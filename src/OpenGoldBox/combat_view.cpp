@@ -1665,12 +1665,11 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     if (mouse->is_pressed() && mouse->get_button_index() == MouseButton::MOUSE_BUTTON_LEFT &&
             campaign_)
     {
-        const auto bounds = required_node<Control>(*this, "PartyRowsBounds").get_rect();
-        const double row_height = bounds.size.y / campaign_->state().slots.size();
-        if (bounds.has_point(local))
+        const int slot = required_node<Control>(*this, "PartyRowsBounds")
+                         .call("slot_at_root", local);
+        if (slot >= 0)
         {
-            const auto slot = static_cast<unsigned>((local.y - bounds.position.y) / row_height);
-            if (const auto id = campaign_->state().slots[slot])
+            if (const auto id = campaign_->state().slots[static_cast<unsigned>(slot)])
                 select_party(id);
             get_viewport()->set_input_as_handled();
             return;
@@ -2546,97 +2545,45 @@ void CombatView::draw_view()
 {
     draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
     draw_rect(board_rect_, get_theme_color("combat_board", "OpenGoldPalette"));
-    if (!campaign_ || !demo_ || !demo_->has_combat())
-        return;
-    const auto &snapshot = demo_.snapshot();
-    const auto font = get_theme_default_font();
-    const int name_size = get_theme_constant("combat_name_font_size", "OpenGoldMetrics");
-    const int detail_size = get_theme_constant("combat_detail_font_size", "OpenGoldMetrics");
-    const int quick_size = get_theme_constant("combat_quick_font_size", "OpenGoldMetrics");
-    const auto rows = required_node<Control>(*this, "PartyRowsBounds").get_rect();
-    const auto metric = [this](const char *name)
+    Array rows;
+    if (campaign_ && demo_ && demo_->has_combat())
     {
-        return get_theme_constant(name, "OpenGoldMetrics");
-    };
-    const double row_height = rows.size.y / campaign_->state().slots.size();
-    for (unsigned slot = 0; slot < 8; ++slot)
-    {
-        const auto id = campaign_->state().slots[slot];
-        const double top = rows.position.y + slot * row_height;
-        const Rect2 row(rows.position.x, top, rows.size.x,
-                        row_height - metric("combat_party_row_gap"));
-        draw_rect(row, id && id == selected_ ? get_theme_color("combat_row_selected", "OpenGoldPalette") : get_theme_color("combat_row", "OpenGoldPalette"));
-        if (!id)
-            continue;
-        const auto &member = campaign_->member(id);
-        const auto found = std::find_if(snapshot.combatants.begin(), snapshot.combatants.end(),
-                                        [&](const auto & c)
+        rows.resize(8);
+        const auto &snapshot = demo_.snapshot();
+        for (unsigned slot = 0; slot < 8; ++slot)
         {
-            return c.id == id;
-        });
-        const int hp =
-            found == snapshot.combatants.end() ? member.vitals.hit_points : found->hit_points;
-        const int maximum = found == snapshot.combatants.end() ? campaign_->hit_point_maximum(id)
-                            : found->max_hit_points;
-        const double size = std::min(static_cast<double>(metric("combat_party_portrait_max")),
-                                     row_height - metric("combat_party_portrait_height_reserve"));
-        const double portrait_y = top + metric("combat_party_portrait_top");
-        const Rect2 image_rect(rows.position.x + metric("combat_party_portrait_left"),
-                               portrait_y, size, size);
-        draw_rect(image_rect, get_theme_color("creation_field", "OpenGoldPalette"));
-        if (const auto portrait = portraits_.find(id); portrait != portraits_.end())
-            draw_texture_rect(portrait->second, image_rect, false);
-        else if (const auto sprite = art_.find(id); sprite != art_.end())
-            draw_texture_rect(sprite->second.texture, image_rect, false);
-        const double hp_y = portrait_y + size + metric("combat_party_hp_gap");
-        draw_rect(Rect2(image_rect.position.x, hp_y, size,
-                        metric("combat_party_hp_height")),
-                  get_theme_color("combat_hp_track", "OpenGoldPalette"));
-        draw_rect(Rect2(image_rect.position.x, hp_y,
-                        size * std::clamp(static_cast<double>(hp) / std::max(1, maximum),
-                                          0.0, 1.0),
-                        metric("combat_party_hp_height")),
-                  get_theme_color(hp <= 0 || static_cast<std::int64_t>(hp) * 100 <=
-                                  static_cast<std::int64_t>(maximum) * metric("combat_low_hp_percent")
-                                      ? "score_negative" : hp < maximum ? "score_positive" : "hp_full",
-                                  "OpenGoldPalette"));
-        const double text_x = rows.position.x + metric("combat_party_text_left");
-        const auto line = [&](String value, double y, int size, Color color)
-        {
-            auto cursor = Vector2(text_x, y);
-            for (int i = 0; i < value.length(); ++i)
-                cursor.x +=
-                    font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(value.unicode_at(i)), size, color);
-        };
-        line(gs(member.character.sheet().name), top + metric("combat_party_name_baseline"), name_size,
-             get_theme_color("combat_name", "OpenGoldPalette"));
-        // A gold tag marks a member the computer plays (Quick).
-        if (is_quick(id))
-        {
-            const Rect2 tag(rows.get_end().x - metric("combat_party_quick_right") -
-                            metric("combat_party_quick_width"),
-                            top + metric("combat_party_quick_top"),
-                            metric("combat_party_quick_width"),
-                            metric("combat_party_quick_height"));
-            draw_rect(tag, get_theme_color("combat_quick_bg", "OpenGoldPalette"));
-            draw_rect(tag, get_theme_color("combat_quick_border", "OpenGoldPalette"), false,
-                      metric("combat_party_quick_border_width"));
-            const String text = i18n::text(N_("QUICK"));
-            double width = 0;
-            for (int i = 0; i < text.length(); ++i)
-                width += font->get_char_size(static_cast<char32_t>(text.unicode_at(i)), quick_size).x;
-            auto cursor = Vector2(tag.get_center().x - width / 2,
-                                  top + metric("combat_party_quick_text_baseline"));
-            for (int i = 0; i < text.length(); ++i)
-                cursor.x += font->draw_char(get_canvas_item(), cursor, static_cast<char32_t>(text.unicode_at(i)), quick_size,
-                                            get_theme_color("combat_quick_text", "OpenGoldPalette"));
+            Dictionary entry;
+            const auto id = campaign_->state().slots[slot];
+            if (id)
+            {
+                const auto &member = campaign_->member(id);
+                const auto found = std::find_if(snapshot.combatants.begin(), snapshot.combatants.end(),
+                                                [&](const auto &combatant)
+                {
+                    return combatant.id == id;
+                });
+                const int hp = found == snapshot.combatants.end()
+                               ? member.vitals.hit_points : found->hit_points;
+                const int maximum = found == snapshot.combatants.end()
+                                    ? campaign_->hit_point_maximum(id) : found->max_hit_points;
+                const auto &sheet = member.character.sheet();
+                entry["selected"] = id == selected_;
+                entry["name"] = gs(sheet.name);
+                entry["detail"] = gs(sheet.character_class).capitalize() + " / " +
+                                  gs(sheet.race).capitalize() + " / " + gs(sheet.gender).capitalize();
+                entry["hp"] = hp;
+                entry["maximum"] = maximum;
+                entry["quick"] = is_quick(id);
+                entry["quick_text"] = i18n::text(N_("QUICK"));
+                if (const auto portrait = portraits_.find(id); portrait != portraits_.end())
+                    entry["portrait"] = portrait->second;
+                else if (const auto sprite = art_.find(id); sprite != art_.end())
+                    entry["portrait"] = sprite->second.texture;
+            }
+            rows[slot] = entry;
         }
-        const auto &sheet = member.character.sheet();
-        line(gs(sheet.character_class).capitalize() + " / " + gs(sheet.race).capitalize() + " / " +
-             gs(sheet.gender).capitalize(),
-             top + metric("combat_party_detail_baseline"), detail_size,
-             get_theme_color("combat_detail", "OpenGoldPalette"));
     }
+    required_node<Control>(*this, "PartyRowsBounds").call("set_rows", rows);
 }
 
 void CombatView::draw_battlefield()

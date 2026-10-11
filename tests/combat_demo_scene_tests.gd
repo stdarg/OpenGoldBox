@@ -39,6 +39,11 @@ func check_demo() -> void:
     require(is_equal_approx(combat.get_node("BattlefieldScroll").size.y, (combat.size.y - 180) * 0.85),
         "Demo uses the shorter shared battlefield layout")
     require(combat.get_node("ZoomLevel").text == "100%", "Demo shows the combat zoom level")
+    var party_rows: Control = combat.get_node("PartyRowsBounds")
+    require(party_rows.visible and party_rows.call("slot_at_root", party_rows.position + Vector2(4, 4)) == 0,
+        "Party rows remain visible and the first row is selectable")
+    require(party_rows.call("slot_at_root", party_rows.position + Vector2(4, party_rows.size.y - 4)) == 7,
+        "The last party row remains selectable")
     require(combat.get_node("Footer").text.contains("Shift+arrow: diagonal"),
         "Demo explains the combat keyboard controls")
     require(not combat.get_node("StatusStack/Roster").visible and not combat.get_node("StatusStack/Turn").visible,
