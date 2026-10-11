@@ -117,7 +117,7 @@ func run_checks() -> void:
     continue_button.pressed.emit(); await settle(30)
     require(in_combat(), "Continue leaves the close-up for combat")
     await lose_the_fight()
-    var log: String = current_scene.get_node("CampaignCombat/Log").get_parsed_text()
+    var log: String = current_scene.get_node("CampaignCombat/LogStack/Log").get_parsed_text()
     require(not log.contains(tr("A: next action | Space: use | Z: spell slot | Enter: end turn")), "A finished fight shows no key hints")
     require(not log.begins_with("Slums encounter"), "A finished campaign fight shows no developer label")
     restore_files()
