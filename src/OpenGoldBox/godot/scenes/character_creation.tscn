@@ -1287,6 +1287,7 @@ metadata/layout_reference = Rect2(24, 18, 732, 36)
 theme_type_variation = &"LabelText24"
 
 [node name="Text" type="RichTextLabel" parent="ModifiersModal"]
+script = ExtResource("98_rich_text")
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24
@@ -1371,6 +1372,7 @@ max_length = 3
 select_all_on_focus = true
 
 [node name="Text" type="RichTextLabel" parent="SavingThrowsModal"]
+script = ExtResource("98_rich_text")
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 24
@@ -1836,6 +1838,7 @@ visible = false
 mouse_filter = 2
 
 [node name="TrainingFixed" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 anchor_right = 1.0
 offset_left = 238
 offset_top = 228

@@ -504,6 +504,7 @@ theme_type_variation = &"DialogSurface"
 theme_type_variation = &"LabelText24"
 
 [node name="Text" type="RichTextLabel" parent="ModifiersModal"]
+script = ExtResource("98_rich_text")
 theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
 
@@ -537,6 +538,7 @@ max_length = 3
 select_all_on_focus = true
 
 [node name="Text" type="RichTextLabel" parent="SavingThrowsModal"]
+script = ExtResource("98_rich_text")
 theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
 
@@ -792,6 +794,7 @@ text = "Does not meet targeted class requirements"
 [node name="LevelUp" parent="." instance=ExtResource("1_level_up")]
 
 [node name="TrainingFixed" type="RichTextLabel" parent="."]
+script = ExtResource("98_rich_text")
 visible = false
 theme_type_variation = &"TrainingFixed"
 bbcode_enabled = true

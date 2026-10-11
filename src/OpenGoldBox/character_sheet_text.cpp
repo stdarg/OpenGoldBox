@@ -65,13 +65,13 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     rules::TemporaryHitPoints temporary;
     if (member)
         temporary = party->recovery_info(member->id).temporary_hp;
-    text += "[b]" +
+    text += "[theme_emphasis]" +
             std::string(presentation::hp_text(member ? member->vitals.hit_points : s.hit_points,
                 s.hit_points, member && member->vitals.dead,
                 temporary, s.hp_messages)
                         .utf8()
                         .get_data()) +
-            "[/b]";
+            "[/theme_emphasis]";
     text += i18n::formatted("   Hit Dice: {level}d{die}", {{"level", s.level}, {"die", s.hit_die}});
     if (member)
         text += i18n::formatted("   Gold {gold}   XP {xp}",
@@ -79,7 +79,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     if (member && member->vitals.dead)
         text += "   " + i18n::utf8("Dead");
     if (member && party->can_advance(member->id))
-        text += "   [b]" + i18n::utf8("Ready to level up") + "[/b]";
+        text += "   [theme_emphasis]" + i18n::utf8("Ready to level up") + "[/theme_emphasis]";
     const auto display = [](const std::string & id)
     {
         if (id == "archery")
@@ -136,7 +136,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         if (!member->vitals.description.empty())
             text += "\n" + literal(member->vitals.description);
     }
-    text += "\n\n[b]" + i18n::utf8("Inventory") + "[/b]";
+    text += "\n\n[theme_emphasis]" + i18n::utf8("Inventory") + "[/theme_emphasis]";
     if (character.inventory().empty())
         text += "\n" + i18n::utf8("Empty");
     const auto positions =

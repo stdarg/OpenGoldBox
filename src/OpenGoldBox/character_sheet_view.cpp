@@ -100,13 +100,13 @@ void CharacterCreationView::show_modifiers()
     if (!member && !completed_)
         return;
     const auto &s = member ? member->character.sheet() : completed_->sheet();
-    std::string text = "[b]" + i18n::utf8("Ability score adjustments") + "[/b]\n";
+    std::string text = "[theme_emphasis]" + i18n::utf8("Ability score adjustments") + "[/theme_emphasis]\n";
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = rules::all_abilities[i];
         if (s.bonuses[ability] == 0)
             continue;
-        text += "[b]" + i18n::utf8(names[i]) + "[/b]\n" +
+        text += "[theme_emphasis]" + i18n::utf8(names[i]) + "[/theme_emphasis]\n" +
         i18n::formatted("Rolled score: {score}", {{"score", s.base[ability]}}) + "\n";
         for (const auto &source : s.ability_adjustments)
             if (source.bonuses[ability])
@@ -118,33 +118,33 @@ void CharacterCreationView::show_modifiers()
         "\n";
         text += i18n::formatted("Final score: {score}", {{"score", s.scores[ability]}}) + "\n\n";
     }
-    text += "\n[b]" + i18n::formatted("Race / {race}", {{"race", i18n::text(s.race)}}) + "[/b]\n" +
+    text += "\n[theme_emphasis]" + i18n::formatted("Race / {race}", {{"race", i18n::text(s.race)}}) + "[/theme_emphasis]\n" +
     i18n::render(s.racial_messages).utf8().get_data();
-    text += "\n\n[b]" +
+    text += "\n\n[theme_emphasis]" +
     i18n::formatted("Class / {class}", {{"class", i18n::text(s.character_class)}}) +
-    "[/b]\n" + i18n::render(s.class_messages).utf8().get_data();
+    "[/theme_emphasis]\n" + i18n::render(s.class_messages).utf8().get_data();
     text +=
-        "\n\n[b]" +
+        "\n\n[theme_emphasis]" +
     i18n::formatted("Background / {background}", {{"background", i18n::text(s.background)}}) +
-    "[/b]\n" + i18n::render(s.background_messages).utf8().get_data();
+    "[/theme_emphasis]\n" + i18n::render(s.background_messages).utf8().get_data();
     try
     {
         const auto pack = presentation::path_from_godot(game_rules_file());
         const auto profile =
             member ? campaign_->profile(member->id) : srd5::load(pack)->character_profile(s, {});
-        text += "\n\n[b]" + i18n::utf8("Items") + "[/b]\n" +
+        text += "\n\n[theme_emphasis]" + i18n::utf8("Items") + "[/theme_emphasis]\n" +
                 i18n::render(profile.item_messages).utf8().get_data();
-        text += "\n\n[b]" + i18n::utf8("Spells") + "[/b]\n" +
+        text += "\n\n[theme_emphasis]" + i18n::utf8("Spells") + "[/theme_emphasis]\n" +
                 i18n::render(profile.spell_messages).utf8().get_data();
         text += "\n\n" + i18n::utf8(profile.description);
     }
     catch (const std::exception &e)
     {
         text += i18n::utf8(
-                    "\n\n[b]Items[/b]\nNo equipped item modifiers.\n\n[b]Spells[/b]\nNo active spell modifiers. Persistent spell effects are not implemented.");
+                    "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented.");
         text += "\n\n" + literal(e.what());
     }
-    required_node<RichTextLabel>(*this, "ModifiersModal/Text").set_text(gs(text));
+    required_node<RichTextLabel>(*this, "ModifiersModal/Text").call("render", gs(text));
     required_node<Label>(*this, "ModifiersModal/Title")
     .set_text(i18n::format("{name} / Modifiers", {{"name", gs(s.name)}}));
     auto *modal = &required_node<Window>(*this, "ModifiersModal");
@@ -200,7 +200,7 @@ void CharacterCreationView::update_saving_throws(String value)
                             ? i18n::text("Any d20 roll saves")
         : i18n::format("Roll {needed} or higher", {{"needed", needed}});
         text += i18n::formatted(
-                    "[b]{ability} save: {bonus} | {target}[/b]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n",
+                    "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n",
         {
             {"ability", i18n::text(names[i])},
             {"bonus", gs(number(s.saving_throws[ability]))},
@@ -225,5 +225,5 @@ void CharacterCreationView::update_saving_throws(String value)
     }
     text += i18n::utf8(
                 "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules.");
-    label->set_text(gs(text));
+    label->call("render", gs(text));
 }

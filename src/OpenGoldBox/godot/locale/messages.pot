@@ -3,7 +3,7 @@ msgid ""
 msgstr "Project-Id-Version: OpenGoldBox\nLanguage: \nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: src/OpenGoldBox/character_sheet_view.cpp:143
-msgid "\n\n[b]Items[/b]\nNo equipped item modifiers.\n\n[b]Spells[/b]\nNo active spell modifiers. Persistent spell effects are not implemented."
+msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented."
 msgstr ""
 
 #: src/OpenGoldBox/character_sheet_text.cpp:107
@@ -336,7 +336,7 @@ msgstr ""
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1233 src/OpenGoldBox/godot/scenes/character_creation.tscn:1527
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1233 src/OpenGoldBox/godot/scenes/character_creation.tscn:1529
 msgid "Add to party"
 msgstr ""
 
@@ -934,7 +934,7 @@ msgstr ""
 msgid "Character Pool"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1515
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1517
 msgid "Character Pool / 48 level-one characters"
 msgstr ""
 
@@ -1230,7 +1230,7 @@ msgstr ""
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1310 src/OpenGoldBox/godot/scenes/character_creation.tscn:1394 src/OpenGoldBox/godot/scenes/character_creation.tscn:1439 src/OpenGoldBox/godot/scenes/character_creation.tscn:1484 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:467
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1311 src/OpenGoldBox/godot/scenes/character_creation.tscn:1396 src/OpenGoldBox/godot/scenes/character_creation.tscn:1441 src/OpenGoldBox/godot/scenes/character_creation.tscn:1486 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:467
 msgid "Close"
 msgstr ""
 
@@ -1561,7 +1561,7 @@ msgstr ""
 msgid "Dodging"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1725 src/OpenGoldBox/godot/scenes/character_creation.tscn:1736 src/OpenGoldBox/godot/scenes/character_creation.tscn:1747 src/OpenGoldBox/godot/scenes/character_creation.tscn:1758 src/OpenGoldBox/godot/scenes/character_creation.tscn:1769 src/OpenGoldBox/godot/scenes/character_creation.tscn:1780
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1727 src/OpenGoldBox/godot/scenes/character_creation.tscn:1738 src/OpenGoldBox/godot/scenes/character_creation.tscn:1749 src/OpenGoldBox/godot/scenes/character_creation.tscn:1760 src/OpenGoldBox/godot/scenes/character_creation.tscn:1771 src/OpenGoldBox/godot/scenes/character_creation.tscn:1782
 msgid "Does not meet targeted class requirements"
 msgstr ""
 
@@ -2063,7 +2063,7 @@ msgstr ""
 msgid "Future class goals: {classes}\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1606
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1608
 msgid "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 msgstr ""
 
@@ -2842,7 +2842,7 @@ msgstr ""
 msgid "Main hand — {item}"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1496 src/OpenGoldBox/godot/scenes/party_panel.tscn:257
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1498 src/OpenGoldBox/godot/scenes/party_panel.tscn:257
 msgid "Make leader"
 msgstr ""
 
@@ -4085,7 +4085,7 @@ msgstr ""
 msgid "Save name"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1321 src/OpenGoldBox/godot/scenes/character_creation.tscn:1324 src/OpenGoldBox/godot/scenes/party_panel.tscn:171
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1322 src/OpenGoldBox/godot/scenes/character_creation.tscn:1325 src/OpenGoldBox/godot/scenes/party_panel.tscn:171
 msgid "Saving Throws"
 msgstr ""
 
@@ -4731,11 +4731,11 @@ msgstr ""
 msgid "Target"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1361
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1362
 msgid "Target DC"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1577
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1579
 msgid "Target class(es)"
 msgstr ""
 
@@ -5338,7 +5338,7 @@ msgstr ""
 
 #: src/OpenGoldBox/character_sheet_view.cpp:202
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "[b]{ability} save: {bonus} | {target}[/b]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n"
+msgid "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n"
 msgstr ""
 
 #: src/OpenGoldBox/character_sheet_text.cpp:39

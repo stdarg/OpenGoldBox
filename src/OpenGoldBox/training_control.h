@@ -89,7 +89,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 {
     godot::String text;
     if (!fixed)
-        text = "\n\n[b]" + tr(N_("Training")) + "[/b]\n" +
+        text = "\n\n[theme_emphasis]" + tr(N_("Training")) + "[/theme_emphasis]\n" +
                tr(profile.complete ? N_("Supported training choices complete")
                   : N_("Training choices pending")) +
                "\n";
@@ -131,7 +131,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     auto fixed = creator.draft();
     fixed.training.clear();
     required_node<RichTextLabel>(parent, "TrainingFixed")
-    .set_text("[b]" + tr(N_("Fixed training")) + "[/b]\n" +
+    .call("render", "[theme_emphasis]" + tr(N_("Fixed training")) + "[/theme_emphasis]\n" +
                training_summary(
                    creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
                    tr, true));

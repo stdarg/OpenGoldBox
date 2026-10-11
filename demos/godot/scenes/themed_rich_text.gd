@@ -19,4 +19,6 @@ func render(source: String) -> void:
     result = result.replace("[theme_header_last]", "[cell][b]")
     result = result.replace("[/theme_header_last]", "[/b][/cell]")
     result = result.replace("[/theme_table]", "[/table]")
+    result = result.replace("[theme_emphasis]", "[b]")
+    result = result.replace("[/theme_emphasis]", "[/b]")
     text = result
