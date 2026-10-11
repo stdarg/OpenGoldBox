@@ -72,6 +72,14 @@ void RolfTourView::_bind_methods()
 
 void RolfTourView::_notification(int what)
 {
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_notification(what);
+    });
+}
+
+void RolfTourView::respond_to_notification(int what)
+{
     if (what == NOTIFICATION_RESIZED && ready_)
     {
         layout();
@@ -80,6 +88,14 @@ void RolfTourView::_notification(int what)
 }
 
 void RolfTourView::_ready()
+{
+    presentation::run_guarded(*this, [&]
+    {
+        prepare_view();
+    });
+}
+
+void RolfTourView::prepare_view()
 {
     i18n::prepare_ui(*this);
     // Resizing the window can notify this view before dynamic controls exist.

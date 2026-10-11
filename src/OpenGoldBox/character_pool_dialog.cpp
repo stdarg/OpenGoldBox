@@ -29,6 +29,14 @@ String gs(std::string_view s)
 
 void CharacterPoolDialog::_ready()
 {
+    presentation::run_guarded(*this, [&]
+    {
+        connect_controls();
+    });
+}
+
+void CharacterPoolDialog::connect_controls()
+{
     required_node<ItemList>(*this, "List")
     .connect("item_selected", presentation::guarded(this, &CharacterPoolDialog::select));
     required_node<Button>(*this, "Add")

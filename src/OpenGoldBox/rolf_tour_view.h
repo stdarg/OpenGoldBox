@@ -103,6 +103,8 @@ class RolfTourView : public godot::Control
     void _notification(int what);
 
   private:
+    void respond_to_notification(int what);
+    void prepare_view();
     // Private, so only enable_save_check sets it (Effective C++ Item 22).
     std::function<void(const std::string &)> save_check_;
     void advance_frame(double delta);

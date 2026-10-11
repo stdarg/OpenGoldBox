@@ -18,6 +18,14 @@ void GameLifecycle::_bind_methods()
 
 void GameLifecycle::_ready()
 {
+    presentation::run_guarded(*this, [&]
+    {
+        start_lifecycle();
+    });
+}
+
+void GameLifecycle::start_lifecycle()
+{
     i18n::initialize();
     set_process_mode(PROCESS_MODE_ALWAYS);
     auto *tree = get_tree(); // borrowed; SceneTree owns this autoload
@@ -39,6 +47,14 @@ void GameLifecycle::watch_window(Node *node)
 }
 
 void GameLifecycle::_input(const Ref<InputEvent> &event)
+{
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_input(event);
+    });
+}
+
+void GameLifecycle::respond_to_input(const Ref<InputEvent> &event)
 {
     shortcut(event, *get_viewport());
 }

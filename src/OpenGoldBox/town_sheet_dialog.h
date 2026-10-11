@@ -36,6 +36,7 @@ class TownSheetDialog : public godot::Window
     }
 
   private:
+    void connect_controls();
     CampaignAccess campaign_;
     std::function<void()> leader_changed_;
     FailureReport report_;

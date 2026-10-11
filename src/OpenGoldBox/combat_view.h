@@ -87,6 +87,7 @@ class CombatView : public godot::Control
     void _notification(int what);
 
   private:
+    void respond_to_notification(int what);
     void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     void draw_view();
     presentation::CachedCombat demo_;

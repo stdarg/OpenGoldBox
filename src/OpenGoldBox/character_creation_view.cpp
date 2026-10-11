@@ -114,6 +114,14 @@ void CharacterCreationView::_bind_methods()
 
 void CharacterCreationView::_notification(int what)
 {
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_notification(what);
+    });
+}
+
+void CharacterCreationView::respond_to_notification(int what)
+{
     // Rows of buttons size to their labels, which change with the language.
     if ((what == NOTIFICATION_RESIZED || what == NOTIFICATION_TRANSLATION_CHANGED) && ready_)
     {

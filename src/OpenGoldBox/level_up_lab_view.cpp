@@ -109,6 +109,14 @@ String label_for(const std::vector<opengold::rules::CreationChoice> &options,
 
 void LevelUpLabView::_ready()
 {
+    presentation::run_guarded(*this, [&]
+    {
+        prepare_view();
+    });
+}
+
+void LevelUpLabView::prepare_view()
+{
     i18n::prepare_ui(*this);
     auto rules = opengold::srd5::character_rules();
     classes_ = rules->choices(opengold::rules::CreationField::character_class);

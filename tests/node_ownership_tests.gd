@@ -27,5 +27,12 @@ func run_checks() -> void:
         dialog.free()
         for child in children:
             require(child.get_ref() == null, "Freeing the dialog must release its native children")
+    # A dialog missing the controls its scene supplies, as a broken mod scene
+    # would leave it, reports the failure; it used to end the whole game.
+    for dialog_class in ["TownSheetDialog", "CharacterPoolDialog"]:
+        var bare := ClassDB.instantiate(dialog_class) as Window
+        root.add_child(bare)
+        require(bare.is_inside_tree(), dialog_class + " without its controls stays open")
+        bare.free()
     print("Native node ownership checks passed: attachment and subtree teardown")
     quit(0)
