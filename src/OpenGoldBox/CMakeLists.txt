@@ -139,6 +139,12 @@ if(OPENGOLD_BUILD_TESTS)
         --target opengoldbox_test_project --config $<CONFIG>)
     set_tests_properties(opengold_godot_prepare PROPERTIES FIXTURES_SETUP godot_project TIMEOUT 600 LABELS godot
         RESOURCE_LOCK godot_project)
+    # Puts back settings.cfg when a settings check (below) was stopped part way.
+    add_test(NAME opengold_godot_restore_settings COMMAND "${CMAKE_COMMAND}"
+        "-DPROJECT=${game_project}" "-DKEPT=${CMAKE_BINARY_DIR}/settings-checks/developer-settings"
+        -P "${PROJECT_SOURCE_DIR}/tests/restore_settings.cmake")
+    set_tests_properties(opengold_godot_restore_settings PROPERTIES FIXTURES_SETUP godot_project
+        LABELS godot RESOURCE_LOCK godot_project)
     function(opengold_godot_test name script expected)
         add_test(NAME "opengold_godot_${name}" COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLDBOX_GODOT}" "-DPROJECT=${game_project}"
