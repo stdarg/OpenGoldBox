@@ -136,7 +136,6 @@ class CombatView : public godot::Control
     std::map<opengold::rules::EntityId, godot::Ref<godot::Texture2D>> portraits_;
     opengold::rules::EntityId selected_{};
     opengold::rules::EntityId last_actor_{};
-    godot::Rect2 board_rect_;
     // The rows of controls the battlefield was last sized to leave room for.
     double laid_out_controls_height_{};
     double base_tile_{};

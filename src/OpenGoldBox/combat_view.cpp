@@ -577,7 +577,7 @@ void CombatView::layout()
     laid_out_controls_height_ = geometry["controls_height"];
     base_tile_ = geometry["base_tile"];
     auto &scroll = required_node<ScrollContainer>(*this, "BattlefieldScroll");
-    board_rect_ = Rect2(scroll.get_position(), scroll.get_size());
+    required_node<Control>(*this, "CombatBackdrop").queue_redraw();
     for (int i = 0; i < scroll.get_child_count(true); ++i)
         if (auto *bar = Object::cast_to<ScrollBar>(scroll.get_child(i, true)))
             bar->set_focus_mode(FOCUS_ALL);
@@ -1676,7 +1676,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         }
     }
     // Keep clicks on the scrollbars out of combat targeting.
-    if (!board_rect_.has_point(local))
+    if (!scroll->get_rect().has_point(local))
         return;
     for (int i = 0; i < scroll->get_child_count(true); ++i)
     {
@@ -1799,7 +1799,7 @@ void CombatView::update_hover(const Vector2 &pointer)
     if (!demo_ || !demo_->has_combat() || panning_)
         return;
     const auto local = get_global_transform_with_canvas().affine_inverse().xform(pointer);
-    if (!board_rect_.has_point(local))
+    if (!required_node<ScrollContainer>(*this, "BattlefieldScroll").get_rect().has_point(local))
         return;
     const auto canvas = required_node<Control>(*this, "BattlefieldScroll/Canvas")
                         .get_global_transform_with_canvas()
@@ -2543,8 +2543,6 @@ void CombatView::report_failure(const std::exception &failure)
 
 void CombatView::draw_view()
 {
-    draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
-    draw_rect(board_rect_, get_theme_color("combat_board", "OpenGoldPalette"));
     Array rows;
     if (campaign_ && demo_ && demo_->has_combat())
     {
