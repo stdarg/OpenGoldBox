@@ -1473,11 +1473,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1169
+#: src/OpenGoldBox/party_preview.cpp:1171
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1241
+#: src/OpenGoldBox/party_preview.cpp:1243
 msgid "Defeat test"
 msgstr ""
 
@@ -1764,7 +1764,7 @@ msgstr ""
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:686 src/OpenGoldBox/rolf_tour_view.cpp:425
+#: src/OpenGoldBox/party_preview.cpp:688 src/OpenGoldBox/rolf_tour_view.cpp:425
 msgid "Equipped."
 msgstr ""
 
@@ -1788,7 +1788,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1180
+#: src/OpenGoldBox/party_preview.cpp:1182
 msgid "Exit to OS"
 msgstr ""
 
@@ -1924,7 +1924,7 @@ msgstr ""
 msgid "Finish Long Rest spell choices before combat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1086
+#: src/OpenGoldBox/party_preview.cpp:1088
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr ""
 
@@ -2431,7 +2431,7 @@ msgstr ""
 msgid "Insight"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1085
+#: src/OpenGoldBox/party_preview.cpp:1087
 msgid "Inspect your party and equipment."
 msgstr ""
 
@@ -2725,7 +2725,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1173
+#: src/OpenGoldBox/party_preview.cpp:1175
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -3781,7 +3781,7 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1180
+#: src/OpenGoldBox/party_preview.cpp:1182
 msgid "Reload a Saved Game"
 msgstr ""
 
@@ -5328,7 +5328,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1171
+#: src/OpenGoldBox/party_preview.cpp:1173
 msgid "Your party has been defeated."
 msgstr ""
 

@@ -1473,11 +1473,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1169
+#: src/OpenGoldBox/party_preview.cpp:1171
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1241
+#: src/OpenGoldBox/party_preview.cpp:1243
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -1764,7 +1764,7 @@ msgstr "Equipado"
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:686 src/OpenGoldBox/rolf_tour_view.cpp:425
+#: src/OpenGoldBox/party_preview.cpp:688 src/OpenGoldBox/rolf_tour_view.cpp:425
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -1788,7 +1788,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1180
+#: src/OpenGoldBox/party_preview.cpp:1182
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -1924,7 +1924,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1086
+#: src/OpenGoldBox/party_preview.cpp:1088
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -2431,7 +2431,7 @@ msgstr "Hechicería innata"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1085
+#: src/OpenGoldBox/party_preview.cpp:1087
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -2725,7 +2725,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1173
+#: src/OpenGoldBox/party_preview.cpp:1175
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -3781,7 +3781,7 @@ msgstr "Volver al grupo"
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1180
+#: src/OpenGoldBox/party_preview.cpp:1182
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -5328,7 +5328,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia y Carisma para 
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1171
+#: src/OpenGoldBox/party_preview.cpp:1173
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 
