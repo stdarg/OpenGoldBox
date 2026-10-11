@@ -67,14 +67,6 @@ void ScreenshotService::_process(double delta)
     if (notice_time_ > 0)
     {
         notice_time_ -= delta;
-        const auto size = get_tree()->get_root()->get_size();
-        const int margin = panel->get_theme_constant("screenshot_notice_margin", "OpenGoldMetrics");
-        const int max_width = panel->get_theme_constant("screenshot_notice_max_width", "OpenGoldMetrics");
-        const Vector2 minimum(std::max(1, std::min(max_width, size.x - 2 * margin)), 0);
-        panel->set_custom_minimum_size(minimum);
-        panel->set_size(minimum);
-        const double bottom = static_cast<double>(size.y - panel->get_size().y - margin);
-        panel->set_position(Vector2(margin, std::max(0.0, bottom)));
         if (notice_time_ <= 0)
             panel->hide();
     }

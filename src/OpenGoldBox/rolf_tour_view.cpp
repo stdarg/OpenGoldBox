@@ -1012,14 +1012,7 @@ void RolfTourView::refresh()
         button->set_text(text);
         button->set_tooltip_text(text);
         auto *arrow = &required_node<Button>(*button, "Advance");
-        const auto width = Vector2(button->get_theme_font("font")->call(
-                                       "get_string_size", name, 0, -1,
-                                       button->get_theme_font_size("font_size")))
-                           .x;
-        arrow->set_position(Vector2(std::min(width + get_theme_constant(
-                "party_arrow_gap", "OpenGoldMetrics"),
-                button->get_size().x - get_theme_constant("tour_arrow_right_inset", "OpenGoldMetrics")),
-            get_theme_constant("tour_arrow_top_inset", "OpenGoldMetrics")));
+        arrow->call("place_in_member_row", name);
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
     queue_redraw();

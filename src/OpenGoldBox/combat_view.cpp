@@ -558,11 +558,6 @@ void CombatView::_ready()
 void CombatView::layout()
 {
     followed_.reset();
-    // Authored control rectangles and anchors live in combat_demo.tscn.
-    for (int i = 0; i < get_child_count(); ++i)
-        if (auto *control = Object::cast_to<Control>(get_child(i));
-                control && control->has_meta("layout_reference"))
-            presentation::restore_scene_control(*control);
     const auto board = demo_ && demo_->has_combat() ? demo_.snapshot().battlefield
                        : Battlefield{12, 9, {}};
     bool party_controls = false;
@@ -576,21 +571,17 @@ void CombatView::layout()
             return actor.id == state.actor && actor.side == rules::Side::party;
         });
     }
-    laid_out_controls_height_ = controls_height(party_controls);
+    const Dictionary geometry = required_node<Node>(*this, "CombatLayout")
+                                .call("apply_layout", Vector2i(board.width, board.height),
+                                      combat_zoom_, party_controls);
+    laid_out_controls_height_ = geometry["controls_height"];
+    base_tile_ = geometry["base_tile"];
     auto &scroll = required_node<ScrollContainer>(*this, "BattlefieldScroll");
-    const double battlefield_height = std::min<double>(
-        scroll.get_size().y,
-        get_size().y - get_theme_constant("combat_board_bottom_reserve", "OpenGoldMetrics") -
-        laid_out_controls_height_ - get_theme_constant("combat_min_log_height", "OpenGoldMetrics"));
-    scroll.set_size(Vector2(scroll.get_size().x, battlefield_height));
     board_rect_ = Rect2(scroll.get_position(), scroll.get_size());
     for (int i = 0; i < scroll.get_child_count(true); ++i)
         if (auto *bar = Object::cast_to<ScrollBar>(scroll.get_child(i, true)))
             bar->set_focus_mode(FOCUS_ALL);
-    base_tile_ = std::max(board_rect_.size.x / board.width, board_rect_.size.y / board.height);
     auto &canvas = required_node<Control>(*this, "BattlefieldScroll/Canvas");
-    canvas.set_custom_minimum_size(Vector2(base_tile_ * board.width, base_tile_ * board.height) *
-                                   combat_zoom_);
     canvas.queue_redraw();
     const int zoom_percent = static_cast<int>(std::lround(combat_zoom_ * 100));
     required_node<Label>(*this, "ZoomLevel").set_text(String::num_int64(zoom_percent) + "%");
@@ -598,77 +589,24 @@ void CombatView::layout()
     required_node<Button>(*this, "ZoomOut10").set_disabled(zoom_percent <= 10);
     required_node<Button>(*this, "ZoomIn10").set_disabled(zoom_percent >= 1000);
     required_node<Button>(*this, "ZoomIn100").set_disabled(zoom_percent >= 1000);
-    layout_reaction_controls(party_controls);
 }
 
 // How far below the battlefield the log starts: the rows of controls showing.
 double CombatView::controls_height(bool show_controls) const
 {
-    const double row = get_theme_constant("combat_action_row_step", "OpenGoldMetrics");
-    const double weapon_height =
-        required_node<OptionButton>(*this, "Weapons").is_visible() ? row : 0;
-    const bool rush = required_node<Button>(*this, "AdrenalineRush").is_visible();
-    const bool spells = required_node<OptionButton>(*this, "Cantrip").is_visible();
-    const bool surge = required_node<Button>(*this, "ActionSurge").is_visible();
-    const bool cunning = required_node<OptionButton>(*this, "CunningAction").is_visible();
-    const bool aid = required_node<Button>(*this, "Stabilize").is_visible();
-    const bool standing = required_node<Button>(*this, "StandUp").is_visible();
-    double inset = weapon_height +
-        (required_node<OptionButton>(*this, "ThrownWeapon").is_visible()
-         ? get_theme_constant("combat_thrown_action_rows", "OpenGoldMetrics") * row
-         : standing ? get_theme_constant("combat_standing_action_rows", "OpenGoldMetrics") * row
-         : (cunning || aid) ? get_theme_constant("combat_aid_action_rows", "OpenGoldMetrics") * row
-         : (show_controls ? row : 0) + ((rush || spells || surge) ? row : 0));
-    if (required_node<OptionButton>(*this, "ItemAction").is_visible())
-        inset += row;
-    return inset;
+    return required_node<Node>(*this, "CombatLayout").call("controls_height", show_controls);
 }
 
 void CombatView::layout_reaction_controls(bool show_controls)
 {
-    const double row = get_theme_constant("combat_action_row_step", "OpenGoldMetrics");
-    const double top = board_rect_.get_end().y +
-                       get_theme_constant("combat_action_top_gap", "OpenGoldMetrics");
-    for (int i = 0; i < get_child_count(); ++i)
-        if (auto *control = Object::cast_to<Control>(get_child(i));
-                control && control->has_meta("action_row"))
-            presentation::restore_scene_control(*control);
-    const double authored_top = required_node<Button>(*this, "React").get_position().y;
-    const double weapon_height = required_node<OptionButton>(*this, "Weapons").is_visible() ? row : 0;
-    for (int i = 0; i < get_child_count(); ++i)
-    {
-        auto *control = Object::cast_to<Control>(get_child(i));
-        if (!control || !control->has_meta("action_row"))
-            continue;
-        const double extra = control->has_meta("action_after_weapon") ? weapon_height : 0;
-        control->set_position(Vector2(control->get_position().x,
-                                      control->get_position().y + top - authored_top + extra));
-    }
-    const double inset = controls_height(show_controls);
-    const double item_y = top + inset -
-        (required_node<OptionButton>(*this, "ItemAction").is_visible() ? row : 0);
-    for (int i = 0; i < get_child_count(); ++i)
-        if (auto *control = Object::cast_to<Control>(get_child(i));
-                control && control->has_meta("action_items"))
-            control->set_position(Vector2(control->get_position().x, item_y));
-    auto &cunning_layout = required_node<Node>(*this, "CunningLayout");
-    cunning_layout.call("play", required_node<Button>(*this, "Stabilize").is_visible()
-                        ? "aid" : "normal");
-    cunning_layout.call("advance", 0);
-    log_area_ = Rect2(board_rect_.position.x, top + inset, board_rect_.size.x,
-                      std::max(0.0, get_size().y -
-                               get_theme_constant("combat_log_bottom_margin", "OpenGoldMetrics") -
-                               top - inset));
-    layout_log();
+    required_node<Node>(*this, "CombatLayout").call("layout_reaction_controls", show_controls);
 }
 
 // The header takes the lines it needs at the top of the log's area; the log
 // fills the rest.
 void CombatView::layout_log()
 {
-    auto &stack = required_node<Control>(*this, "LogStack");
-    stack.set_position(log_area_.position);
-    stack.set_size(log_area_.size);
+    required_node<Node>(*this, "CombatLayout").call("layout_log");
 }
 
 #include "nick_dialog_impl.h"
@@ -1944,13 +1882,7 @@ void CombatView::update_hover(const Vector2 &pointer)
     if (!found->conditions.empty())
         details += "\n" + i18n::render(found->conditions);
     required_node<Label>(*this, "HoverInfo/Details").set_text(details);
-    const auto size = panel->get_size();
-    const double hover_x = panel->get_theme_constant("combat_hover_offset_x", "OpenGoldMetrics");
-    const double hover_y = panel->get_theme_constant("combat_hover_offset_y", "OpenGoldMetrics");
-    panel->set_position(Vector2(
-                            std::clamp(local.x + hover_x, 0.0, std::max(0.0, static_cast<double>(get_size().x - size.x))),
-                            std::clamp(local.y + hover_y, 0.0,
-                                       std::max(0.0, static_cast<double>(get_size().y - size.y)))));
+    required_node<Node>(*this, "CombatLayout").call("place_hover", local);
     panel->show();
 }
 

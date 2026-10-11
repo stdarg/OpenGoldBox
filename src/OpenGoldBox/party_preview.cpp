@@ -178,11 +178,6 @@ void CharacterCreationView::party_layout()
 {
     required_node<CharacterPoolDialog>(*this, "PoolModal").fit(get_size());
     required_node<TownSheetDialog>(*this, "TownSheet").fit(get_size());
-    for (const auto *name :
-            {"CampaignTown", "CampaignCombat"
-            })
-        if (auto *child = Object::cast_to<Control>(get_node_or_null(name)))
-            child->set_size(get_size());
 }
 
 void CharacterCreationView::party_selected(std::int64_t index)

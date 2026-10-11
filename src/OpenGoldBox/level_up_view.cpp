@@ -93,19 +93,9 @@ void CharacterCreationView::refresh_advancement_arrows()
         }
         arrow->set_tooltip_text(
         i18n::format("Level up {name}", {{"name", gs(member.character.sheet().name)}}));
-        const auto rect = list->get_item_rect(static_cast<std::int32_t>(i));
-        const float y = rect.position.y - list->get_v_scroll_bar()->get_value();
-        const auto font = list->get_theme_font("font");
-        const float width = Vector2(font->call("get_string_size", gs(member.character.sheet().name),
-                                               0, -1, list->get_theme_font_size("font_size")))
-                            .x;
-        arrow->set_position(Vector2(std::min(width + list->get_theme_constant(
-                "party_arrow_gap", "OpenGoldMetrics"),
-                list->get_size().x - list->get_theme_constant(
-                    "party_arrow_right_inset", "OpenGoldMetrics")),
-                                    y + list->get_theme_constant("party_arrow_offset_y", "OpenGoldMetrics")));
-        arrow->set_visible(campaign_->can_advance(member.id) && arrow->get_position().y >= 0 &&
-                           arrow->get_position().y + arrow->get_size().y <= list->get_size().y);
+        const bool fits = arrow->call("place_in_roster", static_cast<std::int32_t>(i),
+                                      gs(member.character.sheet().name));
+        arrow->set_visible(campaign_->can_advance(member.id) && fits);
     }
     for (int n = 0; n < list->get_child_count(); ++n)
         if (auto *arrow = Object::cast_to<Button>(list->get_child(n));

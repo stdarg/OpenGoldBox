@@ -137,8 +137,6 @@ class CombatView : public godot::Control
     opengold::rules::EntityId selected_{};
     opengold::rules::EntityId last_actor_{};
     godot::Rect2 board_rect_;
-    // Where the log header and the log go, below the controls.
-    godot::Rect2 log_area_;
     // The rows of controls the battlefield was last sized to leave room for.
     double laid_out_controls_height_{};
     double base_tile_{};

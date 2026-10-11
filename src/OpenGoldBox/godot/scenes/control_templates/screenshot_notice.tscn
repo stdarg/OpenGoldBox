@@ -1,4 +1,6 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/control_templates/screenshot_notice.gd" id="1_notice_layout"]
 
 [node name="NoticeLayer" type="CanvasLayer"]
 layer = 100
@@ -7,6 +9,7 @@ layer = 100
 visible = false
 mouse_filter = 2
 theme_type_variation = &"ScreenshotNotice"
+script = ExtResource("1_notice_layout")
 
 [node name="Text" type="Label" parent="Notice"]
 mouse_filter = 2
