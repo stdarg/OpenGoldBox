@@ -23,6 +23,8 @@ class GameLifecycle : public godot::Node
     static void _bind_methods();
 
   private:
+    void start_lifecycle();
+    void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     bool quitting_{};
     void watch_window(godot::Node *node);
     void window_input(const godot::Ref<godot::InputEvent> &event, godot::Node *window);

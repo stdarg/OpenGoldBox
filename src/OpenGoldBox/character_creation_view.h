@@ -37,6 +37,7 @@ class CharacterCreationView : public godot::Control
     void _notification(int what);
 
   private:
+    void respond_to_notification(int what);
     void draw_view();
     std::unique_ptr<opengold::CharacterCreator> creator_;
     std::optional<opengold::Character> completed_;

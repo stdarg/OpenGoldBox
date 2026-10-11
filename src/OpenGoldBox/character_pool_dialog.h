@@ -52,6 +52,7 @@ class CharacterPoolDialog : public godot::Window
     }
 
   private:
+    void connect_controls();
     // Borrowed from the campaign view, which owns them for longer than this
     // window exists.
     const opengold::rules::CharacterRules *rules_{};

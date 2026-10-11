@@ -369,6 +369,14 @@ void CombatView::prepare_combat()
 
 void CombatView::_notification(int what)
 {
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_notification(what);
+    });
+}
+
+void CombatView::respond_to_notification(int what)
+{
     if (what == NOTIFICATION_RESIZED && ready_)
     {
         layout();

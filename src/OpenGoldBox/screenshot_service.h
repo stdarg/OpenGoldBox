@@ -29,6 +29,8 @@ class ScreenshotService : public godot::Node
     static void _bind_methods();
 
   private:
+    void prepare_service();
+    void advance_capture(double delta);
     godot::String directory_, request_id_;
     bool pending_{}, file_request_{};
     double poll_time_{}, notice_time_{}, capture_wait_{};

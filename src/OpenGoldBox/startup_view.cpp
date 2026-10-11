@@ -33,6 +33,14 @@ void StartupView::_bind_methods()
 
 void StartupView::_ready()
 {
+    presentation::run_guarded(*this, [&]
+    {
+        open_startup();
+    });
+}
+
+void StartupView::open_startup()
+{
     i18n::initialize();
     choose_language();
 }
@@ -307,6 +315,14 @@ void StartupView::show_screen()
 }
 
 void StartupView::_input(const Ref<InputEvent> &event)
+{
+    presentation::run_guarded(*this, [&]
+    {
+        respond_to_input(event);
+    });
+}
+
+void StartupView::respond_to_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (finishing_ || choosing_language_ || choosing_path_ || key.is_null() || !key->is_pressed() ||

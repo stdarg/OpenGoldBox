@@ -23,6 +23,7 @@ class LevelUpLabView : public godot::Control
     static void _bind_methods() {}
 
   private:
+    void prepare_view();
     std::vector<opengold::rules::CreationChoice> classes_, races_, genders_;
     std::unique_ptr<opengold::CampaignParty> campaign_;
     opengold::MemberId member_{};

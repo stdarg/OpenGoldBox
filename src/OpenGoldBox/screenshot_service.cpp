@@ -34,6 +34,14 @@ void ScreenshotService::_bind_methods()
 
 void ScreenshotService::_ready()
 {
+    presentation::run_guarded(*this, [&]
+    {
+        prepare_service();
+    });
+}
+
+void ScreenshotService::prepare_service()
+{
     set_process_mode(PROCESS_MODE_ALWAYS);
     const auto override = OS::get_singleton()->get_environment("OPENGOLD_SCREENSHOT_DIR");
     directory_ = override.is_empty()
@@ -57,6 +65,14 @@ void ScreenshotService::_ready()
 }
 
 void ScreenshotService::_process(double delta)
+{
+    presentation::run_guarded(*this, [&]
+    {
+        advance_capture(delta);
+    });
+}
+
+void ScreenshotService::advance_capture(double delta)
 {
     auto *panel = &required_node<PanelContainer>(*this, "NoticeLayer/Notice"); // scene-owned
     if (notice_time_ > 0)

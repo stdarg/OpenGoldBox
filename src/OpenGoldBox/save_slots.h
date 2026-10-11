@@ -27,6 +27,7 @@ class SaveSlots : public godot::Window
     }
 
   private:
+    void prepare_dialog();
     // Private, so nothing else can replace or call them (Effective C++
     // Item 22).
     FileAction save_, load_;

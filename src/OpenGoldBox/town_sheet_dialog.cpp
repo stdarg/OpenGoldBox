@@ -13,6 +13,14 @@ using presentation::required_node;
 
 void TownSheetDialog::_ready()
 {
+    presentation::run_guarded(*this, [&]
+    {
+        connect_controls();
+    });
+}
+
+void TownSheetDialog::connect_controls()
+{
     required_node<Button>(*this, "MakeLeader")
     .connect("pressed", presentation::guarded(this, &TownSheetDialog::make_leader));
     required_node<Button>(*this, "Close")

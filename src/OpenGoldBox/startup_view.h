@@ -22,6 +22,8 @@ class StartupView : public godot::Control
     static void _bind_methods();
 
   private:
+    void open_startup();
+    void respond_to_input(const godot::Ref<godot::InputEvent> &event);
     unsigned screen_{};
     bool finishing_{};
     bool choosing_language_{};
