@@ -152,13 +152,10 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         auto *box = Object::cast_to<VBoxContainer>(rows->get_node_or_null(name));
         if (!box)
         {
-            auto owned = make_node<VBoxContainer>();
+            auto owned = instantiate_control<VBoxContainer>(
+                "res://scenes/control_templates/training_group.tscn");
             owned->set_name(name);
             box = attach_child(*rows, std::move(owned));
-            box->set_theme_type_variation("TrainingGroup");
-            auto label = make_node<Label>();
-            label->set_name("Title");
-            attach_child(*box, std::move(label));
         }
         box->show();
         rows->move_child(box, i);

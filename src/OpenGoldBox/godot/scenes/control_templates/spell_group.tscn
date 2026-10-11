@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[node name="SpellGroup" type="VBoxContainer"]
+size_flags_horizontal = 3
+theme_type_variation = &"SpellRows"
+
+[node name="Count" type="Label" parent="."]
+autowrap_mode = 3
+
+[node name="Pending" type="Label" parent="."]
+autowrap_mode = 3
+theme_type_variation = &"TrainingPending"

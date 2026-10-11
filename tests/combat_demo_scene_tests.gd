@@ -107,7 +107,7 @@ func check_demo() -> void:
     for frame in range(180):
         if combat.selected_character_cell() == Vector2i(8, 5):
             break
-        await process_frame
+        await create_timer(0.02).timeout
     require(combat.selected_character_cell() == Vector2i(8, 5),
         "Arrow key moves the selected character on their turn")
     require(combat.get_node("EffectAudio").playing,
@@ -141,7 +141,7 @@ func check_demo() -> void:
         end_key.keycode = KEY_ENTER
         end_key.pressed = true
         root.push_input(end_key)
-        await process_frame
+        await create_timer(0.02).timeout
     require(combat.get_node("LogStack/Log").text.contains("Kobold 7 -> Dorian Nightwind"),
         "Kobold on the right attacks the hero to its left")
     require(combat.sprite_facing_left(1007), "Kobold faces left toward its attack target")

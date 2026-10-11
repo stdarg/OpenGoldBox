@@ -107,7 +107,9 @@ void CombatView::_ready()
         callable_mp(this, &CombatView::refresh).unbind(1));
     presentation::setup_weapon_controls(*this, gs, callable_mp(this, &CombatView::weapon_selected));
     ready_ = true;
-    get_window()->set_min_size(Vector2i(1120, 800));
+    get_window()->set_min_size(Vector2i(
+        get_theme_constant("combat_min_width", "OpenGoldMetrics"),
+        get_theme_constant("combat_min_height", "OpenGoldMetrics")));
     set_texture_filter(TEXTURE_FILTER_NEAREST);
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -198,78 +200,10 @@ void CombatView::_ready()
 
 void CombatView::layout()
 {
-    const double width = get_size().x, height = get_size().y, sidebar = 358,
-                 left_width = width - sidebar - 72;
     const auto board = demo_ && demo_->has_combat() ? demo_->combat().snapshot().battlefield
                        : Battlefield{12, 9, {}};
-    const bool recovery =
-        get_node<Button>("Stabilize")->is_visible() || get_node<Button>("StandUp")->is_visible();
-    const double weapon_height = get_node<OptionButton>("Weapons")->is_visible() ? 44 : 0;
-    const double bonus_height = get_node<OptionButton>("CunningAction")->is_visible() ? 44 : 0;
-    const double tile = std::min(left_width / board.width,
-                                 (height - weapon_height - bonus_height -
-                                  (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 368
-                                   : recovery                                           ? 324
-                                   : 280)) /
-                                 board.height);
-    board_rect_ = Rect2(24, 116, tile * board.width, tile * board.height);
-    const double right = width - sidebar - 24;
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("Title", Rect2(24, 18, left_width, 34));
-    place("Subtitle", Rect2(24, 62, left_width, 45));
-    place("Training", Rect2(right, 20, 112, 34));
-    place("Slums", Rect2(right + 120, 20, 112, 34));
-    place("Replay", Rect2(right + 240, 20, 118, 34));
-    place("Turn", Rect2(right, 70, sidebar, 70));
-    place("Roster", Rect2(right, 148, sidebar, 160));
-    place("Prompt", Rect2(right, 318, sidebar, 46));
-    unsigned index = 0;
-    for (const char *name :
-            {"Move", "Melee", "Ranged", "FireBolt", "MagicMissile", "CureWounds",
-             "HealingWord", "ScorchingRay", "SpellSlot", "SecondWind", "Dash",
-             "Dodge", "Disengage", "End", "Continue"
-            })
-    {
-        const unsigned row = index / 3, column = index % 3;
-        place(name, Rect2(right + column * 122, 370 + row * 43, 114, 36));
-        ++index;
-    }
-    place("React", Rect2(right, 590, 174, 36));
-    place("Decline", Rect2(right + 184, 590, 174, 36));
-    place("Nick", Rect2(right + 184, 590, 174, 36));
-    place("Save", Rect2(right, 639, 112, 34));
-    place("Load", Rect2(right + 122, 639, 112, 34));
-    place("Revisit", Rect2(right + 244, 639, 114, 34));
-    place("Help", Rect2(right, 686, sidebar, height - 732));
-    const double weapon_top = board_rect_.get_end().y + 16;
-    place("WeaponLabel", Rect2(24, weapon_top, 180, 36));
-    place("Weapons", Rect2(214, weapon_top, 450, 36));
-    const double bonus_top = weapon_top + weapon_height;
-    place("CunningActionLabel", Rect2(24, bonus_top, 180, 36));
-    place("CunningAction", Rect2(214, bonus_top, 200, 36));
-    place("UseCunningAction", Rect2(424, bonus_top, 240, 36));
-    const double top = bonus_top + bonus_height;
-    place("Stabilize", Rect2(24 + left_width - 170, top, 170, 36));
-    place("StandUp", Rect2(24, top + 44, 180, 36));
-    place("ThrownWeaponLabel", Rect2(24, top + 88, 190, 36));
-    place("ThrownWeapon", Rect2(224, top + 88, 276, 36));
-    place("Throw", Rect2(510, top + 88, 204, 36));
-    place("Log",
-          Rect2(24,
-                top + (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
-                       : recovery                                           ? 88
-                       : 0),
-                left_width,
-                std::max(0.0, height - board_rect_.get_end().y - 64 - weapon_height - bonus_height -
-                         (get_node<OptionButton>("ThrownWeapon")->is_visible() ? 132
-                          : recovery                                           ? 88
-                          : 0))));
-    place("Footer", Rect2(24, height - 34, width - 48, 24));
+    get_node<Node>("Layout")->call("apply", Vector2i(board.width, board.height));
+    board_rect_ = get_node<Control>("BattlefieldBounds")->get_rect();
 }
 
 #include "../../../src/OpenGoldBox/nick_dialog_impl.h"
@@ -876,13 +810,7 @@ void CombatView::refresh()
     get_node<Button>("End")->set_text(gs(s.effect_targeting ? "Skip effect"
                                          : s.free_movement  ? "Finish free move"
                                          : "End turn"));
-    get_node<Button>("End")->set_size(Vector2(s.free_movement
-            ? get_node<Button>("Continue")->get_position().x +
-            get_node<Button>("Continue")->get_size().x -
-            get_node<Button>("End")->get_position().x
-            : get_node<Button>("Continue")->get_size().x,
-            36));
-    get_node<Button>("Continue")->set_visible(!s.free_movement);
+    get_node<Node>("Layout")->call("set_free_movement", s.free_movement.has_value());
     if (s.free_movement)
         mode_ = "move";
     if (s.effect_targeting)
@@ -1077,8 +1005,10 @@ void CombatView::refresh()
 
 void CombatView::_draw()
 {
-    draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
-    draw_rect(board_rect_, Color("202d33"));
+    const auto themed = [this](const char *name)
+    {
+        return get_theme_color(name, "OpenGoldPalette");
+    };
     if (!demo_ || !demo_->has_combat())
         return;
     const auto s = demo_->combat().snapshot();
@@ -1090,15 +1020,15 @@ void CombatView::_draw()
             const Rect2 cell(board_rect_.position + Vector2(x * tile, y * tile),
                              Vector2(tile, tile));
             const auto terrain = s.battlefield.at({x, y});
-            draw_rect(cell, terrain == Terrain::obstacle ? Color("64716d")
-                      : terrain == Terrain::difficult ? Color("665238")
-                      : ((x + y) % 2 ? Color("29373c") : Color("253137")));
+            draw_rect(cell, themed(terrain == Terrain::obstacle ? "terrain_obstacle"
+                                   : terrain == Terrain::difficult ? "terrain_difficult"
+                                   : ((x + y) % 2 ? "terrain_odd" : "terrain_even")));
             const auto index = y * s.battlefield.width + x;
             if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
                 draw_texture_rect(terrain_art_[demo_->battlefield_tiles()[index]], cell, false);
             else
-                draw_rect(cell, Color("172228"), false);
+                draw_rect(cell, themed("terrain_missing"), false);
         }
     const auto active = std::find_if(s.combatants.begin(), s.combatants.end(),
                                      [&](const auto & a)
@@ -1122,47 +1052,58 @@ void CombatView::_draw()
                         continue;
                     p = target->cell;
                 }
+                const bool focused_effect = s.effect_targeting &&
+                    effect_index++ == effect_target_index_;
+                const bool focused_target = !s.effect_targeting &&
+                    (mode_ == "stabilize" || mode_ == "throw" ||
+                     mode_.starts_with("light_") || mode_.starts_with("nick_")) &&
+                    c.target == aid_target_;
                 draw_rect(Rect2(board_rect_.position + Vector2(p.x * tile + 2, p.y * tile + 2),
                                 Vector2(tile - 4, tile - 4)),
-                          Color(.4, .8, .75,
-                                s.effect_targeting
-                                ? (effect_index++ == effect_target_index_ ? .65 : .17)
-                                : (mode_ == "stabilize" || mode_ == "throw" ||
-                                   (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
-                                c.target == aid_target_
-                                ? .6
-                                : .17));
+                          themed(focused_effect ? "combat_demo_effect_focus"
+                                 : focused_target ? "combat_demo_target_focus"
+                                 : "combat_demo_target_overlay"));
             }
     for (const auto &a : s.combatants)
     {
         const auto center =
             board_rect_.position + Vector2((a.cell.x + .5) * tile, (a.cell.y + .5) * tile);
-        const auto color = a.side == rules::Side::party ? Color("79d6d4") : Color("dd9874");
-        draw_circle(center, tile * .34, a.conscious ? color : Color("51595b"));
+        const auto color = themed(a.side == rules::Side::party ? "combat_party" : "combat_enemy");
+        draw_circle(center, tile * .34,
+                    a.conscious ? color : themed("combat_demo_unconscious"));
         if (a.id == s.actor && s.outcome == Outcome::ongoing)
-            draw_arc(center, tile * .42, 0, 6.283185, 32, Color("e6c28a"), 2);
+            draw_arc(center, tile * .42, 0, 6.283185, 32, themed("score_active_border"),
+                     get_theme_constant("combat_demo_arc_width", "OpenGoldMetrics"));
         if (art_.contains(a.id))
         {
             const auto texture = art_.at(a.id);
             const double scale = tile * .9 / std::max(texture->get_width(), texture->get_height());
             const Vector2 size(texture->get_width() * scale, texture->get_height() * scale);
             draw_texture_rect(texture, Rect2(center - size * .5, size), false,
-                              a.conscious ? Color(1, 1, 1) : Color(.5, .5, .5));
+                              a.conscious ? themed("combat_demo_sprite_full")
+                              : themed("combat_demo_sprite_dim"));
         }
         else
         {
             const auto number = std::to_string(a.id);
-            auto cursor = center + Vector2(-5.5 * number.size(), 7);
+            const auto advance = get_theme_constant("combat_marker_digit_advance", "OpenGoldMetrics");
+            auto cursor = center + Vector2(
+                -get_theme_constant("combat_demo_marker_char_width_tenths", "OpenGoldMetrics") /
+                10.0 * number.size(),
+                get_theme_constant("combat_demo_marker_baseline", "OpenGoldMetrics"));
             for (const char digit : number)
             {
-                draw_char(font, cursor, gs(std::string(1, digit)), 20, Color("142027"));
-                cursor.x += 11;
+                draw_char(font, cursor, gs(std::string(1, digit)),
+                          get_theme_constant("combat_marker_font_size", "OpenGoldMetrics"),
+                          themed("combat_demo_marker_text"));
+                cursor.x += advance;
             }
         }
-        draw_rect(Rect2(center + Vector2(-tile * .35, tile * .38), Vector2(tile * .7, 4)),
-                  Color("101719"));
+        const auto bar_height = get_theme_constant("combat_demo_hp_bar_height", "OpenGoldMetrics");
         draw_rect(Rect2(center + Vector2(-tile * .35, tile * .38),
-                        Vector2(tile * .7 * a.hit_points / a.max_hit_points, 4)),
+                        Vector2(tile * .7, bar_height)), themed("combat_demo_hp_track"));
+        draw_rect(Rect2(center + Vector2(-tile * .35, tile * .38),
+                        Vector2(tile * .7 * a.hit_points / a.max_hit_points, bar_height)),
                   color);
     }
 }

@@ -1,4 +1,7 @@
-[gd_scene format=3]
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/legacy_combat_layout.gd" id="1_layout"]
+[ext_resource type="Script" path="res://scenes/legacy_combat_backdrop.gd" id="2_backdrop"]
 
 [node name="CombatDemo" type="CombatView"]
 layout_mode = 3
@@ -7,6 +10,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="CombatBackdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+z_index = -1
+script = ExtResource("2_backdrop")
 
 [node name="Title" type="Label" parent="."]
 theme_type_variation = &"LabelGoldText27"
@@ -158,3 +169,23 @@ text = "Keep failed check"
 [node name="Stabilize" type="Button" parent="."]
 visible = false
 text = "Stabilize"
+
+[node name="Nick" type="Button" parent="."]
+visible = false
+text = "Nick"
+
+[node name="WeaponLabel" type="Label" parent="."]
+visible = false
+text = "Weapon"
+
+[node name="Weapons" type="OptionButton" parent="."]
+visible = false
+fit_to_longest_item = false
+clip_text = true
+
+[node name="BattlefieldBounds" type="Control" parent="."]
+visible = false
+mouse_filter = 2
+
+[node name="Layout" type="Node" parent="."]
+script = ExtResource("1_layout")

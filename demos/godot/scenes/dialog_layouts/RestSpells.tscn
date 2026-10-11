@@ -47,6 +47,8 @@ offset_right = 676.0
 offset_bottom = 586.0
 
 [node name="Error" type="Label" parent="."]
+autowrap_mode = 3
+theme_type_variation = &"TrainingPending"
 offset_left = 24.0
 offset_top = 595.0
 offset_right = 676.0

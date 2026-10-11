@@ -78,18 +78,6 @@ Color ega(unsigned index)
     return presentation::character_color(index);
 }
 
-Ref<StyleBoxFlat> box(Color color, Color border, int width = 1)
-{
-    Ref<StyleBoxFlat> result;
-    result.instantiate();
-    result->set_bg_color(color);
-    result->set_border_color(border);
-    result->set_border_width_all(width);
-    result->set_corner_radius_all(4);
-    result->set_content_margin_all(8);
-    return result;
-}
-
 std::string selection(const CharacterDraft &d, CreationField f)
 {
     switch (f)
@@ -118,14 +106,16 @@ void CharacterCreationView::_notification(int what)
     if (what == NOTIFICATION_RESIZED && ready_)
     {
         layout();
-        queue_redraw();
+        get_node<Control>("CreationCanvas")->queue_redraw();
     }
 }
 
 void CharacterCreationView::_ready()
 {
     ready_ = true;
-    get_window()->set_min_size(Vector2i(1120, 800));
+    get_window()->set_min_size(Vector2i(
+        get_theme_constant("creation_min_width", "OpenGoldMetrics"),
+        get_theme_constant("creation_min_height", "OpenGoldMetrics")));
     set_texture_filter(TEXTURE_FILTER_NEAREST);
     // All node pointers here and below are borrowed from the owning scene tree.
     get_node<Button>("Next")->connect("pressed", callable_mp(this, &CharacterCreationView::next));
@@ -142,8 +132,6 @@ void CharacterCreationView::_ready()
     for (int i = 0; i < 12; ++i)
         get_node<CheckBox>(gs("Targets/Rows/Class" + std::to_string(i)))
         ->connect("toggled", callable_mp(this, &CharacterCreationView::target_toggled).bind(i));
-    get_node<ScrollContainer>("Targets")->add_theme_stylebox_override(
-        "panel", box(Color("10171c"), Color("687d88")));
     get_node<OptionButton>("Bonus")->connect(
         "item_selected", callable_mp(this, &CharacterCreationView::bonus_selected));
     get_node<OptionButton>("PortraitSelect")
@@ -175,7 +163,6 @@ void CharacterCreationView::_ready()
         score->set_default_cursor_shape(Control::CURSOR_DRAG);
         score->set_tooltip_text(
             "Drop a roll here. Drag a filled box onto another ability to swap.");
-        score->add_theme_stylebox_override("normal", box(Color("10171c"), Color("687d88")));
     }
     get_node<Button>("SavingThrows")
     ->connect("pressed", callable_mp(this, &CharacterCreationView::show_saving_throws));
@@ -222,12 +209,8 @@ void CharacterCreationView::_ready()
         button->connect("pressed",
                         callable_mp(this, &CharacterCreationView::palette_selected).bind(i));
         button->set_tooltip_text(colors[i]);
-        button->add_theme_stylebox_override("normal", box(ega(i), Color("667680")));
-        button->add_theme_stylebox_override("hover", box(ega(i), Color("e6c28a"), 3));
-        button->add_theme_stylebox_override("focus", box(Color(0, 0, 0, 0), Color("ffffff"), 2));
+        button->call("configure_palette", ega(i));
     }
-    get_node<ItemList>("Choices")->add_theme_stylebox_override(
-        "panel", box(Color("202d34"), Color("405058")));
     layout();
     if (Engine::get_singleton()->is_editor_hint())
         return;
@@ -273,153 +256,18 @@ void CharacterCreationView::_ready()
 
 void CharacterCreationView::layout()
 {
-    const double w = get_size().x, h = get_size().y;
-    page_rect_ = Rect2(218, 112, w - 584, h - 188);
-    preview_rect_ = Rect2(w - 342, 112, 318, h - 188);
-    const auto place = [&](const String &name, Rect2 r)
-    {
-        auto *c = get_node<Control>(name);
-        c->set_position(r.position);
-        c->set_size(r.size);
-    };
-    place("Title", Rect2(24, 20, w - 48, 36));
-    place("Subtitle", Rect2(24, 64, w - 48, 26));
-    place("Steps", Rect2(24, 128, 180, h - 252));
-    place("Restart", Rect2(24, h - 110, 166, 36));
-    const double x = page_rect_.position.x, y = page_rect_.position.y, pw = page_rect_.size.x,
-                 ph = page_rect_.size.y;
-    place("PageTitle", Rect2(x + 20, y + 18, pw - 40, 36));
-    place("Instructions", Rect2(x + 20, y + 60, pw - 40, 48));
-    place("Choices", Rect2(x + 20, y + 116, pw - 40, ph - 272));
-    place("Description", Rect2(x + 20, y + ph - 140, pw - 40, 120));
-    if (creator_ && creator_->step() == CreationStep::race)
-        place("Choices", Rect2(x + 20, y + 116, pw - 40, ph - 320));
-    place("GenderLabel", Rect2(x + 20, y + ph - 196, 106, 36));
-    place("Gender", Rect2(x + 126, y + ph - 196, pw - 146, 36));
-    get_node<ItemList>("Choices")->set_fixed_column_width((pw - 160) / 2);
-    get_node<ItemList>("Choices")->add_theme_constant_override("h_separation", 32);
-    place("BackgroundLabel", Rect2(x + 20, y + 118, 106, 32));
-    place("Background", Rect2(x + 126, y + 114, pw - 146, 36));
-    place("BonusLabel", Rect2(x + 20, y + 164, 106, 32));
-    place("Bonus", Rect2(x + 126, y + 160, pw - 146, 36));
-    place("Columns", Rect2(x + 20, y + 208, pw - 40, 24));
-    place("DiceHeader", Rect2(x + 152, y + 208, 86, 32));
-    place("DiceHint", Rect2(x + 246, y + 208, pw - 266, 34));
-    place("BaseHeader", Rect2(x + 144, y + 208, 50, 24));
-    place("BonusHeader", Rect2(x + 198, y + 208, 48, 24));
-    place("TotalHeader", Rect2(x + 250, y + 208, 50, 24));
-    for (int i = 0; i < 6; ++i)
-    {
-        place(gs("Ability" + std::to_string(i)), Rect2(x + 20, y + 244 + i * 47, 116, 37));
-        place(gs("Dice" + std::to_string(i)), Rect2(x + pw - 72, y + 244 + i * 47, 52, 37));
-        place(gs("Score" + std::to_string(i)), Rect2(x + 144, y + 244 + i * 47, 64, 37));
-        place(gs("BonusScore" + std::to_string(i)), Rect2(x + 220, y + 244 + i * 47, pw - 304, 37));
-        place(gs("TotalScore" + std::to_string(i)), Rect2(x + 250, y + 248 + i * 47, 50, 37));
-    }
-    place("Roll", Rect2(x + 20, y + ph - 58, 170, 36));
-    place("SwapHint", Rect2(x + 202, y + ph - 62, pw - 222, 46));
-    if (creator_ && creator_->step() == CreationStep::attributes)
-    {
-        place("BackgroundLabel", Rect2(x + 20, y + 62, 106, 32));
-        place("Background", Rect2(x + 126, y + 58, pw - 146, 36));
-        place("BonusLabel", Rect2(x + 20, y + 104, 106, 32));
-        place("Bonus", Rect2(x + 126, y + 100, pw - 146, 36));
-        place("Columns", Rect2(x + 20, y + 142, 110, 24));
-        place("DiceHeader", Rect2(x + 192, y + 142, 86, 24));
-        place("DiceHint", Rect2(x + 20, y + 166, 254, 30));
-        get_node<Label>("DiceHint")->add_theme_font_size_override("font_size", 12);
-        place("TargetsTitle", Rect2(x + 282, y + 142, pw - 302, 28));
-        place("Targets", Rect2(x + 282, y + 178, pw - 302, ph - 336));
-        place("TargetHint", Rect2(x + 282, y + ph - 150, pw - 302, 90));
-        for (int i = 0; i < 6; ++i)
-        {
-            const double row = y + 200 + i * 58;
-            place(gs("Ability" + std::to_string(i)), Rect2(x + 20, row, 98, 32));
-            get_node<Button>(gs("Ability" + std::to_string(i)))
-            ->add_theme_font_size_override("font_size", 13);
-            place(gs("Score" + std::to_string(i)), Rect2(x + 126, row, 60, 32));
-            place(gs("Dice" + std::to_string(i)), Rect2(x + 202, row, 44, 32));
-            place(gs("BonusScore" + std::to_string(i)), Rect2(x + 20, row + 34, 100, 24));
-            get_node<Label>(gs("BonusScore" + std::to_string(i)))
-            ->add_theme_font_size_override("font_size", 11);
-            place(gs("Warning" + std::to_string(i)), Rect2(x + 126, row + 32, 144, 26));
-            get_node<Label>(gs("Warning" + std::to_string(i)))
-            ->add_theme_constant_override("line_spacing", -3);
-        }
-        place("SwapHint", Rect2(x + 202, y + ph - 56, pw - 222, 42));
-        get_node<Label>("SwapHint")->add_theme_font_size_override("font_size", 13);
-    }
-    place("TrainingFixed", Rect2(x + 20, y + 116, pw - 40, 126));
-    place("Training", Rect2(x + 20, y + 250, pw - 40, ph - 270));
-    place("SpellChoices", Rect2(x + 20, y + 132, pw - 40, ph - 152));
-    place("Name", Rect2(x + 20, y + 138, pw - 40, 46));
-    for (const auto &stem :
-            {
-                std::string("CombatHead"), std::string("Weapon")
-            })
-    {
-        const int row = stem == "CombatHead" ? 0 : 1;
-        place(gs(stem + "Previous"), Rect2(x + 20, y + 126 + row * 48, 110, 36));
-        place(gs(stem + "Label"), Rect2(x + 144, y + 130 + row * 48, pw - 290, 30));
-        place(gs(stem + "Next"), Rect2(x + pw - 130, y + 126 + row * 48, 110, 36));
-    }
-    place("Size", Rect2(x + 20, y + 222, 150, 34));
-    place("ColorTitle", Rect2(x + 20, y + 264, pw - 40, 26));
-    const double colorw = (pw - 166) / 2;
-    place("Color1Title", Rect2(x + 130, y + 264, colorw, 26));
-    place("Color2Title", Rect2(x + 138 + colorw, y + 264, colorw, 26));
-    for (int part = 0; part < 6; ++part)
-    {
-        place(gs("Part" + std::to_string(part)), Rect2(x + 20, y + 300 + part * 35, 105, 28));
-        for (int bank = 0; bank < 2; ++bank)
-            place(gs("Color" + std::to_string(bank) + "_" + std::to_string(part)),
-                  Rect2(x + 130 + bank * (colorw + 8), y + 294 + part * 35, colorw, 30));
-    }
-    place("PaletteHint", Rect2(x + 20, y + ph - 106, pw - 40, 24));
-    const double swatch = (pw - 40 - 7 * 6) / 8;
-    for (int i = 0; i < 16; ++i)
-        place(gs("Palette" + std::to_string(i)),
-              Rect2(x + 20 + (i % 8) * (swatch + 6), y + ph - 76 + (i / 8) * 30, swatch, 25));
-    const double px = preview_rect_.position.x, py = preview_rect_.position.y;
-    place("PreviewTitle", Rect2(px + 18, py + 18, 282, 24));
-    place("PreviewName", Rect2(px + 18, py + 50, 282, 36));
-    portrait_rect_ = Rect2(px + 27, py + 100, 264, 264);
-    place("PortraitPrevious", Rect2(px + 18, py + 374, 36, 32));
-    place("PortraitSelect", Rect2(px + 60, py + 374, 198, 32));
-    place("PortraitNext", Rect2(px + 264, py + 374, 36, 32));
-    place("PortraitGender", Rect2(px + 18, py + 414, 136, 32));
-    place("PortraitClass", Rect2(px + 164, py + 414, 136, 32));
-    place("PortraitRace", Rect2(px + 18, py + 454, 282, 32));
-    const double sprite = 72;
-    ready_rect_ = Rect2(px + 50, py + 516, sprite, sprite);
-    action_rect_ = Rect2(px + 196, py + 516, sprite, sprite);
-    place("ReadyLabel", Rect2(px + 26, py + 488, 120, 28));
-    place("ActionLabel", Rect2(px + 172, py + 488, 120, 28));
-    get_node<Control>("PreviewSummary")->set_visible(ph >= 656);
-    place("PreviewSummary", Rect2(px + 18, py + 596, 282, std::max(1.0, ph - 604)));
-    place("Back", Rect2(x, h - 60, 150, 38));
-    place("Next", Rect2(x + pw - 190, h - 60, 190, 38));
-    place("Status", Rect2(x + 160, h - 62, std::max(1.0, pw - 360), 44));
-    place("Footer", Rect2(24, h - 25, w - 48, 22));
-    place("Modifiers", Rect2(x + 20, y + ph - 60, 150, 36));
-    place("SavingThrows", Rect2(x + 180, y + ph - 60, 160, 36));
-    const double mw = std::min(780.0, w - 100), mh = h - 120;
-    get_node<Window>("ModifiersModal")->set_size(Vector2i(mw, mh));
-    place("ModifiersModal/Background", Rect2(0, 0, mw, mh));
-    place("ModifiersModal/Title", Rect2(24, 18, mw - 48, 36));
-    place("ModifiersModal/Text", Rect2(24, 70, mw - 48, mh - 140));
-    place("ModifiersModal/Close", Rect2(mw - 154, mh - 52, 130, 36));
-    get_node<Window>("SavingThrowsModal")->set_size(Vector2i(mw, mh));
-    place("SavingThrowsModal/Background", Rect2(0, 0, mw, mh));
-    place("SavingThrowsModal/Title", Rect2(24, 18, mw - 48, 36));
-    place("SavingThrowsModal/DCLabel", Rect2(24, 66, 110, 36));
-    place("SavingThrowsModal/DC", Rect2(144, 66, 90, 36));
-    place("SavingThrowsModal/Text", Rect2(24, 118, mw - 48, mh - 188));
-    place("SavingThrowsModal/Close", Rect2(mw - 154, mh - 52, 130, 36));
+    const auto step = creator_ ? creator_->step() : CreationStep::race;
+    get_node<Node>("Layout")
+        ->call("apply", creator_ && step == CreationStep::race,
+               creator_ && step == CreationStep::attributes,
+               creator_ && step == CreationStep::sheet);
+    page_rect_ = get_node<Control>("PageBounds")->get_rect();
+    preview_rect_ = get_node<Control>("PreviewBounds")->get_rect();
+    portrait_rect_ = get_node<Control>("PortraitBounds")->get_rect();
+    ready_rect_ = get_node<Control>("ReadyBounds")->get_rect();
+    action_rect_ = get_node<Control>("ActionBounds")->get_rect();
     if (campaign_)
         party_layout();
-    if (creator_ && creator_->step() == CreationStep::sheet)
-        place("Description", Rect2(x + 20, y + 124, pw - 40, ph - 194));
 }
 
 void CharacterCreationView::load_additional_heads()
@@ -584,7 +432,6 @@ void CharacterCreationView::refresh()
         const auto choices = creator_->rules().choices(field);
         auto *list = get_node<ItemList>("Choices");
         list->clear();
-        list->add_theme_constant_override("v_separation", 18);
         for (unsigned i = 0; i < choices.size(); ++i)
         {
             list->add_item(gs(choices[i].label));
@@ -683,23 +530,8 @@ void CharacterCreationView::refresh()
             auto *score_box = get_node<Button>(gs("Score" + std::to_string(i)));
             score_box->set_text(score ? gs(std::to_string(*score)) : String());
             const bool unmet = rules::unmet_targets(creator_->rules(), d)[ability];
-            for (const auto *state :
-                    {"normal", "hover", "pressed"
-                    })
-            {
-                auto style = box(unmet ? Color("651f27") : Color("10171c"),
-                                 Color(state == std::string("normal") ? "687d88" : "e6c28a"));
-                style->set_content_margin_all(4);
-                score_box->add_theme_stylebox_override(state, style);
-            }
             const int change = score ? *score - d.rolls[d.assignment[ability]].total() : 0;
-            const auto color = change > 0   ? Color("f3d55b")
-                               : change < 0 ? Color("f08080")
-                               : Color("e0e0e0");
-            for (const auto *state :
-                    {"font_color", "font_hover_color", "font_pressed_color", "font_focus_color"
-                    })
-                score_box->add_theme_color_override(state, color);
+            score_box->call("configure_score", unmet, change);
             std::string modifier;
             if (score && change)
             {
@@ -792,17 +624,7 @@ void CharacterCreationView::refresh()
                 button->set_text(
                     present ? gs(std::string(selected ? "> " : "") + colors[a.colors[bank][part]])
                     : String("Not present"));
-                button->add_theme_stylebox_override(
-                    "normal",
-                    box(color, selected ? Color("f1d29c") : Color("62707a"), selected ? 3 : 1));
-                button->add_theme_stylebox_override("hover", box(color, Color("ffffff"), 2));
-                button->add_theme_stylebox_override("disabled",
-                                                    box(Color("253038"), Color("405058")));
-                const auto foreground = (color.r * .299 + color.g * .587 + color.b * .114) > .5
-                                        ? Color("101820")
-                                        : Color("ffffff");
-                button->add_theme_color_override("font_color", foreground);
-                button->add_theme_color_override("font_hover_color", foreground);
+                button->call("configure_part", color, selected);
             }
     }
     if (step == CreationStep::sheet)
@@ -828,42 +650,10 @@ void CharacterCreationView::refresh()
            (s ? "\n" + s->alignment + " / " + std::to_string(s->hit_points) + " HP" : "")));
     refresh_art();
     layout();
-    queue_redraw();
+    get_node<Control>("CreationCanvas")
+        ->call("set_images", images_[0], images_[1], images_[2],
+               creator_ && creator_->step() == CreationStep::attributes);
     refreshing_ = false;
-}
-
-void CharacterCreationView::_draw()
-{
-    draw_rect(Rect2(Vector2(), get_size()), Color("121a20"));
-    for (const auto &rect :
-            {
-                page_rect_, preview_rect_
-            })
-    {
-        draw_rect(rect, Color("1c272e"));
-        draw_rect(rect, Color("405058"), false);
-    }
-    for (const auto &rect :
-            {
-                ready_rect_, action_rect_
-            })
-        draw_rect(rect, Color("10171c"));
-    if (creator_ && creator_->step() == CreationStep::attributes)
-        for (unsigned i = 0; i < 6; ++i)
-        {
-            const auto rect = get_node<Control>(gs("Dice" + std::to_string(i)))->get_rect();
-            draw_rect(rect, Color("10171c"));
-            draw_rect(rect, Color("687d88"), false);
-        }
-    {
-        draw_rect(portrait_rect_, Color("10171c"));
-        if (images_[0].is_valid())
-            draw_texture_rect(images_[0], portrait_rect_, false);
-    }
-    if (images_[1].is_valid())
-        draw_texture_rect(images_[1], ready_rect_, false);
-    if (images_[2].is_valid())
-        draw_texture_rect(images_[2], action_rect_, false);
 }
 
 void CharacterCreationView::perform(const std::function<void()> &action)
@@ -1610,7 +1400,8 @@ void CharacterCreationView::check_run()
                 throw std::runtime_error("Target warnings did not follow score assignment");
             const Ref<StyleBoxFlat> style =
                 get_node<Button>(gs("Score" + std::to_string(i)))->get_theme_stylebox("normal");
-            if (style->get_bg_color() != (unmet ? Color("651f27") : Color("10171c")))
+            if (style->get_bg_color() != get_theme_color(
+                    unmet ? "score_unmet_bg" : "creation_field", "OpenGoldPalette"))
                 throw std::runtime_error("Target score background is stale");
         }
         get_node<CheckBox>("Targets/Rows/Class11")->set_pressed(false);

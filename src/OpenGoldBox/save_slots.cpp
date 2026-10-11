@@ -52,7 +52,7 @@ std::string decoded(std::string_view stem)
 
 void SaveSlots::_ready()
 {
-    presentation::attach_dialog_layout(*this);
+    presentation::attach_dialog_layout(*this, "SaveSlots");
     set_flag(Window::FLAG_RESIZE_DISABLED, true);
     set_exclusive(true);
     set_transient(true);

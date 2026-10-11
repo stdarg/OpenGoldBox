@@ -96,7 +96,9 @@ String CharacterCreationView::sheet_text(const Character &character,
         const PartyMember *member) const
 {
     const auto &s = character.sheet();
-    std::string text = "[font_size=24]" + literal(s.name) + "[/font_size]\nLevel " +
+    std::string text = "[font_size=" + std::to_string(
+        get_theme_constant("sheet_title_font_size", "OpenGoldMetrics")) + "]" +
+        literal(s.name) + "[/font_size]\nLevel " +
                        std::to_string(s.level) + " " + s.race + " " + s.gender + " " +
                        s.character_class + "\n" + s.alignment + " / " + s.background + "\n\n";
     if (!character.creation_data().target_classes.empty())
@@ -152,7 +154,9 @@ String CharacterCreationView::sheet_text(const Character &character,
         for (const auto &spell : s.prepared_spells)
             text += display(spell) + "  ";
     }
-    text += "\n[font_size=14]" + literal(s.hp_explanation) + "[/font_size]";
+    text += "\n[font_size=" + std::to_string(
+        get_theme_constant("sheet_note_font_size", "OpenGoldMetrics")) + "]" +
+        literal(s.hp_explanation) + "[/font_size]";
     text +=
         "\n\n[table=3][cell][b]Attribute     [/b][/cell][cell][b]Score     [/b][/cell][cell][b]Saving throw[/b][/cell]";
     for (unsigned i = 0; i < 6; ++i)

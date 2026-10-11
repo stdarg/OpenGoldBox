@@ -32,18 +32,6 @@ using namespace opengold::por;
 
 namespace
 {
-struct DeleteNode
-{
-    void operator()(Node *n) const
-    {
-        memdelete(n);
-    }
-};
-
-// Numeric constructors are safe before Godot initializes the extension interface.
-const Color background(18 / 255.f, 26 / 255.f, 32 / 255.f),
-      panel(28 / 255.f, 39 / 255.f, 46 / 255.f), line(65 / 255.f, 80 / 255.f, 88 / 255.f),
-      gold(215 / 255.f, 180 / 255.f, 121 / 255.f), party_color(121 / 255.f, 214 / 255.f, 212 / 255.f);
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
     Vector2(-1, 0)};
 const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
@@ -86,14 +74,8 @@ void RolfTourView::_ready()
     {
         auto *member = get_node<Button>(String("PartyList/Rows/Member") + String::num_uint64(slot));
         member->connect("pressed", callable_mp(this, &RolfTourView::party_selected).bind(slot));
-        std::unique_ptr<Button, DeleteNode> arrow(memnew(Button));
-        arrow->set_name("Advance");
-        arrow->set_text(String::utf8("↑"));
-        arrow->set_size(Vector2(30, 26));
-        arrow->set_tooltip_text("Level up");
-        arrow->connect("pressed", callable_mp(this, &RolfTourView::level_up_requested).bind(slot));
-        member->add_child(arrow.get());
-        arrow.release();
+        member->get_node<Button>("Advance")
+            ->connect("pressed", callable_mp(this, &RolfTourView::level_up_requested).bind(slot));
     }
     get_node<ItemList>("InventoryPanel/Items")
     ->connect("item_selected", callable_mp(this, &RolfTourView::inventory_selected));
@@ -106,19 +88,14 @@ void RolfTourView::_ready()
     get_node<Window>("MemberSheet")
     ->connect("close_requested", callable_mp(this, &RolfTourView::close_sheet));
     get_node<Button>("LeaveShop")->connect("pressed", callable_mp(this, &RolfTourView::leave_shop));
-    get_window()->set_min_size(Vector2i(960, 720));
-    for (bool saving :
-            {
-                true, false
-            })
+    get_window()->set_min_size(Vector2i(
+        get_theme_constant("tour_min_width", "OpenGoldMetrics"),
+        get_theme_constant("tour_min_height", "OpenGoldMetrics")));
+    for (bool saving : {true, false})
     {
-        std::unique_ptr<Button, DeleteNode> button(memnew(Button));
-        button->set_name(saving ? "SaveGame" : "LoadGame");
-        button->set_text(saving ? "Save game" : "Load game");
-        add_child(button.get());
+        auto *button = get_node<Button>(saving ? "SaveGame" : "LoadGame");
         button->connect("pressed", callable_mp(this, &RolfTourView::request_save).bind(saving));
         button->set_visible(embedded_party_);
-        button.release();
     }
     layout();
     if (Engine::get_singleton()->is_editor_hint())
@@ -156,80 +133,11 @@ void RolfTourView::_ready()
 
 void RolfTourView::layout()
 {
-    const auto width = get_size().x, height = get_size().y;
-    const double margin = 24, gutter = 24,
-                 sidebar = std::min(std::clamp(width * .30, 270.0, 430.0), height - 380.0);
-    const double main_width = width - margin * 2 - gutter - sidebar;
     const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
-    const double view_height = std::min(main_width * .625, height - (shopping ? 490.0 : 410.0));
-    scene_rect_ = Rect2(margin, 102, view_height / 1.2, view_height);
-    map_rect_ = Rect2(margin + main_width + gutter, 102, sidebar, sidebar);
-    dialogue_rect_ = Rect2(margin, scene_rect_.get_end().y + 18, main_width,
-                           height - scene_rect_.get_end().y - 76);
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("SaveGame", Rect2(width - 520, 20, 140, 36));
-    place("LoadGame", Rect2(width - 370, 20, 140, 36));
-    place("Title", Rect2(margin, 20, main_width, 34));
-    place("PartyList", Rect2(scene_rect_.get_end().x + 16, 102,
-                             main_width - scene_rect_.size.x - 16, view_height));
-    place("Location", Rect2(margin, 68, main_width, 26));
-    place("MapTitle", Rect2(map_rect_.position.x, 68, sidebar - 130, 26));
-    place("MapMode", Rect2(width - margin - 122, 64, 122, 30));
-    place("Coordinates", Rect2(map_rect_.position.x, map_rect_.get_end().y + 12, sidebar, 28));
-    place("Legend", Rect2(map_rect_.position.x, map_rect_.get_end().y + 48, sidebar, 50));
-    place("Speaker",
-          Rect2(dialogue_rect_.position + Vector2(18, 12), Vector2(main_width - 36, 26)));
-    place("Dialogue", Rect2(dialogue_rect_.position + Vector2(18, 46),
-                            Vector2(main_width - 36, dialogue_rect_.size.y - 112)));
-    place("Continue", Rect2(dialogue_rect_.get_end() - Vector2(182, 54), Vector2(164, 40)));
-    place("Progress", Rect2(dialogue_rect_.position + Vector2(18, dialogue_rect_.size.y - 48),
-                            Vector2(main_width - 220, 30)));
-    place("Movement", Rect2(map_rect_.position.x, height - 178, sidebar, 26));
-    const double button_width = (sidebar - 12) / 3;
-    place("Left", Rect2(map_rect_.position.x, height - 140, button_width, 40));
-    place("Forward",
-          Rect2(map_rect_.position.x + button_width + 6, height - 140, button_width, 40));
-    place("Right",
-          Rect2(map_rect_.position.x + (button_width + 6) * 2, height - 140, button_width, 40));
-    place("Restart", Rect2(map_rect_.position.x, height - 88, sidebar, 34));
-    place("Footer", Rect2(margin, height - 36, width - 2 * margin, 26));
-    place("Party", Rect2(map_rect_.position.x, map_rect_.get_end().y + 46, sidebar, 50));
-    get_node<Label>("Legend")->hide();
-    const double utility_width = (sidebar - 12) / 3;
-    place("Look", Rect2(map_rect_.position.x, height - 226, utility_width, 34));
-    place("Camp", Rect2(map_rect_.position.x + utility_width + 6, height - 226, utility_width, 34));
-    place("Inventory",
-          Rect2(map_rect_.position.x + 2 * (utility_width + 6), height - 226, utility_width, 34));
-    place("Choices", Rect2(dialogue_rect_.position + Vector2(18, 84),
-                           Vector2(main_width - 36, dialogue_rect_.size.y - 148)));
-    place("Answer", Rect2(dialogue_rect_.position + Vector2(18, dialogue_rect_.size.y - 100),
-                          Vector2(main_width - 36, 36)));
-    place("LeaveShop", Rect2(dialogue_rect_.get_end() - Vector2(332, 54), Vector2(140, 40)));
-    place("InventoryPanel", Rect2(margin + 40, 90, width - 2 * margin - 80, height - 160));
-    auto *inventory_panel = get_node<Control>("InventoryPanel");
-    get_node<Control>("InventoryPanel/Items")->set_position(Vector2(20, 70));
-    get_node<Control>("InventoryPanel/Items")
-    ->set_size(inventory_panel->get_size() - Vector2(40, 210));
-    get_node<Control>("InventoryPanel/Close")
-    ->set_position(Vector2(20, inventory_panel->get_size().y - 54));
-    get_node<Control>("InventoryPanel/Close")->set_size(Vector2(180, 36));
-    const auto iw = inventory_panel->get_size().x, ih = inventory_panel->get_size().y;
-    get_node<Control>("InventoryPanel/Header")->set_position(Vector2(20, 18));
-    get_node<Control>("InventoryPanel/Header")->set_size(Vector2(iw - 40, 44));
-    get_node<Control>("InventoryPanel/Status")->set_position(Vector2(20, ih - 132));
-    get_node<Control>("InventoryPanel/Status")->set_size(Vector2(iw - 40, 68));
-    get_node<Control>("InventoryPanel/Equip")->set_position(Vector2(220, ih - 54));
-    get_node<Control>("InventoryPanel/Equip")->set_size(Vector2(150, 36));
-    get_node<Control>("InventoryPanel/Unequip")->set_position(Vector2(390, ih - 54));
-    get_node<Control>("InventoryPanel/Unequip")->set_size(Vector2(150, 36));
-    get_node<Window>("MemberSheet")->set_size(Vector2i(width - 120, height - 120));
-    place("MemberSheet/Text", Rect2(24, 24, width - 168, height - 220));
-    place("MemberSheet/Close", Rect2(width - 290, height - 180, 130, 36));
+    get_node<Node>("Layout")->call("apply", shopping);
+    scene_rect_ = get_node<Control>("SceneBounds")->get_rect();
+    map_rect_ = get_node<Control>("MapBounds")->get_rect();
+    dialogue_rect_ = get_node<Control>("DialogueBounds")->get_rect();
 }
 
 void RolfTourView::restart()
@@ -710,25 +618,7 @@ void RolfTourView::refresh()
         }
         displayed_ticket_ = s.continue_ticket;
     }
-    get_node<RichTextLabel>("Dialogue")
-    ->set_size(
-        Vector2(dialogue_rect_.size.x - 36,
-                (shopping || multiple) ? 36 : dialogue_rect_.size.y - (answer ? 160 : 112)));
-    if (multiple)
-    {
-        const double text_height = std::min((dialogue_rect_.size.y - 122) * .55,
-                                            std::max<double>(28.0, dialogue_rect_.size.y - 192));
-        get_node<RichTextLabel>("Dialogue")
-        ->set_size(Vector2(dialogue_rect_.size.x - 36, text_height));
-        choices->set_position(dialogue_rect_.position + Vector2(18, 56 + text_height));
-        choices->set_size(
-            Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 120 - text_height));
-    }
-    else
-    {
-        choices->set_position(dialogue_rect_.position + Vector2(18, 84));
-        choices->set_size(Vector2(dialogue_rect_.size.x - 36, dialogue_rect_.size.y - 148));
-    }
+    get_node<Node>("Layout")->call("place_dialogue", shopping, multiple, answer);
     if (shopping)
         get_node<RichTextLabel>("Dialogue")
         ->set_text(s.diagnostic.empty() ? "Prices are per listed item or bundle."
@@ -770,11 +660,7 @@ void RolfTourView::refresh()
         button->set_text(String::utf8(text.c_str()));
         button->set_tooltip_text(String::utf8(text.c_str()));
         auto *arrow = button->get_node<Button>("Advance");
-        const auto width = Vector2(button->get_theme_font("font")->call(
-                                       "get_string_size", String::utf8(cs.name.c_str()), 0, -1,
-                                       button->get_theme_font_size("font_size")))
-                           .x;
-        arrow->set_position(Vector2(std::min(width + 16, button->get_size().x - 36), 2));
+        arrow->call("place_in_member_row", String::utf8(cs.name.c_str()));
         arrow->set_visible(embedded_party_ && campaign_->can_advance(id) && session_->can_leave());
     }
     get_node<Button>("MapMode")->set_text(full_map_ ? "Map: full" : "Map: visited");
@@ -783,22 +669,12 @@ void RolfTourView::refresh()
 
 void RolfTourView::_draw()
 {
-    draw_rect(Rect2(Vector2(), get_size()), background);
-    draw_line(Vector2(24, 57), Vector2(get_size().x - 24, 57), line);
-    draw_rect(dialogue_rect_, panel);
-    draw_rect(dialogue_rect_, line, false);
-    draw_line(dialogue_rect_.position, dialogue_rect_.position + Vector2(dialogue_rect_.size.x, 0),
-              gold, 2);
-    draw_rect(map_rect_, Color("162128"));
     draw_scene();
     draw_map();
-    draw_rect(scene_rect_, line, false);
-    draw_rect(map_rect_, line, false);
 }
 
 void RolfTourView::draw_scene()
 {
-    draw_rect(scene_rect_, panel);
     if (!session_ || wall_view_.is_null())
         return;
     // Fit the complete original 88x88 view. DOS EGA pixels were displayed 6/5
@@ -832,9 +708,11 @@ void RolfTourView::draw_map()
             const auto origin = map_rect_.position + Vector2(x * cell, y * cell);
             if (!full_map_ && !s.visited.test(y * 16 + x))
                 continue;
+            draw_rect(Rect2(origin, Vector2(cell, cell)), get_theme_color(
+                          s.visited.test(y * 16 + x) ? "map_visited" : "map_seen",
+                          "OpenGoldPalette"));
             draw_rect(Rect2(origin, Vector2(cell, cell)),
-                      s.visited.test(y * 16 + x) ? Color("304747") : Color("253038"));
-            draw_rect(Rect2(origin, Vector2(cell, cell)), Color("1b252b"), false);
+                      get_theme_color("map_grid", "OpenGoldPalette"), false);
             const auto &c = session_->map().at(x, y);
             const double inset = 1.3;
             const std::array<Vector2, 4> corners{origin + Vector2(inset, inset),
@@ -844,10 +722,16 @@ void RolfTourView::draw_map()
             for (unsigned d = 0; d < 4; ++d)
             {
                 if (c.walls[d])
-                    draw_line(corners[d], corners[(d + 1) % 4], Color("9ca8a7"), 1.5);
+                    draw_line(corners[d], corners[(d + 1) % 4],
+                              get_theme_color("map_wall", "OpenGoldPalette"),
+                              get_theme_constant("tour_map_wall_width_tenths", "OpenGoldMetrics") / 10.0);
                 if (c.doors[d])
-                    draw_line(corners[d].lerp(corners[(d + 1) % 4], .27),
-                              corners[d].lerp(corners[(d + 1) % 4], .73), gold, 3);
+                    draw_line(corners[d].lerp(corners[(d + 1) % 4],
+                                               get_theme_constant("tour_map_door_start_percent", "OpenGoldMetrics") / 100.0),
+                              corners[d].lerp(corners[(d + 1) % 4],
+                                               get_theme_constant("tour_map_door_end_percent", "OpenGoldMetrics") / 100.0),
+                              get_theme_color("gold", "OpenGoldPalette"),
+                              get_theme_constant("tour_map_door_width", "OpenGoldMetrics"));
             }
         }
     const auto center =
@@ -858,8 +742,10 @@ void RolfTourView::draw_map()
     arrow.push_back(center - forward * cell * .3 + right * cell * .32);
     arrow.push_back(center - forward * cell * .16);
     arrow.push_back(center - forward * cell * .3 - right * cell * .32);
-    draw_circle(center, cell * .45, background);
-    draw_colored_polygon(arrow, party_color);
+    draw_circle(center, cell *
+                get_theme_constant("tour_map_arrow_radius_percent", "OpenGoldMetrics") / 100.0,
+                get_theme_color("background", "OpenGoldPalette"));
+    draw_colored_polygon(arrow, get_theme_color("combat_party", "OpenGoldPalette"));
 }
 
 void RolfTourView::capture_frame(const String &name)

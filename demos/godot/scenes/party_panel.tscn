@@ -15,77 +15,247 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="Title" type="Label" parent="."]
+anchor_right = 1.000000000
+offset_left = 24.000000000
+offset_top = 22.000000000
+offset_right = -24.000000000
+offset_bottom = 62.000000000
 theme_type_variation = &"LabelText28"
 text = "OPENGOLDBOX / Party roster"
 autowrap_mode = 2
 
 [node name="Roster" type="ItemList" parent="."]
+anchor_bottom = 1.000000000
+offset_left = 24.000000000
+offset_top = 90.000000000
+offset_right = 324.000000000
+offset_bottom = -210.000000000
 
 [node name="Sheet" type="RichTextLabel" parent="."]
+anchor_right = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 350.000000000
+offset_top = 90.000000000
+offset_right = -300.000000000
+offset_bottom = -290.000000000
 theme_type_variation = &"RichTextLabelTableGap16Text18"
 
 [node name="Inventory" type="ItemList" parent="."]
+anchor_right = 1.000000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 350.000000000
+offset_top = -280.000000000
+offset_right = -24.000000000
+offset_bottom = -184.000000000
 
 [node name="Portrait" type="TextureRect" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -284.000000000
+offset_top = 90.000000000
+offset_right = -20.000000000
+offset_bottom = 354.000000000
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Status" type="Label" parent="."]
+anchor_right = 1.000000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 24.000000000
+offset_top = -39.000000000
+offset_right = -24.000000000
+offset_bottom = -7.000000000
 autowrap_mode = 2
 
 [node name="Create" type="Button" parent="."]
+anchor_right = 0.200000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 24.000000000
+offset_top = -125.000000000
+offset_right = 11.200000000
+offset_bottom = -89.000000000
 text = "Create character"
 
 [node name="Remove" type="Button" parent="."]
+anchor_left = 0.200000000
+anchor_right = 0.400000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 15.200000000
+offset_top = -125.000000000
+offset_right = 2.400000000
+offset_bottom = -89.000000000
 text = "Remove member"
 
 [node name="Rejoin" type="Button" parent="."]
+anchor_left = 0.400000000
+anchor_right = 0.600000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 6.400000000
+offset_top = -125.000000000
+offset_right = -6.400000000
+offset_bottom = -89.000000000
 text = "Rejoin party"
 
 [node name="Recruit" type="Button" parent="."]
+anchor_left = 0.600000000
+anchor_right = 0.800000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -2.400000000
+offset_top = -125.000000000
+offset_right = -15.200000000
+offset_bottom = -89.000000000
 text = "Recruit preview guard"
 
 [node name="Equip" type="Button" parent="."]
+anchor_left = 0.800000000
+anchor_right = 1.000000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -11.200000000
+offset_top = -125.000000000
+offset_right = -24.000000000
+offset_bottom = -89.000000000
 text = "Equip selected"
 
 [node name="Unequip" type="Button" parent="."]
+anchor_right = 0.200000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 24.000000000
+offset_top = -81.000000000
+offset_right = 11.200000000
+offset_bottom = -45.000000000
 text = "Unequip selected"
 
 [node name="Explore" type="Button" parent="."]
+anchor_left = 0.200000000
+anchor_right = 0.400000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 15.200000000
+offset_top = -81.000000000
+offset_right = 2.400000000
+offset_bottom = -45.000000000
 text = "Explore New Phlan"
 
 [node name="Combat" type="Button" parent="."]
+anchor_left = 0.400000000
+anchor_right = 0.600000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = 6.400000000
+offset_top = -81.000000000
+offset_right = -6.400000000
+offset_bottom = -45.000000000
 text = "Party combat"
 
 [node name="Close" type="Button" parent="."]
+anchor_left = 0.600000000
+anchor_right = 0.800000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -2.400000000
+offset_top = -81.000000000
+offset_right = -15.200000000
+offset_bottom = -45.000000000
 text = "Back to creator"
 
 [node name="Modifiers" type="Button" parent="."]
+anchor_left = 0.800000000
+anchor_right = 0.884000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -11.200000000
+offset_top = -81.000000000
+offset_right = -16.576000000
+offset_bottom = -45.000000000
 theme_type_variation = &"ButtonText14"
 text = "Modifiers"
 
 [node name="SavingThrows" type="Button" parent="."]
+anchor_left = 0.884000000
+anchor_right = 1.000000000
+anchor_top = 1.000000000
+anchor_bottom = 1.000000000
+offset_left = -12.576000000
+offset_top = -81.000000000
+offset_right = -24.000000000
+offset_bottom = -45.000000000
 theme_type_variation = &"ButtonText14"
 text = "Saving Throws"
 
 [node name="ReadyLabel" type="Label" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -284.000000000
+offset_top = 488.000000000
+offset_right = -164.000000000
+offset_bottom = 512.000000000
 text = "Ready"
 horizontal_alignment = 1
 
 [node name="ActionLabel" type="Label" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -140.000000000
+offset_top = 488.000000000
+offset_right = -20.000000000
+offset_bottom = 512.000000000
 text = "Action"
 horizontal_alignment = 1
 
 [node name="ReadySprite" type="TextureRect" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -284.000000000
+offset_top = 364.000000000
+offset_right = -164.000000000
+offset_bottom = 484.000000000
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="ActionSprite" type="TextureRect" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -140.000000000
+offset_top = 364.000000000
+offset_right = -20.000000000
+offset_bottom = 484.000000000
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
 [node name="Pool" type="Button" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -220.000000000
+offset_top = 24.000000000
+offset_right = -24.000000000
+offset_bottom = 60.000000000
 text = "Character Pool"
+
+[node name="Save" type="Button" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -520.000000000
+offset_top = 24.000000000
+offset_right = -380.000000000
+offset_bottom = 60.000000000
+text = "Save game"
+
+[node name="Load" type="Button" parent="."]
+anchor_left = 1.000000000
+anchor_right = 1.000000000
+offset_left = -370.000000000
+offset_top = 24.000000000
+offset_right = -230.000000000
+offset_bottom = 60.000000000
+text = "Load game"

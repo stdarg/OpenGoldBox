@@ -13,7 +13,6 @@ class CharacterCreationView : public godot::Control
     GDCLASS(CharacterCreationView, godot::Control)
   public:
     void _ready() override;
-    void _draw() override;
     void _process(double delta) override;
     // Shows a failed handler's error; called by presentation::run_guarded
     // for the hand-choice dialog's guarded handlers.

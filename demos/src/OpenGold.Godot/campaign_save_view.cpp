@@ -66,15 +66,9 @@ void CharacterCreationView::setup_saves()
             {
                 true, false
             })
-    {
-        std::unique_ptr<Button, DeleteNode> button(memnew(Button));
-        button->set_name(saving ? "Save" : "Load");
-        button->set_text(saving ? "Save game" : "Load game");
-        button->connect("pressed",
-                        callable_mp(this, &CharacterCreationView::open_saves).bind(saving));
-        get_node<Control>("PartyPanel")->add_child(button.get());
-        button.release();
-    }
+        get_node<Button>(saving ? "PartyPanel/Save" : "PartyPanel/Load")
+            ->connect("pressed",
+                      callable_mp(this, &CharacterCreationView::open_saves).bind(saving));
 }
 
 void CharacterCreationView::open_saves(bool saving)

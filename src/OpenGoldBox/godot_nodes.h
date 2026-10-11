@@ -104,9 +104,9 @@ template <class T> [[nodiscard]] NodeOwner<T> instantiate_control(const char *pa
     return NodeOwner<>(packed->instantiate());
 }
 
-inline void attach_dialog_layout(godot::Window &window)
+inline void attach_dialog_layout(godot::Window &window, const godot::String &group)
 {
-    auto scene = dialog_layout_scene(godot::String(window.get_name()));
+    auto scene = dialog_layout_scene(group);
     auto *layout = godot::Object::cast_to<godot::Control>(scene.get());
     if (!layout)
         throw std::runtime_error("Invalid dialog layout root");
@@ -119,6 +119,11 @@ inline void attach_dialog_layout(godot::Window &window)
         child->set_owner(nullptr);
         attach_child(window, detach_child(*layout, *child));
     }
+}
+
+inline void attach_dialog_layout(godot::Window &window)
+{
+    attach_dialog_layout(window, window.get_name());
 }
 
 template <class T> T *dialog_control(godot::Node &parent, const godot::String &name)

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="TrainingGroup" type="VBoxContainer"]
+theme_type_variation = &"TrainingGroup"
+
+[node name="Title" type="Label" parent="."]

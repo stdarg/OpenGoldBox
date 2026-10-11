@@ -54,11 +54,6 @@ void ScreenshotService::_ready()
     if (!get_node_or_null("NoticeLayer"))
         presentation::attach_child(*this, presentation::instantiate_scene(
                                        "res://scenes/control_templates/screenshot_notice.tscn"));
-    auto *label = &required_node<Label>(*this, "NoticeLayer/Notice/Text");
-    label->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-    label->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-    label->set("autowrap_mode",
-               3); // TextServer::AUTOWRAP_WORD_SMART; matches the game build profile.
 }
 
 void ScreenshotService::_process(double delta)

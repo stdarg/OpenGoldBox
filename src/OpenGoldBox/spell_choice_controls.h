@@ -11,10 +11,9 @@ inline godot::VBoxContainer *spell_rows(godot::Node &parent, const godot::String
     auto *rows = godot::Object::cast_to<godot::VBoxContainer>(parent.get_node_or_null(name));
     if (!rows)
     {
-        auto owned = make_node<godot::VBoxContainer>();
+        auto owned = instantiate_control<godot::VBoxContainer>(
+            "res://scenes/control_templates/spell_rows.tscn");
         owned->set_name(name);
-        owned->set_h_size_flags(godot::Control::SIZE_EXPAND_FILL);
-        owned->set_theme_type_variation("SpellRows");
         rows = attach_child(parent, std::move(owned));
     }
     return rows;
@@ -38,21 +37,22 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     int position = 0;
     for (const auto &group : groups)
     {
-        auto *section = spell_rows(rows, training_string(group.id).replace(":", "_"));
+        const auto section_name = training_string(group.id).replace(":", "_");
+        auto *section = Object::cast_to<VBoxContainer>(rows.get_node_or_null(section_name));
+        if (!section)
+        {
+            auto owned = instantiate_control<VBoxContainer>(
+                "res://scenes/control_templates/spell_group.tscn");
+            owned->set_name(section_name);
+            section = attach_child(rows, std::move(owned));
+        }
         if (level_up_theme)
         {
             section->set_theme_type_variation("LevelUpSpellSection");
         }
         rows.move_child(section, position++);
         section->show();
-        auto *label = Object::cast_to<Label>(section->get_node_or_null("Count"));
-        if (!label)
-        {
-            auto owned = make_node<Label>();
-            owned->set_name("Count");
-            label = attach_child(*section, std::move(owned));
-            label->set("autowrap_mode", 3);
-        }
+        auto *label = &required_node<Label>(*section, "Count");
         const auto it = choices.learning.find(group.id);
         const auto picked = group.id == "prepared"
                             ? choices.prepared.value_or(std::vector<std::string> {})
@@ -65,18 +65,8 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
                          String::num_uint64(group.acquired_level)) +
                         " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
-        auto *pending = Object::cast_to<Label>(section->get_node_or_null("Pending"));
-        if (!pending)
-        {
-            auto owned = make_node<Label>();
-            owned->set_name("Pending");
-            pending = attach_child(*section, std::move(owned));
-            pending->set("autowrap_mode", 3);
-            if (level_up_theme)
-                pending->set_theme_type_variation("LevelUpPending");
-            else
-                pending->set_theme_type_variation("TrainingPending");
-        }
+        auto *pending = &required_node<Label>(*section, "Pending");
+        pending->set_theme_type_variation(level_up_theme ? "LevelUpPending" : "TrainingPending");
         pending->set_text(tr(N_("Unsupported choices remain pending.")));
         pending->set_visible(group.options.size() < group.count);
         for (int i = 0; i < section->get_child_count(); ++i)
@@ -157,9 +147,7 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     dialog_control<Label>(*w, "WithLabel")->set_text(tr(N_("With")));
     dialog_control<OptionButton>(*w, "Replace");
     dialog_control<OptionButton>(*w, "With");
-    auto *error = dialog_control<Label>(*w, "Error");
-    error->set("autowrap_mode", 3);
-    error->set_theme_type_variation("TrainingPending");
+    dialog_control<Label>(*w, "Error");
     auto *back = dialog_control<Button>(*w, "Cancel");
     back->set_text(tr(N_("Cancel")));
     back->connect("pressed", cancel);

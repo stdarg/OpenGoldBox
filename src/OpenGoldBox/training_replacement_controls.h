@@ -22,20 +22,15 @@ godot::Window *setup_training_replacement(godot::Node &parent, const godot::Call
     auto *w = attach_child(parent, std::move(owned));
     w->connect("close_requested", keep);
     dialog_control<Label>(*w, "Title");
-    auto *current = dialog_control<Label>(*w, "Current");
-    current->set("autowrap_mode", 3);
+    dialog_control<Label>(*w, "Current");
     dialog_control<Label>(*w, "Limit");
     auto *scroll = dialog_control<ScrollContainer>(*w, "Choices");
     scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
     scroll->set_follow_focus(true);
-    auto rows = make_node<VBoxContainer>();
-    rows->set_name("Rows");
-    rows->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-    rows->set_theme_type_variation("TrainingReplacementRows");
+    auto rows = instantiate_control<VBoxContainer>(
+        "res://scenes/control_templates/training_replacement_rows.tscn");
     attach_child(*scroll, std::move(rows));
-    auto *error = dialog_control<Label>(*w, "Error");
-    error->set("autowrap_mode", 3);
-    error->set_theme_type_variation("TrainingPending");
+    dialog_control<Label>(*w, "Error");
     auto *cancel = dialog_control<Button>(*w, "Cancel");
     cancel->set_text(tr(N_("Keep current")));
     cancel->connect("pressed", keep);

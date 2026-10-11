@@ -1,4 +1,8 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/control_templates/party_advance.tscn" id="1_advance"]
+[ext_resource type="Script" path="res://scenes/legacy_tour_layout.gd" id="2_layout"]
+[ext_resource type="Script" path="res://scenes/legacy_tour_backdrop.gd" id="3_backdrop"]
 
 [node name="RolfTour" type="RolfTourView"]
 layout_mode = 3
@@ -7,6 +11,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="TourBackdrop" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+z_index = -1
+script = ExtResource("3_backdrop")
 
 [node name="Title" type="Label" parent="."]
 theme_type_variation = &"LabelGoldText27"
@@ -189,3 +201,42 @@ custom_minimum_size = Vector2(0, 56)
 size_flags_horizontal = 3
 alignment = 0
 clip_text = true
+
+[node name="SaveGame" type="Button" parent="."]
+visible = false
+text = "Save game"
+
+[node name="LoadGame" type="Button" parent="."]
+visible = false
+text = "Load game"
+
+[node name="Advance" parent="PartyList/Rows/Member0" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member1" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member2" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member3" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member4" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member5" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member6" instance=ExtResource("1_advance")]
+
+[node name="Advance" parent="PartyList/Rows/Member7" instance=ExtResource("1_advance")]
+
+[node name="SceneBounds" type="Control" parent="."]
+visible = false
+mouse_filter = 2
+
+[node name="MapBounds" type="Control" parent="."]
+visible = false
+mouse_filter = 2
+
+[node name="DialogueBounds" type="Control" parent="."]
+visible = false
+mouse_filter = 2
+
+[node name="Layout" type="Node" parent="."]
+script = ExtResource("2_layout")

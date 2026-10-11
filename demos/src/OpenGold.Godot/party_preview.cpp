@@ -125,45 +125,7 @@ void CharacterCreationView::setup_party()
 
 void CharacterCreationView::party_layout()
 {
-    const auto w = get_size().x, h = get_size().y;
-    get_node<Control>("PartyPanel")->set_size(get_size());
-    const auto place = [&](const char *name, Rect2 rect)
-    {
-        auto *node = get_node<Control>(name);
-        node->set_position(rect.position);
-        node->set_size(rect.size);
-    };
-    place("Party", Rect2(24, h - 158, 166, 36));
-    place("AddParty", Rect2(218 + page_rect_.size.x - 190, h - 60, 190, 38));
-    place("ReturnParty", Rect2(w - 218, 20, 190, 36));
-    place("PartyPanel/Title", Rect2(24, 22, w - 48, 40));
-    place("PartyPanel/Roster", Rect2(24, 90, 300, h - 300));
-    place("PartyPanel/Sheet", Rect2(350, 90, w - 650, h - 380));
-    place("PartyPanel/Portrait", Rect2(w - 284, 90, 264, 264));
-    place("PartyPanel/ReadySprite", Rect2(w - 284, 364, 120, 120));
-    place("PartyPanel/ActionSprite", Rect2(w - 140, 364, 120, 120));
-    place("PartyPanel/ReadyLabel", Rect2(w - 284, 488, 120, 24));
-    place("PartyPanel/ActionLabel", Rect2(w - 140, 488, 120, 24));
-    place("PartyPanel/Inventory", Rect2(350, h - 280, w - 374, 96));
-    const std::array<const char *, 9> buttons{"Create",  "Remove",  "Rejoin", "Recruit", "Equip",
-            "Unequip", "Explore", "Combat", "Close"};
-    const double bw = (w - 64) / 5;
-    for (unsigned i = 0; i < buttons.size(); ++i)
-        place((std::string("PartyPanel/") + buttons[i]).c_str(),
-              Rect2(24 + (i % 5) * (bw + 4), h - 125 + (i / 5) * 44, bw, 36));
-    place("PartyPanel/Save", Rect2(w - 520, 24, 140, 36));
-    place("PartyPanel/Load", Rect2(w - 370, 24, 140, 36));
-    place("PartyPanel/Pool", Rect2(w - 220, 24, 196, 36));
     pool_layout();
-    place("PartyPanel/Status", Rect2(24, h - 39, w - 48, 32));
-    place("PartyPanel/Modifiers", Rect2(24 + 4 * (bw + 4), h - 81, bw * 0.42f, 36));
-    place("PartyPanel/SavingThrows",
-          Rect2(28 + 4 * (bw + 4) + bw * 0.42f, h - 81, bw * 0.58f - 4, 36));
-    for (const auto *name :
-            {"CampaignTown", "CampaignCombat"
-            })
-        if (auto *child = Object::cast_to<Control>(get_node_or_null(name)))
-            child->set_size(get_size());
 }
 
 void CharacterCreationView::party_selected(std::int64_t index)
@@ -777,52 +739,15 @@ void CharacterCreationView::expedition_check()
 
 void CharacterCreationView::setup_defeat()
 {
-    std::unique_ptr<Window, DeleteNode> window(memnew(Window));
-    window->set_name("Defeat");
-    window->set_title("Defeat");
-    window->set_size(Vector2i(520, 240));
-    window->set_min_size(Vector2i(520, 240));
-    window->set_flag(Window::FLAG_RESIZE_DISABLED, true);
-    window->set_transient(true);
-    window->set_exclusive(true);
-    window->hide();
-    add_child(window.get());
-    window.release();
     auto *dialog = get_node<Window>("Defeat");
-    std::unique_ptr<Label, DeleteNode> title(memnew(Label));
-    title->set_name("Title");
-    title->set_text("Your party has been defeated.");
-    title->set_position(Vector2(24, 30));
-    title->set_size(Vector2(472, 44));
-    title->add_theme_font_size_override("font_size", 24);
-    dialog->add_child(title.get());
-    title.release();
-    std::unique_ptr<Label, DeleteNode> body(memnew(Label));
-    body->set_text("Load a saved game to continue.");
-    body->set_position(Vector2(24, 90));
-    body->set_size(Vector2(472, 36));
-    dialog->add_child(body.get());
-    body.release();
-    for (bool reload :
-            {
-                true, false
-            })
-    {
-        std::unique_ptr<Button, DeleteNode> button(memnew(Button));
-        button->set_name(reload ? "Reload" : "Exit");
-        button->set_text(reload ? "Reload a Saved Game" : "Exit to OS");
-        button->set_position(Vector2(reload ? 24 : 308, 170));
-        button->set_size(Vector2(reload ? 268 : 188, 44));
-        button->connect("pressed",
-                        reload ? callable_mp(this, &CharacterCreationView::reload_after_defeat)
-                        : callable_mp(this, &CharacterCreationView::exit_after_defeat));
-        dialog->add_child(button.get());
-        button.release();
-    }
+    get_node<Button>("Defeat/Reload")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::reload_after_defeat));
+    get_node<Button>("Defeat/Exit")
+        ->connect("pressed", callable_mp(this, &CharacterCreationView::exit_after_defeat));
     dialog->connect("close_requested", callable_mp(this, &CharacterCreationView::show_defeat));
     get_node<SaveSlots>("SaveSlots")
-    ->connect("visibility_changed",
-              callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
+        ->connect("visibility_changed",
+                  callable_mp(this, &CharacterCreationView::save_dialog_visibility_changed));
     defeat_check_ = OS::get_singleton()->get_cmdline_user_args().has("--defeat-check");
 }
 
