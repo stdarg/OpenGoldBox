@@ -49,24 +49,11 @@ void ScreenshotService::_ready()
         DirAccess::make_dir_recursive_absolute(directory_);
         UtilityFunctions::print("OpenGoldBox screenshots: ", directory_);
     }
-    // The game autoload uses the editable scene. Directly instantiated service
-    // objects in the screenshot regression check still need a notice subtree.
+    // The game autoload owns this subtree in its scene. Directly instantiated
+    // services use the same authored scene for the notice.
     if (!get_node_or_null("NoticeLayer"))
-    {
-        auto layer = presentation::make_node<CanvasLayer>();
-        layer->set_name("NoticeLayer");
-        layer->set_layer(100);
-        auto *canvas = presentation::attach_child(*this, std::move(layer));
-        auto owned_panel = presentation::make_node<PanelContainer>();
-        owned_panel->set_name("Notice");
-        auto *panel = presentation::attach_child(*canvas, std::move(owned_panel));
-        panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-        panel->hide();
-        panel->set_theme_type_variation("ScreenshotNotice");
-        auto owned_text = presentation::make_node<Label>();
-        owned_text->set_name("Text");
-        presentation::attach_child(*panel, std::move(owned_text));
-    }
+        presentation::attach_child(*this, presentation::instantiate_scene(
+                                       "res://scenes/control_templates/screenshot_notice.tscn"));
     auto *label = &required_node<Label>(*this, "NoticeLayer/Notice/Text");
     label->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
     label->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);

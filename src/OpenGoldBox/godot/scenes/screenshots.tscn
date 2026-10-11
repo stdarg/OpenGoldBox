@@ -1,15 +1,7 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/control_templates/screenshot_notice.tscn" id="1_notice"]
 
 [node name="Screenshots" type="ScreenshotService"]
 
-[node name="NoticeLayer" type="CanvasLayer" parent="."]
-layer = 100
-
-[node name="Notice" type="PanelContainer" parent="NoticeLayer"]
-visible = false
-mouse_filter = 2
-theme_type_variation = &"ScreenshotNotice"
-
-[node name="Text" type="Label" parent="NoticeLayer/Notice"]
-mouse_filter = 2
-autowrap_mode = 3
+[node name="NoticeLayer" parent="." instance=ExtResource("1_notice")]
