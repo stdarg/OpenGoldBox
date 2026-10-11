@@ -393,8 +393,12 @@ the earlier authored Slums conversions.
   same, as their records ready no armor), Ogre and Troll (SRD 5.2.1). The user
   chose the Troll's full Regeneration, then (the same day) to kill trolls as the
   original game does: the fight ends once every enemy is down and downed
-  trolls stay dead; during it, a downed troll gets up on its turn unless Acid
-  or Fire hit it or someone stands on its square. The Hobgoblin's poisoned arrows as
+  trolls stay dead. On 2026-10-10 the user chose the original's timing too: a
+  downed troll gets back up, with all its Hit Points, only once 3d6 rounds have
+  passed since it fell, and Acid or Fire on it keeps it down for good. As in
+  the original engine, someone standing on its square keeps it down; it gets up
+  on its first turn after the delay with its square clear. Standing, it
+  regenerates as the SRD says. The Hobgoblin's poisoned arrows as
   written, and, as SRD 5.2.1 has no apprentice mage, a level-3 Wizard profile
   for the magic-user defending Ohlo. The Troll's Charge and Loathsome Limbs
   are not modeled.

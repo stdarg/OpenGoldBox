@@ -256,7 +256,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 47;
+constexpr unsigned checkpoint_format = 48;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -695,6 +695,9 @@ struct Actor
     bool colossus_used{}, horde_used{};
     bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
     bool regeneration_blocked{}; // Took Acid or Fire damage since its last turn began
+    // Downed with Regeneration: the round it may get back up, 3d6 rounds after it
+    // fell (the original game's troll); 0 otherwise.
+    int rises_on_round{};
     // Thrown gear (Acid, Alchemist's Fire, Oil, by ThrownGearEffect) still carried:
     // counted from the inventory when combat begins and spent by each throw.
     std::array<unsigned, 3> thrown_gear_left{};
@@ -2260,6 +2263,7 @@ class Session final : public CombatSession
         return may_rise(a) && a.life.hp == 0;
     }
     void regenerate(Actor &a);
+    void get_up(Actor &a);
     std::vector<EntityId> initiative_choices_;
 
     void start_encounter_turns()
@@ -5073,12 +5077,15 @@ void Session::damage(Actor &target, int amount, bool critical)
         .dies_at_zero = target.source.side == Side::opposition && !def(target).regeneration};
     detail::damage_life(target.life, amount, max_hp(target), options);
     // Regeneration: damage never kills it and it makes no death saves; the start
-    // of its next turn decides (regenerate).
+    // of each of its turns decides (regenerate). As in the original game, it may
+    // get back up 3d6 rounds after it falls.
     if (def(target).regeneration && target.life.hp == 0)
     {
         target.life.dead = false;
         target.life.successes = target.life.failures = 0;
         target.life.recovery = {detail::death_turn_ms, 0};
+        if (standing)
+            target.rises_on_round = static_cast<int>(round_) + dice({3, 6, 0});
     }
     if (standing && target.life.hp == 0)
         bless_fiends(target);
@@ -7305,6 +7312,7 @@ void Session::update_outcome()
                 {
                     a.life.dead = true;
                     a.life.recovery = {};
+                    a.rises_on_round = 0;
                     log(a.source.name + " stays down.",
                     {"{name} stays down.", {{"name", a.source.name}}});
                 }
@@ -7345,17 +7353,10 @@ void Session::bandage_after_victory()
 }
 
 // Regeneration at the start of the creature's turn: Acid or Fire damage since its
-// last turn stops it, as does a creature standing on it while it is down (the
-// original game's rule), and a creature at 0 HP that cannot regenerate dies.
+// last turn stops it, and a creature at 0 HP that cannot regenerate dies.
 void Session::regenerate(Actor &a)
 {
-    const bool stood_on = a.life.hp == 0 && std::any_of(actors_.begin(), actors_.end(),
-                          [&](const auto & other)
-    {
-        return other.source.id != a.source.id && conscious(other) &&
-               other.source.cell == a.source.cell;
-    });
-    const bool blocked = a.regeneration_blocked || stood_on;
+    const bool blocked = a.regeneration_blocked;
     a.regeneration_blocked = false;
     if (blocked)
     {
@@ -7368,12 +7369,17 @@ void Session::regenerate(Actor &a)
         a.life.dead = true;
         a.life.stable = false;
         a.life.recovery = {};
+        a.rises_on_round = 0;
         log(a.source.name + " cannot regenerate and dies.",
         {"{name} cannot regenerate and dies.", {{"name", a.source.name}}});
         clear_departed_overlaps();
         return;
     }
-    const bool rising = a.life.hp == 0;
+    if (a.life.hp == 0)
+    {
+        get_up(a);
+        return;
+    }
     const int healed = detail::heal_life(a.life, def(a).regeneration, max_hp(a),
                                          !detail::healing_blocked(a.effects));
     if (!healed)
@@ -7383,12 +7389,27 @@ void Session::regenerate(Actor &a)
         "{name} regenerates {amount} Hit Points.",
         {{"name", a.source.name}, {"amount", std::to_string(healed)}}
     });
-    if (rising)
+}
+
+// As in the original game, a downed creature with Regeneration gets back up with
+// all its Hit Points once its 3d6 rounds have passed, but not while a creature
+// stands on its square; it tries again on each of its turns.
+void Session::get_up(Actor &a)
+{
+    const bool stood_on = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        a.effects.prone = true;
-        if (shares_occupied_space(a))
-            a.involuntary_overlap = true;
-    }
+        return other.source.id != a.source.id && conscious(other) &&
+               other.source.cell == a.source.cell;
+    });
+    if (static_cast<int>(round_) < a.rises_on_round || stood_on)
+        return;
+    if (!detail::heal_life(a.life, max_hp(a), max_hp(a), !detail::healing_blocked(a.effects)))
+        return;
+    a.rises_on_round = 0;
+    a.effects.prone = true;
+    if (shares_occupied_space(a))
+        a.involuntary_overlap = true;
+    log(a.source.name + " gets back up.", {"{name} gets back up.", {{"name", a.source.name}}});
 }
 
 bool Session::begin_turn()
@@ -8860,10 +8881,10 @@ std::string Session::save() const
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
-            << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1] << ' ' << a.thrown_gear_left[2]
-            << ' ' << a.burning << ' ' << a.oiled_until_round << ' ' << a.shield_off << ' '
-            << a.must_stay << ' ' << a.panicked << ' ' << a.source.morale << ' '
-            << a.source.intelligence << ' ';
+            << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
+            << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
+            << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked << ' '
+            << a.source.morale << ' ' << a.source.intelligence << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -9052,10 +9073,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
           actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
-          actor.regeneration_blocked >> actor.thrown_gear_left[0] >> actor.thrown_gear_left[1] >>
-          actor.thrown_gear_left[2] >> actor.burning >> actor.oiled_until_round >>
-          actor.shield_off >> actor.must_stay >> actor.panicked >> actor.source.morale >>
-          actor.source.intelligence;
+          actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
+          actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
+          actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
+          actor.source.morale >> actor.source.intelligence;
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
         throw std::runtime_error("Invalid checkpoint morale");
     actor.concentration = detail::read_concentration(input);
@@ -9444,6 +9465,10 @@ void Session::validate_restored_state() const
             throw std::runtime_error("Invalid involuntary checkpoint overlap");
         if (actor.regeneration_blocked && !def(actor).regeneration)
             throw std::runtime_error("Regeneration blocked without Regeneration");
+        // 3d6 rounds at most.
+        if (actor.rises_on_round < 0 || actor.rises_on_round > static_cast<int>(round_) + 18 ||
+                (actor.rises_on_round && !def(actor).regeneration))
+            throw std::runtime_error("Invalid getting-up round");
         if ((actor.burning && actor.life.dead) || actor.oiled_until_round < 0 ||
                 actor.oiled_until_round > static_cast<int>(round_) + 10 ||
                 (actor.source.character_profile.empty() &&
@@ -11976,7 +12001,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.154", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.155", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

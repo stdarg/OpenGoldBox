@@ -84,6 +84,13 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.155 has a downed troll get back up as the original game's did
+([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)):
+with all its Hit Points, once 3d6 rounds have passed since it fell, rather
+than regenerating on its next turn. Acid or Fire on it still kills it; someone
+standing on its square now keeps it down rather than killing it, and it gets
+up once the square is clear. Combat checkpoints become `OGCOMBAT 48` (the round
+it may get up).
 
 ## Slums set-encounter creatures
 

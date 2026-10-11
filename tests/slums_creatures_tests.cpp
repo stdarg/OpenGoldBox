@@ -143,9 +143,21 @@ std::pair<EntityId, EntityId> heroes(const CombatSession &c)
     return {now, now == 2 ? 3 : 2};
 }
 
-// Felled by a weapon while its side fights on, the Troll can still be attacked
-// and regenerates on its turn.
-void troll_regenerates()
+// Ends turns until the downed Troll gets up; returns the round it does.
+unsigned round_troll_gets_up(CombatSession &c)
+{
+    for (unsigned turns = 0; unit(c, 1).hit_points == 0; ++turns)
+    {
+        check(turns < 100 && !unit(c, 1).dead, "The Troll gets up within 3d6 rounds");
+        check(submit(c, "end", c.snapshot().actor), "End the turn");
+    }
+    return c.snapshot().round;
+}
+
+// As in the original game, a Troll felled by a weapon while its side fights on
+// stays down for 3d6 rounds, and can still be attacked; then it gets back up
+// with all its Hit Points.
+void troll_gets_up_later()
 {
     const auto module = rules();
     auto c = troll_fight(*module, "slasher", "slasher");
@@ -157,9 +169,28 @@ void troll_regenerates()
     check(submit(*c, "end", first) && c->snapshot().actor == second &&
           offered(*c, "melee", second, 1),
           "A downed Troll can still be attacked");
-    check(submit(*c, "end", second), "The other hero ends its turn");
-    check(unit(*c, 1).hit_points == 15 && count_logged(*c, "Monster regenerates 15") == 1,
-          "The Troll regains 15 HP at the start of its turn");
+    const auto fell = c->snapshot().round;
+    const auto rose = round_troll_gets_up(*c);
+    check(rose >= fell + 3 && rose <= fell + 18, "The Troll stays down for 3d6 rounds");
+    check(unit(*c, 1).hit_points == unit(*c, 1).max_hit_points &&
+          count_logged(*c, "Monster gets back up.") == 1 &&
+          count_logged(*c, "Monster regenerates") == 0,
+          "The Troll gets back up with all its Hit Points");
+}
+
+// The rounds a downed Troll has left before it gets up survive a checkpoint.
+void troll_delay_saved()
+{
+    const auto module = rules();
+    auto c = troll_fight(*module, "slasher", "slasher");
+    const auto [first, second] = heroes(*c);
+    check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "A hero fells the Troll");
+    const auto checkpoint = c->save();
+    check(checkpoint.starts_with("OGCOMBAT 48 "), "Checkpoints use the current format");
+    auto restored = module->restore(checkpoint);
+    check(restored->save() == checkpoint, "A downed Troll's delay survives a checkpoint");
+    check(round_troll_gets_up(*restored) == round_troll_gets_up(*c),
+          "A restored Troll gets up when the saved one does");
 }
 
 // Downed by Fire, the Troll cannot regenerate and dies at the start of its turn.
@@ -170,7 +201,7 @@ void troll_burns()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && unit(*c, 1).hit_points == 0, "Fire fells the Troll");
     const auto checkpoint = c->save();
-    check(checkpoint.starts_with("OGCOMBAT 47 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 48 "), "Checkpoints use the current format");
     auto restored = module->restore(checkpoint);
     check(restored->save() == checkpoint, "A blocked Regeneration survives a checkpoint");
     check(submit(*restored, "end", first) && submit(*restored, "end", second),
@@ -179,24 +210,40 @@ void troll_burns()
           "The Troll dies when it cannot regenerate");
 }
 
-// As in the original game, a hero standing on a downed Troll keeps it down.
+// Moves `id` onto `destination`; true when it got there.
+bool move_to(CombatSession &c, EntityId id, Cell destination)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.actor == id && command.verb == "move" && command.destination == destination)
+            return c.submit(command) && unit(c, id).cell == destination;
+    return false;
+}
+
+// As in the original game, a hero standing on a downed Troll keeps it from
+// getting up for as long as the hero stays; once the hero steps off, the Troll
+// gets up on its turn.
 void troll_held_down()
 {
     const auto module = rules();
     auto c = troll_fight(*module, "slasher", "slasher");
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1) && submit(*c, "end", first), "A hero fells the Troll");
-    bool moved = false;
-    for (const auto &command : c->legal_commands())
-        if (!moved && command.actor == second && command.verb == "move" &&
-                command.destination == Cell{1, 1})
-            moved = c->submit(command);
-    check(moved && unit(*c, second).cell == Cell{1, 1}, "A hero stands on the downed Troll");
+    check(move_to(*c, second, {1, 1}), "A hero stands on the downed Troll");
     const auto checkpoint = c->save();
     check(module->restore(checkpoint)->save() == checkpoint,
           "Standing on a downed Troll survives a checkpoint");
+    // Longer than the most a 3d6 delay can last.
+    const auto stood_from = c->snapshot().round;
+    while (c->snapshot().round < stood_from + 20)
+        check(submit(*c, "end", c->snapshot().actor), "End the turn");
+    check(unit(*c, 1).hit_points == 0 && !unit(*c, 1).dead,
+          "A Troll with a hero on it stays down without dying");
+    turn_of(*c, second);
+    check(move_to(*c, second, {2, 2}), "The hero steps off the Troll");
     check(submit(*c, "end", second), "The hero ends its turn");
-    check(unit(*c, 1).dead, "A Troll with a hero on it cannot get up and dies");
+    turn_of(*c, 1);
+    check(unit(*c, 1).hit_points == unit(*c, 1).max_hit_points,
+          "Its square clear, the Troll gets up on its turn");
 }
 
 // The fight ends once every enemy is down, and a downed Troll stays down.
@@ -243,7 +290,8 @@ int main()
     {
         creatures_join();
         troll_attacks();
-        troll_regenerates();
+        troll_gets_up_later();
+        troll_delay_saved();
         troll_burns();
         troll_held_down();
         troll_stays_down();
