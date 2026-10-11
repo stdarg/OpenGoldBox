@@ -24,8 +24,8 @@ original ECL2:20 mix from the party's strength (as
 in its own room: the hobgoblins arguing over gold (5 hobgoblins), the monster
 leaders (an ogre, 2 gnolls, 2 hobgoblin leaders) and the trolls and ogres (2
 ogres, 4 trolls). As in the original, a downed troll stays down once the fight
-is won, and during it gets up again unless Acid or Fire hit it or someone stands
-on it.
+is won, and during it gets back up 3d6 rounds after it fell unless Acid or Fire
+hit it, or later if someone stands on it.
 
 Kuto's Well follows (its fights on `GEO8:29` and `GEO8:32`): plaza gnolls,
 the sickly kobolds (2 kobolds, 4 leaders), plaza kobolds, the well's kobolds
@@ -65,6 +65,17 @@ party: a creature that surrendered as its turn began, just after a member
 dropped on its own turn, stayed on the field until the next command, and an
 attack on it crashed when a reaction to that attack was answered.
 
+Re-measured with 20 runs per party (2026-10-11, rules 0.6.155, a downed troll
+getting up after 3d6 rounds with all its Hit Points): 3 defeats in 320 runs,
+all six Warlocks' (street orcs, plaza lizardmen and, new, the trolls and ogres).
+Every other party succeeded every time. Flawless runs: classic 90%, martial
+85%, casters 100%, no-fire 65% (0.35 deaths a run), six Fighters 90%, six
+Rangers 95%, six Warlocks 75%, six Wizards 90%, the other classes 100%. Under
+rules 0.6.154 the same seeds gave the same figures but for martial's deaths
+(0.20 a run, against 0.15) and one Warlock defeat fewer. Six Fighters with no
+Fire or Acid clear the arc as often as six with them, losing more members on
+the way (0.35 deaths a run against 0.15).
+
 Martial parties' remaining deaths (2026-10-09) were neither the fight areas nor
 their gear: shields taken off for bows preceded only 4 of 27 Fighter and
 Barbarian deaths, and the troll arena is won at every width. Three in four
@@ -75,7 +86,8 @@ six Fighters from 72% to 94%, six Monks from 76% to 96%, six Rogues from 64% to
 
 Each member sets out with its class kit (a Torch included) and 2 Oil and 2
 Alchemist's Fire, as if bought at New Phlan's general store; the simulator does
-not track gold.
+not track gold. The `no-fire` party is the exception: it carries no Torch, Oil,
+Acid or Alchemist's Fire.
 
 After a victory, dying members are bandaged (as in the game) and the Stable
 regain a Hit Point over four hours. Members level up with the default choices, with
@@ -101,7 +113,9 @@ per member. It prints win rates and writes `arena.csv`.
 ## Parties
 
 `classic` (two fighters, cleric, rogue, wizard, paladin), `martial`, `casters`,
-and `six-<class>` for each class.
+`no-fire` (six Fighters in their class kit without its Torch, carrying no Fire
+or Acid, as the play-test's created Fighters; in the troll arena it plays only
+the kit loadout) and `six-<class>` for each class.
 
 ## Output
 

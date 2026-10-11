@@ -34,16 +34,19 @@ struct PartyPlan
 {
     std::string name;
     std::vector<std::string> classes;
+    bool fire = true; // false: no Torch, Oil, Acid or Alchemist's Fire
 };
 
 // Standard parties: a classic Pool of Radiance mix, all martial, all casters,
-// and six of each class.
+// six Fighters with no Fire or Acid (as the play-test's created Fighters carry
+// none), and six of each class.
 std::vector<PartyPlan> party_plans(const rules::CharacterRules &rules)
 {
     std::vector<PartyPlan> plans{
         {"classic", {"fighter", "fighter", "cleric", "rogue", "wizard", "paladin"}},
         {"martial", {"fighter", "barbarian", "paladin", "ranger", "monk", "rogue"}},
-        {"casters", {"wizard", "sorcerer", "warlock", "cleric", "druid", "bard"}}};
+        {"casters", {"wizard", "sorcerer", "warlock", "cleric", "druid", "bard"}},
+        {"no-fire", std::vector<std::string>(6, "fighter"), false}};
     for (const auto &klass : rules.choices(rules::CreationField::character_class))
         plans.push_back({"six-" + klass.id, std::vector<std::string>(6, klass.id)});
     return plans;
@@ -475,16 +478,44 @@ void carry_flasks(CampaignParty &party, MemberId id, std::uint8_t oil, std::uint
         }
 }
 
-std::shared_ptr<CampaignParty> level_four_party(const std::vector<Character> &members,
-        const Loadout &loadout)
+// Takes away the Torch every starting kit carries.
+void drop_torch(CampaignParty &party, MemberId id)
+{
+    auto state = party.checkpoint();
+    for (auto &member : state.roster)
+    {
+        if (member.id != id)
+            continue;
+        auto inventory = member.character.inventory();
+        for (const auto &item : member.character.inventory().items())
+            if (item.definition_id == "torch")
+            {
+                inventory.remove(item.id, item.quantity);
+                member.item_sources.erase(item.id);
+            }
+        member.character.replace_inventory(std::move(inventory));
+    }
+    party.restore(std::move(state));
+}
+
+// A member in its class kit with the given flasks, or with no Fire at all in a
+// party that carries none.
+void outfit(CampaignParty &party, MemberId id, const PartyPlan &plan, std::uint8_t oil,
+            std::uint8_t fire)
+{
+    outfit_pool_member(party, id);
+    if (plan.fire)
+        carry_flasks(party, id, oil, fire);
+    else
+        drop_torch(party, id);
+}
+
+std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
+        const std::vector<Character> &members, const Loadout &loadout)
 {
     auto party = std::make_shared<CampaignParty>(module());
     for (const auto &member : members)
-    {
-        const auto id = party->add_pc(member);
-        outfit_pool_member(*party, id);
-        carry_flasks(*party, id, loadout.oil, loadout.fire);
-    }
+        outfit(*party, party->add_pc(member), plan, loadout.oil, loadout.fire);
     party->award_experience(party->rule_module().experience_for_level(4), "arena");
     for (const auto id : living(*party))
         while (party->can_advance(id))
@@ -550,10 +581,11 @@ CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_
 
 // Plays one arena fight; true on victory. Width 0 is the trolls' own room in the
 // Slums (`slums`), with the campaign's usual placement.
-bool arena_fight(const std::vector<Character> &members, const Loadout &loadout, unsigned width,
-                 const por::GeoMap &slums, std::uint64_t seed)
+bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
+                 const Loadout &loadout, unsigned width, const por::GeoMap &slums,
+                 std::uint64_t seed)
 {
-    auto party = level_four_party(members, loadout);
+    auto party = level_four_party(plan, members, loadout);
     auto fight = troll_fight();
     std::vector<unsigned> levels;
     std::vector<EncounterGroup> sizes;
@@ -603,13 +635,15 @@ void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Characte
         const auto members = plan_members(plan, pool);
         for (const auto &loadout : loadouts)
         {
+            if (!plan.fire && (loadout.oil || loadout.fire))
+                continue;
             std::printf("%-14s %-9s", plan.name.c_str(), loadout.name);
             for (const auto width : std::array{arena_widths[0], arena_widths[1], arena_widths[2],
                                                arena_widths[3], arena_widths[4], 0u})
             {
                 unsigned wins = 0;
                 for (unsigned run = 1; run <= runs; ++run)
-                    wins += arena_fight(members, loadout, width, slums, run);
+                    wins += arena_fight(plan, members, loadout, width, slums, run);
                 csv << plan.name << ',' << loadout.name << ',' << width << ',' << runs << ','
                     << wins << '\n';
                 std::printf(" %5.0f", 100.0 * wins / runs);
@@ -620,17 +654,13 @@ void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Characte
     }
 }
 
-RunResult play(const std::vector<Character> &members, const ArcMaps &maps, std::uint64_t seed,
-               Usage &usage)
+RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
+               const ArcMaps &maps, std::uint64_t seed, Usage &usage)
 {
     auto party = std::make_shared<CampaignParty>(module());
+    // The flasks as if bought at New Phlan's general store before setting out.
     for (const auto &member : members)
-    {
-        const auto id = party->add_pc(member);
-        outfit_pool_member(*party, id);
-        // As if bought at New Phlan's general store before setting out.
-        carry_flasks(*party, id, 2, 2);
-    }
+        outfit(*party, party->add_pc(member), plan, 2, 2);
     RunResult result;
     unsigned since_long_rest = 0;
     for (std::size_t n = 0; n < arc.size(); ++n)
@@ -810,7 +840,7 @@ int main(int argc, char **argv)
             Usage usage;
             for (unsigned run = 1; run <= runs; ++run)
             {
-                const auto r = play(members, maps, run, usage);
+                const auto r = play(plan, members, maps, run, usage);
                 cleared += r.cleared_slums;
                 complete += r.outcome == "complete";
                 flawless += r.outcome == "complete" && !r.deaths;
