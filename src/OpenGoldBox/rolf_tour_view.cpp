@@ -175,8 +175,10 @@ void RolfTourView::_ready()
 
 void RolfTourView::layout()
 {
-    // The scene owns the normal town layout. Restore authored anchors before
-    // applying the shopping variant to the controls that change with state.
+    auto &shopping_layout = required_node<Node>(*this, "ShoppingLayout");
+    shopping_layout.call("play", "normal");
+    shopping_layout.call("advance", 0);
+    // Reapply scene-authored middle-width offsets to the normal layout.
     for (int i = 0; i < get_child_count(); ++i)
         if (auto *control = Object::cast_to<Control>(get_child(i));
                 control && control->has_meta("layout_reference"))
@@ -184,17 +186,14 @@ void RolfTourView::layout()
     const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
     if (shopping)
     {
-        auto &guides = required_node<Control>(*this, "ShoppingLayout");
-        for (int i = 0; i < guides.get_child_count(); ++i)
-        {
-            auto *guide = Object::cast_to<Control>(guides.get_child(i));
-            if (!guide)
-                continue;
-            presentation::restore_scene_control(*guide);
-            auto &target = required_node<Control>(*this, NodePath(guide->get_name()));
-            target.set_position(guide->get_position());
-            target.set_size(guide->get_size());
-        }
+        const double small = get_theme_constant("layout_small_width", "OpenGoldMetrics");
+        const double middle = get_theme_constant("layout_middle_width", "OpenGoldMetrics");
+        const double design = get_theme_constant("layout_design_width", "OpenGoldMetrics");
+        const double position = get_size().x <= middle
+                                ? 0.6 * std::clamp((get_size().x - small) / (middle - small), 0.0, 1.0)
+                                : 0.6 + 0.4 * std::clamp((get_size().x - middle) / (design - middle), 0.0, 1.0);
+        shopping_layout.call("play", "shopping");
+        shopping_layout.call("seek", position, true);
     }
     const auto bounds = [&](const char *name)
     {
