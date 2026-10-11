@@ -62,11 +62,13 @@ offset_bottom = 308
 theme_type_variation = &"CombatStatusStack"
 
 [node name="Turn" type="Label" parent="StatusStack"]
+visible = false
 layout_mode = 2
 custom_minimum_size = Vector2(0, 84)
 theme_type_variation = &"LabelTealText18"
 autowrap_mode = 2
 [node name="Roster" type="RichTextLabel" parent="StatusStack"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_type_variation = &"RichTextLabelText16"

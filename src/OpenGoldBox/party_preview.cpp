@@ -251,10 +251,11 @@ void CharacterCreationView::refresh_party()
         error_.is_empty()
         ? i18n::text("New PCs receive 250 gp / Save game stores this campaign on disk.")
         : error_);
-    for (const char *name :
-            {"Remove", "Rejoin", "Equip", "Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"
-            })
-        required_node<Button>(*this, gs(std::string("PartyPanel/") + name))
+    for (const char *name : {"Remove", "Rejoin", "Equip"})
+        required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow1/") + name))
+        .set_disabled(state.roster.empty());
+    for (const char *name : {"Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"})
+        required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow2/") + name))
         .set_disabled(state.roster.empty());
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;

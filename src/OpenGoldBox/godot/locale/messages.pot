@@ -5343,7 +5343,7 @@ msgstr ""
 
 #: src/OpenGoldBox/character_sheet_text.cpp:39
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "[font_size=24]{name}[/font_size]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
+msgid "[font_size={title_size}]{name}[/font_size]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
