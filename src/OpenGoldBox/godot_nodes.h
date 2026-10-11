@@ -5,8 +5,6 @@
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/window.hpp>
-#include <godot_cpp/variant/packed_float64_array.hpp>
-#include <algorithm>
 #include <initializer_list>
 #include <memory>
 #include <stdexcept>
@@ -64,63 +62,6 @@ template <class T>
         throw std::runtime_error("Missing or mistyped node: " +
                                  std::string(godot::String(path).utf8().get_data()));
     return *node;
-}
-
-// Restore a scene-authored rectangle after a state-specific layout has moved
-// a control. Cache offsets, not pixels, so Godot's anchors remain authoritative
-// when the parent changes size.
-inline void restore_scene_control(godot::Control &node)
-{
-    const godot::StringName key("_scene_offsets");
-    if (!node.has_meta(key))
-    {
-        godot::PackedFloat64Array offsets;
-        for (auto side : {godot::SIDE_LEFT, godot::SIDE_TOP, godot::SIDE_RIGHT, godot::SIDE_BOTTOM})
-            offsets.push_back(node.get_offset(side));
-        node.set_meta(key, offsets);
-    }
-    const godot::PackedFloat64Array offsets = node.get_meta(key);
-    godot::Vector2 parent_size;
-    if (auto *parent = godot::Object::cast_to<godot::Control>(node.get_parent()))
-        parent_size = parent->get_size();
-    else if (auto *parent = godot::Object::cast_to<godot::Window>(node.get_parent()))
-        parent_size = parent->get_size();
-    else
-        throw std::runtime_error("Scene control has no layout parent");
-    godot::Vector2 start(node.get_anchor(godot::SIDE_LEFT) * parent_size.x + offsets[0],
-                         node.get_anchor(godot::SIDE_TOP) * parent_size.y + offsets[1]);
-    godot::Vector2 end(node.get_anchor(godot::SIDE_RIGHT) * parent_size.x + offsets[2],
-                       node.get_anchor(godot::SIDE_BOTTOM) * parent_size.y + offsets[3]);
-    if (node.has_meta("layout_middle_delta"))
-    {
-        const double small = node.get_theme_constant("layout_small_width", "OpenGoldMetrics");
-        const double middle = node.get_theme_constant("layout_middle_width", "OpenGoldMetrics");
-        const double design = node.get_theme_constant("layout_design_width", "OpenGoldMetrics");
-        const double factor = parent_size.x <= middle
-                              ? std::clamp((parent_size.x - small) / (middle - small), 0.0, 1.0)
-                              : std::clamp((design - parent_size.x) / (design - middle), 0.0, 1.0);
-        const godot::Rect2 delta = node.get_meta("layout_middle_delta");
-        start += delta.position * factor;
-        end += (delta.position + delta.size) * factor;
-    }
-    node.set_position(start);
-    node.set_size(end - start);
-}
-
-inline void size_scene_window(godot::Window &window, const godot::Vector2i &calculated)
-{
-    const godot::StringName reference_key("layout_reference_size");
-    if (!window.has_meta(reference_key))
-    {
-        window.set_size(calculated);
-        return;
-    }
-    const godot::StringName initial_key("_layout_initial_size");
-    if (!window.has_meta(initial_key))
-        window.set_meta(initial_key, window.get_size());
-    const godot::Vector2i reference = window.get_meta(reference_key);
-    const godot::Vector2i initial = window.get_meta(initial_key);
-    window.set_size(initial + calculated - reference);
 }
 
 [[nodiscard]] inline NodeOwner<> instantiate_scene(const char *path)

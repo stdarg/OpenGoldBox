@@ -1,5 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 [ext_resource type="AnimationLibrary" path="res://scenes/tour_shopping_layout.tres" id="2_shopping_layout"]
+[ext_resource type="Script" path="res://scenes/tour_layout.gd" id="3_tour_layout"]
+[ext_resource type="Script" path="res://scenes/window_layout.gd" id="4_window_layout"]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/tour_dialogue_layout.tres" id="1_dialogue_layout"]
 
@@ -411,6 +413,10 @@ exclusive = true
 unresizable = true
 title = "Character Sheet"
 
+[node name="WindowLayout" type="Node" parent="MemberSheet"]
+script = ExtResource("4_window_layout")
+layout_kind = "tour_sheet"
+
 [node name="Text" type="RichTextLabel" parent="MemberSheet"]
 anchor_right = 1
 anchor_bottom = 1
@@ -588,6 +594,7 @@ metadata/layout_reference = Rect2(1550, 20, 140, 36)
 text = "Load game"
 
 [node name="ShoppingLayout" type="AnimationPlayer" parent="."]
+script = ExtResource("3_tour_layout")
 root_node = NodePath("..")
 libraries = {
 "": ExtResource("2_shopping_layout")

@@ -37,10 +37,7 @@ void TownSheetDialog::report_failure(const std::exception &failure)
 
 void TownSheetDialog::fit(Vector2 view_size)
 {
-    const double w = std::min<double>(get_theme_constant("sheet_max_width", "OpenGoldMetrics"),
-                         view_size.x - get_theme_constant("sheet_horizontal_margin", "OpenGoldMetrics"));
-    const double h = view_size.y - get_theme_constant("sheet_vertical_margin", "OpenGoldMetrics");
-    presentation::size_scene_window(*this, Vector2i(w, h));
+    required_node<Node>(*this, "WindowLayout").call("fit", Vector2i(view_size));
 }
 
 void TownSheetDialog::show_member(std::int64_t slot)

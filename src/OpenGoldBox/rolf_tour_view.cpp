@@ -176,25 +176,8 @@ void RolfTourView::_ready()
 void RolfTourView::layout()
 {
     auto &shopping_layout = required_node<Node>(*this, "ShoppingLayout");
-    shopping_layout.call("play", "normal");
-    shopping_layout.call("advance", 0);
-    // Reapply scene-authored middle-width offsets to the normal layout.
-    for (int i = 0; i < get_child_count(); ++i)
-        if (auto *control = Object::cast_to<Control>(get_child(i));
-                control && control->has_meta("layout_reference"))
-            presentation::restore_scene_control(*control);
     const bool shopping = session_ && session_->snapshot().phase == TourPhase::shopping;
-    if (shopping)
-    {
-        const double small = get_theme_constant("layout_small_width", "OpenGoldMetrics");
-        const double middle = get_theme_constant("layout_middle_width", "OpenGoldMetrics");
-        const double design = get_theme_constant("layout_design_width", "OpenGoldMetrics");
-        const double position = get_size().x <= middle
-                                ? 0.6 * std::clamp((get_size().x - small) / (middle - small), 0.0, 1.0)
-                                : 0.6 + 0.4 * std::clamp((get_size().x - middle) / (design - middle), 0.0, 1.0);
-        shopping_layout.call("play", "shopping");
-        shopping_layout.call("seek", position, true);
-    }
+    shopping_layout.call("apply_layout", shopping);
     const auto bounds = [&](const char *name)
     {
         auto &control = required_node<Control>(*this, name);
@@ -204,9 +187,7 @@ void RolfTourView::layout()
     map_rect_ = bounds("MapBounds");
     dialogue_rect_ = bounds("DialogueBounds");
     required_node<Label>(*this, "Legend").hide();
-    const int sheet_margin = get_theme_constant("tour_sheet_margin", "OpenGoldMetrics");
-    presentation::size_scene_window(required_node<Window>(*this, "MemberSheet"),
-                                    Vector2i(get_size()) - Vector2i(sheet_margin, sheet_margin));
+    required_node<Node>(*this, "MemberSheet/WindowLayout").call("fit", Vector2i(get_size()));
 }
 
 void RolfTourView::restart()

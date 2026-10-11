@@ -331,24 +331,10 @@ void CharacterCreationView::layout()
         creation_layout.call("advance", 0);
     }
 
-    // Split the available width among the scene-authored number of columns.
-    auto &choices = required_node<ItemList>(*this, "Choices");
-    if (!choices.has_meta("_layout_column_width"))
-        choices.set_meta("_layout_column_width", choices.get_fixed_column_width());
-    const Rect2 page_design = required_node<Control>(*this, "PageBounds").get_meta("layout_reference");
-    choices.set_fixed_column_width(int(choices.get_meta("_layout_column_width")) +
-                                   static_cast<int>((page_rect_.size.x - page_design.size.x) /
-                                                    std::max(1, choices.get_max_columns())));
-    required_node<Control>(*this, "PreviewSummary").set_visible(
-        page_rect_.size.y >= get_theme_constant("preview_summary_min_height", "OpenGoldMetrics"));
+    required_node<Node>(*this, "ColumnLayout").call("apply_layout");
 
-    const double max_width = get_theme_constant("creation_modal_max_width", "OpenGoldMetrics");
-    const double horizontal_margin = get_theme_constant("creation_modal_horizontal_margin", "OpenGoldMetrics");
-    const double vertical_margin = get_theme_constant("creation_modal_vertical_margin", "OpenGoldMetrics");
-    const Vector2i modal_size(std::min(max_width, get_size().x - horizontal_margin),
-                              get_size().y - vertical_margin);
-    presentation::size_scene_window(required_node<Window>(*this, "ModifiersModal"), modal_size);
-    presentation::size_scene_window(required_node<Window>(*this, "SavingThrowsModal"), modal_size);
+    required_node<Node>(*this, "ModifiersModal/WindowLayout").call("fit", Vector2i(get_size()));
+    required_node<Node>(*this, "SavingThrowsModal/WindowLayout").call("fit", Vector2i(get_size()));
     if (campaign_)
         party_layout();
 }

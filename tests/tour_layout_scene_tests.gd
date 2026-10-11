@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SIZES := [Vector2i(1120, 800), Vector2i(1600, 900), Vector2i(1920, 1080)]
+const SIZES := [Vector2i(1120, 800), Vector2i(1600, 900), Vector2i(1600, 1000), Vector2i(1920, 1080)]
 
 func _initialize() -> void:
     call_deferred("run_checks")
@@ -12,8 +12,7 @@ func run_checks() -> void:
         root.add_child(scene)
         await process_frame
         var shopping: AnimationPlayer = scene.get_node("ShoppingLayout")
-        shopping.play("shopping")
-        shopping.seek(clampf((dimensions.x - 1120.0) / 800.0, 0.0, 1.0), true)
+        shopping.call("apply_layout", true)
         var scene_rect: Rect2 = (scene.get_node("SceneBounds") as Control).get_global_rect()
         var party_rect: Rect2 = (scene.get_node("PartyList") as Control).get_global_rect()
         if scene_rect.end.x > party_rect.position.x or party_rect.end.x > dimensions.x:

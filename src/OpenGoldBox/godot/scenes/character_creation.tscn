@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
+[ext_resource type="Script" path="res://scenes/creation_column_layout.gd" id="2_column_layout"]
+[ext_resource type="Script" path="res://scenes/window_layout.gd" id="3_window_layout"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 layout_mode = 3
@@ -9,6 +11,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="ColumnLayout" type="Node" parent="."]
+script = ExtResource("2_column_layout")
 
 [node name="Title" type="Label" parent="."]
 anchor_right = 1
@@ -1202,6 +1207,10 @@ unresizable = true
 size = Vector2i(780, 960)
 metadata/layout_reference_size = Vector2i(780, 960)
 
+[node name="WindowLayout" type="Node" parent="ModifiersModal"]
+script = ExtResource("3_window_layout")
+layout_kind = "creation_modal"
+
 [node name="Background" type="Panel" parent="ModifiersModal"]
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -1263,6 +1272,10 @@ exclusive = true
 unresizable = true
 size = Vector2i(780, 960)
 metadata/layout_reference_size = Vector2i(780, 960)
+
+[node name="WindowLayout" type="Node" parent="SavingThrowsModal"]
+script = ExtResource("3_window_layout")
+layout_kind = "creation_modal"
 
 [node name="Background" type="Panel" parent="SavingThrowsModal"]
 anchor_right = 1.0
@@ -1332,6 +1345,9 @@ unresizable = true
 size = Vector2i(1000, 960)
 metadata/layout_reference_size = Vector2i(1000, 960)
 
+[node name="WindowLayout" type="Node" parent="PoolModal"]
+script = ExtResource("3_window_layout")
+
 [node name="Background" type="Panel" parent="PoolModal"]
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -1372,6 +1388,9 @@ exclusive = true
 unresizable = true
 size = Vector2i(1000, 960)
 metadata/layout_reference_size = Vector2i(1000, 960)
+
+[node name="WindowLayout" type="Node" parent="TownSheet"]
+script = ExtResource("3_window_layout")
 
 [node name="Background" type="Panel" parent="TownSheet"]
 anchor_right = 1.0
