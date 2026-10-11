@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
 [ext_resource type="Script" path="res://scenes/creation_column_layout.gd" id="2_column_layout"]
 [ext_resource type="Script" path="res://scenes/window_layout.gd" id="3_window_layout"]
 [ext_resource type="Script" path="res://scenes/creation_swatch.gd" id="4_creation_swatch"]
 [ext_resource type="Script" path="res://scenes/creation_score.gd" id="5_creation_score"]
+[ext_resource type="Script" path="res://scenes/creation_canvas.gd" id="6_creation_canvas"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 layout_mode = 3
@@ -13,6 +14,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="CreationCanvas" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("6_creation_canvas")
 
 [node name="ColumnLayout" type="Node" parent="."]
 script = ExtResource("2_column_layout")

@@ -23,7 +23,7 @@ The `OpenGoldPalette/colors/*` entries supply named colors for custom drawing an
 
 The separate review project at `demos/godot` has its own `themes/opengold.tres`, including a few variations for review-only scenes. Keep shared entries in that copy aligned with the game theme when changing them. The playable game's theme is the copy under `src/OpenGoldBox/godot`.
 
-Some character appearance swatches must display a color chosen from the game's EGA art palette. Their fill is content data; `scenes/creation_swatch.gd` reads border, disabled, padding, and text contrast settings from the theme. `scenes/creation_score.gd` reads score colors from the theme. Edit those theme entries to change the styling without recompiling. Temporary animation opacity, such as the startup fade, remains controlled by runtime behavior.
+Some character appearance swatches must display a color chosen from the game's EGA art palette. Their fill is content data; `scenes/creation_swatch.gd` reads border, disabled, padding, and text contrast settings from the theme. `scenes/creation_score.gd` reads score colors from the theme. `scenes/creation_canvas.gd` draws the panels and previews at scene-authored bounds with theme colors. Edit those resources to change the styling without recompiling. Temporary animation opacity, such as the startup fade, remains controlled by runtime behavior.
 
 ## Editing and checking a change
 

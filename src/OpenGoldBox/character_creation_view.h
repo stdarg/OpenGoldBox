@@ -44,7 +44,6 @@ class CharacterCreationView : public godot::Control
     std::optional<opengold::por::CombatBodyCatalog> body_catalog_;
     std::optional<opengold::por::CharacterAppearance> rendered_;
     std::array<godot::Ref<godot::ImageTexture>, 3> images_;
-    godot::Rect2 page_rect_, preview_rect_, portrait_rect_, ready_rect_, action_rect_;
     godot::String error_;
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};

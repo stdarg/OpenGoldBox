@@ -286,17 +286,6 @@ void CharacterCreationView::layout()
     creation_layout.call("play", "normal");
     creation_layout.call("advance", 0);
 
-    const auto rect = [&](const char *name)
-    {
-        auto &control = required_node<Control>(*this, name);
-        return Rect2(control.get_position(), control.get_size());
-    };
-    page_rect_ = rect("PageBounds");
-    preview_rect_ = rect("PreviewBounds");
-    portrait_rect_ = rect("PortraitBounds");
-    ready_rect_ = rect("ReadyBounds");
-    action_rect_ = rect("ActionBounds");
-
     if (creator_)
     {
         if (creator_->step() == CreationStep::race)
@@ -714,37 +703,9 @@ void CharacterCreationView::report_failure(const std::exception &failure)
 
 void CharacterCreationView::draw_view()
 {
-    draw_rect(Rect2(Vector2(), get_size()), get_theme_color("background", "OpenGoldPalette"));
-    for (const auto &rect :
-            {
-                page_rect_, preview_rect_
-            })
-    {
-        draw_rect(rect, get_theme_color("panel", "OpenGoldPalette"));
-        draw_rect(rect, get_theme_color("creation_panel_border", "OpenGoldPalette"), false);
-    }
-    for (const auto &rect :
-            {
-                ready_rect_, action_rect_
-            })
-        draw_rect(rect, get_theme_color("creation_field", "OpenGoldPalette"));
-    if (creator_ && creator_->step() == CreationStep::attributes)
-        for (unsigned i = 0; i < 6; ++i)
-        {
-            const auto rect =
-                required_node<Control>(*this, gs("Dice" + std::to_string(i))).get_rect();
-            draw_rect(rect, get_theme_color("creation_field", "OpenGoldPalette"));
-            draw_rect(rect, get_theme_color("creation_border", "OpenGoldPalette"), false);
-        }
-    {
-        draw_rect(portrait_rect_, get_theme_color("creation_field", "OpenGoldPalette"));
-        if (images_[0].is_valid())
-            draw_texture_rect(images_[0], portrait_rect_, false);
-    }
-    if (images_[1].is_valid())
-        draw_texture_rect(images_[1], ready_rect_, false);
-    if (images_[2].is_valid())
-        draw_texture_rect(images_[2], action_rect_, false);
+    required_node<Control>(*this, "CreationCanvas").call("set_images",
+            images_[0], images_[1], images_[2],
+            creator_ && creator_->step() == CreationStep::attributes);
 }
 
 void CharacterCreationView::perform(const std::function<void()> &action)
