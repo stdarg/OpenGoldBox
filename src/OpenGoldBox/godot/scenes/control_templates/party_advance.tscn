@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[node name="Advance" type="Button"]
+offset_right = 30.0
+offset_bottom = 26.0
+theme_type_variation = &"PartyAdvance"
+text = "↑"
+tooltip_text = "Level up"

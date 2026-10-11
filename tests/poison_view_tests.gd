@@ -74,7 +74,7 @@ func run_checks() -> void:
             spells.select(1); spells.item_selected.emit(1)
             require(cast.disabled == (which == "blocked"), "Selected Poison Spray follows casting eligibility")
         require(combat.get_node("CantripLabel").position.x >= combat.get_node("AdrenalineRush").get_rect().end.x, "Approved spell row stays right of Adrenaline Rush")
-        require(cast.get_rect().end.x < root.size.x - 300 and cast.get_rect().end.y <= combat.get_node("Log").position.y, "Shared controls fit and do not cover the log")
+        require(cast.get_rect().end.x < root.size.x - 300 and cast.get_rect().end.y <= combat.get_node("LogStack/Log").global_position.y, "Shared controls fit and do not cover the log")
         var prompts := ""
         for i in range(18):
             await key(KEY_A)
@@ -120,7 +120,7 @@ func run_checks() -> void:
     await click_cell(Vector2(3, 1))
     require(poison.disabled, "Clicking a legal ally casts and consumes Action")
     require(combat.selected_character_id() == 1, "Spell target click does not switch selection to ally")
-    require(combat.get_node("Log").get_parsed_text().contains("Ally"), "Attack log identifies the chosen ally")
+    require(combat.get_node("LogStack/Log").get_parsed_text().contains("Ally"), "Attack log identifies the chosen ally")
     restore_files()
     print("Poison Spray view checks passed")
     quit(0)

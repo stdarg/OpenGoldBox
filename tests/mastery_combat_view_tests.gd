@@ -81,7 +81,7 @@ func run_checks() -> void:
                     require(current_scene.get_node("Prompt").text.contains(selected_name), "Keyboard action cycle selects melee")
                 await click_target()
                 expect_native(weapon + "-after")
-                var log: RichTextLabel = current_scene.get_node("Log")
+                var log: RichTextLabel = current_scene.get_node("LogStack/Log")
                 var effect := ("Sap" if weapon == "mace" else "Vex") if locale == "en" else ("Debilitar" if weapon == "mace" else "Hostigar")
                 var explanation := "Target gains " + effect + " from Master." if locale == "en" else "Target recibe " + effect + " de Master."
                 require(log.is_visible_in_tree() and log.get_parsed_text().contains(explanation), "Visible combat log names applied mastery and source")

@@ -655,11 +655,6 @@ void CombatView::layout_reaction_controls(bool show_controls)
     cunning_layout.call("play", required_node<Button>(*this, "Stabilize").is_visible()
                         ? "aid" : "normal");
     cunning_layout.call("advance", 0);
-    auto &cantrip = required_node<OptionButton>(*this, "Cantrip");
-    auto &cast = required_node<Button>(*this, "CastCantrip");
-    cast.set_position(Vector2(cantrip.get_position().x + cantrip.get_size().x +
-                              get_theme_constant("combat_cantrip_button_gap", "OpenGoldMetrics"),
-                              cast.get_position().y));
     log_area_ = Rect2(board_rect_.position.x, top + inset, board_rect_.size.x,
                       std::max(0.0, get_size().y -
                                get_theme_constant("combat_log_bottom_margin", "OpenGoldMetrics") -
@@ -671,22 +666,9 @@ void CombatView::layout_reaction_controls(bool show_controls)
 // fills the rest.
 void CombatView::layout_log()
 {
-    auto *header = &required_node<Label>(*this, "LogHeader");
-    header->set_position(log_area_.position);
-    // The header does not wrap (a line too long ends in an ellipsis), so its
-    // height is its line count times the font's line pitch.
-    const auto font = header->get_theme_font("font");
-    const double pitch = font->get_height(header->get_theme_font_size("font_size")) +
-                         header->get_theme_constant("line_spacing");
-    // A small gap keeps a log line scrolled half out of view apart from the header.
-    const double header_height =
-        std::min<double>((header->get_text().count("\n") + 1) * pitch +
-                         get_theme_constant("combat_log_header_gap", "OpenGoldMetrics"),
-                         log_area_.size.y);
-    header->set_size(Vector2(log_area_.size.x, header_height));
-    auto *log = &required_node<RichTextLabel>(*this, "Log");
-    log->set_position(log_area_.position + Vector2(0, header_height));
-    log->set_size(Vector2(log_area_.size.x, std::max(0.0, log_area_.size.y - header_height)));
+    auto &stack = required_node<Control>(*this, "LogStack");
+    stack.set_position(log_area_.position);
+    stack.set_size(log_area_.size);
 }
 
 #include "nick_dialog_impl.h"
@@ -2565,7 +2547,7 @@ void CombatView::refresh()
     // choose) and whose turn it is stay in view while the log follows the
     // newest lines. The turn's status shares one line to leave the log room;
     // the footer already lists the keys.
-    required_node<Label>(*this, "LogHeader")
+    required_node<Label>(*this, "LogStack/LogHeader")
     .set_text(required_node<Label>(*this, "Prompt").get_text() + "\n" +
               turn.replace("\n", " | "));
     String log;
@@ -2585,7 +2567,7 @@ void CombatView::refresh()
     // The log follows its newest lines (scroll_following in the scene) unless
     // the player has scrolled back, who keeps that place. Asking the content
     // height lays out the text first, so the scroll bar is current.
-    auto *log_view = &required_node<RichTextLabel>(*this, "Log");
+    auto *log_view = &required_node<RichTextLabel>(*this, "LogStack/Log");
     auto *log_scroll = log_view->get_v_scroll_bar();
     (void)log_view->get_content_height();
     const double previous_scroll = log_scroll->get_value();

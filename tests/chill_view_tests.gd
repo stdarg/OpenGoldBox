@@ -69,7 +69,7 @@ func run_checks() -> void:
                 root.push_input(event, true)
             await settle()
             require(cast.disabled and current_scene.selected_character_id() == 1, "Legal ally click casts without changing selection")
-            require(current_scene.get_node("Log").get_parsed_text().contains("cannot regain HP" if locale == "en" else "no puede recuperar PG"), "Actual hit reports healing prevention")
+            require(current_scene.get_node("LogStack/Log").get_parsed_text().contains("cannot regain HP" if locale == "en" else "no puede recuperar PG"), "Actual hit reports healing prevention")
             cast.release_focus()
             await load_fixture(klass + "-blocked")
             require(cast.disabled and current_scene.get_node("StatusStack/Roster").get_parsed_text().contains("Chill Touch" if locale == "en" else "Toque helado"), "Internal checkpoint retains spent action and visible sourced effect")

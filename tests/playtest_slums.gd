@@ -141,7 +141,7 @@ func prompt() -> String:
     return (combat().get_node("Prompt") as Label).text
 
 func log_text() -> String:
-    return (combat().get_node("Log") as RichTextLabel).get_parsed_text()
+    return (combat().get_node("LogStack/Log") as RichTextLabel).get_parsed_text()
 
 # Notes a prompt or error the first time it is seen, with a screenshot.
 func note(kind: String, text: String) -> void:

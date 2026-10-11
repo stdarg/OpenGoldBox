@@ -68,7 +68,7 @@ func run_checks() -> void:
         require(found >= 0 and not choice.is_item_disabled(found), "The hit offers Paladin's Smite in the Bonus Action list: " + locale)
         choice.select(found); choice.item_selected.emit(found); await settle()
         combat.get_node("UseCunningAction").pressed.emit(); await settle()
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         require(log.contains("Divine Smite" if locale == "en" else "Castigo divino") and log.contains("Target"), "Use casts the smite on the creature just hit: " + locale)
     TranslationServer.set_locale("en")
     restore_files()

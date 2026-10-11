@@ -108,11 +108,8 @@ void RolfTourView::_ready()
         auto *member = &required_node<Button>(
                            *this, String("PartyList/Rows/Member") + String::num_uint64(slot));
         member->connect("pressed", presentation::guarded(this, &RolfTourView::party_selected).bind(slot));
-        auto arrow = presentation::make_node<Button>();
-        arrow->set_name("Advance");
-        arrow->set_text(String::utf8("↑"));
-        arrow->set_size(Vector2(member->get_theme_constant("party_arrow_width", "OpenGoldMetrics"),
-                                member->get_theme_constant("party_arrow_height", "OpenGoldMetrics")));
+        auto arrow = presentation::instantiate_control<Button>(
+                         "res://scenes/control_templates/party_advance.tscn");
         arrow->set_tooltip_text(i18n::text(N_("Level up")));
         arrow->connect("pressed", presentation::guarded(this, &RolfTourView::level_up_requested).bind(slot));
         presentation::attach_child(*member, std::move(arrow));

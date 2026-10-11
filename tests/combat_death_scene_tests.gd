@@ -49,7 +49,7 @@ func check() -> void:
     combat.get_node("Melee").emit_signal("pressed")
     click.position = canvas.get_global_transform_with_canvas() * Vector2(7.5 * tile, 4.5 * tile)
     root.push_input(click)
-    if not combat.get_node("Log").text.contains("Kobold 3 is defeated."):
+    if not combat.get_node("LogStack/Log").text.contains("Kobold 3 is defeated."):
         push_error("Expected a lethal attack in the shared combat scene")
         quit(1)
         return

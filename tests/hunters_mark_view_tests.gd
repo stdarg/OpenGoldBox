@@ -68,7 +68,7 @@ func run_checks() -> void:
         var label := "Hunter's Mark (Favored Enemy)" if locale == "en" else "Marca del cazador (Enemigo predilecto)"
         require(await cycle_to(combat, label), "The A cycle offers the free Hunter's Mark: " + locale)
         await click_cell(Vector2(6, 1))
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         var cast := "Ranger casts Hunter's Mark (Favored Enemy)." if locale == "en" else "Ranger lanza Marca del cazador (Enemigo predilecto)."
         require(log.contains(cast), "Clicking the enemy marks it: " + locale)
         require(not await cycle_to(combat, label), "The spent Bonus Action ends further marking: " + locale)
@@ -81,7 +81,7 @@ func run_checks() -> void:
         require(await cycle_to(combat, horde), "The A cycle offers Horde Breaker after the attack: " + locale)
         await click_cell(Vector2(2, 2))
         var broke := "Ranger uses Horde Breaker." if locale == "en" else "Ranger usa Rompehordas."
-        require(combat.get_node("Log").get_parsed_text().contains(broke), "Clicking the second enemy attacks it: " + locale)
+        require(combat.get_node("LogStack/Log").get_parsed_text().contains(broke), "Clicking the second enemy attacks it: " + locale)
     TranslationServer.set_locale("en")
     restore_files()
     print("Hunter's Mark view checks passed")

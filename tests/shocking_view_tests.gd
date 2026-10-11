@@ -68,7 +68,7 @@ func run_checks() -> void:
             root.push_input(event, true)
         await settle()
         require(cast.disabled and current_scene.selected_character_id() == 1, "Legal ally click casts without changing selection")
-        require(current_scene.get_node("Log").get_parsed_text().contains("cannot make Opportunity Attacks" if locale == "en" else "no puede realizar ataques de oportunidad"), "Actual hit reports Opportunity Attack suppression")
+        require(current_scene.get_node("LogStack/Log").get_parsed_text().contains("cannot make Opportunity Attacks" if locale == "en" else "no puede realizar ataques de oportunidad"), "Actual hit reports Opportunity Attack suppression")
         cast.release_focus()
         await load_fixture("suppressed")
         require(cast.disabled and current_scene.get_node("StatusStack/Roster").get_parsed_text().contains("Shocking Grasp" if locale == "en" else "Toque electrizante"), "Internal checkpoint retains spent action and visible sourced effect")

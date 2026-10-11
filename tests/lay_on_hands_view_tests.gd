@@ -69,7 +69,7 @@ func run_checks() -> void:
         choice.select(found); choice.item_selected.emit(found); await settle()
         combat.get_node("UseCunningAction").pressed.emit(); await settle()
         await click_cell(Vector2(2, 1))
-        var log: String = combat.get_node("Log").get_parsed_text()
+        var log: String = combat.get_node("LogStack/Log").get_parsed_text()
         require(log.contains(label) and log.contains("Ally"), "Clicking the wounded ally lays hands on it: " + locale)
         require(choice.disabled or combat.get_node("UseCunningAction").disabled, "The spent Bonus Action ends further use this turn")
     TranslationServer.set_locale("en")

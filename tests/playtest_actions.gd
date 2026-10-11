@@ -37,7 +37,7 @@ func prompt() -> String:
     return combat().get_node("Prompt").text
 
 func log_text() -> String:
-    return combat().get_node("Log").get_parsed_text()
+    return combat().get_node("LogStack/Log").get_parsed_text()
 
 func load_fixture(name: String) -> void:
     var bytes := FileAccess.get_file_as_bytes(fixtures.path_join(name + ".save"))

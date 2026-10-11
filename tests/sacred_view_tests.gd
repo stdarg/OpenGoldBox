@@ -104,7 +104,7 @@ func run_checks() -> void:
     await click_cell(Vector2(3, 1))
     require(sacred.disabled, "Clicking a legal ally casts and consumes Action")
     require(combat.selected_character_id() == 1, "Spell target click does not switch selection to ally")
-    require(combat.get_node("Log").get_parsed_text().contains("Ally"), "Cast log identifies the chosen ally")
+    require(combat.get_node("LogStack/Log").get_parsed_text().contains("Ally"), "Cast log identifies the chosen ally")
     sacred.release_focus()
     await load_fixture("known")
     var selected := false

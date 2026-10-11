@@ -30,7 +30,7 @@ func check() -> void:
         var combat := current_scene
         if combat == null:
             continue
-        if combat.get_node("Log").text.contains("Oren Quickwater falls unconscious."):
+        if combat.get_node("LogStack/Log").text.contains("Oren Quickwater falls unconscious."):
             await RenderingServer.frame_post_draw
             var path := ProjectSettings.globalize_path("res://../../../build/checks/combat-unconscious.png")
             if root.get_texture().get_image().save_png(path) != OK:

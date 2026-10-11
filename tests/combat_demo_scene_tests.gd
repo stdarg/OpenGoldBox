@@ -43,13 +43,13 @@ func check_demo() -> void:
         "Demo explains the combat keyboard controls")
     require(not combat.get_node("StatusStack/Roster").visible and not combat.get_node("StatusStack/Turn").visible,
         "The upper-right text window is removed")
-    require(combat.get_node("LogHeader").text.contains("Dorian Nightwind turn"),
+    require(combat.get_node("LogStack/LogHeader").text.contains("Dorian Nightwind turn"),
         "Turn text moved below the battlefield")
-    require(combat.get_node("Log").text.contains("The original script has requested combat."),
+    require(combat.get_node("LogStack/Log").text.contains("The original script has requested combat."),
         "Demo uses the campaign encounter log presentation")
     require(combat.get_node("End").visible and not combat.get_node("End").disabled,
         "Active party turn has a visible End turn button")
-    require(combat.get_node("End").position.y < combat.get_node("Log").position.y,
+    require(combat.get_node("End").position.y < combat.get_node("LogStack/Log").global_position.y,
         "Turn control sits above the combat log without covering portraits")
     require(not combat.get_node("React").visible and not combat.get_node("Decline").visible,
         "Reaction choices stay hidden until a reaction is pending")
@@ -71,7 +71,7 @@ func check_demo() -> void:
         "Selected portrait row is visibly highlighted")
     require(other_selected.get_pixel(1050, 415).r < 0.25,
         "Off-turn portrait selection shows no movement highlights")
-    require(combat.get_node("LogHeader").text.contains("It is not Liora Hallowgrove's turn."),
+    require(combat.get_node("LogStack/LogHeader").text.contains("It is not Liora Hallowgrove's turn."),
         "Off-turn selection explains why movement is unavailable")
     var off_turn_key := InputEventKey.new()
     off_turn_key.keycode = KEY_RIGHT
@@ -91,13 +91,13 @@ func check_demo() -> void:
     blocked_key.keycode = KEY_LEFT
     blocked_key.pressed = true
     root.push_input(blocked_key)
-    require(combat.get_node("Log").text.contains("That square is occupied."),
+    require(combat.get_node("LogStack/Log").text.contains("That square is occupied."),
         "Blocked movement explains why the hero cannot enter an ally's square")
     var active_key := InputEventKey.new()
     active_key.keycode = KEY_RIGHT
     active_key.pressed = true
     root.push_input(active_key)
-    require(combat.get_node("LogHeader").text.contains("reaction"),
+    require(combat.get_node("LogStack/LogHeader").text.contains("reaction"),
         "Arrow key starts the selected character's legal move and handles enemy reactions")
     for frame in range(180):
         if combat.selected_character_cell() == Vector2i(8, 5):
@@ -119,7 +119,7 @@ func check_demo() -> void:
     require(combat.get_node("AttackAudio").playing, "Attack plays the original attack sound")
     require(is_equal_approx(combat.get_node("AttackAudio").volume_linear, 0.125),
         "Attack effects use one-eighth volume")
-    require(combat.get_node("Log").text.contains("Dorian Nightwind -> Kobold"),
+    require(combat.get_node("LogStack/Log").text.contains("Dorian Nightwind -> Kobold"),
         "Arrow key submits a melee attack against the occupied enemy square")
     require(combat.get_node("StatusStack/Turn").text.contains("Dorian Nightwind turn") and not combat.get_node("End").disabled,
         "Attack preserves the hero's remaining turn and explicit End control")
@@ -130,14 +130,14 @@ func check_demo() -> void:
     await create_timer(1.1).timeout
     require(not combat.attack_pose_active(3), "Action pose ends after one second")
     for frame in range(500):
-        if combat.get_node("Log").text.contains("Kobold 7 -> Dorian Nightwind"):
+        if combat.get_node("LogStack/Log").text.contains("Kobold 7 -> Dorian Nightwind"):
             break
         var end_key := InputEventKey.new()
         end_key.keycode = KEY_ENTER
         end_key.pressed = true
         root.push_input(end_key)
         await process_frame
-    require(combat.get_node("Log").text.contains("Kobold 7 -> Dorian Nightwind"),
+    require(combat.get_node("LogStack/Log").text.contains("Kobold 7 -> Dorian Nightwind"),
         "Kobold on the right attacks the hero to its left")
     require(combat.sprite_facing_left(1007), "Kobold faces left toward its attack target")
     await RenderingServer.frame_post_draw
@@ -171,7 +171,7 @@ func check_demo() -> void:
     require(combat.get_node("StatusStack/Turn").text.contains("Move %d ft" % (initial_movement - 15)) and combat.get_node("StatusStack/Turn").text.contains("Action spent"),
         "Transit costs fifteen feet and preserves the spent Disengage action")
     root.push_input(active_key)
-    require(combat.selected_character_cell() == Vector2i(4, 5) and combat.get_node("Log").text.contains("That square is occupied."),
+    require(combat.selected_character_cell() == Vector2i(4, 5) and combat.get_node("LogStack/Log").text.contains("That square is occupied."),
         "A one-square arrow cannot voluntarily end movement on an ally")
     require(combat.get_node("End").visible and not combat.get_node("End").disabled,
         "Allied transit keeps the existing End Turn control available")

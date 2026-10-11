@@ -21,7 +21,7 @@ func require(ok: bool, message: String) -> void:
         cleanup(); push_error(message); quit(1); assert(ok, message)
 # The log panel's height: its header (prompt and turn) and the log below.
 func panel_height() -> float:
-    return current_scene.get_node("Log").get_rect().end.y - current_scene.get_node("LogHeader").position.y
+    return current_scene.get_node("LogStack/Log").get_global_rect().end.y - current_scene.get_node("LogStack/LogHeader").global_position.y
 func settle() -> void:
     for frame in range(4): await process_frame
 func key(window: Window, code: Key) -> void:
@@ -87,7 +87,7 @@ func run_checks() -> void:
             button.grab_focus(); await key(root, KEY_SPACE)
             require("Patient" in current_scene.get_node("Prompt").text, "Keyboard targeting names the selected legal creature")
             if not demo:
-                require(current_scene.get_node("LogHeader").text.begins_with(current_scene.get_node("Prompt").text) and not "Patient" in current_scene.get_node("Footer").text, "Keyboard target and instructions head the log once, not again in the footer")
+                require(current_scene.get_node("LogStack/LogHeader").text.begins_with(current_scene.get_node("Prompt").text) and not "Patient" in current_scene.get_node("Footer").text, "Keyboard target and instructions head the log once, not again in the footer")
             await key(root, KEY_RIGHT); await key(root, KEY_LEFT)
             await capture("keyboard-" + locale + "-" + str(size.x), root)
             await key(root, KEY_SPACE)

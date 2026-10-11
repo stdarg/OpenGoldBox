@@ -46,11 +46,11 @@ func run_checks() -> void:
         current_scene.set_process(false)
         await load_fixture("flee")
         await key(KEY_UP)
-        var log: String = current_scene.get_node("Log").get_parsed_text()
+        var log: String = current_scene.get_node("LogStack/Log").get_parsed_text()
         require(not log.contains(tr("{name} flees the battle.").format({"name": "Hero"})), "Moving along the edge does not flee")
         await load_fixture("flee")
         await key(KEY_LEFT)
-        log = current_scene.get_node("Log").get_parsed_text()
+        log = current_scene.get_node("LogStack/Log").get_parsed_text()
         var fled := log.contains(tr("{name} flees the battle.").format({"name": "Hero"}))
         var stayed := log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"}))
         require(fled or stayed, "Moving off the edge tries to flee: " + log.left(300))
@@ -76,7 +76,7 @@ func run_checks() -> void:
         current_scene.set_process(true)
         for frame in range(240):
             await process_frame
-            log = current_scene.get_node("Log").get_parsed_text()
+            log = current_scene.get_node("LogStack/Log").get_parsed_text()
             if log.contains(tr("{name} flees the battle.").format({"name": "Hero"})) or log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"})): break
         current_scene.set_process(false)
         require(log.contains(tr("{name} flees the battle.").format({"name": "Hero"})) or log.contains(tr("{name} cannot get away and must stay.").format({"name": "Hero"})), "The fleeing party tries to run off the field")
@@ -91,11 +91,11 @@ func run_checks() -> void:
         # The log follows its newest lines below the prompt and turn, once
         # it has laid out its text.
         await settle()
-        var bar: VScrollBar = current_scene.get_node("Log").get_v_scroll_bar()
+        var bar: VScrollBar = current_scene.get_node("LogStack/Log").get_v_scroll_bar()
         require(bar.value >= bar.max_value - bar.page - 2, "The log shows its newest lines")
         # Scrolled back, the player keeps that place while the view refreshes.
         bar.value = 20; await settle()
         await key(KEY_A); await settle()
         require(bar.value == 20, "Scrolling back keeps the player's place in the log")
-        require(current_scene.get_node("LogHeader").text.begins_with(current_scene.get_node("Prompt").text), "The prompt heads the log panel")
+        require(current_scene.get_node("LogStack/LogHeader").text.begins_with(current_scene.get_node("Prompt").text), "The prompt heads the log panel")
     cleanup(); print("Flee controls passed"); quit()

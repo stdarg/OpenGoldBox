@@ -67,13 +67,13 @@ func run_checks() -> void:
             "Space takes the party back on the member's own turn: " + locale)
         await key(KEY_Q)
         require(prompt() == computer and shown("TakeControl"), "Q puts the whole party on Quick")
-        var log: String = current_scene.get_node("Log").get_parsed_text()
+        var log: String = current_scene.get_node("LogStack/Log").get_parsed_text()
         current_scene.set_process(true)
         for frame in range(240):
             await process_frame
-            if current_scene.get_node("Log").get_parsed_text() != log: break
+            if current_scene.get_node("LogStack/Log").get_parsed_text() != log: break
         current_scene.set_process(false)
-        require(current_scene.get_node("Log").get_parsed_text() != log, "The computer plays the member on Quick")
+        require(current_scene.get_node("LogStack/Log").get_parsed_text() != log, "The computer plays the member on Quick")
         current_scene.get_node("TakeControl").pressed.emit(); await settle()
         require(not shown("TakeControl"), "Take control returns the party")
     cleanup(); print("Quick combat controls passed"); quit()

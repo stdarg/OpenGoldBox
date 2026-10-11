@@ -38,7 +38,7 @@ func run_checks() -> void:
     combat.set_process(false) # Keep the real enemy AI from racing UI assertions.
     var blindness: Button = combat.get_node("Blindness")
     var roster: RichTextLabel = combat.get_node("StatusStack/Roster")
-    var log: RichTextLabel = combat.get_node("Log")
+    var log: RichTextLabel = combat.get_node("LogStack/Log")
     require(not blindness.disabled, "Prepared fixture offers Blindness")
     require(blindness.focus_mode == Control.FOCUS_ALL, "Blindness has keyboard focus")
     require(blindness.tooltip_text.contains("level 2"), "Control explains its spell-slot cost")
