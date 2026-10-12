@@ -1,5 +1,6 @@
 #include "opengold/authored_items.h"
 #include "opengold/character_pool.h"
+#include "opengold/dice.h"
 #include <algorithm>
 #include <map>
 #include <numeric>
@@ -265,11 +266,13 @@ MemberId add_pool_member(CampaignParty &party, const Character &character, unsig
     try
     {
         const auto id = party.add_pc(character);
-        party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
-        outfit_pool_member(party, id);
         auto state = party.checkpoint();
+        std::uint16_t gold = 0;
+        for (int die = 0; die < 3; ++die)
+            gold += static_cast<std::uint16_t>(roll_die(state.random_state, 6) * 10);
         state.roster.back().creation_source = "pool:v1:" + std::to_string(pool_index);
         party.restore(std::move(state));
+        party.set_wealth(id, {0, 0, 0, gold, 0, 0, 0});
         return id;
     }
     catch (...)

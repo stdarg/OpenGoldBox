@@ -500,10 +500,15 @@ void pool_starting_gear()
         const auto klass = preset.creation_data().character_class;
         CampaignParty party(module());
         const auto id = add_pool_member(party, preset, 3);
-        const auto &member = party.member(id);
-        check(member.wealth[3] == 250, "Starting gear is free");
-        check(member.creation_source == "pool:v1:3" && party.state().roster.size() == 1,
+        const auto gold = party.member(id).wealth[3];
+        check(gold >= 30 && gold <= 180 && gold % 10 == 0 &&
+              party.member(id).character.inventory().empty(),
+              "A pool member brings 3d6 x 10 gp and no gear, as a new character did originally");
+        check(party.member(id).creation_source == "pool:v1:3" && party.state().roster.size() == 1,
               "A pool member joins once, recording which pool character it is");
+        // The demo and simulator parties still take the class kit.
+        outfit_pool_member(party, id);
+        const auto &member = party.member(id);
         std::vector<std::string> held, carried;
         for (const auto &item : member.character.inventory().items())
         {

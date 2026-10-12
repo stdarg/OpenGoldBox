@@ -4656,12 +4656,12 @@ msgid "Starting-class minimums use the multiclass prerequisites as an OpenGoldBo
 msgstr "OpenGoldBox usa los requisitos de multiclase como mínimos de clase inicial. No cumples los requisitos de las clases desactivadas; vuelve atrás para reasignar puntuaciones o bonificaciones."
 
 #: src/OpenGoldBox/character_pool_dialog.cpp:135
-msgid "Starts with 250 gp. Preview portraits and both combat poses before adding."
-msgstr "Empieza con 250 po. Revisa el retrato y ambas poses de combate antes de añadirlo."
+msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
+msgstr "Empieza con 3d6 x 10 po para comprar su equipo. Previsualiza retratos y ambas poses de combate antes de añadirlo."
 
 #: src/OpenGoldBox/character_pool_dialog.cpp:136
-msgid "Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet."
-msgstr "Empieza con 250 po. Esta clase puede explorar y equiparse; sus rasgos de combate aún no están implementados."
+msgid "Starts with 3d6 x 10 gp to buy its gear. This class can explore and equip gear; its combat features are not implemented yet."
+msgstr "Empieza con 3d6 x 10 po para comprar su equipo. Esta clase puede explorar y equipar objetos; sus rasgos de combate aún no están implementados."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Stealth"

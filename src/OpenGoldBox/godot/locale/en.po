@@ -4656,12 +4656,12 @@ msgid "Starting-class minimums use the multiclass prerequisites as an OpenGoldBo
 msgstr "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."
 
 #: src/OpenGoldBox/character_pool_dialog.cpp:135
-msgid "Starts with 250 gp. Preview portraits and both combat poses before adding."
-msgstr "Starts with 250 gp. Preview portraits and both combat poses before adding."
+msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
+msgstr "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 
 #: src/OpenGoldBox/character_pool_dialog.cpp:136
-msgid "Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet."
-msgstr "Starts with 250 gp. This class can explore and equip gear; its combat features are not implemented yet."
+msgid "Starts with 3d6 x 10 gp to buy its gear. This class can explore and equip gear; its combat features are not implemented yet."
+msgstr "Starts with 3d6 x 10 gp to buy its gear. This class can explore and equip gear; its combat features are not implemented yet."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Stealth"

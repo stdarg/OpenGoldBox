@@ -766,5 +766,8 @@ class and background equipment packages or their gold alternatives.
   chose the manual's single 3d6 × 10 for everyone.
 - Gear comes from the shops at the original prices; the SRD's starting
   packages and their 50 gp background alternative are not granted.
-- The Character Pool's ready-made characters are unchanged for now: 250 gp and
-  a free class kit.
+- The Character Pool's ready-made characters follow the same rule, since the
+  original game had only the characters a player created (2026-10-12): each
+  brings 3d6 x 10 gp, rolled from the party's saved random state when it joins,
+  and no equipment. The combat demo and the campaign simulator still give their
+  parties a class kit so they can fight at once.
