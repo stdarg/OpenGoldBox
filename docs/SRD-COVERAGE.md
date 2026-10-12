@@ -84,6 +84,9 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.157 drops the Musket and Pistol from the Weapon Mastery choices.
+Firearms never appear in Pool of Radiance's world or its shops, so a mastery in
+one could never be used.
 Rules 0.6.156 restores the Guidance cantrip for Clerics and Druids
 ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)): 1d4 on
 Athletics checks to escape and Medicine checks to stabilize, offered once per

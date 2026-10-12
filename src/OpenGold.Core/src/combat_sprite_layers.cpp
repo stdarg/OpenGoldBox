@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <map>
 #include <stdexcept>
 
 namespace opengold::por
@@ -25,7 +26,7 @@ bool limb(unsigned color)
 
 unsigned bank(const CharacterAppearance &a, bool action)
 {
-    return (a.tall ? 64u : 0u) + (action ? 128u : 0u);
+    return (uses_tall_art(a.icon_size) ? 64u : 0u) + (action ? 128u : 0u);
 }
 
 const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
@@ -94,7 +95,8 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose 
     const auto offset = bank(a, action);
     const auto &original = body_at(*this, offset + a.combat_body);
     IndexedIcon result{24, 24, std::vector<std::uint8_t>(576)};
-    const int top = a.tall ? 8 : 10;
+    const bool tall = uses_tall_art(a.icon_size);
+    const int top = tall ? 8 : 10;
     const int waist = top + (robe(a.combat_body) ? 6 : 8);
     for (int y = 0; y < 24; ++y)
         for (int x = 0; x < 24; ++x)
@@ -103,7 +105,7 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose 
             const auto color = original.pixels[p];
             if (garment(color))
                 result.pixels[p] = color;
-            else if (color == 8 && !gray_equipment(a.combat_body, action, a.tall, x, y) &&
+            else if (color == 8 && !gray_equipment(a.combat_body, action, tall, x, y) &&
                      ((y >= top && x >= 8 && x <= 14) || y >= waist))
                 result.pixels[p] = color;
             // Restore only anatomy hidden by the original wielding arm/equipment.
@@ -111,7 +113,7 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose 
             // family. Visible saved garment pixels always take precedence.
             const bool torso = y >= top && y < waist && x >= 8 && x <= 14;
             const bool covered_leg =
-                y >= waist && equipment(color, a.combat_body, action, a.tall, x, y);
+                y >= waist && equipment(color, a.combat_body, action, tall, x, y);
             if (!result.pixels[p] && (torso || covered_leg))
             {
                 std::array<unsigned, 16> count{};
@@ -119,7 +121,7 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose 
                     if (robe(id) == robe(a.combat_body))
                     {
                         const auto c = body_at(*this, offset + id).pixels[p];
-                        if (garment(c) || (c == 8 && !gray_equipment(id, action, a.tall, x, y)))
+                        if (garment(c) || (c == 8 && !gray_equipment(id, action, tall, x, y)))
                             ++count[c];
                     }
                 const auto chosen = std::max_element(count.begin(), count.end());
@@ -137,18 +139,43 @@ Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipme
     auto composed = combat_anatomy(a, pose);
     const auto offset = bank(a, action);
     const auto &wielding = body_at(*this, offset + equipment_body);
-    const int top = a.tall ? 8 : 10, waist = top + (robe(equipment_body) ? 6 : 8);
+    const bool tall = uses_tall_art(a.icon_size);
+    const int top = tall ? 8 : 10, waist = top + (robe(equipment_body) ? 6 : 8);
     for (int y = 0; y < 24; ++y)
         for (int x = 0; x < 24; ++x)
         {
             const auto p = y * 24 + x;
             const auto color = wielding.pixels[p];
             const bool arm_outline = color == 8 && y < waist && (x < 8 || x > 14) &&
-                                     !gray_equipment(equipment_body, action, a.tall, x, y);
+                                     !gray_equipment(equipment_body, action, tall, x, y);
             if (limb(color) || arm_outline ||
-                    equipment(color, equipment_body, action, a.tall, x, y))
+                    equipment(color, equipment_body, action, tall, x, y))
                 composed.pixels[p] = color;
         }
     return compose_character_icon(combat_heads_.at(offset + a.combat_head), composed, a);
+}
+
+std::vector<std::vector<unsigned>> CharacterArt::combat_body_groups() const
+{
+    std::map<std::vector<std::uint8_t>, std::size_t> group_of_look;
+    std::vector<std::vector<unsigned>> groups;
+    for (unsigned body = 0; body < 35; ++body)
+    {
+        std::vector<std::uint8_t> look;
+        for (const auto size : {IconSize::regular, IconSize::small})
+            for (const auto pose : {IconPose::ready, IconPose::action})
+            {
+                CharacterAppearance appearance;
+                appearance.combat_body = body;
+                appearance.icon_size = size;
+                const auto pixels = combat_anatomy(appearance, pose).pixels;
+                look.insert(look.end(), pixels.begin(), pixels.end());
+            }
+        const auto [found, added] = group_of_look.try_emplace(std::move(look), groups.size());
+        if (added)
+            groups.emplace_back();
+        groups[found->second].push_back(body);
+    }
+    return groups;
 }
 } // namespace opengold::por

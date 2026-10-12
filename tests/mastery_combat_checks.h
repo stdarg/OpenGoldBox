@@ -157,7 +157,9 @@ void weapon_matrix()
         auto r = rules(immune);
         for (const auto &weapon : fx::weapons)
         {
-            if (weapon.mastery != fx::Mastery::sap && weapon.mastery != fx::Mastery::vex)
+            // Firearms cannot be mastered.
+            if ((weapon.mastery != fx::Mastery::sap && weapon.mastery != fx::Mastery::vex) ||
+                    weapon.key == "pistol")
                 continue;
             for (bool ranged :
                     {

@@ -46,6 +46,9 @@ void matrix()
     for (const auto &weapon : fx::weapons)
     {
         const auto kind = weapon.mastery;
+        // Firearms cannot be mastered.
+        if (weapon.key == "musket" || weapon.key == "pistol")
+            continue;
         if (kind != fx::Mastery::slow && kind != fx::Mastery::topple &&
                 kind != fx::Mastery::cleave && kind != fx::Mastery::push)
             continue;

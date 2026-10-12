@@ -42,6 +42,8 @@ class CharacterCreationView : public godot::Control
     std::unique_ptr<opengold::CharacterCreator> creator_;
     std::optional<opengold::Character> completed_;
     std::optional<opengold::por::CharacterArt> art_;
+    // The combat bodies that look alike without weapons and shields, grouped.
+    std::vector<std::vector<unsigned>> body_groups_;
     std::optional<opengold::por::CombatBodyCatalog> body_catalog_;
     std::optional<opengold::por::CharacterAppearance> rendered_;
     std::array<godot::Ref<godot::ImageTexture>, 3> images_;
@@ -57,6 +59,8 @@ class CharacterCreationView : public godot::Control
     void refresh();
     void refresh_art();
     void recommend_portrait();
+    // Short for Gnomes, Large for Goliaths, Regular for everyone else.
+    void recommend_icon_size();
     // Shows a random portrait of the draft's race; `again` picks a new one
     // even when the race is unchanged.
     void show_race_portrait(bool again);
@@ -91,7 +95,9 @@ class CharacterCreationView : public godot::Control
     void portrait_part(int direction);
     void portrait_selected(std::int64_t index);
     void combat_part(int part, int direction);
-    void toggle_size();
+    void size_selected(std::int64_t index);
+    // Which of body_groups_ holds the body.
+    [[nodiscard]] std::size_t combat_body_group(unsigned body) const;
     void color_selected(int bank, int part);
     void palette_selected(int index);
     void check_run();

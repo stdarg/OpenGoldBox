@@ -308,71 +308,61 @@ metadata/layout_reference = Rect2(1262, 176, 200, 36)
 
 [node name="CombatHeadPrevious" type="Button" parent="."]
 offset_left = 288
-offset_right = 398
+offset_right = 376
 offset_top = 150
 offset_bottom = 186
-metadata/layout_reference = Rect2(288, 150, 110, 36)
+metadata/layout_reference = Rect2(288, 150, 88, 36)
 text = "< Head"
 
 [node name="CombatHeadNext" type="Button" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -154
-offset_right = -44
+offset_left = 444
+offset_right = 532
 offset_top = 150
 offset_bottom = 186
-metadata/layout_reference = Rect2(1766, 150, 110, 36)
+metadata/layout_reference = Rect2(444, 150, 88, 36)
 text = "Head >"
-
 [node name="CombatHeadLabel" type="Label" parent="."]
-anchor_right = 1
-offset_left = 412
-offset_right = -170
+horizontal_alignment = 1
+offset_left = 382
+offset_right = 438
 offset_top = 154
 offset_bottom = 184
-metadata/layout_reference = Rect2(412, 154, 1338, 30)
+metadata/layout_reference = Rect2(382, 154, 56, 30)
+[node name="BodyPrevious" type="Button" parent="."]
+offset_left = 556
+offset_right = 644
+offset_top = 150
+offset_bottom = 186
+metadata/layout_reference = Rect2(556, 150, 88, 36)
+text = "< Body"
 
-[node name="WeaponPrevious" type="Button" parent="."]
-offset_left = 288
-offset_right = 398
-offset_top = 198
-offset_bottom = 234
-metadata/layout_reference = Rect2(288, 198, 110, 36)
-text = "< Weapon"
-
-[node name="WeaponNext" type="Button" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -154
-offset_right = -44
-offset_top = 198
-offset_bottom = 234
-metadata/layout_reference = Rect2(1766, 198, 110, 36)
-text = "Weapon >"
-
-[node name="WeaponLabel" type="Label" parent="."]
-anchor_right = 1
-offset_left = 412
-offset_right = -170
-offset_top = 202
-offset_bottom = 232
-metadata/layout_reference = Rect2(412, 202, 1338, 30)
-
-[node name="Size" type="Button" parent="."]
-offset_left = 288
-offset_right = 438
-offset_top = 246
-offset_bottom = 280
-metadata/layout_reference = Rect2(288, 246, 150, 34)
-text = "Size: Tall"
-
+[node name="BodyNext" type="Button" parent="."]
+offset_left = 712
+offset_right = 800
+offset_top = 150
+offset_bottom = 186
+metadata/layout_reference = Rect2(712, 150, 88, 36)
+text = "Body >"
+[node name="BodyLabel" type="Label" parent="."]
+horizontal_alignment = 1
+offset_left = 650
+offset_right = 706
+offset_top = 154
+offset_bottom = 184
+metadata/layout_reference = Rect2(650, 154, 56, 30)
+[node name="Size" type="OptionButton" parent="."]
+offset_left = 824
+offset_right = 994
+offset_top = 150
+offset_bottom = 186
+metadata/layout_reference = Rect2(824, 150, 170, 36)
 [node name="ColorTitle" type="Label" parent="."]
 anchor_right = 1
 offset_left = 288
 offset_right = -44
-offset_top = 288
-offset_bottom = 314
-metadata/layout_reference = Rect2(288, 288, 1588, 26)
+offset_top = 204
+offset_bottom = 230
+metadata/layout_reference = Rect2(288, 204, 1588, 26)
 text = "Part"
 
 [node name="PaletteHint" type="Label" parent="."]
@@ -437,9 +427,9 @@ anchor_right = 0.5
 anchor_bottom = 1
 offset_left = -256
 offset_right = -176
-offset_top = 535
+offset_top = 451
 offset_bottom = -190
-metadata/layout_reference = Rect2(704, 535, 80, 355)
+metadata/layout_reference = Rect2(704, 451, 80, 439)
 
 [node name="ActionLabel" type="Label" parent="."]
 vertical_alignment = 1
@@ -450,9 +440,9 @@ anchor_right = 0.5
 anchor_bottom = 1
 offset_left = 132
 offset_right = 212
-offset_top = 535
+offset_top = 451
 offset_bottom = -190
-metadata/layout_reference = Rect2(1092, 535, 80, 355)
+metadata/layout_reference = Rect2(1092, 451, 80, 439)
 
 [node name="Footer" type="Label" parent="."]
 anchor_right = 1
@@ -643,9 +633,9 @@ theme_type_variation = &"ScoreNormal"
 [node name="Part0" type="Label" parent="."]
 offset_left = 288
 offset_right = 393
-offset_top = 324
-offset_bottom = 352
-metadata/layout_reference = Rect2(288, 324, 105, 28)
+offset_top = 240
+offset_bottom = 268
+metadata/layout_reference = Rect2(288, 240, 105, 28)
 text = "Weapon"
 
 [node name="Color0_0" type="Button" parent="."]
@@ -653,9 +643,9 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 318
-offset_bottom = 348
-metadata/layout_reference = Rect2(398, 318, 731, 30)
+offset_top = 234
+offset_bottom = 264
+metadata/layout_reference = Rect2(398, 234, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_0" type="Button" parent="."]
@@ -664,17 +654,17 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 318
-offset_bottom = 348
-metadata/layout_reference = Rect2(1137, 318, 731, 30)
+offset_top = 234
+offset_bottom = 264
+metadata/layout_reference = Rect2(1137, 234, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part1" type="Label" parent="."]
 offset_left = 288
 offset_right = 393
-offset_top = 359
-offset_bottom = 387
-metadata/layout_reference = Rect2(288, 359, 105, 28)
+offset_top = 275
+offset_bottom = 303
+metadata/layout_reference = Rect2(288, 275, 105, 28)
 text = "Body"
 
 [node name="Color0_1" type="Button" parent="."]
@@ -682,9 +672,9 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 353
-offset_bottom = 383
-metadata/layout_reference = Rect2(398, 353, 731, 30)
+offset_top = 269
+offset_bottom = 299
+metadata/layout_reference = Rect2(398, 269, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_1" type="Button" parent="."]
@@ -693,17 +683,17 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 353
-offset_bottom = 383
-metadata/layout_reference = Rect2(1137, 353, 731, 30)
+offset_top = 269
+offset_bottom = 299
+metadata/layout_reference = Rect2(1137, 269, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part2" type="Label" parent="."]
 offset_left = 288
 offset_right = 393
-offset_top = 394
-offset_bottom = 422
-metadata/layout_reference = Rect2(288, 394, 105, 28)
+offset_top = 310
+offset_bottom = 338
+metadata/layout_reference = Rect2(288, 310, 105, 28)
 text = "Hair / Face"
 
 [node name="Color0_2" type="Button" parent="."]
@@ -711,9 +701,9 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 388
-offset_bottom = 418
-metadata/layout_reference = Rect2(398, 388, 731, 30)
+offset_top = 304
+offset_bottom = 334
+metadata/layout_reference = Rect2(398, 304, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_2" type="Button" parent="."]
@@ -722,17 +712,17 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 388
-offset_bottom = 418
-metadata/layout_reference = Rect2(1137, 388, 731, 30)
+offset_top = 304
+offset_bottom = 334
+metadata/layout_reference = Rect2(1137, 304, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part3" type="Label" parent="."]
 offset_left = 288
 offset_right = 393
-offset_top = 429
-offset_bottom = 457
-metadata/layout_reference = Rect2(288, 429, 105, 28)
+offset_top = 345
+offset_bottom = 373
+metadata/layout_reference = Rect2(288, 345, 105, 28)
 text = "Shield"
 
 [node name="Color0_3" type="Button" parent="."]
@@ -740,9 +730,9 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 423
-offset_bottom = 453
-metadata/layout_reference = Rect2(398, 423, 731, 30)
+offset_top = 339
+offset_bottom = 369
+metadata/layout_reference = Rect2(398, 339, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_3" type="Button" parent="."]
@@ -751,17 +741,17 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 423
-offset_bottom = 453
-metadata/layout_reference = Rect2(1137, 423, 731, 30)
+offset_top = 339
+offset_bottom = 369
+metadata/layout_reference = Rect2(1137, 339, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part4" type="Label" parent="."]
 offset_left = 288
 offset_right = 393
-offset_top = 464
-offset_bottom = 492
-metadata/layout_reference = Rect2(288, 464, 105, 28)
+offset_top = 380
+offset_bottom = 408
+metadata/layout_reference = Rect2(288, 380, 105, 28)
 text = "Arms"
 
 [node name="Color0_4" type="Button" parent="."]
@@ -769,9 +759,9 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 458
-offset_bottom = 488
-metadata/layout_reference = Rect2(398, 458, 731, 30)
+offset_top = 374
+offset_bottom = 404
+metadata/layout_reference = Rect2(398, 374, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_4" type="Button" parent="."]
@@ -780,17 +770,17 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 458
-offset_bottom = 488
-metadata/layout_reference = Rect2(1137, 458, 731, 30)
+offset_top = 374
+offset_bottom = 404
+metadata/layout_reference = Rect2(1137, 374, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part5" type="Label" parent="."]
 offset_left = 288
 offset_right = 393
-offset_top = 499
-offset_bottom = 527
-metadata/layout_reference = Rect2(288, 499, 105, 28)
+offset_top = 415
+offset_bottom = 443
+metadata/layout_reference = Rect2(288, 415, 105, 28)
 text = "Legs"
 
 [node name="Color0_5" type="Button" parent="."]
@@ -798,9 +788,9 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 493
-offset_bottom = 523
-metadata/layout_reference = Rect2(398, 493, 731, 30)
+offset_top = 409
+offset_bottom = 439
+metadata/layout_reference = Rect2(398, 409, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_5" type="Button" parent="."]
@@ -809,9 +799,9 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 493
-offset_bottom = 523
-metadata/layout_reference = Rect2(1137, 493, 731, 30)
+offset_top = 409
+offset_bottom = 439
+metadata/layout_reference = Rect2(1137, 409, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Palette0" type="Button" parent="."]
@@ -1055,9 +1045,9 @@ horizontal_alignment = 0
 anchor_right = 0.5
 offset_left = 398
 offset_right = 169
-offset_top = 288
-offset_bottom = 314
-metadata/layout_reference = Rect2(398, 288, 731, 26)
+offset_top = 204
+offset_bottom = 230
+metadata/layout_reference = Rect2(398, 204, 731, 26)
 text = "Color-1"
 horizontal_alignment = 1
 
@@ -1066,9 +1056,9 @@ anchor_left = 0.5
 anchor_right = 1
 offset_left = 177
 offset_right = -52
-offset_top = 288
-offset_bottom = 314
-metadata/layout_reference = Rect2(1137, 288, 731, 26)
+offset_top = 204
+offset_bottom = 230
+metadata/layout_reference = Rect2(1137, 204, 731, 26)
 text = "Color-2"
 horizontal_alignment = 1
 
@@ -1850,9 +1840,9 @@ anchor_right = 0.5
 anchor_bottom = 1
 offset_left = -176
 offset_right = 112
-offset_top = 535
+offset_top = 451
 offset_bottom = -190
-metadata/layout_reference = Rect2(784, 535, 288, 355)
+metadata/layout_reference = Rect2(784, 451, 288, 439)
 
 [node name="ActionBounds" type="Control" parent="."]
 visible = false
@@ -1862,18 +1852,30 @@ anchor_right = 0.5
 anchor_bottom = 1
 offset_left = 212
 offset_right = 500
-offset_top = 535
+offset_top = 451
 offset_bottom = -190
-metadata/layout_reference = Rect2(1172, 535, 288, 355)
+metadata/layout_reference = Rect2(1172, 451, 288, 439)
+
+[node name="TrainingFixedTitle" type="Label" parent="."]
+anchor_right = 1.0
+offset_left = 288
+offset_top = 108
+offset_right = -44
+offset_bottom = 164
+metadata/layout_reference = Rect2(288, 108, 1588, 56)
+visible = false
+theme_type_variation = &"TrainingTitle"
+vertical_alignment = 2
+auto_translate_mode = 2
 
 [node name="TrainingFixed" type="RichTextLabel" parent="."]
 script = ExtResource("98_rich_text")
 anchor_right = 1.0
 offset_left = 288
-offset_top = 140
+offset_top = 168
 offset_right = -44
 offset_bottom = 266
-metadata/layout_reference = Rect2(288, 140, 1588, 126)
+metadata/layout_reference = Rect2(288, 168, 1588, 98)
 visible = false
 theme_type_variation = &"TrainingFixed"
 bbcode_enabled = true

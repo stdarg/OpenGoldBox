@@ -191,9 +191,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     auto *rows = &required_node<VBoxContainer>(parent, "Training/Rows");
     auto fixed = creator.draft();
     fixed.training.clear();
+    required_node<Label>(parent, "TrainingFixedTitle").set_text(tr(N_("Fixed training")));
     required_node<RichTextLabel>(parent, "TrainingFixed")
-    .call("render", "[theme_emphasis]" + tr(N_("Fixed training")) + "[/theme_emphasis]\n" +
-               training_summary(
+    .call("render", training_summary(
                    creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
                    tr, true));
     const auto groups = creator.training_options();

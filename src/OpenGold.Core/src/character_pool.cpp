@@ -175,7 +175,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             appearance.portrait_body = bodies[(c * 3 + variant) % bodies.size()];
             appearance.combat_head = (c + variant * 3) % 14;
             appearance.combat_body = (c * 2 + variant * 5) % 32;
-            appearance.tall = d.race != "gnome";
+            appearance.icon_size = d.race == "gnome"     ? por::IconSize::small
+                                   : d.race == "goliath" ? por::IconSize::large
+                                   : por::IconSize::regular;
             const auto portrait = art.portrait(appearance);
             const auto cloth = dominant(portrait, 40, portrait.height),
                        trim = dominant(portrait, 40, portrait.height, 1),

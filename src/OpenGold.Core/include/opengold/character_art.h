@@ -3,22 +3,40 @@
 
 #include "opengold/formats.h"
 #include <array>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace opengold::por
 {
 // Art references and palette choices belong to presentation, independently of
 // the selected rules edition. Head IDs 0..255 address original archives;
 // additional heads have stable IDs above that range.
+// A combat icon's size: the original game's short and tall art, and a large
+// figure, drawn from the tall art, for Goliaths. The player sees Short,
+// Regular and Large.
+enum class IconSize : std::uint8_t
+{
+    small,
+    regular,
+    large
+};
+
+// Short figures use the original short art; the others its tall art.
+[[nodiscard]] constexpr bool uses_tall_art(IconSize size) noexcept
+{
+    return size != IconSize::small;
+}
+
 struct CharacterAppearance
 {
     unsigned portrait_head{1}, portrait_body{1};
     unsigned combat_head{}, combat_body{};
-    bool tall{true};
+    IconSize icon_size{IconSize::regular};
     // Weapon, body, hair/face, shield, arms, legs; Color-1 then Color-2.
     std::array<std::array<unsigned, 6>, 2> colors{{{7, 1, 6, 6, 1, 6}, {15, 9, 12, 14, 9, 14}}};
     std::string portrait; // Complete portrait basename; empty in legacy saves.
@@ -121,6 +139,10 @@ class CharacterArt
     [[nodiscard]] IndexedIcon combat_anatomy(const CharacterAppearance &, IconPose pose) const;
     [[nodiscard]] Image equipped_icon(const CharacterAppearance &, unsigned equipment_body,
                                       IconPose pose) const;
+    // The 35 combat bodies grouped by how they look, in both poses and both
+    // art sizes, once weapons and shields are stripped. Groups keep body IDs
+    // ascending and are ordered by their first ID.
+    [[nodiscard]] std::vector<std::vector<unsigned>> combat_body_groups() const;
     [[nodiscard]] CharacterColorUsage color_usage(const CharacterAppearance &) const;
     void validate(const CharacterAppearance &) const;
 

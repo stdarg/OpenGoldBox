@@ -901,7 +901,7 @@ void art_tests()
                     false, true
                 })
         {
-            a.tall = tall;
+            a.icon_size = tall ? IconSize::regular : IconSize::small;
             a.combat_body = 0;
             auto usage = art.color_usage(a);
             for (unsigned bank = 0; bank < 2; ++bank)
@@ -980,7 +980,7 @@ void art_tests()
             for (unsigned h = 0; h < 14; ++h)
                 for (unsigned b = 0; b < 35; ++b)
                 {
-                    a.tall = tall;
+                    a.icon_size = tall ? IconSize::regular : IconSize::small;
                     a.combat_head = h;
                     a.combat_body = b;
                     check(art.icon(a, IconPose::ready).rgba.size() == 576 * 4 &&

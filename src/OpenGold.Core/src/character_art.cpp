@@ -228,7 +228,8 @@ void validate_character_appearance(const CharacterAppearance &a)
 {
     return h.id == a.portrait_head;
 })) ||
-a.portrait_body > 255 || a.combat_head >= 14 || a.combat_body >= 35)
+a.portrait_body > 255 || a.combat_head >= 14 || a.combat_body >= 35 ||
+a.icon_size > IconSize::large)
     throw std::runtime_error("Invalid appearance reference");
     if (!a.portrait.empty() &&
             (a.portrait.size() > 160 || !a.portrait.ends_with(".png") ||
@@ -468,7 +469,7 @@ Image CharacterArt::portrait(const CharacterAppearance &a) const
 Image CharacterArt::icon(const CharacterAppearance &a, IconPose pose) const
 {
     validate_character_appearance(a);
-    const unsigned bank = (a.tall ? 64u : 0u) + (pose == IconPose::action ? 128u : 0u);
+    const unsigned bank = (uses_tall_art(a.icon_size) ? 64u : 0u) + (pose == IconPose::action ? 128u : 0u);
     return compose_character_icon(combat_heads_.at(bank + a.combat_head),
                                   combat_bodies_.at(bank + a.combat_body), a);
 }
@@ -482,7 +483,7 @@ CharacterColorUsage CharacterArt::color_usage(const CharacterAppearance &a) cons
                 false, true
             })
     {
-        const unsigned bank = (a.tall ? 64u : 0u) + (action ? 128u : 0u);
+        const unsigned bank = (uses_tall_art(a.icon_size) ? 64u : 0u) + (action ? 128u : 0u);
         const auto pixels = composed_pixels(combat_heads_.at(bank + a.combat_head),
                                             combat_bodies_.at(bank + a.combat_body));
         auto &counts = action ? usage.action : usage.ready;

@@ -388,7 +388,8 @@ selected in the [combat sprite demo](SPRITE-DEMO.md).
   Panning and zooming preserve this ordering. Dead/unconscious figures retain the
   same rendering order and existing tint treatment.
 
-The game identifies Goliaths using the character's stable `goliath` species ID.
+The game draws a character this way when its combat icon size is **Large**, the
+size character creation gives Goliaths.
 The game battlefield fits sprites in `combat_battlefield.gd`; the demo preview uses
 `combat_sprite_canvas.gd`. Godot checks verify size, padding, anchoring, and zoom;
 the native draw-order check verifies row order. Party

@@ -230,7 +230,7 @@ void composition_tests(const CharacterArt &art)
                             false, true
                         })
                 {
-                    appearance.tall = tall;
+                    appearance.icon_size = tall ? IconSize::regular : IconSize::small;
                     appearance.combat_head = head;
                     appearance.combat_body = body;
                     const auto icon = art.icon(appearance, pose_of(action));
@@ -245,7 +245,7 @@ void composition_tests(const CharacterArt &art)
             })
     {
         appearance = {};
-        appearance.tall = tall;
+        appearance.icon_size = tall ? IconSize::regular : IconSize::small;
         const auto usage = art.color_usage(appearance);
         for (bool action :
                 {
@@ -433,7 +433,7 @@ int main()
                     })
             {
                 CharacterAppearance a;
-                a.tall = tall;
+                a.icon_size = tall ? IconSize::regular : IconSize::small;
                 a.combat_body = 24;
                 const auto before = art.icon(a, pose_of(action));
                 const auto axe = art.equipped_icon(a, 6, pose_of(action)),

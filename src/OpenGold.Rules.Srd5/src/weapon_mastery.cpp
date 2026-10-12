@@ -32,10 +32,13 @@ std::string source(CharacterClass klass, unsigned acquired)
            (acquired == 1 ? "" : ":" + std::to_string(acquired));
 }
 
+// Firearms never appear in Pool of Radiance's world or its shops, so no one
+// trains with them.
 bool eligible(CharacterClass klass, const Weapon &item)
 {
     return count(klass, 1) && item.mastery != Mastery::none && weapon_proficient(klass, item) &&
-           (klass != CharacterClass::barbarian || !item.ranged);
+           (klass != CharacterClass::barbarian || !item.ranged) &&
+           item.ammunition != Ammunition::firearm_bullet;
 }
 } // namespace
 

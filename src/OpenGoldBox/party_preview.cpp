@@ -354,7 +354,7 @@ void CharacterCreationView::equipment_art_check()
             draft.name = member ? "Equipment check NPC" : "Equipment check PC";
             auto a = guard.appearance();
             a.combat_body = 24;
-            a.tall = member == 0;
+            a.icon_size = member == 0 ? por::IconSize::regular : por::IconSize::small;
             a.portrait = portraits_->recommended(draft);
             Character character(*srd5::character_rules(), draft, a);
             const auto id = member

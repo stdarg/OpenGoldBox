@@ -817,15 +817,16 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
     }
     for (const auto &source : campaign_art)
     {
-        bool goliath = false;
+        // A Large figure (a Goliath's) gets the Goliath treatment.
+        bool large = false;
         if (campaign_)
             for (const auto &member : campaign_->state().roster)
                 if (member.id == source.entity)
                 {
-                    goliath = member.character.creation_data().race == "goliath";
+                    large = member.character.appearance().icon_size == por::IconSize::large;
                     break;
                 }
-        install(source, goliath);
+        install(source, large);
     }
     // Wild Shape's Beast forms use the original combat icons the art research
     // matched to those monsters (docs/monster-art-mapping.md); the action pose

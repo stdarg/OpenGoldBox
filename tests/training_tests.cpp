@@ -982,6 +982,24 @@ void remaining_backgrounds()
           "Level-four ability improvements recompute fixed skill modifiers");
 }
 
+// Firearms never appear in Pool of Radiance, so no class may master one.
+void no_firearm_mastery()
+{
+    for (const auto *klass : {"barbarian", "fighter", "paladin", "ranger", "rogue"})
+    {
+        auto d = draft(klass, "soldier");
+        for (const auto &group : srd5::character_rules()->training_options(d))
+        {
+            if (!group.id.ends_with(":weapon_mastery"))
+                continue;
+            check(!group.options.empty(), "Mastery classes still choose weapons");
+            for (const auto &option : group.options)
+                check(option.id != "musket" && option.id != "pistol",
+                      "No class is offered Musket or Pistol mastery");
+        }
+    }
+}
+
 void starting_styles()
 {
     auto rules = module();
@@ -1190,6 +1208,7 @@ int main(int argc, char **argv)
         run(sage_training, "sage_training");
         run(remaining_backgrounds, "remaining_backgrounds");
         run(starting_styles, "starting_styles");
+        run(no_firearm_mastery, "no_firearm_mastery");
         run(creation_controls, "creation_controls");
         run(preset_training, "preset_training");
         run(pool_starting_gear, "pool_starting_gear");

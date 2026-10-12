@@ -430,7 +430,7 @@ void party_combat_appearance()
     appearance.colors[0][0] = 3;
     appearance.portrait = "human-male-fighter-01.png";
     pc.appearance(appearance);
-    appearance.tall = false;
+    appearance.icon_size = por::IconSize::small;
     npc.appearance(appearance);
     const auto pc_id = party.add_pc(pc), npc_id = party.recruit("test:guard", npc);
     for (const auto id :

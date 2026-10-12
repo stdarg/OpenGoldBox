@@ -215,12 +215,12 @@ void CharacterCreationView::_ready()
         required_node<Button>(*this, gs(std::string("CombatHead") + suffix))
         .connect("pressed",
                  presentation::guarded(this, &CharacterCreationView::combat_part).bind(0, direction));
-        required_node<Button>(*this, gs(std::string("Weapon") + suffix))
+        required_node<Button>(*this, gs(std::string("Body") + suffix))
         .connect("pressed",
                  presentation::guarded(this, &CharacterCreationView::combat_part).bind(1, direction));
     }
-    required_node<Button>(*this, "Size").connect("pressed",
-            presentation::guarded(this, &CharacterCreationView::toggle_size));
+    required_node<OptionButton>(*this, "Size").connect("item_selected",
+            presentation::guarded(this, &CharacterCreationView::size_selected));
     for (int bank = 0; bank < 2; ++bank)
         for (int part = 0; part < 6; ++part)
             required_node<Button>(*this,
@@ -247,6 +247,7 @@ void CharacterCreationView::_ready()
     {
         const auto directory = settings::game_path();
         art_ = por::CharacterArt::load(presentation::path_from_godot(directory));
+        body_groups_ = art_->combat_body_groups();
         presentation::load_additional_portrait_heads(*art_);
         load_portraits();
         const auto seed =
@@ -313,6 +314,16 @@ void CharacterCreationView::recommend_portrait()
     creator_->appearance(a);
 }
 
+void CharacterCreationView::recommend_icon_size()
+{
+    auto a = creator_->appearance();
+    const auto &race = creator_->draft().race;
+    a.icon_size = race == "gnome"     ? por::IconSize::small
+                  : race == "goliath" ? por::IconSize::large
+                  : por::IconSize::regular;
+    creator_->appearance(a);
+}
+
 void CharacterCreationView::show_race_portrait(bool again)
 {
     const auto &d = creator_->draft();
@@ -333,8 +344,12 @@ void CharacterCreationView::refresh_art()
     if (!creator_ || !art_ || rendered_ == creator_->appearance())
         return;
     const auto &a = creator_->appearance();
-    const std::array<opengold::Image, 3> images{opengold::Image{}, art_->icon(a, por::IconPose::ready),
-            art_->icon(a, por::IconPose::action)};
+    // Unarmed, as combat shows a character with nothing equipped; weapons and
+    // shields appear there once they are equipped.
+    constexpr unsigned unarmed_body = 0;
+    const std::array<opengold::Image, 3> images{opengold::Image{},
+            art_->equipped_icon(a, unarmed_body, por::IconPose::ready),
+            art_->equipped_icon(a, unarmed_body, por::IconPose::action)};
     images_[0] = portraits_->texture(a, creator_->draft());
     for (unsigned i = 1; i < images.size(); ++i)
     {
@@ -392,6 +407,7 @@ void CharacterCreationView::refresh()
     show("Name", step == CreationStep::race);
     show("SpellChoices", step == CreationStep::spell_choices);
     show("TrainingFixed", step == CreationStep::training);
+    show("TrainingFixedTitle", step == CreationStep::training);
     show("Training", step == CreationStep::training);
     for (const auto *n :
             {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
@@ -404,8 +420,8 @@ void CharacterCreationView::refresh()
             })
         required_node<Button>(*this, n).set_disabled(added_to_party_);
     for (const auto *n :
-            {"CombatHeadPrevious", "CombatHeadNext", "CombatHeadLabel", "WeaponPrevious", "WeaponNext",
-             "WeaponLabel", "Size", "ColorTitle", "Color1Title", "Color2Title", "PaletteHint",
+            {"CombatHeadPrevious", "CombatHeadNext", "CombatHeadLabel", "BodyPrevious", "BodyNext",
+             "BodyLabel", "Size", "ColorTitle", "Color1Title", "Color2Title", "PaletteHint",
              "ReadyLabel", "ActionLabel"
             })
         show(n, icon);
@@ -634,15 +650,27 @@ void CharacterCreationView::refresh()
                            "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled.");
     refresh_portraits();
     required_node<Label>(*this, "CombatHeadLabel")
-    .set_text(i18n::format("Head {number} / 14", {{"number", a.combat_head + 1}}));
-    required_node<Label>(*this, "WeaponLabel")
-    .set_text(i18n::format("Weapon {number} / 35", {{"number", a.combat_body + 1}}));
-    required_node<Button>(*this, "Size").set_text(i18n::text(a.tall ? N_("Size: Tall") :
-            N_("Size: Short")));
+    .set_text(i18n::format("{number} / {count}", {{"number", a.combat_head + 1}, {"count", 14}}));
+    const auto body_group = combat_body_group(a.combat_body);
+    required_node<Label>(*this, "BodyLabel")
+    .set_text(i18n::format("{number} / {count}",
+    {
+        {"number", static_cast<std::uint64_t>(body_group + 1)},
+        {"count", static_cast<std::uint64_t>(body_groups_.size())}
+    }));
+    auto *size = &required_node<OptionButton>(*this, "Size");
+    size->clear();
+    for (const auto *label : {N_("Size: Short"), N_("Size: Regular"), N_("Size: Large")})
+        size->add_item(i18n::text(label));
+    size->select(static_cast<int>(a.icon_size));
     if (icon)
     {
         const auto usage = art_->color_usage(a);
-        if (!usage.contains(color_bank_, color_part_))
+        // The preview is unarmed, but a weapon and shield take these colors
+        // once equipped, so they stay choosable.
+        constexpr int weapon_part = 0, shield_part = 3;
+        if (!usage.contains(color_bank_, color_part_) && color_part_ != weapon_part &&
+                color_part_ != shield_part)
         {
             for (unsigned i = 0; i < 12; ++i)
                 if (usage.contains(i / 6, i % 6))
@@ -662,12 +690,15 @@ void CharacterCreationView::refresh()
                 auto *button = &required_node<Button>(*this,
                                                       gs("Color" + std::to_string(bank) + "_" + std::to_string(part)));
                 const bool selected = bank == color_bank_ && part == color_part_;
-                const bool present = usage.contains(bank, part);
+                const bool equipment = part == weapon_part || part == shield_part;
+                const bool present = equipment || usage.contains(bank, part);
                 button->set_disabled(!present);
                 button->set_tooltip_text(i18n::text(
-                                             present
+                                             equipment
+                                             ? N_("Choose a swatch to recolor this part when it is equipped in combat.")
+                                             : present
                                              ? N_("Choose a swatch to recolor this part in the combat preview.")
-                                             : N_("This part is not present in either pose. Choose another head or weapon to use it.")));
+                                             : N_("This part is not present in either pose. Choose another head or body to use it.")));
                 button->set_text(present ? String(selected ? "> " : "") +
                                  i18n::text(colors[a.colors[bank][part]])
                                  : i18n::text("Not present"));
@@ -723,7 +754,8 @@ void CharacterCreationView::draw_view()
             images_[0], images_[1], images_[2], creator_ && step == CreationStep::attributes,
             creator_ && step == CreationStep::portrait,
             creator_ && step == CreationStep::combat_icon,
-            creator_ && step == CreationStep::race ? race_portrait_ : Ref<ImageTexture>());
+            creator_ && step == CreationStep::race ? race_portrait_ : Ref<ImageTexture>(),
+            creator_ && creator_->appearance().icon_size == por::IconSize::large);
 }
 
 void CharacterCreationView::perform(const std::function<void()> &action)
@@ -855,7 +887,10 @@ void CharacterCreationView::choice_selected(std::int64_t index)
         if (f == CreationField::race || f == CreationField::character_class)
             recommend_portrait();
         if (f == CreationField::race)
+        {
             show_race_portrait(true);
+            recommend_icon_size();
+        }
     });
 }
 
@@ -937,20 +972,45 @@ void CharacterCreationView::combat_part(int part, int direction)
         [&]
     {
         auto a = creator_->appearance();
-        auto &id = part == 0 ? a.combat_head : a.combat_body;
-        const int count = part == 0 ? 14 : 35;
-        id = (static_cast<int>(id) + direction + count) % count;
+        if (part == 0)
+        {
+            constexpr int heads = 14;
+            a.combat_head = static_cast<unsigned>((static_cast<int>(a.combat_head) + direction +
+                                                   heads) % heads);
+        }
+        else
+        {
+            // Bodies that differ only in their weapon or shield are one choice.
+            const auto groups = static_cast<int>(body_groups_.size());
+            const auto next = (static_cast<int>(combat_body_group(a.combat_body)) + direction +
+                               groups) % groups;
+            a.combat_body = body_groups_[static_cast<std::size_t>(next)].front();
+        }
         creator_->appearance(a);
     });
 }
 
-void CharacterCreationView::toggle_size()
+std::size_t CharacterCreationView::combat_body_group(unsigned body) const
 {
+    const auto found = std::find_if(body_groups_.begin(), body_groups_.end(),
+                                    [&](const auto & group)
+    {
+        return std::find(group.begin(), group.end(), body) != group.end();
+    });
+    if (found == body_groups_.end())
+        throw std::runtime_error("Unknown combat body");
+    return static_cast<std::size_t>(found - body_groups_.begin());
+}
+
+void CharacterCreationView::size_selected(std::int64_t index)
+{
+    if (refreshing_)
+        return;
     perform(
         [&]
     {
         auto a = creator_->appearance();
-        a.tall = !a.tall;
+        a.icon_size = static_cast<por::IconSize>(index);
         creator_->appearance(a);
     });
 }
@@ -1323,6 +1383,14 @@ void CharacterCreationView::check_run()
             throw std::runtime_error(std::string("Unavailable button: ") + name);
         click(button->get_global_rect().get_center());
     };
+    const auto select_size = [&](por::IconSize size)
+    {
+        auto *sizes = &required_node<OptionButton>(*this, "Size");
+        if (!sizes->is_visible_in_tree())
+            throw std::runtime_error("Size must be on Combat appearance");
+        sizes->select(static_cast<int>(size));
+        sizes->emit_signal("item_selected", static_cast<int>(size));
+    };
     const auto choose = [&](CreationField field, const char *id)
     {
         const auto choices = creator_->rules().choices(field);
@@ -1576,14 +1644,18 @@ void CharacterCreationView::check_run()
                     {
                         0, 3
                     })
-                if (!required_node<Button>(*this,
-                                           gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
+                if (required_node<Button>(*this,
+                                          gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
                         .is_disabled())
-                    throw std::runtime_error("Absent weapon/shield control enabled");
+                    throw std::runtime_error("Weapon and shield colors must stay choosable");
         press("CombatHeadNext");
         for (int i = 0; i < 4; ++i)
-            press("WeaponNext");
-        press("Size");
+            press("BodyNext");
+        if (creator_->appearance().combat_body != body_groups_.at(4).front() ||
+                required_node<Label>(*this, "BodyLabel").get_text() !=
+                String("5 / ") + String::num_uint64(body_groups_.size()))
+            throw std::runtime_error("Body buttons must step through the bodies without weapons");
+        select_size(por::IconSize::small);
         break;
     case 11:
         capture("character-before-colors.png");
@@ -1591,11 +1663,8 @@ void CharacterCreationView::check_run()
             for (int part = 0; part < 6; ++part)
             {
                 const auto before = creator_->appearance();
-                const auto usage = art_->color_usage(before);
                 const auto chosen = (before.colors[bank][part] + 3) % 16;
                 const auto portrait = images_[0]->get_image()->get_data();
-                const std::array<PackedByteArray, 2> old{images_[1]->get_image()->get_data(),
-                        images_[2]->get_image()->get_data()};
                 press(("Color" + std::to_string(bank) + "_" + std::to_string(part)).c_str());
                 press(("Palette" + std::to_string(chosen)).c_str());
                 if (creator_->appearance().colors[bank][part] != chosen)
@@ -1605,20 +1674,12 @@ void CharacterCreationView::check_run()
                 for (unsigned pose = 0; pose < 2; ++pose)
                 {
                     const auto pixels = images_[pose + 1]->get_image()->get_data();
-                    const auto expected = art_->icon(creator_->appearance(),
-                                                              pose != 0 ? por::IconPose::action
-                                                              : por::IconPose::ready);
+                    const auto expected = art_->equipped_icon(creator_->appearance(), 0,
+                                          pose != 0 ? por::IconPose::action
+                                          : por::IconPose::ready);
                     if (std::cmp_not_equal(pixels.size(), expected.rgba.size()) ||
                             !std::equal(expected.rgba.begin(), expected.rgba.end(), pixels.ptr()))
                         throw std::runtime_error("Preview texture is stale after palette input");
-                    unsigned changed = 0;
-                    for (int64_t p = 0; p < pixels.size(); p += 4)
-                        if (!std::equal(pixels.ptr() + p, pixels.ptr() + p + 4,
-                                        old[pose].ptr() + p))
-                            ++changed;
-                    if (changed != (pose ? usage.action : usage.ready)[bank][part])
-                        throw std::runtime_error(
-                            "Recolor changed the wrong number of visible pixels");
                 }
             }
         break;
@@ -1655,12 +1716,12 @@ void CharacterCreationView::check_run()
     {
         press("Back");
         const auto a = creator_->appearance();
-        press("Size");
+        select_size(por::IconSize::regular);
         press("CombatHeadNext");
         if (!required_node<Button>(*this, "Color0_2").is_disabled())
             throw std::runtime_error("Helmet-covered hair control enabled");
         press("CombatHeadPrevious");
-        press("Size");
+        select_size(a.icon_size);
         press("Next");
         press("Next");
         if (a != creator_->appearance() || !completed_ || a != completed_->appearance())

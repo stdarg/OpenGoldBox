@@ -40,7 +40,8 @@ void run()
         for (const auto &item : mastery::weapons)
         {
             const bool allowed =
-                item.key != "wand" && item.key != "torch" && found != expected.end() &&
+                item.key != "wand" && item.key != "torch" && item.key != "musket" &&
+                item.key != "pistol" && found != expected.end() &&
                 (klass.id != "barbarian" || !item.ranged) &&
                 (klass.id != "rogue" || !item.martial || item.finesse || item.light);
             const bool offered = std::any_of(options.options.begin(), options.options.end(),
@@ -58,7 +59,7 @@ void run()
             continue;
         }
         if (klass.id == "fighter" || klass.id == "paladin" || klass.id == "ranger")
-            check(kinds == 38, "Full ordinary SRD weapon catalog offered");
+            check(kinds == 36, "Full ordinary SRD weapon catalog offered, without firearms");
         auto h = chosen(klass.id);
         auto grants = h.sheet().grants;
         check(h.sheet().training.masteries.size() == options.count,
@@ -171,7 +172,7 @@ void run()
     auto h = chosen("fighter");
     auto grants = h.sheet().grants;
     const auto extra = mastery::mastery_options(mastery::CharacterClass::fighter, 4, grants);
-    check(extra.count == 1 && extra.options.size() == 35,
+    check(extra.count == 1 && extra.options.size() == 33,
           "Fourth Fighter choice excludes all three existing kinds");
     grants.push_back({"mastery:" + extra.options.front().id, extra.id, 4, {}});
     rejects(

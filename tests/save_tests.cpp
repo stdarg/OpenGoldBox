@@ -374,7 +374,11 @@ void roundtrip(const std::filesystem::path &directory)
     });
     auto party = std::make_shared<CampaignParty>(module());
     auto fighter = party->add_pc(character("fighter"));
-    auto mage = party->add_pc(character("wizard"));
+    auto wizard = character("wizard");
+    auto large = wizard.appearance();
+    large.icon_size = por::IconSize::large;
+    wizard.appearance(large);
+    auto mage = party->add_pc(wizard);
     auto reserve = party->add_pc(character("bard"));
     party->remove(reserve);
     party->set_wealth(fighter, {0, 0, 0, 500, 0, 0, 2});
@@ -438,6 +442,8 @@ void roundtrip(const std::filesystem::path &directory)
           "Spent caster slots survive load");
     replacement->award_experience(300, "save:encounter");
     check(replacement->member(fighter).experience == 300, "No duplicate XP after reload");
+    check(replacement->member(mage).character.appearance().icon_size == por::IconSize::large,
+          "A Large combat icon survives load");
     check(!replacement->rest(), "Reload must not reset rest timer");
     const auto fighter_rest = replacement->member(fighter).last_rest_minutes;
     const auto mage_vitals = replacement->member(mage).vitals;

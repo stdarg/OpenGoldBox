@@ -242,8 +242,15 @@ template <bool Reading> struct SaveCodec
 
     void field(Visited<por::CharacterAppearance> v)
     {
-        fields(v.portrait_head, v.portrait_body, v.combat_head, v.combat_body, v.tall, v.colors,
+        // 0 short, 1 regular, 2 large: the former tall flag's 0 and 1 read unchanged.
+        auto icon_size = static_cast<unsigned>(v.icon_size);
+        fields(v.portrait_head, v.portrait_body, v.combat_head, v.combat_body, icon_size, v.colors,
                v.portrait);
+        if constexpr (reading)
+        {
+            require(icon_size <= static_cast<unsigned>(por::IconSize::large), "Invalid icon size");
+            v.icon_size = static_cast<por::IconSize>(icon_size);
+        }
     }
 
     void field(Visited<InventoryItem> v)

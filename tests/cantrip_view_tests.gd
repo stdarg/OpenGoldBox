@@ -184,7 +184,7 @@ func run_checks() -> void:
 	canvas = current_scene.get_node("CreationCanvas")
 	for pose in [["ReadyBounds", 1], ["ActionBounds", 2]]:
 		var bounds: Rect2 = current_scene.get_node(pose[0]).get_rect()
-		var icon: Rect2 = canvas._fitted(canvas._images[pose[1]], bounds, true)
+		var icon: Rect2 = canvas._icon_square(canvas._images[pose[1]], bounds)
 		require(icon.size == Vector2(288, 288) and bounds.encloses(icon), "Combat icons are four times their old 72-pixel size")
 	root.size = Vector2i(1120, 800); await settle()
 	await press("Next")
