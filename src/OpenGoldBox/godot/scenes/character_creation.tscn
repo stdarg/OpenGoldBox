@@ -1551,7 +1551,6 @@ offset_right = 169
 offset_top = -88
 offset_bottom = -65
 metadata/layout_reference = Rect2(50, -88, 119, 23)
-theme_type_variation = &"LabelText16"
 text = "Desired Class(es)"
 
 [node name="Targets" type="ScrollContainer" parent="."]

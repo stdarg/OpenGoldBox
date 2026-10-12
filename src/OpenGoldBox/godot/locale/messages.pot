@@ -1453,7 +1453,7 @@ msgstr ""
 msgid "Deflect Attacks"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1555
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1554
 msgid "Desired Class(es)"
 msgstr ""
 
@@ -1525,7 +1525,7 @@ msgstr ""
 msgid "Dodging"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1765 src/OpenGoldBox/godot/scenes/character_creation.tscn:1776 src/OpenGoldBox/godot/scenes/character_creation.tscn:1787 src/OpenGoldBox/godot/scenes/character_creation.tscn:1798 src/OpenGoldBox/godot/scenes/character_creation.tscn:1809 src/OpenGoldBox/godot/scenes/character_creation.tscn:1820
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1764 src/OpenGoldBox/godot/scenes/character_creation.tscn:1775 src/OpenGoldBox/godot/scenes/character_creation.tscn:1786 src/OpenGoldBox/godot/scenes/character_creation.tscn:1797 src/OpenGoldBox/godot/scenes/character_creation.tscn:1808 src/OpenGoldBox/godot/scenes/character_creation.tscn:1819
 msgid "Does not meet targeted class requirements"
 msgstr ""
 
@@ -2039,7 +2039,7 @@ msgstr ""
 msgid "Future class goals: {classes}\n\n"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1586
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1585
 msgid "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 msgstr ""
 
