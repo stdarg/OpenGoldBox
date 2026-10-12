@@ -100,7 +100,7 @@ func run_checks() -> void:
 	await press("Next")
 	await pick(1, "medicine")
 	await pick(1, "persuasion")
-	require(current_scene.get_node("Training/Rows/Group0/Title").text == "Divine Order (0 / 1)" and current_scene.get_node("Next").disabled, "A Cleric chooses a Divine Order")
+	require(current_scene.get_node("Training/Rows/Group0/TitleSlot/Title").text == "Divine Order (0 / 1)" and current_scene.get_node("Next").disabled, "A Cleric chooses a Divine Order")
 	current_scene.get_node("Training/Rows/Group0/protector").set_pressed(true)
 	await settle()
 	await press("Next")

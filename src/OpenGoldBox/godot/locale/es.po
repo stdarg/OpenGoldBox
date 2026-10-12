@@ -417,7 +417,7 @@ msgstr "Trato con animales"
 msgid "Any d20 roll saves"
 msgstr "Cualquier resultado del d20 supera la salvación"
 
-#: src/OpenGoldBox/spell_choice_controls.h:146
+#: src/OpenGoldBox/spell_choice_controls.h:174
 msgid "Apply spell choices"
 msgstr "Aplicar selección"
 
@@ -780,7 +780,7 @@ msgstr "Campaña cargada."
 msgid "Campaign saved."
 msgstr "Campaña guardada."
 
-#: src/OpenGoldBox/equipment_choice_dialog.cpp:72 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:233 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:227 src/OpenGoldBox/rest_dialog_impl.h:68 src/OpenGoldBox/save_slots.cpp:83 src/OpenGoldBox/spell_choice_controls.h:143 src/OpenGoldBox/startup_view.cpp:274
+#: src/OpenGoldBox/equipment_choice_dialog.cpp:72 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:233 src/OpenGoldBox/godot/scenes/startup.tscn:106 src/OpenGoldBox/godot/scenes/startup.tscn:169 src/OpenGoldBox/level_up_dialog.cpp:102 src/OpenGoldBox/nick_controls.h:42 src/OpenGoldBox/rest_dialog_impl.h:227 src/OpenGoldBox/rest_dialog_impl.h:68 src/OpenGoldBox/save_slots.cpp:83 src/OpenGoldBox/spell_choice_controls.h:171 src/OpenGoldBox/startup_view.cpp:274
 msgid "Cancel"
 msgstr "Cancelar"
 
@@ -996,11 +996,11 @@ msgstr "Elige un arma de una mano"
 msgid "Choose a proficient skill"
 msgstr "Elige una habilidad en la que tengas competencia"
 
-#: src/OpenGoldBox/character_creation_view.cpp:702
+#: src/OpenGoldBox/character_creation_view.cpp:703
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr "Elige una muestra para cambiar el color de esta parte en la vista de combate."
 
-#: src/OpenGoldBox/character_creation_view.cpp:700
+#: src/OpenGoldBox/character_creation_view.cpp:701
 msgid "Choose a swatch to recolor this part when it is equipped in combat."
 msgstr "Elige una muestra para cambiar el color de esta parte cuando esté equipada en combate."
 
@@ -1024,11 +1024,11 @@ msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 msgid "Choose an option"
 msgstr "Elige una opción"
 
-#: src/OpenGoldBox/character_creation_view.cpp:645
+#: src/OpenGoldBox/character_creation_view.cpp:646
 msgid "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige trucos y conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
-#: src/OpenGoldBox/character_creation_view.cpp:647
+#: src/OpenGoldBox/character_creation_view.cpp:648
 msgid "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 msgstr "Elige trucos, entradas del libro de conjuros y conjuros preparados. Atrás conserva tus elecciones."
 
@@ -1048,7 +1048,7 @@ msgstr "Elige una clase inicial. Las clases marcadas son objetivos futuros, no n
 msgid "Choose portrait"
 msgstr "Elegir retrato"
 
-#: src/OpenGoldBox/character_creation_view.cpp:641
+#: src/OpenGoldBox/character_creation_view.cpp:642
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
@@ -1073,7 +1073,7 @@ msgstr "Elige opciones válidas para ver tus nuevos PG."
 msgid "Choose weapon hand"
 msgstr "Elegir mano del arma"
 
-#: src/OpenGoldBox/character_creation_view.cpp:648
+#: src/OpenGoldBox/character_creation_view.cpp:649
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr "Elige los trucos disponibles. Las elecciones sin completar quedan pendientes; Atrás conserva tus selecciones."
 
@@ -2516,7 +2516,7 @@ msgstr "Apertura"
 msgid "Known cantrip: {spell}."
 msgstr "Truco conocido: {spell}."
 
-#: src/OpenGoldBox/spell_choice_controls.h:160
+#: src/OpenGoldBox/spell_choice_controls.h:188
 msgid "Known cantrips"
 msgstr "Trucos conocidos"
 
@@ -3190,7 +3190,7 @@ msgstr "No binario"
 msgid "Norris the Gray"
 msgstr "Norris el Gris"
 
-#: src/OpenGoldBox/character_creation_view.cpp:706
+#: src/OpenGoldBox/character_creation_view.cpp:707
 msgid "Not present"
 msgstr "Ausente"
 
@@ -3518,7 +3518,7 @@ msgstr "Conjuros de druida preparados y una orden primigenia: Mago (un truco adi
 msgid "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points."
 msgstr "Conjuros de hechicero preparados e Hechicería innata; puntos de hechicería de Fuente de magia en el nivel dos; Hechicería dracónica en el nivel tres: Resistencia dracónica (puntos de golpe y CA sin armadura 10 + Destreza + Carisma) y Orbe cromático, Orden imperiosa y Aliento de dragón siempre preparados. El nivel cuatro concede un quinto truco y una dote disponible o puntos de característica."
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:180 src/OpenGoldBox/level_up_dialog.cpp:86 src/OpenGoldBox/rest_dialog_impl.h:846 src/OpenGoldBox/spell_choice_controls.h:159 src/OpenGoldBox/spell_choice_controls.h:169
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:180 src/OpenGoldBox/level_up_dialog.cpp:86 src/OpenGoldBox/rest_dialog_impl.h:846 src/OpenGoldBox/spell_choice_controls.h:187 src/OpenGoldBox/spell_choice_controls.h:197
 msgid "Prepared spells"
 msgstr "Conjuros preparados"
 
@@ -3543,7 +3543,7 @@ msgstr "Conjuros preparados: {spells}"
 msgid "Preserve Life"
 msgstr "Preservar la vida"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1958
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1961
 msgid "Press Esc to return"
 msgstr "Pulsa Esc para volver"
 
@@ -3841,7 +3841,7 @@ msgstr "Desgarrar"
 msgid "Repelling Blast"
 msgstr "Descarga repulsora"
 
-#: src/OpenGoldBox/spell_choice_controls.h:137
+#: src/OpenGoldBox/spell_choice_controls.h:165
 msgid "Replace cantrip"
 msgstr "Reemplazar truco"
 
@@ -3970,7 +3970,7 @@ msgstr "Volver al grupo"
 msgid "Review character"
 msgstr "Personaje de prueba"
 
-#: src/OpenGoldBox/character_creation_view.cpp:712
+#: src/OpenGoldBox/character_creation_view.cpp:713
 msgid "Review your character before adding it to the party."
 msgstr "Revisa a tu personaje antes de añadirlo al grupo."
 
@@ -4207,7 +4207,7 @@ msgstr "Selecciona un personaje guardado para sobrescribirlo o escribe un nombre
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr "Selecciona un personaje guardado. Hay versiones anteriores disponibles para recuperarlo."
 
-#: src/OpenGoldBox/character_creation_view.cpp:651
+#: src/OpenGoldBox/character_creation_view.cpp:652
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr "Elige Color-1 o Color-2 de una parte y después una muestra. Cambiarán ambas poses. Las partes ausentes están desactivadas."
 
@@ -4351,15 +4351,15 @@ msgstr "Hoz"
 msgid "Silence"
 msgstr "Silencio"
 
-#: src/OpenGoldBox/character_creation_view.cpp:665
+#: src/OpenGoldBox/character_creation_view.cpp:666
 msgid "Size: Large"
 msgstr "Tamaño: grande"
 
-#: src/OpenGoldBox/character_creation_view.cpp:665
+#: src/OpenGoldBox/character_creation_view.cpp:666
 msgid "Size: Regular"
 msgstr "Tamaño: normal"
 
-#: src/OpenGoldBox/character_creation_view.cpp:665
+#: src/OpenGoldBox/character_creation_view.cpp:666
 msgid "Size: Short"
 msgstr "Tamaño: bajo"
 
@@ -4626,7 +4626,7 @@ msgstr "Elegir conjuros"
 msgid "Spell slots: {count}"
 msgstr "Espacios de conjuro: {count}"
 
-#: src/OpenGoldBox/spell_choice_controls.h:123 src/OpenGoldBox/spell_choice_controls.h:159 src/OpenGoldBox/spell_choice_controls.h:165
+#: src/OpenGoldBox/spell_choice_controls.h:151 src/OpenGoldBox/spell_choice_controls.h:187 src/OpenGoldBox/spell_choice_controls.h:193
 msgid "Spellbook"
 msgstr "Libro de conjuros"
 
@@ -4903,7 +4903,7 @@ msgstr "Este archivo no es una partida de la demo de subida de nivel con un solo
 msgid "This member did not complete the rest."
 msgstr "Este miembro no completó el descanso."
 
-#: src/OpenGoldBox/character_creation_view.cpp:703
+#: src/OpenGoldBox/character_creation_view.cpp:704
 msgid "This part is not present in either pose. Choose another head or body to use it."
 msgstr "Esta parte no aparece en ninguna pose. Elige otra cabeza o cuerpo para usarla."
 
@@ -5307,7 +5307,7 @@ msgstr "Sabiduría"
 msgid "Wisdom save: 1d6 Psychic damage and Disadvantage on the target's next attack roll, 60 feet."
 msgstr "Salvación de Sabiduría: 1d6 de daño psíquico y desventaja en la siguiente tirada de ataque del objetivo, 60 pies."
 
-#: src/OpenGoldBox/spell_choice_controls.h:138
+#: src/OpenGoldBox/spell_choice_controls.h:166
 msgid "With"
 msgstr "Por"
 
@@ -5363,7 +5363,7 @@ msgstr "Logras escapar."
 msgid "Your camp is attacked!"
 msgstr "¡Atacan tu campamento!"
 
-#: src/OpenGoldBox/character_creation_view.cpp:727
+#: src/OpenGoldBox/character_creation_view.cpp:728
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Tu personaje: {race} / {gender} / {class}"
@@ -6436,12 +6436,12 @@ msgstr "{name}: Iniciativa {total}"
 msgid "{name}: {type} damage {before} -> {after}."
 msgstr "{name}: daño de tipo {type}: {before} -> {after}."
 
-#: src/OpenGoldBox/character_creation_view.cpp:655 src/OpenGoldBox/character_creation_view.cpp:658
+#: src/OpenGoldBox/character_creation_view.cpp:656 src/OpenGoldBox/character_creation_view.cpp:659
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{number} / {count}"
 msgstr "{number} / {count}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:686
+#: src/OpenGoldBox/character_creation_view.cpp:687
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
 msgstr "{part} / Color-{bank}: elige un color"

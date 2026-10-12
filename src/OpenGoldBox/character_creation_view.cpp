@@ -636,6 +636,7 @@ void CharacterCreationView::refresh()
             d.spells.value_or(opengold::rules::SpellChoices{}),
             presentation::guarded(this, &CharacterCreationView::creation_spell_toggled),
             i18n::text);
+        presentation::equalize_choice_widths(required_node<Control>(*this, "SpellChoices"));
         instructions =
             d.spells && (d.character_class == "paladin" || d.character_class == "ranger")
             ? N_("Choose prepared spells. Unfilled choices remain pending; Back preserves your choices.")

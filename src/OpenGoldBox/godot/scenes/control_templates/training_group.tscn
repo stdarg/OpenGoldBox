@@ -4,9 +4,13 @@
 theme_type_variation = &"TrainingGroup"
 columns = 2
 
-[node name="Title" type="Label" parent="."]
-theme_type_variation = &"TrainingTitle"
+[node name="TitleSlot" type="Control" parent="."]
 custom_minimum_size = Vector2(0, 56)
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="TitleSlot"]
+anchor_bottom = 1
+theme_type_variation = &"TrainingTitle"
 vertical_alignment = 2
 
 [node name="TitleSpacer" type="Control" parent="."]

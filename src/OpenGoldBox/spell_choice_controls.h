@@ -97,6 +97,34 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     }
 }
 
+// Every visible choice under `root` becomes as wide as the widest one, so the
+// choices line up across groups instead of spanning the page.
+inline void equalize_choice_widths(godot::Node &root)
+{
+    using namespace godot;
+    std::vector<CheckBox *> choices;
+    std::vector<Node *> pending{&root};
+    while (!pending.empty())
+    {
+        auto *node = pending.back();
+        pending.pop_back();
+        for (int i = 0; i < node->get_child_count(); ++i)
+            pending.push_back(node->get_child(i));
+        auto *choice = Object::cast_to<CheckBox>(node);
+        if (choice && choice->is_visible())
+            choices.push_back(choice);
+    }
+    real_t widest = 0;
+    for (auto *choice : choices)
+    {
+        choice->set_h_size_flags(Control::SIZE_SHRINK_BEGIN);
+        choice->set_custom_minimum_size({0, choice->get_custom_minimum_size().y});
+        widest = std::max(widest, choice->get_combined_minimum_size().x);
+    }
+    for (auto *choice : choices)
+        choice->set_custom_minimum_size({widest, choice->get_custom_minimum_size().y});
+}
+
 inline void toggle_spell(opengold::rules::SpellChoices &choice, opengold::ChoiceToggle toggle)
 {
     const auto [group, value, selected] = toggle;

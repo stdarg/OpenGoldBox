@@ -106,14 +106,14 @@ func all_class_skill_controls() -> void:
 		var checks: Array[CheckBox] = []
 		for child in box.get_children():
 			if child is CheckBox and child.visible: checks.append(child)
-		require(checks.size() >= count and box.get_node("Title").text == klass + " skills (0 / " + str(count) + ")", "Fresh class skill group: " + klass)
+		require(checks.size() >= count and box.get_node("TitleSlot/Title").text == klass + " skills (0 / " + str(count) + ")", "Fresh class skill group: " + klass)
 		checks[0].grab_focus()
 		await keyboard(KEY_SPACE)
 		require(checks[0].button_pressed and checks[0].has_focus(), "Class skill keyboard selection retains focus: " + klass)
 		for i in range(1, count):
 			checks[i].set_pressed(true)
 			await settle()
-		require(box.get_node("Title").text.ends_with("(%d / %d)" % [count, count]) and checks[count].disabled, "Class skill count and selection limit: " + klass)
+		require(box.get_node("TitleSlot/Title").text.ends_with("(%d / %d)" % [count, count]) and checks[count].disabled, "Class skill count and selection limit: " + klass)
 		await press("Back")
 		await press("Next")
 		require(checks[0].button_pressed and checks[count - 1].button_pressed, "Back preserves class skills: " + klass)
@@ -141,7 +141,7 @@ func all_class_skill_controls() -> void:
 				TranslationServer.set_locale(locale)
 				await press("Back")
 				await press("Next")
-				require(box.get_node("Title").text.begins_with(klass + " skills" if locale == "en" else "Habilidades de"), "Class skill heading is translated")
+				require(box.get_node("TitleSlot/Title").text.begins_with(klass + " skills" if locale == "en" else "Habilidades de"), "Class skill heading is translated")
 				await complete_mastery(klass)
 				for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
 					root.size = size
@@ -171,7 +171,7 @@ func complete_mastery(klass: String) -> void:
 			child.grab_focus(); await keyboard(KEY_SPACE)
 			require(child.button_pressed and child.has_focus(), "Mastery supports keyboard selection with retained focus")
 			picked += 1
-	require(box.get_node("Title").text.ends_with("(%d / %d)" % [count, count]), "Mastery count is complete")
+	require(box.get_node("TitleSlot/Title").text.ends_with("(%d / %d)" % [count, count]), "Mastery count is complete")
 	for child in box.get_children():
 		if child is CheckBox and child.visible and not child.button_pressed: require(child.disabled, "Mastery selection cannot exceed entitlement")
 	for size in [Vector2i(1120,800), Vector2i(1920,1080)]:
@@ -216,7 +216,7 @@ func run_checks() -> void:
 	require(current_scene.get_node("Training/Rows/Group0/athletics").has_focus(), "Tab navigation did not move to the next checkbox")
 	for skill in ["investigation", "perception", "persuasion"]:
 		await pick(0, skill)
-	require(current_scene.get_node("Training/Rows/Group0/athletics").disabled and current_scene.get_node("Training/Rows/Group0/Title").text.ends_with("(4 / 4)"), "Class skill limit or selection count missing")
+	require(current_scene.get_node("Training/Rows/Group0/athletics").disabled and current_scene.get_node("Training/Rows/Group0/TitleSlot/Title").text.ends_with("(4 / 4)"), "Class skill limit or selection count missing")
 	await capture("training-rogue-skills")
 	# Each choice shows what it adds; hovering for a second names its source.
 	require(ProjectSettings.get_setting("gui/timers/tooltip_delay_sec") == 1.0, "Tooltips wait one second")

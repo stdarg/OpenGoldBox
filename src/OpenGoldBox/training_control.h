@@ -221,7 +221,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         const auto found = creator.draft().training.find(group.id);
         const std::vector<std::string> empty;
         const auto &picked = found == creator.draft().training.end() ? empty : found->second;
-        auto *title = &required_node<Label>(*box, "Title");
+        // The title sits in a zero-width slot, so it does not widen the choices'
+        // column; its text extends past the slot.
+        auto *title = &required_node<Label>(*box, "TitleSlot/Title");
         title->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
         title->set_text(tr(group.label) + " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
@@ -230,7 +232,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         {
             auto *row = Object::cast_to<Control>(box->get_child(j));
             const String row_name = row->get_name();
-            const bool used = row_name == "Title" || row_name == "TitleSpacer" ||
+            const bool used = row_name == "TitleSlot" || row_name == "TitleSpacer" ||
                               std::any_of(group.options.begin(), group.options.end(),
                                           [&](const auto & o)
             {
@@ -250,7 +252,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             box->set_meta("radios", Ref<ButtonGroup>(memnew(ButtonGroup)));
         const Ref<ButtonGroup> radios = single ? Ref<ButtonGroup>(box->get_meta("radios"))
                                         : Ref<ButtonGroup>();
-        int row_index = 2; // after Title and its spacer
+        int row_index = 2; // after the title's slot and its spacer
         for (const auto &option : group.options)
         {
             const auto node_name = training_string(option.id);
@@ -285,9 +287,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             check->set_button_group(radios);
             const bool selected =
                 std::find(picked.begin(), picked.end(), option.id) != picked.end();
-            check->set_text(tr(option.label) + (single || option.description.empty()
-                                                ? String()
-                                                : String(" / ") + tr(option.description)));
+            check->set_text(tr(option.label));
             check->set_pressed_no_signal(selected);
             check->set_disabled(
                 (has_locked && std::find(original->second.begin(), original->second.end(),

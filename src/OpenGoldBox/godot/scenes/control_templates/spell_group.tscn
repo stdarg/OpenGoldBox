@@ -8,6 +8,9 @@ size_flags_horizontal = 3
 theme_type_variation = &"SpellRows"
 
 [node name="Count" type="Label" parent="."]
+theme_type_variation = &"TrainingTitle"
+custom_minimum_size = Vector2(0, 56)
+vertical_alignment = 2
 autowrap_mode = 3
 
 [node name="Pending" type="Label" parent="."]
