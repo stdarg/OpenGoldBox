@@ -47,7 +47,7 @@ class CharacterCreationView : public godot::Control
     std::array<godot::Ref<godot::ImageTexture>, 3> images_;
     // A random portrait of the race chosen on the first page, and that race.
     godot::Ref<godot::ImageTexture> race_portrait_;
-    std::string race_portrait_of_, race_portrait_file_;
+    std::string race_portrait_of_, race_portrait_gender_, race_portrait_file_;
     godot::String error_;
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};

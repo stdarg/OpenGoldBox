@@ -316,12 +316,15 @@ void CharacterCreationView::recommend_portrait()
 void CharacterCreationView::show_race_portrait(bool again)
 {
     const auto &d = creator_->draft();
-    if (!again && race_portrait_.is_valid() && race_portrait_of_ == d.race)
+    if (!again && race_portrait_.is_valid() && race_portrait_of_ == d.race &&
+            race_portrait_gender_ == d.gender)
         return;
     auto a = creator_->appearance();
-    a.portrait = portraits_->of_race(d, static_cast<std::uint32_t>(UtilityFunctions::randi()));
+    a.portrait = portraits_->of_race_and_gender(
+                     d, static_cast<std::uint32_t>(UtilityFunctions::randi()));
     race_portrait_ = portraits_->texture(a, d);
     race_portrait_of_ = d.race;
+    race_portrait_gender_ = d.gender;
     race_portrait_file_ = a.portrait;
 }
 
@@ -519,7 +522,11 @@ void CharacterCreationView::refresh()
             auto *check =
                 &required_node<CheckBox>(*this, gs("Targets/Rows/Class" + std::to_string(i)));
             const auto requirements = creator_->rules().class_requirements(targets[i].id);
-            check->set_text(i18n::text(targets[i].label) + "\n" + i18n::requirements(requirements));
+            check->set_text(i18n::format("{class} ({requirements})",
+            {
+                {"class", i18n::text(targets[i].label)},
+                {"requirements", i18n::requirements(requirements)}
+            }));
             check->set_tooltip_text(
                 i18n::text(targets[i].description) + "\n" +
                 i18n::text(rules::class_eligible(creator_->rules(), d, targets[i].id)
@@ -864,6 +871,7 @@ void CharacterCreationView::gender_selected(std::int64_t index)
         creator_->select(CreationField::gender,
         creator_->rules().choices(CreationField::gender).at(index).id);
         recommend_portrait();
+        show_race_portrait(true);
     });
 }
 
@@ -1450,18 +1458,27 @@ void CharacterCreationView::check_run()
         break;
     case 2:
     {
-        // The first page shows a portrait of the chosen race beside its traits.
-        const auto &entries = portraits_->entries();
-        const auto shown = std::find_if(entries.begin(), entries.end(), [&](const auto & p)
+        const auto shown_portrait = [&]
         {
-            return p.filename == race_portrait_file_;
-        });
-        if (!required_node<Label>(*this, "RaceSelection").is_visible() || shown == entries.end() ||
+            const auto &entries = portraits_->entries();
+            const auto shown = std::find_if(entries.begin(), entries.end(), [&](const auto & p)
+            {
+                return p.filename == race_portrait_file_;
+            });
+            return shown == entries.end() ? nullptr : &*shown;
+        };
+        // The first page shows a portrait of the chosen race beside its traits.
+        const auto *shown = shown_portrait();
+        if (!required_node<Label>(*this, "RaceSelection").is_visible() || !shown ||
                 shown->race != "Dwarf" || race_portrait_of_ != "dwarf" ||
                 !required_node<RichTextLabel>(*this, "Description").get_text().contains("Racial traits"))
             throw std::runtime_error("The race page must show a portrait and the traits of the chosen race");
-    }
+        // Changing gender shows a portrait of the race and the new gender.
         choose(CreationField::gender, "female");
+        shown = shown_portrait();
+        if (!shown || shown->race != "Dwarf" || shown->gender != "Female")
+            throw std::runtime_error("The race page must show a portrait of the chosen gender");
+    }
         press("Next");
         break;
     case 3:

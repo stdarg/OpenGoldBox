@@ -91,12 +91,13 @@ std::string PortraitCatalog::recommended(const opengold::rules::CharacterDraft &
     return best->filename;
 }
 
-std::string PortraitCatalog::of_race(const opengold::rules::CharacterDraft &draft,
-                                     std::uint32_t pick) const
+std::string PortraitCatalog::of_race_and_gender(const opengold::rules::CharacterDraft &draft,
+        std::uint32_t pick) const
 {
     std::vector<const Portrait *> matches;
     for (const auto &p : portraits_)
-        if (normalized(p.race) == normalized(draft.race))
+        if (normalized(p.race) == normalized(draft.race) &&
+                normalized(p.gender) == normalized(draft.gender))
             matches.push_back(&p);
     if (matches.empty())
         return recommended(draft);

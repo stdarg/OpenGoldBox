@@ -32,10 +32,10 @@ class PortraitCatalog
 
     // The portrait best matching the draft's race, then gender, then class.
     [[nodiscard]] std::string recommended(const opengold::rules::CharacterDraft &draft) const;
-    // One of the race's portraits, the `pick`th modulo how many there are;
-    // the recommended portrait when the race has none.
-    [[nodiscard]] std::string of_race(const opengold::rules::CharacterDraft &draft,
-                                      std::uint32_t pick) const;
+    // One of the portraits of the draft's race and gender, the `pick`th modulo
+    // how many there are; the recommended portrait when there are none.
+    [[nodiscard]] std::string of_race_and_gender(const opengold::rules::CharacterDraft &draft,
+            std::uint32_t pick) const;
     // The appearance's portrait, or the recommended one when the catalog lacks
     // it. Each texture is loaded once and kept.
     [[nodiscard]] godot::Ref<godot::ImageTexture>
