@@ -1,6 +1,7 @@
 extends Node
 
 var _authored_column_width := -1
+var _authored_portrait_rows := {}
 
 
 func apply_layout() -> void:
@@ -34,3 +35,37 @@ func apply_layout() -> void:
         var swap_hint: Control = view.get_node("SwapHint")
         swap_hint.position.y = last_row.position.y + last_row.size.y
         swap_hint.size.y = bottom - swap_hint.position.y
+    var identity: Label = view.get_node("PortraitIdentity")
+    if identity.visible:
+        _place_portrait_rows(view, identity)
+
+
+# The portrait filters sit on the title row, between the title and the
+# character's identity at the top right. When they do not fit there, they
+# start a line of their own at the left margin, and the rows below move down.
+func _place_portrait_rows(view: Control, identity: Label) -> void:
+    var filters := ["PortraitFilters", "PortraitGender", "PortraitClass", "PortraitRace"]
+    var below := ["PortraitPrevious", "PortraitSelect", "PortraitNext", "PortraitScroll"]
+    if _authored_portrait_rows.is_empty():
+        for name in filters + below:
+            var control: Control = view.get_node(name)
+            _authored_portrait_rows[name] = Vector2(control.offset_left, control.offset_top)
+    var text_width := identity.get_theme_font("font").get_string_size(identity.text,
+        HORIZONTAL_ALIGNMENT_LEFT, -1, identity.get_theme_font_size("font_size")).x
+    var race: Control = view.get_node("PortraitRace")
+    var filters_end: float = _authored_portrait_rows["PortraitRace"].x + race.size.x
+    var fits := filters_end + 24 <= identity.position.x + identity.size.x - text_width
+    var line: float = 0.0 if fits else _authored_portrait_rows["PortraitSelect"].y \
+        - _authored_portrait_rows["PortraitFilters"].y
+    var indent: float = 0.0 if fits else _authored_portrait_rows["PortraitPrevious"].x \
+        - _authored_portrait_rows["PortraitFilters"].x
+    for name in filters:
+        var control: Control = view.get_node(name)
+        control.position = _authored_portrait_rows[name] + Vector2(indent, line)
+    for name in below:
+        var control: Control = view.get_node(name)
+        if name == "PortraitScroll":
+            control.offset_top = _authored_portrait_rows[name].y + line
+        else:
+            control.position.y = _authored_portrait_rows[name].y + line
+

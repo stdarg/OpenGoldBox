@@ -182,7 +182,7 @@ func run_checks() -> void:
 	require(not current_scene.get_node("PortraitSelect").is_visible_in_tree(), "The portrait picker waits for its own page")
 	root.size = Vector2i(1920, 1080); await settle()
 	canvas = current_scene.get_node("CreationCanvas")
-	for pose in [["ReadyBounds", 1], ["ActionBounds", 2]]:
+	for pose in [["ReadyBounds", 0], ["ActionBounds", 1]]:
 		var bounds: Rect2 = current_scene.get_node(pose[0]).get_rect()
 		var icon: Rect2 = canvas._icon_square(canvas._images[pose[1]], bounds)
 		require(icon.size == Vector2(288, 288) and bounds.encloses(icon), "Combat icons are four times their old 72-pixel size")

@@ -4,7 +4,6 @@ extends Control
 # colors. Character art itself is supplied by the native view.
 var _images: Array = []
 var _show_dice := false
-var _show_portrait := false
 var _show_icons := false
 var _large_icons := false
 var _race_portrait: Texture2D
@@ -13,12 +12,11 @@ var _race_portrait: Texture2D
 # `race_portrait` is a sample portrait of the race chosen on the first page,
 # null on the other pages. `large_icons` draws the combat icons at the Large
 # size.
-func set_images(portrait: Texture2D, ready: Texture2D, action: Texture2D,
-        show_dice: bool, show_portrait: bool, show_icons: bool,
+func set_images(ready: Texture2D, action: Texture2D,
+        show_dice: bool, show_icons: bool,
         race_portrait: Texture2D, large_icons: bool) -> void:
-    _images = [portrait, ready, action]
+    _images = [ready, action]
     _show_dice = show_dice
-    _show_portrait = show_portrait
     _show_icons = show_icons
     _large_icons = large_icons
     _race_portrait = race_portrait
@@ -62,15 +60,12 @@ func _draw() -> void:
         var rect := _fitted(_race_portrait, bounds)
         rect.position = bounds.position
         draw_texture_rect(_race_portrait, rect, false)
-    if _images.size() != 3:
+    if _images.size() != 2:
         return
-    if _show_portrait and _images[0] != null:
-        draw_texture_rect(_images[0], _fitted(_images[0], _bounds("PortraitBounds")),
-                false)
     if _show_icons:
-        for index in [1, 2]:
+        for index in [0, 1]:
             if _images[index] != null:
-                _draw_icon(_images[index], _bounds("ReadyBounds" if index == 1 else "ActionBounds"))
+                _draw_icon(_images[index], _bounds("ReadyBounds" if index == 0 else "ActionBounds"))
 
 
 # Every size is drawn at the whole-multiple scale that leaves a Large figure

@@ -157,6 +157,8 @@ void CharacterCreationView::_ready()
         "item_selected", presentation::guarded(this, &CharacterCreationView::bonus_selected));
     required_node<OptionButton>(*this, "PortraitSelect")
     .connect("item_selected", presentation::guarded(this, &CharacterCreationView::portrait_selected));
+    required_node<Control>(*this, "PortraitScroll/PortraitSheet")
+    .connect("portrait_chosen", presentation::guarded(this, &CharacterCreationView::portrait_selected));
     required_node<LineEdit>(*this, "Name").connect("text_changed",
             presentation::guarded(this, &CharacterCreationView::name_changed));
     for (int i = 0; i < 6; ++i)
@@ -411,9 +413,11 @@ void CharacterCreationView::refresh()
     show("Training", step == CreationStep::training);
     for (const auto *n :
             {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
-             "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters"
+             "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters", "PortraitScroll"
             })
         show(n, portrait);
+    if (!portrait)
+        show("PortraitZoom", false);
     for (const auto *n :
             {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
              "PortraitClass", "PortraitRace"
@@ -643,8 +647,6 @@ void CharacterCreationView::refresh()
             ? N_("Choose cantrips, spellbook entries and prepared spells. Back preserves your choices.")
             : N_("Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections.");
     }
-    if (portrait)
-        instructions = N_("Choose a portrait. Filters narrow the list and do not change your character.");
     if (icon)
         instructions = N_(
                            "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled.");
@@ -751,8 +753,7 @@ void CharacterCreationView::draw_view()
 {
     const auto step = creator_ ? creator_->step() : CreationStep::race;
     required_node<Control>(*this, "CreationCanvas").call("set_images",
-            images_[0], images_[1], images_[2], creator_ && step == CreationStep::attributes,
-            creator_ && step == CreationStep::portrait,
+            images_[1], images_[2], creator_ && step == CreationStep::attributes,
             creator_ && step == CreationStep::combat_icon,
             creator_ && step == CreationStep::race ? race_portrait_ : Ref<ImageTexture>(),
             creator_ && creator_->appearance().icon_size == por::IconSize::large);

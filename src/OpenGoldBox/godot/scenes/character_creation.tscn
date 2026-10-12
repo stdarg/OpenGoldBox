@@ -1,10 +1,15 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
+
 [ext_resource type="Script" path="res://scenes/creation_column_layout.gd" id="2_column_layout"]
+
 [ext_resource type="Script" path="res://scenes/window_layout.gd" id="3_window_layout"]
+
 [ext_resource type="Script" path="res://scenes/creation_swatch.gd" id="4_creation_swatch"]
+
 [ext_resource type="Script" path="res://scenes/creation_score.gd" id="5_creation_score"]
+
 [ext_resource type="Script" path="res://scenes/creation_canvas.gd" id="6_creation_canvas"]
 
 [ext_resource type="Script" path="res://scenes/window_minimum.gd" id="99_window_minimum"]
@@ -12,6 +17,10 @@
 [ext_resource type="Script" path="res://scenes/themed_rich_text.gd" id="98_rich_text"]
 
 [ext_resource type="Script" path="res://scenes/training_scroll.gd" id="96_training_scroll"]
+
+[ext_resource type="Script" path="res://scenes/portrait_sheet.gd" id="95_portrait_sheet"]
+
+[ext_resource type="Script" path="res://scenes/portrait_zoom.gd" id="94_portrait_zoom"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 texture_filter = 1
@@ -214,97 +223,75 @@ vertical_alignment = 1
 metadata/layout_reference = Rect2(288, 140, 106, 36)
 
 [node name="PortraitIdentity" type="Label" parent="."]
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -258
-offset_right = 502
-offset_top = 130
-offset_bottom = 166
+anchor_left = 1
+anchor_right = 1
+offset_left = -760
+offset_right = -44
+offset_top = 42
+offset_bottom = 78
+horizontal_alignment = 2
 theme_type_variation = &"LabelText22"
-horizontal_alignment = 1
 auto_translate_mode = 2
-metadata/layout_reference = Rect2(702, 130, 760, 36)
 
 [node name="PortraitFilters" type="Label" parent="."]
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -258
-offset_right = -128
-offset_top = 176
-offset_bottom = 212
+offset_left = 420
+offset_right = 500
+offset_top = 42
+offset_bottom = 78
 text = "Filter by"
 vertical_alignment = 1
-metadata/layout_reference = Rect2(702, 176, 130, 36)
 
 [node name="PortraitPrevious" type="Button" parent="."]
+offset_left = 288
+offset_right = 328
+offset_top = 88
+offset_bottom = 124
 text = "<"
 tooltip_text = "Previous matching portrait"
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -258
-offset_right = -218
-offset_top = 222
-offset_bottom = 258
-metadata/layout_reference = Rect2(702, 222, 40, 36)
 
 [node name="PortraitNext" type="Button" parent="."]
+offset_left = 1004
+offset_right = 1044
+offset_top = 88
+offset_bottom = 124
 text = ">"
 tooltip_text = "Next matching portrait"
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = 462
-offset_right = 502
-offset_top = 222
-offset_bottom = 258
-metadata/layout_reference = Rect2(1422, 222, 40, 36)
 
 [node name="PortraitSelect" type="OptionButton" parent="."]
+offset_left = 336
+offset_right = 996
+offset_top = 88
+offset_bottom = 124
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait select"
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -208
-offset_right = 452
-offset_top = 222
-offset_bottom = 258
-metadata/layout_reference = Rect2(752, 222, 660, 36)
 
 [node name="PortraitGender" type="OptionButton" parent="."]
+offset_left = 508
+offset_right = 688
+offset_top = 42
+offset_bottom = 78
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait gender"
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -118
-offset_right = 82
-offset_top = 176
-offset_bottom = 212
-metadata/layout_reference = Rect2(842, 176, 200, 36)
 
 [node name="PortraitClass" type="OptionButton" parent="."]
+offset_left = 696
+offset_right = 876
+offset_top = 42
+offset_bottom = 78
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait class"
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = 92
-offset_right = 292
-offset_top = 176
-offset_bottom = 212
-metadata/layout_reference = Rect2(1052, 176, 200, 36)
 
 [node name="PortraitRace" type="OptionButton" parent="."]
+offset_left = 884
+offset_right = 1064
+offset_top = 42
+offset_bottom = 78
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait race"
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = 302
-offset_right = 502
-offset_top = 176
-offset_bottom = 212
-metadata/layout_reference = Rect2(1262, 176, 200, 36)
 
 [node name="CombatHeadPrevious" type="Button" parent="."]
 offset_left = 288
@@ -321,6 +308,7 @@ offset_top = 150
 offset_bottom = 186
 metadata/layout_reference = Rect2(444, 150, 88, 36)
 text = "Head >"
+
 [node name="CombatHeadLabel" type="Label" parent="."]
 horizontal_alignment = 1
 offset_left = 382
@@ -328,6 +316,7 @@ offset_right = 438
 offset_top = 154
 offset_bottom = 184
 metadata/layout_reference = Rect2(382, 154, 56, 30)
+
 [node name="BodyPrevious" type="Button" parent="."]
 offset_left = 556
 offset_right = 644
@@ -343,6 +332,7 @@ offset_top = 150
 offset_bottom = 186
 metadata/layout_reference = Rect2(712, 150, 88, 36)
 text = "Body >"
+
 [node name="BodyLabel" type="Label" parent="."]
 horizontal_alignment = 1
 offset_left = 650
@@ -350,12 +340,14 @@ offset_right = 706
 offset_top = 154
 offset_bottom = 184
 metadata/layout_reference = Rect2(650, 154, 56, 30)
+
 [node name="Size" type="OptionButton" parent="."]
 offset_left = 824
 offset_right = 994
 offset_top = 150
 offset_bottom = 186
 metadata/layout_reference = Rect2(824, 150, 170, 36)
+
 [node name="ColorTitle" type="Label" parent="."]
 anchor_right = 1
 offset_left = 288
@@ -1820,18 +1812,6 @@ metadata/layout_reference = Rect2(268, 24, 1628, 980)
 visible = false
 mouse_filter = 2
 
-[node name="PortraitBounds" type="Control" parent="."]
-visible = false
-mouse_filter = 2
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -258
-offset_right = 502
-offset_top = 270
-offset_bottom = -96
-anchor_bottom = 1
-metadata/layout_reference = Rect2(702, 270, 760, 714)
-
 [node name="ReadyBounds" type="Control" parent="."]
 visible = false
 mouse_filter = 2
@@ -1921,6 +1901,61 @@ autowrap_mode = 2
 [node name="Pending" type="Label" parent="SpellChoices/Rows"]
 auto_translate_mode = 2
 autowrap_mode = 2
+
+[node name="PortraitScroll" type="ScrollContainer" parent="."]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 288
+offset_right = -44
+offset_top = 136
+offset_bottom = -96
+visible = false
+horizontal_scroll_mode = 0
+
+[node name="PortraitSheet" type="Control" parent="PortraitScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("95_portrait_sheet")
+
+[node name="PortraitZoom" type="Panel" parent="."]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 268
+offset_right = -24
+offset_top = 24
+offset_bottom = -76
+visible = false
+theme_type_variation = &"DialogSurface"
+script = ExtResource("94_portrait_zoom")
+
+[node name="Image" type="TextureRect" parent="PortraitZoom"]
+anchor_right = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = -360
+offset_top = 20
+offset_bottom = -20
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Caption" type="Label" parent="PortraitZoom"]
+anchor_left = 1
+anchor_right = 1
+offset_left = -340
+offset_right = -20
+offset_top = 20
+offset_bottom = 120
+theme_type_variation = &"LabelText22"
+auto_translate_mode = 2
+
+[node name="Hint" type="Label" parent="PortraitZoom"]
+anchor_left = 1
+anchor_right = 1
+offset_left = -340
+offset_right = -20
+offset_top = 132
+offset_bottom = 164
+text = "Press Esc to return"
 
 [node name="CreationLayout" type="AnimationPlayer" parent="."]
 root_node = NodePath("..")

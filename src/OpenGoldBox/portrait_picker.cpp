@@ -51,6 +51,7 @@ void CharacterCreationView::refresh_portraits()
                String(c->get_item_metadata(c->get_selected())) == gs(value);
     };
     int selected = -1;
+    PackedStringArray files, captions;
     for (std::size_t i = 0; i < portraits_->entries().size(); ++i)
     {
         const auto &p = portraits_->entries()[i];
@@ -62,7 +63,15 @@ void CharacterCreationView::refresh_portraits()
         filtered_portraits_.push_back(i);
         list->add_item(i18n::text(p.klass) + " / " + i18n::text(p.race) + " / " +
                        i18n::text(p.gender));
+        files.push_back(gs("res://bin/portraits/" + p.filename));
+        captions.push_back(i18n::format("Race: {race}\nClass: {class}\nGender: {gender}",
+        {
+            {"race", i18n::text(p.race)}, {"class", i18n::text(p.klass)},
+            {"gender", i18n::text(p.gender)}
+        }));
     }
+    required_node<Control>(*this, "PortraitScroll/PortraitSheet")
+    .call("show_portraits", files, captions, selected);
     list->select(selected);
     if (selected < 0)
         list->set_text(i18n::text(filtered_portraits_.empty() ? N_("No matching portraits")
