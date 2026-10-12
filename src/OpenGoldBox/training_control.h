@@ -11,6 +11,7 @@
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
 #include <algorithm>
+#include <vector>
 
 namespace presentation
 {
@@ -298,6 +299,28 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             benefit->show();
         }
     }
+    // Every choice is as wide as the widest one on the page, so the choices and
+    // their benefits line up across groups.
+    std::vector<CheckBox *> choices;
+    for (unsigned i = 0; i < groups.size(); ++i)
+    {
+        auto &box = required_node<GridContainer>(*rows, String("Group") + String::num_uint64(i));
+        for (int j = 0; j < box.get_child_count(); ++j)
+        {
+            auto *choice = Object::cast_to<CheckBox>(box.get_child(j));
+            if (choice && choice->is_visible())
+                choices.push_back(choice);
+        }
+    }
+    real_t widest = 0;
+    for (auto *choice : choices)
+    {
+        choice->set_custom_minimum_size({0, choice->get_custom_minimum_size().y});
+        widest = std::max(widest, choice->get_combined_minimum_size().x);
+    }
+    for (auto *choice : choices)
+        choice->set_custom_minimum_size({widest, choice->get_custom_minimum_size().y});
+
     String signature;
     for (const auto &group : groups)
         signature += training_string(group.id) + ";";

@@ -157,7 +157,7 @@ msgstr "A hunter and wilderness explorer. Primary abilities: Dexterity and Wisdo
 msgid "A master of weapons. Primary ability: Strength or Dexterity. Hit Die: d10."
 msgstr "A master of weapons. Primary ability: Strength or Dexterity. Hit Die: d10."
 
-#: src/OpenGoldBox/training_control.h:128
+#: src/OpenGoldBox/training_control.h:129
 msgid "A miss still deals damage equal to the ability modifier used for the attack."
 msgstr "A miss still deals damage equal to the ability modifier used for the attack."
 
@@ -211,7 +211,7 @@ msgstr "Acid Splash"
 msgid "Acolyte"
 msgstr "Acolyte"
 
-#: src/OpenGoldBox/training_control.h:61
+#: src/OpenGoldBox/training_control.h:62
 msgid "Acolyte background"
 msgstr "Acolyte background"
 
@@ -333,7 +333,7 @@ msgstr "Adrenaline Rush ({remaining}/{maximum})"
 msgid "Advantage on Constitution saves to keep Concentration."
 msgstr "Advantage on Constitution saves to keep Concentration."
 
-#: src/OpenGoldBox/training_control.h:126
+#: src/OpenGoldBox/training_control.h:127
 msgid "After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn."
 msgstr "After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn."
 
@@ -551,7 +551,7 @@ msgstr "Bane: -1d4 to attack rolls and saving throws."
 msgid "Barbarian"
 msgstr "Barbarian"
 
-#: src/OpenGoldBox/training_control.h:27
+#: src/OpenGoldBox/training_control.h:28
 msgid "Barbarian class"
 msgstr "Barbarian class"
 
@@ -567,7 +567,7 @@ msgstr "Bard"
 msgid "Bard cantrips"
 msgstr "Bard cantrips"
 
-#: src/OpenGoldBox/training_control.h:29
+#: src/OpenGoldBox/training_control.h:30
 msgid "Bard class"
 msgstr "Bard class"
 
@@ -1170,7 +1170,7 @@ msgstr "Cleave"
 msgid "Cleric"
 msgstr "Cleric"
 
-#: src/OpenGoldBox/training_control.h:33
+#: src/OpenGoldBox/training_control.h:34
 msgid "Cleric Divine Order"
 msgstr "Cleric Divine Order"
 
@@ -1178,7 +1178,7 @@ msgstr "Cleric Divine Order"
 msgid "Cleric cantrips"
 msgstr "Cleric cantrips"
 
-#: src/OpenGoldBox/training_control.h:31
+#: src/OpenGoldBox/training_control.h:32
 msgid "Cleric class"
 msgstr "Cleric class"
 
@@ -1343,7 +1343,7 @@ msgstr "Create character"
 msgid "Criminal"
 msgstr "Criminal"
 
-#: src/OpenGoldBox/training_control.h:69
+#: src/OpenGoldBox/training_control.h:70
 msgid "Criminal background"
 msgstr "Criminal background"
 
@@ -1577,7 +1577,7 @@ msgstr "Drop a roll here. Drag a filled box onto another ability to swap."
 msgid "Druid"
 msgstr "Druid"
 
-#: src/OpenGoldBox/training_control.h:37
+#: src/OpenGoldBox/training_control.h:38
 msgid "Druid Primal Order"
 msgstr "Druid Primal Order"
 
@@ -1585,7 +1585,7 @@ msgstr "Druid Primal Order"
 msgid "Druid cantrips"
 msgstr "Druid cantrips"
 
-#: src/OpenGoldBox/training_control.h:35
+#: src/OpenGoldBox/training_control.h:36
 msgid "Druid class"
 msgstr "Druid class"
 
@@ -1776,7 +1776,7 @@ msgstr "Expeditious Retreat (level 2 slot)"
 msgid "Expeditious Retreat: Dash"
 msgstr "Expeditious Retreat: Dash"
 
-#: src/OpenGoldBox/training_control.h:107
+#: src/OpenGoldBox/training_control.h:108
 msgid "Expertise"
 msgstr "Expertise"
 
@@ -1855,11 +1855,11 @@ msgstr "Fighter"
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 
-#: src/OpenGoldBox/training_control.h:25
+#: src/OpenGoldBox/training_control.h:26
 msgid "Fighter Fighting Style"
 msgstr "Fighter Fighting Style"
 
-#: src/OpenGoldBox/training_control.h:43
+#: src/OpenGoldBox/training_control.h:44
 msgid "Fighter class"
 msgstr "Fighter class"
 
@@ -1924,7 +1924,7 @@ msgstr "Fire"
 msgid "Fire Bolt"
 msgstr "Fire Bolt"
 
-#: src/OpenGoldBox/training_control.h:194
+#: src/OpenGoldBox/training_control.h:195
 msgid "Fixed training"
 msgstr "Fixed training"
 
@@ -3010,7 +3010,7 @@ msgstr "Modifiers"
 msgid "Monk"
 msgstr "Monk"
 
-#: src/OpenGoldBox/training_control.h:45
+#: src/OpenGoldBox/training_control.h:46
 msgid "Monk class"
 msgstr "Monk class"
 
@@ -3220,23 +3220,23 @@ msgstr "Ogre"
 msgid "Oil"
 msgstr "Oil"
 
-#: src/OpenGoldBox/training_control.h:136
+#: src/OpenGoldBox/training_control.h:137
 msgid "On a hit that deals damage, the target's Speed drops by 10 feet until your next turn."
 msgstr "On a hit that deals damage, the target's Speed drops by 10 feet until your next turn."
 
-#: src/OpenGoldBox/training_control.h:140
+#: src/OpenGoldBox/training_control.h:141
 msgid "On a hit that deals damage, your next attack against that target before the end of your next turn has Advantage."
 msgstr "On a hit that deals damage, your next attack against that target before the end of your next turn has Advantage."
 
-#: src/OpenGoldBox/training_control.h:132
+#: src/OpenGoldBox/training_control.h:133
 msgid "On a hit, push a Large or smaller creature up to 10 feet straight away from you."
 msgstr "On a hit, push a Large or smaller creature up to 10 feet straight away from you."
 
-#: src/OpenGoldBox/training_control.h:134
+#: src/OpenGoldBox/training_control.h:135
 msgid "On a hit, the target has Disadvantage on its next attack roll before your next turn."
 msgstr "On a hit, the target has Disadvantage on its next attack roll before your next turn."
 
-#: src/OpenGoldBox/training_control.h:138
+#: src/OpenGoldBox/training_control.h:139
 msgid "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone."
 msgstr "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone."
 
@@ -3350,7 +3350,7 @@ msgstr "Padded Armor"
 msgid "Paladin"
 msgstr "Paladin"
 
-#: src/OpenGoldBox/training_control.h:47
+#: src/OpenGoldBox/training_control.h:48
 msgid "Paladin class"
 msgstr "Paladin class"
 
@@ -3572,7 +3572,7 @@ msgstr "Primal Order"
 msgid "Produce Flame"
 msgstr "Produce Flame"
 
-#: src/OpenGoldBox/training_control.h:109
+#: src/OpenGoldBox/training_control.h:110
 msgid "Proficient"
 msgstr "Proficient"
 
@@ -3714,7 +3714,7 @@ msgstr "Ranged spell attack: 1d8 damage of a chosen type, 120 feet; an 8 rolls a
 msgid "Ranger"
 msgstr "Ranger"
 
-#: src/OpenGoldBox/training_control.h:49
+#: src/OpenGoldBox/training_control.h:50
 msgid "Ranger class"
 msgstr "Ranger class"
 
@@ -3978,11 +3978,11 @@ msgstr "Ring Mail"
 msgid "Rogue"
 msgstr "Rogue"
 
-#: src/OpenGoldBox/training_control.h:59
+#: src/OpenGoldBox/training_control.h:60
 msgid "Rogue Expertise"
 msgstr "Rogue Expertise"
 
-#: src/OpenGoldBox/training_control.h:57
+#: src/OpenGoldBox/training_control.h:58
 msgid "Rogue class"
 msgstr "Rogue class"
 
@@ -4068,7 +4068,7 @@ msgstr "Sacred Weapon (Radiant)"
 msgid "Sage"
 msgstr "Sage"
 
-#: src/OpenGoldBox/training_control.h:65
+#: src/OpenGoldBox/training_control.h:66
 msgid "Sage background"
 msgstr "Sage background"
 
@@ -4442,7 +4442,7 @@ msgstr "Sneak Attack: once per turn, extra weapon damage is added automatically 
 msgid "Soldier"
 msgstr "Soldier"
 
-#: src/OpenGoldBox/training_control.h:63
+#: src/OpenGoldBox/training_control.h:64
 msgid "Soldier background"
 msgstr "Soldier background"
 
@@ -4459,7 +4459,7 @@ msgstr "Sorcerer cantrips"
 msgid "Sorcerer cantrips: Charisma score {score}; spell attack bonus {attack}; pending choices {cantrips}."
 msgstr "Sorcerer cantrips: Charisma score {score}; spell attack bonus {attack}; pending choices {cantrips}."
 
-#: src/OpenGoldBox/training_control.h:51
+#: src/OpenGoldBox/training_control.h:52
 msgid "Sorcerer class"
 msgstr "Sorcerer class"
 
@@ -4723,7 +4723,7 @@ msgstr "Subtle Spell"
 msgid "Success"
 msgstr "Success"
 
-#: src/OpenGoldBox/training_control.h:94
+#: src/OpenGoldBox/training_control.h:95
 msgid "Supported training choices complete"
 msgstr "Supported training choices complete"
 
@@ -4830,7 +4830,7 @@ msgstr "That spell or feature cannot be used now"
 msgid "Thaumaturge"
 msgstr "Thaumaturge"
 
-#: src/OpenGoldBox/training_control.h:130
+#: src/OpenGoldBox/training_control.h:131
 msgid "The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn."
 msgstr "The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn."
 
@@ -4964,7 +4964,7 @@ msgstr "Touch: once per turn the creature takes 1d4 less damage of a chosen type
 msgid "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
 msgstr "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
 
-#: src/OpenGoldBox/character_creation_view.cpp:57 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:93
+#: src/OpenGoldBox/character_creation_view.cpp:57 src/OpenGoldBox/godot/scenes/combat_demo.tscn:55 src/OpenGoldBox/training_control.h:94
 msgid "Training"
 msgstr "Training"
 
@@ -4972,7 +4972,7 @@ msgstr "Training"
 msgid "Training arena"
 msgstr "Training arena"
 
-#: src/OpenGoldBox/training_control.h:95
+#: src/OpenGoldBox/training_control.h:96
 msgid "Training choices pending"
 msgstr "Training choices pending"
 
@@ -5221,7 +5221,7 @@ msgstr "Warlock"
 msgid "Warlock cantrips"
 msgstr "Warlock cantrips"
 
-#: src/OpenGoldBox/training_control.h:53
+#: src/OpenGoldBox/training_control.h:54
 msgid "Warlock class"
 msgstr "Warlock class"
 
@@ -5237,7 +5237,7 @@ msgstr "Weapon"
 msgid "Weapon >"
 msgstr "Weapon >"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/training_control.h:117 src/OpenGoldBox/training_control.h:39 src/OpenGoldBox/training_control.h:41 src/OpenGoldBox/training_replacement_controls.h:16
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/training_control.h:118 src/OpenGoldBox/training_control.h:40 src/OpenGoldBox/training_control.h:42 src/OpenGoldBox/training_replacement_controls.h:16
 msgid "Weapon Mastery"
 msgstr "Weapon Mastery"
 
@@ -5312,7 +5312,7 @@ msgstr "With"
 msgid "Wizard"
 msgstr "Wizard"
 
-#: src/OpenGoldBox/training_control.h:67
+#: src/OpenGoldBox/training_control.h:68
 msgid "Wizard Scholar"
 msgstr "Wizard Scholar"
 
@@ -5320,7 +5320,7 @@ msgstr "Wizard Scholar"
 msgid "Wizard cantrips"
 msgstr "Wizard cantrips"
 
-#: src/OpenGoldBox/training_control.h:55
+#: src/OpenGoldBox/training_control.h:56
 msgid "Wizard class"
 msgstr "Wizard class"
 
@@ -6438,12 +6438,12 @@ msgstr "{name}: {type} damage {before} -> {after}."
 msgid "{part} / Color-{bank}: choose a color"
 msgstr "{part} / Color-{bank}: choose a color"
 
-#: src/OpenGoldBox/training_control.h:172
+#: src/OpenGoldBox/training_control.h:173
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} {bonus} if chosen (now {current})"
 msgstr "{skill} {bonus} if chosen (now {current})"
 
-#: src/OpenGoldBox/training_control.h:171
+#: src/OpenGoldBox/training_control.h:172
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{skill} {bonus} with Expertise (now {current})"
 msgstr "{skill} {bonus} with Expertise (now {current})"
