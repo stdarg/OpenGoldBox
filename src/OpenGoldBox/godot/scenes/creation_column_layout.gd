@@ -21,3 +21,16 @@ func apply_layout() -> void:
         description.offset_left = portrait.position.x + minf(portrait.size.x, portrait.size.y) + 16
     else:
         description.offset_left = choices.offset_left
+    # Reroll and its hint sit under the attributes table, their bottoms level
+    # with the bottom of the hint under the desired classes, which is as tall
+    # as its text in each language. Reroll's hint fills the space under the
+    # table with its text on the bottom edge, however that text wraps.
+    var target_hint: Control = view.get_node("TargetHint")
+    if target_hint.visible:
+        var bottom := target_hint.position.y + target_hint.size.y
+        var roll: Control = view.get_node("Roll")
+        roll.position.y = bottom - roll.size.y
+        var last_row: Control = view.get_node("BonusScore5")
+        var swap_hint: Control = view.get_node("SwapHint")
+        swap_hint.position.y = last_row.position.y + last_row.size.y
+        swap_hint.size.y = bottom - swap_hint.position.y

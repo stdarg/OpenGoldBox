@@ -172,6 +172,7 @@ offset_bottom = -92
 metadata/layout_reference = Rect2(470, 942, 1406, 46)
 theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
+vertical_alignment = 2
 
 [node name="Name" type="LineEdit" parent="."]
 anchor_right = 0.5
