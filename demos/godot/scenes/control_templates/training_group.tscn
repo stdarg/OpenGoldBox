@@ -1,6 +1,10 @@
 [gd_scene format=3]
 
-[node name="TrainingGroup" type="VBoxContainer"]
+[node name="TrainingGroup" type="GridContainer"]
 theme_type_variation = &"TrainingGroup"
+columns = 2
 
 [node name="Title" type="Label" parent="."]
+
+[node name="TitleSpacer" type="Control" parent="."]
+mouse_filter = 2

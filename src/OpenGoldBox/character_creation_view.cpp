@@ -595,7 +595,6 @@ void CharacterCreationView::refresh()
     {
         presentation::refresh_training_controls(
             *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
-            presentation::guarded(this, &CharacterCreationView::training_selected),
             i18n::text);
         instructions = N_("Choose the required training options. Back preserves your selections.");
     }
@@ -775,33 +774,23 @@ void CharacterCreationView::cantrip_toggled(bool selected, String option)
     });
 }
 
-void CharacterCreationView::training_selected(std::int64_t index, String group)
-{
-    if (refreshing_ || !creator_ || creator_->step() != CreationStep::training || index <= 0)
-        return;
-    perform(
-        [&]
-    {
-        const auto groups = creator_->rules().training_options(creator_->draft());
-        const auto found = std::find_if(groups.begin(), groups.end(),
-                                        [&](const auto & g)
-        {
-            return g.id == group.utf8().get_data();
-        });
-        if (found == groups.end() ||
-                found->control != opengold::rules::TrainingChoiceControl::single_selection ||
-                static_cast<std::size_t>(index) > found->options.size())
-            throw std::runtime_error("Unknown training choice");
-        creator_->training_choice({.group = found->id,
-                                   .option = found->options[index - 1].id,
-                                   .selected = true});
-    });
-}
-
 void CharacterCreationView::training_toggled(bool selected, String group, String option)
 {
     if (refreshing_ || !creator_ || creator_->step() != CreationStep::training)
         return;
+    // A radio button turning off only means another of its group was chosen,
+    // and that choice replaces it.
+    if (!selected)
+    {
+        const auto groups = creator_->training_options();
+        const auto found = std::find_if(groups.begin(), groups.end(), [&](const auto & g)
+        {
+            return g.id == group.utf8().get_data();
+        });
+        if (found != groups.end() &&
+                found->control == opengold::rules::TrainingChoiceControl::single_selection)
+            return;
+    }
     perform(
         [&]
     {
@@ -1557,9 +1546,7 @@ void CharacterCreationView::check_run()
             throw std::runtime_error("Qualified Fighter must complete Training first");
         required_node<CheckBox>(*this, "Training/Rows/Group1/athletics").set_pressed(true);
         required_node<CheckBox>(*this, "Training/Rows/Group1/history").set_pressed(true);
-        required_node<OptionButton>(*this, "Training/Rows/Group0/Choice").select(2);
-        required_node<OptionButton>(*this, "Training/Rows/Group0/Choice")
-        .emit_signal("item_selected", 2);
+        required_node<CheckBox>(*this, "Training/Rows/Group0/archery").set_pressed(true);
         // A Fighter also masters three weapons.
         for (const char *weapon : {"dagger", "longsword", "greataxe"})
             required_node<CheckBox>(*this, gs(std::string("Training/Rows/Group2/") + weapon))

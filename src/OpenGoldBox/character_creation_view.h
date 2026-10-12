@@ -77,7 +77,6 @@ class CharacterCreationView : public godot::Control
     void creation_spell_toggled(bool selected, godot::String group, godot::String option);
     void cantrip_toggled(bool selected, godot::String option);
     void training_toggled(bool selected, godot::String group, godot::String option);
-    void training_selected(std::int64_t index, godot::String group);
     void roll();
     void score_selected(int index);
     godot::Variant drag_roll(godot::Vector2 position, int index);

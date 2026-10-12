@@ -5,7 +5,7 @@ gives Fighters one Fighting Style feat at level one. Archery adds +2 to attack
 rolls with Ranged weapons; Defense adds +1 AC while wearing armor. Neither feat
 is repeatable. Defense is the recommended starting choice in the SRD.
 
-The approved Training dropdown appears above languages and requires one of the
+The Training step's Fighting Style radio buttons, each with its benefit beside it, come first and require one of the
 currently implemented styles before Next. Keyboard selection retains focus;
 Back and background changes preserve the choice. Changing away from Fighter
 removes it. Presets receive a pre-generated choice. The shared C++ training

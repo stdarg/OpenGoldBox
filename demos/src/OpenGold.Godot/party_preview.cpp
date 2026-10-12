@@ -457,9 +457,7 @@ void CharacterCreationView::party_check()
                         })
                     get_node<CheckBox>(String("Training/Rows/Group2/") + mastery)
                     ->set_pressed(true);
-                get_node<OptionButton>("Training/Rows/Group0/Choice")->select(2);
-                get_node<OptionButton>("Training/Rows/Group0/Choice")
-                ->emit_signal("item_selected", 2);
+                get_node<CheckBox>("Training/Rows/Group0/archery")->set_pressed(true);
             }
             next();
             if (creator_->step() == before)

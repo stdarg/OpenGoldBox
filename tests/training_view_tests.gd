@@ -102,7 +102,7 @@ func all_class_skill_controls() -> void:
 		await press("Next")
 		var group := 1 if klass in ["Fighter", "Cleric", "Druid", "Warlock"] else 0
 		var count := 3 if klass in ["Bard", "Ranger"] else 2
-		var box: VBoxContainer = current_scene.get_node("Training/Rows/Group%d" % group)
+		var box: GridContainer = current_scene.get_node("Training/Rows/Group%d" % group)
 		var checks: Array[CheckBox] = []
 		for child in box.get_children():
 			if child is CheckBox and child.visible: checks.append(child)
@@ -117,13 +117,13 @@ func all_class_skill_controls() -> void:
 		await press("Back")
 		await press("Next")
 		require(checks[0].button_pressed and checks[count - 1].button_pressed, "Back preserves class skills: " + klass)
-		if klass == "Fighter": await choose("Training/Rows/Group0/Choice", "Defense")
+		if klass == "Fighter": await pick(0, "defense")
 		if klass == "Cleric":
 			require(current_scene.get_node("Next").disabled, "A Cleric must choose a Divine Order")
-			await choose("Training/Rows/Group0/Choice", "Protector")
+			await pick(0, "protector")
 		if klass == "Druid":
 			require(current_scene.get_node("Next").disabled, "A Druid must choose a Primal Order")
-			await choose("Training/Rows/Group0/Choice", "Warden")
+			await pick(0, "warden")
 		if klass == "Warlock":
 			require(current_scene.get_node("Next").disabled, "A Warlock must choose an Eldritch Invocation")
 			for child in current_scene.get_node("Training/Rows/Group0").get_children():
@@ -158,7 +158,7 @@ func all_class_skill_controls() -> void:
 
 func complete_mastery(klass: String) -> void:
 	if not klass in ["Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]: return
-	var box: VBoxContainer
+	var box: GridContainer
 	for candidate in current_scene.get_node("Training/Rows").get_children():
 		if candidate.visible and candidate.has_node("dagger") and candidate.get_node("dagger").visible: box = candidate
 	require(box != null, "Eligible class has a Weapon Mastery group: " + klass)
@@ -218,17 +218,18 @@ func run_checks() -> void:
 		await pick(0, skill)
 	require(current_scene.get_node("Training/Rows/Group0/athletics").disabled and current_scene.get_node("Training/Rows/Group0/Title").text.ends_with("(4 / 4)"), "Class skill limit or selection count missing")
 	await capture("training-rogue-skills")
-	# Hovering a choice for a second shows what it adds.
+	# Each choice shows what it adds; hovering for a second names its source.
 	require(ProjectSettings.get_setting("gui/timers/tooltip_delay_sec") == 1.0, "Tooltips wait one second")
-	var chosen: String = current_scene.get_node("Training/Rows/Group0/acrobatics").tooltip_text
-	var open: String = current_scene.get_node("Training/Rows/Group0/athletics").tooltip_text
-	require(chosen.begins_with("Acrobatics +") and not chosen.contains("if chosen") and open.contains(" if chosen (now ") and open.contains("Rogue class"), "Skill tooltips show the bonus once chosen")
+	var chosen: String = current_scene.get_node("Training/Rows/Group0/acrobaticsBenefit").text
+	var open: String = current_scene.get_node("Training/Rows/Group0/athleticsBenefit").text
+	require(chosen.begins_with("Acrobatics +") and not chosen.contains("if chosen") and open.contains(" if chosen (now "), "Each skill shows its bonus once chosen beside it")
+	require(current_scene.get_node("Training/Rows/Group0/athletics").tooltip_text.contains("Rogue class"), "Hovering a skill names who offers it")
 	await pick(1, "stealth")
 	await pick(1, "perception")
 	await complete_mastery("Rogue")
 	require(not current_scene.get_node("Next").disabled, "Complete Rogue training cannot continue")
-	var dagger: CheckBox = current_scene.get_node("Training/Rows/Group2/dagger")
-	require(dagger.tooltip_text.begins_with("Nick: The Light weapon's extra attack"), "Mastery tooltips say what the property does")
+	var dagger: Label = current_scene.get_node("Training/Rows/Group2/daggerBenefit")
+	require(dagger.text.begins_with("Nick: The Light weapon's extra attack"), "Each weapon shows what its mastery property does")
 	var last: CheckBox
 	for child in current_scene.get_node("Training/Rows/Group2").get_children():
 		if child is CheckBox and child.visible: last = child
@@ -273,28 +274,30 @@ func run_checks() -> void:
 	await choose("Choices", "Fighter")
 	await press("Next")
 	await complete_mastery("Fighter")
-	var style: OptionButton = current_scene.get_node("Training/Rows/Group0/Choice")
-	require(style.is_visible_in_tree() and style.selected == 0 and current_scene.get_node("Next").disabled, "Fighter must choose a starting style")
+	# A single choice is a set of radio buttons, each with its bonus beside it.
+	var styles: Control = current_scene.get_node("Training/Rows/Group0")
+	var defense: CheckBox = styles.get_node("defense")
+	var archery: CheckBox = styles.get_node("archery")
+	require(defense.is_visible_in_tree() and archery.button_group != null and archery.button_group == defense.button_group and not defense.button_pressed and not archery.button_pressed and current_scene.get_node("Next").disabled, "Fighter must choose a starting style from radio buttons")
+	var benefit: Label = styles.get_node("archeryBenefit")
+	require(benefit.text == "+2 to attack rolls with Ranged weapons." and benefit.position.x >= archery.position.x + archery.size.x and archery.size.x < styles.size.x * 0.6, "Choices take only the width they need, with their bonus to the right")
 	require(current_scene.get_node("Training/Rows/Group0").get_index() == 0 and not current_scene.get_node("Training/Rows/Group0/acrobatics").visible, "Style must appear first without Rogue controls")
 	require(current_scene.get_node("Training/Rows/Group1/acrobatics").button_pressed and current_scene.get_node("Training/Rows/Group1/persuasion").button_pressed, "Fighter keeps compatible Rogue skill selections up to its limit")
-	style.grab_focus()
+	archery.grab_focus()
 	await keyboard(KEY_SPACE)
-	require(style.get_popup().visible, "Keyboard must open the style dropdown")
-	await keyboard(KEY_DOWN)
-	await keyboard(KEY_ENTER)
-	require(style.selected == 2 and style.has_focus() and not current_scene.get_node("Next").disabled, "Keyboard Archery choice must complete training and retain focus")
+	require(archery.button_pressed and archery.has_focus() and not current_scene.get_node("Next").disabled, "Keyboard Archery choice must complete training and retain focus")
 	await press("Next")
 	await press("Back")
-	require(style.selected == 2, "Back must preserve the chosen style")
-	await choose("Training/Rows/Group0/Choice", "Great Weapon Fighting")
-	require(style.selected == 3 and not current_scene.get_node("Next").disabled, "GWF completes starting style choice")
-	await choose("Training/Rows/Group0/Choice", "Defense")
-	require(style.selected == 1 and not current_scene.get_node("Next").disabled, "Changing style must replace its selection")
+	require(archery.button_pressed, "Back must preserve the chosen style")
+	await pick(0, "great_weapon_fighting")
+	require(styles.get_node("great_weapon_fighting").button_pressed and not archery.button_pressed and not current_scene.get_node("Next").disabled, "GWF completes starting style choice")
+	await pick(0, "defense")
+	require(defense.button_pressed and not styles.get_node("great_weapon_fighting").button_pressed and not current_scene.get_node("Next").disabled, "Changing style must replace its selection")
 	for locale in locales:
 		TranslationServer.set_locale(locale)
 		await press("Back")
 		await press("Next")
-		require(style.selected == 1 and style.get_item_text(1) == ("Defense" if locale == "en" else "Defensa"), "Translated dropdown must preserve Defense")
+		require(defense.button_pressed and defense.text == ("Defense" if locale == "en" else "Defensa"), "Translated radio button must keep Defense")
 		for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:
 			root.size = size
 			await settle()
@@ -308,7 +311,7 @@ func run_checks() -> void:
 	await press("Back")
 	await choose("Choices", "Rogue")
 	await press("Next")
-	require(not style.visible and current_scene.get_node("Next").disabled and current_scene.get_node("Training/Rows/Group0/acrobatics").button_pressed, "Returning to Rogue keeps valid skills and requires its missing choices")
+	require(not defense.visible and current_scene.get_node("Next").disabled and current_scene.get_node("Training/Rows/Group0/acrobatics").button_pressed, "Returning to Rogue keeps valid skills and requires its missing choices")
 	for skill in ["acrobatics", "investigation", "perception", "persuasion"]:
 		await pick(0, skill)
 	await pick(1, "perception")

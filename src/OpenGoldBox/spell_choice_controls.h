@@ -2,6 +2,7 @@
 #define OPENGOLDBOX_SPELL_CHOICE_CONTROLS_H
 #include "training_control.h"
 #include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/window.hpp>
 
 namespace presentation

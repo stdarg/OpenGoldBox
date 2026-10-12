@@ -57,9 +57,11 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
    choices ([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)). Counts show progress and Next requires every supported choice.
    Back preserves choices; class/background edits clear only invalid choices and
    their dependencies. The full first package and limits are in [TRAINING.md](TRAINING.md).
-   Hovering a choice for a second shows what it adds: a skill's check bonus once
-   chosen (and its bonus now), or what a weapon's mastery property does. The
-   one-second delay is the game's setting for every tooltip.
+   A group with one choice (Fighting Style, Divine Order, Primal Order) uses radio
+   buttons. Each choice is as wide as the group's longest and has what it gives
+   written to its right: a skill's check bonus once chosen (and its bonus now),
+   a weapon's mastery property, or a style's or order's benefit. Hovering a
+   choice for a second names the class or background that offers it.
 6. Wizards and Clerics choose supported cantrips in **Spell Choices**, after
    Training. Wizard Fire Bolt/Poison Spray and Cleric Sacred Flame have labeled
    checkboxes, counts and keyboard access.

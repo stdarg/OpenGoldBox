@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[node name="TrainingBenefit" type="Label"]
+size_flags_horizontal = 3
+theme_type_variation = &"LabelText15"
+vertical_alignment = 1
+autowrap_mode = 3
+auto_translate_mode = 2

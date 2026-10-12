@@ -1,6 +1,6 @@
 {
     "enabled_classes": [
-        "DirAccess", "DisplayServer", "RenderingServer", "Time", "JSON", "FileAccess", "VScrollBar", "CheckBox", "ScrollContainer", "Control", "Button", "Label", "RichTextLabel", "PanelContainer", "ItemList", "LineEdit", "OptionButton", "PopupMenu",
+        "DirAccess", "DisplayServer", "RenderingServer", "Time", "JSON", "FileAccess", "VScrollBar", "CheckBox", "ButtonGroup", "GridContainer", "ScrollContainer", "Control", "Button", "Label", "RichTextLabel", "PanelContainer", "ItemList", "LineEdit", "OptionButton", "PopupMenu",
         "MarginContainer", "HBoxContainer", "VBoxContainer", "StyleBoxFlat",
         "Image", "ImageTexture", "Font", "InputEventKey", "InputEventMouseButton", "InputEventMouseMotion",
         "ProjectSettings", "ResourceLoader", "OS", "Engine", "Window", "SceneTree",

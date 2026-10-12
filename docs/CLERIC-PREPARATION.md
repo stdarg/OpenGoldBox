@@ -39,7 +39,7 @@ Rules module 0.6.63. SRD 5.2.1 Cleric, levels 1–4; counts as recorded in the
 
 ## Interface
 
-- **Training step:** a "Divine Order" dropdown, sorted first like Fighting Style.
+- **Training step:** "Divine Order" radio buttons, sorted first like Fighting Style.
 - **Spell Choices step:** the Cleric cantrip group, then "Prepared spells
   (n / 4)". Next stays disabled until every available spell is prepared.
 - **Level up:** a second page with the prepared group. Earlier preparations are
@@ -79,7 +79,7 @@ are rejected by the rules identity, as the
 - `opengold_godot_rest` (CTest) opens a Cleric's Long Rest window after the
   Wizard checks: "Prepared spells" title, no replacement row, Apply closes it.
 - `tests/cleric_cantrip_view_tests.gd` and `tests/training_view_tests.gd`
-  cover the Training dropdown and the Spell Choices step.
+  cover the Training radio buttons and the Spell Choices step.
 
 ## Not covered
 

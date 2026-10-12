@@ -3,9 +3,10 @@
 #include "godot_nodes.h"
 #include "localization.h"
 #include "opengold/character_creator.h"
+#include <godot_cpp/classes/button_group.hpp>
 #include <godot_cpp/classes/check_box.hpp>
+#include <godot_cpp/classes/grid_container.hpp>
 #include <godot_cpp/classes/label.hpp>
-#include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
@@ -182,8 +183,7 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
 // not destroy the focused checkbox or its keyboard navigation position.
 template <class Translate>
 void refresh_training_controls(godot::Node &parent, const opengold::CharacterCreator &creator,
-                               const godot::Callable &toggled, const godot::Callable &selected,
-                               const Translate &tr,
+                               const godot::Callable &toggled, const Translate &tr,
                                const opengold::rules::TrainingChoices &locked = {})
 {
     using namespace godot;
@@ -205,10 +205,12 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         const auto original = locked.find(group.id);
         const bool has_locked = original != locked.end() && !original->second.empty();
         const auto name = String("Group") + String::num_uint64(i);
-        auto *box = Object::cast_to<VBoxContainer>(rows->get_node_or_null(name));
+        // Each group is a two-column grid: a choice sized to the longest one,
+        // then what it gives.
+        auto *box = Object::cast_to<GridContainer>(rows->get_node_or_null(name));
         if (!box)
         {
-            auto owned = instantiate_control<VBoxContainer>(
+            auto owned = instantiate_control<GridContainer>(
                 "res://scenes/control_templates/training_group.tscn");
             owned->set_name(name);
             box = attach_child(*rows, std::move(owned));
@@ -222,67 +224,32 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         title->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
         title->set_text(tr(group.label) + " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
-        auto *choice = Object::cast_to<OptionButton>(box->get_node_or_null("Choice"));
-        if (choice && group.control != opengold::rules::TrainingChoiceControl::single_selection)
-        {
-            choice->hide();
-            choice->set_disabled(true);
-        }
-        if (group.control == opengold::rules::TrainingChoiceControl::single_selection)
-        {
-            for (int j = 0; j < box->get_child_count(); ++j)
-                if (auto *check = Object::cast_to<CheckBox>(box->get_child(j)))
-                {
-                    check->hide();
-                    check->set_disabled(true);
-                }
-            if (!choice)
-            {
-                auto owned = instantiate_control<OptionButton>(
-                    "res://scenes/control_templates/training_dropdown.tscn");
-                owned->set_name("Choice");
-                choice = attach_child(*box, std::move(owned));
-            }
-            if (choice->has_meta("training_callback"))
-            {
-                const Callable previous = choice->get_meta("training_callback");
-                choice->disconnect("item_selected", previous);
-            }
-            const auto callback = selected.bind(training_string(group.id));
-            choice->connect("item_selected", callback);
-            choice->set_meta("training_callback", callback);
-            choice->clear();
-            choice->add_item(tr(N_("Choose an option")));
-            choice->set_item_disabled(0, true);
-            int index = 0;
-            for (unsigned n = 0; n < group.options.size(); ++n)
-            {
-                const auto &option = group.options[n];
-                choice->add_item(tr(option.label));
-                choice->set_item_tooltip(n + 1, tr(option.description));
-                if (std::find(picked.begin(), picked.end(), option.id) != picked.end())
-                    index = n + 1;
-            }
-            choice->select(index);
-            choice->set_tooltip_text(training_source(group.id, tr));
-            choice->set_disabled(has_locked);
-            choice->show();
-            continue;
-        }
+        // A reused group can hold another class's options.
         for (int j = 0; j < box->get_child_count(); ++j)
-            if (auto *check = Object::cast_to<CheckBox>(box->get_child(j)))
+        {
+            auto *row = Object::cast_to<Control>(box->get_child(j));
+            const String row_name = row->get_name();
+            const bool used = row_name == "Title" || row_name == "TitleSpacer" ||
+                              std::any_of(group.options.begin(), group.options.end(),
+                                          [&](const auto & o)
             {
-                if (std::none_of(group.options.begin(), group.options.end(),
-                                 [&](const auto & o)
-            {
-                return training_string(o.id) == String(check->get_name());
-                }))
-                {
-                    check->hide();
-                    check->set_disabled(true);
-                }
-            }
-        int option_index = 1;
+                const auto id = training_string(o.id);
+                return row_name == id || row_name == id + String("Benefit");
+            });
+            if (used)
+                continue;
+            row->hide();
+            if (auto *check = Object::cast_to<CheckBox>(row))
+                check->set_disabled(true);
+        }
+        // A single choice is a set of radio buttons sharing one group.
+        const bool single =
+            group.control == opengold::rules::TrainingChoiceControl::single_selection;
+        if (single && !box->has_meta("radios"))
+            box->set_meta("radios", Ref<ButtonGroup>(memnew(ButtonGroup)));
+        const Ref<ButtonGroup> radios = single ? Ref<ButtonGroup>(box->get_meta("radios"))
+                                        : Ref<ButtonGroup>();
+        int row_index = 2; // after Title and its spacer
         for (const auto &option : group.options)
         {
             const auto node_name = training_string(option.id);
@@ -294,6 +261,15 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                 owned->set_name(node_name);
                 check = attach_child(*box, std::move(owned));
             }
+            const auto benefit_name = node_name + String("Benefit");
+            auto *benefit = Object::cast_to<Label>(box->get_node_or_null(benefit_name));
+            if (!benefit)
+            {
+                auto owned = instantiate_control<Label>(
+                    "res://scenes/control_templates/training_benefit.tscn");
+                owned->set_name(benefit_name);
+                benefit = attach_child(*box, std::move(owned));
+            }
             // A reused row can now belong to another class's skill group.
             if (check->has_meta("training_callback"))
             {
@@ -303,20 +279,23 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             const auto callback = toggled.bind(training_string(group.id), node_name);
             check->connect("toggled", callback);
             check->set_meta("training_callback", callback);
-            box->move_child(check, option_index++);
+            box->move_child(check, row_index++);
+            box->move_child(benefit, row_index++);
+            check->set_button_group(radios);
             const bool selected =
                 std::find(picked.begin(), picked.end(), option.id) != picked.end();
-            check->set_text(tr(option.label) + (option.description.empty()
+            check->set_text(tr(option.label) + (single || option.description.empty()
                                                 ? String()
                                                 : String(" / ") + tr(option.description)));
             check->set_pressed_no_signal(selected);
             check->set_disabled(
                 (has_locked && std::find(original->second.begin(), original->second.end(),
                                          option.id) != original->second.end()) ||
-                (!selected && picked.size() >= group.count));
+                (!single && !selected && picked.size() >= group.count));
             check->show();
-            check->set_tooltip_text(training_benefit(group, option, sheet, tr) + "\n" +
-                                    training_source(group.id, tr));
+            check->set_tooltip_text(training_source(group.id, tr));
+            benefit->set_text(training_benefit(group, option, sheet, tr));
+            benefit->show();
         }
     }
     String signature;
@@ -327,7 +306,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     for (unsigned i = 0; i < groups.size(); ++i)
         if (groups[i].control == opengold::rules::TrainingChoiceControl::single_selection)
             rows->move_child(
-                &required_node<VBoxContainer>(*rows, String("Group") + String::num_uint64(i)),
+                &required_node<GridContainer>(*rows, String("Group") + String::num_uint64(i)),
                 first++);
 }
 } // namespace presentation

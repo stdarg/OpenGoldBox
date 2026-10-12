@@ -25,7 +25,7 @@ func _initialize() -> void:
                 return
         layout.free()
 
-    for template in ["cantrip_choice", "training_dropdown", "training_checkbox", "training_replacement", "spell_choice"]:
+    for template in ["cantrip_choice", "training_checkbox", "training_replacement", "spell_choice"]:
         var scene: PackedScene = load("res://scenes/control_templates/%s.tscn" % template)
         if scene == null:
             _fail("Missing generated control template: " + template)
