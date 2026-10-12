@@ -45,6 +45,9 @@ class CharacterCreationView : public godot::Control
     std::optional<opengold::por::CombatBodyCatalog> body_catalog_;
     std::optional<opengold::por::CharacterAppearance> rendered_;
     std::array<godot::Ref<godot::ImageTexture>, 3> images_;
+    // A random portrait of the race chosen on the first page, and that race.
+    godot::Ref<godot::ImageTexture> race_portrait_;
+    std::string race_portrait_of_, race_portrait_file_;
     godot::String error_;
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};
@@ -54,6 +57,9 @@ class CharacterCreationView : public godot::Control
     void refresh();
     void refresh_art();
     void recommend_portrait();
+    // Shows a random portrait of the draft's race; `again` picks a new one
+    // even when the race is unchanged.
+    void show_race_portrait(bool again);
     std::optional<PortraitCatalog> portraits_;
     std::vector<std::size_t> filtered_portraits_;
     void load_portraits();

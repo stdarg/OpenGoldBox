@@ -125,11 +125,11 @@ msgstr "2 puntos de hechicería: lanza un conjuro de acción como acción adicio
 msgid "2 Sorcery Points: one target has Disadvantage on its save against the spell."
 msgstr "2 puntos de hechicería: un objetivo tiene desventaja en su salvación contra el conjuro."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:294
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:314
 msgid "< Head"
 msgstr "< Cabeza"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:320
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:340
 msgid "< Weapon"
 msgstr "< Arma"
 
@@ -141,33 +141,13 @@ msgstr "Una criatura con 0 puntos de golpe a 15 pies o menos queda estable."
 msgid "A disciplined martial artist. Primary abilities: Dexterity and Wisdom. Hit Die: d8."
 msgstr "Un artista marcial disciplinado. Características principales: Destreza y Sabiduría. Dado de golpe: d8."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:193
-msgid "A draconic humanoid."
-msgstr "Un humanoide de ascendencia dracónica."
-
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:30
 msgid "A fierce warrior. Primary ability: Strength. Hit Die: d12."
 msgstr "Un combatiente feroz. Característica principal: Fuerza. Dado de golpe: d12."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:195
-msgid "A folk with a connection to the Fey."
-msgstr "Un pueblo vinculado a los seres feéricos."
-
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:201
-msgid "A folk with a fiendish legacy."
-msgstr "Un pueblo con un legado infernal."
-
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:197
-msgid "A folk with giant ancestry."
-msgstr "Un pueblo de ascendencia gigante."
-
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:42
 msgid "A guardian of nature. Primary ability: Wisdom. Hit Die: d8."
 msgstr "Un guardián de la naturaleza. Característica principal: Sabiduría. Dado de golpe: d8."
-
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:194
-msgid "A hardy folk. Dwarven Toughness adds 1 to starting HP."
-msgstr "Un pueblo resistente. Dureza enana añade 1 a los PG iniciales."
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:58
 msgid "A hunter and wilderness explorer. Primary abilities: Dexterity and Wisdom. Hit Die: d10."
@@ -181,21 +161,9 @@ msgstr "Un maestro de las armas. Característica principal: Fuerza o Destreza. D
 msgid "A miss still deals damage equal to the ability modifier used for the attack."
 msgstr "Un fallo inflige igualmente daño igual al modificador de característica usado en el ataque."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:200
-msgid "A resilient, determined folk."
-msgstr "Un pueblo tenaz y decidido."
-
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:74
 msgid "A scholar of arcane magic. Primary ability: Intelligence. Hit Die: d6."
 msgstr "Un estudioso de la magia arcana. Característica principal: Inteligencia. Dado de golpe: d6."
-
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:196
-msgid "A small, inventive folk."
-msgstr "Un pueblo de baja estatura y gran inventiva."
-
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:198
-msgid "A small, resourceful folk."
-msgstr "Un pueblo de baja estatura y muchos recursos."
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:70
 msgid "A spellcaster empowered by a pact. Primary ability: Charisma. Hit Die: d8."
@@ -204,10 +172,6 @@ msgstr "Un lanzador de conjuros cuyo poder procede de un pacto. Característica 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:66
 msgid "A spellcaster with innate magic. Primary ability: Charisma. Hit Die: d6."
 msgstr "Un lanzador de conjuros con magia innata. Característica principal: Carisma. Dado de golpe: d6."
-
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:199
-msgid "A versatile and adaptable folk."
-msgstr "Un pueblo versátil y adaptable."
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:38
 msgid "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
@@ -243,7 +207,7 @@ msgstr "Flecha ácida"
 msgid "Acid Splash"
 msgstr "Salpicadura de ácido"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:246
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:258
 msgid "Acolyte"
 msgstr "Acólito"
 
@@ -255,7 +219,7 @@ msgstr "Trasfondo de acólito"
 msgid "Acrobatics"
 msgstr "Acrobacias"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:425 src/OpenGoldBox/godot/scenes/party_panel.tscn:192
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:445 src/OpenGoldBox/godot/scenes/party_panel.tscn:192
 msgid "Action"
 msgstr "Acción"
 
@@ -324,7 +288,7 @@ msgstr "Acción; toque; cura 2d8 + modificador de Sabiduría."
 msgid "Active conditions are shown in the character status."
 msgstr "Las condiciones activas se muestran en el estado del personaje."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:239
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:251
 msgid "Acts destructively with little regard for rules or others."
 msgstr "Actúa de forma destructiva, sin apenas respetar las normas ni a los demás."
 
@@ -340,7 +304,7 @@ msgstr "Añade primero un miembro al grupo"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Suma tu bonificador por competencia a Iniciativa; puedes intercambiarla con un aliado apto antes del primer turno."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1189 src/OpenGoldBox/godot/scenes/character_creation.tscn:1485
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1209 src/OpenGoldBox/godot/scenes/character_creation.tscn:1505
 msgid "Add to party"
 msgstr "Añadir al grupo"
 
@@ -494,7 +458,7 @@ msgstr "Armadura de sombras"
 msgid "Armor of Shadows (Mage Armor)"
 msgstr "Armadura de sombras (Armadura de mago)"
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:744
+#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:764
 msgid "Arms"
 msgstr "Brazos"
 
@@ -526,19 +490,19 @@ msgstr "Atletismo"
 msgid "Attribute"
 msgstr "Característica"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:248
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:260
 msgid "Attribute bonuses: Constitution, Intelligence, Wisdom."
 msgstr "Bonificaciones: Constitución, Inteligencia y Sabiduría."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:247
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:259
 msgid "Attribute bonuses: Dexterity, Constitution, Intelligence."
 msgstr "Bonificaciones: Destreza, Constitución e Inteligencia."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:246
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:258
 msgid "Attribute bonuses: Intelligence, Wisdom, Charisma."
 msgstr "Bonificaciones: Inteligencia, Sabiduría y Carisma."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:249
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:261
 msgid "Attribute bonuses: Strength, Dexterity, Constitution."
 msgstr "Bonificaciones: Fuerza, Destreza y Constitución."
 
@@ -546,7 +510,7 @@ msgstr "Bonificaciones: Fuerza, Destreza y Constitución."
 msgid "Attributes"
 msgstr "Características"
 
-#: src/OpenGoldBox/character_creation_view.cpp:428 src/OpenGoldBox/godot/scenes/character_creation.tscn:375 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:54 src/OpenGoldBox/level_up_dialog.cpp:64
+#: src/OpenGoldBox/character_creation_view.cpp:443 src/OpenGoldBox/godot/scenes/character_creation.tscn:395 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:54 src/OpenGoldBox/level_up_dialog.cpp:64
 msgid "Back"
 msgstr "Atrás"
 
@@ -567,7 +531,7 @@ msgstr "Trasfondo / {background}"
 msgid "Background bonuses cannot raise a score above 20"
 msgstr "Las bonificaciones de trasfondo no pueden superar una puntuación de 20"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:229
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:241
 msgid "Balances competing principles or acts according to circumstances."
 msgstr "Equilibra principios opuestos o actúa según las circunstancias."
 
@@ -628,7 +592,7 @@ msgstr "Lanzamiento de conjuros de bardo con conjuros preparados; Aprendiz de to
 msgid "Barkskin"
 msgstr "Piel robliza"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1012
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1032
 msgid "Base"
 msgstr "Base"
 
@@ -696,7 +660,7 @@ msgstr "Desenfoque"
 msgid "Boar"
 msgstr "jabalí"
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:657
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:677
 msgid "Body"
 msgstr "Cuerpo"
 
@@ -704,7 +668,7 @@ msgstr "Cuerpo"
 msgid "Bone bow"
 msgstr "Arco de hueso"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1021
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1041
 msgid "Bonus"
 msgstr "Bonificación"
 
@@ -914,15 +878,15 @@ msgstr "Canalizar divinidad"
 msgid "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead."
 msgstr "Canalizar divinidad: dos usos, uno se recupera con un descanso corto, para Chispa divina (cura o daña 1d8 + Sabiduría a 30 pies o menos) o Expulsar muertos vivientes."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:239
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:251
 msgid "Chaotic Evil"
 msgstr "Caótico malvado"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:227
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:239
 msgid "Chaotic Good"
 msgstr "Caótico bueno"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:233
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:245
 msgid "Chaotic Neutral"
 msgstr "Caótico neutral"
 
@@ -934,7 +898,7 @@ msgstr "Personaje"
 msgid "Character Pool"
 msgstr "Reserva de personajes"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1473
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1493
 msgid "Character Pool / 48 level-one characters"
 msgstr "Reserva / 48 personajes de nivel 1"
 
@@ -950,7 +914,7 @@ msgstr "No se pudieron cargar los gráficos del personaje. Reinicia con --reset-
 msgid "Character loaded."
 msgstr "Personaje cargado."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1214
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1234
 msgid "Character modifiers"
 msgstr "Modificadores del personaje"
 
@@ -1024,7 +988,7 @@ msgstr "Elige un personaje y pulsa Crear personaje."
 msgid "Choose a one-handed weapon"
 msgstr "Elige un arma de una mano"
 
-#: src/OpenGoldBox/character_creation_view.cpp:612
+#: src/OpenGoldBox/character_creation_view.cpp:627
 msgid "Choose a portrait. Filters narrow the list and do not change your character."
 msgstr "Elige un retrato. Los filtros acotan la lista y no cambian a tu personaje."
 
@@ -1032,7 +996,7 @@ msgstr "Elige un retrato. Los filtros acotan la lista y no cambian a tu personaj
 msgid "Choose a proficient skill"
 msgstr "Elige una habilidad en la que tengas competencia"
 
-#: src/OpenGoldBox/character_creation_view.cpp:650
+#: src/OpenGoldBox/character_creation_view.cpp:665
 msgid "Choose a swatch to recolor this part in the combat preview."
 msgstr "Elige una muestra para cambiar el color de esta parte en la vista de combate."
 
@@ -1056,11 +1020,11 @@ msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 msgid "Choose an option"
 msgstr "Elige una opción"
 
-#: src/OpenGoldBox/character_creation_view.cpp:606
+#: src/OpenGoldBox/character_creation_view.cpp:621
 msgid "Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige trucos y conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
-#: src/OpenGoldBox/character_creation_view.cpp:608
+#: src/OpenGoldBox/character_creation_view.cpp:623
 msgid "Choose cantrips, spellbook entries and prepared spells. Back preserves your choices."
 msgstr "Elige trucos, entradas del libro de conjuros y conjuros preparados. Atrás conserva tus elecciones."
 
@@ -1072,7 +1036,7 @@ msgstr "Elige la carpeta del juego"
 msgid "Choose language"
 msgstr "Elige idioma"
 
-#: src/OpenGoldBox/character_creation_view.cpp:482
+#: src/OpenGoldBox/character_creation_view.cpp:497
 msgid "Choose one starting class. Checked targets are future plans, not additional class levels."
 msgstr "Elige una clase inicial. Las clases marcadas son objetivos futuros, no niveles adicionales."
 
@@ -1080,7 +1044,7 @@ msgstr "Elige una clase inicial. Las clases marcadas son objetivos futuros, no n
 msgid "Choose portrait"
 msgstr "Elegir retrato"
 
-#: src/OpenGoldBox/character_creation_view.cpp:602
+#: src/OpenGoldBox/character_creation_view.cpp:617
 msgid "Choose prepared spells. Unfilled choices remain pending; Back preserves your choices."
 msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendientes; Atrás conserva tus elecciones."
 
@@ -1088,7 +1052,7 @@ msgstr "Elige conjuros preparados. Las elecciones sin completar quedan pendiente
 msgid "Choose the folder containing START.EXE and the original DAX game files."
 msgstr "Elige la carpeta que contiene START.EXE y los archivos DAX originales del juego."
 
-#: src/OpenGoldBox/character_creation_view.cpp:585
+#: src/OpenGoldBox/character_creation_view.cpp:600
 msgid "Choose the required training options. Back preserves your selections."
 msgstr "Elige las opciones de entrenamiento requeridas. Atrás conserva tus selecciones."
 
@@ -1105,7 +1069,7 @@ msgstr "Elige opciones válidas para ver tus nuevos PG."
 msgid "Choose weapon hand"
 msgstr "Elegir mano del arma"
 
-#: src/OpenGoldBox/character_creation_view.cpp:609
+#: src/OpenGoldBox/character_creation_view.cpp:624
 msgid "Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections."
 msgstr "Elige los trucos disponibles. Las elecciones sin completar quedan pendientes; Atrás conserva tus selecciones."
 
@@ -1226,7 +1190,7 @@ msgstr "Habilidades de clérigo"
 msgid "Click: choose or remove | Space or Cast spell: cast | Escape: cancel"
 msgstr "Clic: elegir o quitar | Espacio o Lanzar conjuro: lanzar | Escape: cancelar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1267 src/OpenGoldBox/godot/scenes/character_creation.tscn:1352 src/OpenGoldBox/godot/scenes/character_creation.tscn:1397 src/OpenGoldBox/godot/scenes/character_creation.tscn:1442 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:467
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1287 src/OpenGoldBox/godot/scenes/character_creation.tscn:1372 src/OpenGoldBox/godot/scenes/character_creation.tscn:1417 src/OpenGoldBox/godot/scenes/character_creation.tscn:1462 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:301 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:467
 msgid "Close"
 msgstr "Cerrar"
 
@@ -1250,11 +1214,11 @@ msgstr "Rociada de color"
 msgid "Color Spray (level 2 slot)"
 msgstr "Rociada de color (espacio de nivel 2)"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1040
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1060
 msgid "Color-1"
 msgstr "Color-1"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1051
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1071
 msgid "Color-2"
 msgstr "Color-2"
 
@@ -1275,7 +1239,7 @@ msgstr "Aspecto en combate"
 msgid "Combat begins. Each square is 5 feet."
 msgstr "Comienza el combate. Cada casilla equivale a 5 pies."
 
-#: src/OpenGoldBox/character_creation_view.cpp:422
+#: src/OpenGoldBox/character_creation_view.cpp:437
 msgid "Combat icon"
 msgstr "Icono de combate"
 
@@ -1375,7 +1339,7 @@ msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nHay seis
 msgid "Create character"
 msgstr "Crear personaje"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:247
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:259
 msgid "Criminal"
 msgstr "Criminal"
 
@@ -1505,7 +1469,7 @@ msgstr "Salvación de Destreza: 1d6 de daño de ácido a cada criatura en una es
 msgid "Dexterity save: 1d8 Radiant damage, visible creature within 60 feet."
 msgstr "Salvación de Destreza: 1d8 de daño radiante, criatura visible a 60 pies o menos."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:992
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1012
 msgid "Dice Rolls"
 msgstr "Tiradas"
 
@@ -1557,7 +1521,7 @@ msgstr "Esquivar"
 msgid "Dodging"
 msgstr "Esquivando"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1683 src/OpenGoldBox/godot/scenes/character_creation.tscn:1694 src/OpenGoldBox/godot/scenes/character_creation.tscn:1705 src/OpenGoldBox/godot/scenes/character_creation.tscn:1716 src/OpenGoldBox/godot/scenes/character_creation.tscn:1727 src/OpenGoldBox/godot/scenes/character_creation.tscn:1738
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1703 src/OpenGoldBox/godot/scenes/character_creation.tscn:1714 src/OpenGoldBox/godot/scenes/character_creation.tscn:1725 src/OpenGoldBox/godot/scenes/character_creation.tscn:1736 src/OpenGoldBox/godot/scenes/character_creation.tscn:1747 src/OpenGoldBox/godot/scenes/character_creation.tscn:1758
 msgid "Does not meet targeted class requirements"
 msgstr "No cumple los requisitos de las clases objetivo"
 
@@ -1565,7 +1529,7 @@ msgstr "No cumple los requisitos de las clases objetivo"
 msgid "Drag this rolled result onto an attribute to assign it."
 msgstr "Arrastra este resultado a una característica para asignarlo."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1003
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1023
 msgid "Drag to the ability score of your choice."
 msgstr "Arrastra a la característica que elijas."
 
@@ -1593,9 +1557,13 @@ msgstr "Aliento de dragón: relámpago"
 msgid "Dragon's Breath: Poison"
 msgstr "Aliento de dragón: veneno"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:193
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:196
 msgid "Dragonborn"
 msgstr "Dracónido"
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:196
+msgid "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance. Not in the game yet.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half. Not in the game yet.\n- Damage Resistance to your ancestry's damage type. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los dracónidos descienden de dragones, cuyo poder se nota en sus escamas y en su aliento.\n\nRasgos raciales:\n- Ascendencia dracónica: un tipo de dragón que fija el daño de tu aliento y tu resistencia. Aún no está en el juego.\n- Arma de aliento: en lugar de un ataque, un cono de 15 pies o una línea de 30 pies de 1d10 de daño, con salvación de Destreza para la mitad. Aún no está en el juego.\n- Resistencia al tipo de daño de tu ascendencia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
 #: src/OpenGoldBox/character_creation_view.cpp:188
 msgid "Drop a roll here. Drag a filled box onto another ability to swap."
@@ -1629,14 +1597,18 @@ msgstr "Guerrero druídico"
 msgid "Druidic Warrior cantrips"
 msgstr "Trucos de guerrero druídico"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:194
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:198
 msgid "Dwarf"
 msgstr "Enano"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:463 src/OpenGold.Rules.Srd5/src/srd5.cpp:10808 src/OpenGold.Rules.Srd5/src/srd5.cpp:3351 src/OpenGoldBox/level_up_view.cpp:282
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:475 src/OpenGold.Rules.Srd5/src/srd5.cpp:10808 src/OpenGold.Rules.Srd5/src/srd5.cpp:3351 src/OpenGoldBox/level_up_view.cpp:282
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr "Dureza enana: +{hp} PG máximos."
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:198
+msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage. Its Advantage on saves against being Poisoned is not in the game yet.\n- Darkvision, 120 feet. Not in the game yet."
+msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno. Su ventaja en las salvaciones contra quedar envenenado aún no está en el juego.\n- Visión en la oscuridad, 120 pies. Aún no está en el juego."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Each roll must be assigned exactly once"
@@ -1662,13 +1634,17 @@ msgstr "Mente sobrenatural"
 msgid "Eldritch Spear"
 msgstr "Lanza sobrenatural"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:195
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:200
 msgid "Elf"
 msgstr "Elfo"
 
 #: src/OpenGoldBox/rest_dialog_impl.h:173
 msgid "Eligible to rest."
 msgstr "Puede descansar."
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:200
+msgid "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: Drow, High Elf or Wood Elf, each with its own magic. Not in the game yet.\n- Fey Ancestry: Advantage on saves against being Charmed. Not in the game yet.\n- Keen Senses: training in Insight, Perception or Survival. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los elfos son gente longeva con la sangre del Feywild en las venas.\n\nRasgos raciales:\n- Trance: la magia no puede dormirte.\n- Linaje élfico: drow, alto elfo o elfo del bosque, cada uno con su propia magia. Aún no está en el juego.\n- Ascendencia feérica: ventaja en las salvaciones contra quedar hechizado. Aún no está en el juego.\n- Sentidos agudos: entrenamiento en Perspicacia, Percepción o Supervivencia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:109 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Empowered Spell"
@@ -1715,7 +1691,7 @@ msgstr "Golpe apresador"
 msgid "Entangle"
 msgstr "Enmarañar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:177
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:182
 msgid "Enter a character name"
 msgstr "Nombre del personaje"
 
@@ -1854,7 +1830,7 @@ msgstr "Dote o puntos de característica"
 msgid "Feat: {feats}"
 msgstr "Dote: {feats}"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:203
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:215
 msgid "Female"
 msgstr "Femenino"
 
@@ -1891,11 +1867,11 @@ msgstr "Habilidades de guerrero"
 msgid "Fighting Style"
 msgstr "Estilo de combate"
 
-#: src/OpenGoldBox/character_creation_view.cpp:534
+#: src/OpenGoldBox/character_creation_view.cpp:549
 msgid "Fill all six boxes to continue.\nAssigned scores include bonuses."
 msgstr "Completa las seis casillas para continuar.\nLas puntuaciones incluyen bonificaciones."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:214
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:234
 msgid "Filter by"
 msgstr "Filtrar por"
 
@@ -2059,7 +2035,7 @@ msgstr "Puntos de Golpe completos."
 msgid "Future class goals: {classes}\n\n"
 msgstr "Clases objetivo: {classes}\n\n"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1564
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1584
 msgid "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
 msgstr "Solo son objetivos futuros. Después elegirás una clase inicial. Las mejoras de características posteriores pueden ayudarte a cumplir sus requisitos."
 
@@ -2079,11 +2055,11 @@ msgstr "Obtienes la dote Atacante salvaje."
 msgid "Game file warning"
 msgstr "Advertencia sobre los archivos del juego"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:101 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:143
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:100 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:143
 msgid "Gender"
 msgstr "Género"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:203 src/OpenGold.Rules.Srd5/src/character_rules.cpp:206 src/OpenGold.Rules.Srd5/src/character_rules.cpp:210
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:215 src/OpenGold.Rules.Srd5/src/character_rules.cpp:218 src/OpenGold.Rules.Srd5/src/character_rules.cpp:222
 msgid "Gender does not change attributes or restrict class or appearance choices."
 msgstr "El género no cambia las características ni limita la clase o el aspecto."
 
@@ -2103,13 +2079,21 @@ msgstr "Guja"
 msgid "Gnoll Warrior"
 msgstr "Guerrero gnoll"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:196
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:202
 msgid "Gnome"
 msgstr "Gnomo"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:197
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:202
+msgid "Gnomes are small, quick-witted folk with a knack for magic and invention.\n\nRacial traits:\n- Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los gnomos son gente pequeña y astuta, con talento para la magia y la invención.\n\nRasgos raciales:\n- Astucia gnoma: ventaja en las salvaciones de Inteligencia, Sabiduría y Carisma. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:204
 msgid "Goliath"
 msgstr "Goliat"
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:204
+msgid "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests. Not in the game yet."
+msgstr "Los goliats son gente altísima que desciende de gigantes.\n\nRasgos raciales:\n- Velocidad de 35 pies.\n- Ascendencia de gigante: un don de los gigantes de las nubes, del fuego, de la escarcha, de las colinas, de piedra o de las tormentas, que se usa unas pocas veces entre descansos largos. Aún no está en el juego."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Goodberry"
@@ -2175,11 +2159,11 @@ msgstr "Orientación divina: Atletismo"
 msgid "Guidance: Medicine"
 msgstr "Orientación divina: Medicina"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:225
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:237
 msgid "Guided by compassion, duty, and order."
 msgstr "Se guía por la compasión, el deber y el orden."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:228
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:240
 msgid "Guided by rules, tradition, or a personal code."
 msgstr "Se guía por las normas, la tradición o un código personal."
 
@@ -2212,7 +2196,7 @@ msgstr "PG recuperados:"
 msgid "HP {current} / {maximum}"
 msgstr "PG {current} / {maximum}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:686
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/scenes/character_creation.tscn:706
 msgid "Hair / Face"
 msgstr "Pelo / Cara"
 
@@ -2232,9 +2216,13 @@ msgstr "Semielfo"
 msgid "Half-Orc"
 msgstr "Semiorco"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:198
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:206
 msgid "Halfling"
 msgstr "Mediano"
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:206
+msgid "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw. Not in the game yet.\n- Brave: Advantage on saves against being Frightened. Not in the game yet.\n- Halfling Nimbleness: move through the space of larger creatures. Not in the game yet.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."
+msgstr "Los medianos son gente pequeña y alegre, conocida por su valor y su suerte extraordinaria.\n\nRasgos raciales:\n- Suerte: vuelve a tirar un 1 en una tirada de ataque, prueba de característica o tirada de salvación. Aún no está en el juego.\n- Valiente: ventaja en las salvaciones contra quedar asustado. Aún no está en el juego.\n- Agilidad de mediano: atraviesa el espacio de criaturas más grandes. Aún no está en el juego.\n- Sigiloso por naturaleza: escóndete tras criaturas más grandes. Aún no está en el juego."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Halt"
@@ -2248,11 +2236,11 @@ msgstr "Ballesta de mano"
 msgid "Handaxe"
 msgstr "Hacha de mano"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:304
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:324
 msgid "Head >"
 msgstr "Cabeza >"
 
-#: src/OpenGoldBox/character_creation_view.cpp:618
+#: src/OpenGoldBox/character_creation_view.cpp:633
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Head {number} / 14"
 msgstr "Cabeza {number} / 14"
@@ -2361,9 +2349,13 @@ msgstr "Inmovilizar persona"
 msgid "Horde Breaker"
 msgstr "Rompehordas"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:199
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:208
 msgid "Human"
 msgstr "Humano"
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:208
+msgid "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice. Not in the game yet.\n- Versatile: an Origin feat of your choice. Not in the game yet."
+msgstr "Los humanos son gente ambiciosa y adaptable que se encuentra en todas las tierras.\n\nRasgos raciales:\n- Ingenioso: inspiración heroica tras cada descanso largo. Aún no está en el juego.\n- Hábil: entrenamiento en una habilidad a tu elección. Aún no está en el juego.\n- Versátil: una dote de origen a tu elección. Aún no está en el juego."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:6994 src/OpenGold.Rules.Srd5/src/srd5.cpp:6995
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -2546,15 +2538,15 @@ msgstr "Ayuda de la tierra"
 msgid "Language"
 msgstr "Idioma"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:234
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:246
 msgid "Lawful Evil"
 msgstr "Legal malvado"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:225
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:237
 msgid "Lawful Good"
 msgstr "Legal bueno"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:228
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:240
 msgid "Lawful Neutral"
 msgstr "Legal neutral"
 
@@ -2598,7 +2590,7 @@ msgstr "Una campaña antigua no puede contener Maestría con armas"
 msgid "Legacy checkpoint cannot contain Weapon Mastery"
 msgstr "Un punto de control antiguo no puede contener Maestría con armas"
 
-#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:773
+#: src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/scenes/character_creation.tscn:793
 msgid "Legs"
 msgstr "Piernas"
 
@@ -2850,11 +2842,11 @@ msgstr "Mano principal"
 msgid "Main hand — {item}"
 msgstr "Mano principal — {item}"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1454 src/OpenGoldBox/godot/scenes/party_panel.tscn:257
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1474 src/OpenGoldBox/godot/scenes/party_panel.tscn:257
 msgid "Make leader"
 msgstr "Nombrar líder"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:206
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:218
 msgid "Male"
 msgstr "Masculino"
 
@@ -3006,7 +2998,7 @@ msgstr "Faltan archivos del juego o no se pueden leer:"
 msgid "Misty Step"
 msgstr "Paso brumoso"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1211 src/OpenGoldBox/godot/scenes/party_panel.tscn:164
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1231 src/OpenGoldBox/godot/scenes/party_panel.tscn:164
 msgid "Modifiers"
 msgstr "Modificadores"
 
@@ -3063,11 +3055,11 @@ msgstr "Mosquete"
 msgid "NPC"
 msgstr "PNJ"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:191 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:74
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:211 src/OpenGoldBox/godot/scenes/level_up_lab.tscn:74
 msgid "Name"
 msgstr "Nombre"
 
-#: src/OpenGoldBox/character_creation_view.cpp:484
+#: src/OpenGoldBox/character_creation_view.cpp:499
 msgid "Name your character (up to 40 characters), then choose a race (species in SRD 5.2.1) and gender."
 msgstr "Pon nombre a tu personaje (hasta 40 caracteres) y elige raza (especie en SRD 5.2.1) y género."
 
@@ -3083,15 +3075,15 @@ msgstr "Naturaleza"
 msgid "Necrotic"
 msgstr "Necrótico"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:229
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:241
 msgid "Neutral"
 msgstr "Neutral"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:235
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:247
 msgid "Neutral Evil"
 msgstr "Neutral malvado"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:226
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:238
 msgid "Neutral Good"
 msgstr "Neutral bueno"
 
@@ -3103,11 +3095,11 @@ msgstr "Los nuevos personajes empiezan con 3d6 × 10 po / Guardar partida guarda
 msgid "New Phlan"
 msgstr "Nueva Phlan"
 
-#: src/OpenGoldBox/character_creation_view.cpp:434 src/OpenGoldBox/godot/scenes/character_creation.tscn:387 src/OpenGoldBox/level_up_dialog.cpp:171
+#: src/OpenGoldBox/character_creation_view.cpp:449 src/OpenGoldBox/godot/scenes/character_creation.tscn:407 src/OpenGoldBox/level_up_dialog.cpp:171
 msgid "Next"
 msgstr "Siguiente"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:231
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:251
 msgid "Next matching portrait"
 msgstr "Siguiente retrato coincidente"
 
@@ -3167,7 +3159,7 @@ msgstr "No hay retratos coincidentes"
 msgid "No member can be healed by it now"
 msgstr "Ningún miembro puede curarse con ella ahora"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:473
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:485
 msgid "No numeric racial modifiers are currently applied."
 msgstr "No se aplican modificadores numéricos de raza actualmente."
 
@@ -3187,7 +3179,7 @@ msgstr "No hay elecciones de conjuros disponibles pendientes."
 msgid "Non-binary"
 msgstr "No binario"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:210
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:222
 msgid "Nonbinary"
 msgstr "No binario"
 
@@ -3195,11 +3187,11 @@ msgstr "No binario"
 msgid "Norris the Gray"
 msgstr "Norris el Gris"
 
-#: src/OpenGoldBox/character_creation_view.cpp:654
+#: src/OpenGoldBox/character_creation_view.cpp:669
 msgid "Not present"
 msgstr "Ausente"
 
-#: src/OpenGoldBox/character_creation_view.cpp:512
+#: src/OpenGoldBox/character_creation_view.cpp:527
 msgid "Not yet qualified. You may still plan for this class."
 msgstr "Aún no cumples los requisitos. Puedes mantener esta clase como objetivo."
 
@@ -3284,7 +3276,7 @@ msgstr "Abrir subida de nivel"
 msgid "Opportunity attack"
 msgstr "Ataque de oportunidad"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:200
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:210
 msgid "Orc"
 msgstr "Orco"
 
@@ -3292,15 +3284,19 @@ msgstr "Orco"
 msgid "Orc / Adrenaline Rush"
 msgstr "Orco / Subidón de adrenalina"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:469
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:481
 msgid "Orc / Adrenaline Rush: Bonus Action Dash and Temporary HP equal to proficiency bonus. Uses equal to proficiency bonus; all recover on a Short or Long Rest."
 msgstr "Orco / Subidón de adrenalina: Correr como acción adicional y PG temporales iguales al bonificador por competencia. Usos iguales al bonificador por competencia; se recuperan todos tras un descanso corto o largo."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:446
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:210
+msgid "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest. Not in the game yet.\n- Darkvision, 120 feet. Not in the game yet."
+msgstr "Los orcos son gente fuerte e incansable que sigue adelante donde otros desfallecen.\n\nRasgos raciales:\n- Subidón de adrenalina: corre como acción adicional y obtén puntos de golpe temporales, unas pocas veces entre descansos.\n- Aguante incansable: quédate con 1 punto de golpe en lugar de 0, una vez por descanso largo. Aún no está en el juego.\n- Visión en la oscuridad, 120 pies. Aún no está en el juego."
+
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:466
 msgid "Original game art + OpenGoldBox portraits / SRD 5.2.1"
 msgstr "Arte original + retratos de OpenGoldBox / SRD 5.2.1"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:495
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:507
 msgid "Other background features are not implemented."
 msgstr "Los demás rasgos de trasfondo no están implementados."
 
@@ -3313,7 +3309,7 @@ msgstr "Otra mano"
 msgid "Other hand — {item}"
 msgstr "Otra mano — {item}"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:484
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:496
 msgid "Other racial traits and conditional effects are not implemented."
 msgstr "Los demás rasgos de raza y efectos condicionales no están implementados."
 
@@ -3371,7 +3367,7 @@ msgstr "Castigo del paladín"
 msgid "Paralyzed"
 msgstr "Paralizado"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:355
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:375
 msgid "Part"
 msgstr "Parte"
 
@@ -3486,19 +3482,19 @@ msgstr "Archivos de Pool of Radiance"
 msgid "Portrait"
 msgstr "Retrato"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:267
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:287
 msgid "Portrait class"
 msgstr "Clase del retrato"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:255
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:275
 msgid "Portrait gender"
 msgstr "Género del retrato"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:279
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:299
 msgid "Portrait race"
 msgstr "Raza del retrato"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:243
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:263
 msgid "Portrait select"
 msgstr "Elegir retrato"
 
@@ -3548,7 +3544,7 @@ msgstr "Preservar la vida"
 msgid "Press any key to fight."
 msgstr "Pulsa cualquier tecla para luchar."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:220
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:240
 msgid "Previous matching portrait"
 msgstr "Retrato coincidente anterior"
 
@@ -3600,11 +3596,11 @@ msgstr "Protector"
 msgid "Psychic"
 msgstr "Psíquico"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:234
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:246
 msgid "Pursues selfish ends through structure and rules."
 msgstr "Persigue fines egoístas mediante las estructuras y las normas."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:235
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:247
 msgid "Pursues selfish ends without loyalty to order or freedom."
 msgstr "Persigue fines egoístas sin lealtad al orden ni a la libertad."
 
@@ -3652,6 +3648,10 @@ msgstr "Raza"
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Race / {race}"
 msgstr "Raza / {race}"
+
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:194
+msgid "Race Selection"
+msgstr "Selección de raza"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Radiant"
@@ -3756,7 +3756,7 @@ msgstr "Rayo de enfermedad (espacio de nivel 2)"
 msgid "Read the encounter text, then Continue."
 msgstr "Lee el texto del encuentro y pulsa Continuar."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:412 src/OpenGoldBox/godot/scenes/party_panel.tscn:181
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:432 src/OpenGoldBox/godot/scenes/party_panel.tscn:181
 msgid "Ready"
 msgstr "En guardia"
 
@@ -3841,16 +3841,16 @@ msgstr "Límite de sustituciones"
 msgid "Replay tour"
 msgstr "Repetir recorrido"
 
-#: src/OpenGoldBox/character_creation_view.cpp:511
+#: src/OpenGoldBox/character_creation_view.cpp:526
 msgid "Requirements met."
 msgstr "Requisitos cumplidos."
 
-#: src/OpenGoldBox/character_creation_view.cpp:458
+#: src/OpenGoldBox/character_creation_view.cpp:473
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Requires {requirements}"
 msgstr "Requiere {requirements}"
 
-#: src/OpenGoldBox/character_creation_view.cpp:531
+#: src/OpenGoldBox/character_creation_view.cpp:546
 msgid "Reroll all six"
 msgstr "Volver a tirar"
 
@@ -3950,7 +3950,7 @@ msgstr "Apresado"
 msgid "Retain the class-granted Fighting Style."
 msgstr "Conservar el Estilo de combate otorgado por la clase."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1200
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1220
 msgid "Return to party"
 msgstr "Volver al grupo"
 
@@ -3958,7 +3958,7 @@ msgstr "Volver al grupo"
 msgid "Review character"
 msgstr "Personaje de prueba"
 
-#: src/OpenGoldBox/character_creation_view.cpp:660
+#: src/OpenGoldBox/character_creation_view.cpp:675
 msgid "Review your character before adding it to the party."
 msgstr "Revisa a tu personaje antes de añadirlo al grupo."
 
@@ -3999,7 +3999,7 @@ msgstr "Rodar Esfera llameante"
 msgid "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n"
 msgstr "Tira un d20 y suma la bonificación de salvación. Iguala o supera la CD {dc} para tener éxito.\n\n"
 
-#: src/OpenGoldBox/character_creation_view.cpp:531 src/OpenGoldBox/godot/scenes/character_creation.tscn:162
+#: src/OpenGoldBox/character_creation_view.cpp:546 src/OpenGoldBox/godot/scenes/character_creation.tscn:162
 msgid "Roll all six"
 msgstr "Tirar seis dados"
 
@@ -4060,7 +4060,7 @@ msgstr "Arma sagrada"
 msgid "Sacred Weapon (Radiant)"
 msgstr "Arma sagrada (radiante)"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:248 src/OpenGoldBox/level_up_view.cpp:273 src/OpenGoldBox/level_up_view.cpp:278
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:260 src/OpenGoldBox/level_up_view.cpp:273 src/OpenGoldBox/level_up_view.cpp:278
 msgid "Sage"
 msgstr "Sabio"
 
@@ -4117,7 +4117,7 @@ msgstr "Guardar partida"
 msgid "Save name"
 msgstr "Nombre de la partida"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1278 src/OpenGoldBox/godot/scenes/character_creation.tscn:1281 src/OpenGoldBox/godot/scenes/party_panel.tscn:171
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1298 src/OpenGoldBox/godot/scenes/character_creation.tscn:1301 src/OpenGoldBox/godot/scenes/party_panel.tscn:171
 msgid "Saving Throws"
 msgstr "Salvaciones"
 
@@ -4183,7 +4183,7 @@ msgstr "Conjuro buscador"
 msgid "Seeking Spell rerolls the missed attack."
 msgstr "Conjuro buscador repite el ataque fallido."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:226
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:238
 msgid "Seeks to help others, with flexibility about rules."
 msgstr "Busca ayudar a los demás y es flexible con las normas."
 
@@ -4195,7 +4195,7 @@ msgstr "Selecciona un personaje guardado para sobrescribirlo o escribe un nombre
 msgid "Select a character save. Previous versions are available for recovery."
 msgstr "Selecciona un personaje guardado. Hay versiones anteriores disponibles para recuperarlo."
 
-#: src/OpenGoldBox/character_creation_view.cpp:614
+#: src/OpenGoldBox/character_creation_view.cpp:629
 msgid "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled."
 msgstr "Elige Color-1 o Color-2 de una parte y después una muestra. Cambiarán ambas poses. Las partes ausentes están desactivadas."
 
@@ -4215,7 +4215,7 @@ msgstr "Elige una partida. Puedes recuperar versiones anteriores."
 msgid "Select an inventory item first"
 msgstr "Elige primero un objeto del inventario"
 
-#: src/OpenGoldBox/character_creation_view.cpp:485
+#: src/OpenGoldBox/character_creation_view.cpp:500
 msgid "Select an option, then continue."
 msgstr "Elige una opción y continúa."
 
@@ -4270,7 +4270,7 @@ msgstr "Despertar a sacudidas"
 msgid "Shatter"
 msgstr "Romper"
 
-#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10411 src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:715
+#: src/OpenGold.Rules.Srd5/src/srd5.cpp:10411 src/OpenGoldBox/character_creation_view.cpp:85 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:735
 msgid "Shield"
 msgstr "Escudo"
 
@@ -4323,7 +4323,7 @@ msgstr "Arco corto"
 msgid "Shortsword"
 msgstr "Espada corta"
 
-#: src/OpenGoldBox/character_creation_view.cpp:433
+#: src/OpenGoldBox/character_creation_view.cpp:448
 msgid "Show character sheet"
 msgstr "Ver hoja de personaje"
 
@@ -4339,11 +4339,11 @@ msgstr "Hoz"
 msgid "Silence"
 msgstr "Silencio"
 
-#: src/OpenGoldBox/character_creation_view.cpp:622
+#: src/OpenGoldBox/character_creation_view.cpp:637
 msgid "Size: Short"
 msgstr "Tamaño: bajo"
 
-#: src/OpenGoldBox/character_creation_view.cpp:621 src/OpenGoldBox/godot/scenes/character_creation.tscn:346
+#: src/OpenGoldBox/character_creation_view.cpp:636 src/OpenGoldBox/godot/scenes/character_creation.tscn:366
 msgid "Size: Tall"
 msgstr "Tamaño: alto"
 
@@ -4430,11 +4430,11 @@ msgstr "Ataque furtivo: 2d6. Puntería firme: acción adicional; ventaja en el p
 msgid "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide and weapon mastery remain unavailable."
 msgstr "Ataque furtivo: 2d6. Puntería firme: acción adicional; ventaja en el próximo ataque y velocidad 0.\nLadrón: Manos rápidas no tiene uso hasta que haya objetos mágicos. Ocultarse y maestría de armas aún no están disponibles."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:458
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:470
 msgid "Sneak Attack: once per turn, extra weapon damage is added automatically to the first eligible hit; the combat log shows the dice."
 msgstr "Ataque furtivo: una vez por turno, el daño adicional se suma automáticamente al primer impacto que cumpla los requisitos; el registro de combate muestra los dados."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:249
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:261
 msgid "Soldier"
 msgstr "Soldado"
 
@@ -4504,7 +4504,7 @@ msgstr "Puntos de hechicería"
 msgid "Source: Cure Wounds and Cleric spellcasting, Wisdom score {score}. Healing: 2d8 + Wisdom modifier ({modifier})."
 msgstr "Origen: Curar heridas y magia de clérigo, Sabiduría {score}. Curación: 2d8 + modificador de Sabiduría ({modifier})."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:479
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:491
 msgid "Source: Dwarf / Dwarven Resilience. Resistance to Poison damage (half, rounded down)."
 msgstr "Fuente: Enano / Resistencia enana. Resistencia al daño de veneno (mitad, redondeada hacia abajo)."
 
@@ -4513,7 +4513,7 @@ msgstr "Fuente: Enano / Resistencia enana. Resistencia al daño de veneno (mitad
 msgid "Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +2 level-one proficiency = {attack}. Magic Missile has no ability modifier to damage."
 msgstr "Origen: Descarga de fuego y magia de mago, Inteligencia {score}. Ataque: modificador de Inteligencia +2 por competencia de nivel 1 = {attack}. Proyectil mágico no añade modificadores de característica al daño."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:466
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:478
 msgid "Source: Goliath / Speed trait. Speed is 35 feet (5 feet above the default)."
 msgstr "Origen: Goliat / Velocidad. Velocidad de 35 pies (5 pies más de lo normal)."
 
@@ -4574,17 +4574,17 @@ msgstr "Origen: {item} equipado. Requiere Fuerza {required}; puntuación actual 
 msgid "Source: equipped {item}. Requires Strength {required}; current score {score}. Speed reduced by 10 feet."
 msgstr "Origen: {item} equipado. Requiere Fuerza {required}; puntuación actual {score}. Velocidad reducida en 10 pies."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:485
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:497
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Source: {background} background, selected ability increases."
 msgstr "Origen: trasfondo {background}, mejoras de características elegidas."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:444 src/OpenGold.Rules.Srd5/src/character_rules.cpp:445
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:456 src/OpenGold.Rules.Srd5/src/character_rules.cpp:457
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Source: {class} Hit Die and Constitution score {score}. Starting HP: maximum d{die} + Constitution modifier ({modifier})."
 msgstr "Origen: dado de golpe de {class} y Constitución {score}. PG iniciales: máximo de d{die} + modificador de Constitución ({modifier})."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:437 src/OpenGold.Rules.Srd5/src/character_rules.cpp:438
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:449 src/OpenGold.Rules.Srd5/src/character_rules.cpp:450
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Source: {class} class, level 1. Saving-throw training adds +2 proficiency to {first} and {second}."
 msgstr "Origen: clase {class}, nivel 1. La competencia en salvaciones añade +2 a {first} y {second}."
@@ -4659,7 +4659,7 @@ msgstr "Destello estelar"
 msgid "Start"
 msgstr "Empezar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:397
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:417
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
@@ -4667,7 +4667,7 @@ msgstr "Empezar de nuevo"
 msgid "Starting level"
 msgstr "Nivel inicial"
 
-#: src/OpenGoldBox/character_creation_view.cpp:478
+#: src/OpenGoldBox/character_creation_view.cpp:493
 msgid "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."
 msgstr "OpenGoldBox usa los requisitos de multiclase como mínimos de clase inicial. No cumples los requisitos de las clases desactivadas; vuelve atrás para reasignar puntuaciones o bonificaciones."
 
@@ -4763,11 +4763,11 @@ msgstr "Quitarse el escudo"
 msgid "Target"
 msgstr "Elegir objetivo"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1318
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1338
 msgid "Target DC"
 msgstr "CD objetivo"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1535
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1555
 msgid "Target class(es)"
 msgstr "Clases objetivo"
 
@@ -4891,7 +4891,7 @@ msgstr "Este archivo no es una partida de la demo de subida de nivel con un solo
 msgid "This member did not complete the rest."
 msgstr "Este miembro no completó el descanso."
 
-#: src/OpenGoldBox/character_creation_view.cpp:651
+#: src/OpenGoldBox/character_creation_view.cpp:666
 msgid "This part is not present in either pose. Choose another head or weapon to use it."
 msgstr "Esta parte no aparece en ninguna pose. Elige otra cabeza o arma para usarla."
 
@@ -4931,9 +4931,13 @@ msgstr "Onda atronadora"
 msgid "Thunderwave (level 2 slot)"
 msgstr "Onda atronadora (espacio de nivel 2)"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:201
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:212
 msgid "Tiefling"
 msgstr "Tiefling"
+
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:212
+msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los tieflings llevan la marca de los Planos Inferiores en la sangre y en el porte.\n\nRasgos raciales:\n- Legado infernal: abisal, ctónico o infernal, cada uno con una resistencia y su propia magia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
 #: src/OpenGoldBox/level_up_dialog.cpp:275
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -4948,7 +4952,7 @@ msgstr "Derribar"
 msgid "Torch attack"
 msgstr "Ataque con antorcha"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1030
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1050
 msgid "Total"
 msgstr "Total"
 
@@ -5148,11 +5152,11 @@ msgstr "Usar nuevos"
 msgid "Use or decline the opportunity attack."
 msgstr "Usa o rechaza el ataque de oportunidad."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:227
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:239
 msgid "Values kindness and individual freedom."
 msgstr "Valora la bondad y la libertad individual."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:233
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:245
 msgid "Values personal freedom and independence."
 msgstr "Valora la libertad personal y la independencia."
 
@@ -5181,7 +5185,7 @@ msgstr "Victoria."
 msgid "View Character"
 msgstr "Ver personaje"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1176
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1196
 msgid "View party"
 msgstr "Ver grupo"
 
@@ -5225,11 +5229,11 @@ msgstr "Clase de brujo"
 msgid "Warlock skills"
 msgstr "Habilidades de brujo"
 
-#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:628 src/OpenGoldBox/godot/scenes/combat_demo.tscn:932
+#: src/OpenGoldBox/character_creation_view.cpp:84 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:648 src/OpenGoldBox/godot/scenes/combat_demo.tscn:932
 msgid "Weapon"
 msgstr "Arma"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:330
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:350
 msgid "Weapon >"
 msgstr "Arma >"
 
@@ -5250,7 +5254,7 @@ msgstr "Agarre del arma: {hands} manos; daño cuerpo a cuerpo 1d{sides} + modifi
 msgid "Weapon hand"
 msgstr "Mano del arma"
 
-#: src/OpenGoldBox/character_creation_view.cpp:620
+#: src/OpenGoldBox/character_creation_view.cpp:635
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Weapon {number} / 35"
 msgstr "Arma {number} / 35"
@@ -5356,7 +5360,7 @@ msgstr "Logras escapar."
 msgid "Your camp is attacked!"
 msgstr "¡Atacan tu campamento!"
 
-#: src/OpenGoldBox/character_creation_view.cpp:675
+#: src/OpenGoldBox/character_creation_view.cpp:690
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Your character: {race} / {gender} / {class}"
 msgstr "Tu personaje: {race} / {gender} / {class}"
@@ -5475,7 +5479,7 @@ msgstr "éxito"
 msgid "without proficiency"
 msgstr "sin competencia"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:490 src/OpenGold.Rules.Srd5/src/character_rules.cpp:491 src/OpenGoldBox/character_text.h:39
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:502 src/OpenGold.Rules.Srd5/src/character_rules.cpp:503 src/OpenGoldBox/character_text.h:39
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{ability} +{bonus}"
 msgstr "{ability} +{bonus}"
@@ -5515,7 +5519,7 @@ msgstr "{actor} intenta estabilizar a {target}: d20 {roll} + {modifier} + {boost
 msgid "{attacker} hits one of {name}'s duplicates, which vanishes."
 msgstr "{attacker} golpea a uno de los duplicados de {name}, que se desvanece."
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:390 src/OpenGoldBox/level_up_view.cpp:273 src/OpenGoldBox/level_up_view.cpp:278
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:402 src/OpenGoldBox/level_up_view.cpp:273 src/OpenGoldBox/level_up_view.cpp:278
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{background} background"
 msgstr "Trasfondo {background}"
@@ -5564,7 +5568,7 @@ msgstr "{count} ppt"
 msgid "{count} sp"
 msgstr "{count} pp"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:497 src/OpenGold.Rules.Srd5/src/character_rules.cpp:498
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:509 src/OpenGold.Rules.Srd5/src/character_rules.cpp:510
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr "{die} (máximo de d{die}) {modifier} (Constitución) + {racial} (bonificación de raza) = {hp} PG"
@@ -6429,7 +6433,7 @@ msgstr "{name}: Iniciativa {total}"
 msgid "{name}: {type} damage {before} -> {after}."
 msgstr "{name}: daño de tipo {type}: {before} -> {after}."
 
-#: src/OpenGoldBox/character_creation_view.cpp:637
+#: src/OpenGoldBox/character_creation_view.cpp:652
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
 msgstr "{part} / Color-{bank}: elige un color"

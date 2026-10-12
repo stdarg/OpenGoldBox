@@ -313,6 +313,18 @@ void CharacterCreationView::recommend_portrait()
     creator_->appearance(a);
 }
 
+void CharacterCreationView::show_race_portrait(bool again)
+{
+    const auto &d = creator_->draft();
+    if (!again && race_portrait_.is_valid() && race_portrait_of_ == d.race)
+        return;
+    auto a = creator_->appearance();
+    a.portrait = portraits_->of_race(d, static_cast<std::uint32_t>(UtilityFunctions::randi()));
+    race_portrait_ = portraits_->texture(a, d);
+    race_portrait_of_ = d.race;
+    race_portrait_file_ = a.portrait;
+}
+
 void CharacterCreationView::refresh_art()
 {
     if (!creator_ || !art_ || rendered_ == creator_->appearance())
@@ -371,6 +383,9 @@ void CharacterCreationView::refresh()
             })
         show(n, false);
     show("NameLabel", step == CreationStep::race);
+    show("RaceSelection", step == CreationStep::race);
+    if (step == CreationStep::race)
+        show_race_portrait(false);
     show("Name", step == CreationStep::race);
     show("SpellChoices", step == CreationStep::spell_choices);
     show("TrainingFixed", step == CreationStep::training);
@@ -703,7 +718,8 @@ void CharacterCreationView::draw_view()
     required_node<Control>(*this, "CreationCanvas").call("set_images",
             images_[0], images_[1], images_[2], creator_ && step == CreationStep::attributes,
             creator_ && step == CreationStep::portrait,
-            creator_ && step == CreationStep::combat_icon);
+            creator_ && step == CreationStep::combat_icon,
+            creator_ && step == CreationStep::race ? race_portrait_ : Ref<ImageTexture>());
 }
 
 void CharacterCreationView::perform(const std::function<void()> &action)
@@ -844,6 +860,8 @@ void CharacterCreationView::choice_selected(std::int64_t index)
         creator_->select(f, creator_->rules().choices(f).at(index).id);
         if (f == CreationField::race || f == CreationField::character_class)
             recommend_portrait();
+        if (f == CreationField::race)
+            show_race_portrait(true);
     });
 }
 
@@ -1442,6 +1460,18 @@ void CharacterCreationView::check_run()
         choose(CreationField::race, "dwarf");
         break;
     case 2:
+    {
+        // The first page shows a portrait of the chosen race beside its traits.
+        const auto &entries = portraits_->entries();
+        const auto shown = std::find_if(entries.begin(), entries.end(), [&](const auto & p)
+        {
+            return p.filename == race_portrait_file_;
+        });
+        if (!required_node<Label>(*this, "RaceSelection").is_visible() || shown == entries.end() ||
+                shown->race != "Dwarf" || race_portrait_of_ != "dwarf" ||
+                !required_node<RichTextLabel>(*this, "Description").get_text().contains("Racial traits"))
+            throw std::runtime_error("The race page must show a portrait and the traits of the chosen race");
+    }
         choose(CreationField::gender, "female");
         press("Next");
         break;

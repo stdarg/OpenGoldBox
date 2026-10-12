@@ -6,14 +6,19 @@ var _images: Array = []
 var _show_dice := false
 var _show_portrait := false
 var _show_icons := false
+var _race_portrait: Texture2D
 
 
+# `race_portrait` is a sample portrait of the race chosen on the first page,
+# null on the other pages.
 func set_images(portrait: Texture2D, ready: Texture2D, action: Texture2D,
-        show_dice: bool, show_portrait: bool, show_icons: bool) -> void:
+        show_dice: bool, show_portrait: bool, show_icons: bool,
+        race_portrait: Texture2D) -> void:
     _images = [portrait, ready, action]
     _show_dice = show_dice
     _show_portrait = show_portrait
     _show_icons = show_icons
+    _race_portrait = race_portrait
     queue_redraw()
 
 
@@ -51,6 +56,12 @@ func _draw() -> void:
             var rect := _bounds("Dice%d" % index)
             draw_rect(rect, _color("creation_field"))
             draw_rect(rect, _color("creation_border"), false)
+    if _race_portrait != null:
+        # Kept to the column's top left so the text beside it starts level with it.
+        var bounds := _bounds("RacePortraitBounds")
+        var rect := _fitted(_race_portrait, bounds, false)
+        rect.position = bounds.position
+        draw_texture_rect(_race_portrait, rect, false)
     if _images.size() != 3:
         return
     if _show_portrait and _images[0] != null:

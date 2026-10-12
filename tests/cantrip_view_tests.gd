@@ -89,7 +89,16 @@ func run_checks() -> void:
 	name.text = "Cantrip Wizard"
 	name.text_changed.emit(name.text)
 	await settle()
+	# The first page: Name and Gender share a row, then the labelled race list
+	# with a portrait of the chosen race and its traits beside it.
+	var canvas = current_scene.get_node("CreationCanvas")
+	require(current_scene.get_node("Gender").position.y == name.position.y and current_scene.get_node("RaceSelection").visible, "Name and Gender share a row above the Race Selection list")
+	require(current_scene.get_node("Description").get_parsed_text().contains("Racial traits:") and canvas._race_portrait != null, "The race page shows a portrait and the race's traits")
+	await choose("Choices", "Dwarf")
+	require(current_scene.get_node("Description").get_parsed_text().contains("Dwarven Toughness") and canvas._race_portrait != null, "Choosing a race shows its traits and a portrait")
+	await choose("Choices", "Dragonborn")
 	await press("Next")
+	require(canvas._race_portrait == null and not current_scene.get_node("RaceSelection").visible, "The race portrait and label stay on the first page")
 	await press("Next")
 	await choose("Background", "Sage")
 	for attempt in range(100):
@@ -172,7 +181,7 @@ func run_checks() -> void:
 		require(not current_scene.has_node(gone), "Removed creation node remains: " + gone)
 	require(not current_scene.get_node("PortraitSelect").is_visible_in_tree(), "The portrait picker waits for its own page")
 	root.size = Vector2i(1920, 1080); await settle()
-	var canvas = current_scene.get_node("CreationCanvas")
+	canvas = current_scene.get_node("CreationCanvas")
 	for pose in [["ReadyBounds", 1], ["ActionBounds", 2]]:
 		var bounds: Rect2 = current_scene.get_node(pose[0]).get_rect()
 		var icon: Rect2 = canvas._fitted(canvas._images[pose[1]], bounds, true)

@@ -91,24 +91,24 @@ theme_type_variation = &"RichTextLabelTableGap16Text18"
 bbcode_enabled = true
 
 [node name="GenderLabel" type="Label" parent="."]
-anchor_top = 1
-anchor_bottom = 1
-offset_left = 288
-offset_right = 394
-offset_top = -272
-offset_bottom = -236
-metadata/layout_reference = Rect2(288, 808, 106, 36)
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 134
+offset_right = 240
+offset_top = 140
+offset_bottom = 176
 text = "Gender"
+vertical_alignment = 1
+metadata/layout_reference = Rect2(1094, 140, 106, 36)
 
 [node name="Gender" type="OptionButton" parent="."]
+anchor_left = 0.5
 anchor_right = 1
-anchor_top = 1
-anchor_bottom = 1
-offset_left = 394
+offset_left = 240
 offset_right = -44
-offset_top = -272
-offset_bottom = -236
-metadata/layout_reference = Rect2(394, 808, 1482, 36)
+offset_top = 140
+offset_bottom = 176
+metadata/layout_reference = Rect2(1200, 140, 676, 36)
 
 [node name="BackgroundLabel" type="Label" parent="."]
 offset_left = 288
@@ -174,14 +174,34 @@ theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
 
 [node name="Name" type="LineEdit" parent="."]
-placeholder_text = "Enter a character name"
-max_length = 40
-anchor_right = 1
+anchor_right = 0.5
 offset_left = 394
-offset_right = -44
+offset_right = 110
 offset_top = 140
 offset_bottom = 176
-metadata/layout_reference = Rect2(394, 140, 1482, 36)
+placeholder_text = "Enter a character name"
+max_length = 40
+metadata/layout_reference = Rect2(394, 140, 676, 36)
+
+[node name="RaceSelection" type="Label" parent="."]
+anchor_right = 1
+offset_left = 288
+offset_right = -44
+offset_top = 208
+offset_bottom = 236
+metadata/layout_reference = Rect2(288, 208, 1588, 28)
+theme_type_variation = &"LabelText20"
+text = "Race Selection"
+
+[node name="RacePortraitBounds" type="Control" parent="."]
+anchor_bottom = 1
+offset_left = 288
+offset_right = 648
+offset_top = 508
+offset_bottom = -96
+metadata/layout_reference = Rect2(288, 508, 360, 476)
+visible = false
+mouse_filter = 2
 
 [node name="NameLabel" type="Label" parent="."]
 offset_left = 288

@@ -91,6 +91,18 @@ std::string PortraitCatalog::recommended(const opengold::rules::CharacterDraft &
     return best->filename;
 }
 
+std::string PortraitCatalog::of_race(const opengold::rules::CharacterDraft &draft,
+                                     std::uint32_t pick) const
+{
+    std::vector<const Portrait *> matches;
+    for (const auto &p : portraits_)
+        if (normalized(p.race) == normalized(draft.race))
+            matches.push_back(&p);
+    if (matches.empty())
+        return recommended(draft);
+    return matches[pick % matches.size()]->filename;
+}
+
 Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppearance &appearance,
         const opengold::rules::CharacterDraft &draft)
 {

@@ -17,10 +17,13 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
 
 ## Creation flow
 
-1. **Name, Race & Gender**: enter a name (up to 40 characters) in the field at
-   the top; Next waits for one. Select race (the nine species included in SRD
-   5.2.1) from the two-column list and gender from the dropdown below it. Gender
-   does not alter stats or restrict other choices. All three persist when returning.
+1. **Name, Race & Gender**: the Name field and the Gender dropdown share the
+   top row; Next waits for a name. Below, under **Race Selection**, choose one of
+   the nine species included in SRD 5.2.1 from the two-column list. Choosing a
+   race shows a random portrait of that race and, beside it, a short
+   description and the race's SRD traits, each marked when the game does not
+   apply it yet. Traits SCOPE-2 and DM-1 left out are not listed. Gender does
+   not alter stats or restrict other choices. All three persist when returning.
 2. Select alignment.
 3. The **Dice Rolls** area starts with six empty boxes to the right of the
    abilities. Roll attributes to fill those boxes with totals only. The native
