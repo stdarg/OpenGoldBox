@@ -162,7 +162,9 @@ configured earlier with Unix Makefiles must be deleted once
 ## The demos
 
 The demos are reference scenes in `demos/godot/`, backed by the C++ extension in
-`demos/src/OpenGold.Godot/`. They are separate from the game. See
+`demos/src/OpenGold.Godot/`. That extension holds only research tools (sprites,
+equipment, sound board); the character, combat and Rolf launchers open the
+game's own scenes in `src/OpenGoldBox/godot`, so they need the game build. See
 [demos/README.md](../demos/README.md) for what each one shows.
 
 ### Build the demo extension
@@ -200,14 +202,14 @@ ctest --test-dir build/sprite-demo -L demo --output-on-failure
 ### Launch a demo
 
 Each Windows launcher refreshes the Godot import cache, then opens its scene.
-Most require the demo extension; the map inspector instead requires
+Each requires the game build or the demo extension, as listed; the map inspector instead requires
 `build/opengold_maps.exe` from `.\build.cmd`.
 
 | Demo | Windows launcher | Scene | Requires | Documentation |
 | --- | --- | --- | --- | --- |
-| Character creation and party | `demos\review-character.cmd` | `character_creation.tscn` | extension | [CHARACTER-CREATION.md](CHARACTER-CREATION.md) |
-| Combat | `demos\review-combat.cmd` | `combat_demo.tscn` | extension | [RULES.md](RULES.md), [COMBAT-DEMO.md](COMBAT-DEMO.md) |
-| Rolf's tour and New Phlan | `demos\review-rolf.cmd` | `rolf_tour.tscn` | extension | [ROLF.md](ROLF.md), [PHLAN.md](PHLAN.md) |
+| Character creation and party | `demos\review-character.cmd` | `character_creation.tscn` | game | [CHARACTER-CREATION.md](CHARACTER-CREATION.md) |
+| Combat | `demos\review-combat.cmd` | `combat_demo.tscn` | game | [RULES.md](RULES.md), [COMBAT-DEMO.md](COMBAT-DEMO.md) |
+| Rolf's tour and New Phlan | `demos\review-rolf.cmd` | `rolf_tour.tscn` | game | [ROLF.md](ROLF.md), [PHLAN.md](PHLAN.md) |
 | Sound board | `demos\review-sounds.cmd` | `sound_board.tscn` | extension | [sound-format.md](sound-format.md) |
 | Equipment sprites | `demos\review-equipment.cmd` | `equipment_sprite_demo.tscn` | extension | [demos/README.md](../demos/README.md#equipment-sprite-demo) |
 | Combat sprite scale | `demos\review-sprites.cmd` | `combat_sprite_demo.tscn` | builds extension itself | [SPRITE-DEMO.md](SPRITE-DEMO.md) |
@@ -219,7 +221,7 @@ A typical session from PowerShell at the repository root:
 
 ```powershell
 $env:OPENGOLD_GAME_DIR = 'C:\Games\POOLRAD'
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-combat.cmd
 ```
 

@@ -18,34 +18,10 @@ FetchContent_MakeAvailable(godot_cpp)
 # godot-cpp's headers are third-party; keep their warnings out of the project's.
 get_target_property(godot_cpp_includes godot-cpp INTERFACE_INCLUDE_DIRECTORIES)
 set_target_properties(godot-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${godot_cpp_includes}")
-# Keep the approved source PNGs authoritative, and ship build copies inside
-# the Godot project. Asset changes refresh even when the DLL needs no relink.
-set(portrait_outputs)
-foreach(species gnome orc goliath tiefling dragonborn)
-    foreach(gender male female)
-        set(portrait_source "${PROJECT_SOURCE_DIR}/data/art/portraits/${species}-${gender}.png")
-        set(portrait_output "${PROJECT_SOURCE_DIR}/demos/godot/bin/portraits/${species}-${gender}.png")
-        add_custom_command(OUTPUT "${portrait_output}"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "${PROJECT_SOURCE_DIR}/demos/godot/bin/portraits"
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${portrait_source}" "${portrait_output}"
-            DEPENDS "${portrait_source}" VERBATIM)
-        list(APPEND portrait_outputs "${portrait_output}")
-    endforeach()
-endforeach()
-file(GLOB complete_portraits CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/art/portraits/*.png" "${PROJECT_SOURCE_DIR}/art/portraits/portraits.json")
-foreach(source IN LISTS complete_portraits)
-    get_filename_component(name "${source}" NAME)
-    set(output "${PROJECT_SOURCE_DIR}/demos/godot/bin/portraits/${name}")
-    add_custom_command(OUTPUT "${output}"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "${PROJECT_SOURCE_DIR}/demos/godot/bin/portraits"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${source}" "${output}"
-        DEPENDS "${source}" VERBATIM)
-    list(APPEND portrait_outputs "${output}")
-endforeach()
-add_custom_target(opengold_portrait_assets DEPENDS ${portrait_outputs})
-add_library(opengold_godot SHARED rolf_tour_view.cpp combat_view.cpp combat_sprite_demo.cpp equipment_sprite_demo.cpp character_creation_view.cpp
-    portrait_picker.cpp party_preview.cpp equipment_choice.cpp level_up_view.cpp campaign_save_view.cpp save_slots.cpp character_pool_view.cpp character_sheet_view.cpp sound_board_view.cpp godot_sound_output.cpp register_types.cpp)
-add_dependencies(opengold_godot opengold_portrait_assets)
+# The character, combat and Rolf views are the game's own (src/OpenGoldBox);
+# this extension keeps only the research tools, sharing the game's sound output.
+add_library(opengold_godot SHARED combat_sprite_demo.cpp equipment_sprite_demo.cpp sound_board_view.cpp
+    "${PROJECT_SOURCE_DIR}/src/OpenGoldBox/godot_sound_output.cpp" register_types.cpp)
 target_link_libraries(opengold_godot PRIVATE opengold_core opengold_rules_srd5 godot-cpp)
 target_compile_features(opengold_godot PRIVATE cxx_std_20)
 target_compile_definitions(opengold_godot PRIVATE $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)

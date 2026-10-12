@@ -17,7 +17,7 @@ wand or shield in hand never blocks casting, and Silence does not stop spells.
 From the repository root:
 
 ```cmd
-demos\build-rolf.cmd
+build-opengoldbox.cmd
 demos\review-combat.cmd
 ```
 
@@ -256,7 +256,7 @@ feats, Healing Word, Scorching Ray and level-two upcasting.
 
 ## Validation and next increments
 
-`build.cmd` tests the rules without Godot; `demos\build-rolf.cmd` also builds the scene.
+`build.cmd` tests the rules without Godot; `build-opengoldbox.cmd` also builds the scene.
 With `OPENGOLD_GAME_DIR` set, `opengold_rules_tests` executes the installed Slums
 script, fights using actual legal commands, checks result writes and revisits.
 The older ECL mock remains a separate bytecode regression test.

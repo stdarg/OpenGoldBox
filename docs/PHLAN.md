@@ -12,7 +12,7 @@ an empty inventory. Combat rules remain the separate SRD 5.2.1 module.
 
 ## Playing
 
-From CMD in the repository root, build once with `demos\build-rolf.cmd`, then run
+From CMD in the repository root, build once with `build-opengoldbox.cmd`, then run
 `demos\review-rolf.cmd`. Existing game-directory configuration is unchanged.
 
 - Complete Rolf's eight dialogue pauses with Continue/Enter.

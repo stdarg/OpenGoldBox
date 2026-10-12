@@ -19,7 +19,7 @@ architecture document or completion ledger. See [TECH](TECH.md) for boundaries.
 | Creator and training controls | `src/OpenGoldBox/character_creation_view.cpp`, `training_control.h`, `cantrip_control.h` | Asset-backed `tests/*cantrip_view_tests.gd`; [training](TRAINING.md) |
 | Combat UI and decisions | `src/OpenGoldBox/combat_view.cpp` | `tests/*view_tests.gd`; registered targets in `src/OpenGoldBox/CMakeLists.txt` |
 | Advancement and sheets | `src/OpenGoldBox/level_up_view.cpp`, `character_sheet_view.cpp` | Feature-specific player-path checks and advancement checks |
-| Demo equivalents | `demos/src/OpenGold.Godot/` | Build `opengold_godot` in `build/sprite-demo`; inspect reuse before duplicating edits |
+| Demo research tools | `demos/src/OpenGold.Godot/` (sprite, equipment and sound-board demos only; the character, combat and Rolf views are the game's) | Build `opengold_godot` with `OPENGOLD_BUILD_GODOT=ON` in its own build directory |
 | Localization | `src/OpenGoldBox/godot/locale/dynamic_sources.json`, `en.po`, `es.po`; `tools/localization.py` | `python3 tools/localization.py --check` |
 | Test registration and save checks | Root `CMakeLists.txt`, `src/OpenGoldBox/CMakeLists.txt`, `tests/fixtures/README.md` | Current-writer round-trips, exact continuation and older-format rejection; see [saves](SAVES.md#pre-10-format-policy) |
 

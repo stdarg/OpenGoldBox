@@ -12,7 +12,7 @@ and waterfront pieces directly from your installed game files.
 From the repository root:
 
 ```cmd
-demos\build-rolf.cmd
+build-opengoldbox.cmd
 demos\review-rolf.cmd
 ```
 
@@ -42,8 +42,9 @@ map visibility; visited means cells actually occupied, not a line-of-sight rule.
 
 ## Build boundary
 
-The scene is `demos/godot/scenes/rolf_tour.tscn`. Its `RolfTourView` node is implemented
-in `demos/src/OpenGold.Godot` using C++; no GDScript drives this scene. The native
+The scene is `src/OpenGoldBox/godot/scenes/rolf_tour.tscn`, the game's own; the demo
+launcher opens it in the game project. Its `RolfTourView` node is implemented
+in `src/OpenGoldBox` using C++; no GDScript drives this scene. The native
 `opengold::por::RolfTourSession` reuses `EclMachine`, `MapCatalog` and the existing
 sprite decoder. Core code has no Godot dependency. Scene nodes own their children;
 the wrapper uses Godot `Ref` values for textures/audio and value-owned session

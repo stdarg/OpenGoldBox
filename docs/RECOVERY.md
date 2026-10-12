@@ -169,8 +169,8 @@ The combat checkpoint format is `OGCOMBAT 44` and the rules module identity is
 From PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
-godot --headless --path demos/godot res://scenes/character_creation.tscn -- --party-check
+.\build-opengoldbox.cmd
+godot --headless --path src/OpenGoldBox/godot res://scenes/character_creation.tscn -- --party-check
 ```
 
 The deterministic route uses the actual creation/shop/combat callbacks, verifies

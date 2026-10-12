@@ -1,5 +1,5 @@
 #include "sound_board_view.h"
-#include "godot_sound_output.h"
+#include "../../../src/OpenGoldBox/godot_sound_output.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/engine.hpp>

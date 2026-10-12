@@ -5,7 +5,7 @@ character creator, town and combat scenes through reusable C++20 classes.
 Run from PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-character.cmd
 ```
 

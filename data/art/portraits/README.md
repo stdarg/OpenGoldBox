@@ -24,8 +24,8 @@ in [neck-revision-prompts.json](neck-revision-prompts.json). These four updated
 PNGs replace the previous versions at the same paths and retain their IDs.
 
 These enlarged source PNGs are now used by the native character creator.
-`demos\build-rolf.cmd` copies them into `demos/godot/bin/portraits/`, and the review launcher
-imports those copies as Godot resources. At load time, native code fits each
+The game build copies them into `src/OpenGoldBox/godot/bin/portraits/`, and Godot
+imports those copies as resources. At load time, native code fits each
 head into the 88 x 40 panel with nearest-neighbor sampling and trims it at a
 measured neck baseline. When a body is selected, native composition aligns the
 head to its neck opening and fits the lowest neck rows to its width. Faces and

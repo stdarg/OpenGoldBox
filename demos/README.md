@@ -5,14 +5,17 @@ reference while the game is developed. They are not the game's entry point.
 Change these files only when maintaining or explicitly working on a demo.
 
 - `godot/`: demo project, scenes, scripts, shaders, and theme.
-- `src/OpenGold.Godot/`: C++ GDExtension presentation used by the demos.
+- `src/OpenGold.Godot/`: C++ GDExtension for the research tools (sprite, equipment
+  and sound-board demos).
 - `build-rolf.cmd`: builds the demo extension and runs the native tests.
 - `review-*.cmd`: launch character/party, combat, Rolf/town, art, map, and sound demos.
+  The character, combat and Rolf launchers open the game's own scenes in
+  `src/OpenGoldBox/godot`; build the game first with `build-opengoldbox.cmd`.
 
 From PowerShell at the repository root:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-character.cmd
 ```
 
@@ -26,7 +29,7 @@ portrait copies go to `demos/godot/bin/`. Captures and isolated test profiles
 remain under the root `user-data/`. Original game files are still supplied by
 the user through `OPENGOLD_GAME_DIR` or the demo project's existing setting.
 
-The game now has a separate source copy in [src/OpenGoldBox](../src/OpenGoldBox/README.md).
+The demos share the game's code in [src/OpenGoldBox](../src/OpenGoldBox/README.md) rather than keeping a copy.
 See the root [README](../README.md) and
 [feature documentation](../docs/CHARACTER-CREATION.md) for demo limitations.
 

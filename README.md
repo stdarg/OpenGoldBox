@@ -136,7 +136,7 @@ See [New Phlan exploration](docs/PHLAN.md) for controls and current script limit
 From PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-rolf.cmd
 ```
 
@@ -149,7 +149,7 @@ combat scene and an offline curated rules pack. The standalone modes use fixed
 fixtures; the shared party preview uses your created characters. From PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-combat.cmd
 ```
 
@@ -164,7 +164,7 @@ Create level-one characters with nine species, twelve classes, four SRD
 backgrounds, 4d6-drop-lowest rolls, drag-and-drop ability assignment and score
 swapping. Background bonuses update the scores and class eligibility immediately.
 Starting-class prerequisite checks are an OpenGoldBox house rule. A scrollable
-**Target class(es)** checklist records future goals and shows unmet ability
+**Desired Class(es)** checklist records future goals and shows unmet ability
 requirements; acquiring additional classes is not implemented.
 
 Choose from 72 complete portraits with optional gender, class, and in-game race
@@ -176,7 +176,7 @@ stats, a **Modifiers** dialog and a **Saving Throws** calculator.
 From PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-character.cmd
 ```
 
@@ -359,8 +359,9 @@ initializes Visual Studio and uses its installed CMake directly:
 
 Open `demos/godot/project.godot` in Godot 4.x for the presentation shell. The native
 core is deliberately testable without launching Godot. The optional C++
-GDExtension contains the tour/town, character/party, combat and sound-board
-scenes and is built separately with `.\demos\build-rolf.cmd`. Both build helpers run
+GDExtension (`.\build-opengoldbox.cmd`) contains the tour/town, character/party
+and combat scenes; the demos' research tools, such as the sound board, are built
+separately with `.\demos\build-rolf.cmd`. Both build helpers run
 the native tests; close running native demo scenes before rebuilding the DLL.
 The helpers currently expect Visual Studio Build Tools under the hard-coded
 `Microsoft Visual Studio\18\BuildTools` path. For other installations, use the

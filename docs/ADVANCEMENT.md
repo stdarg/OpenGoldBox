@@ -100,7 +100,7 @@ reactions, involuntary overlap during allied transit, remaining Hit Dice, mortal
 From PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-character.cmd --advancement-check
 .\demos\review-character.cmd --level-up-review
 ```

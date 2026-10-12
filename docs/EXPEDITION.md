@@ -176,7 +176,7 @@ is kept as the backup), reloads in a fresh process, checks the rest timer, and
 revisits the orcs without a second fight or reward. The fresh process's result
 must equal the same continuation without a reload.
 
-From PowerShell, build with `.\demos\build-rolf.cmd`. Run
+From PowerShell, build with `.\build-opengoldbox.cmd`. Run
 `.\demos\review-character.cmd --expedition-check` for the visible automated trip and
 `user-data/slums-battlefield.png` capture. The fixture is six equipped level-four
 fighters with explicitly confirmed Defense; it does not demonstrate that six

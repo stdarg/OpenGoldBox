@@ -6,14 +6,13 @@ character sheet. It uses SRD 5.2.1 and complete OpenGoldBox portraits and the or
 Run from Windows CMD at the repository root:
 
 ```cmd
-demos\build-rolf.cmd
+build-opengoldbox.cmd
 demos\review-character.cmd
 ```
 
-The shared extension uses the existing [build prerequisites](ROLF.md). The
-launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
-`OPENGOLD_GAME_DIR` environment variable, falling back to
-`opengold/game_directory` in `demos/godot/project.godot`.
+The game build uses the existing [build prerequisites](ROLF.md). The
+launcher opens the game's `src/OpenGoldBox/godot/scenes/character_creation.tscn`.
+Art loads from the `OPENGOLD_GAME_DIR` environment variable.
 
 ## Creation flow
 
@@ -220,7 +219,7 @@ are not used as an assumed list of available archive IDs.
 
 ## Verification
 
-`build.cmd` and `demos\build-rolf.cmd` include `opengold_character_tests`. Synthetic
+`build.cmd` and `build-opengoldbox.cmd` include `opengold_character_tests`. Synthetic
 tests cover deterministic rolls, retained dice, swaps, all class HP values,
 background bonuses, invalid selections, name validation, navigation, restart,
 truncation, all twelve color controls, head composition, fixed pixels,

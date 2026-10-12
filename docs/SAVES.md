@@ -134,7 +134,7 @@ and continuation; their existence does not authorize an in-combat save control.
 From PowerShell:
 
 ```powershell
-.\demos\build-rolf.cmd
+.\build-opengoldbox.cmd
 .\demos\review-character.cmd --save-restart
 ```
 
