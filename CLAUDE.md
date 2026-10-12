@@ -66,12 +66,16 @@ work") require constant clarification.
 Always run all tests after completing task. Then, commit your work and push to
 origin.
 
-## 6. Do your work in git worktrees.
+After a change, run only the tests that are directly related to the change, we do not have the time to run every test after every single change.
+
+After every 5 changes in a session, run all tests. If all tests have not been run in a day, run them. Save the date when all tests are run for future reference.
+
+## 6. Do your work in git worktrees
 
 Before committing and pushing to origin/main, ensure all tests pass. Always
 commit your work when done and push to origin/main.
 
-## 7. Write readable code.
+## 7. Write readable code
 
 - Use clear names: remaining\_hit\_points, not hp2; verbs for actions (apply\_damage), nouns for values (damage\_roll).
 - Keep functions small and single-purpose. A reader should quickly see what a function promises to do.
@@ -82,13 +86,15 @@ commit your work when done and push to origin/main.
 - Use standard-library algorithms and containers when they express the operation more directly—but don’t compress logic into inscrutable one-liners.
 - Keep headers lean: expose the public interface, hide implementation details, and avoid unnecessary dependencies.
 - Write comments for why a choice or constraint exists, not to narrate code the reader can already see.
-- Follow one consistent local style for formatting, error handling, and naming; consistency matters more than a particular style.
 - Test behavior at meaningful boundaries. Clear tests double as executable examples of intended use.
 - Use blank lines for readability before and after functions and methods, as well as any
   C++ block.
 
 A useful rule: a capable teammate should be able to infer ownership, invariants, inputs, outputs, and side effects from the type signatures and a quick read of the function body.
 
+Always adhere to the [C++ Core Guidelines by Stroustrup and Sutter](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#main). Good style promotes readability and correctness.
+
 ## 8. Keep the Git Repository Tidy
 
-- Do it a git pull from orgin / main before working.
+- Do a git pull from orgin / main before working.
+- Remove the temporary worktrees after pushing your work to origin/main.
