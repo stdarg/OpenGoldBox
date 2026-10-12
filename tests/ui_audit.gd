@@ -159,6 +159,10 @@ func creation_pages() -> void:
         if not seen.has(page):
             seen[page] = true
             await audit("creation-%d" % seen.size())
+        # The first page needs a name before Next.
+        var name_edit: LineEdit = current_scene.get_node("Name")
+        if name_edit.is_visible_in_tree() and name_edit.text.is_empty():
+            name_edit.text = "Audit"; name_edit.text_changed.emit(name_edit.text); await settle()
         # The ability page: roll, then drag each die onto its ability.
         var roll: Button = current_scene.get_node("Roll")
         if roll.is_visible_in_tree() and current_scene.get_node("Next").disabled:

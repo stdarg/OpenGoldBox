@@ -409,9 +409,10 @@ void CharacterCreator::appearance(por::CharacterAppearance value)
 
 CharacterSheet CharacterCreator::sheet() const
 {
-    return rules_->evaluate(draft_, step_ >= CreationStep::combat_icon
-                            ? rules::NameRequirement::required
-                            : rules::NameRequirement::optional);
+    // The name is entered on the first page, so only that page may lack one.
+    return rules_->evaluate(draft_, step_ == CreationStep::race
+                            ? rules::NameRequirement::optional
+                            : rules::NameRequirement::required);
 }
 
 Character CharacterCreator::create_character() const
@@ -433,10 +434,12 @@ void CharacterCreator::next()
         throw std::runtime_error("Complete available spell choices.");
     if (step_ >= CreationStep::training && !training_complete())
         throw std::runtime_error("Complete the required training choices.");
+    // The name is entered on the first page; the rules check it fully once
+    // the scores they also need are rolled.
+    if (draft_.name.empty())
+        throw std::runtime_error("Enter a name for your character.");
     if (step_ >= CreationStep::attributes)
-        (void)rules_->evaluate(draft_, step_ >= CreationStep::name
-                               ? rules::NameRequirement::required
-                               : rules::NameRequirement::optional);
+        (void)rules_->evaluate(draft_, rules::NameRequirement::required);
     if (step_ >= CreationStep::character_class &&
             !rules::class_eligible(*rules_, draft_, draft_.character_class))
         throw std::runtime_error("Choose a qualified starting class. Requires " +
@@ -444,7 +447,7 @@ void CharacterCreator::next()
                                  ".");
     step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) + 1);
     if (step_ == CreationStep::spell_choices && !has_spell_choices())
-        step_ = CreationStep::name;
+        step_ = CreationStep::combat_icon;
     if (step_ == CreationStep::spell_choices && !draft_.spells &&
             rules_->spell_choice_options(draft_).may_prepare)
         draft_.spells = SpellChoices{};

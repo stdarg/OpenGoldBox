@@ -46,7 +46,7 @@ func run_checks() -> void:
 		change_scene_to_file("res://scenes/startup.tscn")
 		await settle()
 		require(current_scene.name == "CharacterCreation", "No-flag startup should skip the language dialog and splashes")
-		require(current_scene.get_node("PageTitle").text == "Raza y género", "Restored language did not reach character creation")
+		require(current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Restored language did not reach character creation")
 		print("Language restore passed across process restart.")
 		quit(0)
 		return
@@ -115,7 +115,7 @@ func run_checks() -> void:
 			await RenderingServer.frame_post_draw
 			require(root.get_texture().get_image().get_data() == pixels, "Spanish splash backgrounds are not pixel-identical")
 		await key(root, KEY_SPACE)
-	require(current_scene.name == "CharacterCreation" and current_scene.get_node("PageTitle").text == "Raza y género", "Selection did not reach Spanish character creation")
+	require(current_scene.name == "CharacterCreation" and current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Selection did not reach Spanish character creation")
 	# Reopen the actual startup dialog, select English using the controls, and use
 	# its button path. Keep Spanish saved for the separate restart check.
 	change_scene_to_file("res://scenes/startup.tscn")

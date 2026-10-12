@@ -4,12 +4,16 @@ extends Control
 # colors. Character art itself is supplied by the native view.
 var _images: Array = []
 var _show_dice := false
+var _show_portrait := false
+var _show_icons := false
 
 
 func set_images(portrait: Texture2D, ready: Texture2D, action: Texture2D,
-        show_dice: bool) -> void:
+        show_dice: bool, show_portrait: bool, show_icons: bool) -> void:
     _images = [portrait, ready, action]
     _show_dice = show_dice
+    _show_portrait = show_portrait
+    _show_icons = show_icons
     queue_redraw()
 
 
@@ -26,25 +30,37 @@ func _color(name: String) -> Color:
     return get_theme_color(name, "OpenGoldPalette")
 
 
+# The largest rect with the texture's proportions that fits, centered. Combat
+# icons are pixel art, so they only grow by whole multiples.
+func _fitted(texture: Texture2D, bounds: Rect2, whole_multiples: bool) -> Rect2:
+    var source := Vector2(texture.get_size())
+    var scale := minf(bounds.size.x / source.x, bounds.size.y / source.y)
+    if whole_multiples:
+        scale = maxf(1.0, floorf(scale))
+    var fitted := source * scale
+    return Rect2((bounds.position + (bounds.size - fitted) / 2).floor(), fitted)
+
+
 func _draw() -> void:
     draw_rect(Rect2(Vector2.ZERO, size), _color("background"))
-    for name in ["PageBounds", "PreviewBounds"]:
-        var rect := _bounds(name)
-        draw_rect(rect, _color("panel"))
-        draw_rect(rect, _color("creation_panel_border"), false)
-    for name in ["ReadyBounds", "ActionBounds"]:
-        draw_rect(_bounds(name), _color("creation_field"))
+    var page := _bounds("PageBounds")
+    draw_rect(page, _color("panel"))
+    draw_rect(page, _color("creation_panel_border"), false)
     if _show_dice:
         for index in 6:
             var rect := _bounds("Dice%d" % index)
             draw_rect(rect, _color("creation_field"))
             draw_rect(rect, _color("creation_border"), false)
-    var portrait_rect := _bounds("PortraitBounds")
-    draw_rect(portrait_rect, _color("creation_field"))
-    if _images.size() == 3:
-        if _images[0] != null:
-            draw_texture_rect(_images[0], portrait_rect, false)
-        if _images[1] != null:
-            draw_texture_rect(_images[1], _bounds("ReadyBounds"), false)
-        if _images[2] != null:
-            draw_texture_rect(_images[2], _bounds("ActionBounds"), false)
+    if _images.size() != 3:
+        return
+    if _show_portrait and _images[0] != null:
+        draw_texture_rect(_images[0], _fitted(_images[0], _bounds("PortraitBounds"), false),
+                false)
+    if _show_icons:
+        for index in [1, 2]:
+            if _images[index] == null:
+                continue
+            var bounds := _bounds("ReadyBounds" if index == 1 else "ActionBounds")
+            var rect := _fitted(_images[index], bounds, true)
+            draw_rect(rect, _color("creation_field"))
+            draw_texture_rect(_images[index], rect, false)

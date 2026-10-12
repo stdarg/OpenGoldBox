@@ -501,7 +501,6 @@ OpenGoldMetrics/constants/tour_arrow_top_inset = 2
 OpenGoldMetrics/constants/sheet_max_width = 1000
 OpenGoldMetrics/constants/sheet_horizontal_margin = 64
 OpenGoldMetrics/constants/sheet_vertical_margin = 120
-OpenGoldMetrics/constants/preview_summary_min_height = 656
 OpenGoldMetrics/constants/creation_modal_max_width = 780
 OpenGoldMetrics/constants/creation_modal_horizontal_margin = 100
 OpenGoldMetrics/constants/creation_modal_vertical_margin = 120

@@ -23,7 +23,8 @@ func apply(race: bool, attributes: bool, sheet: bool) -> void:
 	_place("Restart", Rect2(24, h - 110, 166, 36))
 	_place("PageTitle", Rect2(x + 20, y + 18, pw - 40, 36))
 	_place("Instructions", Rect2(x + 20, y + 60, pw - 40, 48))
-	_place("Choices", Rect2(x + 20, y + 116, pw - 40, ph - (320 if race else 272)))
+	# The first page heads the race list with the Name field.
+	_place("Choices", Rect2(x + 20, y + (164 if race else 116), pw - 40, ph - (368 if race else 272)))
 	_place("Description", Rect2(x + 20, y + ph - 140, pw - 40, 120))
 	_place("GenderLabel", Rect2(x + 20, y + ph - 196, 106, 36))
 	_place("Gender", Rect2(x + 126, y + ph - 196, pw - 146, 36))
@@ -72,7 +73,7 @@ func apply(race: bool, attributes: bool, sheet: bool) -> void:
 	_place("TrainingFixed", Rect2(x + 20, y + 116, pw - 40, 126))
 	_place("Training", Rect2(x + 20, y + 250, pw - 40, ph - 270))
 	_place("SpellChoices", Rect2(x + 20, y + 132, pw - 40, ph - 152))
-	_place("Name", Rect2(x + 20, y + 138, pw - 40, 46))
+	_place("Name", Rect2(x + 20, y + 116, pw - 40, 40))
 	for stem in ["CombatHead", "Weapon"]:
 		var row := 0 if stem == "CombatHead" else 1
 		_place(stem + "Previous", Rect2(x + 20, y + 126 + row * 48, 110, 36))

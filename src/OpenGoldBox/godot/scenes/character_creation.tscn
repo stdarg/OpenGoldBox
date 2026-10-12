@@ -36,62 +36,42 @@ script = ExtResource("6_creation_canvas")
 [node name="ColumnLayout" type="Node" parent="."]
 script = ExtResource("2_column_layout")
 
-[node name="Title" type="Label" parent="."]
-anchor_right = 1
-offset_left = 24
-offset_right = -24
-offset_top = 20
-offset_bottom = 59
-metadata/layout_reference = Rect2(24, 20, 1872, 39)
-theme_type_variation = &"LabelText28Gold"
-text = "OPENGOLDBOX / Create a character"
-
-[node name="Subtitle" type="Label" parent="."]
-anchor_right = 1
-offset_left = 24
-offset_right = -24
-offset_top = 64
-offset_bottom = 90
-metadata/layout_reference = Rect2(24, 64, 1872, 26)
-theme_type_variation = &"LabelText17"
-text = "SRD 5.2.1 / Level 1"
-
 [node name="Steps" type="Label" parent="."]
 anchor_bottom = 1
 offset_left = 24
-offset_right = 204
-offset_top = 128
+offset_right = 254
+offset_top = 40
 offset_bottom = -124
-metadata/layout_reference = Rect2(24, 128, 180, 828)
+metadata/layout_reference = Rect2(24, 40, 230, 916)
 theme_type_variation = &"LabelText17"
 
 [node name="PageTitle" type="Label" parent="."]
 anchor_right = 1
-offset_left = 238
-offset_right = -386
-offset_top = 130
-offset_bottom = 166
-metadata/layout_reference = Rect2(238, 130, 1296, 36)
+offset_left = 288
+offset_right = -44
+offset_top = 42
+offset_bottom = 78
+metadata/layout_reference = Rect2(288, 42, 1588, 36)
 theme_type_variation = &"LabelText25"
 
 [node name="Instructions" type="Label" parent="."]
 anchor_right = 1
-offset_left = 238
-offset_right = -386
-offset_top = 172
-offset_bottom = 220
-metadata/layout_reference = Rect2(238, 172, 1296, 48)
+offset_left = 288
+offset_right = -44
+offset_top = 84
+offset_bottom = 132
+metadata/layout_reference = Rect2(288, 84, 1588, 48)
 theme_type_variation = &"LabelText16"
 autowrap_mode = 2
 
 [node name="Choices" type="ItemList" parent="."]
 anchor_right = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = -386
-offset_top = 228
+offset_left = 288
+offset_right = -44
+offset_top = 140
 offset_bottom = -232
-metadata/layout_reference = Rect2(238, 228, 1296, 620)
+metadata/layout_reference = Rect2(288, 140, 1588, 708)
 fixed_column_width = 588
 theme_type_variation = &"CreationChoices"
 max_columns = 2
@@ -102,269 +82,296 @@ script = ExtResource("98_rich_text")
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = -386
+offset_left = 288
+offset_right = -44
 offset_top = -216
 offset_bottom = -96
-metadata/layout_reference = Rect2(238, 864, 1296, 120)
+metadata/layout_reference = Rect2(288, 864, 1588, 120)
 theme_type_variation = &"RichTextLabelTableGap16Text18"
 bbcode_enabled = true
 
 [node name="GenderLabel" type="Label" parent="."]
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = 344
+offset_left = 288
+offset_right = 394
 offset_top = -272
 offset_bottom = -236
-metadata/layout_reference = Rect2(238, 808, 106, 36)
+metadata/layout_reference = Rect2(288, 808, 106, 36)
 text = "Gender"
 
 [node name="Gender" type="OptionButton" parent="."]
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 344
-offset_right = -386
+offset_left = 394
+offset_right = -44
 offset_top = -272
 offset_bottom = -236
-metadata/layout_reference = Rect2(344, 808, 1190, 36)
+metadata/layout_reference = Rect2(394, 808, 1482, 36)
 
 [node name="BackgroundLabel" type="Label" parent="."]
-offset_left = 238
-offset_right = 344
-offset_top = 230
-offset_bottom = 262
-metadata/layout_reference = Rect2(238, 230, 106, 32)
+offset_left = 288
+offset_right = 394
+offset_top = 142
+offset_bottom = 174
+metadata/layout_reference = Rect2(288, 142, 106, 32)
 text = "Background"
 
 [node name="Background" type="OptionButton" parent="."]
 anchor_right = 1
-offset_left = 344
-offset_right = -386
-offset_top = 226
-offset_bottom = 262
-metadata/layout_reference = Rect2(344, 226, 1190, 36)
-
+offset_left = 394
+offset_right = -44
+offset_top = 138
+offset_bottom = 174
+metadata/layout_reference = Rect2(394, 138, 1482, 36)
 
 [node name="BonusLabel" type="Label" parent="."]
-offset_left = 238
-offset_right = 344
-offset_top = 276
-offset_bottom = 308
-metadata/layout_reference = Rect2(238, 276, 106, 32)
+offset_left = 288
+offset_right = 394
+offset_top = 188
+offset_bottom = 220
+metadata/layout_reference = Rect2(288, 188, 106, 32)
 text = "Bonuses"
 
 [node name="Bonus" type="OptionButton" parent="."]
 anchor_right = 1
-offset_left = 344
-offset_right = -386
-offset_top = 272
-offset_bottom = 308
-metadata/layout_reference = Rect2(344, 272, 1190, 36)
-
+offset_left = 394
+offset_right = -44
+offset_top = 184
+offset_bottom = 220
+metadata/layout_reference = Rect2(394, 184, 1482, 36)
 
 [node name="Columns" type="Label" parent="."]
 anchor_right = 1
-offset_left = 238
-offset_right = -386
-offset_top = 320
-offset_bottom = 344
-metadata/layout_reference = Rect2(238, 320, 1296, 24)
+offset_left = 288
+offset_right = -44
+offset_top = 232
+offset_bottom = 256
+metadata/layout_reference = Rect2(288, 232, 1588, 24)
 text = "Attribute"
 
 [node name="Roll" type="Button" parent="."]
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = 408
+offset_left = 288
+offset_right = 458
 offset_top = -134
 offset_bottom = -98
-metadata/layout_reference = Rect2(238, 946, 170, 36)
+metadata/layout_reference = Rect2(288, 946, 170, 36)
 text = "Roll all six"
 
 [node name="SwapHint" type="Label" parent="."]
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 420
-offset_right = -386
+offset_left = 470
+offset_right = -44
 offset_top = -138
 offset_bottom = -92
-metadata/layout_reference = Rect2(420, 942, 1114, 46)
+metadata/layout_reference = Rect2(470, 942, 1406, 46)
 theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
 
 [node name="Name" type="LineEdit" parent="."]
-anchor_right = 1
-offset_left = 238
-offset_right = -386
-offset_top = 250
-offset_bottom = 296
-metadata/layout_reference = Rect2(238, 250, 1296, 46)
 placeholder_text = "Enter a character name"
 max_length = 40
+anchor_right = 1
+offset_left = 394
+offset_right = -44
+offset_top = 140
+offset_bottom = 176
+metadata/layout_reference = Rect2(394, 140, 1482, 36)
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = 288
+offset_right = 394
+offset_top = 140
+offset_bottom = 176
+text = "Name"
+vertical_alignment = 1
+metadata/layout_reference = Rect2(288, 140, 106, 36)
+
+[node name="PortraitIdentity" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -258
+offset_right = 502
+offset_top = 130
+offset_bottom = 166
+theme_type_variation = &"LabelText22"
+horizontal_alignment = 1
+auto_translate_mode = 2
+metadata/layout_reference = Rect2(702, 130, 760, 36)
+
+[node name="PortraitFilters" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -258
+offset_right = -128
+offset_top = 176
+offset_bottom = 212
+text = "Filter by"
+vertical_alignment = 1
+metadata/layout_reference = Rect2(702, 176, 130, 36)
 
 [node name="PortraitPrevious" type="Button" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -324
-offset_right = -288
-offset_top = 486
-offset_bottom = 518
-metadata/layout_reference = Rect2(1596, 486, 36, 32)
 text = "<"
 tooltip_text = "Previous matching portrait"
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -258
+offset_right = -218
+offset_top = 222
+offset_bottom = 258
+metadata/layout_reference = Rect2(702, 222, 40, 36)
 
 [node name="PortraitNext" type="Button" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -78
-offset_right = -42
-offset_top = 486
-offset_bottom = 518
-metadata/layout_reference = Rect2(1842, 486, 36, 32)
 text = ">"
 tooltip_text = "Next matching portrait"
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 462
+offset_right = 502
+offset_top = 222
+offset_bottom = 258
+metadata/layout_reference = Rect2(1422, 222, 40, 36)
 
 [node name="PortraitSelect" type="OptionButton" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -282
-offset_right = -84
-offset_top = 486
-offset_bottom = 518
-metadata/layout_reference = Rect2(1638, 486, 198, 32)
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait select"
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -208
+offset_right = 452
+offset_top = 222
+offset_bottom = 258
+metadata/layout_reference = Rect2(752, 222, 660, 36)
 
 [node name="PortraitGender" type="OptionButton" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -324
-offset_right = -188
-offset_top = 526
-offset_bottom = 558
-metadata/layout_reference = Rect2(1596, 526, 136, 32)
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait gender"
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -118
+offset_right = 82
+offset_top = 176
+offset_bottom = 212
+metadata/layout_reference = Rect2(842, 176, 200, 36)
 
 [node name="PortraitClass" type="OptionButton" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -178
-offset_right = -42
-offset_top = 526
-offset_bottom = 558
-metadata/layout_reference = Rect2(1742, 526, 136, 32)
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait class"
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 92
+offset_right = 292
+offset_top = 176
+offset_bottom = 212
+metadata/layout_reference = Rect2(1052, 176, 200, 36)
 
 [node name="PortraitRace" type="OptionButton" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -324
-offset_right = -42
-offset_top = 566
-offset_bottom = 598
-metadata/layout_reference = Rect2(1596, 566, 282, 32)
 fit_to_longest_item = false
 clip_text = true
 tooltip_text = "Portrait race"
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 302
+offset_right = 502
+offset_top = 176
+offset_bottom = 212
+metadata/layout_reference = Rect2(1262, 176, 200, 36)
 
 [node name="CombatHeadPrevious" type="Button" parent="."]
-offset_left = 238
-offset_right = 348
-offset_top = 238
-offset_bottom = 274
-metadata/layout_reference = Rect2(238, 238, 110, 36)
+offset_left = 288
+offset_right = 398
+offset_top = 150
+offset_bottom = 186
+metadata/layout_reference = Rect2(288, 150, 110, 36)
 text = "< Head"
 
 [node name="CombatHeadNext" type="Button" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -496
-offset_right = -386
-offset_top = 238
-offset_bottom = 274
-metadata/layout_reference = Rect2(1424, 238, 110, 36)
+offset_left = -154
+offset_right = -44
+offset_top = 150
+offset_bottom = 186
+metadata/layout_reference = Rect2(1766, 150, 110, 36)
 text = "Head >"
 
 [node name="CombatHeadLabel" type="Label" parent="."]
 anchor_right = 1
-offset_left = 362
-offset_right = -512
-offset_top = 242
-offset_bottom = 272
-metadata/layout_reference = Rect2(362, 242, 1046, 30)
-
+offset_left = 412
+offset_right = -170
+offset_top = 154
+offset_bottom = 184
+metadata/layout_reference = Rect2(412, 154, 1338, 30)
 
 [node name="WeaponPrevious" type="Button" parent="."]
-offset_left = 238
-offset_right = 348
-offset_top = 286
-offset_bottom = 322
-metadata/layout_reference = Rect2(238, 286, 110, 36)
+offset_left = 288
+offset_right = 398
+offset_top = 198
+offset_bottom = 234
+metadata/layout_reference = Rect2(288, 198, 110, 36)
 text = "< Weapon"
 
 [node name="WeaponNext" type="Button" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -496
-offset_right = -386
-offset_top = 286
-offset_bottom = 322
-metadata/layout_reference = Rect2(1424, 286, 110, 36)
+offset_left = -154
+offset_right = -44
+offset_top = 198
+offset_bottom = 234
+metadata/layout_reference = Rect2(1766, 198, 110, 36)
 text = "Weapon >"
 
 [node name="WeaponLabel" type="Label" parent="."]
 anchor_right = 1
-offset_left = 362
-offset_right = -512
-offset_top = 290
-offset_bottom = 320
-metadata/layout_reference = Rect2(362, 290, 1046, 30)
-
+offset_left = 412
+offset_right = -170
+offset_top = 202
+offset_bottom = 232
+metadata/layout_reference = Rect2(412, 202, 1338, 30)
 
 [node name="Size" type="Button" parent="."]
-offset_left = 238
-offset_right = 388
-offset_top = 334
-offset_bottom = 368
-metadata/layout_reference = Rect2(238, 334, 150, 34)
+offset_left = 288
+offset_right = 438
+offset_top = 246
+offset_bottom = 280
+metadata/layout_reference = Rect2(288, 246, 150, 34)
 text = "Size: Tall"
 
 [node name="ColorTitle" type="Label" parent="."]
 anchor_right = 1
-offset_left = 238
-offset_right = -386
-offset_top = 376
-offset_bottom = 402
-metadata/layout_reference = Rect2(238, 376, 1296, 26)
+offset_left = 288
+offset_right = -44
+offset_top = 288
+offset_bottom = 314
+metadata/layout_reference = Rect2(288, 288, 1588, 26)
 text = "Part"
 
 [node name="PaletteHint" type="Label" parent="."]
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = -386
+offset_left = 288
+offset_right = -44
 offset_top = -182
 offset_bottom = -158
-metadata/layout_reference = Rect2(238, 898, 1296, 24)
-
+metadata/layout_reference = Rect2(288, 898, 1588, 24)
 
 [node name="Back" type="Button" parent="."]
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 218
-offset_right = 368
+offset_left = 268
+offset_right = 418
 offset_top = -64
 offset_bottom = -26
-metadata/layout_reference = Rect2(218, 1016, 150, 38)
+metadata/layout_reference = Rect2(268, 1016, 150, 38)
 text = "Back"
 
 [node name="Next" type="Button" parent="."]
@@ -372,11 +379,11 @@ anchor_left = 1
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -556
-offset_right = -366
+offset_left = -214
+offset_right = -24
 offset_top = -64
 offset_bottom = -26
-metadata/layout_reference = Rect2(1364, 1016, 190, 38)
+metadata/layout_reference = Rect2(1706, 1016, 190, 38)
 text = "Next"
 
 [node name="Restart" type="Button" parent="."]
@@ -393,68 +400,38 @@ text = "Start over"
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1.0
-offset_left = 378
-offset_right = -566
+offset_left = 428
+offset_right = -224
 offset_top = -66
 offset_bottom = -26
-metadata/layout_reference = Rect2(378, 1014, 976, 40)
+metadata/layout_reference = Rect2(428, 1014, 1268, 40)
 autowrap_mode = 2
-
-[node name="PreviewTitle" type="Label" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -324
-offset_right = -42
-offset_top = 130
-offset_bottom = 154
-metadata/layout_reference = Rect2(1596, 130, 282, 24)
-theme_type_variation = &"LabelText16"
-text = "CHARACTER PREVIEW"
-
-[node name="PreviewName" type="Label" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -324
-offset_right = -42
-offset_top = 162
-offset_bottom = 198
-metadata/layout_reference = Rect2(1596, 162, 282, 36)
-theme_type_variation = &"LabelText22"
-text_overrun_behavior = 3
 
 [node name="ReadyLabel" type="Label" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -316
-offset_right = -196
-offset_top = 600
-offset_bottom = 628
-metadata/layout_reference = Rect2(1604, 600, 120, 28)
+vertical_alignment = 1
 text = "Ready"
 horizontal_alignment = 1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1
+offset_left = -256
+offset_right = -176
+offset_top = 535
+offset_bottom = -190
+metadata/layout_reference = Rect2(704, 535, 80, 355)
 
 [node name="ActionLabel" type="Label" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -170
-offset_right = -50
-offset_top = 600
-offset_bottom = 628
-metadata/layout_reference = Rect2(1750, 600, 120, 28)
+vertical_alignment = 1
 text = "Action"
 horizontal_alignment = 1
-
-[node name="PreviewSummary" type="Label" parent="."]
-anchor_left = 1
-anchor_right = 1
-anchor_bottom = 1.0
-offset_left = -324
-offset_right = -42
-offset_top = 708
-offset_bottom = -84
-metadata/layout_reference = Rect2(1596, 708, 282, 288)
-theme_type_variation = &"LabelText16"
-autowrap_mode = 2
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1
+offset_left = 132
+offset_right = 212
+offset_top = 535
+offset_bottom = -190
+metadata/layout_reference = Rect2(1092, 535, 80, 355)
 
 [node name="Footer" type="Label" parent="."]
 anchor_right = 1
@@ -469,357 +446,351 @@ theme_type_variation = &"LabelText14"
 text = "Original game art + OpenGoldBox portraits / SRD 5.2.1"
 
 [node name="Ability0" type="Button" parent="."]
-offset_left = 238
-offset_right = 354
-offset_top = 356
-offset_bottom = 393
-metadata/layout_reference = Rect2(238, 356, 116, 37)
+offset_left = 288
+offset_right = 404
+offset_top = 268
+offset_bottom = 305
+metadata/layout_reference = Rect2(288, 268, 116, 37)
 theme_type_variation = &"CreationAbility"
-
 
 [node name="Dice0" type="RichTextLabel" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -438
-offset_right = -386
-offset_top = 356
-offset_bottom = 393
-metadata/layout_reference = Rect2(1482, 356, 52, 37)
+offset_left = -96
+offset_right = -44
+offset_top = 268
+offset_bottom = 305
+metadata/layout_reference = Rect2(1824, 268, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
 
 [node name="Score0" type="Button" parent="."]
 script = ExtResource("5_creation_score")
-offset_left = 362
-offset_right = 426
-offset_top = 356
-offset_bottom = 393
-metadata/layout_reference = Rect2(362, 356, 64, 37)
+offset_left = 412
+offset_right = 476
+offset_top = 268
+offset_bottom = 305
+metadata/layout_reference = Rect2(412, 268, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability1" type="Button" parent="."]
-offset_left = 238
-offset_right = 354
-offset_top = 403
-offset_bottom = 440
-metadata/layout_reference = Rect2(238, 403, 116, 37)
+offset_left = 288
+offset_right = 404
+offset_top = 315
+offset_bottom = 352
+metadata/layout_reference = Rect2(288, 315, 116, 37)
 theme_type_variation = &"CreationAbility"
-
 
 [node name="Dice1" type="RichTextLabel" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -438
-offset_right = -386
-offset_top = 403
-offset_bottom = 440
-metadata/layout_reference = Rect2(1482, 403, 52, 37)
+offset_left = -96
+offset_right = -44
+offset_top = 315
+offset_bottom = 352
+metadata/layout_reference = Rect2(1824, 315, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
 
 [node name="Score1" type="Button" parent="."]
 script = ExtResource("5_creation_score")
-offset_left = 362
-offset_right = 426
-offset_top = 403
-offset_bottom = 440
-metadata/layout_reference = Rect2(362, 403, 64, 37)
+offset_left = 412
+offset_right = 476
+offset_top = 315
+offset_bottom = 352
+metadata/layout_reference = Rect2(412, 315, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability2" type="Button" parent="."]
-offset_left = 238
-offset_right = 354
-offset_top = 450
-offset_bottom = 487
-metadata/layout_reference = Rect2(238, 450, 116, 37)
+offset_left = 288
+offset_right = 404
+offset_top = 362
+offset_bottom = 399
+metadata/layout_reference = Rect2(288, 362, 116, 37)
 theme_type_variation = &"CreationAbility"
-
 
 [node name="Dice2" type="RichTextLabel" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -438
-offset_right = -386
-offset_top = 450
-offset_bottom = 487
-metadata/layout_reference = Rect2(1482, 450, 52, 37)
+offset_left = -96
+offset_right = -44
+offset_top = 362
+offset_bottom = 399
+metadata/layout_reference = Rect2(1824, 362, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
 
 [node name="Score2" type="Button" parent="."]
 script = ExtResource("5_creation_score")
-offset_left = 362
-offset_right = 426
-offset_top = 450
-offset_bottom = 487
-metadata/layout_reference = Rect2(362, 450, 64, 37)
+offset_left = 412
+offset_right = 476
+offset_top = 362
+offset_bottom = 399
+metadata/layout_reference = Rect2(412, 362, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability3" type="Button" parent="."]
-offset_left = 238
-offset_right = 354
-offset_top = 497
-offset_bottom = 534
-metadata/layout_reference = Rect2(238, 497, 116, 37)
+offset_left = 288
+offset_right = 404
+offset_top = 409
+offset_bottom = 446
+metadata/layout_reference = Rect2(288, 409, 116, 37)
 theme_type_variation = &"CreationAbility"
-
 
 [node name="Dice3" type="RichTextLabel" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -438
-offset_right = -386
-offset_top = 497
-offset_bottom = 534
-metadata/layout_reference = Rect2(1482, 497, 52, 37)
+offset_left = -96
+offset_right = -44
+offset_top = 409
+offset_bottom = 446
+metadata/layout_reference = Rect2(1824, 409, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
 
 [node name="Score3" type="Button" parent="."]
 script = ExtResource("5_creation_score")
-offset_left = 362
-offset_right = 426
-offset_top = 497
-offset_bottom = 534
-metadata/layout_reference = Rect2(362, 497, 64, 37)
+offset_left = 412
+offset_right = 476
+offset_top = 409
+offset_bottom = 446
+metadata/layout_reference = Rect2(412, 409, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability4" type="Button" parent="."]
-offset_left = 238
-offset_right = 354
-offset_top = 544
-offset_bottom = 581
-metadata/layout_reference = Rect2(238, 544, 116, 37)
+offset_left = 288
+offset_right = 404
+offset_top = 456
+offset_bottom = 493
+metadata/layout_reference = Rect2(288, 456, 116, 37)
 theme_type_variation = &"CreationAbility"
-
 
 [node name="Dice4" type="RichTextLabel" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -438
-offset_right = -386
-offset_top = 544
-offset_bottom = 581
-metadata/layout_reference = Rect2(1482, 544, 52, 37)
+offset_left = -96
+offset_right = -44
+offset_top = 456
+offset_bottom = 493
+metadata/layout_reference = Rect2(1824, 456, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
 
 [node name="Score4" type="Button" parent="."]
 script = ExtResource("5_creation_score")
-offset_left = 362
-offset_right = 426
-offset_top = 544
-offset_bottom = 581
-metadata/layout_reference = Rect2(362, 544, 64, 37)
+offset_left = 412
+offset_right = 476
+offset_top = 456
+offset_bottom = 493
+metadata/layout_reference = Rect2(412, 456, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Ability5" type="Button" parent="."]
-offset_left = 238
-offset_right = 354
-offset_top = 591
-offset_bottom = 628
-metadata/layout_reference = Rect2(238, 591, 116, 37)
+offset_left = 288
+offset_right = 404
+offset_top = 503
+offset_bottom = 540
+metadata/layout_reference = Rect2(288, 503, 116, 37)
 theme_type_variation = &"CreationAbility"
-
 
 [node name="Dice5" type="RichTextLabel" parent="."]
 anchor_left = 1
 anchor_right = 1
-offset_left = -438
-offset_right = -386
-offset_top = 591
-offset_bottom = 628
-metadata/layout_reference = Rect2(1482, 591, 52, 37)
+offset_left = -96
+offset_right = -44
+offset_top = 503
+offset_bottom = 540
+metadata/layout_reference = Rect2(1824, 503, 52, 37)
 theme_type_variation = &"RichTextLabelText16"
 bbcode_enabled = true
 scroll_active = false
 
 [node name="Score5" type="Button" parent="."]
 script = ExtResource("5_creation_score")
-offset_left = 362
-offset_right = 426
-offset_top = 591
-offset_bottom = 628
-metadata/layout_reference = Rect2(362, 591, 64, 37)
+offset_left = 412
+offset_right = 476
+offset_top = 503
+offset_bottom = 540
+metadata/layout_reference = Rect2(412, 503, 64, 37)
 theme_type_variation = &"ScoreNormal"
 
 [node name="Part0" type="Label" parent="."]
-offset_left = 238
-offset_right = 343
-offset_top = 412
-offset_bottom = 440
-metadata/layout_reference = Rect2(238, 412, 105, 28)
+offset_left = 288
+offset_right = 393
+offset_top = 324
+offset_bottom = 352
+metadata/layout_reference = Rect2(288, 324, 105, 28)
 text = "Weapon"
 
 [node name="Color0_0" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 406
-offset_bottom = 436
-metadata/layout_reference = Rect2(348, 406, 585, 30)
+offset_left = 398
+offset_right = 169
+offset_top = 318
+offset_bottom = 348
+metadata/layout_reference = Rect2(398, 318, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_0" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 406
-offset_bottom = 436
-metadata/layout_reference = Rect2(941, 406, 585, 30)
+offset_left = 177
+offset_right = -52
+offset_top = 318
+offset_bottom = 348
+metadata/layout_reference = Rect2(1137, 318, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part1" type="Label" parent="."]
-offset_left = 238
-offset_right = 343
-offset_top = 447
-offset_bottom = 475
-metadata/layout_reference = Rect2(238, 447, 105, 28)
+offset_left = 288
+offset_right = 393
+offset_top = 359
+offset_bottom = 387
+metadata/layout_reference = Rect2(288, 359, 105, 28)
 text = "Body"
 
 [node name="Color0_1" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 441
-offset_bottom = 471
-metadata/layout_reference = Rect2(348, 441, 585, 30)
+offset_left = 398
+offset_right = 169
+offset_top = 353
+offset_bottom = 383
+metadata/layout_reference = Rect2(398, 353, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_1" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 441
-offset_bottom = 471
-metadata/layout_reference = Rect2(941, 441, 585, 30)
+offset_left = 177
+offset_right = -52
+offset_top = 353
+offset_bottom = 383
+metadata/layout_reference = Rect2(1137, 353, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part2" type="Label" parent="."]
-offset_left = 238
-offset_right = 343
-offset_top = 482
-offset_bottom = 510
-metadata/layout_reference = Rect2(238, 482, 105, 28)
+offset_left = 288
+offset_right = 393
+offset_top = 394
+offset_bottom = 422
+metadata/layout_reference = Rect2(288, 394, 105, 28)
 text = "Hair / Face"
 
 [node name="Color0_2" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 476
-offset_bottom = 506
-metadata/layout_reference = Rect2(348, 476, 585, 30)
+offset_left = 398
+offset_right = 169
+offset_top = 388
+offset_bottom = 418
+metadata/layout_reference = Rect2(398, 388, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_2" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 476
-offset_bottom = 506
-metadata/layout_reference = Rect2(941, 476, 585, 30)
+offset_left = 177
+offset_right = -52
+offset_top = 388
+offset_bottom = 418
+metadata/layout_reference = Rect2(1137, 388, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part3" type="Label" parent="."]
-offset_left = 238
-offset_right = 343
-offset_top = 517
-offset_bottom = 545
-metadata/layout_reference = Rect2(238, 517, 105, 28)
+offset_left = 288
+offset_right = 393
+offset_top = 429
+offset_bottom = 457
+metadata/layout_reference = Rect2(288, 429, 105, 28)
 text = "Shield"
 
 [node name="Color0_3" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 511
-offset_bottom = 541
-metadata/layout_reference = Rect2(348, 511, 585, 30)
+offset_left = 398
+offset_right = 169
+offset_top = 423
+offset_bottom = 453
+metadata/layout_reference = Rect2(398, 423, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_3" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 511
-offset_bottom = 541
-metadata/layout_reference = Rect2(941, 511, 585, 30)
+offset_left = 177
+offset_right = -52
+offset_top = 423
+offset_bottom = 453
+metadata/layout_reference = Rect2(1137, 423, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part4" type="Label" parent="."]
-offset_left = 238
-offset_right = 343
-offset_top = 552
-offset_bottom = 580
-metadata/layout_reference = Rect2(238, 552, 105, 28)
+offset_left = 288
+offset_right = 393
+offset_top = 464
+offset_bottom = 492
+metadata/layout_reference = Rect2(288, 464, 105, 28)
 text = "Arms"
 
 [node name="Color0_4" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 546
-offset_bottom = 576
-metadata/layout_reference = Rect2(348, 546, 585, 30)
+offset_left = 398
+offset_right = 169
+offset_top = 458
+offset_bottom = 488
+metadata/layout_reference = Rect2(398, 458, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_4" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 546
-offset_bottom = 576
-metadata/layout_reference = Rect2(941, 546, 585, 30)
+offset_left = 177
+offset_right = -52
+offset_top = 458
+offset_bottom = 488
+metadata/layout_reference = Rect2(1137, 458, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Part5" type="Label" parent="."]
-offset_left = 238
-offset_right = 343
-offset_top = 587
-offset_bottom = 615
-metadata/layout_reference = Rect2(238, 587, 105, 28)
+offset_left = 288
+offset_right = 393
+offset_top = 499
+offset_bottom = 527
+metadata/layout_reference = Rect2(288, 499, 105, 28)
 text = "Legs"
 
 [node name="Color0_5" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 581
-offset_bottom = 611
-metadata/layout_reference = Rect2(348, 581, 585, 30)
+offset_left = 398
+offset_right = 169
+offset_top = 493
+offset_bottom = 523
+metadata/layout_reference = Rect2(398, 493, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Color1_5" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 581
-offset_bottom = 611
-metadata/layout_reference = Rect2(941, 581, 585, 30)
+offset_left = 177
+offset_right = -52
+offset_top = 493
+offset_bottom = 523
+metadata/layout_reference = Rect2(1137, 493, 731, 30)
 theme_type_variation = &"ButtonText14"
 
 [node name="Palette0" type="Button" parent="."]
@@ -827,12 +798,11 @@ script = ExtResource("4_creation_swatch")
 anchor_right = 0.125
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = 154.75
+offset_left = 288
+offset_right = 241.25
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(238, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(288, 928, 193.25, 25)
 
 [node name="Palette1" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -840,12 +810,11 @@ anchor_left = 0.125
 anchor_right = 0.25
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 160.75
-offset_right = 77.5
+offset_left = 247.25
+offset_right = 200.5
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(400.75, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(487.25, 928, 193.25, 25)
 
 [node name="Palette2" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -853,12 +822,11 @@ anchor_left = 0.25
 anchor_right = 0.375
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 83.5
-offset_right = 0.25
+offset_left = 206.5
+offset_right = 159.75
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(563.5, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(686.5, 928, 193.25, 25)
 
 [node name="Palette3" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -866,12 +834,11 @@ anchor_left = 0.375
 anchor_right = 0.5
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 6.25
-offset_right = -77
+offset_left = 165.75
+offset_right = 119
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(726.25, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(885.75, 928, 193.25, 25)
 
 [node name="Palette4" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -879,12 +846,11 @@ anchor_left = 0.5
 anchor_right = 0.625
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -71
-offset_right = -154.25
+offset_left = 125
+offset_right = 78.25
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(889, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(1085, 928, 193.25, 25)
 
 [node name="Palette5" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -892,12 +858,11 @@ anchor_left = 0.625
 anchor_right = 0.75
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -148.25
-offset_right = -231.5
+offset_left = 84.25
+offset_right = 37.5
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(1051.75, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(1284.25, 928, 193.25, 25)
 
 [node name="Palette6" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -905,12 +870,11 @@ anchor_left = 0.75
 anchor_right = 0.875
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -225.5
-offset_right = -308.75
+offset_left = 43.5
+offset_right = -3.25
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(1214.5, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(1483.5, 928, 193.25, 25)
 
 [node name="Palette7" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -918,24 +882,22 @@ anchor_left = 0.875
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -302.75
-offset_right = -386
+offset_left = 2.75
+offset_right = -44
 offset_top = -152
 offset_bottom = -127
-metadata/layout_reference = Rect2(1377.25, 928, 156.75, 25)
-
+metadata/layout_reference = Rect2(1682.75, 928, 193.25, 25)
 
 [node name="Palette8" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
 anchor_right = 0.125
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = 154.75
+offset_left = 288
+offset_right = 241.25
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(238, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(288, 958, 193.25, 25)
 
 [node name="Palette9" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -943,12 +905,11 @@ anchor_left = 0.125
 anchor_right = 0.25
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 160.75
-offset_right = 77.5
+offset_left = 247.25
+offset_right = 200.5
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(400.75, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(487.25, 958, 193.25, 25)
 
 [node name="Palette10" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -956,12 +917,11 @@ anchor_left = 0.25
 anchor_right = 0.375
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 83.5
-offset_right = 0.25
+offset_left = 206.5
+offset_right = 159.75
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(563.5, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(686.5, 958, 193.25, 25)
 
 [node name="Palette11" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -969,12 +929,11 @@ anchor_left = 0.375
 anchor_right = 0.5
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 6.25
-offset_right = -77
+offset_left = 165.75
+offset_right = 119
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(726.25, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(885.75, 958, 193.25, 25)
 
 [node name="Palette12" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -982,12 +941,11 @@ anchor_left = 0.5
 anchor_right = 0.625
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -71
-offset_right = -154.25
+offset_left = 125
+offset_right = 78.25
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(889, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(1085, 958, 193.25, 25)
 
 [node name="Palette13" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -995,12 +953,11 @@ anchor_left = 0.625
 anchor_right = 0.75
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -148.25
-offset_right = -231.5
+offset_left = 84.25
+offset_right = 37.5
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(1051.75, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(1284.25, 958, 193.25, 25)
 
 [node name="Palette14" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -1008,12 +965,11 @@ anchor_left = 0.75
 anchor_right = 0.875
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -225.5
-offset_right = -308.75
+offset_left = 43.5
+offset_right = -3.25
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(1214.5, 958, 156.75, 25)
-
+metadata/layout_reference = Rect2(1483.5, 958, 193.25, 25)
 
 [node name="Palette15" type="Button" parent="."]
 script = ExtResource("4_creation_swatch")
@@ -1021,192 +977,192 @@ anchor_left = 0.875
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -302.75
-offset_right = -386
+offset_left = 2.75
+offset_right = -44
 offset_top = -122
 offset_bottom = -97
-metadata/layout_reference = Rect2(1377.25, 958, 156.75, 25)
+metadata/layout_reference = Rect2(1682.75, 958, 193.25, 25)
 
 [node name="DiceHeader" type="Label" parent="."]
-offset_left = 370
-offset_right = 456
-offset_top = 320
-offset_bottom = 352
-metadata/layout_reference = Rect2(370, 320, 86, 32)
+offset_left = 420
+offset_right = 506
+offset_top = 232
+offset_bottom = 264
+metadata/layout_reference = Rect2(420, 232, 86, 32)
 text = "Dice Rolls"
 horizontal_alignment = 0
 
 [node name="DiceHint" type="Label" parent="."]
 anchor_right = 1
-offset_left = 464
-offset_right = -386
-offset_top = 320
-offset_bottom = 477
-metadata/layout_reference = Rect2(464, 320, 1070, 157)
+offset_left = 514
+offset_right = -44
+offset_top = 232
+offset_bottom = 389
+metadata/layout_reference = Rect2(514, 232, 1362, 157)
 theme_type_variation = &"CreationHint"
 text = "Drag to the ability score of your choice."
 autowrap_mode = 2
 
 [node name="BaseHeader" type="Label" parent="."]
-offset_left = 362
-offset_right = 412
-offset_top = 320
-offset_bottom = 344
-metadata/layout_reference = Rect2(362, 320, 50, 24)
+offset_left = 412
+offset_right = 462
+offset_top = 232
+offset_bottom = 256
+metadata/layout_reference = Rect2(412, 232, 50, 24)
 text = "Base"
 horizontal_alignment = 0
 
 [node name="BonusHeader" type="Label" parent="."]
-offset_left = 416
-offset_right = 465
-offset_top = 320
-offset_bottom = 344
-metadata/layout_reference = Rect2(416, 320, 49, 24)
+offset_left = 466
+offset_right = 515
+offset_top = 232
+offset_bottom = 256
+metadata/layout_reference = Rect2(466, 232, 49, 24)
 text = "Bonus"
 horizontal_alignment = 0
 
 [node name="TotalHeader" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 320
-offset_bottom = 344
-metadata/layout_reference = Rect2(468, 320, 50, 24)
+offset_left = 518
+offset_right = 568
+offset_top = 232
+offset_bottom = 256
+metadata/layout_reference = Rect2(518, 232, 50, 24)
 text = "Total"
 horizontal_alignment = 0
 
 [node name="Color1Title" type="Label" parent="."]
 anchor_right = 0.5
-offset_left = 348
-offset_right = -27
-offset_top = 376
-offset_bottom = 402
-metadata/layout_reference = Rect2(348, 376, 585, 26)
+offset_left = 398
+offset_right = 169
+offset_top = 288
+offset_bottom = 314
+metadata/layout_reference = Rect2(398, 288, 731, 26)
 text = "Color-1"
 horizontal_alignment = 1
 
 [node name="Color2Title" type="Label" parent="."]
 anchor_left = 0.5
 anchor_right = 1
-offset_left = -19
-offset_right = -394
-offset_top = 376
-offset_bottom = 402
-metadata/layout_reference = Rect2(941, 376, 585, 26)
+offset_left = 177
+offset_right = -52
+offset_top = 288
+offset_bottom = 314
+metadata/layout_reference = Rect2(1137, 288, 731, 26)
 text = "Color-2"
 horizontal_alignment = 1
 
 [node name="BonusScore0" type="Label" parent="."]
 anchor_right = 1
-offset_left = 438
-offset_right = -450
-offset_top = 356
-offset_bottom = 393
-metadata/layout_reference = Rect2(438, 356, 1032, 37)
+offset_left = 488
+offset_right = -108
+offset_top = 268
+offset_bottom = 305
+metadata/layout_reference = Rect2(488, 268, 1324, 37)
 theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TotalScore0" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 360
-offset_bottom = 397
-metadata/layout_reference = Rect2(468, 360, 50, 37)
+offset_left = 518
+offset_right = 568
+offset_top = 272
+offset_bottom = 309
+metadata/layout_reference = Rect2(518, 272, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore1" type="Label" parent="."]
 anchor_right = 1
-offset_left = 438
-offset_right = -450
-offset_top = 403
-offset_bottom = 440
-metadata/layout_reference = Rect2(438, 403, 1032, 37)
+offset_left = 488
+offset_right = -108
+offset_top = 315
+offset_bottom = 352
+metadata/layout_reference = Rect2(488, 315, 1324, 37)
 theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TotalScore1" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 407
-offset_bottom = 444
-metadata/layout_reference = Rect2(468, 407, 50, 37)
+offset_left = 518
+offset_right = 568
+offset_top = 319
+offset_bottom = 356
+metadata/layout_reference = Rect2(518, 319, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore2" type="Label" parent="."]
 anchor_right = 1
-offset_left = 438
-offset_right = -450
-offset_top = 450
-offset_bottom = 487
-metadata/layout_reference = Rect2(438, 450, 1032, 37)
+offset_left = 488
+offset_right = -108
+offset_top = 362
+offset_bottom = 399
+metadata/layout_reference = Rect2(488, 362, 1324, 37)
 theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TotalScore2" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 454
-offset_bottom = 491
-metadata/layout_reference = Rect2(468, 454, 50, 37)
+offset_left = 518
+offset_right = 568
+offset_top = 366
+offset_bottom = 403
+metadata/layout_reference = Rect2(518, 366, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore3" type="Label" parent="."]
 anchor_right = 1
-offset_left = 438
-offset_right = -450
-offset_top = 497
-offset_bottom = 534
-metadata/layout_reference = Rect2(438, 497, 1032, 37)
+offset_left = 488
+offset_right = -108
+offset_top = 409
+offset_bottom = 446
+metadata/layout_reference = Rect2(488, 409, 1324, 37)
 theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TotalScore3" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 501
-offset_bottom = 538
-metadata/layout_reference = Rect2(468, 501, 50, 37)
+offset_left = 518
+offset_right = 568
+offset_top = 413
+offset_bottom = 450
+metadata/layout_reference = Rect2(518, 413, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore4" type="Label" parent="."]
 anchor_right = 1
-offset_left = 438
-offset_right = -450
-offset_top = 544
-offset_bottom = 581
-metadata/layout_reference = Rect2(438, 544, 1032, 37)
+offset_left = 488
+offset_right = -108
+offset_top = 456
+offset_bottom = 493
+metadata/layout_reference = Rect2(488, 456, 1324, 37)
 theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TotalScore4" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 548
-offset_bottom = 585
-metadata/layout_reference = Rect2(468, 548, 50, 37)
+offset_left = 518
+offset_right = 568
+offset_top = 460
+offset_bottom = 497
+metadata/layout_reference = Rect2(518, 460, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="BonusScore5" type="Label" parent="."]
 anchor_right = 1
-offset_left = 438
-offset_right = -450
-offset_top = 591
-offset_bottom = 628
-metadata/layout_reference = Rect2(438, 591, 1032, 37)
+offset_left = 488
+offset_right = -108
+offset_top = 503
+offset_bottom = 540
+metadata/layout_reference = Rect2(488, 503, 1324, 37)
 theme_type_variation = &"LabelText11"
 vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TotalScore5" type="Label" parent="."]
-offset_left = 468
-offset_right = 518
-offset_top = 595
-offset_bottom = 632
-metadata/layout_reference = Rect2(468, 595, 50, 37)
+offset_left = 518
+offset_right = 568
+offset_top = 507
+offset_bottom = 544
+metadata/layout_reference = Rect2(518, 507, 50, 37)
 theme_type_variation = &"LabelText19"
 
 [node name="Party" type="Button" parent="."]
@@ -1224,11 +1180,11 @@ anchor_left = 1
 anchor_right = 1
 anchor_top = 1
 anchor_bottom = 1
-offset_left = -556
-offset_right = -366
+offset_left = -214
+offset_right = -24
 offset_top = -60
 offset_bottom = -22
-metadata/layout_reference = Rect2(1364, 1020, 190, 38)
+metadata/layout_reference = Rect2(1706, 1020, 190, 38)
 visible = false
 text = "Add to party"
 
@@ -1246,11 +1202,11 @@ text = "Return to party"
 [node name="Modifiers" type="Button" parent="."]
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 238
-offset_right = 388
+offset_left = 288
+offset_right = 438
 offset_top = -136
 offset_bottom = -100
-metadata/layout_reference = Rect2(238, 944, 150, 36)
+metadata/layout_reference = Rect2(288, 944, 150, 36)
 visible = false
 text = "Modifiers"
 
@@ -1274,7 +1230,7 @@ offset_left = 0
 offset_top = 0
 offset_right = 0
 offset_bottom = 0
-metadata/layout_reference = Rect2(0, 0, 780, 960)
+metadata/layout_reference = Rect2(0, 0, 1920, 1080)
 theme_type_variation = &"DialogSurface"
 
 [node name="Title" type="Label" parent="ModifiersModal"]
@@ -1283,7 +1239,7 @@ offset_left = 24
 offset_top = 18
 offset_right = -24
 offset_bottom = 54
-metadata/layout_reference = Rect2(24, 18, 732, 36)
+metadata/layout_reference = Rect2(24, 18, 1872, 36)
 theme_type_variation = &"LabelText24"
 
 [node name="Text" type="RichTextLabel" parent="ModifiersModal"]
@@ -1294,7 +1250,7 @@ offset_left = 24
 offset_top = 70
 offset_right = -24
 offset_bottom = -70
-metadata/layout_reference = Rect2(24, 70, 732, 820)
+metadata/layout_reference = Rect2(24, 70, 1872, 940)
 theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
 
@@ -1307,17 +1263,17 @@ offset_left = -154
 offset_top = -52
 offset_right = -24
 offset_bottom = -16
-metadata/layout_reference = Rect2(626, 908, 130, 36)
+metadata/layout_reference = Rect2(1766, 1028, 130, 36)
 text = "Close"
 
 [node name="SavingThrows" type="Button" parent="."]
 anchor_top = 1
 anchor_bottom = 1
-offset_left = 398
-offset_right = 558
+offset_left = 448
+offset_right = 608
 offset_top = -136
 offset_bottom = -100
-metadata/layout_reference = Rect2(398, 944, 160, 36)
+metadata/layout_reference = Rect2(448, 944, 160, 36)
 visible = false
 text = "Saving Throws"
 
@@ -1341,7 +1297,7 @@ offset_left = 0
 offset_top = 0
 offset_right = 0
 offset_bottom = 0
-metadata/layout_reference = Rect2(0, 0, 780, 960)
+metadata/layout_reference = Rect2(0, 0, 1920, 1080)
 theme_type_variation = &"DialogSurface"
 
 [node name="Title" type="Label" parent="SavingThrowsModal"]
@@ -1350,7 +1306,7 @@ offset_left = 24
 offset_top = 18
 offset_right = -24
 offset_bottom = 54
-metadata/layout_reference = Rect2(24, 18, 732, 36)
+metadata/layout_reference = Rect2(24, 18, 1872, 36)
 theme_type_variation = &"LabelText24"
 
 [node name="DCLabel" type="Label" parent="SavingThrowsModal"]
@@ -1379,7 +1335,7 @@ offset_left = 24
 offset_top = 118
 offset_right = -24
 offset_bottom = -70
-metadata/layout_reference = Rect2(24, 118, 732, 772)
+metadata/layout_reference = Rect2(24, 118, 1872, 892)
 theme_type_variation = &"RichTextLabelText18"
 bbcode_enabled = true
 
@@ -1392,7 +1348,7 @@ offset_left = -154
 offset_top = -52
 offset_right = -24
 offset_bottom = -16
-metadata/layout_reference = Rect2(626, 908, 130, 36)
+metadata/layout_reference = Rect2(1766, 1028, 130, 36)
 text = "Close"
 
 [node name="PoolModal" type="CharacterPoolDialog" parent="."]
@@ -1413,7 +1369,7 @@ offset_left = 0
 offset_top = 0
 offset_right = 0
 offset_bottom = 0
-metadata/layout_reference = Rect2(0, 0, 1000, 960)
+metadata/layout_reference = Rect2(0, 0, 1920, 1080)
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="PoolModal"]
@@ -1424,7 +1380,7 @@ offset_left = 508
 offset_top = 64
 offset_right = -20
 offset_bottom = -90
-metadata/layout_reference = Rect2(508, 64, 472, 806)
+metadata/layout_reference = Rect2(508, 64, 1392, 926)
 theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
 
@@ -1437,7 +1393,7 @@ offset_left = -146
 offset_top = -58
 offset_right = -20
 offset_bottom = -22
-metadata/layout_reference = Rect2(854, 902, 126, 36)
+metadata/layout_reference = Rect2(1774, 1022, 126, 36)
 text = "Close"
 
 [node name="TownSheet" type="TownSheetDialog" parent="."]
@@ -1458,7 +1414,7 @@ offset_left = 0
 offset_top = 0
 offset_right = 0
 offset_bottom = 0
-metadata/layout_reference = Rect2(0, 0, 1000, 960)
+metadata/layout_reference = Rect2(0, 0, 1920, 1080)
 theme_type_variation = &"DialogSurface"
 
 [node name="Text" type="RichTextLabel" parent="TownSheet"]
@@ -1469,7 +1425,7 @@ offset_left = 24
 offset_top = 24
 offset_right = -24
 offset_bottom = -76
-metadata/layout_reference = Rect2(24, 24, 952, 860)
+metadata/layout_reference = Rect2(24, 24, 1872, 980)
 theme_type_variation = &"RichTextLabelText17"
 bbcode_enabled = true
 
@@ -1482,7 +1438,7 @@ offset_left = -154
 offset_top = -56
 offset_right = -24
 offset_bottom = -20
-metadata/layout_reference = Rect2(846, 904, 130, 36)
+metadata/layout_reference = Rect2(1766, 1024, 130, 36)
 text = "Close"
 
 [node name="MakeLeader" type="Button" parent="TownSheet"]
@@ -1494,7 +1450,7 @@ offset_left = -314
 offset_top = -56
 offset_right = -164
 offset_bottom = -20
-metadata/layout_reference = Rect2(686, 904, 150, 36)
+metadata/layout_reference = Rect2(1606, 1024, 150, 36)
 text = "Make leader"
 
 [node name="List" type="ItemList" parent="PoolModal"]
@@ -1503,7 +1459,7 @@ offset_left = 20
 offset_top = 64
 offset_right = 280
 offset_bottom = -90
-metadata/layout_reference = Rect2(20, 64, 260, 806)
+metadata/layout_reference = Rect2(20, 64, 260, 926)
 theme_type_variation = &"ItemListText16"
 
 [node name="Title" type="Label" parent="PoolModal"]
@@ -1512,7 +1468,7 @@ offset_left = 20
 offset_top = 16
 offset_right = -20
 offset_bottom = 52
-metadata/layout_reference = Rect2(20, 16, 960, 36)
+metadata/layout_reference = Rect2(20, 16, 1880, 36)
 theme_type_variation = &"LabelText23"
 text = "Character Pool / 48 level-one characters"
 
@@ -1525,7 +1481,7 @@ offset_left = -310
 offset_top = -58
 offset_right = -160
 offset_bottom = -22
-metadata/layout_reference = Rect2(690, 902, 150, 36)
+metadata/layout_reference = Rect2(1610, 1022, 150, 36)
 text = "Add to party"
 
 [node name="Status" type="Label" parent="PoolModal"]
@@ -1536,7 +1492,7 @@ offset_left = 20
 offset_top = -82
 offset_right = -330
 offset_bottom = -20
-metadata/layout_reference = Rect2(20, 878, 650, 62)
+metadata/layout_reference = Rect2(20, 998, 1570, 62)
 autowrap_mode = 2
 
 [node name="Portrait" type="TextureRect" parent="PoolModal"]
@@ -1570,20 +1526,20 @@ stretch_mode = 5
 texture_filter = 1
 
 [node name="TargetsTitle" type="Label" parent="."]
-offset_left = 0
-offset_right = 119
-offset_top = 0
-offset_bottom = 23
-metadata/layout_reference = Rect2(0, 0, 119, 23)
+offset_left = 50
+offset_right = 169
+offset_top = -88
+offset_bottom = -65
+metadata/layout_reference = Rect2(50, -88, 119, 23)
 theme_type_variation = &"LabelText16"
 text = "Target class(es)"
 
 [node name="Targets" type="ScrollContainer" parent="."]
-offset_left = 0
-offset_right = 56
-offset_top = 0
-offset_bottom = 16
-metadata/layout_reference = Rect2(0, 0, 56, 16)
+offset_left = 50
+offset_right = 106
+offset_top = -88
+offset_bottom = -72
+metadata/layout_reference = Rect2(50, -88, 56, 16)
 theme_type_variation = &"TargetPanel"
 horizontal_scroll_mode = 0
 follow_focus = true
@@ -1598,11 +1554,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="TargetHint" type="Label" parent="."]
-offset_left = 500
-offset_right = 1534
-offset_top = 826
-offset_bottom = 944
-metadata/layout_reference = Rect2(500, 826, 1034, 118)
+offset_left = 550
+offset_right = 1584
+offset_top = 738
+offset_bottom = 856
+metadata/layout_reference = Rect2(550, 738, 1034, 118)
 theme_type_variation = &"CreationTargetHint"
 autowrap_mode = 2
 text = "Future goals only. Choose one starting class next. Later Ability Score Improvements can raise scores to help you qualify."
@@ -1716,66 +1672,66 @@ theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
 [node name="Warning0" type="Label" parent="."]
-offset_left = 358
-offset_right = 488
-offset_top = 344
-offset_bottom = 373
-metadata/layout_reference = Rect2(358, 344, 130, 29)
+offset_left = 408
+offset_right = 538
+offset_top = 256
+offset_bottom = 285
+metadata/layout_reference = Rect2(408, 256, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
 
 [node name="Warning1" type="Label" parent="."]
-offset_left = 358
-offset_right = 488
-offset_top = 402
-offset_bottom = 431
-metadata/layout_reference = Rect2(358, 402, 130, 29)
+offset_left = 408
+offset_right = 538
+offset_top = 314
+offset_bottom = 343
+metadata/layout_reference = Rect2(408, 314, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
 
 [node name="Warning2" type="Label" parent="."]
-offset_left = 358
-offset_right = 488
-offset_top = 460
-offset_bottom = 489
-metadata/layout_reference = Rect2(358, 460, 130, 29)
+offset_left = 408
+offset_right = 538
+offset_top = 372
+offset_bottom = 401
+metadata/layout_reference = Rect2(408, 372, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
 
 [node name="Warning3" type="Label" parent="."]
-offset_left = 358
-offset_right = 488
-offset_top = 518
-offset_bottom = 547
-metadata/layout_reference = Rect2(358, 518, 130, 29)
+offset_left = 408
+offset_right = 538
+offset_top = 430
+offset_bottom = 459
+metadata/layout_reference = Rect2(408, 430, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
 
 [node name="Warning4" type="Label" parent="."]
-offset_left = 358
-offset_right = 488
-offset_top = 576
-offset_bottom = 605
-metadata/layout_reference = Rect2(358, 576, 130, 29)
+offset_left = 408
+offset_right = 538
+offset_top = 488
+offset_bottom = 517
+metadata/layout_reference = Rect2(408, 488, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
 text = "Does not meet targeted class requirements"
 
 [node name="Warning5" type="Label" parent="."]
-offset_left = 358
-offset_right = 488
-offset_top = 634
-offset_bottom = 663
-metadata/layout_reference = Rect2(358, 634, 130, 29)
+offset_left = 408
+offset_right = 538
+offset_top = 546
+offset_bottom = 575
+metadata/layout_reference = Rect2(408, 546, 130, 29)
 theme_type_variation = &"CreationWarning"
 mouse_filter = 2
 autowrap_mode = 2
@@ -1784,67 +1740,58 @@ text = "Does not meet targeted class requirements"
 [node name="PageBounds" type="Control" parent="."]
 anchor_right = 1
 anchor_bottom = 1
-offset_left = 218
-offset_right = -366
-offset_top = 112
-offset_bottom = -76
-metadata/layout_reference = Rect2(218, 112, 1336, 892)
-visible = false
-mouse_filter = 2
-
-[node name="PreviewBounds" type="Control" parent="."]
-anchor_left = 1
-anchor_right = 1
-anchor_bottom = 1
-offset_left = -342
+offset_left = 268
 offset_right = -24
-offset_top = 112
+offset_top = 24
 offset_bottom = -76
-metadata/layout_reference = Rect2(1578, 112, 318, 892)
+metadata/layout_reference = Rect2(268, 24, 1628, 980)
 visible = false
 mouse_filter = 2
 
 [node name="PortraitBounds" type="Control" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -315
-offset_right = -51
-offset_top = 212
-offset_bottom = 476
-metadata/layout_reference = Rect2(1605, 212, 264, 264)
 visible = false
 mouse_filter = 2
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -258
+offset_right = 502
+offset_top = 270
+offset_bottom = -96
+anchor_bottom = 1
+metadata/layout_reference = Rect2(702, 270, 760, 714)
 
 [node name="ReadyBounds" type="Control" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -292
-offset_right = -220
-offset_top = 628
-offset_bottom = 700
-metadata/layout_reference = Rect2(1628, 628, 72, 72)
 visible = false
 mouse_filter = 2
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1
+offset_left = -176
+offset_right = 112
+offset_top = 535
+offset_bottom = -190
+metadata/layout_reference = Rect2(784, 535, 288, 355)
 
 [node name="ActionBounds" type="Control" parent="."]
-anchor_left = 1
-anchor_right = 1
-offset_left = -146
-offset_right = -74
-offset_top = 628
-offset_bottom = 700
-metadata/layout_reference = Rect2(1774, 628, 72, 72)
 visible = false
 mouse_filter = 2
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1
+offset_left = 212
+offset_right = 500
+offset_top = 535
+offset_bottom = -190
+metadata/layout_reference = Rect2(1172, 535, 288, 355)
 
 [node name="TrainingFixed" type="RichTextLabel" parent="."]
 script = ExtResource("98_rich_text")
 anchor_right = 1.0
-offset_left = 238
-offset_top = 228
-offset_right = -386
-offset_bottom = 354
-metadata/layout_reference = Rect2(238, 228, 1296, 126)
+offset_left = 288
+offset_top = 140
+offset_right = -44
+offset_bottom = 266
+metadata/layout_reference = Rect2(288, 140, 1588, 126)
 visible = false
 theme_type_variation = &"TrainingFixed"
 bbcode_enabled = true
@@ -1854,11 +1801,11 @@ auto_translate_mode = 2
 script = ExtResource("96_training_scroll")
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 238
-offset_top = 362
-offset_right = -386
+offset_left = 288
+offset_top = 274
+offset_right = -44
 offset_bottom = -96
-metadata/layout_reference = Rect2(238, 362, 1296, 622)
+metadata/layout_reference = Rect2(288, 274, 1588, 710)
 visible = false
 horizontal_scroll_mode = 0
 follow_focus = true
@@ -1870,11 +1817,11 @@ theme_type_variation = &"TrainingRows"
 [node name="SpellChoices" type="ScrollContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 238
-offset_top = 244
-offset_right = -386
+offset_left = 288
+offset_top = 156
+offset_right = -44
 offset_bottom = -96
-metadata/layout_reference = Rect2(238, 244, 1296, 740)
+metadata/layout_reference = Rect2(288, 156, 1588, 828)
 visible = false
 horizontal_scroll_mode = 0
 follow_focus = true

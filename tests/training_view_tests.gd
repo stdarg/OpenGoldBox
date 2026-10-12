@@ -134,7 +134,7 @@ func all_class_skill_controls() -> void:
 		await complete_mastery(klass)
 		require(not current_scene.get_node("Next").disabled, "Every class can finish all supported Training choices: " + klass)
 		await press("Next")
-		require(current_scene.get_node("PageTitle").text == ("Spell Choices" if klass in ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"] else "Name"), "Completed Training reaches the next creation step: " + klass)
+		require(current_scene.get_node("PageTitle").text == ("Spell Choices" if klass in ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"] else "Combat appearance"), "Completed Training reaches the next creation step: " + klass)
 		await press("Back")
 		if klass in ["Bard", "Monk", "Druid", "Wizard", "Barbarian", "Fighter", "Paladin", "Ranger", "Rogue"]:
 			for locale in locales:
@@ -183,6 +183,10 @@ func run_checks() -> void:
 	await settle()
 	root.size = Vector2i(1120, 800)
 	await settle()
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Trained Rogue"
+	name.text_changed.emit(name.text)
+	await settle()
 	await press("Next")
 	await press("Next")
 	await choose("Background", "Criminal")
@@ -214,10 +218,17 @@ func run_checks() -> void:
 		await pick(0, skill)
 	require(current_scene.get_node("Training/Rows/Group0/athletics").disabled and current_scene.get_node("Training/Rows/Group0/Title").text.ends_with("(4 / 4)"), "Class skill limit or selection count missing")
 	await capture("training-rogue-skills")
+	# Hovering a choice for a second shows what it adds.
+	require(ProjectSettings.get_setting("gui/timers/tooltip_delay_sec") == 1.0, "Tooltips wait one second")
+	var chosen: String = current_scene.get_node("Training/Rows/Group0/acrobatics").tooltip_text
+	var open: String = current_scene.get_node("Training/Rows/Group0/athletics").tooltip_text
+	require(chosen.begins_with("Acrobatics +") and not chosen.contains("if chosen") and open.contains(" if chosen (now ") and open.contains("Rogue class"), "Skill tooltips show the bonus once chosen")
 	await pick(1, "stealth")
 	await pick(1, "perception")
 	await complete_mastery("Rogue")
 	require(not current_scene.get_node("Next").disabled, "Complete Rogue training cannot continue")
+	var dagger: CheckBox = current_scene.get_node("Training/Rows/Group2/dagger")
+	require(dagger.tooltip_text.begins_with("Nick: The Light weapon's extra attack"), "Mastery tooltips say what the property does")
 	var last: CheckBox
 	for child in current_scene.get_node("Training/Rows/Group2").get_children():
 		if child is CheckBox and child.visible: last = child
@@ -307,9 +318,6 @@ func run_checks() -> void:
 	await settle()
 	await capture("training-rogue-expertise")
 	await press("Next")
-	var name: LineEdit = current_scene.get_node("Name")
-	name.text = "Trained Rogue"
-	name.text_changed.emit(name.text)
 	await press("Next")
 	await press("Next")
 	var sheet: String = current_scene.get_node("Description").get_parsed_text()

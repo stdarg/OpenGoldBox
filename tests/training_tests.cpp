@@ -333,6 +333,7 @@ void creation_controls()
     CharacterCreator creator(srd5::character_rules(), 42);
     creator.select(CreationField::character_class, "rogue");
     creator.select(CreationField::background, "criminal");
+    creator.name("Created Rogue");
     creator.next();
     creator.next();
     for (unsigned tries = 0;; ++tries)
@@ -451,12 +452,8 @@ void creation_controls()
             })
         for (const auto &value : selected.at(group))
             creator.training_choice({.group = group, .option = value, .selected = true});
-    creator.next();
-    creator.next();
-    creator.next();
-    creator.name("Created Rogue");
-    creator.next();
-    creator.next();
+    for (int step = 0; step < 5; ++step)
+        creator.next(); // Class, Training, Combat icon, Portrait, then the sheet.
     const auto finished = creator.create_character();
     check(finished.sheet().training.complete,
           "Finished character retains the training selected through the creator");

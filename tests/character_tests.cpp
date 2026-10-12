@@ -267,8 +267,15 @@ void creation_tests()
     },
     "Incomplete drafts cannot become characters");
     creator.select(CreationField::gender, "male");
+    rejects(
+        [&]
+    {
+        creator.next();
+    },
+    "The name is required on the first page");
+    creator.name("  Mira Stoneward  ");
     creator.next();
-    check(creator.step() == CreationStep::alignment, "Race and gender advance to Alignment");
+    check(creator.step() == CreationStep::alignment, "Name, race and gender advance to Alignment");
     creator.back();
     check(creator.step() == CreationStep::race && creator.draft().gender == "male",
           "Back retains gender on combined first step");
@@ -425,21 +432,15 @@ void creation_tests()
             })
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     creator.next();
-    check(creator.step() == CreationStep::name, "Spell Choices advances to Name");
-    rejects(
-        [&]
-    {
-        creator.next();
-    },
-    "Name required before portrait");
-    creator.name("  Mira Stoneward  ");
-    creator.next();
     check(creator.step() == CreationStep::combat_icon,
-          "Name advances directly to combat appearance");
+          "Spell Choices advances to combat appearance");
     auto appearance = creator.appearance();
-    appearance.portrait_head = 261;
     appearance.combat_head = 9;
     appearance.colors[1][5] = 0;
+    creator.appearance(appearance);
+    creator.next();
+    check(creator.step() == CreationStep::portrait, "Combat appearance advances to Portrait");
+    appearance.portrait_head = 261;
     creator.appearance(appearance);
     creator.next();
     check(creator.step() == CreationStep::sheet && creator.sheet().name == "Mira Stoneward",
@@ -554,8 +555,6 @@ void starting_gold_tests()
     for (std::uint64_t seed = 1; seed <= 2000; ++seed)
     {
         CharacterCreator creator(srd5::character_rules(), seed);
-        for (int i = 0; i < 2; ++i)
-            creator.next();
         creator.roll();
         const int gold = creator.starting_gold();
         check(gold >= 30 && gold <= 180 && gold % 10 == 0, "Starting gold is 3d6 x 10 gp");
@@ -564,11 +563,7 @@ void starting_gold_tests()
     check(amounts.size() == 16, "Every amount from 30 to 180 gp can be rolled");
     CharacterCreator first(srd5::character_rules(), 99), second(srd5::character_rules(), 99);
     for (auto *creator : {&first, &second})
-    {
-        for (int i = 0; i < 2; ++i)
-            creator->next();
         creator->roll();
-    }
     check(first.starting_gold() == second.starting_gold(), "Seeded starting gold reproduces");
     std::set<int> rerolled{first.starting_gold()};
     for (int i = 0; i < 20; ++i)

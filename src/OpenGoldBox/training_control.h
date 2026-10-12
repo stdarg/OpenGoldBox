@@ -118,6 +118,66 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
     return text;
 }
 
+// What a weapon's mastery property does, keyed by its SRD name.
+inline const char *mastery_effect(std::string_view mastery)
+{
+    if (mastery == "Cleave")
+        return N_("After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn.");
+    if (mastery == "Graze")
+        return N_("A miss still deals damage equal to the ability modifier used for the attack.");
+    if (mastery == "Nick")
+        return N_("The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn.");
+    if (mastery == "Push")
+        return N_("On a hit, push a Large or smaller creature up to 10 feet straight away from you.");
+    if (mastery == "Sap")
+        return N_("On a hit, the target has Disadvantage on its next attack roll before your next turn.");
+    if (mastery == "Slow")
+        return N_("On a hit that deals damage, the target's Speed drops by 10 feet until your next turn.");
+    if (mastery == "Topple")
+        return N_("On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone.");
+    if (mastery == "Vex")
+        return N_("On a hit that deals damage, your next attack against that target before the end of your next turn has Advantage.");
+    return nullptr;
+}
+
+inline godot::String signed_bonus(int value)
+{
+    return godot::String(value >= 0 ? "+" : "") + godot::String::num_int64(value);
+}
+
+// What choosing a training option gives: a skill's check bonus once chosen,
+// or what a weapon's mastery property does.
+template <class Translate>
+godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group,
+                               const opengold::rules::CreationChoice &option,
+                               const opengold::rules::CharacterSheet &sheet, const Translate &tr)
+{
+    const auto &skills = sheet.training.skills;
+    const auto skill = std::find_if(skills.begin(), skills.end(), [&](const auto & s)
+    {
+        return s.id == option.id;
+    });
+    if (skill != skills.end())
+    {
+        const int proficiency = 2 + (sheet.level - 1) / 4;
+        const bool expertise = group.id.ends_with(":expertise");
+        const bool gained = expertise ? !skill->expertise : !skill->proficient;
+        const auto name = tr(skill->label);
+        const auto chosen = signed_bonus(skill->bonus + (gained ? proficiency : 0));
+        if (!gained)
+            return name + godot::String(" ") + chosen;
+        // The demo shares this header without the game's formatter.
+        return tr(expertise ? N_("{skill} {bonus} with Expertise (now {current})")
+                  : N_("{skill} {bonus} if chosen (now {current})"))
+               .replace("{skill}", name)
+               .replace("{bonus}", chosen)
+               .replace("{current}", signed_bonus(skill->bonus));
+    }
+    if (const auto *effect = mastery_effect(option.description))
+        return tr(option.description) + godot::String(": ") + tr(effect);
+    return tr(option.description);
+}
+
 // The scene owns every node. Reuse controls across refreshes so toggling does
 // not destroy the focused checkbox or its keyboard navigation position.
 template <class Translate>
@@ -136,6 +196,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                    creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
                    tr, true));
     const auto groups = creator.training_options();
+    const auto sheet = creator.sheet();
     for (auto i = static_cast<unsigned>(groups.size()); i < static_cast<unsigned>(rows->get_child_count()); ++i)
         required_node<Control>(*rows, String("Group") + String::num_uint64(i)).hide();
     for (unsigned i = 0; i < groups.size(); ++i)
@@ -254,7 +315,8 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                                          option.id) != original->second.end()) ||
                 (!selected && picked.size() >= group.count));
             check->show();
-            check->set_tooltip_text(training_source(group.id, tr));
+            check->set_tooltip_text(training_benefit(group, option, sheet, tr) + "\n" +
+                                    training_source(group.id, tr));
         }
     }
     String signature;

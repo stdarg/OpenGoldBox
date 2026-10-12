@@ -53,9 +53,9 @@ String gs(std::string_view s)
 
 const std::array<const char *, 9> steps
 {
-    N_("Race & Gender"), N_("Alignment"),         N_("Attributes"),
-    N_("Class"),         N_("Training"),          N_("Spell Choices"),
-    N_("Name"),          N_("Combat appearance"), N_("Character sheet")};
+    N_("Name, Race & Gender"), N_("Alignment"),         N_("Attributes"),
+    N_("Class"),               N_("Training"),          N_("Spell Choices"),
+    N_("Combat appearance"),   N_("Portrait"),          N_("Character sheet")};
 
 CreationField choice_field(CreationStep step)
 {
@@ -133,8 +133,6 @@ void CharacterCreationView::respond_to_notification(int what)
 void CharacterCreationView::_ready()
 {
     i18n::prepare_ui(*this);
-    required_node<Label>(*this, "PreviewName").set_auto_translate_mode(
-        Node::AUTO_TRANSLATE_MODE_DISABLED);
     ready_ = true;
     // All node pointers here and below are borrowed from the owning scene tree.
     required_node<Button>(*this, "Next").connect("pressed", presentation::guarded(this,
@@ -345,7 +343,8 @@ void CharacterCreationView::refresh()
     };
     const bool choosing = step == CreationStep::race || step == CreationStep::alignment ||
                           step == CreationStep::character_class,
-                          stats = step == CreationStep::attributes, icon = step == CreationStep::combat_icon;
+                          stats = step == CreationStep::attributes, icon = step == CreationStep::combat_icon,
+                          portrait = step == CreationStep::portrait;
     for (const auto *n : {"Choices"})
         show(n, choosing);
     show("GenderLabel", step == CreationStep::race);
@@ -371,15 +370,16 @@ void CharacterCreationView::refresh()
             {"BaseHeader", "BonusHeader", "TotalHeader"
             })
         show(n, false);
-    show("Name", step == CreationStep::name);
+    show("NameLabel", step == CreationStep::race);
+    show("Name", step == CreationStep::race);
     show("SpellChoices", step == CreationStep::spell_choices);
     show("TrainingFixed", step == CreationStep::training);
     show("Training", step == CreationStep::training);
     for (const auto *n :
             {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
-             "PortraitClass", "PortraitRace"
+             "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters"
             })
-        show(n, true);
+        show(n, portrait);
     for (const auto *n :
             {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
              "PortraitClass", "PortraitRace"
@@ -387,7 +387,8 @@ void CharacterCreationView::refresh()
         required_node<Button>(*this, n).set_disabled(added_to_party_);
     for (const auto *n :
             {"CombatHeadPrevious", "CombatHeadNext", "CombatHeadLabel", "WeaponPrevious", "WeaponNext",
-             "WeaponLabel", "Size", "ColorTitle", "Color1Title", "Color2Title", "PaletteHint"
+             "WeaponLabel", "Size", "ColorTitle", "Color1Title", "Color2Title", "PaletteHint",
+             "ReadyLabel", "ActionLabel"
             })
         show(n, icon);
     for (int i = 0; i < 6; ++i)
@@ -424,8 +425,7 @@ void CharacterCreationView::refresh()
     }
     required_node<Label>(*this, "Steps").set_text(gs(progress));
     required_node<Button>(*this, "Back").set_disabled(step == CreationStep::race);
-    required_node<Button>(*this, "Back").set_text(
-        i18n::text(step == CreationStep::sheet ? N_("Edit appearance") : N_("Back")));
+    required_node<Button>(*this, "Back").set_text(i18n::text(N_("Back")));
     show("Next", step != CreationStep::sheet);
     if (campaign_)
         required_node<Button>(*this, "AddParty").set_visible(step == CreationStep::sheet
@@ -438,7 +438,7 @@ void CharacterCreationView::refresh()
          !rules::class_eligible(creator_->rules(), d, d.character_class)) ||
         (step == CreationStep::training && !creator_->training_complete()) ||
         (step == CreationStep::spell_choices && !creator_->spell_choices_complete()) ||
-        (step == CreationStep::name && d.name.empty()));
+        (step == CreationStep::race && d.name.empty()));
     required_node<Label>(*this, "Status").set_text(error_);
     std::string instructions;
     if (choosing)
@@ -480,7 +480,8 @@ void CharacterCreationView::refresh()
         instructions =
             step == CreationStep::character_class
             ? N_("Choose one starting class. Checked targets are future plans, not additional class levels.")
-            : step == CreationStep::race ? N_("Choose your race (species in SRD 5.2.1) and gender.")
+            : step == CreationStep::race
+            ? N_("Name your character (up to 40 characters), then choose a race (species in SRD 5.2.1) and gender.")
             : N_("Select an option, then continue.");
     }
     if (step == CreationStep::race)
@@ -607,8 +608,8 @@ void CharacterCreationView::refresh()
             ? N_("Choose cantrips, spellbook entries and prepared spells. Back preserves your choices.")
             : N_("Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections.");
     }
-    if (step == CreationStep::name)
-        instructions = N_("Choose a name for your character (up to 40 characters).");
+    if (portrait)
+        instructions = N_("Choose a portrait. Filters narrow the list and do not change your character.");
     if (icon)
         instructions = N_(
                            "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled.");
@@ -656,31 +657,27 @@ void CharacterCreationView::refresh()
     }
     if (step == CreationStep::sheet)
     {
-        instructions = N_(
-                           "Review your character and use the portrait controls to choose a complete portrait before adding it to the party.");
+        instructions = N_("Review your character before adding it to the party.");
         required_node<RichTextLabel>(*this, "Description")
         .call("render", presentation::sheet_text(*completed_));
     }
     required_node<Label>(*this, "Instructions").set_text(i18n::text(instructions));
-    required_node<Label>(*this, "PreviewTitle")
-    .set_text(i18n::text(icon ? N_("COMBAT PREVIEW") : N_("CHARACTER PREVIEW")));
-    required_node<Label>(*this, "PreviewName")
-    .set_text(d.name.empty() ? i18n::text("Unnamed character") : gs(d.name));
-    std::string identity;
-    for (const auto field :
-            {
-                CreationField::race, CreationField::gender, CreationField::character_class
-            })
+    // The portrait page names the character's race, gender and class so a
+    // matching portrait is easy to find.
+    const auto chosen_label = [&](CreationField field)
+    {
         for (const auto &choice : creator_->rules().choices(field))
             if (choice.id == selection(d, field))
-                identity += (identity.empty() ? "" : " / ") + i18n::utf8(choice.label);
-    required_node<Label>(*this, "PreviewSummary")
-    .set_text(gs(identity) + (s ? "\n" + i18n::format("{alignment} / {hp} HP",
+                return i18n::text(choice.label);
+        return String();
+    };
+    required_node<Label>(*this, "PortraitIdentity")
+    .set_text(i18n::format("Your character: {race} / {gender} / {class}",
     {
-        {"alignment", i18n::text(s->alignment)},
-        {"hp", s->hit_points}
-    })
-    : String()));
+        {"race", chosen_label(CreationField::race)},
+        {"gender", chosen_label(CreationField::gender)},
+        {"class", chosen_label(CreationField::character_class)}
+    }));
     refresh_art();
     layout();
     queue_redraw();
@@ -702,9 +699,11 @@ void CharacterCreationView::report_failure(const std::exception &failure)
 
 void CharacterCreationView::draw_view()
 {
+    const auto step = creator_ ? creator_->step() : CreationStep::race;
     required_node<Control>(*this, "CreationCanvas").call("set_images",
-            images_[0], images_[1], images_[2],
-            creator_ && creator_->step() == CreationStep::attributes);
+            images_[0], images_[1], images_[2], creator_ && step == CreationStep::attributes,
+            creator_ && step == CreationStep::portrait,
+            creator_ && step == CreationStep::combat_icon);
 }
 
 void CharacterCreationView::perform(const std::function<void()> &action)
@@ -1115,7 +1114,7 @@ void CharacterCreationView::_process(double)
 
 void CharacterCreationView::check_run()
 {
-    if (check_stage_ == 6 && drag_check_stage_ < 12)
+    if (check_stage_ == 7 && drag_check_stage_ < 12)
     {
         const auto group = drag_check_stage_ / 4, phase = drag_check_stage_ % 4;
         const auto source = required_node<Control>(*this, group == 0   ? "Dice0"
@@ -1335,13 +1334,12 @@ void CharacterCreationView::check_run()
             }
         throw std::runtime_error("Missing UI choice");
     };
-    if (check_stage_ == 0 && check_head_ < portraits_->entries().size())
+    // The portrait picker is checked on its own page, after combat appearance.
+    const bool on_portraits = creator_->step() == CreationStep::portrait;
+    if (on_portraits && check_head_ < portraits_->entries().size())
     {
         if (check_head_ == 0)
-        {
-            capture("character-race-columns.png");
             portrait_selected(0);
-        }
         const auto &p = portraits_->entries()[check_head_];
         if (creator_->appearance().portrait != p.filename || images_[0]->get_width() != 1254)
             throw std::runtime_error("Portrait navigation or full-resolution texture failed");
@@ -1349,7 +1347,7 @@ void CharacterCreationView::check_run()
         press("PortraitNext");
         return;
     }
-    if (check_stage_ == 0 && check_default_ == 0)
+    if (on_portraits && check_default_ == 0)
     {
         const auto before = creator_->appearance();
         const auto draft = creator_->draft();
@@ -1416,25 +1414,42 @@ void CharacterCreationView::check_run()
                                     " portraits and all gender, class and race combinations");
             checking_ = false;
             get_tree()->quit(0);
-            return;
         }
-        restart();
         return;
     }
     switch (check_stage_++)
     {
     case 0:
+        capture("character-race-columns.png");
+        if (!required_node<Button>(*this, "Next").is_disabled())
+            throw std::runtime_error("Empty name accepted");
+        required_node<LineEdit>(*this, "Name").grab_focus();
+        for (char c : std::string("Mira Stoneward"))
+            for (bool pressed :
+                    {
+                        true, false
+                    })
+            {
+                Ref<InputEventKey> event;
+                event.instantiate();
+                event->set_unicode(c);
+                event->set_keycode(static_cast<Key>(c >= 'a' && c <= 'z' ? c - 32 : c));
+                event->set_pressed(pressed);
+                get_viewport()->push_input(event, true);
+            }
+        break; // LineEdit publishes text_changed on the next idle turn.
+    case 1:
         choose(CreationField::race, "dwarf");
         break;
-    case 1:
+    case 2:
         choose(CreationField::gender, "female");
         press("Next");
         break;
-    case 2:
+    case 3:
         choose(CreationField::alignment, "neutral_good");
         press("Next");
         break;
-    case 3:
+    case 4:
         if (creator_->step() != CreationStep::attributes)
             throw std::runtime_error("Attributes must precede Class");
         for (unsigned i = 0; i < 12; ++i)
@@ -1445,7 +1460,7 @@ void CharacterCreationView::check_run()
             throw std::runtime_error(
                 "Target checkboxes must accept future goals and show unmet requirements");
         break;
-    case 4:
+    case 5:
         if (!required_node<Button>(*this, "Next").is_disabled())
             throw std::runtime_error("Unrolled scores accepted");
         capture("character-empty-rolls.png");
@@ -1454,7 +1469,7 @@ void CharacterCreationView::check_run()
                 !required_node<Button>(*this, "Score0").get_text().is_empty())
             throw std::runtime_error("Dice were automatically assigned");
         break;
-    case 5:
+    case 6:
     {
         capture("character-unassigned-rolls.png");
         const auto old = creator_->draft().rolls;
@@ -1465,7 +1480,7 @@ void CharacterCreationView::check_run()
         required_node<OptionButton>(*this, "Bonus").emit_signal("item_selected", 1);
         break;
     }
-    case 6:
+    case 7:
     {
         const auto old = creator_->draft().assignment;
         press("Ability0");
@@ -1474,7 +1489,7 @@ void CharacterCreationView::check_run()
             throw std::runtime_error("UI swap failed");
         break;
     }
-    case 7:
+    case 8:
         for (unsigned i = 0; i < 6; ++i)
         {
             const auto ability = rules::all_abilities[i];
@@ -1502,14 +1517,14 @@ void CharacterCreationView::check_run()
         capture("character-attributes.png");
         press("Next");
         break;
-    case 8:
+    case 9:
         if (creator_->step() != CreationStep::character_class)
             throw std::runtime_error("Attributes must advance to Class");
         choose(CreationField::character_class, "fighter");
         press("Next");
         if (creator_->step() != CreationStep::training
                 || !required_node<Button>(*this, "Next").is_disabled())
-            throw std::runtime_error("Qualified Fighter must complete Training before Name");
+            throw std::runtime_error("Qualified Fighter must complete Training first");
         required_node<CheckBox>(*this, "Training/Rows/Group1/athletics").set_pressed(true);
         required_node<CheckBox>(*this, "Training/Rows/Group1/history").set_pressed(true);
         required_node<OptionButton>(*this, "Training/Rows/Group0/Choice").select(2);
@@ -1520,61 +1535,25 @@ void CharacterCreationView::check_run()
             required_node<CheckBox>(*this, gs(std::string("Training/Rows/Group2/") + weapon))
             .set_pressed(true);
         press("Next");
-        if (creator_->step() != CreationStep::name)
-            throw std::runtime_error("Completed training must advance to Name");
+        if (creator_->step() != CreationStep::combat_icon)
+            throw std::runtime_error("Completed training must advance to combat appearance");
         break;
-    case 9:
-        if (!required_node<Button>(*this, "Next").is_disabled())
-            throw std::runtime_error("Empty name accepted");
-        required_node<LineEdit>(*this, "Name").grab_focus();
-        for (char c : std::string("Mira Stoneward"))
-            for (bool pressed :
-                    {
-                        true, false
-                    })
-            {
-                Ref<InputEventKey> event;
-                event.instantiate();
-                event->set_unicode(c);
-                event->set_keycode(static_cast<Key>(c >= 'a' && c <= 'z' ? c - 32 : c));
-                event->set_pressed(pressed);
-                get_viewport()->push_input(event, true);
-            }
-        break; // LineEdit publishes text_changed on the next idle turn.
     case 10:
-        press("Next");
-        required_node<OptionButton>(*this, "PortraitSelect").select(0);
-        required_node<OptionButton>(*this, "PortraitSelect").emit_signal("item_selected", 0);
-        press("PortraitPrevious");
+        for (int bank = 0; bank < 2; ++bank)
+            for (int part :
+                    {
+                        0, 3
+                    })
+                if (!required_node<Button>(*this,
+                                           gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
+                        .is_disabled())
+                    throw std::runtime_error("Absent weapon/shield control enabled");
+        press("CombatHeadNext");
+        for (int i = 0; i < 4; ++i)
+            press("WeaponNext");
+        press("Size");
         break;
     case 11:
-    {
-        auto *list = &required_node<OptionButton>(*this, "PortraitSelect");
-        list->select(0);
-        list->emit_signal("item_selected", 0);
-        const auto chosen = creator_->appearance().portrait;
-        press("Back");
-        press("Next");
-        if (chosen != creator_->appearance().portrait)
-            throw std::runtime_error("Manual portrait changed on Back/Next");
-    }
-    if (creator_->step() != CreationStep::combat_icon)
-        throw std::runtime_error("Name must advance directly to combat appearance");
-    for (int bank = 0; bank < 2; ++bank)
-        for (int part :
-                {
-                    0, 3
-                })
-            if (!required_node<Button>(*this,
-                                       gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
-                    .is_disabled())
-                throw std::runtime_error("Absent weapon/shield control enabled");
-    press("CombatHeadNext");
-    for (int i = 0; i < 4; ++i)
-        press("WeaponNext");
-    press("Size");
-    break;
-    case 12:
         capture("character-before-colors.png");
         for (int bank = 0; bank < 2; ++bank)
             for (int part = 0; part < 6; ++part)
@@ -1611,30 +1590,38 @@ void CharacterCreationView::check_run()
                 }
             }
         break;
-    case 13:
+    case 12:
         capture("character-appearance.png");
         press("Next");
+        if (creator_->step() != CreationStep::portrait)
+            throw std::runtime_error("Combat appearance must advance to Portrait");
         break;
+    case 13:
+    {
+        auto *list = &required_node<OptionButton>(*this, "PortraitSelect");
+        list->select(0);
+        list->emit_signal("item_selected", 0);
+        const auto chosen = creator_->appearance().portrait;
+        press("Back");
+        press("Next");
+        if (chosen != creator_->appearance().portrait)
+            throw std::runtime_error("Manual portrait changed on Back/Next");
+        capture("character-portrait.png");
+        press("Next");
+        break;
+    }
     case 14:
         if (creator_->step() != CreationStep::sheet || !completed_ ||
                 completed_->sheet().name != "Mira Stoneward" || !completed_->inventory().empty() ||
                 completed_->appearance() != creator_->appearance() ||
                 completed_->appearance().portrait.empty())
             throw std::runtime_error("Character not completed with the selected portrait");
-        {
-            const auto before = completed_->appearance();
-            press("PortraitNext");
-            if (completed_->appearance() == before ||
-                    completed_->appearance() != creator_->appearance() ||
-                    creator_->step() != CreationStep::sheet)
-                throw std::runtime_error("Portrait controls did not update the reviewed character");
-            press("PortraitPrevious");
-        }
         capture("character-sheet.png");
         press("Back");
         break;
     case 15:
     {
+        press("Back");
         const auto a = creator_->appearance();
         press("Size");
         press("CombatHeadNext");
@@ -1643,7 +1630,8 @@ void CharacterCreationView::check_run()
         press("CombatHeadPrevious");
         press("Size");
         press("Next");
-        if (a != creator_->appearance() || a != completed_->appearance())
+        press("Next");
+        if (a != creator_->appearance() || !completed_ || a != completed_->appearance())
             throw std::runtime_error("Appearance lost on part changes or review");
         press("Restart");
         break;

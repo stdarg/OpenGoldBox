@@ -17,9 +17,10 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
 
 ## Creation flow
 
-1. **Race & Gender**: select race (the nine species included in SRD 5.2.1)
-   from the two-column list and gender from the dropdown below it. Gender does
-   not alter stats or restrict other choices. Both selections persist when returning.
+1. **Name, Race & Gender**: enter a name (up to 40 characters) in the field at
+   the top; Next waits for one. Select race (the nine species included in SRD
+   5.2.1) from the two-column list and gender from the dropdown below it. Gender
+   does not alter stats or restrict other choices. All three persist when returning.
 2. Select alignment.
 3. The **Dice Rolls** area starts with six empty boxes to the right of the
    abilities. Roll attributes to fill those boxes with totals only. The native
@@ -53,6 +54,9 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
    choices ([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)). Counts show progress and Next requires every supported choice.
    Back preserves choices; class/background edits clear only invalid choices and
    their dependencies. The full first package and limits are in [TRAINING.md](TRAINING.md).
+   Hovering a choice for a second shows what it adds: a skill's check bonus once
+   chosen (and its bonus now), or what a weapon's mastery property does. The
+   one-second delay is the game's setting for every tooltip.
 6. Wizards and Clerics choose supported cantrips in **Spell Choices**, after
    Training. Wizard Fire Bolt/Poison Spray and Cleric Sacred Flame have labeled
    checkboxes, counts and keyboard access.
@@ -60,19 +64,21 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
    Class changes clear invalid choices and hide their controls. Presets receive
    their supported class cantrips. See
    [Wizard spell choices](POISON-SPRAY.md) and [Cleric spell choices](SACRED-FLAME.md).
-7. Enter a name, up to 40 characters. There is no separate HP step.
-   Choose a complete portrait with the dropdown or Previous/Next buttons.
-   Optional gender, class, and in-game race filters combine to narrow the list;
-   All clears each filter. Filters never change character data or the current
-   portrait. An empty result disables selection and navigation. Any portrait may
-   be selected regardless of the character's traits. Initial recommendations favor
-   race, then gender, then class; manual choices persist through later edits.
-8. Customize combat head and weapon/body parts, tall/short art, and all twelve
+7. Customize combat head and weapon/body parts, tall/short art, and all twelve
    region colors. Select a region's Color-1 or Color-2 button, then a palette
-   swatch. Enlarged ready and action previews update immediately, recoloring
-   only that part, with the complete portrait visible above both
-   poses. Controls show **Not present** when the selected parts omit
+   swatch. Ready and action previews update immediately, recoloring only that
+   part. In the game they sit in the page between the colors and the palette, at
+   288 pixels (twelve times the 24-pixel original) at 1920 x 1080 and smaller
+   whole multiples in a smaller window. Controls show **Not present** when the selected parts omit
    that region in both poses. Its saved colors return when the part is present.
+8. **Portrait**: the page names the character's race, gender and class above
+   the picker. Choose a complete portrait with the dropdown or Previous/Next
+   buttons. Optional gender, class, and in-game race filters combine to narrow
+   the list; All clears each filter. Filters never change character data or the
+   current portrait. An empty result disables selection and navigation. Any
+   portrait may be selected regardless of the character's traits. Initial
+   recommendations favor race, then gender, then class; manual choices persist
+   through later edits.
 9. Show the character sheet: race, gender, class, level, background, six scores,
     saving throws, Hit Dice, HP and inventory (initially empty), plus skill bonuses,
     Expertise, tools, languages and their grant sources. Saving throws
@@ -102,8 +108,11 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
     The party screen uses this same sheet for its selected member, including
     live HP, equipment and resources; roster entries show character names.
     Ready and Action combat sprites appear side by side under the party portrait,
-    with their labels below the images. Portrait selection has no separate step;
-    its preview controls remain available throughout creation.
+    with their labels below the images.
+
+The game's creation screen has no title band and no right-hand preview pane;
+the step list and the page fill the window. The reference demo keeps its
+preview pane, where its portrait controls stay available on every page.
 
 **Back** preserves selections and allows earlier edits. Derived scores and HP
 update from the current choices. **Start over** clears the single character.

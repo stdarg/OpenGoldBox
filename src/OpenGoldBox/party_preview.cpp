@@ -858,7 +858,7 @@ void CharacterCreationView::party_check()
             for (unsigned i = 0; i < 6; ++i)
                 creator_->assign_roll(i, static_cast<rules::Ability>(i));
         }
-        while (creator_->step() != CreationStep::sheet)
+        while (creator_->step() != CreationStep::portrait)
         {
             const auto before = creator_->step();
             if (before == CreationStep::training)
@@ -879,6 +879,9 @@ void CharacterCreationView::party_check()
                 throw std::runtime_error("Party-check creation did not advance");
         }
         press("PortraitNext");
+        next();
+        if (creator_->step() != CreationStep::sheet)
+            throw std::runtime_error("Portrait must advance to the character sheet");
         const auto chosen = completed_->appearance();
         press("AddParty");
         if (campaign_->state().slots[0] == 0)

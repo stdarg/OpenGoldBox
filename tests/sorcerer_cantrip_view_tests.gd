@@ -83,6 +83,10 @@ func run_checks() -> void:
 	await settle()
 	root.size = Vector2i(1120, 800)
 	await settle()
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Cantrip Sorcerer"
+	name.text_changed.emit(name.text)
+	await settle()
 	await press("Next")
 	await press("Next")
 	await choose("Background", "Sage")
@@ -143,7 +147,7 @@ func run_checks() -> void:
 			ready += 1
 	require(not current_scene.get_node("SpellChoices/Rows/Pending").visible, "No starting choice pending")
 	await press("Next")
-	require(current_scene.get_node("PageTitle").text == "Name", "Name follows choices")
+	require(current_scene.get_node("PageTitle").text == "Combat appearance", "Combat appearance follows choices")
 	await press("Back")
 	require(blast.button_pressed, "Back retains choice")
 	for locale in ["en", "es"]:
@@ -158,9 +162,6 @@ func run_checks() -> void:
 			await capture("sorcerer-choices-" + locale + "-" + str(size.x))
 	TranslationServer.set_locale("en")
 	await press("Next")
-	var name: LineEdit = current_scene.get_node("Name")
-	name.text = "Cantrip Sorcerer"
-	name.text_changed.emit(name.text)
 	await press("Next")
 	await press("Next")
 	await press("Modifiers")

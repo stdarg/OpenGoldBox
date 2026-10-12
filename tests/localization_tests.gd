@@ -67,7 +67,10 @@ func run_checks() -> void:
 	require(TranslationServer.translate("A missing original message", "por/test/dialogue") == "A missing original message", "Source fallback failed")
 	change_scene_to_file("res://scenes/character_creation.tscn")
 	await settle()
-	require(current_scene.get_node("PageTitle").text == "Raza y género", "Native page title is not Spanish")
+	require(current_scene.get_node("PageTitle").text == "Nombre, raza y género", "Native page title is not Spanish")
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Mira {level} [b]"
+	name.text_changed.emit(name.text)
 	require(current_scene.get_node("Choices").get_item_text(0) == "Dracónido", "Rule choice labels are not translated")
 	require(current_scene.get_node("Gender").get_item_text(0) == "Femenino", "Gender labels are not translated")
 	var filter: OptionButton = current_scene.get_node("PortraitClass")
@@ -120,7 +123,7 @@ func run_checks() -> void:
 	current_scene.get_node("SpellChoices/Rows/fire_bolt").set_pressed(true)
 	await capture("spanish-cantrips")
 	# A Wizard must fill every cantrip slot, write six level-one spells in the
-	# spellbook and prepare four of them before Name.
+	# spellbook and prepare four of them before continuing.
 	for cantrip in ["ray_of_frost", "poison_spray"]:
 		current_scene.get_node("SpellChoices/Rows/" + cantrip).set_pressed(true)
 		await settle()
@@ -142,12 +145,6 @@ func run_checks() -> void:
 			await settle()
 			ready += 1
 	await press("Next")
-	var name: LineEdit = current_scene.get_node("Name")
-	name.text = "Fighter"
-	name.text_changed.emit(name.text)
-	require(current_scene.get_node("PreviewName").text == "Fighter", "Player name was translated as a class label")
-	name.text = "Mira {level} [b]"
-	name.text_changed.emit(name.text)
 	await press("Next")
 	await press("Next")
 	var sheet: String = current_scene.get_node("Description").text
@@ -168,7 +165,7 @@ func run_checks() -> void:
 	require(TranslationServer.translate("Heavy Crossbow") == "Heavy Crossbow" and TranslationServer.translate("Hand Crossbow") == "Hand Crossbow", "English weapon labels expose internal IDs")
 	change_scene_to_file("res://scenes/character_creation.tscn")
 	await settle()
-	require(current_scene.get_node("PageTitle").text == "Race & Gender", "English reload failed")
+	require(current_scene.get_node("PageTitle").text == "Name, Race & Gender", "English reload failed")
 	require(current_scene.get_node("Choices").get_item_text(0) == "Dragonborn", "English rules labels failed")
 	# Expanded accented rendering finds clipping and missing glyphs without a third
 	# selectable player language. Leave the feature off after the screenshot.

@@ -85,6 +85,10 @@ func run_checks() -> void:
 	await settle()
 	root.size = Vector2i(1120, 800)
 	await settle()
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Cantrip Wizard"
+	name.text_changed.emit(name.text)
+	await settle()
 	await press("Next")
 	await press("Next")
 	await choose("Background", "Sage")
@@ -156,17 +160,29 @@ func run_checks() -> void:
 	require(not current_scene.get_node("SpellChoices/Rows/Pending").visible, "No missing starting cantrip remains")
 	await capture("cantrip-choices-1120")
 	await press("Next")
-	require(current_scene.get_node("PageTitle").text == "Name", "Name follows Spell Choices")
+	require(current_scene.get_node("PageTitle").text == "Combat appearance", "Combat appearance follows Spell Choices")
 	await press("Back")
 	require(fire.button_pressed and poison.button_pressed and frost.button_pressed, "Back retains all three selections")
 	await press("Back")
 	await press("Next")
 	require(fire.button_pressed and poison.button_pressed and frost.button_pressed, "Training navigation retains cantrips")
 	await press("Next")
-	var name: LineEdit = current_scene.get_node("Name")
-	name.text = "Cantrip Wizard"
-	name.text_changed.emit(name.text)
+	# Combat appearance shows both poses large in the page; the right pane is gone.
+	for gone in ["Title", "Subtitle", "PreviewBounds", "PreviewName", "PreviewSummary"]:
+		require(not current_scene.has_node(gone), "Removed creation node remains: " + gone)
+	require(not current_scene.get_node("PortraitSelect").is_visible_in_tree(), "The portrait picker waits for its own page")
+	root.size = Vector2i(1920, 1080); await settle()
+	var canvas = current_scene.get_node("CreationCanvas")
+	for pose in [["ReadyBounds", 1], ["ActionBounds", 2]]:
+		var bounds: Rect2 = current_scene.get_node(pose[0]).get_rect()
+		var icon: Rect2 = canvas._fitted(canvas._images[pose[1]], bounds, true)
+		require(icon.size == Vector2(288, 288) and bounds.encloses(icon), "Combat icons are four times their old 72-pixel size")
+	root.size = Vector2i(1120, 800); await settle()
 	await press("Next")
+	require(current_scene.get_node("PageTitle").text == "Portrait", "Portrait follows combat appearance")
+	require(current_scene.get_node("PortraitIdentity").text == "Your character: Dragonborn / Female / Wizard", "The portrait page names race, gender and class")
+	for control in ["PortraitGender", "PortraitClass", "PortraitRace", "PortraitSelect", "PortraitPrevious", "PortraitNext"]:
+		require(current_scene.get_node(control).is_visible_in_tree(), "Portrait control missing: " + control)
 	await press("Next")
 	await press("Modifiers")
 	var sheet: String = current_scene.get_node("ModifiersModal/Text").text

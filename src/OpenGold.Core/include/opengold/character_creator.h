@@ -12,8 +12,8 @@ enum class CreationStep
     character_class,
     training,
     spell_choices,
-    name,
     combat_icon,
+    portrait,
     sheet
 };
 

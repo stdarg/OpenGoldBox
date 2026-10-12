@@ -106,6 +106,10 @@ func run_checks() -> void:
 	await settle()
 	root.size = Vector2i(1120, 800)
 	await settle()
+	var name: LineEdit = current_scene.get_node("Name")
+	name.text = "Chill Wizard"
+	name.text_changed.emit(name.text)
+	await settle()
 	await press("Next")
 	await press("Next")
 	await choose("Background", "Sage")
@@ -147,7 +151,7 @@ func run_checks() -> void:
 	require(current_scene.get_node("Next").disabled and current_scene.get_node("SpellChoices/Rows/Pending").visible, "Available Wizard choices must be completed")
 	await complete_wizard_choices()
 	await press("Next")
-	require(current_scene.get_node("PageTitle").text == "Name", "Name follows choices")
+	require(current_scene.get_node("PageTitle").text == "Combat appearance", "Combat appearance follows choices")
 	await press("Back")
 	require(blast.button_pressed, "Back retains choice")
 	for locale in locales:
@@ -161,9 +165,6 @@ func run_checks() -> void:
 			await capture("chill-choices-" + locale + "-" + str(size.x))
 	TranslationServer.set_locale("en")
 	await press("Next")
-	var name: LineEdit = current_scene.get_node("Name")
-	name.text = "Chill Wizard"
-	name.text_changed.emit(name.text)
 	await press("Next")
 	await press("Next")
 	await press("Modifiers")
