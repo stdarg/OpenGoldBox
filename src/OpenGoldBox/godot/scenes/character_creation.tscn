@@ -1564,7 +1564,9 @@ theme_type_variation = &"TargetPanel"
 horizontal_scroll_mode = 0
 follow_focus = true
 
-[node name="Rows" type="VBoxContainer" parent="Targets"]
+[node name="Rows" type="GridContainer" parent="Targets"]
+theme_type_variation = &"TargetRows"
+columns = 2
 offset_left = 8
 offset_top = 8
 offset_right = 36
@@ -1592,6 +1594,11 @@ metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
+[node name="Requirements0" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
+
 [node name="Class1" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
 offset_top = 0
@@ -1600,6 +1607,11 @@ offset_bottom = 24
 metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
+
+[node name="Requirements1" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
 
 [node name="Class2" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
@@ -1610,6 +1622,11 @@ metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
+[node name="Requirements2" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
+
 [node name="Class3" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
 offset_top = 0
@@ -1618,6 +1635,11 @@ offset_bottom = 24
 metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
+
+[node name="Requirements3" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
 
 [node name="Class4" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
@@ -1628,6 +1650,11 @@ metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
+[node name="Requirements4" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
+
 [node name="Class5" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
 offset_top = 0
@@ -1636,6 +1663,11 @@ offset_bottom = 24
 metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
+
+[node name="Requirements5" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
 
 [node name="Class6" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
@@ -1646,6 +1678,11 @@ metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
+[node name="Requirements6" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
+
 [node name="Class7" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
 offset_top = 0
@@ -1654,6 +1691,11 @@ offset_bottom = 24
 metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
+
+[node name="Requirements7" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
 
 [node name="Class8" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
@@ -1664,6 +1706,11 @@ metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
+[node name="Requirements8" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
+
 [node name="Class9" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
 offset_top = 0
@@ -1672,6 +1719,11 @@ offset_bottom = 24
 metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
+
+[node name="Requirements9" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
 
 [node name="Class10" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
@@ -1682,6 +1734,11 @@ metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
 
+[node name="Requirements10" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
+
 [node name="Class11" type="CheckBox" parent="Targets/Rows"]
 offset_left = 0
 offset_top = 0
@@ -1690,6 +1747,11 @@ offset_bottom = 24
 metadata/layout_reference = Rect2(0, 0, 28, 24)
 theme_type_variation = &"CheckBoxText13"
 layout_mode = 2
+
+[node name="Requirements11" type="Label" parent="Targets/Rows"]
+theme_type_variation = &"LabelText13"
+layout_mode = 2
+vertical_alignment = 1
 
 [node name="Warning0" type="Label" parent="."]
 offset_left = 408

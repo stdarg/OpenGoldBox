@@ -522,11 +522,9 @@ void CharacterCreationView::refresh()
             auto *check =
                 &required_node<CheckBox>(*this, gs("Targets/Rows/Class" + std::to_string(i)));
             const auto requirements = creator_->rules().class_requirements(targets[i].id);
-            check->set_text(i18n::format("{class} ({requirements})",
-            {
-                {"class", i18n::text(targets[i].label)},
-                {"requirements", i18n::requirements(requirements)}
-            }));
+            check->set_text(i18n::text(targets[i].label));
+            required_node<Label>(*this, gs("Targets/Rows/Requirements" + std::to_string(i)))
+            .set_text(i18n::requirements(requirements));
             check->set_tooltip_text(
                 i18n::text(targets[i].description) + "\n" +
                 i18n::text(rules::class_eligible(creator_->rules(), d, targets[i].id)

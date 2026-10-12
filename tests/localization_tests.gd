@@ -91,7 +91,7 @@ func run_checks() -> void:
 	require(current_scene.get_node("PageTitle").text == "Alineamiento", "Alignment page not translated")
 	await press("Next")
 	require(current_scene.get_node("Ability0").text.contains("Fuerza"), "Ability name not translated")
-	require(current_scene.get_node("Targets/Rows/Class4").text.contains("FUE 13 o DES 13"), "Class prerequisites not translated from structured data")
+	require(current_scene.get_node("Targets/Rows/Requirements4").text.contains("FUE 13 o DES 13"), "Class prerequisites not translated from structured data")
 	for attempt in range(30):
 		await press("Roll")
 		if current_scene.get_node("Dice3").get_parsed_text().to_int() >= 13:
