@@ -70,6 +70,8 @@ After a change, run only the tests that are directly related to the change, we d
 
 After every 5 changes in a session, run all tests. If all tests have not been run in a day, run them. Save the date when all tests are run for future reference.
 
+Documentation-only changes need no tests and do not count toward the 5 changes.
+
 ## 6. Do your work in git worktrees
 
 Before committing and pushing to origin/main, ensure all tests pass. Always
