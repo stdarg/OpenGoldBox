@@ -239,7 +239,8 @@ which has no DM to adjudicate them. Skills and Expertise stay.
 - **Languages:** Common, the two chosen standard languages, the Rogue's Thieves'
   Cant and extra language, and Druidic.
 - **Spells:** the 33 narrative-only spells listed in
-  [Removed: needs a DM](SPELL-INVENTORY.md#removed-needs-a-dm), plus ritual
+  [Removed: needs a DM](SPELL-INVENTORY.md#removed-needs-a-dm) (Guidance was
+  later restored by [GUIDE-1](#guide-1-2026-10-12-guidance-restored)), plus ritual
   casting (Ritual Adept) and the features that exist only to cast removed spells:
   Mask of Many Faces, Misty Visions, Pact of the Chain, Wild Companion, the Forest
   and Rock Gnome lineage spells, Tiefling Thaumaturgy and High Elf
@@ -771,3 +772,31 @@ class and background equipment packages or their gold alternatives.
   brings 3d6 x 10 gp, rolled from the party's saved random state when it joins,
   and no equipment. The combat demo and the campaign simulator still give their
   parties a class kit so they can fight at once.
+
+## GUIDE-1 (2026-10-12): Guidance restored
+
+Clerics owe more cantrips than the three DM-1 and DM-3 left them (Sacred Flame,
+Spare the Dying and Resistance): four at level 4, and a Thaumaturge one more.
+The user restored Guidance, the cut cantrip with a use in this game.
+
+- SRD 5.2.1 (p. 138): an Action, touch, Concentration up to 1 minute; the
+  creature adds 1d4 to ability checks with the chosen skill.
+- In a fight it is offered, like Resistance (CLASS-7), once for each skill the
+  game checks there: "Guidance: Athletics" (escaping Ensnaring Strike, Entangle
+  and Web) and "Guidance: Medicine" (stabilizing a dying creature). The 1d4 is
+  rolled with the check and logged.
+- It is a Cleric and Druid cantrip, so Blessed and Druidic Warriors may learn
+  it too. A level-four Thaumaturge still has one cantrip choice left pending.
+- Bashing or picking a locked door, the other checks the game makes, happen
+  outside combat at the door menu; Guidance is not offered there yet.
+
+## SACRED-1 (2026-10-12): Sacred Weapon's damage is the player's choice
+
+SRD 5.2.1 lets the Paladin deal the weapon's own damage or Radiant on each hit.
+The game used to choose Radiant only when the target resisted the weapon's type
+more, reading resistances the player cannot see. The user chose instead that
+the player picks when imbuing the weapon: the A cycle offers "Sacred Weapon"
+(the weapon's own damage) and "Sacred Weapon (Radiant)", and the choice holds
+for its 10 minutes. The party's computer-played members take the weapon's own
+damage.
+

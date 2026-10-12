@@ -117,7 +117,8 @@ enum class Rider : unsigned
     flame_blade,
     moonbeam,
     spike_growth,
-    heat_metal
+    heat_metal,
+    guidance
 };
 
 // Added when cast from a level-two slot. Zeroed means the spell does not upcast.
@@ -462,6 +463,17 @@ inline constexpr std::array spell_table
         .target = SpellTarget::ally,
         .range = 5,
         .rider = Rider::resistance,
+        .concentration = true},
+    // SRD 5.2.1: the touched creature adds 1d4 to ability checks with the
+    // chosen skill, offered for each skill the game checks (GUIDE-1).
+    SpellDef{
+        .id = "guidance",
+        .label = "Guidance",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::guidance,
         .concentration = true},
     // SRD 5.2.1 p. 162: a 20-foot-radius sphere where Thunder damage is
     // ignored. Spells have no components here (CLASS-11), so it does not stop
@@ -1347,6 +1359,22 @@ inline std::optional<DamageType> resistance_type(std::string_view verb)
     return damage_type(verb);
 }
 
+// The skills Guidance is offered for: those the game makes checks with in a
+// fight (GUIDE-1), each offered as "guidance_<skill>".
+inline constexpr std::array<std::string_view, 2> guidance_skills{"athletics", "medicine"};
+
+// The index in guidance_skills that a Guidance verb names, if it is one.
+inline std::optional<int> guidance_skill(std::string_view verb)
+{
+    if (!verb.starts_with("guidance_"))
+        return std::nullopt;
+    verb.remove_prefix(9);
+    const auto found = std::find(guidance_skills.begin(), guidance_skills.end(), verb);
+    if (found == guidance_skills.end())
+        return std::nullopt;
+    return static_cast<int>(found - guidance_skills.begin());
+}
+
 inline const SpellDef *find_spell(std::string_view id)
 {
     if (id.ends_with("_2"))
@@ -1355,6 +1383,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "command";
     if (resistance_type(id))
         id = "resistance";
+    if (guidance_skill(id))
+        id = "guidance";
     if (chromatic_type(id))
         id = "chromatic_orb";
     if (id == "enlarge" || id == "reduce")

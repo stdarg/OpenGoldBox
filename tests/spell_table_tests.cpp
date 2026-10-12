@@ -433,8 +433,8 @@ void behaviour()
     for (const auto &row : spell_table)
     {
         // Smites are offered by the caster's own melee hit, not by range, a
-        // spell on several creatures begins a choice, Command, Resistance and
-        // Chromatic Orb are offered once per option, camp spells only outside combat, area spells are aimed,
+        // spell on several creatures begins a choice, Command, Resistance,
+        // Guidance and Chromatic Orb are offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one
         // Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
@@ -444,6 +444,7 @@ void behaviour()
                  row.instances > 1) ||
                 row.target == SpellTarget::dying_ally ||
                 row.rider == Rider::command || row.rider == Rider::resistance ||
+                row.rider == Rider::guidance ||
                 row.rider == Rider::enlarge_reduce ||
                 row.id == std::string_view("chromatic_orb") ||
                 row.id == std::string_view("sorcerous_burst") ||

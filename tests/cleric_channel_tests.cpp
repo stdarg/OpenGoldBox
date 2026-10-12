@@ -46,7 +46,10 @@ std::unique_ptr<RulesModule> rules()
 
 // A Cleric of the given level, advanced through the campaign, with the named
 // level-one spells prepared.
-Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_wounds"})
+Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_wounds"},
+                 std::vector<std::string> cantrips = {"sacred_flame", "spare_the_dying",
+                         "resistance"
+                                                     })
 {
     CharacterDraft d;
     d.race = "human";
@@ -58,7 +61,7 @@ Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_woun
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"sacred_flame", "spare_the_dying", "resistance"};
+    d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
         {"class:cleric:divine_order", {"protector"}}
@@ -494,6 +497,42 @@ void resistance_checks()
     check(logged(*c, "Ally's Resistance reduces the damage by"), "It takes 1d4 less of that type");
 }
 
+// GUIDE-1: Guidance is offered for each skill the game checks in a fight and
+// adds 1d4 to the creature's checks with the chosen one.
+void guidance_checks()
+{
+    auto module = rules();
+    const auto guide = cleric(1, {"cure_wounds"}, {"sacred_flame", "spare_the_dying", "guidance"});
+    const auto profile =
+        module->character_profile(guide.sheet(), std::vector<std::string> {"mace"}).data;
+    auto c = module->create({{12, 4, std::vector<Terrain>(48)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile},
+            {2, "campaign-character", "Healer", Side::party, {2, 1}, profile},
+            {3, "target", "Ally", Side::party, {3, 1}, {}, VitalState{0, false, {}}},
+            {99, "target", "Enemy", Side::opposition, {9, 1}}
+        }},
+    5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Cleric's turn");
+    std::vector<std::string> labels;
+    for (const auto &command : c->legal_commands())
+        if (command.verb.starts_with("guidance_") && command.target == 2)
+            labels.push_back(command.label);
+    check(labels == std::vector<std::string> {"Guidance: Athletics", "Guidance: Medicine"},
+          "Guidance is offered for Athletics and Medicine");
+    check(submit(*c, "guidance_medicine", 2) &&
+          logged(*c, "Healer gains Guidance for Medicine checks."),
+          "Guidance touches an ally for the chosen skill");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "Guidance survives a checkpoint");
+    check(submit(*c, "end"), "End the Cleric's turn");
+    for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Healer's turn");
+    check(submit(*c, "stabilize", 3) && logged(*c, "Healer's Guidance adds ") &&
+          logged(*c, "Healer Medicine: "),
+          "The guided creature adds 1d4 to its Medicine check");
+}
+
 void silence_checks()
 {
     auto module = rules();
@@ -556,6 +595,7 @@ int main()
         warding_bond_checks();
         protection_from_poison_checks();
         resistance_checks();
+        guidance_checks();
         silence_checks();
         spiritual_weapon_checks();
         write_ui_fixture();

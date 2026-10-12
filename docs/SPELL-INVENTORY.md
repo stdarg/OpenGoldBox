@@ -23,8 +23,9 @@ twelve partial, one implemented and 76 missing**.
 
 ## Scope and counting
 
-The milestone requires **89 distinct spells: 16 cantrips, 41 level-one spells
-and 32 level-two spells** (106 before DM-3 removed 17, 139 before DM-1 removed 33). It covers all twelve SRD classes, their twelve SRD
+The milestone requires **90 distinct spells: 17 cantrips, 41 level-one spells
+and 32 level-two spells** (106 before DM-3 removed 17, 139 before DM-1 removed 33;
+GUIDE-1 restored Guidance). It covers all twelve SRD classes, their twelve SRD
 subclasses, all nine species and their lineages, the four SRD backgrounds, and
 eligible SRD feats through character level 4. The baseline has **six partial
 playable paths and 133 missing spells**. With 0.6.22 this becomes **seven partial
@@ -188,6 +189,7 @@ are evidence of partial behavior, not certification of the full spell.
 | [Chill Touch](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=115) (p. 115) | S, K, W | MI, Tome, High, Chthonic | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial: Wizard 1–4, Sorcerer/Warlock 1; creature casting, healing prevention and Q40 earned recovery verified in [Chill Touch](CHILL-TOUCH.md). MI/Tome/species, objects and higher class progression remain open under [#165](https://github.com/stdarg/OpenGold/issues/165) |
 | [Eldritch Blast](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=127) (p. 127) | K | Tome | Objects [#225](https://github.com/stdarg/OpenGold/issues/225) | Partial level-one Warlock creatures; [#204](https://github.com/stdarg/OpenGold/issues/204) |
 | [Fire Bolt](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=132) (p. 132) | S, W | MI, Tome, High, Arid, Infernal | — | Partial; [#166](https://github.com/stdarg/OpenGold/issues/166) |
+| [Guidance](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=138) (p. 138) | C, D | MI, Tome, Thaum, Blessed, Magician, DruidicWarrior | Door checks outside combat | Implemented for combat Athletics and Medicine checks ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)); [Cleric](CLERIC.md#resistance-and-silence) |
 | [Poison Spray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=153) (p. 153) | D, S, K, W | MI, Tome, High, Magician, DruidicWarrior, Abyssal | — | Partial Wizard levels 1–4 and Warlock level 1; [#202](https://github.com/stdarg/OpenGold/issues/202) |
 | [Produce Flame](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=156) (p. 156) | D | MI, Tome, Magician, DruidicWarrior | [#46](https://github.com/stdarg/OpenGold/issues/46) | Implemented for Druids; [Druid](DRUID.md#spellcasting-primal-order-and-the-circle-of-the-land) |
 | [Ray of Frost](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=157) (p. 157) | S, W | MI, Tome, High, Polar | [#35](https://github.com/stdarg/OpenGold/issues/35) | Partial: [Wizard selection, Cold attack and timed slow](RAY-OF-FROST.md); other sources and verbal blockers remain. [#205](https://github.com/stdarg/OpenGold/issues/205) |
@@ -325,8 +327,9 @@ Misty Visions, Pact of the Chain, Wild Companion, Druidic's Speak with Animals)
 are removed too. Spells with a combat, lighting, trap, item or encumbrance
 effect stay.
 
-- Cantrips (9): Druidcraft, Elementalism, Guidance, Mage Hand, Mending, Message,
-  Minor Illusion, Prestidigitation, Thaumaturgy.
+- Cantrips (8): Druidcraft, Elementalism, Mage Hand, Mending, Message, Minor
+  Illusion, Prestidigitation, Thaumaturgy. (Guidance was removed here too and
+  restored by [GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored).)
 - Level one (12): Alarm, Comprehend Languages, Create or Destroy Water, Detect
   Evil and Good, Detect Poison and Disease, Disguise Self, Find Familiar,
   Illusory Script, Purify Food and Drink, Silent Image, Speak with Animals,

@@ -159,8 +159,10 @@ enum class EffectKind : unsigned
     // Heat Metal: Disadvantage on attack rolls until the caster's next turn.
     scorched = 66,
     // Wild Shape: `dc` is the Beast form, one past its index in beast_forms.
+    wild_shape = 67,
+    // Guidance: 1d4 on ability checks with one skill; `dc` indexes guidance_skills.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    wild_shape = 67
+    guidance = 68
 };
 
 // The longest a spell benefit lasts, in milliseconds.

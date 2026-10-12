@@ -23,8 +23,11 @@ Rules module 0.6.63. SRD 5.2.1 Cleric, levels 1–4; counts as recorded in the
 - **Changing preparation:** creation chooses the first list. Gaining a level
   keeps the earlier list and adds to it. After a completed Long Rest the whole
   list may be changed, once per rest, through the shared spell window.
-- **Cantrips:** Sacred Flame is the only implemented Cleric cantrip. The
-  level-four cantrip is a learning group at level-up and stays pending.
+- **Cantrips:** four Cleric cantrips are implemented: Sacred Flame, Spare the
+  Dying, Resistance and Guidance
+  ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)), enough
+  for every Cleric's choices except a level-four Thaumaturge's fifth, which stays
+  pending. The level-four cantrip is a learning group at level-up.
   Replacing a cantrip on gaining a Cleric level waits for a second implemented
   cantrip; it is not offered at a Long Rest.
 - **Divine Order** (level 1, required):

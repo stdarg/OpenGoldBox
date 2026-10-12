@@ -136,6 +136,12 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   so on ([CLASS-7](SRD-DECISIONS.md#class-7-2026-10-05-choosing-resistances-damage-type)),
   then click the creature. It is a Cleric and Druid cantrip, so Blessed and
   Druidic Warriors may learn it.
+- **Guidance** (cantrip, Action, touch, Concentration up to 1 minute): the
+  creature adds 1d4 to ability checks with the chosen skill. The A cycle offers
+  "Guidance: Athletics" (escaping Ensnaring Strike, Entangle and Web) and
+  "Guidance: Medicine" (stabilizing), then click the creature
+  ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)). The 1d4 is
+  rolled with the check and logged. It is a Cleric and Druid cantrip too.
 - **Silence** (level 2, Action, 120 feet, Concentration up to 10 minutes),
   aimed like Entangle: a 20-foot-radius sphere, tinted on the map. Creatures
   inside take no Thunder damage. Spells have no components

@@ -161,6 +161,11 @@ func run_checks() -> void:
 	spare.set_pressed(true)
 	resistance.set_pressed(true)
 	await settle()
+	# Guidance (GUIDE-1) fills the Thaumaturge's fourth cantrip.
+	var guidance: CheckBox = current_scene.get_node("SpellChoices/Rows/guidance")
+	require(guidance.visible and current_scene.get_node("Next").disabled, "A fourth cantrip is available, so the Thaumaturge must choose it")
+	guidance.set_pressed(true)
+	await settle()
 	for spell in ["cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"]:
 		current_scene.get_node(prepared + spell).set_pressed(true)
 		await settle()
@@ -169,7 +174,7 @@ func run_checks() -> void:
 	await press("Next")
 	await press("Modifiers")
 	var sheet: String = current_scene.get_node("ModifiersModal/Text").text
-	require(sheet.contains("Sacred Flame") and sheet.contains("Pending Cleric choices: 1 cantrips, 0 prepared spells."), "Created character sheet shows choices and remaining entitlement")
+	require(sheet.contains("Sacred Flame") and sheet.contains("Guidance") and sheet.contains("Pending Cleric choices: 0 cantrips, 0 prepared spells."), "Created character sheet shows all four choices and nothing pending")
 	require(current_scene.get_node("Description").get_parsed_text().contains("Cleric class"), "Created sheet shows the class skill source")
 	print("Cleric cantrip creator checks passed")
 	quit(0)

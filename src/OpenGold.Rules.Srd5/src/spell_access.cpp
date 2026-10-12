@@ -79,6 +79,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"protection_from_poison", "Protection from Poison", 2, 0,
         cleric_list | druid_list | paladin_list | ranger_list},
     Spell{"resistance", "Resistance", 0, 0, cleric_list | druid_list},
+    Spell{"guidance", "Guidance", 0, 0, cleric_list | druid_list},
     // Also on the Bard list; added with that class.
     Spell{"silence", "Silence", 2, 0, cleric_list | bard_list},
     Spell{"spiritual_weapon", "Spiritual Weapon", 2, 0, cleric_list},
@@ -490,6 +491,11 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
         {
             "starry_wisp", "Starry Wisp",
             "Ranged spell attack: 1d8 Radiant damage, 60 feet; the target cannot be Invisible until the end of your next turn."
+        },
+        // Last, so ready-made Druids keep the cantrips they had before it (GUIDE-1).
+        {
+            "guidance", "Guidance",
+            "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
         }
     }};
     if (klass == CharacterClass::bard)
@@ -524,6 +530,10 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
         {
             "resistance", "Resistance",
             "Touch: once per turn the creature takes 1d4 less damage of a chosen type; Concentration."
+        },
+        {
+            "guidance", "Guidance",
+            "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."
         }
     }};
     if (klass != CharacterClass::wizard && klass != CharacterClass::sorcerer)

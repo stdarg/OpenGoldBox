@@ -404,6 +404,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::turned:
     case EffectKind::bane:
     case EffectKind::resistance:
+    case EffectKind::guidance:
     case EffectKind::blur:
     case EffectKind::mirror_image:
     case EffectKind::enlarged:
@@ -600,10 +601,10 @@ namespace
 {
 // A saved effect kind, checked before it becomes an EffectKind so the reader
 // compares kinds rather than casting numbers (Effective C++ Item 27).
-// wild_shape is the last kind.
+// guidance is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::wild_shape))
+    if (value > static_cast<unsigned>(EffectKind::guidance))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

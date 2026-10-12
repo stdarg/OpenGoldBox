@@ -22,11 +22,12 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 - **Sacred Weapon** spends one use. It comes with the Attack action, so it is
   offered in the A cycle (Space uses it) while the Action is unspent, and costs
   no Action. For 10 minutes the Paladin adds its Charisma modifier (at least +1)
-  to attack rolls with Melee weapons, and the weapon deals Radiant damage
-  whenever the target resists its own damage type more than Radiant (the SRD
-  leaves the choice to the Paladin; this takes the better one). It ends when
-  the Paladin drops to 0 Hit Points. Its light is not modeled. The party AI uses
-  it before its first melee attack.
+  to attack rolls with Melee weapons. The A cycle offers it twice: "Sacred
+  Weapon" keeps the weapon's own damage and "Sacred Weapon (Radiant)" makes its
+  hits Radiant, for the whole 10 minutes
+  ([SACRED-1](SRD-DECISIONS.md#sacred-1-2026-10-12-sacred-weapons-damage-is-the-players-choice)).
+  It ends when the Paladin drops to 0 Hit Points. Its light is not modeled. The
+  party AI uses it, with the weapon's own damage, before its first melee attack.
 - Divine Sense is left out: every creature in combat is already visible
   ([CLASS-4](SRD-DECISIONS.md#class-4-2026-10-05-divine-sense)).
 - The oath spells, Protection from Evil and Good and Shield of Faith, are always

@@ -39,6 +39,8 @@ void sacred_weapon_checks()
     check(!submit(*low, "sacred_weapon", 1), "A level-one Paladin has no Sacred Weapon");
 }
 
+// SACRED-1: the player picks the weapon's own damage or Radiant when imbuing
+// it; nothing is chosen from the target's resistances.
 void sacred_radiant_checks()
 {
     auto module = rules();
@@ -46,10 +48,20 @@ void sacred_radiant_checks()
     auto plain = battle(*module, hero, "fiend");
     check(submit(*plain, "melee", 99) && logged(*plain, "Slashing damage"),
           "The Fiend resists the longsword's Slashing damage");
+    auto own = battle(*module, hero, "fiend");
+    check(submit(*own, "sacred_weapon", 1) && !submit(*own, "sacred_weapon_radiant", 1) &&
+          submit(*own, "melee", 99) && logged(*own, "Slashing damage"),
+          "Sacred Weapon with the weapon's own damage stays Slashing, even against resistance");
     auto sacred = battle(*module, hero, "fiend");
-    check(submit(*sacred, "sacred_weapon", 1) && submit(*sacred, "melee", 99) &&
-          !logged(*sacred, "Slashing damage") && unit(*sacred, 99).hit_points < 1000,
-          "Sacred Weapon deals Radiant damage to a target that resists the weapon");
+    check(submit(*sacred, "sacred_weapon_radiant", 1) &&
+          logged(*sacred, "Paladin uses Sacred Weapon, dealing Radiant damage.") &&
+          !submit(*sacred, "sacred_weapon", 1),
+          "Sacred Weapon (Radiant) is the other choice of the same use");
+    const auto saved = sacred->save();
+    auto restored = module->restore(saved);
+    check(restored->save() == saved && submit(*restored, "melee", 99) &&
+          !logged(*restored, "Slashing damage") && unit(*restored, 99).hit_points < 1000,
+          "The Radiant choice survives a checkpoint and makes hits Radiant");
 }
 
 // A level-three Paladin beside a vanguard on its turn, for

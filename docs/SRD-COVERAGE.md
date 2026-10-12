@@ -84,6 +84,14 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.156 restores the Guidance cantrip for Clerics and Druids
+([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)): 1d4 on
+Athletics checks to escape and Medicine checks to stabilize, offered once per
+skill. Sacred Weapon's damage is now the player's choice when it is used, the
+weapon's own or Radiant, instead of one picked from the target's resistances
+([SACRED-1](SRD-DECISIONS.md#sacred-1-2026-10-12-sacred-weapons-damage-is-the-players-choice)).
+Combat checkpoints become `OGCOMBAT 49` (Guidance's roll in a pending Medicine
+check, and Sacred Weapon's stored choice).
 Rules 0.6.155 has a downed troll get back up as the original game's did
 ([MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks)):
 with all its Hit Points, once 3d6 rounds have passed since it fell, rather

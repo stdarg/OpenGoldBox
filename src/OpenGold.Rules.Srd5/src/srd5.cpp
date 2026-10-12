@@ -182,6 +182,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::hunters_mark || kind == detail::EffectKind::ensnaring_strike ||
            kind == detail::EffectKind::entangle || kind == detail::EffectKind::bane ||
            kind == detail::EffectKind::hold_person || kind == detail::EffectKind::resistance ||
+           kind == detail::EffectKind::guidance ||
            kind == detail::EffectKind::expeditious_retreat || kind == detail::EffectKind::drowsy ||
            kind == detail::EffectKind::asleep || kind == detail::EffectKind::laughing ||
            kind == detail::EffectKind::webbed || kind == detail::EffectKind::enfeebled ||
@@ -256,7 +257,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 48;
+constexpr unsigned checkpoint_format = 49;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -310,11 +311,14 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::cleric, "warding_bond", 3},
     SpellAccessRow{CharacterClass::cleric, "protection_from_poison", 3},
     SpellAccessRow{CharacterClass::cleric, "resistance", 1},
+    SpellAccessRow{CharacterClass::cleric, "guidance", 1},
     SpellAccessRow{CharacterClass::cleric, "silence", 3},
     SpellAccessRow{CharacterClass::cleric, "spiritual_weapon", 3},
     SpellAccessRow{CharacterClass::cleric, "prayer_of_healing", 3},
     SpellAccessRow{CharacterClass::paladin, "resistance", 2},
     SpellAccessRow{CharacterClass::ranger, "resistance", 2},
+    SpellAccessRow{CharacterClass::paladin, "guidance", 2},
+    SpellAccessRow{CharacterClass::ranger, "guidance", 2},
     SpellAccessRow{CharacterClass::paladin, "spare_the_dying", 2},
     SpellAccessRow{CharacterClass::ranger, "spare_the_dying", 2},
     SpellAccessRow{CharacterClass::wizard, "fire_bolt", 1},
@@ -436,6 +440,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "shillelagh", 1},
     SpellAccessRow{CharacterClass::druid, "poison_spray", 1},
     SpellAccessRow{CharacterClass::druid, "resistance", 1},
+    SpellAccessRow{CharacterClass::druid, "guidance", 1},
     SpellAccessRow{CharacterClass::druid, "spare_the_dying", 1},
     SpellAccessRow{CharacterClass::druid, "starry_wisp", 1},
     SpellAccessRow{CharacterClass::druid, "charm_person", 1},
@@ -971,6 +976,7 @@ struct PendingCheck
     EntityId actor{}, target{};
     int natural{};
     bool surge_spent{};
+    int guidance{}; // Guidance's 1d4, rolled with the check; 0 without it.
 };
 
 // `draconic`: a Draconic Sorcerer gains its level in Hit Points from level 3.
@@ -2109,12 +2115,14 @@ class Session final : public CombatSession
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
+    // Guidance's 1d4 for an ability check with `skill`, logged; 0 without it.
+    [[nodiscard]] int guidance_bonus(const Actor &a, std::string_view skill);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
     [[nodiscard]] bool hexed_by(const Actor &target, const Actor &caster) const;
     [[nodiscard]] bool hex_can_move(const Actor &caster) const;
     // Sacred Weapon's attack bonus, 0 without it.
     [[nodiscard]] int sacred_weapon_bonus(const Actor &a) const;
-    [[nodiscard]] detail::DamageType sacred_damage_type(const Actor &a, const Actor &target) const;
+    [[nodiscard]] detail::DamageType sacred_damage_type(const Actor &a) const;
     unsigned next_save_ms(EntityId target) const;
     unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
@@ -3121,8 +3129,9 @@ Snapshot Session::snapshot() const
         s.ability_check_choice = AbilityCheckChoice{c.actor,
                                                     c.target,
                                                     c.natural,
-                                                    def(actor(c.actor)).medicine,
-                                                    c.natural + def(actor(c.actor)).medicine,
+                                                    def(actor(c.actor)).medicine + c.guidance,
+                                                    c.natural + def(actor(c.actor)).medicine +
+                                                    c.guidance,
                                                     10,
                                                     actor(c.actor).winds};
     }
@@ -3556,6 +3565,19 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {
             "{name} gains Resistance against {type} damage.",
             {{"name", target.source.name}, {"type", name, true}}
+        });
+        return;
+    }
+    case detail::Rider::guidance:
+    {
+        const int skill = *detail::guidance_skill(verb);
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::guidance, skill);
+        const auto name = std::string(skill == 0 ? "Athletics" : "Medicine");
+        log(target.source.name + " gains Guidance for " + name + " checks.",
+        {
+            "{name} gains Guidance for {skill} checks.",
+            {{"name", target.source.name}, {"skill", name, true}}
         });
         return;
     }
@@ -4236,6 +4258,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             }
             continue;
         }
+        if (spell.rider == detail::Rider::guidance)
+        {
+            offer("guidance_athletics", "Guidance: Athletics");
+            offer("guidance_medicine", "Guidance: Medicine");
+            continue;
+        }
         if (spell.rider == detail::Rider::resistance)
         {
             for (const auto type : detail::resistance_types)
@@ -4763,10 +4791,14 @@ std::vector<Command> Session::legal_commands() const
                     add(id, "hunters_mark_move", "Move Hunter's Mark", other.source.id);
             }
     // Sacred Weapon comes with the Attack action, so it is offered while the
-    // Action is unspent and costs only a Channel Divinity use.
+    // Action is unspent and costs only a Channel Divinity use. The player picks
+    // the weapon's own damage or Radiant when imbuing it (SACRED-1).
     if (d.sacred_weapon && a.channel_divinity > 0 && a.actions.available() && d.melee.count &&
             !detail::has_effect(a.effects, detail::EffectKind::sacred_weapon))
+    {
         add(id, "sacred_weapon", "Sacred Weapon", id);
+        add(id, "sacred_weapon_radiant", "Sacred Weapon (Radiant)", id);
+    }
     if (a.bonus && d.aggressive && speed > 0 && enemy_in_sight(a))
         add(id, "aggressive", "Aggressive");
     if (a.bonus && a.winds > 0 && a.life.hp < max_hp(a))
@@ -6092,6 +6124,25 @@ void Session::squeeze_ensnared(Actor &a)
     damage(a, amount, false);
 }
 
+int Session::guidance_bonus(const Actor &a, std::string_view skill)
+{
+    const bool guided = std::any_of(a.effects.active.begin(), a.effects.active.end(),
+                                    [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::guidance &&
+               detail::guidance_skills[static_cast<std::size_t>(e.dc)] == skill;
+    });
+    if (!guided)
+        return 0;
+    const int bonus = roll(4);
+    log(a.source.name + "'s Guidance adds " + std::to_string(bonus) + ".",
+    {
+        "{name}'s Guidance adds {amount}.",
+        {{"name", a.source.name}, {"amount", std::to_string(bonus)}}
+    });
+    return bonus;
+}
+
 void Session::escape_ensnaring(Actor &a)
 {
     // A Strength (Athletics) check against the spell's DC ends Ensnaring
@@ -6103,8 +6154,9 @@ void Session::escape_ensnaring(Actor &a)
                e.kind == detail::EffectKind::entangle || e.kind == detail::EffectKind::webbed;
     });
     const auto vines = *found;
-    const int bonus = a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics;
     const int natural = roll(20);
+    const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
+                      guidance_bonus(a, "athletics");
     const bool escaped = natural + bonus >= vines.dc;
     log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + " + " +
         std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
@@ -6790,7 +6842,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     }
     const auto damage_type = spell    ? spell_attack->type
                              : ranged ? d.ranged_type
-                             : sacred_damage_type(a, target);
+                             : sacred_damage_type(a);
     // Shield cannot turn a critical hit into a miss, but Deflect Attacks can
     // still lessen one.
     if (hit)
@@ -7233,25 +7285,18 @@ bool Session::strikes_duplicate(const Actor &attacker, Actor &target)
 
 int Session::sacred_weapon_bonus(const Actor &a) const
 {
-    for (const auto &effect : a.effects.active)
-        if (effect.kind == detail::EffectKind::sacred_weapon)
-            return effect.dc;
-    return 0;
+    // The Charisma modifier, at least +1, while the weapon is imbued.
+    return detail::has_effect(a.effects, detail::EffectKind::sacred_weapon)
+           ? std::max(1, def(a).casting - 2) : 0;
 }
 
-detail::DamageType Session::sacred_damage_type(const Actor &a, const Actor &target) const
+detail::DamageType Session::sacred_damage_type(const Actor &a) const
 {
-    // Sacred Weapon's Radiant damage is optional; it is chosen whenever the
-    // target resists the weapon's own type more than Radiant.
-    const auto usual = def(a).melee_type;
-    if (!sacred_weapon_bonus(a))
-        return usual;
-    const auto taken = [&](detail::DamageType type)
-    {
-        const std::array parts{detail::DamagePart{type, 100}};
-        return detail::resolve_damage(parts, affinities(target)).total;
-    };
-    return taken(detail::DamageType::radiant) > taken(usual) ? detail::DamageType::radiant : usual;
+    // The damage the Paladin chose when imbuing the weapon.
+    for (const auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::sacred_weapon && effect.dc == 1)
+            return detail::DamageType::radiant;
+    return def(a).melee_type;
 }
 
 void Session::finish_reaction()
@@ -8268,16 +8313,17 @@ void Session::dispatch(const Command &command)
         const auto check = *check_choice_;
         check_choice_.reset();
         const int boost = command.verb == "mind_use" ? roll(10) : 0;
-        if (boost && check.natural + d.medicine + boost >= 10)
+        if (boost && check.natural + d.medicine + check.guidance + boost >= 10)
             --a.winds;
         finish_check(check, boost);
     }
     else if (command.verb == "stabilize")
     {
         PendingCheck check{a.source.id, command.target, detail::d20({}, rng_), a.actions.surge};
+        check.guidance = guidance_bonus(a, "medicine");
         a.nick_origin = 0;
         a.actions.spend();
-        if (check.natural + d.medicine < 10 && d.tactical_mind && a.winds > 0)
+        if (check.natural + d.medicine + check.guidance < 10 && d.tactical_mind && a.winds > 0)
             check_choice_ = check;
         else
             finish_check(check, 0);
@@ -8648,14 +8694,19 @@ void Session::dispatch(const Command &command)
         });
         reveal_lore(a, quarry);
     }
-    else if (command.verb == "sacred_weapon")
+    else if (command.verb == "sacred_weapon" || command.verb == "sacred_weapon_radiant")
     {
+        // The effect records the chosen damage: 1 for Radiant, 0 for the weapon's own.
+        const bool radiant = command.verb == "sacred_weapon_radiant";
         --a.channel_divinity;
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
-                                    detail::EffectKind::sacred_weapon,
-                                    std::max(1, d.casting - 2));
-        log(a.source.name + " uses Sacred Weapon.",
-        {"{name} uses Sacred Weapon.", {{"name", a.source.name}}});
+                                    detail::EffectKind::sacred_weapon, radiant ? 1 : 0);
+        if (radiant)
+            log(a.source.name + " uses Sacred Weapon, dealing Radiant damage.",
+            {"{name} uses Sacred Weapon, dealing Radiant damage.", {{"name", a.source.name}}});
+        else
+            log(a.source.name + " uses Sacred Weapon.",
+            {"{name} uses Sacred Weapon.", {{"name", a.source.name}}});
     }
     else if (command.verb == "adrenaline_rush")
     {
@@ -8924,7 +8975,8 @@ std::string Session::save() const
     if (check_choice_)
     {
         const auto &c = *check_choice_;
-        out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.surge_spent << '\n';
+        out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.surge_spent << ' '
+            << c.guidance << '\n';
     }
     out << static_cast<bool>(champion_move_) << '\n';
     if (champion_move_)
@@ -9213,7 +9265,7 @@ void Session::finish_check(const PendingCheck &check, int boost)
 {
     auto &a = actor(check.actor);
     auto &target = actor(check.target);
-    const int total = check.natural + def(a).medicine + boost;
+    const int total = check.natural + def(a).medicine + check.guidance + boost;
     const bool success = total >= 10;
     if (success)
         detail::stabilize(target.life, rng_);
@@ -9223,14 +9275,14 @@ void Session::finish_check(const PendingCheck &check, int boost)
         {   {"actor", a.source.name},
             {"target", target.source.name},
             {"roll", std::to_string(check.natural)},
-            {"modifier", std::to_string(def(a).medicine)},
+            {"modifier", std::to_string(def(a).medicine + check.guidance)},
             {"boost", std::to_string(boost)},
             {"total", std::to_string(total)},
             {"dc", "10"},
             {"result", success ? "Success" : "Failure", true}
         }};
     log(a.source.name + " Medicine: " + std::to_string(check.natural) + " + " +
-        std::to_string(def(a).medicine) + " + " + std::to_string(boost) + " = " +
+        std::to_string(def(a).medicine + check.guidance) + " + " + std::to_string(boost) + " = " +
         std::to_string(total) + " vs DC 10: " + (success ? "success" : "failure"),
         message);
 }
@@ -9357,7 +9409,7 @@ void Session::validate_check() const
         return t.source.id == c.target;
     });
     if (c.actor != a.source.id || !conscious(a) || !def(a).tactical_mind || a.winds <= 0 ||
-            c.natural < 1 || c.natural > 20 || c.natural + def(a).medicine >= 10 ||
+            c.natural < 1 || c.natural > 20 || c.natural + def(a).medicine + c.guidance >= 10 ||
             target == actors_.end() || target->life.hp != 0 || target->life.dead || target->life.stable ||
             distance(a.source.cell, target->source.cell) > 5 ||
             !line_of_sight(a.source.cell, target->source.cell) || pending() || temporary_offer_ ||
@@ -9728,8 +9780,8 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     if (pending_check)
     {
         PendingCheck c;
-        input >> c.actor >> c.target >> c.natural >> c.surge_spent;
-        if (!input)
+        input >> c.actor >> c.target >> c.natural >> c.surge_spent >> c.guidance;
+        if (!input || c.guidance < 0 || c.guidance > 4)
             throw std::runtime_error("Invalid ability-check checkpoint");
         session->check_choice_ = c;
     }
@@ -12004,7 +12056,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.155", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.156", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

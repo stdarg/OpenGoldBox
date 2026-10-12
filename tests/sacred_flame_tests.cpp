@@ -237,8 +237,9 @@ void access()
         if (preset.sheet().character_class == "Cleric")
         {
             ++clerics;
-            // Resistance, Sacred Flame and Spare the Dying are the Cleric cantrips so far.
-            check(rules->spell_access(preset.sheet()).cantrips.size() == 3,
+            // Four Cleric cantrips exist, enough for every level-one choice.
+            const auto access = rules->spell_access(preset.sheet());
+            check(access.cantrips.size() == access.cantrip_choices,
                   "Preset Clerics have pre-generated supported selections");
         }
     check(clerics == 4, "All Cleric presets verified");

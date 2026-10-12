@@ -66,6 +66,8 @@ func run_checks() -> void:
         await settle()
         await load_fixture("sacred")
         var label := "Sacred Weapon" if locale == "en" else "Arma sagrada"
+        var radiant := "Sacred Weapon (Radiant)" if locale == "en" else "Arma sagrada (radiante)"
+        require(await cycle_to(combat, radiant), "The A cycle offers Sacred Weapon's Radiant choice: " + locale)
         require(await cycle_to(combat, label), "The A cycle offers Sacred Weapon: " + locale)
         await key(KEY_SPACE)
         var log: String = combat.get_node("LogStack/Log").get_parsed_text()
