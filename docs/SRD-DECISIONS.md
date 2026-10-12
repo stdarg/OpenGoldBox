@@ -788,7 +788,8 @@ The user restored Guidance, the cut cantrip with a use in this game.
 - It is a Cleric and Druid cantrip, so Blessed and Druidic Warriors may learn
   it too. A level-four Thaumaturge still has one cantrip choice left pending.
 - Bashing or picking a locked door, the other checks the game makes, happen
-  outside combat at the door menu; Guidance is not offered there yet.
+  outside combat at the door menu. The user chose (2026-10-12) to keep
+  Guidance to fights; the door menu does not offer it.
 
 ## SACRED-1 (2026-10-12): Sacred Weapon's damage is the player's choice
 
