@@ -96,7 +96,7 @@ A useful rule: a capable teammate should be able to infer ownership, invariants,
 
 Always adhere to the [C++ Core Guidelines by Stroustrup and Sutter](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#main). Good style promotes readability and correctness.
 
-Always adhere to the rules laid out in Scott Meyers' Effective C++ thrird edition.
+Always adhere to the rules laid out in Scott Meyers' Effective Modern C++.
 
 ## 8. Keep the Git Repository Tidy
 
