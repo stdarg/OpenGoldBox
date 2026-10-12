@@ -5,6 +5,8 @@
 Use this style for project-owned C++ source and headers. Preserve the C++20,
 Godot 4.x, and GDExtension architecture described in [TECH.md](TECH.md).
 Exclude third-party, generated, build, and packaged files from formatting.
+For design and correctness mistakes to avoid, see
+[CPP_ANTIPATTERNS.md](CPP_ANTIPATTERNS.md).
 
 This document records the agreed style and the pinned formatter setup. The
 project-owned C++ tree is formatted to this style. Select and record an exact
