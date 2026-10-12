@@ -31,7 +31,9 @@ profile. The [first Slums expedition](EXPEDITION.md) connects original district
 travel, automatic combat, original tactical geometry and persistent rewards.
 
 1. Finish a character, then select **Add to party** on the character sheet.
-   The preview grants each new PC 250 gp. **View party** opens the roster.
+   A new PC brings the 3d6 × 10 gp rolled with its abilities and no equipment;
+   it buys its gear in Phlan's shops ([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
+   **View party** opens the roster.
    Alternatively, **Character Pool** opens 48 level-one characters, four for each
    SRD class, with varied alignments, genders, strong ability scores, and selected
    portrait heads/bodies. The ready/action sprite palettes use colors sampled

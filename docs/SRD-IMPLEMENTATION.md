@@ -172,8 +172,9 @@ series of small increments, not one combined delivery.
 | Species | One species' passive traits, then one active trait or lineage per increment. | All nine species and their SRD choices work through creation, derived statistics, actions, recovery and saves. Include Human's extra Origin feat and level-dependent traits in the ledger. Not planned (SCOPE-2): Elf Trance, Goliath Powerful Build and Large Form, Dragonborn Draconic Flight, Dwarf Stonecunning and the emptied Gnome lineages. |
 | Starting class choices | One class's proficiency/equipment/spell-choice integration at a time. | A normally created character receives every level-one entitlement; fixed fixtures cannot substitute for the ordinary creation path. |
 
-Before equipment package integration, resolve how SRD starting entitlements
-interact with the campaign's preview wealth and original-item conversion.
+Starting equipment is settled by [START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it):
+a new character starts with the original game's gold and buys its gear, so no
+SRD equipment package or starting wealth is granted.
 Before species/feat/class selectors are implemented, obtain the required UI
 layout and control decisions. Those questions do not reopen the four already
 approved rules changes.

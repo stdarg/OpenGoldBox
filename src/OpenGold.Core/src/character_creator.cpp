@@ -1,4 +1,5 @@
 #include "opengold/character_creator.h"
+#include "opengold/dice.h"
 #include <algorithm>
 #include <stdexcept>
 
@@ -7,7 +8,7 @@ namespace opengold
 using namespace rules;
 
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
-    : rules_(std::move(rules)), random_{seed}
+    : rules_(std::move(rules)), random_{seed}, gold_random_{~seed}
 {
     if (!rules_)
         throw std::runtime_error("Character creator requires a rules module");
@@ -24,6 +25,7 @@ void CharacterCreator::restart()
     draft_ = {};
     appearance_ = {};
     step_ = CreationStep::race;
+    starting_gold_ = 0;
     for (auto field :
             {
                 CreationField::race, CreationField::gender, CreationField::character_class,
@@ -356,6 +358,9 @@ void CharacterCreator::roll()
     draft_.rolls = rules_->roll(random_);
     draft_.rolled = true;
     draft_.assignment = {6, 6, 6, 6, 6, 6}; // Every rolled result starts unassigned.
+    starting_gold_ = 0;
+    for (int die = 0; die < 3; ++die)
+        starting_gold_ += static_cast<std::uint16_t>(roll_die(gold_random_, 6) * 10);
 }
 
 bool CharacterCreator::scores_assigned() const

@@ -747,3 +747,24 @@ code was copied.
   for nothing; OpenGold keeps the band's first monster instead, on the nearest
   free square the party can reach. A party member with no room takes that
   nearest free square too.
+
+## START-1 (2026-10-11): starting gold, as the original game gave it
+
+The user chose (2026-10-11) that player characters start with gold and buy
+their starting equipment, as in Pool of Radiance, instead of receiving the SRD
+class and background equipment packages or their gold alternatives.
+
+- A newly created character gets 3d6 × 10 gp (30 to 180 gp), the range the
+  original manual gives for every class. It is rolled together with the ability
+  scores, so rerolling all six rolls the gold again. It replaces the flat 250 gp
+  the party preview used to grant.
+- The original's START.EXE also holds AD&D's per-class starting-money dice
+  (Cleric and Druid 3d6, Fighter, Paladin, Ranger and Monk 5d4, Thief 2d6,
+  Magic-User 2d4, each × 10 gp); the coab reimplementation of the next Gold Box
+  game keeps the same table unused. Its use in Pool of Radiance was not
+  confirmed, and four SRD classes have no original counterpart, so the user
+  chose the manual's single 3d6 × 10 for everyone.
+- Gear comes from the shops at the original prices; the SRD's starting
+  packages and their 50 gp background alternative are not granted.
+- The Character Pool's ready-made characters are unchanged for now: 250 gp and
+  a free class kit.

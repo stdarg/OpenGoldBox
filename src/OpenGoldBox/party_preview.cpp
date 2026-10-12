@@ -247,7 +247,7 @@ void CharacterCreationView::refresh_party()
     required_node<Label>(*this, "PartyPanel/Status")
     .set_text(
         error_.is_empty()
-        ? i18n::text("New PCs receive 250 gp / Save game stores this campaign on disk.")
+        ? i18n::text("New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk.")
         : error_);
     for (const char *name : {"Remove", "Rejoin", "Equip"})
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow1/") + name))
@@ -630,7 +630,7 @@ void CharacterCreationView::party_action(PartyAction action)
             if (!completed_ || added_to_party_)
                 return;
             const auto added = campaign_->add_pc(*completed_);
-            campaign_->set_wealth(added, {0, 0, 0, 250, 0, 0, 0});
+            campaign_->set_wealth(added, {0, 0, 0, creator_->starting_gold(), 0, 0, 0});
             added_to_party_ = true;
             roster_index_ = campaign_->state().roster.size() - 1;
             refresh();
@@ -883,6 +883,9 @@ void CharacterCreationView::party_check()
         press("AddParty");
         if (campaign_->state().slots[0] == 0)
             throw std::runtime_error("Add party callback failed");
+        const auto gold = campaign_->member(campaign_->state().slots[0]).wealth[3];
+        if (gold != creator_->starting_gold() || gold < 30 || gold > 180)
+            throw std::runtime_error("A new PC must bring its rolled 3d6 x 10 gp");
         if (!required_node<Button>(*this, "PortraitNext").is_disabled() ||
                 !required_node<Button>(*this, "PortraitSelect").is_disabled())
             throw std::runtime_error("Added portrait controls remained enabled");

@@ -29,6 +29,8 @@ launcher opens `demos/godot/scenes/character_creation.tscn`. Art loads from the
    unassigned roll onto a filled ability returns the displaced result to the
    right. All six abilities must be assigned before continuing. **Reroll all six**
    replaces the complete set and empties ability boxes; attempts are unlimited.
+   Each roll also rolls the character's starting gold, 3d6 × 10 gp, which it
+   brings to the party ([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
    Choose one of the four SRD backgrounds here, then allocate its attribute
    bonuses (+2/+1 to different allowed abilities, or +1 to all three).
    Assigned ability boxes include those bonuses and update immediately when

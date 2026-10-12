@@ -1473,11 +1473,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1163
+#: src/OpenGoldBox/party_preview.cpp:1166
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1235
+#: src/OpenGoldBox/party_preview.cpp:1238
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -1788,7 +1788,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1174
+#: src/OpenGoldBox/party_preview.cpp:1177
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -1924,7 +1924,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1080
+#: src/OpenGoldBox/party_preview.cpp:1083
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -2431,7 +2431,7 @@ msgstr "Hechicería innata"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1079
+#: src/OpenGoldBox/party_preview.cpp:1082
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -2725,7 +2725,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1167
+#: src/OpenGoldBox/party_preview.cpp:1170
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -3080,8 +3080,8 @@ msgid "Neutral Good"
 msgstr "Neutral bueno"
 
 #: src/OpenGoldBox/party_preview.cpp:250
-msgid "New PCs receive 250 gp / Save game stores this campaign on disk."
-msgstr "Los nuevos personajes reciben 250 po / Guardar partida guarda esta campaña en disco."
+msgid "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk."
+msgstr "Los nuevos personajes empiezan con 3d6 × 10 po / Guardar partida guarda esta campaña en disco."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:60
 msgid "New Phlan"
@@ -3781,7 +3781,7 @@ msgstr "Volver al grupo"
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1174
+#: src/OpenGoldBox/party_preview.cpp:1177
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -5328,7 +5328,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia y Carisma para 
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1165
+#: src/OpenGoldBox/party_preview.cpp:1168
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 

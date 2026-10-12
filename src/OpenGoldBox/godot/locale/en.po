@@ -1473,11 +1473,11 @@ msgstr "Decrease battlefield zoom by 10 percentage points"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Decrease battlefield zoom by 100 percentage points"
 
-#: src/OpenGoldBox/party_preview.cpp:1163
+#: src/OpenGoldBox/party_preview.cpp:1166
 msgid "Defeat"
 msgstr "Defeat"
 
-#: src/OpenGoldBox/party_preview.cpp:1235
+#: src/OpenGoldBox/party_preview.cpp:1238
 msgid "Defeat test"
 msgstr "Defeat test"
 
@@ -1788,7 +1788,7 @@ msgstr "Exhale (Dragon's Breath)"
 msgid "Exit"
 msgstr "Exit"
 
-#: src/OpenGoldBox/party_preview.cpp:1174
+#: src/OpenGoldBox/party_preview.cpp:1177
 msgid "Exit to OS"
 msgstr "Exit to OS"
 
@@ -1924,7 +1924,7 @@ msgstr "Finish Long Rest spell choices before changing the party"
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Finish Long Rest spell choices before combat"
 
-#: src/OpenGoldBox/party_preview.cpp:1080
+#: src/OpenGoldBox/party_preview.cpp:1083
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Finish combat, dialogue or shopping before returning to the party."
 
@@ -2431,7 +2431,7 @@ msgstr "Innate Sorcery"
 msgid "Insight"
 msgstr "Insight"
 
-#: src/OpenGoldBox/party_preview.cpp:1079
+#: src/OpenGoldBox/party_preview.cpp:1082
 msgid "Inspect your party and equipment."
 msgstr "Inspect your party and equipment."
 
@@ -2725,7 +2725,7 @@ msgstr "Load"
 msgid "Load Character"
 msgstr "Load Character"
 
-#: src/OpenGoldBox/party_preview.cpp:1167
+#: src/OpenGoldBox/party_preview.cpp:1170
 msgid "Load a saved game to continue."
 msgstr "Load a saved game to continue."
 
@@ -3080,8 +3080,8 @@ msgid "Neutral Good"
 msgstr "Neutral Good"
 
 #: src/OpenGoldBox/party_preview.cpp:250
-msgid "New PCs receive 250 gp / Save game stores this campaign on disk."
-msgstr "New PCs receive 250 gp / Save game stores this campaign on disk."
+msgid "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk."
+msgstr "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk."
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:60
 msgid "New Phlan"
@@ -3781,7 +3781,7 @@ msgstr "Rejoin party"
 msgid "Religion"
 msgstr "Religion"
 
-#: src/OpenGoldBox/party_preview.cpp:1174
+#: src/OpenGoldBox/party_preview.cpp:1177
 msgid "Reload a Saved Game"
 msgstr "Reload a Saved Game"
 
@@ -5328,7 +5328,7 @@ msgstr "Your melee weapon is your pact weapon: proficiency, and Charisma for its
 msgid "Your party flees the battle."
 msgstr "Your party flees the battle."
 
-#: src/OpenGoldBox/party_preview.cpp:1165
+#: src/OpenGoldBox/party_preview.cpp:1168
 msgid "Your party has been defeated."
 msgstr "Your party has been defeated."
 

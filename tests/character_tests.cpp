@@ -544,6 +544,43 @@ void creation_tests()
     "Direct character construction validates creation data");
 }
 
+// Pool of Radiance gives each new character 30 to 180 gp to buy its equipment;
+// a reroll of the ability scores rolls the gold again.
+void starting_gold_tests()
+{
+    CharacterCreator unrolled(srd5::character_rules(), 7);
+    check(unrolled.starting_gold() == 0, "No starting gold before the first roll");
+    std::set<int> amounts;
+    for (std::uint64_t seed = 1; seed <= 2000; ++seed)
+    {
+        CharacterCreator creator(srd5::character_rules(), seed);
+        for (int i = 0; i < 2; ++i)
+            creator.next();
+        creator.roll();
+        const int gold = creator.starting_gold();
+        check(gold >= 30 && gold <= 180 && gold % 10 == 0, "Starting gold is 3d6 x 10 gp");
+        amounts.insert(gold);
+    }
+    check(amounts.size() == 16, "Every amount from 30 to 180 gp can be rolled");
+    CharacterCreator first(srd5::character_rules(), 99), second(srd5::character_rules(), 99);
+    for (auto *creator : {&first, &second})
+    {
+        for (int i = 0; i < 2; ++i)
+            creator->next();
+        creator->roll();
+    }
+    check(first.starting_gold() == second.starting_gold(), "Seeded starting gold reproduces");
+    std::set<int> rerolled{first.starting_gold()};
+    for (int i = 0; i < 20; ++i)
+    {
+        first.roll();
+        rerolled.insert(first.starting_gold());
+    }
+    check(rerolled.size() > 1, "Rerolling the abilities rolls the gold again");
+    first.restart();
+    check(first.starting_gold() == 0, "Restarting creation clears the starting gold");
+}
+
 void inventory_tests()
 {
     Inventory inventory;
@@ -967,6 +1004,7 @@ int main()
     try
     {
         creation_tests();
+        starting_gold_tests();
         inventory_tests();
         additional_portrait_tests();
         art_tests();

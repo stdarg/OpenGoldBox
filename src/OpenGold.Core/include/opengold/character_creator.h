@@ -63,7 +63,16 @@ class CharacterCreator
     [[nodiscard]] bool spell_choices_complete() const;
     void cantrip_choice(std::string_view option, bool selected);
     [[nodiscard]] bool training_complete() const;
+    // Rolls the six ability results and, with them, the starting gold.
     void roll();
+
+    // Gold the character joins the party with: 3d6 x 10 gp, the original
+    // game's 30 to 180 gp for buying equipment. Zero until the first roll.
+    [[nodiscard]] std::uint16_t starting_gold() const
+    {
+        return starting_gold_;
+    }
+
     void assign_roll(unsigned roll, rules::Ability ability);
     [[nodiscard]] bool scores_assigned() const;
     void swap_scores(rules::Ability first, rules::Ability second);
@@ -76,9 +85,12 @@ class CharacterCreator
   private:
     std::unique_ptr<rules::CharacterRules> rules_;
     RandomState random_;
+    // Gold has its own stream so the seeded ability rolls are the same with it.
+    RandomState gold_random_;
     rules::CharacterDraft draft_;
     por::CharacterAppearance appearance_;
     CreationStep step_{CreationStep::race};
+    std::uint16_t starting_gold_{};
     void require_editable() const;
     void prune_training(rules::CharacterDraft &candidate) const;
 };
