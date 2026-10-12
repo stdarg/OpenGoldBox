@@ -40,32 +40,40 @@ func apply_layout() -> void:
         _place_portrait_rows(view, identity)
 
 
-# The portrait filters sit on the title row, between the title and the
-# character's identity at the top right. When they do not fit there, they
-# start a line of their own at the left margin, and the rows below move down.
+# The portrait page: the filters follow the title on its row when they fit
+# before the preview at the top right, and otherwise take the next line,
+# their lists narrowed to fit. The character's identity takes the line after
+# them, wrapping before the preview, and the contact sheet starts below it.
 func _place_portrait_rows(view: Control, identity: Label) -> void:
-    var filters := ["PortraitFilters", "PortraitGender", "PortraitClass", "PortraitRace"]
-    var below := ["PortraitPrevious", "PortraitSelect", "PortraitNext", "PortraitScroll"]
+    var lists := ["PortraitGender", "PortraitClass", "PortraitRace"]
+    var label: Control = view.get_node("PortraitFilters")
     if _authored_portrait_rows.is_empty():
-        for name in filters + below:
-            var control: Control = view.get_node(name)
-            _authored_portrait_rows[name] = Vector2(control.offset_left, control.offset_top)
-    var text_width := identity.get_theme_font("font").get_string_size(identity.text,
-        HORIZONTAL_ALIGNMENT_LEFT, -1, identity.get_theme_font_size("font_size")).x
-    var race: Control = view.get_node("PortraitRace")
-    var filters_end: float = _authored_portrait_rows["PortraitRace"].x + race.size.x
-    var fits := filters_end + 24 <= identity.position.x + identity.size.x - text_width
-    var line: float = 0.0 if fits else _authored_portrait_rows["PortraitSelect"].y \
-        - _authored_portrait_rows["PortraitFilters"].y
-    var indent: float = 0.0 if fits else _authored_portrait_rows["PortraitPrevious"].x \
-        - _authored_portrait_rows["PortraitFilters"].x
-    for name in filters:
-        var control: Control = view.get_node(name)
-        control.position = _authored_portrait_rows[name] + Vector2(indent, line)
-    for name in below:
-        var control: Control = view.get_node(name)
-        if name == "PortraitScroll":
-            control.offset_top = _authored_portrait_rows[name].y + line
-        else:
-            control.position.y = _authored_portrait_rows[name].y + line
-
+        _authored_portrait_rows["list_width"] = (view.get_node(lists[0]) as Control).size.x
+        _authored_portrait_rows["row"] = label.size.y + 10
+    var gap := 8.0
+    var row: float = _authored_portrait_rows["row"]
+    var title: Label = view.get_node("PageTitle")
+    var title_end := title.position.x + title.get_theme_font("font").get_string_size(title.text,
+        HORIZONTAL_ALIGNMENT_LEFT, -1, title.get_theme_font_size("font_size")).x
+    var right: float = (view.get_node("PortraitPreview") as Control).position.x - 16
+    var list_width: float = _authored_portrait_rows["list_width"]
+    var filters_width := label.size.x + gap + 3 * list_width + 2 * gap
+    var x := title_end + 32
+    var y := title.position.y
+    if x + filters_width > right:
+        x = title.position.x
+        y += row
+        list_width = minf(list_width, (right - x - label.size.x - 3 * gap) / 3)
+    label.position = Vector2(x, y)
+    x += label.size.x + gap
+    for name in lists:
+        var list: Control = view.get_node(name)
+        list.position = Vector2(x, y)
+        list.size.x = list_width
+        x += list_width + gap
+    identity.position.y = y + row
+    # Measured from the font: the label re-wraps only on its next frame.
+    identity.size.y = identity.get_theme_font("font").get_multiline_string_size(identity.text,
+        HORIZONTAL_ALIGNMENT_LEFT, identity.size.x, identity.get_theme_font_size("font_size")).y
+    (view.get_node("PortraitScroll") as Control).offset_top = identity.position.y \
+        + identity.size.y + 12

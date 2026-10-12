@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="AnimationLibrary" path="res://scenes/creation_layout.tres" id="1_creation_layout"]
 
@@ -21,6 +21,8 @@
 [ext_resource type="Script" path="res://scenes/portrait_sheet.gd" id="95_portrait_sheet"]
 
 [ext_resource type="Script" path="res://scenes/portrait_zoom.gd" id="94_portrait_zoom"]
+
+[ext_resource type="Script" path="res://scenes/portrait_preview.gd" id="93_portrait_preview"]
 
 [node name="CharacterCreation" type="CharacterCreationView"]
 texture_filter = 1
@@ -223,14 +225,13 @@ vertical_alignment = 1
 metadata/layout_reference = Rect2(288, 140, 106, 36)
 
 [node name="PortraitIdentity" type="Label" parent="."]
-anchor_left = 1
 anchor_right = 1
-offset_left = -760
-offset_right = -44
-offset_top = 42
-offset_bottom = 78
-horizontal_alignment = 2
+offset_left = 288
+offset_right = -360
+offset_top = 88
+offset_bottom = 124
 theme_type_variation = &"LabelText22"
+autowrap_mode = 2
 auto_translate_mode = 2
 
 [node name="PortraitFilters" type="Label" parent="."]
@@ -240,31 +241,6 @@ offset_top = 42
 offset_bottom = 78
 text = "Filter by"
 vertical_alignment = 1
-
-[node name="PortraitPrevious" type="Button" parent="."]
-offset_left = 288
-offset_right = 328
-offset_top = 88
-offset_bottom = 124
-text = "<"
-tooltip_text = "Previous matching portrait"
-
-[node name="PortraitNext" type="Button" parent="."]
-offset_left = 1004
-offset_right = 1044
-offset_top = 88
-offset_bottom = 124
-text = ">"
-tooltip_text = "Next matching portrait"
-
-[node name="PortraitSelect" type="OptionButton" parent="."]
-offset_left = 336
-offset_right = 996
-offset_top = 88
-offset_bottom = 124
-fit_to_longest_item = false
-clip_text = true
-tooltip_text = "Portrait select"
 
 [node name="PortraitGender" type="OptionButton" parent="."]
 offset_left = 508
@@ -1909,7 +1885,7 @@ autowrap_mode = 2
 anchor_right = 1
 anchor_bottom = 1
 offset_left = 288
-offset_right = -44
+offset_right = -360
 offset_top = 136
 offset_bottom = -96
 visible = false
@@ -1918,7 +1894,20 @@ horizontal_scroll_mode = 0
 [node name="PortraitSheet" type="Control" parent="PortraitScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 2
 script = ExtResource("95_portrait_sheet")
+
+[node name="PortraitPreview" type="TextureRect" parent="."]
+anchor_left = 1
+anchor_right = 1
+offset_left = -344
+offset_right = -44
+offset_top = 42
+offset_bottom = 342
+visible = false
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("93_portrait_preview")
 
 [node name="PortraitZoom" type="Panel" parent="."]
 anchor_right = 1

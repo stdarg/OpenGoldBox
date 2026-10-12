@@ -4,6 +4,7 @@
 #include "godot_nodes.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
+#include <algorithm>
 #include <set>
 #include <stdexcept>
 using namespace godot;
@@ -42,54 +43,40 @@ void CharacterCreationView::load_portraits()
 void CharacterCreationView::refresh_portraits()
 {
     filtered_portraits_.clear();
-    auto *list = &required_node<OptionButton>(*this, "PortraitSelect");
-    list->clear();
     const auto matches = [&](const char *node, const std::string & value)
     {
         auto *c = &required_node<OptionButton>(*this, node);
         return c->get_selected() <= 0 ||
                String(c->get_item_metadata(c->get_selected())) == gs(value);
     };
+    const auto caption = [](const PortraitCatalog::Portrait & p)
+    {
+        return i18n::format("Race: {race}\nClass: {class}\nGender: {gender}",
+        {
+            {"race", i18n::text(p.race)}, {"class", i18n::text(p.klass)},
+            {"gender", i18n::text(p.gender)}
+        });
+    };
+    const auto &current = creator_->appearance().portrait;
     int selected = -1;
     PackedStringArray files, captions;
     for (std::size_t i = 0; i < portraits_->entries().size(); ++i)
     {
         const auto &p = portraits_->entries()[i];
+        if (p.filename == current)
+            required_node<Control>(*this, "PortraitPreview")
+            .call("show_portrait", gs("res://bin/portraits/" + p.filename), caption(p));
         if (!matches("PortraitGender", p.gender) || !matches("PortraitClass", p.klass) ||
                 !matches("PortraitRace", p.race))
             continue;
-        if (p.filename == creator_->appearance().portrait)
+        if (p.filename == current)
             selected = static_cast<int>(filtered_portraits_.size());
         filtered_portraits_.push_back(i);
-        list->add_item(i18n::text(p.klass) + " / " + i18n::text(p.race) + " / " +
-                       i18n::text(p.gender));
         files.push_back(gs("res://bin/portraits/" + p.filename));
-        captions.push_back(i18n::format("Race: {race}\nClass: {class}\nGender: {gender}",
-        {
-            {"race", i18n::text(p.race)}, {"class", i18n::text(p.klass)},
-            {"gender", i18n::text(p.gender)}
-        }));
+        captions.push_back(caption(p));
     }
     required_node<Control>(*this, "PortraitScroll/PortraitSheet")
-    .call("show_portraits", files, captions, selected);
-    list->select(selected);
-    if (selected < 0)
-        list->set_text(i18n::text(filtered_portraits_.empty() ? N_("No matching portraits")
-                                  : N_("Choose portrait")));
-    const bool disabled = added_to_party_ || filtered_portraits_.empty();
-    list->set_disabled(disabled);
-    required_node<Button>(*this, "PortraitPrevious").set_disabled(disabled);
-    required_node<Button>(*this, "PortraitNext").set_disabled(disabled);
-    const auto &filename = creator_->appearance().portrait;
-    list->set_tooltip_text(i18n::format(
-                               "Current portrait: {file}\n{matches} Filters do not change your character.",
-    {
-        {"file", gs(filename)},
-        {
-            "matches", i18n::plural("{count} matching portrait.", "{count} matching portraits.",
-                                    static_cast<int>(filtered_portraits_.size()))
-        }
-    }));
+    .call("show_portraits", files, captions, selected, !added_to_party_);
 }
 
 void CharacterCreationView::portrait_filter_selected(std::int64_t)
@@ -98,14 +85,21 @@ void CharacterCreationView::portrait_filter_selected(std::int64_t)
         refresh();
 }
 
+// The next or previous matching portrait, wrapping around.
 void CharacterCreationView::portrait_part(int direction)
 {
     if (added_to_party_ || filtered_portraits_.empty())
         return;
-    const int current = required_node<OptionButton>(*this, "PortraitSelect").get_selected(),
-              count = static_cast<int>(filtered_portraits_.size());
-    portrait_selected(current < 0 ? (direction > 0 ? 0 : count - 1)
-                      : (current + direction + count) % count);
+    const auto &current = creator_->appearance().portrait;
+    const auto found = std::find_if(filtered_portraits_.begin(), filtered_portraits_.end(),
+                                    [&](std::size_t index)
+    {
+        return portraits_->entries()[index].filename == current;
+    });
+    const int count = static_cast<int>(filtered_portraits_.size());
+    const int at = found == filtered_portraits_.end()
+                   ? -1 : static_cast<int>(found - filtered_portraits_.begin());
+    portrait_selected(at < 0 ? (direction > 0 ? 0 : count - 1) : (at + direction + count) % count);
 }
 
 void CharacterCreationView::portrait_selected(std::int64_t index)

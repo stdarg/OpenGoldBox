@@ -1,8 +1,11 @@
 extends Control
 
-# A contact sheet of portrait thumbnails. A click chooses a portrait; a
-# double click shows it full size in the view's PortraitZoom.
+# A contact sheet of portrait thumbnails. A click or the arrow keys choose a
+# portrait; a double click shows it full size in the view's PortraitZoom.
 signal portrait_chosen(index: int)
+
+# False once the character joins the party: its portrait is then fixed.
+var enabled := true
 
 var _files := PackedStringArray()
 var _captions := PackedStringArray()
@@ -11,16 +14,31 @@ var _thumbnails := {}
 var _pending: Array[String] = []
 
 
-func show_portraits(files: PackedStringArray, captions: PackedStringArray, selected: int) -> void:
+func show_portraits(files: PackedStringArray, captions: PackedStringArray, selected: int,
+        choosable: bool) -> void:
     _files = files
     _captions = captions
     _selected = selected
+    enabled = choosable
     _pending.clear()
     for file in files:
         if not _thumbnails.has(file):
             _pending.append(file)
     _fit_height()
+    _reveal.call_deferred()
     queue_redraw()
+
+
+# Scrolls so the chosen portrait is in view.
+func _reveal() -> void:
+    var scroll := get_parent() as ScrollContainer
+    if _selected < 0 or scroll == null:
+        return
+    var rect := _rect(_selected)
+    if rect.position.y < scroll.scroll_vertical:
+        scroll.scroll_vertical = int(rect.position.y)
+    elif rect.end.y > scroll.scroll_vertical + scroll.size.y:
+        scroll.scroll_vertical = int(rect.end.y - scroll.size.y)
 
 
 func _cell() -> int:
@@ -45,6 +63,8 @@ func _notification(what: int) -> void:
     if what == NOTIFICATION_RESIZED:
         _fit_height()
         queue_redraw()
+    elif what == NOTIFICATION_VISIBILITY_CHANGED and is_visible_in_tree():
+        grab_focus.call_deferred()
 
 
 # Source portraits are large, so thumbnails are made a few per frame.
@@ -80,6 +100,16 @@ func _draw() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+    var key := event as InputEventKey
+    if key != null and key.pressed and enabled and not _files.is_empty():
+        var steps := {KEY_LEFT: -1, KEY_RIGHT: 1, KEY_UP: -_columns(), KEY_DOWN: _columns()}
+        if steps.has(key.keycode):
+            accept_event()
+            var next: int = clampi(maxi(_selected, 0) + steps[key.keycode] if _selected >= 0 else 0,
+                0, _files.size() - 1)
+            if next != _selected:
+                portrait_chosen.emit(next)
+        return
     var click := event as InputEventMouseButton
     if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
         return
@@ -89,7 +119,8 @@ func _gui_input(event: InputEvent) -> void:
     if cell.x >= _columns() or index < 0 or index >= _files.size():
         return
     accept_event()
+    grab_focus()
     if click.double_click:
         owner.get_node("PortraitZoom").call("open", _files[index], _captions[index])
-    else:
+    elif enabled:
         portrait_chosen.emit(index)

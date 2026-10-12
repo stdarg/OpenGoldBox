@@ -81,9 +81,10 @@ func run_checks() -> void:
 	filter.select(wizard)
 	filter.item_selected.emit(wizard)
 	await settle()
-	require(current_scene.get_node("PortraitSelect").item_count > 0, "Spanish portrait filtering has no matches")
-	for i in range(current_scene.get_node("PortraitSelect").item_count):
-		require(current_scene.get_node("PortraitSelect").get_item_text(i).begins_with("Mago /"), "Filter matched the wrong class")
+	var portraits: PackedStringArray = current_scene.get_node("PortraitScroll/PortraitSheet")._captions
+	require(portraits.size() > 0, "Spanish portrait filtering has no matches")
+	for caption in portraits:
+		require(caption.contains("Clase: Mago"), "Filter matched the wrong class")
 	filter.select(0)
 	filter.item_selected.emit(0)
 	await capture("spanish-race")

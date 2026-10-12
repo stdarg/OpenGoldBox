@@ -179,7 +179,7 @@ func run_checks() -> void:
 	# Combat appearance shows both poses large in the page; the right pane is gone.
 	for gone in ["Title", "Subtitle", "PreviewBounds", "PreviewName", "PreviewSummary"]:
 		require(not current_scene.has_node(gone), "Removed creation node remains: " + gone)
-	require(not current_scene.get_node("PortraitSelect").is_visible_in_tree(), "The portrait picker waits for its own page")
+	require(not current_scene.get_node("PortraitScroll").is_visible_in_tree(), "The portrait picker waits for its own page")
 	root.size = Vector2i(1920, 1080); await settle()
 	canvas = current_scene.get_node("CreationCanvas")
 	for pose in [["ReadyBounds", 0], ["ActionBounds", 1]]:
@@ -190,7 +190,7 @@ func run_checks() -> void:
 	await press("Next")
 	require(current_scene.get_node("PageTitle").text == "Portrait", "Portrait follows combat appearance")
 	require(current_scene.get_node("PortraitIdentity").text == "Your character: Dragonborn / Female / Wizard", "The portrait page names race, gender and class")
-	for control in ["PortraitGender", "PortraitClass", "PortraitRace", "PortraitSelect", "PortraitPrevious", "PortraitNext"]:
+	for control in ["PortraitGender", "PortraitClass", "PortraitRace", "PortraitScroll", "PortraitPreview"]:
 		require(current_scene.get_node(control).is_visible_in_tree(), "Portrait control missing: " + control)
 	await press("Next")
 	await press("Modifiers")

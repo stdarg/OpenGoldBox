@@ -876,7 +876,7 @@ void CharacterCreationView::party_check()
             if (creator_->step() == before)
                 throw std::runtime_error("Party-check creation did not advance");
         }
-        press("PortraitNext");
+        portrait_part(1);
         next();
         if (creator_->step() != CreationStep::sheet)
             throw std::runtime_error("Portrait must advance to the character sheet");
@@ -887,8 +887,7 @@ void CharacterCreationView::party_check()
         const auto gold = campaign_->member(campaign_->state().slots[0]).wealth[3];
         if (gold != creator_->starting_gold() || gold < 30 || gold > 180)
             throw std::runtime_error("A new PC must bring its rolled 3d6 x 10 gp");
-        if (!required_node<Button>(*this, "PortraitNext").is_disabled() ||
-                !required_node<Button>(*this, "PortraitSelect").is_disabled())
+        if (bool(required_node<Control>(*this, "PortraitScroll/PortraitSheet").get("enabled")))
             throw std::runtime_error("Added portrait controls remained enabled");
         portrait_part(1);
         if (completed_->appearance() != chosen ||

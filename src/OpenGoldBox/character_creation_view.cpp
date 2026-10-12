@@ -155,8 +155,6 @@ void CharacterCreationView::_ready()
         .connect("toggled", presentation::guarded(this, &CharacterCreationView::target_toggled).bind(i));
     required_node<OptionButton>(*this, "Bonus").connect(
         "item_selected", presentation::guarded(this, &CharacterCreationView::bonus_selected));
-    required_node<OptionButton>(*this, "PortraitSelect")
-    .connect("item_selected", presentation::guarded(this, &CharacterCreationView::portrait_selected));
     required_node<Control>(*this, "PortraitScroll/PortraitSheet")
     .connect("portrait_chosen", presentation::guarded(this, &CharacterCreationView::portrait_selected));
     required_node<LineEdit>(*this, "Name").connect("text_changed",
@@ -211,9 +209,6 @@ void CharacterCreationView::_ready()
             })
     {
         const auto suffix = direction < 0 ? "Previous" : "Next";
-        required_node<Button>(*this, gs(std::string("Portrait") + suffix))
-        .connect("pressed",
-                 presentation::guarded(this, &CharacterCreationView::portrait_part).bind(direction));
         required_node<Button>(*this, gs(std::string("CombatHead") + suffix))
         .connect("pressed",
                  presentation::guarded(this, &CharacterCreationView::combat_part).bind(0, direction));
@@ -412,15 +407,14 @@ void CharacterCreationView::refresh()
     show("TrainingFixedTitle", step == CreationStep::training);
     show("Training", step == CreationStep::training);
     for (const auto *n :
-            {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
-             "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters", "PortraitScroll"
+            {"PortraitGender", "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters",
+             "PortraitScroll", "PortraitPreview"
             })
         show(n, portrait);
     if (!portrait)
         show("PortraitZoom", false);
     for (const auto *n :
-            {"PortraitPrevious", "PortraitNext", "PortraitSelect", "PortraitGender",
-             "PortraitClass", "PortraitRace"
+            {"PortraitGender", "PortraitClass", "PortraitRace"
             })
         required_node<Button>(*this, n).set_disabled(added_to_party_);
     for (const auto *n :
@@ -468,7 +462,7 @@ void CharacterCreationView::refresh()
     if (campaign_)
         required_node<Button>(*this, "AddParty").set_visible(step == CreationStep::sheet
                 && !added_to_party_);
-    required_node<Button>(*this, "Next").set_text(i18n::text(icon ? N_("Show character sheet") :
+    required_node<Button>(*this, "Next").set_text(i18n::text(portrait ? N_("Show character sheet") :
             N_("Next")));
     required_node<Button>(*this, "Next").set_disabled(
         (stats && !creator_->scores_assigned()) ||
@@ -1427,7 +1421,7 @@ void CharacterCreationView::check_run()
         if (creator_->appearance().portrait != p.filename || images_[0]->get_width() != 1254)
             throw std::runtime_error("Portrait navigation or full-resolution texture failed");
         ++check_head_;
-        press("PortraitNext");
+        portrait_part(1);
         return;
     }
     if (on_portraits && check_default_ == 0)
@@ -1460,11 +1454,8 @@ void CharacterCreationView::check_run()
                                 gs(p.race) == race_value)
                             ++count;
                     if (count == 0 || filtered_portraits_.size() != count ||
-                            std::cmp_not_equal(
-                                required_node<OptionButton>(*this, "PortraitSelect").get_item_count(),
-                                count) ||
-                            required_node<Button>(*this, "PortraitNext").is_disabled() ||
-                            required_node<Button>(*this, "PortraitPrevious").is_disabled())
+                            !bool(required_node<Control>(*this, "PortraitScroll/PortraitSheet")
+                                  .get("enabled")))
                         throw std::runtime_error("Portrait intersection is missing or cannot be selected");
                     for (const auto index : filtered_portraits_)
                     {
@@ -1693,9 +1684,8 @@ void CharacterCreationView::check_run()
         break;
     case 13:
     {
-        auto *list = &required_node<OptionButton>(*this, "PortraitSelect");
-        list->select(0);
-        list->emit_signal("item_selected", 0);
+        required_node<Control>(*this, "PortraitScroll/PortraitSheet")
+        .emit_signal("portrait_chosen", 0);
         const auto chosen = creator_->appearance().portrait;
         press("Back");
         press("Next");
