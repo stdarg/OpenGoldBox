@@ -37,7 +37,7 @@ ctest --test-dir build --output-on-failure -R '^<one_target>$'
 
 ## The full suite, including Godot and localization
 
-`build.cmd` / `build.sh` configure with the `default` preset, which leaves
+`build.cmd` and `./build.sh default --test` use the `default` preset, which leaves
 `OPENGOLD_BUILD_GODOT` **off**. That is the fast native gate, not the whole
 suite. Running only that and reporting "all checks passed" hides every Godot
 runtime check — the failure mode is silence, not an error.

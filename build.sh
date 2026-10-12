@@ -1,11 +1,16 @@
 #!/bin/sh
-# macOS and Linux counterpart of build.cmd: configure, build, then run the
-# native test suite, stopping at the first failure.
+# Builds OpenGoldBox on macOS and Linux. With no options it builds the game
+# and re-exports mac-package/OpenGoldBox.app on macOS (the native core on
+# Linux, where the game is not packaged), and runs no tests.
 #
-# The contract matches build.cmd deliberately -- "run the suite" must be one
-# documented command on every platform (docs/TECH.md section 14.1). A non-zero
-# exit means the build or a test failed; it never reaches ctest with a stale
-# binary, which is how a failed compile can otherwise be reported as a pass.
+#   --test      after building, run the native test suite
+#   --test-all  after building, run every test, including the Godot checks
+#   --werror    make every compiler warning fail the build
+#   <preset>    build another CMake preset: default (native core and tests,
+#               build/), debug (the same, unoptimized) or macos-universal
+#
+# A non-zero exit means the build or a requested test failed. Tests never run
+# after a failed build, which is how a stale binary can otherwise pass.
 set -eu
 
 cd "$(dirname "$0")"
@@ -20,22 +25,44 @@ JOBS="${JOBS:-$( (command -v sysctl >/dev/null 2>&1 && sysctl -n hw.ncpu) \
               || (command -v nproc  >/dev/null 2>&1 && nproc) \
               || echo 4 )}"
 
-# "./build.sh debug" runs the slower Debug preset; the default is optimized.
-# "--werror" makes every compiler warning fail the build.
-PRESET=default
+PRESET=
 WARNINGS_AS_ERRORS=OFF
+TESTS=none
 for arg in "$@"; do
     case "$arg" in
         --werror) WARNINGS_AS_ERRORS=ON ;;
+        --test) TESTS=native ;;
+        --test-all) TESTS=all ;;
+        -*)
+            echo "Unknown option: $arg (use --test, --test-all, --werror or a preset name)" >&2
+            exit 2
+            ;;
         *) PRESET="$arg" ;;
     esac
 done
+if [ -z "$PRESET" ]; then
+    if [ "$(uname -s)" = Darwin ]; then
+        PRESET=macos-universal
+    else
+        PRESET=default
+    fi
+fi
 
 # Passed on every run, so a tree configured with --werror goes back to
 # warnings when the flag is dropped.
 "$CMAKE" --preset "$PRESET" -DCMAKE_COMPILE_WARNING_AS_ERROR="$WARNINGS_AS_ERRORS"
 "$CMAKE" --build --preset "$PRESET" --parallel "$JOBS"
+if [ "$PRESET" = macos-universal ]; then
+    echo "Game exported: mac-package/OpenGoldBox.app"
+fi
 
-# Exclude the Godot runtime checks: they need a Godot install and share a
-# user-data path, so they are run serially and separately. See docs/TECH.md 14.1.
-ctest --preset "$PRESET" -j "$JOBS" --exclude-regex '^opengold_godot_'
+case "$TESTS" in
+    native)
+        # The Godot runtime checks need a Godot install and share a user-data
+        # path, so --test leaves them out. See docs/TECH.md 14.1.
+        ctest --preset "$PRESET" -j "$JOBS" --exclude-regex '^opengold_godot_'
+        ;;
+    all)
+        ctest --preset "$PRESET" -j "$JOBS" --output-on-failure
+        ;;
+esac

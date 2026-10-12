@@ -80,7 +80,7 @@ if(OPENGOLD_BUILD_TESTS)
             RESOURCE_LOCK demo_project)
         # Synthetic checks, plus the installed ECL scripts and maps when
         # OPENGOLD_GAME_DIR names the original files. The map inspector reads
-        # maps through build/opengold_maps, which ./build.sh builds.
+        # maps through build/opengold_maps, which ./build.sh default builds.
         add_test(NAME opengold_godot_ecl_art COMMAND "${CMAKE_COMMAND}"
             "-DGODOT=${OPENGOLD_DEMO_GODOT}" "-DPROJECT=${demo_project}"
             "-DSCRIPT=${PROJECT_SOURCE_DIR}/tests/ecl_art_tests.gd"

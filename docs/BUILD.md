@@ -4,11 +4,16 @@ This guide covers the three separate builds in this repository: the native core
 and its tests, the OpenGoldBox game, and the reference demos. Install the
 prerequisites in [INSTALL.md](INSTALL.md) first.
 
-| Build | Command (Windows) | Build tree | Output |
-| --- | --- | --- | --- |
-| Native core and tests | `.\build.cmd` | `build/` | libraries, tests, `opengold_maps` |
-| Game | `.\build-opengoldbox.cmd` | `build/game/` | `win-package/opengoldbox.exe` |
-| Demos | `.\demos\build-rolf.cmd` | `build/godot/` | `demos/godot/bin/opengold_godot.dll` |
+| Build | Windows | macOS | Build tree | Output |
+| --- | --- | --- | --- | --- |
+| Native core and tests | `.\build.cmd` | `./build.sh default` | `build/` | libraries, tests, `opengold_maps` |
+| Game | `.\build-opengoldbox.cmd` | `./build.sh` | `build/game/` (Windows), `build/macos-universal/` (macOS) | `win-package/opengoldbox.exe`, `mac-package/OpenGoldBox.app` |
+| Demos | `.\demos\build-rolf.cmd` | see [the demos](#the-demos) | `build/godot/` | `demos/godot/bin/opengold_godot.dll` |
+
+On macOS, `./build.sh` with no options builds the game and re-exports the app,
+and runs no tests. Run it after every change you want to see in the app: the
+app carries its own copy of the scenes, so it does not change until it is
+exported again.
 
 Keep the game and demo trees separate. The demos' `build_profile.json` trims the
 generated Godot bindings and removes classes the game needs, so one tree cannot
@@ -58,12 +63,24 @@ Windows:
 macOS and Linux:
 
 ```bash
-./build.sh
+./build.sh default --test
 ```
 
-Both scripts configure the `default` preset (RelWithDebInfo, Ninja), build, then
-run the tests in parallel, and stop at the first failure. They always build the
-checkout they live in, whatever the current directory. The equivalent manual
+`build.cmd` configures the `default` preset (RelWithDebInfo, Ninja), builds,
+then runs the tests in parallel, and stops at the first failure. `build.sh`
+builds the preset it is given (on Linux, `default` is also what it builds with
+no preset) and runs tests only when asked:
+
+| `build.sh` option | Effect |
+| --- | --- |
+| *(none)* | macOS: build the game and re-export `mac-package/OpenGoldBox.app`. Linux: build the native core. No tests. |
+| `--test` | After building, run the native tests (everything except the Godot runtime checks). |
+| `--test-all` | After building, run every test, including the Godot runtime checks. |
+| `--werror` | Make every compiler warning fail the build. |
+| `default`, `debug`, `macos-universal` | Build that preset instead of the platform default. |
+
+Both scripts always build the checkout they live in, whatever the current
+directory, and never run tests after a failed build. The equivalent manual
 commands are:
 
 ```powershell
@@ -81,6 +98,10 @@ than every change:
 .\build.cmd debug
 ```
 
+```bash
+./build.sh debug --test
+```
+
 The project's own targets build at a high warning level: `-Wall -Wextra` with
 Clang and GCC (plus `-Wshorten-64-to-32` on Clang, which reports the narrowing
 MSVC warns about) and `/W4 /permissive-` with MSVC. Fetched code such as
@@ -90,14 +111,13 @@ game builds are warning-free with Apple Clang; leaving the flag off on a later
 run turns warnings back into warnings:
 
 ```bash
-./build.sh --werror
-./build.sh --werror debug
+./build.sh --werror                  # the game, on macOS
+./build.sh --werror default --test   # the native core and its tests
 ```
 
-The game and demo builds are warning-free too. Add
-`-DCMAKE_COMPILE_WARNING_AS_ERROR=ON` to their configure step (or to
-`.\build-opengoldbox.cmd` and `.\demos\build-rolf.cmd`, which pass CMake options
-through), for example:
+The demo build is warning-free too. Add `-DCMAKE_COMPILE_WARNING_AS_ERROR=ON`
+to its configure step (or to `.\build-opengoldbox.cmd` and
+`.\demos\build-rolf.cmd`, which pass CMake options through), for example:
 
 ```bash
 cmake --preset macos-universal -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
@@ -148,10 +168,17 @@ cmake --build build/game --target OpenGoldBox
 Install the Godot macOS export templates matching your editor, then:
 
 ```bash
+./build.sh
+open mac-package/OpenGoldBox.app
+```
+
+Add `--test` for the native tests or `--test-all` for every test, including the
+Godot checks. The script runs these commands:
+
+```bash
 cmake --preset macos-universal
 cmake --build --preset macos-universal
 ctest --preset macos-universal
-open mac-package/OpenGoldBox.app
 ```
 
 This builds a universal (`arm64` and `x86_64`) app bundle, ad hoc signed for

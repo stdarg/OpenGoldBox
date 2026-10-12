@@ -114,7 +114,7 @@ both catalogs; the view derives its "Skill:"/"Tool:" label prefix from that id.
 Native rules:
 
 ```bash
-sh ./build.sh                                   # 50/50, includes Skilled
+sh ./build.sh default --test                    # 50/50, includes Skilled
 ./build/opengold_training_tests --skilled        # acceptance only
 python3 tools/localization.py --check            # 1026 messages
 ```

@@ -127,8 +127,8 @@ closures, WIP, added scope and build/test time with the batch's baseline.
 ## Verification selection
 
 These examples use the `default` CMake preset, whose build directory is `build`
-on every platform. Run `build.cmd` (Windows) or `./build.sh` (macOS, Linux) for
-the whole suite; the targeted commands below are for development loops.
+on every platform. Run `build.cmd` (Windows) or `./build.sh default --test` (macOS, Linux) for
+the native suite; the targeted commands below are for development loops.
 Build changed test targets before running them; `ctest` alone can run stale binaries.
 Discover names with `ctest --test-dir build -N` when needed.
 
