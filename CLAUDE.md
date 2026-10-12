@@ -98,4 +98,4 @@ Always adhere to the [C++ Core Guidelines by Stroustrup and Sutter](https://isoc
 
 ## 8. Keep the Git Repository Tidy
 
-- Do a git pull from orgin / main before working.
+- Do a git pull from origin / main before working.
