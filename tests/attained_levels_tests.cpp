@@ -1,6 +1,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
+#include "opengold/character_pool.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -59,6 +60,26 @@ Character created(const std::string &klass)
     return Character(*srd5::character_rules(), d, {});
 }
 
+// A ready-made Character Pool character of the class, as a player adds one.
+Character ready_made(std::string_view klass)
+{
+    por::CharacterArt art;
+    Image head;
+    head.width = 88;
+    head.height = 40;
+    head.rgba.assign(88 * 40 * 4, 128);
+    Image body;
+    body.width = 88;
+    body.height = 48;
+    body.rgba.assign(88 * 48 * 4, 128);
+    art.set_original_head(1, por::PortraitPart{"fixture", head});
+    art.set_original_body(1, por::PortraitPart{"fixture", body});
+    for (const auto &preset : character_pool(*srd5::character_rules(), art))
+        if (preset.creation_data().character_class == klass)
+            return preset;
+    throw std::runtime_error("No pool character of the class");
+}
+
 Encounter encounter(const CampaignParty &party)
 {
     Encounter e{{12, 8, std::vector<Terrain>(96)}, party.participants()};
@@ -92,7 +113,7 @@ bool has_grant(const CampaignParty &party, MemberId id, std::string_view grant)
 // Plays a fight: the member uses the first offered class verb, then the demo
 // AI plays both sides to the end.
 std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::string> verbs,
-                                     std::uint64_t seed)
+                                     std::uint64_t seed, const std::string &label)
 {
     auto combat = party.rule_module().create(encounter(party), seed);
     bool used = false;
@@ -114,10 +135,10 @@ std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::
                 std::cerr << ' ' << legal.verb;
             std::cerr << "\n  -> " << command.verb << '\n';
         }
-        check(combat->submit(command), "The fight accepts a legal command");
+        check(combat->submit(command), label + ": the fight accepts a legal command");
     }
-    check(used, "The class's own action is offered in the fight");
-    check(combat->snapshot().outcome != Outcome::ongoing, "The fight ends");
+    check(used || verbs.empty(), label + ": the class's own action is offered in the fight");
+    check(combat->snapshot().outcome != Outcome::ongoing, label + ": the fight ends");
     return combat;
 }
 
@@ -139,10 +160,13 @@ struct LevelPlan
     std::vector<std::string> grants; // Grants the character holds at this level.
 };
 
-void attained_levels(const std::string &klass, const std::vector<LevelPlan> &plan)
+void attained_levels(const std::string &klass, const std::vector<LevelPlan> &plan,
+                     bool pool = false)
 {
     CampaignParty party(module());
-    const auto id = party.add_pc(created(klass));
+    const auto id = party.add_pc(pool ? ready_made(klass) : created(klass));
+    if (pool)
+        outfit_pool_member(party, id);
     for (unsigned level = 1; level <= 4; ++level)
     {
         const auto label = klass + " level " + std::to_string(level);
@@ -163,11 +187,13 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
         }
 
         // The fight's wounds and spent uses come back to the party.
-        auto combat = fight(party, step.verbs, 40 + level);
+        auto combat = fight(party, step.verbs, 40 + level, label);
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         party.end_combat();
-        check(spent(party, id) > 0, label + ": the class action's use stays spent after the fight");
+        // A Rogue's actions spend nothing; every other class's do.
+        check(step.verbs.empty() || pools(party, id).empty() || spent(party, id) > 0,
+              label + ": the class action's use stays spent after the fight");
 
         // A save mid-adventure reads back, and the next fight plays out the same.
         auto copy = reloaded(party, label);
@@ -223,6 +249,13 @@ int main()
 {
     try
     {
+        // Explores one class: prints what it holds and is offered at each level.
+        if (const auto *only = std::getenv("OPENGOLD_ATTAINED_CLASS"))
+        {
+            attained_levels(only, std::vector<LevelPlan>(4), true);
+            std::cout << "Attained-level checks passed\n";
+            return 0;
+        }
         attained_levels("fighter", {
             {{"second_wind"}, {"feature:second_wind", "feat:defense"}},
             {{"action_surge"}, {"feature:action_surge", "feature:tactical_mind"}},
@@ -238,6 +271,80 @@ int main()
             {{"magic_missile"}, {"subclass:evoker", "feature:potent_cantrip", "feature:sculpt_spells"}},
             {{"magic_missile"}, {"feat:ability_score_improvement"}}
         });
+        // The other classes start as ready-made Character Pool characters with
+        // their class kit.
+        const std::vector<std::string> asi{"feat:ability_score_improvement"};
+        attained_levels("barbarian", {
+            {{"rage"}, {"feature:unarmored_defense"}},
+            {{"rage"}, {"feature:danger_sense", "feature:reckless_attack"}},
+            {{"rage"}, {"subclass:berserker", "feature:frenzy", "feature:primal_knowledge"}},
+            {{"rage"}, asi}
+        }, true);
+        const std::vector<std::string> bard_spells{"heroism", "command_halt", "healing_word"};
+        attained_levels("bard", {
+            {bard_spells, {"feature:bardic_inspiration", "feature:spellcasting"}},
+            {bard_spells, {"feature:jack_of_all_trades"}},
+            {bard_spells, {"subclass:lore", "feature:cutting_words", "feature:bonus_proficiencies"}},
+            {bard_spells, asi}
+        }, true);
+        const std::vector<std::string> cleric_spells{"bless", "guiding_bolt", "shield_of_faith"};
+        attained_levels("cleric", {
+            {cleric_spells, {"feature:spellcasting"}},
+            {cleric_spells, {"feature:channel_divinity"}},
+            {cleric_spells, {"subclass:life", "feature:disciple_of_life", "feature:preserve_life"}},
+            {cleric_spells, asi}
+        }, true);
+        attained_levels("druid", {
+            {{"longstrider", "protection_from_evil_and_good"}, {"feature:spellcasting"}},
+            {{"wild_shape_wolf"}, {"feature:wild_shape"}},
+            {{"wild_shape_wolf"}, {"subclass:land", "feature:circle_spells", "feature:lands_aid"}},
+            {{"wild_shape_wolf"}, asi}
+        }, true);
+        attained_levels("monk", {
+            {{}, {"feature:unarmored_defense"}},
+            {{"flurry_of_blows"}, {"feature:monks_focus", "feature:uncanny_metabolism"}},
+            {
+                {"flurry_of_blows"},
+                {"subclass:open_hand", "feature:deflect_attacks", "feature:open_hand_technique"}
+            },
+            {{"flurry_of_blows"}, asi}
+        }, true);
+        attained_levels("paladin", {
+            {{"divine_smite"}, {"feature:spellcasting"}},
+            {{"divine_smite", "shield_of_faith", "lay_on_hands"}, {"feature:fighting_style"}},
+            {{"sacred_weapon"}, {"subclass:devotion", "feature:channel_divinity", "feature:sacred_weapon"}},
+            {{"sacred_weapon"}, asi}
+        }, true);
+        const std::vector<std::string> mark{"hunters_mark_free", "hunters_mark"};
+        attained_levels("ranger", {
+            {mark, {"feature:spellcasting"}},
+            {mark, {"feature:fighting_style"}},
+            {mark, {"subclass:hunter", "feature:hunters_lore", "prey:colossus_slayer"}},
+            {mark, asi}
+        }, true);
+        attained_levels("rogue", {
+            {{}, {"feature:sneak_attack"}},
+            {{"cunning_dash", "cunning_disengage"}, {"feature:cunning_action"}},
+            {{"steady_aim"}, {"subclass:thief", "feature:fast_hands", "feature:steady_aim"}},
+            {{"steady_aim"}, asi}
+        }, true);
+        attained_levels("sorcerer", {
+            {{"innate_sorcery"}, {"feature:innate_sorcery"}},
+            {{"innate_sorcery"}, {"feature:font_of_magic", "feature:metamagic"}},
+            {
+                {"innate_sorcery"},
+                {"subclass:draconic", "feature:draconic_resilience", "feature:draconic_spells"}
+            },
+            {{"innate_sorcery"}, asi}
+        }, true);
+        const std::vector<std::string> warlock_spells{"protection_from_evil_and_good",
+                                                      "expeditious_retreat", "hold_person"};
+        attained_levels("warlock", {
+            {warlock_spells, {"feature:pact_magic", "spell:eldritch_blast"}},
+            {warlock_spells, {"feature:magical_cunning"}},
+            {warlock_spells, {"subclass:fiend", "feature:dark_ones_blessing", "feature:fiend_spells"}},
+            {warlock_spells, asi}
+        }, true);
     }
     catch (const std::exception &error)
     {
