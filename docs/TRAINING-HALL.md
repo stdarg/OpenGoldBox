@@ -4,7 +4,7 @@ Pool of Radiance levels characters up only at New Phlan's training halls. In
 OpenGoldBox, characters advance from the party roster's Advance button
 anywhere. This page records what the original game does and the decisions
 needed before [#9](https://github.com/stdarg/OpenGold/issues/9) can implement
-it. Nothing here is implemented or approved yet.
+it. The decisions below are approved; nothing is implemented yet.
 
 ## What the original does
 
@@ -32,32 +32,39 @@ it. Nothing here is implemented or approved yet.
 - **Level limits.** The manual gives Phlan's highest levels: fighter 8,
   thief 9, cleric and magic-user 6. OpenGoldBox stops at level 4 for now.
 
-## Decisions needed
+## Decisions (2026-10-13)
 
-1. **Which hall trains each SRD class?** A proposal following AD&D 2nd
-   edition's class groups:
+1. **Halls by class**, following AD&D 2nd edition's class groups:
    - Fighters: Fighter, Barbarian, Paladin, Ranger.
    - Clerics: Cleric, Druid.
    - Magic-users: Wizard, Sorcerer, Warlock.
    - Thieves: Rogue, Bard, Monk.
-2. **Does training replace the roster's Advance button**, as in the original,
-   or sit beside it? If it replaces it, should the Character Pool and party
-   creation still allow training "at the start of an adventure"?
-3. **Cost.** 1,000 gp per level, from the trainee's own purse (the original),
-   or from any member as the inn's payment works?
-4. **Experience after training.** Clamp to just below the next threshold, as
-   the original did, or keep the SRD's running total?
-5. **Controls.** The original shows its party creation menu. A proposal is the
-   party roster with Train in place of Advance, so only members of the hall's
-   classes who have the experience and the gold can train. Screenshots of
-   this would come before any code.
+2. **Levels are gained anywhere.** The roster's Advance button stays, as in
+   other D&D games. This departs from the original. The halls instead grant
+   experience and train skills.
+3. **Gold belongs to the party**, not to a character. The original's
+   per-character purses, pooled for party purchases, are not kept. Every
+   payment, the halls' included, comes from the party's gold.
+4. **Experience is kept.** Training does not clamp it, unlike the original.
+5. **Controls.** The party roster, with the halls' services beside Advance.
+   Screenshots of each state come before any code.
 
-## What the answers unlock
+## Still open
+
+- **Experience.** What a hall's experience costs, how much it grants and how
+  often it can be bought.
+- **Skills.** Which skills a hall teaches (its classes' skill lists?), at what
+  cost, and how many a character can learn.
+- **Party gold.** Replacing per-character purses touches shops, the temple,
+  the inn, loot, the original scripts' money checks and the save format. It
+  comes before the halls, since they spend the party's gold.
+
+## What the decisions unlock
 
 `PROGRAM 0` as a supported service:
 
-- It opens the existing level-up dialog for an eligible member and charges
-  the fee only when the level is confirmed.
-- Cancel, an ineligible member or too little gold change nothing.
+- It opens the roster for the hall's services. A service is charged only when
+  confirmed.
+- Cancel, a member of another hall's class or too little gold change nothing.
 - The script then resumes, as the temple and inn services already do.
 - Training and payments are saved like other campaign state ([#10](https://github.com/stdarg/OpenGold/issues/10)).
