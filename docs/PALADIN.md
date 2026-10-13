@@ -47,9 +47,8 @@ English and Spanish).
 - At level two the Fighting Style dropdown also offers **Blessed Warrior**
   instead of a Fighting Style feat. The Paladin learns two Cleric cantrips,
   cast with Charisma, chosen on the level-up Spell Choices page ("Blessed
-  Warrior cantrips"). Sacred Flame is the only Cleric cantrip in the game so
-  far, so the second choice stays pending until another arrives; replacing one
-  on later Paladin levels waits for it too.
+  Warrior cantrips"). Replacing one on later Paladin levels is not offered yet
+  (the shared level-up replacement gap).
 - Changing the style on the first page drops the cantrip picks with it.
 - A new rules call, `spell_choice_sheet`, gives the level-up page the sheet
   with the chosen style, so the page offers exactly what the level-up applies.

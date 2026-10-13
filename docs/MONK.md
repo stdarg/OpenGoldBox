@@ -43,8 +43,11 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
   Level 4 brings a feat or ability points. Slow Fall is dropped
   (SRD-DECISIONS).
 - Verification: `opengold_monk_tests` (the grants, four Focus and 40 feet at
-  level 4, Flurry of Blows, Step of the Wind, Patient Defense's Dodge, Uncanny
-  Metabolism at Initiative), `opengold_archery_tests` (Monks advance).
+  level 4, Flurry of Blows, Step of the Wind free and with a Focus Point (Dash
+  and Disengage), Patient Defense free (no Dodge) and with a Focus Point (Dodge),
+  no Focus option at 0 Focus, a Shield taking away Unarmored Movement, Uncanny
+  Metabolism at Initiative and once per Long Rest), `opengold_archery_tests`
+  (Monks advance).
 
 ## Deflect Attacks and Open Hand Technique (level 3)
 
@@ -71,5 +74,6 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
 - The computer always deflects and redirects when it can.
 - Verification: `opengold_monk_tests` (the question and its checkpoint,
   Deflect's Reaction, the redirect question and its checkpoint, the redirect's
-  Focus Point and save, Decline, Topple), `opengold_wizard_spell_tests` (Shield
+  Focus Point and save, Decline; Topple, Addle stopping Opportunity Attacks and
+  Push's 15 feet), `opengold_wizard_spell_tests` (Shield
   still asked).

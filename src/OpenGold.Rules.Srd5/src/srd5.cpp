@@ -10567,7 +10567,7 @@ class Module final : public RulesModule
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
         if (klass == CharacterClass::rogue && result.level >= 3)
             result.description =
-                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide and weapon mastery remain unavailable.";
+                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
         if (klass == CharacterClass::paladin)
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";

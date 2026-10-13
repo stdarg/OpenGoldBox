@@ -341,6 +341,124 @@ void open_hand_checks()
     throw std::runtime_error("No seed topples the enemy");
 }
 
+// Ends turns until the Monk acts again.
+void next_monk_turn(CombatSession &c)
+{
+    check(submit(c, "end"), "End the Monk's turn");
+    for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(c, "end"), "End a turn");
+    check(c.snapshot().actor == 1, "The Monk acts again");
+}
+
+// The free Patient Defense only Disengages; Step of the Wind with a Focus Point
+// Disengages and Dashes; Focus options wait for a Focus Point.
+void focus_option_checks()
+{
+    auto module = rules();
+    {
+        auto c = battle(*module, monk(2));
+        check(submit(*c, "patient_defense") && focus_left(*c) == 2 &&
+              logged(*c, "Monk uses Patient Defense."),
+              "The free Patient Defense spends no Focus Point");
+        check(submit(*c, "end") && submit(*c, "melee", 1) && !logged(*c, "(disadvantage)"),
+              "Without a Focus Point there is no Dodge");
+    }
+    {
+        auto c = battle(*module, monk(2));
+        const int feet = unit(*c, 1).movement_feet;
+        check(submit(*c, "step_of_the_wind_focus") && focus_left(*c) == 1 &&
+              unit(*c, 1).movement_feet == 2 * feet,
+              "Step of the Wind with a Focus Point Dashes");
+        Command away;
+        for (const auto &command : c->legal_commands())
+            if (command.verb == "move" && command.destination == Cell{0, 1})
+                away = command;
+        check(c->submit(away) && !c->snapshot().reaction_pending && attack_lines(*c).empty(),
+              "and Disengages: leaving the enemy's reach provokes nothing");
+    }
+    {
+        auto c = battle(*module, monk(2));
+        check(submit(*c, "flurry_of_blows", 98) && focus_left(*c) == 1, "One Flurry");
+        next_monk_turn(*c);
+        check(submit(*c, "flurry_of_blows", 98) && focus_left(*c) == 0, "A second Flurry");
+        next_monk_turn(*c);
+        const auto saved = c->save();
+        check(!offered(*c, "flurry_of_blows") && !offered(*c, "patient_defense_focus") &&
+              !offered(*c, "step_of_the_wind_focus") && offered(*c, "patient_defense") &&
+              !submit(*c, "flurry_of_blows", 98) && c->save() == saved,
+              "With no Focus Point left only the free options are offered");
+    }
+}
+
+// Unarmored Movement needs no Shield; Uncanny Metabolism is once per Long Rest.
+void movement_and_metabolism_checks()
+{
+    auto module = rules();
+    check(battle(*module, monk(4))->snapshot().combatants.front().movement_feet == 40 &&
+          unit(*battle(*module, monk(4), {"shield"}), 1).movement_feet == 30,
+          "A Shield takes away Unarmored Movement");
+    auto c = hurt_battle(*module, monk(2));
+    check(submit(*c, "uncanny_metabolism"), "Uncanny Metabolism is used");
+    auto vitals = unit(*c, 1).persistent;
+    vitals.hit_points -= 5;
+    const auto profile = module->character_profile(monk(2).sheet(), std::vector<std::string> {}).data;
+    Participant again{1, "campaign-character", "Monk", Side::party, {1, 1}, profile};
+    again.state = vitals;
+    auto later = module->create({{12, 6, std::vector<Terrain>(72)},
+        {again, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, 5);
+    check(!offered(*later, "uncanny_metabolism"),
+          "Uncanny Metabolism is not offered again before a Long Rest");
+}
+
+// Open Hand Technique: Addle stops the target's Opportunity Attacks; Push
+// shoves it 15 feet on a failed Strength save.
+void open_hand_option_checks()
+{
+    auto module = rules();
+    const auto leave = [](CombatSession &c)
+    {
+        for (const auto &command : c.legal_commands())
+            if (command.verb == "move" && command.destination == Cell{0, 1})
+                return c.submit(command);
+        return false;
+    };
+    bool addled = false, pushed = false;
+    for (std::uint64_t seed = 1; seed < 64 && !(addled && pushed); ++seed)
+    {
+        if (!addled)
+        {
+            auto c = battle(*module, monk(3), {}, seed);
+            check(submit(*c, "flurry_addle", 98), "Flurry of Blows with Addle");
+            if (logged(*c, "Enemy is addled."))
+            {
+                const auto before = attack_lines(*c).size();
+                check(leave(*c) && attack_lines(*c).size() == before,
+                      "An addled enemy makes no Opportunity Attack");
+                auto plain = battle(*module, monk(3), {}, seed);
+                const auto plain_before = attack_lines(*plain).size();
+                // A provoked attack may first ask the Monk about Deflect Attacks.
+                check(submit(*plain, "flurry_of_blows", 98) && leave(*plain) &&
+                      (plain->snapshot().reaction_pending ||
+                       attack_lines(*plain).size() > plain_before + 2),
+                      "Without Addle, leaving its reach provokes one");
+                addled = true;
+            }
+        }
+        if (!pushed)
+        {
+            auto c = battle(*module, monk(3), {}, seed);
+            check(submit(*c, "flurry_push", 98), "Flurry of Blows with Push");
+            if (logged(*c, "Enemy is pushed 15 feet."))
+            {
+                check(logged(*c, "Enemy Strength save") && unit(*c, 98).cell == Cell{5, 1},
+                      "Push shoves the enemy 15 feet after a failed Strength save");
+                pushed = true;
+            }
+        }
+    }
+    check(addled && pushed, "Some seed addles and some pushes the enemy");
+}
+
 } // namespace
 
 int main()
@@ -355,6 +473,9 @@ int main()
         metabolism_checks();
         deflect_checks();
         open_hand_checks();
+        focus_option_checks();
+        movement_and_metabolism_checks();
+        open_hand_option_checks();
         std::cout << "Monk tests passed\n";
     }
     catch (const std::exception &e)

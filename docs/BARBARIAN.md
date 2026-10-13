@@ -46,5 +46,8 @@ Unarmored Defense came earlier; see [Armor](ARMOR.md).
 - A third Rage at level 3; a third Weapon Mastery and a feat or ability points
   at level 4.
 - Verification: `opengold_barbarian_tests` (the grants at each level, three
-  Rages, Reckless Attack's Advantage both ways, Frenzy's damage),
+  Rages, Reckless Attack's Advantage both ways, Reckless lasting until the next
+  turn and through a checkpoint, Danger Sense's Advantage on Dexterity saves and
+  its loss while Incapacitated, Primal Knowledge refusing a held, foreign or
+  unknown skill without change, Frenzy's damage),
   `opengold_archery_tests` (Barbarians advance).

@@ -1,18 +1,21 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 using namespace opengold;
 using namespace opengold::rules;
+namespace fx = opengold::srd5::detail;
 
 namespace
 {
@@ -270,6 +273,127 @@ void reckless_checks()
     "Attacks against a reckless Barbarian have Advantage");
 }
 
+// Reckless lasts until the start of the Barbarian's next turn and survives a
+// checkpoint.
+void reckless_duration_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, barbarian(2));
+    const auto reckless = [&]
+    {
+        const auto conditions = unit(*c, 1).conditions;
+        return std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
+        {
+            return condition.source == "Reckless";
+        });
+    };
+    check(submit(*c, "reckless", 98) && reckless(), "Attacking recklessly makes the Barbarian Reckless");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "Reckless survives a checkpoint");
+    reach(*c, 98);
+    check(reckless(), "Reckless lasts through the enemy's turn");
+    reach(*c, 1);
+    check(!reckless(), "Reckless ends at the start of the Barbarian's next turn");
+}
+
+// An enemy Cleric casts Sacred Flame at the Barbarian, who rolls a Dexterity
+// save; returns its natural roll. `incapacitated` laughs it helplessly first.
+int danger_save(const RulesModule &module, const Character &hero, std::uint64_t seed,
+                bool incapacitated)
+{
+    CharacterDraft d;
+    d.race = "orc";
+    d.gender = "female";
+    d.character_class = "cleric";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Foe";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.cantrips = {"sacred_flame"};
+    d.spells = SpellChoices{{}, std::vector<std::string> {"cure_wounds"}, {}, {}};
+    const Character foe(*srd5::character_rules(), d, {});
+    Encounter e{{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Barbarian", Side::party, {1, 1},
+                module.character_profile(hero.sheet(), std::vector<std::string> {"greataxe"}).data},
+            {98, "campaign-character", "Foe", Side::opposition, {6, 1},
+             module.character_profile(foe.sheet(), {}).data}
+        }};
+    if (incapacitated)
+    {
+        auto vitals = unit(*module.create(e, seed), 1).persistent;
+        const auto at = vitals.resources.find("FX8");
+        std::istringstream in(vitals.resources.substr(at));
+        auto effects = fx::read_effects(in);
+        fx::apply_repeating_condition(effects, fx::EffectKind::laughing, {.scope = 7, .actor = 98},
+                                      "Foe", {.dc = 38, .first_save_ms = 6000});
+        std::ostringstream out;
+        fx::write_effects(out, effects);
+        vitals.resources.replace(at, std::string::npos, out.str());
+        e.participants[0].state = vitals;
+    }
+    auto c = module.create(e, seed);
+    for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the Cleric's turn");
+    check(submit(*c, "sacred_flame", 1), "The Cleric casts Sacred Flame at the Barbarian");
+    for (const auto &line : c->snapshot().log())
+        if (const auto at = line.find("Barbarian Dexterity save: d20 "); at != std::string::npos)
+            return std::stoi(line.substr(at + 30));
+    throw std::runtime_error("No Dexterity save in the log");
+}
+
+// Danger Sense: Advantage on Dexterity saves, unless Incapacitated. With the
+// same rolls, Advantage keeps the first die or a higher second one.
+void danger_sense_checks()
+{
+    auto module = rules();
+    const auto first = barbarian(1), second = barbarian(2);
+    bool higher = false;
+    for (std::uint64_t seed = 1; seed <= 24; ++seed)
+    {
+        const int plain = danger_save(*module, first, seed, false),
+                  sensed = danger_save(*module, second, seed, false);
+        check(sensed >= plain, "Danger Sense never lowers a Dexterity save");
+        higher |= sensed > plain;
+        check(danger_save(*module, second, seed, true) == danger_save(*module, first, seed, true),
+              "An Incapacitated Barbarian has no Danger Sense");
+    }
+    check(higher, "Danger Sense gives Advantage on Dexterity saves");
+}
+
+// Primal Knowledge is one of its six skills the Barbarian does not already have;
+// a refused choice changes nothing.
+void primal_knowledge_checks()
+{
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(barbarian(2));
+    party.award_experience(900, "primal:level");
+    const auto before = party.member(id).character.sheet();
+    for (const auto *skill : {"athletics", "arcana", "unknown"})
+    {
+        auto choice = party.default_advancement(id);
+        choice.training["class:barbarian:primal_knowledge"] = {skill};
+        bool refused = false;
+        try
+        {
+            party.advance(id, choice);
+        }
+        catch (const std::exception &)
+        {
+            refused = true;
+        }
+        check(refused && party.member(id).character.sheet().level == 2 &&
+              party.member(id).character.sheet().grants == before.grants,
+              "A held, foreign or unknown Primal Knowledge skill is refused");
+    }
+    auto choice = party.default_advancement(id);
+    choice.training["class:barbarian:primal_knowledge"] = {"survival"};
+    party.advance(id, choice);
+    check(has_grant(party.member(id).character, "skill:survival", "class:barbarian:primal_knowledge"),
+          "Survival is learned through Primal Knowledge");
+}
+
 void frenzy_checks()
 {
     auto module = rules();
@@ -297,6 +421,9 @@ int main()
         heavy_armor_checks();
         advancement_checks();
         reckless_checks();
+        reckless_duration_checks();
+        danger_sense_checks();
+        primal_knowledge_checks();
         frenzy_checks();
         std::cout << "Barbarian tests passed\n";
     }
