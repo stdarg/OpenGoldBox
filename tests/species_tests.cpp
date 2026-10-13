@@ -1,5 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
+#include "opengold/dice.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
 #include <algorithm>
@@ -213,6 +214,49 @@ void orc_checks()
     (void)id;
 }
 
+// Halfling Luck: a d20 that shows 1 is rolled again. Across many fights a
+// Halfling's attack never stands on a natural 1, and the log says when Luck
+// rerolled one; a Human with the same rolls does roll 1s.
+void halfling_checks()
+{
+    // The roll itself.
+    std::uint64_t seed = 0;
+    for (;; ++seed)
+    {
+        auto probe = seed;
+        if (opengold::roll_die(probe, 20) == 1)
+            break;
+    }
+    auto plain = seed, lucky = seed;
+    bool rerolled = false;
+    check(fx::d20({}, plain) == 1 && fx::d20({false, false, true}, lucky, &rerolled) != 1 &&
+          rerolled, "Luck rolls a 1 again");
+
+    const auto rules = module();
+    const auto attacks = [&](const Character &hero, std::uint64_t fight)
+    {
+        auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                    rules->character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data},
+                {98, "bandit", "Bandit", Side::opposition, {2, 1}}
+            }},
+        fight);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the hero's turn");
+        check(submit(*c, "melee", 98), "The hero attacks");
+        return c;
+    };
+    bool human_one = false, luck = false;
+    for (std::uint64_t fight = 1; fight <= 120; ++fight)
+    {
+        auto halfling = attacks(fighter("halfling"), fight);
+        check(!logged(*halfling, "Hero -> Bandit: d20 1 +"), "A Halfling never keeps a natural 1");
+        luck |= logged(*halfling, "Hero rolls a 1 and rerolls it with Luck.");
+        human_one |= logged(*attacks(fighter("human"), fight), "Hero -> Bandit: d20 1 +");
+    }
+    check(luck && human_one, "Luck rerolled 1s that a Human kept");
+}
+
 } // namespace
 
 int main()
@@ -221,6 +265,7 @@ int main()
     {
         gnome_checks();
         orc_checks();
+        halfling_checks();
     }
     catch (const std::exception &error)
     {

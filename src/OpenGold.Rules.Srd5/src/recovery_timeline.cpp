@@ -28,7 +28,8 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
         {
             auto &life = subject.life.get();
             while (life.hp == 0 && !life.dead && !life.stable)
-                (void)death_save(life, rng, !healing_blocked(subject.effects.effects.get()));
+                (void)death_save(life, rng, !healing_blocked(subject.effects.effects.get()),
+                                 subject.effects.lucky);
         }
     for (auto &subject : ordered)
         start_stable_recovery(subject.life, rng);

@@ -175,6 +175,8 @@ inline constexpr std::size_t effect_limit = 128;
 struct RollModifiers
 {
     bool advantage{}, disadvantage{};
+    // Halfling Luck: a d20 that shows 1 is rolled again, and the new roll used.
+    bool lucky{};
 
     // Multiple sources never add extra dice. Opposing sources cancel.
     [[nodiscard]] int mode() const
@@ -190,9 +192,10 @@ struct SaveResult
     bool success{};
 };
 
+// `lucky_reroll`, when given, reports whether Luck rerolled a 1.
 [[nodiscard]] SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifiers,
-                                      std::uint64_t &rng);
-[[nodiscard]] int d20(RollModifiers modifiers, std::uint64_t &rng);
+                                      std::uint64_t &rng, bool *lucky_reroll = nullptr);
+[[nodiscard]] int d20(RollModifiers modifiers, std::uint64_t &rng, bool *lucky_reroll = nullptr);
 [[nodiscard]] std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class);
 
 // A source is provenance, never a borrowed Actor pointer. Scope distinguishes
@@ -224,6 +227,7 @@ struct EffectSubject
     bool dead{}, str_dex_disadvantage{}, dodge{};
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     bool mental_advantage{};
+    bool lucky{}; // Halfling Luck, for repeated saves and death saves
 };
 
 struct EffectEvent

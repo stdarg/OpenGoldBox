@@ -29,19 +29,28 @@ bool recorded(EffectSource source, const std::string &name)
 }
 } // namespace
 
-int d20(RollModifiers modifiers, std::uint64_t &rng)
+int d20(RollModifiers modifiers, std::uint64_t &rng, bool *lucky_reroll)
 {
-    const int first = roll_die(rng, 20), mode = modifiers.mode();
+    const auto die = [&]
+    {
+        const int rolled = roll_die(rng, 20);
+        if (!modifiers.lucky || rolled != 1)
+            return rolled;
+        if (lucky_reroll)
+            *lucky_reroll = true;
+        return roll_die(rng, 20);
+    };
+    const int first = die(), mode = modifiers.mode();
     if (!mode)
         return first;
-    const int second = roll_die(rng, 20);
+    const int second = die();
     return mode > 0 ? std::max(first, second) : std::min(first, second);
 }
 
 SaveResult saving_throw(Ability ability, int bonus, int dc, RollModifiers modifiers,
-                        std::uint64_t &rng)
+                        std::uint64_t &rng, bool *lucky_reroll)
 {
-    const int natural = d20(modifiers, rng);
+    const int natural = d20(modifiers, rng, lucky_reroll);
     // Ordinary saves compare totals. The special natural 1/20 death-save and
     // attack rules do not apply here. Widen before adding user-supplied values.
     return {ability, natural, bonus, dc, modifiers.mode(),
@@ -487,6 +496,7 @@ RollModifiers mental_save_modifiers(Ability ability, const EffectSubject &subjec
 {
     auto modifiers = saving_modifiers(ability, subject.str_dex_disadvantage, subject.dodge);
     modifiers.advantage |= subject.mental_advantage && mental(ability);
+    modifiers.lucky = subject.lucky;
     return modifiers;
 }
 

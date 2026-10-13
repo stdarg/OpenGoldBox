@@ -32,7 +32,9 @@ void validate_recovery(const LifeState &state);
 void validate_temporary_hp(const rules::TemporaryHitPoints &pool);
 void grant_temporary_hp(LifeState &, const rules::TemporaryHitPoints &, rules::TemporaryHpChoice);
 void stabilize(LifeState &state, std::uint64_t &rng);
-[[nodiscard]] int death_save(LifeState &state, std::uint64_t &rng, bool can_heal = true);
+// `lucky`: Halfling Luck rolls a 1 again.
+[[nodiscard]] int death_save(LifeState &state, std::uint64_t &rng, bool can_heal = true,
+                             bool lucky = false);
 // How damage at 0 HP lands: a critical hit costs two death-save failures, and a
 // creature that dies at zero makes none. Named fields keep the two apart.
 struct DamageOptions

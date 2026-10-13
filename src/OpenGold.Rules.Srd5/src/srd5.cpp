@@ -607,6 +607,7 @@ struct Definition
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
+    bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -1170,6 +1171,7 @@ character_definition(std::string_view bytes,
     d.dwarf = race == "Dwarf";
     d.gnomish_cunning = race == "Gnome";
     d.relentless = race == "Orc";
+    d.lucky = race == "Halfling";
     // Gnomes and Halflings are Small.
     if (race == "Gnome" || race == "Halfling")
         d.size = 1;
@@ -1752,7 +1754,8 @@ class Session final : public CombatSession
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
             a.initiative =
-                detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised}, rng_) +
+                detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised, d.lucky},
+                            rng_) +
                 d.initiative;
             a.movement = d.speed;
             actors_.push_back(std::move(a));
@@ -2253,6 +2256,8 @@ class Session final : public CombatSession
     unsigned next_save_ms(EntityId target) const;
     unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
+    // Halfling Luck, logged when it rerolled a 1 (automatic, as AUTO-1).
+    void log_luck(const Actor &a, bool rerolled);
     void log_save(const Actor &target, const detail::SaveResult &result);
     // `advantage` is a feature's own Advantage, such as a Large creature against
     // Ensnaring Strike; conditions and armor are applied here.
@@ -6412,7 +6417,7 @@ void Session::escape_ensnaring(Actor &a)
     });
     const auto vines = *found;
     const bool advantage = rage_of(a) || def(a).champion;
-    const int natural = detail::d20({advantage}, rng_);
+    const int natural = detail::d20({advantage, false, def(a).lucky}, rng_);
     const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                       guidance_bonus(a, "athletics");
     const bool escaped = natural + bonus >= vines.dc;
@@ -6832,6 +6837,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         else
             result.disadvantage = true;
     }
+    result.lucky = d.lucky;
     return result;
 }
 
@@ -7088,7 +7094,9 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         return e.kind == detail::EffectKind::guiding_bolt;
     });
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
-    int natural = detail::d20(modifiers, rng_);
+    bool lucky_reroll = false;
+    int natural = detail::d20(modifiers, rng_, &lucky_reroll);
+    log_luck(a, lucky_reroll);
     end_invisibility(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
@@ -7808,7 +7816,8 @@ bool Session::begin_turn()
     {
         if (!a.life.stable)
         {
-            const int result = detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects));
+            const int result =
+                detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects), def(a).lucky);
             log(a.source.name + " death save: " + std::to_string(result),
             {
                 "{name} death save: {roll}",
@@ -7902,6 +7911,13 @@ unsigned Session::next_save_ms(EntityId target) const
     return end > start ? end - start : detail::round_ms - start + end;
 }
 
+void Session::log_luck(const Actor &a, bool rerolled)
+{
+    if (rerolled)
+        log(a.source.name + " rolls a 1 and rerolls it with Luck.",
+        {"{name} rolls a 1 and rerolls it with Luck.", {{"name", a.source.name}}});
+}
+
 void Session::log_save(const Actor &target, const detail::SaveResult &result)
 {
     constexpr std::array names{"Strength",     "Dexterity", "Constitution",
@@ -7990,9 +8006,12 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged) ||
                                rage_of(target);
     }
+    modifiers.lucky = def(target).lucky;
+    bool lucky_reroll = false;
     auto result = detail::saving_throw(
                       ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
-                      modifiers, rng_);
+                      modifiers, rng_, &lucky_reroll);
+    log_luck(target, lucky_reroll);
     log_save(target, result);
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
@@ -8018,7 +8037,7 @@ void Session::advance_turn_time()
         subjects.push_back(
         {
             {   a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
-                def(a).gnomish_cunning
+                def(a).gnomish_cunning, def(a).lucky
             },
             a.life});
         if (a.life.hp == 0)
@@ -8613,7 +8632,8 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "stabilize")
     {
-        PendingCheck check{a.source.id, command.target, detail::d20({}, rng_), a.actions.surge};
+        PendingCheck check{a.source.id, command.target, detail::d20({false, false, d.lucky}, rng_),
+                           a.actions.surge};
         check.guidance = guidance_bonus(a, "medicine");
         a.nick_origin = 0;
         a.actions.spend();
@@ -11335,7 +11355,8 @@ class Module final : public RulesModule
         for (auto &a : actors)
             subjects.push_back({{
                 a.source.id, a.effects, a.definition.saves, a.life.dead,
-                a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning
+                a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning,
+                a.definition.lucky
             },
             a.life});
         auto rng = random_state.value;
@@ -11525,7 +11546,8 @@ class Module final : public RulesModule
             // As after a victory, the dying member's saves are rolled at once.
             while (actor.life.hp == 0 && !actor.life.dead && !actor.life.stable)
                 result.death_saves.push_back(
-                    detail::death_save(actor.life, rng, !detail::healing_blocked(actor.effects)));
+                    detail::death_save(actor.life, rng, !detail::healing_blocked(actor.effects),
+                                       actor.definition.lucky));
         }
         state = vitals(actor);
         random_state.value = rng;
@@ -11915,14 +11937,10 @@ class Module final : public RulesModule
                                         RandomState &random_state) const override
     {
         const auto modifier = ability_check(sheet, gear, ability, skill);
+        const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
         auto rng = random_state.value;
-        int die = roll_die(rng, 20);
         // Advantage and Disadvantage cancel; either alone rolls a second d20.
-        if (modifier.advantage != modifier.disadvantage)
-        {
-            const int second = roll_die(rng, 20);
-            die = modifier.advantage ? std::max(die, second) : std::min(die, second);
-        }
+        const int die = detail::d20({modifier.advantage, modifier.disadvantage, lucky}, rng);
         random_state.value = rng;
         return {die, die + modifier.total};
     }
@@ -12446,7 +12464,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.165", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.166", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

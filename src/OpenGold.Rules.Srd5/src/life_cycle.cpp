@@ -76,11 +76,13 @@ void stabilize(LifeState &state, std::uint64_t &rng)
     start_stable_recovery(state, rng);
 }
 
-int death_save(LifeState &state, std::uint64_t &rng, bool can_heal)
+int death_save(LifeState &state, std::uint64_t &rng, bool can_heal, bool lucky)
 {
     if (state.hp != 0 || state.dead || state.stable)
         throw std::runtime_error("Death save requires an unstable living creature at zero HP");
-    const int natural = roll_die(rng, 20);
+    int natural = roll_die(rng, 20);
+    if (lucky && natural == 1)
+        natural = roll_die(rng, 20);
     state.recovery.death_save_in_ms = death_turn_ms;
     if (natural == 20 && can_heal)
     {
