@@ -219,7 +219,7 @@ msgstr "Acolyte background"
 msgid "Acrobatics"
 msgstr "Acrobatics"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:194
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:198
 msgid "Action"
 msgstr "Action"
 
@@ -365,15 +365,15 @@ msgstr "Alert: add proficiency to Initiative; optionally swap Initiative with an
 msgid "Alignment"
 msgstr "Alignment"
 
-#: src/OpenGoldBox/portrait_picker.cpp:27
+#: src/OpenGoldBox/portrait_picker.cpp:28
 msgid "All classes"
 msgstr "All classes"
 
-#: src/OpenGoldBox/portrait_picker.cpp:27
+#: src/OpenGoldBox/portrait_picker.cpp:28
 msgid "All genders"
 msgstr "All genders"
 
-#: src/OpenGoldBox/portrait_picker.cpp:27
+#: src/OpenGoldBox/portrait_picker.cpp:28
 msgid "All races"
 msgstr "All races"
 
@@ -898,7 +898,7 @@ msgstr "Chaotic Neutral"
 msgid "Character"
 msgstr "Character"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:229
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:237
 msgid "Character Pool"
 msgstr "Character Pool"
 
@@ -2731,7 +2731,7 @@ msgstr "Load character"
 msgid "Load combat"
 msgstr "Load combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:249 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:629 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
+#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:257 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:629 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
 msgid "Load game"
 msgstr "Load game"
 
@@ -2836,7 +2836,7 @@ msgstr "Main hand"
 msgid "Main hand — {item}"
 msgstr "Main hand — {item}"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:259
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:267
 msgid "Make leader"
 msgstr "Make leader"
 
@@ -3190,10 +3190,6 @@ msgstr "OPENGOLDBOX  /  Rolf's welcome"
 msgid "OPENGOLDBOX  /  {district}"
 msgstr "OPENGOLDBOX  /  {district}"
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:28
-msgid "OPENGOLDBOX / Party roster"
-msgstr "OPENGOLDBOX / Party roster"
-
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Ogre"
 msgstr "Ogre"
@@ -3373,6 +3369,10 @@ msgstr "Party combat preview. HP and spent resources carry back to the party."
 #: src/OpenGoldBox/combat_view.cpp:1931
 msgid "Party incapacitated / defeat"
 msgstr "Party incapacitated / defeat"
+
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:28
+msgid "Party roster"
+msgstr "Party roster"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Party training"
@@ -3635,7 +3635,7 @@ msgstr "Race / {race}"
 msgid "Race Selection"
 msgstr "Race Selection"
 
-#: src/OpenGoldBox/portrait_picker.cpp:54
+#: src/OpenGoldBox/portrait_picker.cpp:76
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Race: {race}\nClass: {class}\nGender: {gender}"
 msgstr "Race: {race}\nClass: {class}\nGender: {gender}"
@@ -3743,7 +3743,7 @@ msgstr "Ray of Sickness (level 2 slot)"
 msgid "Read the encounter text, then Continue."
 msgstr "Read the encounter text, then Continue."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:183
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:185
 msgid "Ready"
 msgstr "Ready"
 
@@ -4096,7 +4096,7 @@ msgstr "Save character"
 msgid "Save combat"
 msgstr "Save combat"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:239 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:619 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
+#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:619 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
 msgid "Save game"
 msgstr "Save game"
 

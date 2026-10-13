@@ -30,6 +30,9 @@ class PortraitCatalog
         return portraits_;
     }
 
+    // Whether a catalog value names the same race, gender or class as a
+    // draft's id, ignoring case, spaces, hyphens and underscores.
+    [[nodiscard]] static bool same(const std::string &catalog_value, const std::string &draft_value);
     // The portrait best matching the draft's race, then gender, then class.
     [[nodiscard]] std::string recommended(const opengold::rules::CharacterDraft &draft) const;
     // One of the portraits of the draft's race and gender, the `pick`th modulo

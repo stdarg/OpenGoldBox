@@ -73,6 +73,11 @@ PortraitCatalog PortraitCatalog::load()
     return result;
 }
 
+bool PortraitCatalog::same(const std::string &catalog_value, const std::string &draft_value)
+{
+    return normalized(catalog_value) == normalized(draft_value);
+}
+
 std::string PortraitCatalog::recommended(const opengold::rules::CharacterDraft &draft) const
 {
     const Portrait *best = &portraits_.front();

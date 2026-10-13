@@ -54,7 +54,8 @@ class CharacterCreationView : public godot::Control
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};
     unsigned drag_check_stage_{}, modal_check_stage_{};
-    bool ready_{}, refreshing_{}, checking_{}, portrait_check_{}, capture_{}, fatal_{}, portrait_chosen_{};
+    bool ready_{}, refreshing_{}, checking_{}, portrait_check_{}, capture_{}, fatal_{}, portrait_chosen_{},
+         on_portrait_page_{};
     void layout();
     void refresh();
     void refresh_art();
@@ -68,6 +69,7 @@ class CharacterCreationView : public godot::Control
     std::vector<std::size_t> filtered_portraits_;
     void load_portraits();
     void refresh_portraits();
+    void match_portrait_filters();
     void portrait_filter_selected(std::int64_t index);
     void perform(const std::function<void()> &action);
     void next();

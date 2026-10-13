@@ -25,7 +25,7 @@ offset_right = -24
 offset_bottom = 62
 metadata/layout_reference = Rect2(24, 22, 1872, 40)
 theme_type_variation = &"LabelText28"
-text = "OPENGOLDBOX / Party roster"
+text = "Party roster"
 autowrap_mode = 2
 
 [node name="Roster" type="ItemList" parent="."]
@@ -46,9 +46,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 350
 offset_top = 90
-offset_right = -300
+offset_right = -636
 offset_bottom = -290
-metadata/layout_reference = Rect2(350, 90, 1270, 700)
+metadata/layout_reference = Rect2(350, 90, 934, 700)
 theme_type_variation = &"RichTextLabelTableGap16Text18"
 
 [node name="Inventory" type="ItemList" parent="."]
@@ -57,18 +57,18 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 350
 offset_top = -280
-offset_right = -24
+offset_right = -636
 offset_bottom = -184
-metadata/layout_reference = Rect2(350, 800, 1546, 96)
+metadata/layout_reference = Rect2(350, 800, 934, 96)
 
 [node name="Portrait" type="TextureRect" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -284
+offset_left = -620
 offset_top = 90
 offset_right = -20
-offset_bottom = 354
-metadata/layout_reference = Rect2(1636, 90, 264, 264)
+offset_bottom = 690
+metadata/layout_reference = Rect2(1300, 90, 600, 600)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
@@ -175,33 +175,39 @@ text = "Saving Throws"
 [node name="ReadyLabel" type="Label" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -284
-offset_top = 488
-offset_right = -164
-offset_bottom = 512
-metadata/layout_reference = Rect2(1636, 488, 120, 24)
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -530
+offset_top = -156
+offset_right = -410
+offset_bottom = -132
+metadata/layout_reference = Rect2(1390, 924, 120, 24)
 text = "Ready"
 horizontal_alignment = 1
 
 [node name="ActionLabel" type="Label" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -140
-offset_top = 488
-offset_right = -20
-offset_bottom = 512
-metadata/layout_reference = Rect2(1780, 488, 120, 24)
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -230
+offset_top = -156
+offset_right = -110
+offset_bottom = -132
+metadata/layout_reference = Rect2(1690, 924, 120, 24)
 text = "Action"
 horizontal_alignment = 1
 
 [node name="ReadySprite" type="TextureRect" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -284
-offset_top = 364
-offset_right = -164
-offset_bottom = 484
-metadata/layout_reference = Rect2(1636, 364, 120, 120)
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -530
+offset_top = -280
+offset_right = -410
+offset_bottom = -160
+metadata/layout_reference = Rect2(1390, 800, 120, 120)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
@@ -209,11 +215,13 @@ texture_filter = 1
 [node name="ActionSprite" type="TextureRect" parent="."]
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -140
-offset_top = 364
-offset_right = -20
-offset_bottom = 484
-metadata/layout_reference = Rect2(1780, 364, 120, 120)
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -230
+offset_top = -280
+offset_right = -110
+offset_bottom = -160
+metadata/layout_reference = Rect2(1690, 800, 120, 120)
 expand_mode = 1
 stretch_mode = 5
 texture_filter = 1

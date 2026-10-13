@@ -1417,7 +1417,28 @@ void CharacterCreationView::check_run()
     if (on_portraits && check_head_ < portraits_->entries().size())
     {
         if (check_head_ == 0)
+        {
+            // Arriving here, the filters show the character's gender and race,
+            // of every class; the walk below clears them to step through all.
+            const auto &d = creator_->draft();
+            if (filtered_portraits_.empty() ||
+                    required_node<OptionButton>(*this, "PortraitClass").get_selected() != 0)
+                throw std::runtime_error("Portrait filters must start at the character's gender and race");
+            for (const auto index : filtered_portraits_)
+            {
+                const auto &shown = portraits_->entries().at(index);
+                if (!PortraitCatalog::same(shown.gender, d.gender) ||
+                        !PortraitCatalog::same(shown.race, d.race))
+                    throw std::runtime_error("Portrait filters must start at the character's gender and race");
+            }
+            for (const auto *name : {"PortraitGender", "PortraitRace"})
+            {
+                auto *filter = &required_node<OptionButton>(*this, name);
+                filter->select(0);
+                filter->emit_signal("item_selected", 0);
+            }
             portrait_selected(0);
+        }
         const auto &p = portraits_->entries()[check_head_];
         if (creator_->appearance().portrait != p.filename || images_[0]->get_width() != 1254)
             throw std::runtime_error("Portrait navigation or full-resolution texture failed");

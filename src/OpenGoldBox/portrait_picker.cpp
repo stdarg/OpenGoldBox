@@ -6,6 +6,7 @@
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <algorithm>
 #include <set>
+#include <utility>
 #include <stdexcept>
 using namespace godot;
 using presentation::required_node;
@@ -40,8 +41,29 @@ void CharacterCreationView::load_portraits()
     }
 }
 
+// On arriving at the portrait page, the filters show portraits of the
+// character's gender and race, of every class.
+void CharacterCreationView::match_portrait_filters()
+{
+    const auto &draft = creator_->draft();
+    const std::pair<const char *, const std::string *> filters[] {
+        {"PortraitGender", &draft.gender}, {"PortraitClass", nullptr}, {"PortraitRace", &draft.race}};
+    for (const auto &[name, value] : filters)
+    {
+        auto *filter = &required_node<OptionButton>(*this, name);
+        filter->select(0);
+        for (int item = 1; value && item < filter->get_item_count(); ++item)
+            if (PortraitCatalog::same(String(filter->get_item_metadata(item)).utf8().get_data(), *value))
+                filter->select(item);
+    }
+}
+
 void CharacterCreationView::refresh_portraits()
 {
+    const bool on_page = creator_->step() == opengold::CreationStep::portrait;
+    if (on_page && !on_portrait_page_)
+        match_portrait_filters();
+    on_portrait_page_ = on_page;
     filtered_portraits_.clear();
     const auto matches = [&](const char *node, const std::string & value)
     {
