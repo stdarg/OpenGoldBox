@@ -10336,6 +10336,36 @@ class Module final : public RulesModule
                                           detail::mastery_replacements(klass)};
     }
 
+    TrainingChoiceGroup hall_training_options(const CharacterSheet &sheet,
+            std::span<const std::string> class_ids) const override
+    {
+        std::vector<detail::CharacterClass> classes;
+        for (const auto &id : class_ids)
+            classes.push_back(detail::class_from_id(id));
+        return detail::hall_training_options(sheet.grants, classes);
+    }
+
+    void train_at_hall(CharacterSheet &sheet, std::string_view grant) const override
+    {
+        const auto klass = detail::class_of(sheet);
+        auto candidate = sheet;
+        // After the last skill or Expertise grant, so a save's replay, which
+        // applies a level's spell choices first, rebuilds the same grant order.
+        const auto last_skill =
+            std::find_if(candidate.grants.rbegin(), candidate.grants.rend(), [](const auto & g)
+        {
+            return g.id.starts_with("skill:") || g.id.starts_with("expertise:");
+        });
+        candidate.grants.insert(last_skill.base(),
+                                FeatureGrant{std::string(grant), std::string(detail::hall_training),
+                                             static_cast<unsigned>(sheet.level), {}});
+        candidate.training = detail::training_profile(candidate.grants, klass,
+            detail::background_id(candidate.background),
+            candidate.level, candidate.scores);
+        (void)character_profile(candidate, {});
+        sheet = std::move(candidate);
+    }
+
     TrainingChoices replace_rest_training(CharacterSheet &sheet,
                                           std::span<const std::string> selected) const override
     {
@@ -12259,7 +12289,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.158", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.159", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

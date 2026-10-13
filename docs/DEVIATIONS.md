@@ -61,15 +61,17 @@ Add an entry whenever a new departure is decided.
 ## Advancement and training
 
 All decided 2026-10-13 and recorded in
-[TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13). The halls are not
-yet implemented ([#9](https://github.com/stdarg/OpenGold/issues/9)).
+[TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13). The halls' rules
+are implemented; their screen is not yet
+([#9](https://github.com/stdarg/OpenGold/issues/9)).
 
 - **Levels anywhere.** The original raised levels only at a training hall, for
   1,000 gp. OpenGoldBox raises them from the roster's Advance button anywhere.
 - **Halls sell experience.** One session per level grants half the experience
   to the next level, for 1,000 gp at level 1, doubling at each level.
-- **Halls train skills.** Skills from the hall's classes' lists, tools and
-  languages: proficiency 250 gp, Expertise 500 gp, one per level.
+- **Halls train skills.** Skills from the hall's classes' lists: proficiency
+  250 gp, Expertise 500 gp, one per level. Tools and languages, also
+  approved, wait on DM-1, which removed them from the game.
 - **Experience kept.** The original clamped experience to just below the next
   threshold after training. OpenGoldBox keeps it all.
 - **Hall classes.** The original's four halls train the 12 SRD classes by

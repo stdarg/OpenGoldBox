@@ -632,6 +632,90 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id)
     state_ = std::move(next);
 }
 
+ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) const
+{
+    const auto &m = member(id);
+    const auto &sheet = m.character.sheet();
+    const auto next_level = rules_->advancement_options(sheet).level;
+    ExperienceOffer offer;
+    if (next_level)
+    {
+        const auto level = next_level - 1;
+        offer.fee = experience_session_fee(level);
+        offer.experience =
+            (rules_->experience_for_level(next_level) - rules_->experience_for_level(level)) / 2;
+    }
+    const auto active = std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end();
+    if (training_hall_for_class(m.character.creation_data().character_class) != hall)
+        offer.denial = TrainingDenial::other_hall;
+    else if (!active || m.vitals.dead)
+        offer.denial = TrainingDenial::not_active;
+    else if (!next_level)
+        offer.denial = TrainingDenial::highest_level;
+    else if (m.experience >= rules_->experience_for_level(next_level))
+        offer.denial = TrainingDenial::ready_to_advance;
+    else if (m.hall_experience_level == next_level - 1)
+        offer.denial = TrainingDenial::already_trained;
+    else if (coins(state_.wealth, Coin::gold) < offer.fee)
+        offer.denial = TrainingDenial::gold;
+    return offer;
+}
+
+void CampaignParty::buy_experience(MemberId id, TrainingHall hall)
+{
+    editable();
+    outside_combat();
+    const auto offer = experience_offer(id, hall);
+    if (offer.denial != TrainingDenial::none)
+        throw std::runtime_error("The training hall cannot sell this member experience");
+    auto &m = edit(id);
+    m.experience += offer.experience;
+    m.hall_experience_level = rules_->advancement_options(m.character.sheet()).level - 1;
+    coins(state_.wealth, Coin::gold) -= offer.fee;
+}
+
+TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall hall) const
+{
+    const auto &m = member(id);
+    const auto active = std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end();
+    const auto &trained = m.character.hall_training();
+    if (training_hall_for_class(m.character.creation_data().character_class) != hall)
+        return TrainingDenial::other_hall;
+    if (!active || m.vitals.dead)
+        return TrainingDenial::not_active;
+    if (!trained.empty() &&
+            trained.back().level == static_cast<unsigned>(m.character.sheet().level))
+        return TrainingDenial::already_trained;
+    if (coins(state_.wealth, Coin::gold) < proficiency_training_fee)
+        return TrainingDenial::gold;
+    return TrainingDenial::none;
+}
+
+rules::TrainingChoiceGroup CampaignParty::skill_lessons(MemberId id, TrainingHall hall) const
+{
+    std::vector<std::string> classes;
+    for (const auto klass : hall_classes(hall))
+        classes.emplace_back(klass);
+    return rules_->hall_training_options(member(id).character.sheet(), classes);
+}
+
+void CampaignParty::train_skill(MemberId id, TrainingHall hall, const std::string &grant)
+{
+    editable();
+    const auto lessons = skill_lessons(id, hall).options;
+    const auto fee = skill_training_fee(grant);
+    if (skill_training_denial(id, hall) != TrainingDenial::none ||
+            std::none_of(lessons.begin(), lessons.end(), [&](const auto & lesson)
+    {
+        return lesson.id == grant;
+    }) || coins(state_.wealth, Coin::gold) < fee)
+        throw std::runtime_error("The training hall cannot teach this lesson");
+    auto character = member(id).character;
+    character.train_at_hall(*rules_, grant);
+    edit(id).character = std::move(character);
+    coins(state_.wealth, Coin::gold) -= fee;
+}
+
 bool CampaignParty::can_advance(MemberId id) const
 {
     if (combat_ || state_.short_rest || state_.spell_rest || state_.training_rest)

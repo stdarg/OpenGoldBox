@@ -637,7 +637,7 @@ void CharacterCreationView::party_action(PartyAction action)
         {
             if (!completed_ || added_to_party_)
                 return;
-            const auto added = campaign_->add_pc(*completed_);
+            (void)campaign_->add_pc(*completed_);
             campaign_->add_coins(Coin::gold, creator_->starting_gold());
             added_to_party_ = true;
             roster_index_ = campaign_->state().roster.size() - 1;
@@ -1253,7 +1253,7 @@ void CharacterCreationView::defeat_check()
         throw std::runtime_error("Defeat check timed out");
     if (defeat_check_stage_ == 0)
     {
-        const auto id = campaign_->add_pc(preview_guard());
+        (void)campaign_->add_pc(preview_guard());
         campaign_->add_coins(Coin::gold, 250);
         open_saves(true);
         required_node<LineEdit>(*saves, "Name").set_text(i18n::text(N_("Defeat test")));

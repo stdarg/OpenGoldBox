@@ -1454,7 +1454,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             snapshot_.choices.push_back("Cancel");
             temple_request_ = request.id;
             snapshot_.dialogue +=
-                "\nCure Wounds costs 100 gp from active party purses and heals 2d8 + 3 HP. Choose a wounded living member. Other temple services are not supported.";
+                "\nCure Wounds costs 100 gp of the party's gold and heals 2d8 + 3 HP. Choose a wounded living member. Other temple services are not supported.";
             snapshot_.diagnostic.clear();
             snapshot_.phase = TourPhase::awaiting_continue;
             snapshot_.continue_ticket = ++next_ticket_;

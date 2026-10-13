@@ -89,4 +89,14 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
     sheet_ = std::move(candidate);
     training_edits_ = std::move(history);
 }
+
+void Character::train_at_hall(const rules::RulesModule &rules, std::string grant)
+{
+    auto candidate = sheet_;
+    auto history = hall_training_;
+    rules.train_at_hall(candidate, grant);
+    history.push_back({static_cast<unsigned>(sheet_.level), std::move(grant)});
+    sheet_ = std::move(candidate);
+    hall_training_ = std::move(history);
+}
 } // namespace opengold

@@ -120,6 +120,17 @@ class ForwardingModule : public rules::RulesModule
         return rules_->training_options(sheet);
     }
 
+    rules::TrainingChoiceGroup hall_training_options(const rules::CharacterSheet &sheet,
+            std::span<const std::string> class_ids) const override
+    {
+        return rules_->hall_training_options(sheet, class_ids);
+    }
+
+    void train_at_hall(rules::CharacterSheet &sheet, std::string_view grant) const override
+    {
+        rules_->train_at_hall(sheet, grant);
+    }
+
     rules::AdvancementOptions advancement_options(const rules::CharacterSheet &sheet) const override
     {
         return rules_->advancement_options(sheet);

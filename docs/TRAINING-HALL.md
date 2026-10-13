@@ -3,8 +3,9 @@
 Pool of Radiance levels characters up only at New Phlan's training halls. In
 OpenGoldBox, characters advance from the party roster's Advance button
 anywhere. This page records what the original game does and the approved
-design for [#9](https://github.com/stdarg/OpenGold/issues/9). Nothing is
-implemented yet.
+design for [#9](https://github.com/stdarg/OpenGold/issues/9). The halls'
+rules are implemented; the screen and the original script's `PROGRAM 0` are
+not yet (see [Status](#status)).
 
 ## What the original does
 
@@ -71,9 +72,40 @@ implemented yet.
    tools and languages. Proficiency costs 250 gp and Expertise 500 gp. A
    character learns one per level.
 
+   Tools and languages were removed from the game earlier
+   ([DM-1](SRD-DECISIONS.md#dm-1-2026-09-30-tools-languages-and-dm-adjudicated-spells)),
+   so the halls teach skills and Expertise only until that decision changes.
+
 Party gold ([#232](https://github.com/stdarg/OpenGold/issues/232)) comes
 before the halls, since they spend it. These decisions are also listed in
 [DEVIATIONS.md](DEVIATIONS.md).
+
+## Status
+
+Implemented in the campaign party (`training_hall.h`, `CampaignParty`), with
+`opengold_training_hall_tests`:
+
+- **Halls.** Each class's hall, and the hall the original script names in
+  `0x982C` ("FIGHTERS ", "CLERICS ", "MAGIC USERS ", "THIEVES ").
+- **Experience.** `experience_offer` gives the fee, the experience and why a
+  member cannot buy: another hall's class, not an active living member, the
+  highest level, enough experience to advance already (advance first), already
+  bought at this level, or too little party gold. `buy_experience` is atomic.
+- **Skills.** `skill_lessons` lists proficiency in each skill on any of the
+  hall's classes' lists the character lacks (the Thieves' hall teaches the
+  Bard's whole list) and Expertise in each skill it is proficient in.
+  `train_skill` charges 250 or 500 gp of the party's gold, one lesson per level.
+- **Rules.** A lesson is a grant sourced `training_hall` at the character's
+  level. The rules reject a second lesson at a level, a lesson already held,
+  and Expertise without proficiency. A Wizard's Scholar no longer offers
+  Expertise held from another source.
+- **Saves.** Each character's lessons replay with its history, and each
+  member keeps the level of its last session. Campaign format 27, rules
+  0.6.159.
+
+Still to do: the roster's hall controls (screenshots first), and `PROGRAM 0`,
+which the original hall script runs after YES. Until then a hall's YES is
+reported as unsupported and rolled back, as before.
 
 ## What the decisions unlock
 

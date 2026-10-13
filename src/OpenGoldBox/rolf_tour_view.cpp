@@ -225,8 +225,8 @@ void RolfTourView::restart()
             d.rolled = true;
             for (auto &roll : d.rolls)
                 roll = {{6, 5, 4, 1}, 3};
-            const auto id =
-                campaign_->add_pc(opengold::Character(*opengold::srd5::character_rules(), d, {}));
+            (void)campaign_->add_pc(
+                opengold::Character(*opengold::srd5::character_rules(), d, {}));
             campaign_->add_coins(Coin::gold, 9999);
         }
         if (session_)

@@ -25,6 +25,14 @@ struct TrainingChoiceEdit
     bool operator==(const TrainingChoiceEdit &) const = default;
 };
 
+// A skill or Expertise ("skill:stealth") learned at a training hall at a level.
+struct HallTraining
+{
+    unsigned level{};
+    std::string grant;
+    bool operator==(const HallTraining &) const = default;
+};
+
 class Character
 {
   public:
@@ -79,6 +87,12 @@ class Character
                        rules::ChoiceCompleteness completeness = rules::ChoiceCompleteness::complete);
     void replace_rest_training(const rules::RulesModule &, std::span<const std::string>,
                                std::uint64_t rest_session);
+    void train_at_hall(const rules::RulesModule &, std::string grant);
+
+    [[nodiscard]] const auto &hall_training() const
+    {
+        return hall_training_;
+    }
 
     [[nodiscard]] const auto &training_edits() const
     {
@@ -104,6 +118,7 @@ class Character
     std::vector<rules::AdvancementChoice> advancements_;
     std::vector<SpellChoiceEdit> spell_edits_;
     std::vector<TrainingChoiceEdit> training_edits_;
+    std::vector<HallTraining> hall_training_;
 };
 } // namespace opengold
 #endif

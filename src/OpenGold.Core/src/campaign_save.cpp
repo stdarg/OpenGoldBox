@@ -15,7 +15,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 26;
+constexpr unsigned campaign_format = 27;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -240,6 +240,11 @@ template <bool Reading> struct SaveCodec
         fields(v.level, v.rest_session, v.selections);
     }
 
+    void field(Visited<HallTraining> v)
+    {
+        fields(v.level, v.grant);
+    }
+
     void field(Visited<por::CharacterAppearance> v)
     {
         // 0 short, 1 regular, 2 large: the former tall flag's 0 and 1 read unchanged.
@@ -324,7 +329,8 @@ template <bool Reading> struct SaveCodec
     void member(Visited<PartyMember> v)
     {
         fields(v.id, v.npc_source, v.vitals, v.equipped, v.morale, v.experience,
-               v.last_rest_minutes, v.item_sources, v.creation_source, v.quick);
+               v.last_rest_minutes, v.item_sources, v.creation_source, v.quick,
+               v.hall_experience_level);
         // Grants are derived by replaying creation and advancement. Storing them
         // lets a load detect rules that would rebuild a different character.
         auto grants = v.character.sheet().grants;
@@ -359,7 +365,8 @@ template <bool Reading> struct SaveCodec
                 std::vector<rules::AdvancementChoice> history;
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;
-                fields(history, edits, training);
+                std::vector<HallTraining> hall;
+                fields(history, edits, training, hall);
                 require(std::cmp_equal(history.size(), level - 1),
                         "Saved advancement history disagrees with level");
                 unsigned prior_level = 1;
@@ -372,6 +379,14 @@ template <bool Reading> struct SaveCodec
                             "Invalid training replacement history");
                     prior_level = edit.level;
                     prior_session = edit.rest_session;
+                }
+                unsigned hall_level = 0;
+                for (const auto &trained : hall)
+                {
+                    require(trained.level > hall_level &&
+                            trained.level <= static_cast<unsigned>(level),
+                            "Invalid training hall history");
+                    hall_level = trained.level;
                 }
                 unsigned previous = 1;
                 std::uint64_t rest = 0;
@@ -397,6 +412,9 @@ template <bool Reading> struct SaveCodec
                         if (edit.level == static_cast<unsigned>(character.sheet().level))
                             character.replace_rest_training(*module, edit.selections,
                                                             edit.rest_session);
+                    for (const auto &trained : hall)
+                        if (trained.level == static_cast<unsigned>(character.sheet().level))
+                            character.train_at_hall(*module, trained.grant);
                 };
                 replay();
                 for (const auto &choice : history)
@@ -423,7 +441,8 @@ template <bool Reading> struct SaveCodec
                 const auto &history = m.character.advancements();
                 const auto &edits = m.character.spell_edits();
                 const auto &training = m.character.training_edits();
-                fields(history, edits, training);
+                const auto &hall = m.character.hall_training();
+                fields(history, edits, training, hall);
                 field(m.character.inventory());
                 member(m);
             }

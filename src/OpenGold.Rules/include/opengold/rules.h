@@ -750,6 +750,12 @@ class RulesModule
             std::span<const std::string>) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterSheet &) const = 0;
+    // A training hall's skills for a member of the hall's classes (stable class
+    // IDs): each option ID is the whole grant, "skill:<id>" or "expertise:<id>".
+    [[nodiscard]] virtual TrainingChoiceGroup
+    hall_training_options(const CharacterSheet &, std::span<const std::string> class_ids) const = 0;
+    // Adds one hall-trained skill or Expertise at the sheet's level. Atomic.
+    virtual void train_at_hall(CharacterSheet &, std::string_view grant) const = 0;
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &sheet,
             const AdvancementChoice &) const = 0;

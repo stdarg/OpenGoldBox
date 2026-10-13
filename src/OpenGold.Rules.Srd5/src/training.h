@@ -13,6 +13,12 @@ rules::TrainingChoiceGroup land_options();
 rules::TrainingChoiceGroup invocation_options(unsigned level,
         std::span<const rules::FeatureGrant> grants, std::string_view source);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
+// The grant source of skills and Expertise a training hall teaches.
+constexpr std::string_view hall_training = "training_hall";
+// What a hall teaches a member of `classes`: proficiency in a skill on any of
+// their lists the character lacks, or Expertise in a skill it is proficient in.
+rules::TrainingChoiceGroup hall_training_options(std::span<const rules::FeatureGrant> grants,
+        std::span<const CharacterClass> classes);
 std::vector<rules::TrainingChoiceGroup> training_options(const rules::CharacterDraft &draft);
 std::vector<rules::FeatureGrant>
 training_grants(CharacterClass klass, std::string_view background,

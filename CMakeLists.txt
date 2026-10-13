@@ -123,6 +123,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/npc_portraits.cpp
     src/OpenGold.Core/src/coin_purse.cpp
+    src/OpenGold.Core/src/training_hall.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
     src/OpenGold.Core/src/campaign_save.cpp
     src/OpenGold.Core/src/save_file.cpp
@@ -475,6 +476,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_magic_initiate_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_magic_initiate_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_magic_initiate_tests COMMAND opengold_magic_initiate_tests)
+    add_executable(opengold_training_hall_tests tests/training_hall_tests.cpp)
+    target_link_libraries(opengold_training_hall_tests PRIVATE opengold_rules_srd5 opengold_core)
+    target_compile_definitions(opengold_training_hall_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_training_hall_tests COMMAND opengold_training_hall_tests)
 
     add_executable(opengold_armor_catalog_tests tests/armor_catalog_tests.cpp)
     target_link_libraries(opengold_armor_catalog_tests PRIVATE opengold_rules_srd5 opengold_core)

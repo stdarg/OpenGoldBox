@@ -3,6 +3,7 @@
 #include "opengold/character.h"
 #include "opengold/coin_purse.h"
 #include "opengold/equipment.h"
+#include "opengold/training_hall.h"
 #include <chrono>
 
 namespace opengold::por
@@ -97,6 +98,8 @@ struct PartyMember
     unsigned last_rest_subminute_milliseconds{};
     std::map<std::uint64_t, por::Equipment> item_sources;
     std::string creation_source; // Stable pool candidate identity, empty for authored PCs.
+    // The level at which the member last bought a hall's experience; 0 for never.
+    unsigned hall_experience_level{};
     bool quick{}; // The computer plays it in fights (Quick) until the player takes control.
 };
 
@@ -178,6 +181,18 @@ class CampaignParty
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);
     void award_experience(unsigned amount, std::string reward_id);
+    // A training hall's experience session: half the experience between the
+    // member's level and the next, once per level, paid in the party's gold.
+    [[nodiscard]] ExperienceOffer experience_offer(MemberId id, TrainingHall hall) const;
+    // Atomic: throws, changing nothing, unless experience_offer() allows it.
+    void buy_experience(MemberId id, TrainingHall hall);
+    // Why the hall cannot teach the member a skill now; none when it can. The
+    // fee of each lesson is checked when it is bought.
+    [[nodiscard]] TrainingDenial skill_training_denial(MemberId id, TrainingHall hall) const;
+    // The skills and Expertise the hall teaches the member, as whole grants.
+    [[nodiscard]] rules::TrainingChoiceGroup skill_lessons(MemberId id, TrainingHall hall) const;
+    // One lesson per level, paid in the party's gold. Atomic.
+    void train_skill(MemberId id, TrainingHall hall, const std::string &grant);
     [[nodiscard]] bool can_advance(MemberId id) const;
     [[nodiscard]] rules::AdvancementOptions
     advancement_options(MemberId id, const rules::AdvancementChoice &choice = {}) const;
