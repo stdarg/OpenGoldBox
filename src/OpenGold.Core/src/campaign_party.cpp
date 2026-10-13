@@ -360,7 +360,13 @@ MemberId CampaignParty::recruit(std::string source, Character converted, unsigne
     const auto id = state_.next_id;
     const auto hp = converted.sheet().hit_points;
     state_.roster.push_back(
-    {id, std::move(converted), std::move(source), {hp, false, {}}, {}, {}, morale});
+    {
+        .id = id,
+        .character = std::move(converted),
+        .npc_source = std::move(source),
+        .vitals = {hp, false, {}},
+        .morale = morale
+    });
     ++state_.next_id;
     join(id, true);
     return id;
@@ -513,7 +519,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     auto &m = edit(id);
     if (m.character.inventory().items().size() >= 16)
         throw std::runtime_error("Inventory is full (16 items)");
-    if (coins(m.wealth, Coin::gold) < item.stored.value)
+    if (coins(state_.wealth, Coin::gold) < item.stored.value)
         throw std::runtime_error("Not enough gold");
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
@@ -525,13 +531,22 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
-    coins(m.wealth, Coin::gold) -= item.stored.value;
+    coins(state_.wealth, Coin::gold) -= item.stored.value;
 }
 
-void CampaignParty::set_wealth(MemberId id, Purse wealth)
+void CampaignParty::set_wealth(Purse wealth)
 {
     editable();
-    edit(id).wealth = wealth;
+    state_.wealth = wealth;
+}
+
+void CampaignParty::add_coins(Coin coin, std::uint32_t count)
+{
+    editable();
+    auto &held = coins(state_.wealth, coin);
+    if (count > purse_limit - held)
+        throw std::runtime_error("The party purse cannot hold more coins");
+    held += count;
 }
 
 bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
@@ -558,16 +573,10 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         return false;
     for (unsigned coin = 0; coin < 7; ++coin)
     {
-        auto remaining = wealth[coin];
-        for (auto index : recipients)
-        {
-            auto &purse = next.roster[index].wealth[coin];
-            const auto amount = std::min(remaining, static_cast<unsigned>(65535 - purse));
-            purse += amount;
-            remaining -= amount;
-        }
-        if (remaining)
+        auto &purse = next.wealth[coin];
+        if (wealth[coin] > purse_limit - purse)
             return false;
+        purse += wealth[coin];
     }
     for (const auto &item : items)
     {
@@ -880,19 +889,12 @@ void CampaignParty::temple_heal(MemberId target)
         throw std::runtime_error("Temple target must be active");
     if (current.vitals.dead || current.vitals.hit_points >= hit_point_maximum(target))
         throw std::runtime_error("Cure Wounds requires a wounded living member");
+    constexpr std::uint32_t temple_fee = 100;
+    if (coins(state_.wealth, Coin::gold) < temple_fee)
+        throw std::runtime_error("Party cannot afford temple service");
     auto next = state_;
     auto &healed = member_in(next, target);
-    unsigned remaining = 100;
-    for (auto id : next.slots)
-        if (id)
-        {
-            auto &m = member_in(next, id);
-            const auto paid = std::min<unsigned>(coins(m.wealth, Coin::gold), remaining);
-            coins(m.wealth, Coin::gold) -= static_cast<std::uint16_t>(paid);
-            remaining -= paid;
-        }
-    if (remaining)
-        throw std::runtime_error("Party cannot afford temple service");
+    coins(next.wealth, Coin::gold) -= temple_fee;
     rules_->temple_heal(healed.vitals, healed.character.sheet(), next.random_state);
     state_ = std::move(next);
 }
@@ -990,11 +992,11 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot,
     // training choices do not depend on; the inn's script continues after its rest.
     if (state_.short_rest)
         throw std::runtime_error("Finish Short Rest spending before changing the party");
-    auto settled = settle_script_coins(current.wealth, after_script);
+    auto settled = settle_script_coins(state_.wealth, after_script);
     auto &m = edit(id);
     auto vitals = m.vitals;
     rules_->set_hit_points(vitals, m.character.sheet(), hp);
-    m.wealth = settled.purse;
+    state_.wealth = settled.purse;
     m.vitals = std::move(vitals);
     return settled.exchange;
 }

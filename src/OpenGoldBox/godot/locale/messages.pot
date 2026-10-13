@@ -10,14 +10,14 @@ msgstr ""
 msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 msgstr ""
 
-#: src/OpenGoldBox/character_sheet_text.cpp:76
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "   Gold {gold}   XP {xp}"
-msgstr ""
-
 #: src/OpenGoldBox/character_sheet_text.cpp:74
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Hit Dice: {level}d{die}"
+msgstr ""
+
+#: src/OpenGoldBox/character_sheet_text.cpp:76
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "   Party gold {gold}   XP {xp}"
 msgstr ""
 
 #: src/OpenGoldBox/party_preview.cpp:207
@@ -4516,7 +4516,7 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:866
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "Shop / buying for {name}: {gold} gp, {count}/16 items"
+msgid "Shop / buying for {name}: party {gold} gp, {count}/16 items"
 msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:858
@@ -5839,7 +5839,7 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:971
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "{name} / HP {current}/{maximum}\n{gold} gp / {items}"
+msgid "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"
 msgstr ""
 
 #: src/OpenGoldBox/level_up_dialog.cpp:341
@@ -5859,7 +5859,7 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:345
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "{name} / {class} / {gold} gp"
+msgid "{name} / {class} / party {gold} gp"
 msgstr ""
 
 #: src/OpenGoldBox/level_up_lab_view.cpp:297

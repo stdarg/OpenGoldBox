@@ -715,15 +715,16 @@ void roster_and_equipment()
     {
         party.recruit("MON:third-profile", character());
     });
-    party.set_wealth(npc, {0, 0, 0, 123, 0, 0, 0});
+    party.set_wealth({0, 0, 0, 123, 0, 0, 0});
     party.remove(npc);
-    party.recruit("MON:explicit-profile", character());
-    check(party.member(npc).wealth[3] == 123 && party.state().roster.size() == 8,
+    check(party.state().wealth[3] == 123, "A member leaving takes none of the party's money");
+    check(party.recruit("MON:explicit-profile", character()) == npc &&
+          party.state().roster.size() == 8 && party.state().wealth[3] == 123,
           "Re-recruit preserves original NPC instance");
     party.remove(pc);
     party.rejoin(pc);
     check(party.state().slots[0] == pc, "Rejoin restores PC position");
-    party.set_wealth(pc, {0, 0, 0, 100, 0, 0, 0});
+    party.set_wealth({0, 0, 0, 100, 0, 0, 0});
     party.purchase(pc, item(36));
     party.purchase(pc, item(59));
     const auto items = party.member(pc).character.inventory().items();
@@ -731,7 +732,7 @@ void roster_and_equipment()
     const auto ac = party.profile(pc).armor_class;
     party.equip(pc, sword);
     party.equip(pc, shield);
-    check(party.profile(pc).armor_class == ac + 2 && party.member(pc).wealth[3] == 80,
+    check(party.profile(pc).armor_class == ac + 2 && party.state().wealth[3] == 80,
           "Purchased shield changes actual rules AC");
     check(por::party_has_item(party, 59) && !por::party_has_item(party, 55), "Party item query uses original types");
     party.purchase(pc, item(55));
@@ -745,7 +746,7 @@ void roster_and_equipment()
     {
         party.purchase(pc, item(50, 500));
     });
-    check(party.member(pc).wealth[3] == 70, "Unaffordable buy is atomic");
+    check(party.state().wealth[3] == 70, "Unaffordable buy is atomic");
     party.purchase(pc, item(49));
     rejects(
         [&]
@@ -769,7 +770,7 @@ void roster_and_equipment()
     party.end_combat();
     CampaignParty wizard(module());
     auto mage = wizard.add_pc(character("wizard"));
-    wizard.set_wealth(mage, {0, 0, 0, 50, 0, 0, 0});
+    wizard.set_wealth({0, 0, 0, 50, 0, 0, 0});
     wizard.purchase(mage, item(59));
     const int naked_ac = wizard.profile(mage).armor_class;
     wizard.equip(mage, 1);
@@ -1158,7 +1159,7 @@ void combat_handoff()
     auto party = std::make_shared<CampaignParty>(module());
     auto pc = party->add_pc(character("wizard", "Mage"));
     const auto guard = party->recruit("guard", character());
-    party->set_wealth(pc, {0, 0, 0, 50, 0, 0, 0});
+    party->set_wealth({0, 0, 0, 50, 0, 0, 0});
     party->purchase(pc, item(8));
     party->equip(pc, 1);
     auto start = party->checkpoint();
@@ -1663,7 +1664,7 @@ void progression_and_services()
     party.restore(wounded);
     check(!party.rest() && party.time_hours() == 32,
           "Unconscious members cannot start a long rest");
-    party.set_wealth(pc, {0, 0, 0, 50, 0, 0, 0});
+    party.set_wealth({0, 0, 0, 50, 0, 0, 0});
     auto before = party.checkpoint();
     auto temple_before = party.member(pc).vitals;
     rejects(
@@ -1671,13 +1672,13 @@ void progression_and_services()
     {
         party.temple_heal(pc);
     });
-    check(party.member(pc).wealth[3] == 50 && party.member(pc).vitals == temple_before,
+    check(party.state().wealth[3] == 50 && party.member(pc).vitals == temple_before,
           "Rejected temple request is atomic");
     check(party.state().random_state == before.random_state,
           "Rejected payment preserves random state");
-    party.set_wealth(pc, {0, 0, 0, 100, 0, 0, 0});
+    party.set_wealth({0, 0, 0, 100, 0, 0, 0});
     party.temple_heal(pc);
-    check(party.member(pc).vitals.hit_points > 0 && party.member(pc).wealth[3] == 0 &&
+    check(party.member(pc).vitals.hit_points > 0 && party.state().wealth[3] == 0 &&
           party.member(pc).vitals.resources ==
           "SRD12 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
           "Healing charges once, clears death saves and preserves spent resources");
@@ -1685,7 +1686,7 @@ void progression_and_services()
     CampaignParty restored(module());
     restored.restore(checkpoint);
     check(restored.member(pc).vitals == party.member(pc).vitals && restored.time_hours() == 32 &&
-          restored.member(pc).wealth[3] == 0,
+          restored.state().wealth[3] == 0,
           "Native checkpoint retains recovery, payments and clock");
     restored.award_experience(300, "quest:slums");
     check(restored.member(pc).experience == 300, "Checkpoint retains claimed rewards");
@@ -1768,12 +1769,11 @@ void caster_advancement()
     }
 }
 
-void temple_pooling()
+void temple_party_purse()
 {
     CampaignParty party(module());
-    const auto payer = party.add_pc(character()), target = party.add_pc(character("wizard"));
-    party.set_wealth(payer, {0, 0, 0, 40, 0, 0, 0});
-    party.set_wealth(target, {0, 0, 0, 50, 0, 0, 0});
+    const auto other = party.add_pc(character()), target = party.add_pc(character("wizard"));
+    party.set_wealth({0, 0, 0, 90, 0, 0, 0});
     auto state = party.checkpoint();
     state.roster[1].vitals = {0, false, "SRD12 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"};
     party.restore(state);
@@ -1782,15 +1782,13 @@ void temple_pooling()
     {
         party.temple_heal(target);
     });
-    check(party.member(payer).wealth[3] == 40 && party.member(target).wealth[3] == 50 &&
-          party.member(target).vitals == state.roster[1].vitals,
-          "Insufficient pooled funds debit neither purse");
-    party.set_wealth(target, {0, 0, 0, 60, 0, 0, 0});
+    check(party.state().wealth[3] == 90 && party.member(target).vitals == state.roster[1].vitals,
+          "Too little party gold charges nothing");
+    party.set_wealth({0, 0, 0, 130, 0, 0, 0});
     party.temple_heal(target);
-    check(party.member(payer).wealth[3] == 0 && party.member(target).wealth[3] == 0 &&
-          party.member(target).vitals.hit_points > 0 &&
-          party.member(payer).vitals == state.roster[0].vitals,
-          "Pooled service heals only the requested target");
+    check(party.state().wealth[3] == 30 && party.member(target).vitals.hit_points > 0 &&
+          party.member(other).vitals == state.roster[0].vitals,
+          "The party's gold heals only the requested target");
 }
 
 void dynamic_checkpoint()
@@ -2408,18 +2406,18 @@ void recovery_hosts()
     check(!temple.choose(ticket, 0) && party->member(pc).vitals.hit_points == 1 &&
           party->state().random_state == state.random_state,
           "Unaffordable temple choice leaves request and party unchanged");
-    party->set_wealth(pc, {0, 0, 0, 100, 0, 0, 0});
+    party->set_wealth({0, 0, 0, 100, 0, 0, 0});
     check(temple.choose(ticket, 0) && !temple.choose(ticket, 0),
           "Temple payment accepted exactly once");
     settle(temple);
     check(temple.can_leave() && temple.script_variable(por::ecl_temple_service) == 0 &&
           temple.script_variable(por::EclAddress{0x9811}) == 1 &&
-          party->member(pc).wealth[3] == 0 &&
+          party->state().wealth[3] == 0 &&
           party->member(pc).vitals.hit_points > 1,
           "Temple resumes ECL with healed HP and charged purse");
     // An unsupported continuation refunds the complete service, including dice.
     party->restore(state);
-    party->set_wealth(pc, {0, 0, 0, 100, 0, 0, 0});
+    party->set_wealth({0, 0, 0, 100, 0, 0, 0});
     auto failed = program({9, 0, 1, 1, 0xe2, 0x6d, 36, 56, 0, 0, 0});
     por::RolfTourSession rollback({}, failed, {}, 0x9914, {}, resources);
     rollback.campaign_party(party);
@@ -2429,10 +2427,10 @@ void recovery_hosts()
     check(rollback.choose(rollback.snapshot().continue_ticket, 0),
           "Service before unsupported continuation");
     settle(rollback);
-    if (party->member(pc).wealth[3] != 100 || party->member(pc).vitals.hit_points != 1 ||
+    if (party->state().wealth[3] != 100 || party->member(pc).vitals.hit_points != 1 ||
             party->state().random_state != state.random_state)
         throw std::runtime_error(
-            "Failed service rollback: gold=" + std::to_string(party->member(pc).wealth[3]) +
+            "Failed service rollback: gold=" + std::to_string(party->state().wealth[3]) +
             ", HP=" + std::to_string(party->member(pc).vitals.hit_points) + ", " +
             rollback.snapshot().dialogue);
     check(rollback.choose(rollback.snapshot().continue_ticket, 0) && rollback.can_leave(),
@@ -2477,10 +2475,9 @@ std::shared_ptr<const por::EclProgram> shop_program()
 void shop_buyer_switch()
 {
     auto party = std::make_shared<CampaignParty>(module());
-    auto first = party->add_pc(character("fighter", "First")),
-         second = party->add_pc(character("cleric", "Second"));
-    party->set_wealth(first, {0, 0, 0, 100, 0, 0, 0});
-    party->set_wealth(second, {0, 0, 0, 200, 0, 0, 0});
+    auto first = party->add_pc(character("fighter", "First"));
+    (void)party->add_pc(character("cleric", "Second"));
+    party->set_wealth({0, 0, 0, 300, 0, 0, 0});
     auto p = shop_program();
     auto resources = std::make_shared<por::PhlanResources>();
     resources->programs.emplace(0, p);
@@ -2499,12 +2496,13 @@ void shop_buyer_switch()
           "The buyer can change while shopping");
     party->select(PartySlot{0});
     check(town.buy(town.snapshot().continue_ticket, 0), "Buy for the newly chosen buyer");
-    check(party->member(first).wealth[3] == 90 && party->member(second).wealth[3] == 200,
-          "The purchase debits only the new buyer");
+    check(party->state().wealth[3] == 290 &&
+          party->member(first).character.inventory().items().size() == 1,
+          "The party's gold pays and the new buyer gets the item");
     town.leave_shop(town.snapshot().continue_ticket);
     settle(town);
-    check(town.script_variable(por::EclAddress{0x6BC1}) == 90,
-          "Leaving the shop hands the final buyer to the original script");
+    check(town.script_variable(por::EclAddress{0x6BC1}) == 290,
+          "Leaving the shop hands the party's gold to the original script");
 }
 
 void script_handoff()
@@ -2512,8 +2510,7 @@ void script_handoff()
     auto party = std::make_shared<CampaignParty>(module());
     auto first = party->add_pc(character("fighter", "First")),
          second = party->add_pc(character("cleric", "Second"));
-    party->set_wealth(first, {0, 0, 0, 100, 0, 0, 0});
-    party->set_wealth(second, {0, 0, 0, 200, 0, 0, 0});
+    party->set_wealth({0, 0, 0, 300, 0, 0, 0});
     auto p = shop_program();
     auto resources = std::make_shared<por::PhlanResources>();
     resources->programs.emplace(0, p);
@@ -2535,12 +2532,14 @@ void script_handoff()
           "Original shop opens for selected member");
     check(party->selected() == second, "Script slot scans do not change the chosen buyer");
     check(town.buy(town.snapshot().continue_ticket, 0), "Buy for selected member");
-    check(party->member(second).wealth[3] == 190 && party->member(first).wealth[3] == 100,
-          "Purchase debits only selected purse");
+    check(party->state().wealth[3] == 290 &&
+          party->member(second).character.inventory().items().size() == 1 &&
+          party->member(first).character.inventory().empty(),
+          "The party's gold buys for the selected member");
     check(por::party_has_item(*party, 59), "Script item query sees purchase");
     town.leave_shop(town.snapshot().continue_ticket);
     settle(town);
-    check(town.script_variable(por::EclAddress{0x6BC1}) == 190 && town.can_leave(),
+    check(town.script_variable(por::EclAddress{0x6BC1}) == 290 && town.can_leave(),
           "Shop return synchronizes selected character");
     // PARTY STRENGTH ran with the level-one fighter at full HP and the cleric at 3 HP:
     // (HP + 5 for THAC0 20) / 10 and (4 + 3 + 5) / 10.
@@ -2578,28 +2577,28 @@ void script_handoff()
 void original_loot()
 {
     CampaignParty party(module());
-    const auto first = party.add_pc(character()), second = party.add_pc(character("cleric", "Bo"));
-    party.set_wealth(first, {0, 65530, 0, 0, 0, 0, 0});
-    party.set_wealth(second, {0, 0, 0, 0, 0, 0, 0});
+    const auto first = party.add_pc(character());
+    (void)party.add_pc(character("cleric", "Bo"));
+    party.set_wealth({0, 65530, 0, 0, 0, 0, 0});
     por::Equipment scroll;
     scroll.stored.type = 62;
     scroll.stored.magic_bonus = 1;
     scroll.stored.stack_size = 1;
     check(party.award_loot({0, 96, 0, 0, 0, 0, 0}, {scroll}, "test:loot"),
           "Collect original coins and item");
-    check(party.member(first).wealth[1] == 65535 && party.member(second).wealth[1] == 91,
-          "Coin overflow continues into another purse");
+    check(party.state().wealth[1] == 65626,
+          "The party purse holds more than an original 16-bit purse");
     check(party.member(first).item_sources.size() == 1 &&
           party.member(first).character.inventory().items()[0].definition_id ==
           "por:unsupported:62",
           "Magic loot retains provenance without inventing a rules conversion");
     check(party.award_loot({0, 96, 0, 0, 0, 0, 0}, {scroll}, "test:loot") &&
-          party.member(second).wealth[1] == 91,
+          party.state().wealth[1] == 65626,
           "Duplicate loot cannot pay twice");
-    party.set_wealth(second, {0, 65535, 0, 0, 0, 0, 0});
+    party.set_wealth({0, purse_limit, 0, 0, 0, 0, 0});
     const auto before = party.checkpoint();
     check(!party.award_loot({0, 1, 0, 0, 0, 0, 0}, {scroll}, "test:overflow"),
-          "Full party purses retain pending loot");
+          "A full party purse retains pending loot");
     check(party.state().claimed_rewards == before.claimed_rewards &&
           party.member(first).item_sources.size() == 1,
           "Failed collection changes neither reward history nor inventory");
@@ -2679,7 +2678,7 @@ int main()
         combat_ownership();
         progression_and_services();
         caster_advancement();
-        temple_pooling();
+        temple_party_purse();
         dynamic_checkpoint();
         combat_demo_fixture();
         script_handoff();

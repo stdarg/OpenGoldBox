@@ -161,7 +161,7 @@ void campaign()
         party.equip(id, 1);
         auto state = party.checkpoint();
         state.roster[0].vitals.hit_points -= 2;
-        state.roster[0].wealth[3] = 37;
+        state.wealth[3] = 37;
         party.restore(state);
         auto actors = party.participants();
         actors[0].cell = {1, 1};

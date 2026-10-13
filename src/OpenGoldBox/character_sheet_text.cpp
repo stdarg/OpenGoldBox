@@ -73,8 +73,8 @@ String formatted_sheet(const Character &character, const PartyMember *member,
             "[/theme_emphasis]";
     text += i18n::formatted("   Hit Dice: {level}d{die}", {{"level", s.level}, {"die", s.hit_die}});
     if (member)
-        text += i18n::formatted("   Gold {gold}   XP {xp}",
-    {{"gold", coins(member->wealth, Coin::gold)}, {"xp", member->experience}});
+        text += i18n::formatted("   Party gold {gold}   XP {xp}",
+    {{"gold", coins(party->state().wealth, Coin::gold)}, {"xp", member->experience}});
     if (member && member->vitals.dead)
         text += "   " + i18n::utf8("Dead");
     if (member && party->can_advance(member->id))

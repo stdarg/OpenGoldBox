@@ -506,7 +506,7 @@ void campaign()
             p.equip(id, 1);
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
-            state.roster[0].wealth[3] = 37;
+            state.wealth[3] = 37;
             state.time_minutes = 123;
             state.subminute_milliseconds = 456;
             p.restore(std::move(state));

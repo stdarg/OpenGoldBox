@@ -90,7 +90,6 @@ struct PartyMember
     Character character;
     std::string npc_source; // Empty for PCs; explicit campaign conversion identity for NPCs.
     rules::VitalState vitals;
-    Purse wealth{};
     std::vector<std::uint64_t> equipped;
     unsigned morale{100};
     unsigned experience{};
@@ -114,6 +113,7 @@ struct PartyState
     MemberId next_id{1};
     PartySlot selected_slot{};
     MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
+    Purse wealth{}; // All the party's money; no member carries coins of their own.
     bool quick_magic{}; // Members on Quick may cast spells.
     std::uint64_t time_minutes{};
     RandomState random_state{42};
@@ -172,8 +172,11 @@ class CampaignParty
                rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
     void unequip(MemberId id, std::uint64_t item);
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
+    // The party's gold pays; the item goes to the member.
     void purchase(MemberId id, const por::Equipment &item);
-    void set_wealth(MemberId id, Purse wealth);
+    void set_wealth(Purse wealth);
+    // Money a joining character brings; throws if the party purse cannot hold it.
+    void add_coins(Coin coin, std::uint32_t count);
     void award_experience(unsigned amount, std::string reward_id);
     [[nodiscard]] bool can_advance(MemberId id) const;
     [[nodiscard]] rules::AdvancementOptions
@@ -191,7 +194,7 @@ class CampaignParty
             std::span<const std::string>) const;
     void replace_rest_training(RestTicket, MemberId, std::span<const std::string>);
     void keep_rest_training(RestTicket, MemberId);
-    // Atomic original loot delivery. A full set of purses leaves it unclaimed.
+    // Atomic original loot delivery. A full party purse leaves it unclaimed.
     bool award_loot(const std::array<unsigned, 7> &wealth, const std::vector<por::Equipment> &items,
                     std::string reward_id);
     [[nodiscard]] bool rest();
@@ -232,8 +235,9 @@ class CampaignParty
     [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, rules::Ability ability,
             std::string_view skill = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
-    // Applies the script's HP and coin changes. Coins are seen and settled as
-    // script_coins() describes; the result reports any change the purse made.
+    // Applies the script's HP and coin changes. The script sees the party purse
+    // as the slot's money, and coins are seen and settled as script_coins()
+    // describes; the result reports any change the purse made.
     [[nodiscard]] std::optional<CoinExchange> read_character(PartySlot slot,
             const por::EclMachine &vm);
 

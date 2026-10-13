@@ -92,14 +92,14 @@ void armor_conversion_tests()
     // The audited case: a new Cleric buys Scale Mail, pays once and equips it.
     CampaignParty party(module());
     const auto id = party.add_pc(character("Cleric", 1, "cleric"));
-    party.set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+    party.set_wealth({0, 0, 0, 250, 0, 0, 0});
     por::Equipment scale;
     scale.stored.type = 54;
     scale.stored.value = 45;
     party.purchase(id, scale);
     const auto item = party.member(id).character.inventory().items().back().id;
     party.equip(id, item);
-    check(party.member(id).wealth[3] == 205 && party.member(id).equipped.size() == 1,
+    check(party.state().wealth[3] == 205 && party.member(id).equipped.size() == 1,
           "Scale Mail is bought for 45 gp and equipped");
 }
 
@@ -148,6 +148,17 @@ void coin_purse_tests()
     check(settle_script_coins(gold_and_silver, treasure).purse == Purse{0, 146, 0, 145, 0, 3, 1},
           "Coins a script adds are added as given");
 
+    // The party purse holds more of a coin than a script's 16-bit cell shows.
+    const Purse hoard{0, 0, 0, 70000, 0, 70000, 0};
+    auto hoard_view = script_coins(hoard);
+    check(hoard_view[3] == script_coin_limit && hoard_view[5] == script_coin_limit,
+          "A script cell shows at most 65,535 coins or gems");
+    hoard_view[3] -= 10;
+    --hoard_view[5];
+    const auto spent = settle_script_coins(hoard, hoard_view);
+    check(spent.purse == Purse{0, 0, 0, 69990, 0, 69999, 0} && !spent.exchange,
+          "What a script takes comes out of the coins it could not see");
+
     auto gem = view;
     --gem[5];
     check(settle_script_coins(gold_and_silver, gem).purse == Purse{0, 96, 0, 145, 0, 2, 1},
@@ -185,8 +196,8 @@ void settle_synthetic(por::RolfTourSession &town)
 void script_payment_tests()
 {
     auto party = std::make_shared<CampaignParty>(module());
-    const auto payer = party->add_pc(character("Arden"));
-    party->set_wealth(payer, {0, 96, 0, 145, 0, 0, 0});
+    (void)party->add_pc(character("Arden"));
+    party->set_wealth({0, 96, 0, 145, 0, 0, 0});
     auto resources = std::make_shared<por::PhlanResources>();
     auto payment = program({9, 0, 14, 1, 0xC3, 0x6B, 10, 0, 128, 0});
     por::RolfTourSession town({}, payment, {}, 0x9914, {}, resources);
@@ -196,7 +207,7 @@ void script_payment_tests()
           "The script sees fifteen affordable platinum");
     check(town.explore(por::ExplorationCommand::look), "Payment event starts");
     settle_synthetic(town);
-    check(party->member(payer).wealth == Purse{0, 96, 0, 135, 0, 0, 0},
+    check(party->state().wealth == Purse{0, 96, 0, 135, 0, 0, 0},
           "The payment is charged exactly once across both script reads");
     check(town.snapshot().payments.size() == 1 && town.snapshot().payments[0].payer == "Arden" &&
           town.snapshot().payments[0].coins.paid == Coins{0, 0, 0, 10, 0},
@@ -211,7 +222,7 @@ void script_payment_tests()
     settle_synthetic(reading);
     reading.explore(por::ExplorationCommand::look);
     settle_synthetic(reading);
-    check(party->member(payer).wealth == Purse{0, 96, 0, 135, 0, 0, 0} &&
+    check(party->state().wealth == Purse{0, 96, 0, 135, 0, 0, 0} &&
           reading.snapshot().payments.empty(),
           "Events that only read coins never change the purse");
 }
@@ -239,12 +250,9 @@ bool look(por::RolfTourSession &town)
     return !settle_or_rollback(town);
 }
 
-std::vector<Purse> purses(const PartyState &state)
+Purse party_purse(const PartyState &state)
 {
-    std::vector<Purse> result;
-    for (const auto &member : state.roster)
-        result.push_back(member.wealth);
-    return result;
+    return state.wealth;
 }
 
 unsigned claims_starting(const PartyState &state, std::string_view prefix)
@@ -288,7 +296,7 @@ void script_treasure_tests()
     const auto before = party->checkpoint();
     check(!look(town) && town.script_diagnostics().size() == 1,
           "A failure after the award reports and rolls back the event");
-    check(purses(party->checkpoint()) == purses(before) &&
+    check(party_purse(party->checkpoint()) == party_purse(before) &&
           party->state().claimed_rewards == before.claimed_rewards &&
           town.script_variable(por::EclAddress{0x4A04}) == 0,
           "The rollback restores purses, claims and the quest flag together");
@@ -296,10 +304,10 @@ void script_treasure_tests()
     party->select(PartySlot{0});
     check(look(town), "The retried event completes");
     const auto paid = party->checkpoint();
-    check(paid.roster[0].wealth == Purse{0, 0, 0, 0, 150, 0, 1} &&
-          paid.roster[1].wealth == Purse{} && claims_starting(paid, synthetic_treasure) == 1 &&
+    check(paid.wealth == Purse{0, 0, 0, 0, 150, 0, 1} &&
+          claims_starting(paid, synthetic_treasure) == 1 &&
           town.script_variable(por::EclAddress{0x4A04}) == 255 && paid.roster[0].experience == 0,
-          "The first living member receives 150 pp and the jewelry once, with no XP");
+          "The party receives 150 pp and the jewelry once, with no XP");
     const auto &arden = paid.roster[0];
     check(arden.character.inventory().items().size() == 1 && arden.item_sources.size() == 1 &&
           paid.roster[1].character.inventory().items().empty(),
@@ -322,7 +330,7 @@ void script_treasure_tests()
           twin_member.item_sources.begin()->second.stored.raw == source.stored.raw,
           "Random treasure is deterministic from the saved script random state");
 
-    check(look(town) && purses(party->checkpoint()) == purses(paid) &&
+    check(look(town) && party_purse(party->checkpoint()) == party_purse(paid) &&
           party->state().claimed_rewards == paid.claimed_rewards,
           "The completed flag keeps a revisit from paying again");
 
@@ -334,7 +342,7 @@ void script_treasure_tests()
     settle_synthetic(repeat);
     check(look(repeat), "The unguarded treasure pays once");
     const auto once = other->checkpoint();
-    check(!look(repeat) && purses(other->checkpoint()) == purses(once) &&
+    check(!look(repeat) && party_purse(other->checkpoint()) == party_purse(once) &&
           other->state().claimed_rewards == once.claimed_rewards &&
           repeat.script_diagnostics().back().find("already awarded") != std::string::npos,
           "A repeated award is an explicit, rolled-back failure");
@@ -370,12 +378,12 @@ void random_treasure_tables()
           "A generated scroll records its original spell codes");
 }
 
-// Full purses defer the treasure without loss; a reload keeps it pending.
+// A full party purse defers the treasure without loss; a reload keeps it pending.
 void deferred_treasure_tests()
 {
     auto party = std::make_shared<CampaignParty>(module());
     const auto arden = party->add_pc(character("Arden"));
-    party->set_wealth(arden, {0, 0, 0, 0, 65535 - 100, 0, 0});
+    party->set_wealth({0, 0, 0, 0, purse_limit - 100, 0, 0});
     const auto script = treasure_program(true, false);
     auto resources = std::make_shared<por::PhlanResources>();
     resources->programs.emplace(0, script);
@@ -384,11 +392,11 @@ void deferred_treasure_tests()
     settle_synthetic(town);
 
     check(look(town) && town.script_variable(por::EclAddress{0x4A04}) == 255 &&
-          party->member(arden).wealth == Purse{0, 0, 0, 0, 65535 - 100, 0, 0} &&
+          party->state().wealth == Purse{0, 0, 0, 0, purse_limit - 100, 0, 0} &&
           claims_starting(party->checkpoint(), synthetic_treasure) == 0 &&
           town.snapshot().dialogue.find("Loot is retained") != std::string::npos,
-          "A purse without room defers the whole award and the quest still completes");
-    check(look(town) && party->member(arden).wealth == Purse{0, 0, 0, 0, 65535 - 100, 0, 0},
+          "A party purse without room defers the whole award and the quest still completes");
+    check(look(town) && party->state().wealth == Purse{0, 0, 0, 0, purse_limit - 100, 0, 0},
           "The award stays pending while there is no room");
 
     const auto rules = module();
@@ -403,16 +411,16 @@ void deferred_treasure_tests()
 
     check(party->member(arden).character.inventory().items().empty(),
           "Deferred treasure holds back its item too");
-    reloaded->set_wealth(arden, {0, 0, 0, 0, 100, 0, 0});
+    reloaded->set_wealth({0, 0, 0, 0, 100, 0, 0});
     const auto items = [&]
     {
         return reloaded->member(arden).character.inventory().items().size();
     };
-    check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
+    check(look(restored) && reloaded->state().wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
           items() == 1 && reloaded->member(arden).item_sources.size() == 1 &&
           claims_starting(reloaded->checkpoint(), synthetic_treasure) == 1,
           "Once there is room the deferred treasure and its item are collected exactly once");
-    check(look(restored) && reloaded->member(arden).wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
+    check(look(restored) && reloaded->state().wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
           items() == 1,
           "Collected treasure is not collected again");
 }
@@ -808,7 +816,10 @@ Expedition create_party(const std::filesystem::path &directory)
     for (const auto *name :
             {"Arden", "Bryn", "Cora", "Darin", "Elin", "Fenn"
             })
-        party->set_wealth(party->add_pc(character(name, seed++)), {0, 0, 0, 250, 0, 0, 0});
+    {
+        (void)party->add_pc(character(name, seed++));
+        party->add_coins(Coin::gold, 250);
+    }
     auto town = por::RolfTourSession::load(directory);
     town.campaign_party(party);
     settle(town, party);
@@ -893,8 +904,8 @@ void buy_and_equip(Expedition &trip)
             for (const auto &item : party->member(id).character.inventory().items())
                 party->equip(id, item.id);
             check(party->member(id).equipped.size() == 3 &&
-                  party->member(id).wealth == Purse{0, 0, 0, 250 - 15 - 75 - 15, 0, 0, 0},
-                  "Each fighter pays in gold and equips sword, mail and shield");
+                  party->state().wealth == Purse{0, 0, 0, 6 * (250 - 15 - 75 - 15), 0, 0, 0},
+                  "The party pays in gold and each fighter equips sword, mail and shield");
         }
 }
 
@@ -915,13 +926,9 @@ void defeat_four_orcs(Expedition &trip)
     walk_to(town, party, 12, 1);
     check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2,
           "The four-orc victory sets its original flag and claims XP and loot once");
-    unsigned silver = 0;
     for (const auto &member : party->state().roster)
-    {
         check(member.experience == 300, "Every fighter earns the victory XP");
-        silver += member.wealth[1];
-    }
-    check(silver == 96, "The orcs' original silver is collected");
+    check(party->state().wealth[1] == 96, "The orcs' original silver is collected");
     walk_to(town, party, 15, 4);
     step(town, party, 1);
     check(town.snapshot().area_id == 0 && town.snapshot().pose.x == 0 &&
@@ -941,12 +948,9 @@ Answer inn_answer(bool stay, std::string payer)
     };
 }
 
-std::vector<Purse> purses(const CampaignParty &party)
+Purse party_purse(const CampaignParty &party)
 {
-    std::vector<Purse> result;
-    for (const auto &member : party.state().roster)
-        result.push_back(member.wealth);
-    return result;
+    return party.state().wealth;
 }
 
 // The original inn (ECL3:0, south of (4,11)) asks the chosen character for one platinum.
@@ -965,30 +969,33 @@ void rest_at_inn(Expedition &trip)
     };
 
     auto before = party->checkpoint();
-    const auto start = purses(*party);
+    const auto start = party_purse(*party);
     step(town, party, 2, inn_answer(false, ""));
-    check(town.snapshot().dialogue == "THEN YOU MUST LEAVE." && purses(*party) == start &&
+    check(town.snapshot().dialogue == "THEN YOU MUST LEAVE." && party_purse(*party) == start &&
           party->state().roster[0].vitals == before.roster[0].vitals &&
           party->state().time_minutes - before.time_minutes < 1,
           "Declining the quote costs nothing and grants no rest");
     leave_inn();
 
-    // A payer worth less than one platinum (9 gp 9 sp) is refused by the script.
-    party->set_wealth(party->state().roster.at(2).id, {0, 9, 0, 9, 0, 0, 0});
+    // A party worth less than one platinum (9 gp 9 sp) is refused by the script.
+    const auto savings = party_purse(*party);
+    party->set_wealth({0, 9, 0, 9, 0, 0, 0});
     before = party->checkpoint();
-    const auto unpaid = purses(*party);
+    const auto unpaid = party_purse(*party);
     step(town, party, 2, inn_answer(true, "Cora"));
     check(town.snapshot().dialogue == "YOU DON'T HAVE ENOUGH PLATINUM." &&
-          purses(*party) == unpaid && town.snapshot().payments.empty() &&
+          party_purse(*party) == unpaid && town.snapshot().payments.empty() &&
           party->state().time_minutes - before.time_minutes < 1,
-          "An unaffordable stay is refused with every purse unchanged");
+          "An unaffordable stay is refused with the purse unchanged");
     leave_inn();
 
+    party->set_wealth(savings);
     before = party->checkpoint();
     step(town, party, 2, inn_answer(true, "Arden"));
-    auto expected = unpaid;
-    expected[0][3] -= 10;
-    check(purses(*party) == expected, "Arden pays exactly ten gold for the platinum, once");
+    auto expected = savings;
+    expected[3] -= 10;
+    check(party_purse(*party) == expected,
+          "The party pays exactly ten gold for the platinum, once");
     const auto &payments = town.snapshot().payments;
     check(payments.size() == 1 && payments[0].payer == "Arden" &&
           payments[0].coins.owed == Coins{0, 0, 0, 0, 1} &&
@@ -1017,10 +1024,10 @@ void revisit_orcs(Expedition &trip)
     check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2 &&
           party->state().claimed_rewards == before.claimed_rewards,
           "The completed event does not fight or reward again");
+    check(party->state().wealth == before.wealth, "Revisiting pays nothing");
     for (std::size_t n = 0; n < before.roster.size(); ++n)
-        check(party->state().roster[n].experience == before.roster[n].experience &&
-              party->state().roster[n].wealth == before.roster[n].wealth,
-              "Revisiting keeps XP and purses");
+        check(party->state().roster[n].experience == before.roster[n].experience,
+              "Revisiting keeps XP");
 }
 
 constexpr std::string_view ohlo_reward = "por:ECL2:20:treasure:a390:v1";
@@ -1081,7 +1088,7 @@ void accept_commission(Expedition &trip)
 
     const auto accepting = enter_ohlo_room(trip, 250);
     check(town.script_variable(por::EclAddress{0x4A81}) == 0 &&
-          purses(*party) == purses(accepting) &&
+          party_purse(*party) == party_purse(accepting) &&
           party->state().claimed_rewards == accepting.claimed_rewards,
           "Accepting the commission sets its flag and pays nothing");
 }
@@ -1124,9 +1131,9 @@ void check_ohlo_reward(const PartyState &before, const PartyState &after)
     auto claims = before.claimed_rewards;
     claims.emplace_back(ohlo_reward);
     check(after.claimed_rewards == claims, "The hand-in claims only Ohlo's reward");
-    check(after.roster[0].wealth[4] == before.roster[0].wealth[4] + 150 &&
-          after.roster[0].wealth[6] == before.roster[0].wealth[6] + 1,
-          "The first living member receives Ohlo's 150 pp and jewelry");
+    check(after.wealth[4] == before.wealth[4] + 150 &&
+          after.wealth[6] == before.wealth[6] + 1,
+          "The party receives Ohlo's 150 pp and jewelry");
     const auto original_items = [](const PartyState &state)
     {
         std::size_t count = 0;
@@ -1137,13 +1144,8 @@ void check_ohlo_reward(const PartyState &before, const PartyState &after)
     check(original_items(after) == original_items(before) + 1,
           "Ohlo's random item is awarded once with its original record");
     for (std::size_t n = 0; n < after.roster.size(); ++n)
-    {
         check(after.roster[n].experience == before.roster[n].experience,
               "The original hand-in grants no experience");
-        if (n)
-            check(after.roster[n].wealth == before.roster[n].wealth,
-                  "Only the first living member is paid");
-    }
 }
 
 // Hands the potion to Ohlo for his reward, then returns to New Phlan.
@@ -1175,7 +1177,7 @@ void revisit_ohlo(Expedition &trip)
         const auto before = party->checkpoint();
         step(town, party, facing, quest_answer, "OHLO");
         const bool arrived = town.snapshot().pose.x == x + (facing == 1 ? 1 : -1);
-        check(!arrived || (purses(*party) == purses(before) &&
+        check(!arrived || (party_purse(*party) == party_purse(before) &&
                            party->state().claimed_rewards == before.claimed_rewards),
               "A completed quest location pays nothing again");
     };
@@ -1415,7 +1417,7 @@ unsigned party_coins(const CampaignParty &party)
     unsigned coins = 0;
     for (const auto id : party.state().slots)
         if (id)
-            for (const auto amount : party.member(id).wealth)
+            for (const auto amount : party.state().wealth)
                 coins += amount;
     return coins;
 }
@@ -1776,7 +1778,7 @@ std::uint64_t party_gold(const CampaignParty &party)
     std::uint64_t gold = 0;
     for (const auto id : party.state().slots)
         if (id)
-            gold += party.member(id).wealth[3];
+            gold += party.state().wealth[3];
     return gold;
 }
 

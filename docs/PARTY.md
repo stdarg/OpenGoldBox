@@ -193,9 +193,10 @@ Original records and raw AD&D statistics are never rewritten into SRD values.
 ## Reusable native boundaries
 
 `CampaignParty` owns an injected rules module and a value-owned `PartyState`:
-roster, stable member IDs, active slots and selected slot. `PartyMember` owns a
+roster, stable member IDs, active slots, selected slot and the party purse,
+which holds all the party's money. `PartyMember` owns a
 `Character`, its one authoritative `Inventory`, equipment IDs, original item
-provenance, purse, NPC source/morale and live `VitalState`.
+provenance, NPC source/morale and live `VitalState`.
 All public member views are const; reacquire them after mutations.
 
 The creator, `RolfTourSession` and `CombatDemo` share the same `CampaignParty`

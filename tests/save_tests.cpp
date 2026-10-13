@@ -62,7 +62,7 @@ template <class F> std::string rejection_message(F f)
 }
 
 // The only campaign format this build reads and writes.
-constexpr unsigned current_campaign_format = 25;
+constexpr unsigned current_campaign_format = 26;
 
 // The checksum line covers only the body, so rewriting the header number
 // changes nothing but the claimed format.
@@ -381,7 +381,7 @@ void roundtrip(const std::filesystem::path &directory)
     auto mage = party->add_pc(wizard);
     auto reserve = party->add_pc(character("bard"));
     party->remove(reserve);
-    party->set_wealth(fighter, {0, 0, 0, 500, 0, 0, 2});
+    party->set_wealth({0, 0, 0, 500, 0, 0, 2});
     por::Equipment sword;
     sword.stored.type = 36;
     sword.stored.stack_size = 1;
@@ -437,7 +437,7 @@ void roundtrip(const std::filesystem::path &directory)
               combat_a->save() == combat_b->save(),
               "Next combat continues deterministically after disk reload");
     }
-    check(replacement->member(fighter).wealth[3] == 390, "Temple charge survives load");
+    check(replacement->state().wealth[3] == 390, "Temple charge survives load");
     check(replacement->member(mage).vitals.resources == spent_slot,
           "Spent caster slots survive load");
     replacement->award_experience(300, "save:encounter");

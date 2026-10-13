@@ -364,7 +364,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         if (found == pool.end())
             throw std::runtime_error("Missing showcase hero in character pool");
         const auto id = party->add_pc(*found);
-        party->set_wealth(id, {0, 0, 0, 10, 0, 0, 0});
+        party->add_coins(Coin::gold, 10);
         if (custom)
             outfit_pool_member(*party, id);
         else

@@ -429,11 +429,11 @@ void campaign()
     original.stored.stack_size = 1;
     CampaignParty bought(module());
     const auto buyer = bought.add_pc(hero());
-    bought.set_wealth(buyer, {0, 0, 0, 100, 0, 0, 0});
+    bought.set_wealth({0, 0, 0, 100, 0, 0, 0});
     bought.purchase(buyer, original);
     const auto purchased = bought.member(buyer).character.inventory().items().front();
     check(
-        purchased.definition_id == "longbow" && bought.member(buyer).wealth[3] == 50 &&
+        purchased.definition_id == "longbow" && bought.state().wealth[3] == 50 &&
         bought.member(buyer).item_sources.at(purchased.id).stored.type == 45,
         "Ordinary purchase retains original price, quantity, provenance and existing bow conversion");
     bought.equip(buyer, purchased.id);

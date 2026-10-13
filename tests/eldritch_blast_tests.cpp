@@ -449,7 +449,7 @@ void campaign()
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
             state.random_state.value = 123;
-            state.roster[0].wealth[3] = 37;
+            state.wealth[3] = 37;
             p.restore(std::move(state));
             auto actors = p.participants();
             actors[0].cell = {1, 1};
@@ -464,7 +464,7 @@ void campaign()
             check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "eldritch");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 25\n"),
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 26\n"),
                   "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "eldritch", nullptr).party);
@@ -494,7 +494,7 @@ void campaign()
                 if (item.definition_id == "quarterstaff")
                     quarterstaffs += item.quantity;
             check(
-                quarterstaffs == 1 && restored.member(id).wealth[3] == 37 &&
+                quarterstaffs == 1 && restored.state().wealth[3] == 37 &&
                 rules->spell_access(restored.member(id).character.sheet()).cantrips.size() == 1,
                 "Rest preserves physical equipment, wealth and cast access");
         }

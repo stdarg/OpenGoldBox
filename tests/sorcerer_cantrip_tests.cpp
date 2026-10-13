@@ -400,7 +400,7 @@ void campaign()
             party.equip(id, 1);
             auto state = party.checkpoint();
             state.roster[0].vitals.hit_points -= 2;
-            state.roster[0].wealth[3] = 37;
+            state.wealth[3] = 37;
             party.restore(state);
             auto actors = party.participants();
             actors[0].cell = {1, 1};
@@ -412,7 +412,7 @@ void campaign()
             party.apply_combat(c->snapshot());
             party.end_combat();
             check(party.member(id).vitals == unit(*c, id).persistent &&
-                  party.member(id).wealth == state.roster[0].wealth,
+                  party.state().wealth == state.wealth,
                   "Handoff preserves actual damage/effects and wealth");
             auto saved = encode_campaign(party, nullptr, "sorcerer-cantrip");
             CampaignParty restored(module());

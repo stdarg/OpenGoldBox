@@ -208,7 +208,7 @@ CampaignParty party(bool npc = false)
     state.time_minutes = 123;
     state.subminute_milliseconds = 456;
     state.random_state.value = 789;
-    state.roster[0].wealth[3] = 37;
+    state.wealth[3] = 37;
     p.restore(std::move(state));
     return p;
 }

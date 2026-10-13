@@ -500,7 +500,7 @@ void pool_starting_gear()
         const auto klass = preset.creation_data().character_class;
         CampaignParty party(module());
         const auto id = add_pool_member(party, preset, 3);
-        const auto gold = party.member(id).wealth[3];
+        const auto gold = party.state().wealth[3];
         check(gold >= 30 && gold <= 180 && gold % 10 == 0 &&
               party.member(id).character.inventory().empty(),
               "A pool member brings 3d6 x 10 gp and no gear, as a new character did originally");

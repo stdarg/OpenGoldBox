@@ -49,7 +49,7 @@ void script_reads_after_rest(CampaignParty &party, MemberId id)
     for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
         vm.bind_variable(por::EclAddress{coin}, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
     (void)party.read_character(PartySlot{}, vm);
-    check(party.member(id).wealth[3] == 7 && party.state().training_rest,
+    check(party.state().wealth[3] == 7 && party.state().training_rest,
           "Script read after a Long Rest keeps the pending mastery choice");
 }
 
@@ -168,7 +168,7 @@ void run()
                 party.replace_rest_training(ticket, id, selected);
             });
             party = roundtrip(party);
-            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 25\n"),
+            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 26\n"),
                   "Actual training history uses the current campaign format");
             party.advance_time(std::chrono::minutes(24 * 60));
             check(bool(party.rest(RestKind::long_rest)),

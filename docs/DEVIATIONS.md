@@ -52,10 +52,11 @@ Add an entry whenever a new departure is decided.
   3d6 × 10 gp, not START.EXE's per-class dice, whose use in Pool of Radiance is
   unconfirmed. [START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it).
 - **Party gold** (2026-10-13). The original kept a purse per character, pooled
-  for party purchases. OpenGoldBox will keep one purse for the party that pays
-  for everything. Not yet implemented
+  for party purchases. OpenGoldBox keeps one purse for the party that pays for
+  everything; scripts see it as every member's money
   ([#232](https://github.com/stdarg/OpenGold/issues/232)).
-  [TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13).
+  [TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13),
+  [PHLAN.md](PHLAN.md#coin-payments).
 
 ## Advancement and training
 

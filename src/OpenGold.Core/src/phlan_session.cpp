@@ -184,7 +184,7 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
         fields[0x119] = party_.hit_points;
         for (unsigned n = 0; n < ecl_coin_addresses.size(); ++n)
             fields[ecl_coin_addresses[n].location - ecl_character_record.location] =
-                party_.wealth[n];
+                static_cast<std::uint16_t>(party_.wealth[n]);
     }
     for (unsigned n = 0; n < fields.size(); ++n)
         reply.writes.push_back(
@@ -1577,14 +1577,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (!campaign_ || arg(0) != 1 || arg(1) > 100)
             throw EclError("Unsupported ROB form");
         read_character();
-        for (const auto id : campaign_->state().slots)
-            if (id)
-            {
-                auto wealth = campaign_->member(id).wealth;
-                for (auto &coins : wealth)
-                    coins = static_cast<std::uint16_t>(coins * (100 - arg(1)) / 100);
-                campaign_->set_wealth(id, wealth);
-            }
+        {
+            auto wealth = campaign_->state().wealth;
+            for (auto &coins : wealth)
+                coins = static_cast<std::uint32_t>(std::uint64_t{coins} * (100 - arg(1)) / 100);
+            campaign_->set_wealth(wealth);
+        }
         robbed_ = true;
         reply = character_reply(selected_character_);
         break;

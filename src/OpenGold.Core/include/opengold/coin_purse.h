@@ -3,14 +3,20 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <optional>
 
 namespace opengold
 {
 // Original purse order: copper, silver, electrum, gold, platinum, gems, jewelry.
-using Purse = std::array<std::uint16_t, 7>;
+// The party's one purse holds what six original purses could, and more, so its
+// counts are wider than the scripts' 16-bit coin variables.
+using Purse = std::array<std::uint32_t, 7>;
 // Coin counts in the purse's first five denominations, copper through platinum.
-using Coins = std::array<std::uint16_t, 5>;
+using Coins = std::array<std::uint32_t, 5>;
+constexpr std::uint32_t purse_limit = std::numeric_limits<std::uint32_t>::max();
+// The most of one denomination a script's coin variable can show.
+constexpr std::uint32_t script_coin_limit = 65535;
 
 // A purse entry by name rather than by position: wealth[3] meant gold
 // (Effective C++ Item 18).
@@ -25,12 +31,12 @@ enum class Coin : std::size_t
     jewelry
 };
 
-[[nodiscard]] constexpr std::uint16_t &coins(Purse &purse, Coin coin) noexcept
+[[nodiscard]] constexpr std::uint32_t &coins(Purse &purse, Coin coin) noexcept
 {
     return purse[static_cast<std::size_t>(coin)];
 }
 
-[[nodiscard]] constexpr std::uint16_t coins(const Purse &purse, Coin coin) noexcept
+[[nodiscard]] constexpr std::uint32_t coins(const Purse &purse, Coin coin) noexcept
 {
     return purse[static_cast<std::size_t>(coin)];
 }
@@ -52,7 +58,7 @@ struct SettledPurse
 // Original New Phlan scripts check and take one particular denomination (the
 // inn asks for platinum). They see, in each denomination, what the whole coin
 // purse can afford at SRD rates. Gems and jewelry are not coins; they are shown
-// as held.
+// as held. A script variable shows at most script_coin_limit.
 [[nodiscard]] Purse script_coins(const Purse &purse);
 
 // Applies once what a script changed relative to script_coins(purse). Added

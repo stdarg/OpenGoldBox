@@ -638,7 +638,7 @@ void CharacterCreationView::party_action(PartyAction action)
             if (!completed_ || added_to_party_)
                 return;
             const auto added = campaign_->add_pc(*completed_);
-            campaign_->set_wealth(added, {0, 0, 0, creator_->starting_gold(), 0, 0, 0});
+            campaign_->add_coins(Coin::gold, creator_->starting_gold());
             added_to_party_ = true;
             roster_index_ = campaign_->state().roster.size() - 1;
             refresh();
@@ -905,7 +905,7 @@ void CharacterCreationView::party_check()
         press("AddParty");
         if (campaign_->state().slots[0] == 0)
             throw std::runtime_error("Add party callback failed");
-        const auto gold = campaign_->member(campaign_->state().slots[0]).wealth[3];
+        const auto gold = coins(campaign_->state().wealth, Coin::gold);
         if (gold != creator_->starting_gold() || gold < 30 || gold > 180)
             throw std::runtime_error("A new PC must bring its rolled 3d6 x 10 gp");
         if (bool(required_node<Control>(*this, "PortraitScroll/PortraitSheet").get("enabled")))
@@ -1114,7 +1114,7 @@ void CharacterCreationView::expedition_check()
         {
             auto character = preview_guard();
             const auto id = campaign_->add_pc(std::move(character));
-            campaign_->set_wealth(id, {0, 0, 0, 500, 0, 0, 0});
+            campaign_->add_coins(Coin::gold, 500);
             for (unsigned type :
                     {
                         36, 55, 59
@@ -1254,7 +1254,7 @@ void CharacterCreationView::defeat_check()
     if (defeat_check_stage_ == 0)
     {
         const auto id = campaign_->add_pc(preview_guard());
-        campaign_->set_wealth(id, {0, 0, 0, 250, 0, 0, 0});
+        campaign_->add_coins(Coin::gold, 250);
         open_saves(true);
         required_node<LineEdit>(*saves, "Name").set_text(i18n::text(N_("Defeat test")));
         required_node<Button>(*saves, "Action").emit_signal("pressed");

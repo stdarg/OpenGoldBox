@@ -128,7 +128,7 @@ The d100 uses the saved script random state rather than the DOS generator.
 
 The original inn's **PROGRAM 9** request follows its own pre-camp subroutine and
 payment dialogue. A safe, eligible request completes a long rest. The script
-collects one platinum piece from the chosen payer, who
+collects one platinum piece from the party purse, for the chosen member, and
 [makes change](PHLAN.md#coin-payments) from gold and silver when needed.
 Failed services restore the event checkpoint, including any payment. Original
 training requests (PROGRAM 0) and victory services (PROGRAM 8)
@@ -138,7 +138,7 @@ original training fee or completion of a training-hall script.
 The original temple **COMBAT** request with `6DE2=1` offers the supported
 **Cure Wounds** service using the existing dialogue list. Select a wounded living
 active member, or **Cancel**. The original Cure Light Wounds price is retained at
-**100 gp**, collected in active-slot order from gold purses only. Its healing is
+**100 gp**, paid from the party's gold coins only. Its healing is
 explicitly converted to SRD Cure Wounds, **2d8 + 3**, with an authored Wisdom +3
 temple caster. Dice are deterministic and campaign-owned; the rules module
 calculates healing, caps HP and clears death-save state without refilling slots

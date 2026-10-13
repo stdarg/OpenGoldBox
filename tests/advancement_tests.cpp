@@ -800,7 +800,7 @@ void feats()
         party.award_experience(2700, "xp");
         for (unsigned level = 2; level <= 3; ++level)
             party.advance(id, party.default_advancement(id));
-        party.set_wealth(id, {0, 0, 0, 100, 0, 0, 0});
+        party.set_wealth({0, 0, 0, 100, 0, 0, 0});
         for (unsigned type :
                 {
                     36, 55

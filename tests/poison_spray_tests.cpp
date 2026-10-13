@@ -479,7 +479,7 @@ void campaign()
             auto state = p.checkpoint();
             state.roster[0].vitals.hit_points -= 3;
             state.random_state.value = 123;
-            state.roster[0].wealth[3] = 37;
+            state.wealth[3] = 37;
             p.restore(std::move(state));
             auto actors = p.participants();
             actors[0].cell = {1, 1};
@@ -494,7 +494,7 @@ void campaign()
             check(p.member(id).vitals == old && p.profile(id).weapon_hands == 2,
                   "Cantrip handoff retains wounds, pools and the two-handed staff");
             const auto saved = encode_campaign(p, nullptr, "poison");
-            check(saved.starts_with("OPENGOLD-CAMPAIGN 25\n"),
+            check(saved.starts_with("OPENGOLD-CAMPAIGN 26\n"),
                   "Every campaign uses the current save format");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "poison", nullptr).party);
@@ -502,7 +502,7 @@ void campaign()
                   restored.member(id).character.creation_data().cantrips ==
                   p.member(id).character.creation_data().cantrips,
                   "Replay preserves chosen cantrips, history and resources exactly");
-            check(restored.member(id).wealth[3] == 37 &&
+            check(restored.state().wealth[3] == 37 &&
                   restored.profile(id).data == p.profile(id).data,
                   "Inventory, wealth, equipment and cast access retained");
         }

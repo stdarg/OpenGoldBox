@@ -1,7 +1,7 @@
 # New Phlan exploration demo
 
 The [party preview](PARTY.md) can inject created PCs/NPCs into this same native
-host, including shared purses/inventory, WHO and character/party queries.
+host, including the party purse, inventories, WHO and character/party queries.
 The standalone launcher retains the single-fighter fixture described below.
 
 `demos\review-rolf.cmd` runs the C++/Godot Rolf tour followed by free exploration of
@@ -145,25 +145,32 @@ character. `ECL3.DAX` record 0, as listed by
 - Gambling: the wager is asked in platinum; the script copies `[6BC3]` to a
   scratch cell and writes the result back to `[6BC3]`.
 
+The party owns all its money in one purse ([#232](https://github.com/stdarg/OpenGold/issues/232),
+a [deviation](DEVIATIONS.md#money) from the original's purse per character).
+Every member a script reads shows the party purse, and every payment comes from
+it.
+
 A new party carries gold and silver, so taken literally these scripts could
 never be paid. Approved policy (issue #17), **make change automatically**:
 
 - The script sees, in each coin cell (`6BBB` cp, `6BBD` sp, `6BBF` ep, `6BC1` gp,
-  `6BC3` pp), what the character's whole coin purse can afford at SRD rates
-  (1 / 10 / 50 / 100 / 1,000 cp). 145 gp and 96 sp show as 15 pp, 154 gp, and so on.
+  `6BC3` pp), what the party's whole coin purse can afford at SRD rates
+  (1 / 10 / 50 / 100 / 1,000 cp), up to 65,535 of each, the most a cell holds.
+  145 gp and 96 sp show as 15 pp, 154 gp, and so on.
 - When the script stores the character, the change from that view is applied to
   the real purse exactly once. Coins the script adds are added as given. Coins it
   takes come from that denomination first; the rest is paid from the largest
   coins that do not overpay, then by breaking one larger coin, with change back
   in gold, silver and copper. Afterwards the script is shown the settled purse.
 - Gems and jewelry (cells `6BC5`, `6BC7`) are not coins and are never converted.
+  The script's change to them is applied to the purse.
 - Prices are unchanged and no money is granted. A script that takes more than
   the purse is worth fails and the event rolls back.
 - The exchange is logged under the script's text, for example
-  "Arden pays 10 gp for 1 pp." (localized).
+  "Arden pays 10 gp for 1 pp." (localized), naming the member the script read.
 
 Reads that change nothing leave the purse alone. Shops price in gold and still
-charge gold coins. Robbery and pickpocketing remain unsupported and roll back.
+charge the party's gold coins; the item goes to the chosen buyer. Robbery and pickpocketing remain unsupported and roll back.
 Native coverage: `tests/expedition_tests.cpp` (exchange rules, one charge across
 repeated reads, and the installed inn route: decline, refusal, payment, rest).
 

@@ -287,12 +287,12 @@ MemberId add_pool_member(CampaignParty &party, const Character &character, unsig
     {
         const auto id = party.add_pc(character);
         auto state = party.checkpoint();
-        std::uint16_t gold = 0;
+        std::uint32_t gold = 0;
         for (int die = 0; die < 3; ++die)
-            gold += static_cast<std::uint16_t>(roll_die(state.random_state, 6) * 10);
+            gold += static_cast<std::uint32_t>(roll_die(state.random_state, 6) * 10);
         state.roster.back().creation_source = "pool:v1:" + std::to_string(pool_index);
         party.restore(std::move(state));
-        party.set_wealth(id, {0, 0, 0, gold, 0, 0, 0});
+        party.add_coins(Coin::gold, gold);
         return id;
     }
     catch (...)

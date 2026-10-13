@@ -15,7 +15,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 25;
+constexpr unsigned campaign_format = 26;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -323,7 +323,7 @@ template <bool Reading> struct SaveCodec
 
     void member(Visited<PartyMember> v)
     {
-        fields(v.id, v.npc_source, v.vitals, v.wealth, v.equipped, v.morale, v.experience,
+        fields(v.id, v.npc_source, v.vitals, v.equipped, v.morale, v.experience,
                v.last_rest_minutes, v.item_sources, v.creation_source, v.quick);
         // Grants are derived by replaying creation and advancement. Storing them
         // lets a load detect rules that would rebuild a different character.
@@ -335,8 +335,8 @@ template <bool Reading> struct SaveCodec
 
     void field(Visited<PartyState> v)
     {
-        fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.time_minutes,
-               v.random_state.value, v.claimed_rewards);
+        fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.wealth,
+               v.time_minutes, v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if constexpr (!reading)
             for (const auto &member : v.roster)

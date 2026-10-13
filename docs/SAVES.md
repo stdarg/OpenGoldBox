@@ -21,7 +21,7 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 25` (`campaign_format` in
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 26` (`campaign_format` in
   `campaign_save.cpp`).
 - The internal training-combat checkpoint: `OGCOMBAT 50` (`checkpoint_format`
   in `srd5.cpp`).
@@ -55,7 +55,7 @@ A campaign save stores:
 - Finished character drafts, appearances, levels, advancement choices, training
   selections and acquired feature/feat/training grants,
   stable member and inventory IDs,
-  inventory and original item provenance, equipment, purses, NPC identities/morale,
+  inventory and original item provenance, equipment, the party purse, NPC identities/morale,
   active/reserve membership, selected slot and character-pool candidate identities.
 - HP/death state, opaque rules-owned resources, XP, claimed reward IDs, recovery
   timers, campaign minutes/millisecond remainder and service RNG state.

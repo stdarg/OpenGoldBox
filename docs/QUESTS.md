@@ -82,12 +82,11 @@ that treasure. Ohlo pays 150 pp, 1 jewelry and 1 random item.
 
 - **Money and items** are awarded by that COMBAT through the same atomic loot
   service as encounter loot. Its stable identity is the script and instruction:
-  `por:ECL2:20:treasure:a390:v1`. Money goes to the first living active member
-  in party order, overflowing to the next; each item to the living member
+  `por:ECL2:20:treasure:a390:v1`. Money goes to the party purse; each item to the living member
   carrying the fewest items. Items keep their original record as provenance.
 - **XP**: none. The original grants experience only for defeated monsters and
   this script awards none.
-- **Full purses** defer the whole award, items included, as pending loot saved
+- **A full party purse** (over 4 billion of a coin) defers the whole award, items included, as pending loot saved
   with the campaign and collected when a later event starts and there is room.
   It is never split or paid twice.
 - Claim, purses, items, pending loot and the ECL flags commit with the event. A
