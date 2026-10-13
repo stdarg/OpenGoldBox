@@ -901,7 +901,7 @@ commit-specific findings as historical evidence.
 | E5: Rogue/Monk weapon proficiency | Fixed for implemented weapons | [I01 #20](https://github.com/stdarg/OpenGold/issues/20) |
 | G1: complete class features/advancement | Open; all twelve required | [Level-four milestone #8](https://github.com/stdarg/OpenGold/issues/8) and its class issues |
 | G2: species/background grants | Open | [Species #51](https://github.com/stdarg/OpenGold/issues/51), [backgrounds #50](https://github.com/stdarg/OpenGold/issues/50) |
-| G3: feat entitlements/choices | Open; Grappler removed by SCOPE-2 | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
+| G3: feat entitlements/choices | Complete: Alert, Magic Initiate, Savage Attacker, Skilled, Ability Score Improvement and the four Fighting Style feats (#74–#82); Grappler removed by SCOPE-2; Epic Boons come at level 19, beyond the level-15 cap (SCOPE-1) | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
 | G4: spell access/learning/preparation | Partial: Wizard ordinary learning/preparation controls delivered; other source/class routes remain | [F07 #36](https://github.com/stdarg/OpenGold/issues/36) and class-specific integration |
 | G5: spells/shared casting mechanics | Open | [Spell inventory #165](https://github.com/stdarg/OpenGold/issues/165) and named spell/mechanic issues |
 | G6: full progression/multiclassing | Open through level 15 (the cap); multiclassing deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [Higher levels #176](https://github.com/stdarg/OpenGold/issues/176); multiclassing [#179](https://github.com/stdarg/OpenGold/issues/179) deferred |
