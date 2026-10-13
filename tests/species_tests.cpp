@@ -257,6 +257,40 @@ void halfling_checks()
     check(luck && human_one, "Luck rerolled 1s that a Human kept");
 }
 
+// Halfling Nimbleness: a Halfling moves through a larger creature's space but
+// cannot stop there. In a corridor one square wide a Medium bandit blocks a
+// Human; a Halfling slips past it, and a Small kobold still blocks it.
+void nimbleness_checks()
+{
+    const auto rules = module();
+    std::vector<Terrain> corridor(36, Terrain::obstacle);
+    for (int x = 0; x < 12; ++x)
+        corridor[12 + x] = Terrain::open;
+    const auto offers_move = [&](const Character &hero, const std::string &blocker, Cell to)
+    {
+        auto c = rules->create({{12, 3, corridor},
+            {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                    rules->character_profile(hero.sheet(), {}).data},
+                {98, blocker, "Blocker", Side::opposition, {2, 1}}
+            }},
+        3);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the hero's turn");
+        const auto commands = c->legal_commands();
+        return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+        {
+            return command.verb == "move" && command.destination == to;
+        });
+    };
+    check(!offers_move(fighter("human"), "bandit", {3, 1}), "A bandit blocks a Human");
+    check(offers_move(fighter("halfling"), "bandit", {3, 1}),
+          "A Halfling moves through the bandit's space");
+    check(!offers_move(fighter("halfling"), "bandit", {2, 1}),
+          "A Halfling cannot stop in the bandit's space");
+    check(!offers_move(fighter("halfling"), "slums-kobold", {3, 1}),
+          "A Small kobold blocks a Halfling");
+}
+
 } // namespace
 
 int main()
@@ -266,6 +300,7 @@ int main()
         gnome_checks();
         orc_checks();
         halfling_checks();
+        nimbleness_checks();
     }
     catch (const std::exception &error)
     {

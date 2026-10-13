@@ -608,6 +608,7 @@ struct Definition
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
+    bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -1172,6 +1173,7 @@ character_definition(std::string_view bytes,
     d.gnomish_cunning = race == "Gnome";
     d.relentless = race == "Orc";
     d.lucky = race == "Halfling";
+    d.nimble = race == "Halfling";
     // Gnomes and Halflings are Small.
     if (race == "Gnome" || race == "Halfling")
         d.size = 1;
@@ -3161,10 +3163,15 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         // Unconscious actors still occupy space; corpses do not. The mover's
         // current cell is the path origin, not an obstacle. As in the original
         // game, a creature may stop on the downed (dying heroes walling in the
-        // last one could otherwise leave a fight no one can end).
-        if (!other.life.dead && !downed_riser(other) && other.source.id != mover.source.id)
-            occupants.push_back({other.source.cell, other.source.side != mover.source.side,
-                                 unconscious(other), other.life.hp == 0});
+        // last one could otherwise leave a fight no one can end). Halfling
+        // Nimbleness passes through a larger enemy as through an ally: never
+        // stopping there.
+        if (other.life.dead || downed_riser(other) || other.source.id == mover.source.id)
+            continue;
+        const bool nimble_pass = def(mover).nimble && def(other).size > def(mover).size;
+        occupants.push_back({other.source.cell,
+                             other.source.side != mover.source.side && !nimble_pass,
+                             unconscious(other), other.life.hp == 0});
     }
     return {zoned_board(), mover.source.cell, occupants, mover.effects.prone};
 }
@@ -12503,7 +12510,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.169", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.170", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -99,8 +99,12 @@ included), Initiative and ability checks, in fights and in the campaign. It is
 taken automatically, as AUTO-1 takes other always-better choices, and the log
 says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
-Nimbleness and Naturally Stealthy (which waits on Hide, #219); Brave has
-nothing to act on, since nothing in the game frightens a character yet.
+Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
+since nothing in the game frightens a character yet.
+Rules 0.6.170 gives Halflings Nimbleness: a Halfling moves through the space
+of a creature larger than itself, friend or foe, but cannot stop there. The
+user kept it on 2026-10-13 although SCOPE-2 dropped the other size-difference
+movement cases.
 Rules 0.6.165 gives Orcs Relentless Endurance: dropped to 0 Hit Points but not
 killed outright, an Orc drops to 1 instead, once per Long Rest (taken
 automatically, as AUTO-1 takes other always-better choices). The spent use is an
