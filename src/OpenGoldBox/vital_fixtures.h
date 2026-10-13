@@ -4,6 +4,7 @@
 // SRD module's only vital format with every class pool full, so a check states
 // just the spent and mortality fields it exercises.
 #include "opengold/character.h"
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -33,11 +34,19 @@ inline std::string srd_vitals(const opengold::Character &character, const VitalF
     const int free_casts = class_id == "paladin" && sheet.level >= 2 ? 1
                            : class_id == "ranger"                 ? 2
                            : 0;
-    out << "SRD11 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << ' '
+    // The free cast of each Magic Initiate feat that has chosen its spell, unspent.
+    const auto initiates = std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                                         [](const auto & grant)
+    {
+        const auto access = grant.choices.find("access");
+        return grant.source_id.starts_with("feat:magic_initiate_") &&
+               access != grant.choices.end() && access->second == "always_prepared";
+    });
+    out << "SRD12 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << ' '
         << fixture.successes << ' ' << fixture.failures << ' ' << fixture.stable << ' '
         << fixture.hit_dice << ' ' << fixture.death_save_ms << ' ' << fixture.stable_recovery_ms
         << " 0 \"\" " << rushes << ' ' << surges << ' ' << arcane << ' ' << lay_on_hands << ' '
-        << free_casts << " 0 " << fixture.effects;
+        << free_casts << " 0 " << (1 << initiates) - 1 << ' ' << fixture.effects;
     return out.str();
 }
 } // namespace presentation

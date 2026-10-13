@@ -85,7 +85,7 @@ bool logged(const CombatSession &c, std::string_view text)
     });
 }
 
-// Level-one slots, read from the vital record "SRD11 winds slots ...".
+// Level-one slots, read from the vital record "SRD12 winds slots ...".
 int slots(const CombatSession &c)
 {
     std::istringstream in(unit(c, 1).persistent.resources);

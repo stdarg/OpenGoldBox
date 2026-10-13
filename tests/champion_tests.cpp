@@ -107,7 +107,7 @@ std::vector<std::string> gear = {"longsword"}, bool prone = false)
                 rules.character_profile(h.sheet(), gear).data,
                 prone ? std::optional<VitalState>{{
                         h.sheet().hit_points, false,
-                         "SRD11 2 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 0 0 0 FX8 1 0 1"
+                         "SRD12 2 0 0 0 0 0 3 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 1"
                     }
                 }
 : std::nullopt
@@ -152,8 +152,8 @@ std::string escape_line(unsigned level)
                 1, "campaign-character", "Champion", Side::party, {2, 2},
                 rules->character_profile(h.sheet(), std::vector<std::string> {"longsword"}).data,
                 VitalState{h.sheet().hit_points, false,
-                           "SRD11 2 0 0 0 0 0 " + std::to_string(level) +
-                           " 0 0 0 \"\" 0 1 0 0 0 0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}
+                           "SRD12 2 0 0 0 0 0 " + std::to_string(level) +
+                           " 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}
             },
             {2, "dummy", "Target", Side::opposition, {6, 6}}
         }},

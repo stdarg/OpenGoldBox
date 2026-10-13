@@ -18,6 +18,30 @@ namespace
 {
 const AbilityArray<std::string> ability_names{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
 
+// Whether another learning group of the draft than `group` has chosen the spell.
+bool picked_elsewhere(const CharacterDraft &draft, std::string_view group, std::string_view spell)
+{
+    return draft.spells &&
+           std::any_of(draft.spells->learning.begin(), draft.spells->learning.end(),
+                       [&](const auto & picks)
+    {
+        return picks.first != group &&
+               std::find(picks.second.begin(), picks.second.end(), spell) != picks.second.end();
+    });
+}
+
+// A spell is learned once, so a group does not offer one another group of the
+// draft has chosen (a Sage Wizard's spellbook and Magic Initiate share a list).
+SpellChoiceOptions without_other_picks(SpellChoiceOptions options, const CharacterDraft &draft)
+{
+    for (auto &group : options.learning)
+        std::erase_if(group.options, [&](const auto & option)
+    {
+        return picked_elsewhere(draft, group.id, option.id);
+    });
+    return options;
+}
+
 struct Class
 {
     detail::CharacterClass character_class;
@@ -131,17 +155,30 @@ class CreatorRules final : public CharacterRules
     {
         using enum detail::CharacterClass;
         const auto klass = detail::draft_class(draft);
-        if (klass == cleric || klass == paladin || klass == ranger || klass == sorcerer ||
-                klass == warlock || klass == bard || klass == druid)
+        if (!klass)
+            return {};
+        // At creation only Acolyte and Sage bring spells to a class without its own.
+        if (!detail::prepares_spells(*klass) && draft.background != "acolyte" &&
+                draft.background != "sage")
+            return {};
+        // The options come from the evaluated sheet, which needs every score.
+        if (!draft.rolled || std::any_of(draft.assignment.begin(), draft.assignment.end(),
+                                         [](unsigned roll)
+    {
+        return roll >= 6;
+    }))
+        return {};
+        if (klass != wizard)
         {
-            // These classes prepare from the class list; the selection never changes it.
+            // These classes prepare from the class list, or learn only Magic
+            // Initiate's spells; the selection never changes the options.
             auto base = draft;
             base.spells = SpellChoices{};
-            return detail::spell_choice_options(evaluate(base, NameRequirement::optional),
-                                                SpellChoiceContext::advancement);
+            return without_other_picks(
+                       detail::spell_choice_options(evaluate(base, NameRequirement::optional),
+                               SpellChoiceContext::advancement),
+                       draft);
         }
-        if (klass != wizard)
-            return {};
         auto base = draft;
         base.spells = SpellChoices{};
         auto sheet = evaluate(base, NameRequirement::optional);
@@ -154,7 +191,7 @@ class CreatorRules final : public CharacterRules
         const auto selected = evaluate(draft, NameRequirement::optional);
         options.preparation =
             detail::spell_choice_options(selected, SpellChoiceContext::advancement).preparation;
-        return options;
+        return without_other_picks(std::move(options), draft);
     }
 
     TrainingChoiceGroup cantrip_options(const CharacterDraft &draft) const override
@@ -173,6 +210,11 @@ class CreatorRules final : public CharacterRules
         if (klass == detail::CharacterClass::druid && primal != draft.training.end() &&
                 primal->second == std::vector<std::string> {"magician"})
             ++group.count;
+        // A cantrip Magic Initiate already teaches is not learned twice.
+        std::erase_if(group.options, [&](const auto & option)
+        {
+            return picked_elsewhere(draft, {}, option.id);
+        });
         return group;
     }
 
@@ -527,23 +569,19 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     using enum detail::CharacterClass;
     if (klass == wizard)
         s.prepared_spells = {"magic_missile"};
-    if (d.spells && (klass == cleric || klass == paladin || klass == ranger ||
-                     klass == sorcerer || klass == warlock || klass == bard || klass == druid))
-        detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
-                                    ChoiceCompleteness::partial);
-    else if (d.spells)
+    if (d.spells && klass == wizard)
     {
-        if (klass != wizard)
-            throw std::runtime_error("Spell choices require a spellcasting class");
         std::erase_if(s.grants,
                       [](const auto & g)
         {
             return g.id == "spell:magic_missile";
         });
         s.prepared_spells.clear();
+    }
+    // Any class may learn Magic Initiate's spells; only casters prepare.
+    if (d.spells)
         detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
                                     ChoiceCompleteness::partial);
-    }
     return s;
 }
 } // namespace

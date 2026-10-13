@@ -21,9 +21,8 @@ creation, Rogue eligibility, modifier totals, invalid grants and canonical
 current saves.
 The [creation test](../tests/cantrip_view_tests.gd) checks the fixed Training display.
 
-The Sage parent #63 remains open for Magic Initiate (#75), starting equipment/
-wealth choices and their full integration. This change does not grant the Magic Initiate spell package or invent
-items in inventory.
+Sage's Magic Initiate (Wizard) is delivered; see [Magic Initiate](MAGIC-INITIATE.md).
+Starting gold replaced the equipment packages ([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
 
 Verification: 40 native/tool checks pass in aggregate after updating nine frozen
 migration expectations for the exact owed grants. Eleven affected migration,

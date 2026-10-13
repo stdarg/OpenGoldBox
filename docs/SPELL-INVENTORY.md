@@ -94,7 +94,7 @@ list column intentionally does not absorb subclass or species additions.
 
 | Tag | Availability / grant | Authority (SRD pages) | Integration issue |
 | --- | --- | --- | --- |
-| MI | Magic Initiate: two cantrips and one level-one spell from the same chosen Cleric, Druid or Wizard list; selected ability, one free leveled cast per Long Rest, slot casting and level-up replacement | 87 | [#75](https://github.com/stdarg/OpenGold/issues/75), [#200](https://github.com/stdarg/OpenGold/issues/200) |
+| MI | Magic Initiate: two cantrips and one level-one spell from the same chosen Cleric, Druid or Wizard list; selected ability, one free leveled cast per Long Rest and slot casting (delivered; level-up replacement not offered, see [Magic Initiate](MAGIC-INITIATE.md)) | 87 | [#75](https://github.com/stdarg/OpenGold/issues/75), [#200](https://github.com/stdarg/OpenGold/issues/200) |
 | Tome | Pact of the Tome: three cantrips and two level-one Ritual-tagged spells from any class list, with the feature's preparation and book restrictions; ritual casting itself is removed by DM-1, so they use slots | 74 | [#161](https://github.com/stdarg/OpenGold/issues/161), [#160](https://github.com/stdarg/OpenGold/issues/160) |
 | Thaum | Cleric's Thaumaturge Divine Order: one extra Cleric cantrip at level 1 | 37 | [#91](https://github.com/stdarg/OpenGold/issues/91) |
 | Magician | Druid's Magician Primal Order: one extra Druid cantrip at level 1 | 42 | [#152](https://github.com/stdarg/OpenGold/issues/152) |
@@ -122,9 +122,9 @@ list column intentionally does not absorb subclass or species additions.
 | Infernal | Fire Bolt at character level 1; Hellish Rebuke at 3 | 86 | [#73](https://github.com/stdarg/OpenGold/issues/73) |
 
 Acolyte grants Magic Initiate (Cleric) and Sage grants Magic Initiate (Wizard);
-Criminal and Soldier do not grant spells. Human's chosen Origin feat can grant
-Magic Initiate, as can Warlock's level-2 Lessons of the First Ones. Eligible
-level-four feat choices can also grant it. Its repeatability uses different
+Criminal and Soldier do not grant spells. Warlock's level-2 Lessons of the First
+Ones and the level-four feat choice can also grant it (all four delivered);
+Human's chosen Origin feat will, with #71. Its repeatability uses different
 spell lists, not unrestricted duplication of free uses. See [#61](https://github.com/stdarg/OpenGold/issues/61), [#63](https://github.com/stdarg/OpenGold/issues/63), [#71](https://github.com/stdarg/OpenGold/issues/71), [#75](https://github.com/stdarg/OpenGold/issues/75),
 [#82](https://github.com/stdarg/OpenGold/issues/82) and [#161](https://github.com/stdarg/OpenGold/issues/161). Dragonborn, Dwarf, Goliath, Halfling and Orc add no spell names in
 this tier; their supernatural abilities are not spells merely because they

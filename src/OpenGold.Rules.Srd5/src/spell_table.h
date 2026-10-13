@@ -1273,7 +1273,21 @@ inline constexpr std::array spell_table
         .rider = Rider::heat_metal,
         .concentration = true}};
 
-// Accepts the "_2" upcast verb form, so callers can pass a command verb directly.
+// A verb casting a level-one spell from a level-two slot ends in "_2"; one
+// casting it with Magic Initiate's free use ends in "_initiate".
+inline constexpr std::string_view initiate_suffix = "_initiate";
+
+// The verb without its "_2" or "_initiate" form, naming the spell or option cast.
+inline std::string_view without_cast_suffix(std::string_view verb)
+{
+    if (verb.ends_with("_2"))
+        verb.remove_suffix(2);
+    else if (verb.ends_with(initiate_suffix))
+        verb.remove_suffix(initiate_suffix.size());
+    return verb;
+}
+
+// Accepts the "_2" and "_initiate" verb forms, so callers can pass a command verb directly.
 // Command's options, in CommandOption order.
 inline constexpr std::array<std::string_view, 4> command_options{"approach", "flee", "grovel",
     "halt"};
@@ -1281,8 +1295,7 @@ inline constexpr std::array<std::string_view, 4> command_options{"approach", "fl
 // The option a Command verb names, if it is one.
 inline std::optional<CommandOption> command_option(std::string_view verb)
 {
-    if (verb.ends_with("_2"))
-        verb.remove_suffix(2);
+    verb = without_cast_suffix(verb);
     if (!verb.starts_with("command_"))
         return std::nullopt;
     verb.remove_prefix(8);
@@ -1299,8 +1312,7 @@ inline constexpr std::array<std::string_view, 6> chromatic_types{"acid", "cold",
 // The damage type a Chromatic Orb verb names, if it is one.
 inline std::optional<DamageType> chromatic_type(std::string_view verb)
 {
-    if (verb.ends_with("_2"))
-        verb.remove_suffix(2);
+    verb = without_cast_suffix(verb);
     if (!verb.starts_with("chromatic_orb_"))
         return std::nullopt;
     verb.remove_prefix(14);
@@ -1394,8 +1406,7 @@ inline std::optional<int> guidance_skill(std::string_view verb)
 
 inline const SpellDef *find_spell(std::string_view id)
 {
-    if (id.ends_with("_2"))
-        id.remove_suffix(2);
+    id = without_cast_suffix(id);
     if (command_option(id))
         id = "command";
     if (resistance_type(id))

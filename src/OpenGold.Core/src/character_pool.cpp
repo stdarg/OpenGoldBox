@@ -148,17 +148,35 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                 }
             }
             const auto spell_options = rules.spell_choice_options(d);
-            if (spell_options.may_prepare)
+            if (spell_options.may_prepare || !spell_options.learning.empty())
             {
                 d.spells = SpellChoices{};
+                // Two groups can offer the same spell (a Sage Wizard's spellbook
+                // and Magic Initiate), but a spell is learned only once.
+                const auto chosen = [&](const std::string & id)
+                {
+                    if (d.cantrips && std::find(d.cantrips->begin(), d.cantrips->end(), id) !=
+                            d.cantrips->end())
+                        return true;
+                    return std::any_of(d.spells->learning.begin(), d.spells->learning.end(),
+                                       [&](const auto & picks)
+                    {
+                        return std::find(picks.second.begin(), picks.second.end(), id) !=
+                               picks.second.end();
+                    });
+                };
                 for (const auto &group : spell_options.learning)
                     for (const auto &option : group.options)
                     {
                         auto &values = d.spells->learning[group.id];
                         if (values.size() == group.count)
                             break;
-                        values.push_back(option.id);
+                        if (!chosen(option.id))
+                            values.push_back(option.id);
                     }
+            }
+            if (spell_options.may_prepare)
+            {
                 d.spells->prepared.emplace();
                 for (const auto &option : rules.spell_choice_options(d).preparation)
                 {

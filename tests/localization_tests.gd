@@ -52,6 +52,17 @@ func drag(from: Vector2, to: Vector2) -> void:
 	root.push_input(up, true)
 	await settle()
 
+# Magic Initiate's spellcasting ability, two cantrips and a level-one spell,
+# each the first one still offered.
+func complete_initiate() -> void:
+	for section in current_scene.get_node("SpellChoices/Rows/BookChoices").get_children():
+		if not section.visible or not String(section.name).begins_with("feat_magic_initiate_"):
+			continue
+		for entry in section.get_children():
+			if entry is CheckBox and entry.visible and not entry.disabled and not entry.button_pressed:
+				entry.set_pressed(true)
+				await settle()
+
 func run_checks() -> void:
 	TranslationServer.set_locale("es")
 	require(TranslationServer.translate("Next") == "Siguiente", "Spanish catalog not loaded")
@@ -145,6 +156,10 @@ func run_checks() -> void:
 			entry.set_pressed(true)
 			await settle()
 			ready += 1
+	# The default Acolyte background brings Magic Initiate (Cleric).
+	var initiate: VBoxContainer = current_scene.get_node("SpellChoices/Rows/BookChoices/feat_magic_initiate_cleric_cantrips")
+	require(initiate.get_node("Count").text.begins_with("Trucos de Iniciado en la magia (Clérigo)"), "Magic Initiate choices are translated")
+	await complete_initiate()
 	await press("Next")
 	await press("Next")
 	await press("Next")

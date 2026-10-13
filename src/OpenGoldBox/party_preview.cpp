@@ -880,6 +880,19 @@ void CharacterCreationView::party_check()
                     .set_pressed(true);
                 required_node<CheckBox>(*this, "Training/Rows/Group0/archery").set_pressed(true);
             }
+            // The default Acolyte background brings Magic Initiate (Cleric): its
+            // ability, cantrips and spell, each the first one offered.
+            if (before == CreationStep::spell_choices)
+                for (const auto &group :
+                        creator_->rules().spell_choice_options(creator_->draft()).learning)
+                {
+                    const auto section = String("SpellChoices/Rows/BookChoices/") +
+                                         String::utf8(group.id.c_str()).replace(":", "_") + "/";
+                    for (unsigned n = 0; n < group.count && n < group.options.size(); ++n)
+                        required_node<CheckBox>(
+                            *this, section + String::utf8(group.options[n].id.c_str()))
+                        .set_pressed(true);
+                }
             next();
             if (creator_->step() == before)
                 throw std::runtime_error("Party-check creation did not advance");

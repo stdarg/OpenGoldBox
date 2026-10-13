@@ -68,6 +68,9 @@ Art loads from the `OPENGOLD_GAME_DIR` environment variable.
    Class changes clear invalid choices and hide their controls. Presets receive
    their supported class cantrips. See
    [Wizard spell choices](POISON-SPRAY.md) and [Cleric spell choices](SACRED-FLAME.md).
+   An Acolyte or a Sage of any class also chooses Magic Initiate's ability,
+   two cantrips and a level-one spell here; a class without spells of its own
+   gets this step for them. See [Magic Initiate](MAGIC-INITIATE.md).
 7. Customize combat head and weapon/body parts, tall/short art, and all twelve
    region colors. Select a region's Color-1 or Color-2 button, then a palette
    swatch. Ready and action previews update immediately, recoloring only that

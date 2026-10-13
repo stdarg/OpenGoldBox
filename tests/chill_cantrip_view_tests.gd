@@ -72,6 +72,17 @@ func pick(group: int, option: String, selected := true) -> void:
 	check.set_pressed(selected)
 	await settle()
 
+# A Sage also learns Magic Initiate (Wizard): its spellcasting ability, two
+# cantrips and a level-one spell, each the first one still offered.
+func complete_initiate() -> void:
+	for section in current_scene.get_node("SpellChoices/Rows/BookChoices").get_children():
+		if not section.visible or not String(section.name).begins_with("feat_magic_initiate_"):
+			continue
+		for entry in section.get_children():
+			if entry is CheckBox and entry.visible and not entry.disabled and not entry.button_pressed:
+				entry.set_pressed(true)
+				await settle()
+
 # A Wizard must fill every cantrip slot, write six level-one spells in the
 # spellbook and prepare four of them before Name.
 func complete_wizard_choices() -> void:
@@ -80,6 +91,7 @@ func complete_wizard_choices() -> void:
 		await settle()
 	await check_until("SpellChoices/Rows/BookChoices/spellbook_1", 6)
 	await check_until("SpellChoices/Rows/BookChoices/prepared", 4)
+	await complete_initiate()
 
 # Check the list's open boxes in order until `wanted` of them are checked.
 func check_until(path: String, wanted: int) -> void:

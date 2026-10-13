@@ -77,6 +77,10 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     case CreationField::background:
         candidate.background = id;
         candidate.adjustment = 0;
+        // A background can bring spells to learn (Magic Initiate), so its
+        // spell choices go with it, as a class's do.
+        if (candidate.background != draft_.background)
+            candidate.spells.reset();
         break;
     }
     if (field == CreationField::character_class &&
@@ -213,17 +217,19 @@ void CharacterCreator::spell_choice(ChoiceToggle toggle)
     draft_ = std::move(next);
 }
 
-// The Spell Choices step appears for cantrips or for spells to prepare.
+// The Spell Choices step appears for cantrips, spells to learn or spells to prepare.
 bool CharacterCreator::has_spell_choices() const
 {
-    return !rules_->cantrip_options(draft_).options.empty() ||
-           rules_->spell_choice_options(draft_).may_prepare;
+    if (!rules_->cantrip_options(draft_).options.empty())
+        return true;
+    const auto options = rules_->spell_choice_options(draft_);
+    return options.may_prepare || !options.learning.empty();
 }
 
 bool CharacterCreator::spell_choices_complete() const
 {
     const auto options = rules_->spell_choice_options(draft_);
-    if (!options.may_prepare)
+    if (!options.may_prepare && options.learning.empty())
         return true;
     if (!draft_.spells)
         return false;
@@ -238,9 +244,10 @@ bool CharacterCreator::spell_choices_complete() const
                 std::min<std::size_t>(group.count, group.options.size()))
             return false;
     }
-    return draft_.spells->prepared &&
-           draft_.spells->prepared->size() ==
-           std::min<std::size_t>(options.prepared_count, options.preparation.size());
+    return !options.may_prepare ||
+           (draft_.spells->prepared &&
+            draft_.spells->prepared->size() ==
+            std::min<std::size_t>(options.prepared_count, options.preparation.size()));
 }
 
 void CharacterCreator::prune_training(CharacterDraft &candidate) const
@@ -448,8 +455,7 @@ void CharacterCreator::next()
     step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) + 1);
     if (step_ == CreationStep::spell_choices && !has_spell_choices())
         step_ = CreationStep::combat_icon;
-    if (step_ == CreationStep::spell_choices && !draft_.spells &&
-            rules_->spell_choice_options(draft_).may_prepare)
+    if (step_ == CreationStep::spell_choices && !draft_.spells)
         draft_.spells = SpellChoices{};
 }
 

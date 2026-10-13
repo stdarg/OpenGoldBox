@@ -120,7 +120,7 @@ bool logged(const CombatSession &c, std::string_view text)
     });
 }
 
-// Level-one and level-two slots in "SRD11 winds slots slots2 ...".
+// Level-one and level-two slots in "SRD12 winds slots slots2 ...".
 std::pair<int, int> slots(const VitalState &vitals)
 {
     std::istringstream in(vitals.resources);

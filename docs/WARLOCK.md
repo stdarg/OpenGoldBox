@@ -51,8 +51,10 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 - **Devil's Sight**: the Warlock sees through magical Darkness, which is now
   its own zone (Fog Cloud still hides everything); it attacks into Darkness
   with Advantage while its target cannot see it.
-- **Lessons of the First Ones**: Alert or Savage Attacker (Magic Initiate is
-  unavailable and Skilled's further choices are not offered here).
+- **Lessons of the First Ones**: Alert, Savage Attacker or
+  [Magic Initiate](MAGIC-INITIATE.md) with a list the Warlock does not already
+  have; its spells are chosen on the level-up dialog's spell page. Skilled's
+  further choices are not offered here.
 - **Pact of the Blade**: the Warlock's melee weapon is its pact weapon:
   proficiency, and Charisma when that is better. Conjuring the weapon, the
   bond and the damage type choice are not modeled.

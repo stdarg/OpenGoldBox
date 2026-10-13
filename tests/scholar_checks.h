@@ -147,7 +147,7 @@ void medicine_combat()
                     Side::party,
                     {2, 1},
                     {},
-                    VitalState{0, false, "SRD11 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 FX8 1 0 0"}
+                    VitalState{0, false, "SRD12 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}
                 },
                 {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
             }};

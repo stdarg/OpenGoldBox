@@ -119,7 +119,7 @@ unsigned pool(const CombatSession &c, std::string_view id)
     throw std::runtime_error("Missing resource pool");
 }
 
-// Level-one slots, read from "SRD11 winds slots slots2 ...".
+// Level-one slots, read from "SRD12 winds slots slots2 ...".
 int first_level_slots(const CombatSession &c)
 {
     std::istringstream in(unit(c, 1).persistent.resources);

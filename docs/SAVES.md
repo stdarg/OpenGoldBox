@@ -23,15 +23,15 @@ every field:
 
 - Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 25` (`campaign_format` in
   `campaign_save.cpp`).
-- The internal training-combat checkpoint: `OGCOMBAT 48` (`checkpoint_format`
+- The internal training-combat checkpoint: `OGCOMBAT 50` (`checkpoint_format`
   in `srd5.cpp`).
 - Records embedded by the SRD module: character profile recipe `PC42` (an
-  explicit spell ID list), vital state `SRD11`, effect state `FX8` and
+  explicit spell ID list), vital state `SRD12`, effect state `FX8` and
   concentration `CN1`.
 
 A save or checkpoint with an older format number, or one written under a
 different rules identity (module, version or content hash; currently
-`opengold.srd5` 0.6.155, `content.identity` in `srd5.cpp`), is rejected with
+`opengold.srd5` 0.6.158, `content.identity` in `srd5.cpp`), is rejected with
 the localized message "This save was made by an older pre-release version of
 OpenGoldBox and can't be loaded." A newer or unknown campaign number reports
 "Unsupported campaign save version". Nothing is migrated.

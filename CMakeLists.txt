@@ -471,6 +471,11 @@ if(OPENGOLD_BUILD_TESTS)
     set_tests_properties(opengold_spell_access_tests PROPERTIES
         FIXTURES_SETUP spell_choice_fixtures)
 
+    add_executable(opengold_magic_initiate_tests tests/magic_initiate_tests.cpp)
+    target_link_libraries(opengold_magic_initiate_tests PRIVATE opengold_rules_srd5 opengold_core)
+    target_compile_definitions(opengold_magic_initiate_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_magic_initiate_tests COMMAND opengold_magic_initiate_tests)
+
     add_executable(opengold_armor_catalog_tests tests/armor_catalog_tests.cpp)
     target_link_libraries(opengold_armor_catalog_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_include_directories(opengold_armor_catalog_tests PRIVATE src/OpenGold.Rules.Srd5/src)

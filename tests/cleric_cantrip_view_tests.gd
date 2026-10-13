@@ -70,6 +70,17 @@ func pick(group: int, option: String, selected := true) -> void:
 	check.set_pressed(selected)
 	await settle()
 
+# A Sage also learns Magic Initiate (Wizard): its spellcasting ability, two
+# cantrips and a level-one spell, each the first one still offered.
+func complete_initiate() -> void:
+	for section in current_scene.get_node("SpellChoices/Rows/BookChoices").get_children():
+		if not section.visible or not String(section.name).begins_with("feat_magic_initiate_"):
+			continue
+		for entry in section.get_children():
+			if entry is CheckBox and entry.visible and not entry.disabled and not entry.button_pressed:
+				entry.set_pressed(true)
+				await settle()
+
 func keyboard(key: Key) -> void:
 	for down in [true, false]:
 		var event := InputEventKey.new()
@@ -124,6 +135,7 @@ func run_checks() -> void:
 		current_scene.get_node(prepared + spell).set_pressed(true)
 		await settle()
 	require(current_scene.get_node(prepared + "Count").text == "Prepared spells (4 / 4)", "Every available spell is prepared")
+	await complete_initiate()
 	await capture("cleric-cantrip-choices-1120")
 	TranslationServer.set_locale("es")
 	await press("Back")
@@ -171,6 +183,8 @@ func run_checks() -> void:
 	for spell in ["cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"]:
 		current_scene.get_node(prepared + spell).set_pressed(true)
 		await settle()
+	# Changing the class cleared the Sage's Magic Initiate picks too.
+	await complete_initiate()
 	await press("Next")
 	await press("Next")
 	await press("Next")

@@ -431,6 +431,22 @@ void creation_tests()
             {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"
             })
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
+    rejects(
+        [&]
+    {
+        creator.next();
+    },
+    "An Acolyte chooses Magic Initiate's spells and ability");
+    creator.spell_choice({.group = "feat:magic_initiate_cleric:ability",
+                          .option = "wisdom",
+                          .selected = true});
+    // Guidance is the one Cleric cantrip the class choices left; the second stays pending.
+    creator.spell_choice({.group = "feat:magic_initiate_cleric:cantrips",
+                          .option = "guidance",
+                          .selected = true});
+    creator.spell_choice({.group = "feat:magic_initiate_cleric:spell",
+                          .option = "bless",
+                          .selected = true});
     creator.next();
     check(creator.step() == CreationStep::combat_icon,
           "Spell Choices advances to combat appearance");

@@ -25,7 +25,8 @@ Expertise, independent check totals, profile validation and level-four
 ability improvements. [Godot checks](../tests/training_view_tests.gd) cover the
 actual choice groups, background switching, keyboard access and final party sheet.
 
-Acolyte #61 remains open for Magic Initiate and starting equipment/wealth.
+Acolyte's Magic Initiate (Cleric) is delivered; see [Magic Initiate](MAGIC-INITIATE.md).
+Starting gold replaced the equipment packages ([START-1](SRD-DECISIONS.md#start-1-2026-10-11-starting-gold-as-the-original-game-gave-it)).
 Soldier #64 retains Savage Attacker. Starting equipment/wealth remains open. This
 original increment completed only the fixed skill grants.
 

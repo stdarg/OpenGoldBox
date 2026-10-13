@@ -205,8 +205,12 @@ struct SpellAccess
 {
     std::vector<LearnedSpell> cantrips, spellbook;
     std::vector<std::string> prepared;
-    // Granted by a class or subclass feature; never counted against prepared_choices.
+    // Granted by a class or subclass feature, or Magic Initiate; never counted
+    // against prepared_choices.
     std::vector<std::string> always_prepared;
+    // Magic Initiate's cantrips and level-one spell, each sourced from its feat;
+    // never counted against the class's choices.
+    std::vector<LearnedSpell> initiate;
     unsigned cantrip_choices{}, spellbook_choices{}, prepared_choices{};
 };
 

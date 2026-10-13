@@ -315,6 +315,209 @@ bool druidic_warrior(std::span<const FeatureGrant> grants)
                                   {}}) != grants.end();
 }
 
+// Magic Initiate, SRD 5.2.1 p. 87: two cantrips and one level-one spell from
+// the Cleric, Druid or Wizard list, cast with the ability chosen for the feat.
+// Taken again it must name another list, so each list is its own feat id and
+// the grants it makes are sourced from that id.
+struct InitiateList
+{
+    std::string_view id, label;
+    unsigned list;
+};
+
+constexpr std::array initiate_lists{InitiateList{"cleric", "Cleric", cleric_list},
+    InitiateList{"druid", "Druid", druid_list}, InitiateList{"wizard", "Wizard", wizard_list}};
+
+constexpr std::string_view initiate_prefix = "feat:magic_initiate_";
+constexpr std::string_view ability_prefix = "spellcasting_ability:";
+constexpr std::array<std::pair<std::string_view, std::string_view>, 3> initiate_abilities{
+    {{"intelligence", "Intelligence"}, {"wisdom", "Wisdom"}, {"charisma", "Charisma"}}};
+
+const InitiateList *initiate_list(std::string_view feat)
+{
+    if (!feat.starts_with(initiate_prefix))
+        return nullptr;
+    feat.remove_prefix(initiate_prefix.size());
+    for (const auto &list : initiate_lists)
+        if (list.id == feat)
+            return &list;
+    return nullptr;
+}
+
+// A class's own spell grant; Magic Initiate's spells answer to the feat instead.
+bool class_spell_grant(const FeatureGrant &grant)
+{
+    return is_spell_grant(grant) && !is_initiate_grant(grant);
+}
+
+// The Magic Initiate feats held, as (feat id, acquisition level), in grant
+// order: from a background or level four, or the Warlock's Lessons of the
+// First Ones, which grants the feat its id names.
+std::vector<std::pair<std::string, unsigned>> initiate_feats(std::span<const FeatureGrant> grants)
+{
+    constexpr std::string_view lessons = "invocation:lessons_";
+    std::vector<std::pair<std::string, unsigned>> result;
+    for (const auto &g : grants)
+        if (initiate_list(g.id))
+            result.emplace_back(g.id, g.level);
+        else if (g.id.starts_with(lessons) &&
+                 initiate_list("feat:" + g.id.substr(lessons.size())))
+            result.emplace_back("feat:" + g.id.substr(lessons.size()), g.level);
+    return result;
+}
+
+FeatureGrant initiate_spell_grant(std::string_view feat, std::string_view spell, unsigned level)
+{
+    return {"spell:" + std::string(spell), std::string(feat), level,
+        {{"access", find(spell).level ? "always_prepared" : "cantrip"}}};
+}
+
+// Checks each feat's grants and adds its cantrips and always-prepared spell.
+void add_initiate_access(SpellAccess &result, std::span<const FeatureGrant> grants,
+                         unsigned level)
+{
+    std::set<std::string> known;
+    for (const auto &g : grants)
+        if (is_spell_grant(g))
+            require(known.insert(g.id).second);
+    const auto feats = initiate_feats(grants);
+    std::set<std::string> lists;
+    for (const auto &feat : feats)
+        require(lists.insert(feat.first).second);
+    for (const auto &g : grants)
+    {
+        if (!is_initiate_grant(g))
+            continue;
+        const auto feat = std::find_if(feats.begin(), feats.end(), [&](const auto & f)
+        {
+            return f.first == g.source_id;
+        });
+        require(feat != feats.end() && g.level == feat->second && g.level <= level);
+        if (g.id.starts_with(ability_prefix))
+        {
+            const auto ability = std::string_view(g.id).substr(ability_prefix.size());
+            require(g.choices.empty() &&
+                    std::any_of(initiate_abilities.begin(), initiate_abilities.end(),
+                                [&](const auto & a)
+            {
+                return a.first == ability;
+            }));
+            continue;
+        }
+        require(is_spell_grant(g));
+        const auto &spell = find(std::string_view(g.id).substr(6));
+        require((spell.lists & initiate_list(g.source_id)->list) && spell.level <= 1 &&
+                g == initiate_spell_grant(g.source_id, spell.id, g.level));
+        result.initiate.push_back(
+        {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
+        if (spell.level && std::find(result.always_prepared.begin(), result.always_prepared.end(),
+                                     spell.id) == result.always_prepared.end())
+            result.always_prepared.emplace_back(spell.id);
+    }
+    for (const auto &[feat, acquired] : feats)
+    {
+        unsigned abilities = 0, cantrips = 0, leveled = 0;
+        for (const auto &g : grants)
+            if (g.source_id == feat)
+            {
+                if (g.id.starts_with(ability_prefix))
+                    ++abilities;
+                else if (find(std::string_view(g.id).substr(6)).level)
+                    ++leveled;
+                else
+                    ++cantrips;
+            }
+        require(abilities <= 1 && cantrips <= 2 && leveled <= 1);
+    }
+}
+
+// What each Magic Initiate feat acquired at the sheet's level still has to choose.
+void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &sheet)
+{
+    for (const auto &[feat, acquired] : initiate_feats(sheet.grants))
+    {
+        if (acquired != static_cast<unsigned>(sheet.level))
+            continue;
+        const auto &list = *initiate_list(feat);
+        const auto name = "Magic Initiate (" + std::string(list.label) + ")";
+        const auto mine = [&](auto predicate)
+        {
+            return static_cast<unsigned>(std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                                         [&](const auto & g)
+            {
+                return g.source_id == feat && predicate(g);
+            }));
+        };
+        const auto known = [&](std::string_view id)
+        {
+            return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+            {
+                return g.id == "spell:" + std::string(id);
+            });
+        };
+        const bool ability_chosen = mine([](const auto & g)
+        {
+            return g.id.starts_with(ability_prefix);
+        }) > 0;
+        if (!ability_chosen)
+        {
+            TrainingChoiceGroup group{feat + ":ability", name + ": spellcasting ability", 1, {}};
+            group.acquired_level = acquired;
+            // The class's own spellcasting ability first, so a ready-made
+            // character's first pick is the one its class already raises.
+            using enum CharacterClass;
+            const auto klass = class_of(sheet);
+            const std::string_view first =
+                klass == cleric || klass == druid || klass == ranger ? "wisdom"
+                : klass == bard || klass == paladin || klass == sorcerer || klass == warlock
+                ? "charisma"
+                : "intelligence";
+            auto abilities = initiate_abilities;
+            std::stable_partition(abilities.begin(), abilities.end(), [&](const auto & a)
+            {
+                return a.first == first;
+            });
+            for (const auto &[id, label] : abilities)
+                group.options.push_back({std::string(id), std::string(label),
+                                         "Spell attacks and save DCs for these spells."});
+            result.learning.push_back(std::move(group));
+        }
+        for (const unsigned spell_level : {0u, 1u})
+        {
+            const unsigned owed = spell_level ? 1 : 2;
+            const auto have = mine([&](const auto & g)
+            {
+                return is_spell_grant(g) &&
+                       find(std::string_view(g.id).substr(6)).level == spell_level;
+            });
+            if (have >= owed)
+                continue;
+            TrainingChoiceGroup group{feat + (spell_level ? ":spell" : ":cantrips"),
+                                      name + (spell_level ? " level 1 spell" : " cantrips"),
+                                      owed - have, {}};
+            group.acquired_level = acquired;
+            for (const auto &spell : spells)
+                if ((spell.lists & list.list) && spell.level == spell_level && !known(spell.id))
+                    group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
+            result.learning.push_back(std::move(group));
+        }
+    }
+}
+
+// The grant a Magic Initiate learning group's pick makes, or none for another group.
+std::optional<FeatureGrant> initiate_choice_grant(const TrainingChoiceGroup &group,
+        std::string_view value)
+{
+    const auto split = group.id.rfind(':');
+    if (split == std::string::npos || !initiate_list(std::string_view(group.id).substr(0, split)))
+        return std::nullopt;
+    const auto feat = group.id.substr(0, split);
+    if (group.id.ends_with(":ability"))
+        return FeatureGrant{std::string(ability_prefix) + std::string(value), feat,
+                            group.acquired_level, {}};
+    return initiate_spell_grant(feat, value, group.acquired_level);
+}
+
 // The cantrips a caster knows at a class level, its features included.
 unsigned cantrips_at(const PreparedCaster &caster, std::span<const FeatureGrant> grants,
                      unsigned level)
@@ -344,7 +547,7 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
     std::set<std::string> known;
     std::array<unsigned, 5> learned{};
     for (const auto &g : grants)
-        if (is_spell_grant(g))
+        if (class_spell_grant(g))
         {
             const auto &spell = find(std::string_view(g.id).substr(6));
             // Cantrips are learned at level one or at a level whose count grows.
@@ -381,14 +584,15 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
         const CharacterSheet &sheet, SpellChoiceContext context)
 {
     SpellChoiceOptions result;
-    const auto access = prepared_access(caster, sheet.grants, sheet.level, sheet.prepared_spells);
+    const auto access = spell_access(sheet.grants, caster.klass, sheet.level, sheet.prepared_spells);
     const auto known = [&](std::string_view id)
     {
-        return std::any_of(access.cantrips.begin(), access.cantrips.end(),
-                           [&](const auto & s)
+        const auto named = [&](const auto & s)
         {
             return s.id == id;
-        });
+        };
+        return std::any_of(access.cantrips.begin(), access.cantrips.end(), named) ||
+               std::any_of(access.initiate.begin(), access.initiate.end(), named);
     };
     const unsigned level = sheet.level;
     const unsigned capacity = level > 1 ? cantrips_at(caster, sheet.grants, level) -
@@ -399,7 +603,7 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
         const auto used = static_cast<unsigned>(std::count_if(sheet.grants.begin(), sheet.grants.end(),
                                             [&](const auto & g)
         {
-            return is_spell_grant(g) && g.level == level;
+            return class_spell_grant(g) && g.level == level;
         }));
         if (used < capacity)
         {
@@ -436,11 +640,16 @@ bool is_spell_grant(const FeatureGrant &grant)
     return grant.id.starts_with("spell:");
 }
 
+bool is_initiate_grant(const FeatureGrant &grant)
+{
+    return grant.source_id.starts_with(initiate_prefix);
+}
+
 std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> grants)
 {
     std::vector<FeatureGrant> result;
     for (const auto &g : grants)
-        if (!is_spell_grant(g))
+        if (!is_spell_grant(g) && !is_initiate_grant(g))
             result.push_back(g);
     return result;
 }
@@ -678,15 +887,29 @@ starting_spell_grants(CharacterClass klass,
     return result;
 }
 
+// A class's own spells, without Magic Initiate's.
+SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
+                               unsigned level, std::span<const std::string> prepared);
+SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
+        SpellChoiceContext context);
+
 SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
                          unsigned level, std::span<const std::string> prepared)
+{
+    auto result = class_spell_access(grants, klass, level, prepared);
+    add_initiate_access(result, grants, level);
+    return result;
+}
+
+SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
+                               unsigned level, std::span<const std::string> prepared)
 {
     SpellAccess result;
     if (const auto *caster = prepared_caster(klass))
         return prepared_access(*caster, grants, level, prepared);
     if (klass != CharacterClass::wizard)
     {
-        require(std::none_of(grants.begin(), grants.end(), is_spell_grant));
+        require(std::none_of(grants.begin(), grants.end(), class_spell_grant));
         return result; // Each other class's preparation policy has its own issue.
     }
     require(level >= 1 && level <= 4);
@@ -698,7 +921,7 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass kl
     std::set<std::string> known;
     std::array<unsigned, 5> books{}, cantrips{};
     for (const auto &g : grants)
-        if (is_spell_grant(g))
+        if (class_spell_grant(g))
         {
             require(g.source_id == source && g.level >= 1 && g.level <= level &&
                     known.insert(g.id).second);
@@ -750,6 +973,15 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass kl
 
 SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoiceContext context)
 {
+    auto result = class_spell_choice_options(sheet, context);
+    if (context == SpellChoiceContext::advancement)
+        add_initiate_learning(result, sheet);
+    return result;
+}
+
+SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
+        SpellChoiceContext context)
+{
     SpellChoiceOptions result;
     const auto klass = class_of(sheet);
     if (const auto *caster = prepared_caster(klass))
@@ -783,7 +1015,7 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
                                       sheet.grants.begin(), sheet.grants.end(),
                                       [&](const auto & g)
             {
-                return is_spell_grant(g) && g.level == level &&
+                return class_spell_grant(g) && g.level == level &&
                        (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
             }));
             if (capacity == used)
@@ -826,7 +1058,6 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     const bool complete = completeness == ChoiceCompleteness::complete;
     const auto klass = class_of(sheet);
     const auto *caster = prepared_caster(klass);
-    require(klass == CharacterClass::wizard || caster);
     const auto origin = class_source(klass);
     auto candidate = sheet;
     const auto options = spell_choice_options(sheet, context);
@@ -845,7 +1076,10 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
             {
                 return o.id == value;
             }));
-            candidate.grants.push_back(grant(value, group->acquired_level, origin));
+            if (const auto initiate = initiate_choice_grant(*group, value))
+                candidate.grants.push_back(*initiate);
+            else
+                candidate.grants.push_back(grant(value, group->acquired_level, origin));
         }
     }
     require(choices.replace_cantrip.empty() == choices.replacement.empty());
@@ -916,6 +1150,60 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
         return g.id == "land:" + std::string(entry.land);
     })))
         result.emplace_back(entry.spell);
+    // Magic Initiate's level-one spell is always prepared too.
+    for (const auto &g : grants)
+        if (is_initiate_grant(g) && is_spell_grant(g))
+        {
+            const auto id = std::string_view(g.id).substr(6);
+            if (find(id).level && std::find(result.begin(), result.end(), id) == result.end())
+                result.emplace_back(id);
+        }
+    return result;
+}
+
+std::vector<InitiateSpells> magic_initiate_spells(std::span<const FeatureGrant> grants)
+{
+    std::vector<InitiateSpells> result;
+    for (const auto &[feat, acquired] : initiate_feats(grants))
+    {
+        InitiateSpells entry{feat};
+        for (const auto &g : grants)
+        {
+            if (g.source_id != feat)
+                continue;
+            if (g.id.starts_with(ability_prefix))
+            {
+                const auto ability = std::string_view(g.id).substr(ability_prefix.size());
+                entry.ability = ability == "wisdom"     ? Ability::wisdom
+                                : ability == "charisma" ? Ability::charisma
+                                : Ability::intelligence;
+                continue;
+            }
+            const auto id = std::string_view(g.id).substr(6);
+            entry.spells.emplace_back(id);
+            if (find(id).level)
+                entry.free_spell = id;
+        }
+        result.push_back(std::move(entry));
+    }
+    return result;
+}
+
+std::vector<AdvancementOption> magic_initiate_feats(std::span<const FeatureGrant> grants)
+{
+    const auto held = initiate_feats(grants);
+    std::vector<AdvancementOption> result;
+    for (const auto &list : initiate_lists)
+    {
+        const auto feat = std::string(initiate_prefix) + std::string(list.id);
+        result.push_back({feat.substr(5), "Magic Initiate (" + std::string(list.label) + ")",
+                          "Two " + std::string(list.label) +
+                          " cantrips and one level-one spell, cast once per Long Rest without a slot; Intelligence, Wisdom or Charisma for them.",
+                          std::none_of(held.begin(), held.end(), [&](const auto & f)
+        {
+            return f.first == feat;
+        })});
+    }
     return result;
 }
 
@@ -933,6 +1221,9 @@ std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
         (void)find(s.id);
         result.push_back(s.id);
     }
+    for (const auto &s : access.initiate)
+        if (!find(s.id).level)
+            result.push_back(s.id);
     return result;
 }
 

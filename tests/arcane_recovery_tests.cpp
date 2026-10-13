@@ -312,8 +312,8 @@ void eligibility_and_effects()
     check(caught && state.resources == unconscious, "Unconscious recovery rejects atomically");
     state = conscious_state;
     (void)rules->recover_rest_choice(state, sheet, "arcane_recovery:1:0");
-    check(state.resources.starts_with("SRD11 "), "Spent use has a versioned vital record");
-    // A lasting effect must still expire when its host resource record is SRD11.
+    check(state.resources.starts_with("SRD12 "), "Spent use has a versioned vital record");
+    // A lasting effect must still expire when its host resource record is SRD12.
     srd5::detail::EffectState effects;
     srd5::detail::apply_ray_of_frost(effects, {.scope = 1, .actor = 99}, "Recovery test", 6000);
     std::ostringstream encoded;
@@ -375,7 +375,7 @@ void combat_and_advancement()
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         const auto before = combat->save();
-        check(before.starts_with("OGCOMBAT 49 "),
+        check(before.starts_with("OGCOMBAT 50 "),
               "Spent recovery uses a versioned combat checkpoint");
         auto copy = rules->restore(before);
         check(copy->save() == before && copy->snapshot().physical_inventory == physical,

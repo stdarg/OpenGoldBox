@@ -60,6 +60,11 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
         result.push_back({"feat:alert", "background:criminal", 1, {}});
     if (background == "soldier")
         result.push_back({"feat:savage_attacker", "background:soldier", 1, {}});
+    // Each list of Magic Initiate is its own feat, so Acolyte and Sage name theirs.
+    if (background == "acolyte")
+        result.push_back({"feat:magic_initiate_cleric", "background:acolyte", 1, {}});
+    if (background == "sage")
+        result.push_back({"feat:magic_initiate_wizard", "background:sage", 1, {}});
     if (klass == CharacterClass::fighter)
     {
         // Entitlement already used by the existing Defense selection. Completing
@@ -253,7 +258,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
     {
         require(grant.level >= 1 && grant.level <= level);
         // ASI and Skilled are repeatable, but never twice from the same
-        // entitlement; the entitlements set below enforces that. Other
+        // entitlement; the entitlements set below enforces that. Magic Initiate
+        // repeats only with another list, which is another feat id. Other
         // implemented feats/features are not repeatable (SRD pp. 87–88).
         if (grant.id != "feat:ability_score_improvement" && grant.id != "feat:skilled")
             require(nonrepeatable.insert(grant.id).second);
@@ -310,7 +316,10 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                     require(has_grant(grants, "feature:fighting_style"));
                 else
                     require(grant.id == "feat:savage_attacker" || grant.id == "feat:alert" ||
-                            grant.id == "feat:skilled");
+                            grant.id == "feat:skilled" ||
+                            grant.id == "feat:magic_initiate_cleric" ||
+                            grant.id == "feat:magic_initiate_druid" ||
+                            grant.id == "feat:magic_initiate_wizard");
             }
         }
         if (grant.id == "feat:alert")
@@ -350,7 +359,7 @@ std::vector<rules::FeatureGrant> read_grants(std::istream &in)
 {
     unsigned count{};
     in >> count;
-    require(static_cast<bool>(in) && count <= 32);
+    require(static_cast<bool>(in) && count <= 64);
     std::vector<rules::FeatureGrant> result;
     for (unsigned i = 0; i < count; ++i)
     {

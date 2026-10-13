@@ -257,7 +257,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 49;
+constexpr unsigned checkpoint_format = 50;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -565,6 +565,11 @@ struct Definition
     // Uncanny Metabolism's once-per-Long-Rest use (kept in Actor::arcane).
     int focus{}, metabolism{};
     int innate_sorcery{}; // Sorcerer: Innate Sorcery uses, in Actor::free_casts
+    // Magic Initiate: the spell attack bonus (the feat's ability modifier plus
+    // Proficiency Bonus) of each spell it teaches, and each feat's level-one
+    // spell in feat order, cast once per Long Rest without a slot.
+    std::map<std::string, int, std::less<>> initiate_casting;
+    std::vector<std::string> initiate_spells;
     int sorcery_points{}; // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
     bool pact_magic{};    // Warlock: slots of one level, back on a Short Rest
@@ -680,6 +685,8 @@ struct Actor
         // most one of them while multiclassing is deferred (SCOPE-1).
         free_casts{},
         channel_divinity{};
+    // Magic Initiate's unspent free casts: bit n is Definition::initiate_spells[n].
+    int initiate_casts{};
     // The creature this actor just hit with a melee weapon on its own turn, which
     // a smite may follow; cleared by any other command or a new turn.
     EntityId smite_target{};
@@ -826,6 +833,28 @@ int free_cast_capacity(const Definition &d)
     return d.free_smite + d.favored_enemy + d.innate_sorcery;
 }
 
+// One bit per Magic Initiate feat, each its spell's free cast.
+int initiate_capacity(const Definition &d)
+{
+    return (1 << d.initiate_spells.size()) - 1;
+}
+
+// The bit of a spell's Magic Initiate free cast, or 0 when no feat casts it free.
+int initiate_bit(const Definition &d, std::string_view spell)
+{
+    const auto found = std::find(d.initiate_spells.begin(), d.initiate_spells.end(), spell);
+    return found == d.initiate_spells.end()
+           ? 0 : 1 << (found - d.initiate_spells.begin());
+}
+
+// The spell attack bonus a spell uses: the ability Magic Initiate chose for
+// the spells it teaches, the class's spellcasting ability for every other.
+int casting_bonus(const Definition &d, std::string_view spell)
+{
+    const auto found = d.initiate_casting.find(spell);
+    return found == d.initiate_casting.end() ? d.casting : found->second;
+}
+
 // Action Surge and Focus Points share one store; no class has both, and a
 // Short Rest restores each fully.
 int surge_capacity(const Definition &d)
@@ -892,6 +921,34 @@ rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Ac
         static_cast<unsigned>(actor.*descriptor.remaining),
         capacity,
         descriptor.short_rest < 0 ? capacity : static_cast<unsigned>(descriptor.short_rest)};
+}
+
+// Magic Initiate's free casts: one pool per feat, named for its spell.
+void add_initiate_pools(std::vector<rules::ResourcePool> &pools, const Actor &actor,
+                        const Definition &d)
+{
+    for (std::size_t n = 0; n < d.initiate_spells.size(); ++n)
+        pools.push_back({"magic_initiate:" + d.initiate_spells[n],
+            {   "Magic Initiate: {spell}",
+                {{"spell", std::string(detail::find_spell(d.initiate_spells[n])->label), true}}
+            },
+            (actor.initiate_casts >> n) & 1 ? 1u : 0u, 1u, 0u});
+}
+
+// Pays for a leveled spell: with Magic Initiate's free cast, or from a slot
+// (a level-two one for a level-two spell or a "_2" verb), the turn's one slot.
+void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
+{
+    if (verb.ends_with(detail::initiate_suffix))
+    {
+        a.initiate_casts &= ~initiate_bit(a.definition, spell.id);
+        return;
+    }
+    if (verb.ends_with("_2") || spell.level >= 2)
+        --a.slots2;
+    else
+        --a.slots;
+    a.spent_slot = true;
 }
 
 bool unconscious(const Actor &a)
@@ -1187,14 +1244,8 @@ character_definition(std::string_view bytes,
            klass == CharacterClass::paladin || klass == CharacterClass::bard) ? Ability::charisma
         : Ability::intelligence;
     d.casting = 2 + ability_modifier(scores[casting_ability]);
-    const auto allowed = allowed_spells(klass, level);
-    const bool eligible = std::all_of(stored_spells.begin(), stored_spells.end(),
-                                      [&](const auto & id)
-    {
-        return detail::knows_spell(allowed, id);
-    });
-    if (!eligible || ((features & 1) && klass != CharacterClass::fighter &&
-                      klass != CharacterClass::paladin && klass != CharacterClass::ranger))
+    if ((features & 1) && klass != CharacterClass::fighter &&
+            klass != CharacterClass::paladin && klass != CharacterClass::ranger)
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
     d.spells = stored_spells;
     d.savage = (features & 2) != 0;
@@ -1215,6 +1266,21 @@ character_definition(std::string_view bytes,
     std::string background;
     in >> std::quoted(background);
     const auto grants = detail::read_grants(in);
+    for (const auto &feat : detail::magic_initiate_spells(grants))
+    {
+        for (const auto &spell : feat.spells)
+            d.initiate_casting.emplace(spell, 2 + ability_modifier(scores[feat.ability]));
+        if (!feat.free_spell.empty())
+            d.initiate_spells.push_back(feat.free_spell);
+    }
+    // A stored spell is the class's at this level, or one Magic Initiate teaches.
+    const auto allowed = allowed_spells(klass, level);
+    const auto storable = [&](const std::string & id)
+    {
+        return detail::knows_spell(allowed, id) || d.initiate_casting.contains(id);
+    };
+    if (!std::all_of(stored_spells.begin(), stored_spells.end(), storable))
+        throw std::runtime_error("Invalid prepared spells or feat prerequisites");
     const auto invoked = [&](std::string_view id)
     {
         return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
@@ -1364,8 +1430,7 @@ character_definition(std::string_view bytes,
         std::sort(right.begin(), right.end());
         return left == right;
     };
-    if (detail::prepares_spells(klass) &&
-            !same_spells(detail::casting_ids(access), stored_spells))
+    if (!same_spells(detail::casting_ids(access), stored_spells))
         throw std::runtime_error("Character casting access disagrees with spell grants");
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
     const auto effects = detail::validate_grants(features_only, klass,
@@ -1426,7 +1491,7 @@ character_definition(std::string_view bytes,
 }
 
 // The only vital-state tag this module reads or writes; see profile_magic.
-constexpr std::string_view vitals_magic = "SRD11";
+constexpr std::string_view vitals_magic = "SRD12";
 
 void restore_vitals(Actor &a, const VitalState &state)
 {
@@ -1441,6 +1506,7 @@ void restore_vitals(Actor &a, const VitalState &state)
     a.lay_on_hands = lay_capacity(a.definition);
     a.free_casts = free_cast_capacity(a.definition);
     a.channel_divinity = channel_capacity(a.definition);
+    a.initiate_casts = initiate_capacity(a.definition);
     if (!state.resources.empty())
     {
         std::istringstream in(state.resources);
@@ -1448,7 +1514,8 @@ void restore_vitals(Actor &a, const VitalState &state)
         in >> magic >> a.winds >> a.slots >> a.slots2 >> a.life.successes >> a.life.failures >> a.life.stable >>
            a.hit_dice >> a.life.recovery.death_save_in_ms >> a.life.recovery.stable_recovery_in_ms >>
            a.life.temporary_hp.amount >> std::quoted(a.life.temporary_hp.source_id) >> a.rushes >>
-           a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity;
+           a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity >>
+           a.initiate_casts;
         if (!in || magic != vitals_magic)
             throw std::runtime_error("Invalid character resource state");
         detail::decode_stable_recovery(a.life.recovery);
@@ -1466,7 +1533,8 @@ void restore_vitals(Actor &a, const VitalState &state)
             a.life.successes < 0 || a.life.successes > 3 || a.life.failures < 0 || a.life.failures > 4 ||
             a.lay_on_hands < 0 || a.lay_on_hands > lay_capacity(d) || a.free_casts < 0 ||
             a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
-            a.channel_divinity > channel_capacity(d))
+            a.channel_divinity > channel_capacity(d) || a.initiate_casts < 0 ||
+            (a.initiate_casts & ~initiate_capacity(d)))
         throw std::runtime_error("Invalid character vitals");
     detail::validate_recovery(a.life);
     detail::validate_temporary_hp(a.life.temporary_hp);
@@ -1496,7 +1564,7 @@ VitalState vitals(const Actor &a)
         << a.life.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.life.recovery) << ' '
         << a.life.temporary_hp.amount << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' '
         << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
-        << a.free_casts << ' ' << a.channel_divinity << ' ';
+        << a.free_casts << ' ' << a.channel_divinity << ' ' << a.initiate_casts << ' ';
     detail::write_effects(out, a.effects);
     std::string description;
     if (a.definition.slots)
@@ -1597,6 +1665,7 @@ struct SpellAttack
     Dice dice;
     detail::DamageType type{};
     int bursts{}; // how many extra d8s an 8 may add (Sorcerous Burst)
+    std::string_view spell{}; // its attack bonus follows Magic Initiate's ability
 };
 
 // What attack() settled before apply_hit reports and applies it. Four ints and
@@ -1663,6 +1732,7 @@ class Session final : public CombatSession
             a.lay_on_hands = lay_capacity(d);
             a.free_casts = free_cast_capacity(d);
             a.channel_divinity = channel_capacity(d);
+            a.initiate_casts = initiate_capacity(d);
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
@@ -2221,10 +2291,11 @@ class Session final : public CombatSession
     std::optional<ReadyMetamagic> casting_metamagic_;
     EntityId heightened_target_{};
     // 8 + the caster's spellcasting modifier and Proficiency Bonus, +1 during
-    // Innate Sorcery.
-    [[nodiscard]] int spell_dc(const Actor &caster) const
+    // Innate Sorcery. A spell Magic Initiate teaches uses the feat's ability;
+    // a class feature names no spell and uses the class's.
+    [[nodiscard]] int spell_dc(const Actor &caster, std::string_view spell = {}) const
     {
-        return 8 + def(caster).casting +
+        return 8 + casting_bonus(def(caster), spell) +
                (detail::has_effect(caster.effects, detail::EffectKind::innate_sorcery) ? 1 : 0);
     }
     // The source recorded on an effect that `a` imposes.
@@ -3370,6 +3441,7 @@ Snapshot Session::snapshot() const
         for (const auto &descriptor : resource_descriptors)
             if (descriptor.combat_view && def(a).*descriptor.capacity)
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
+        add_initiate_pools(view.resources, a, def(a));
         // Explicit display order: this list feeds the combat cantrip dropdown,
         // so its order is observable in the UI and is not the table's order.
         for (const auto *id :
@@ -3987,22 +4059,14 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     take_metamagic(a, spell);
     if (casting_with(Metamagic::heightened))
         heightened_target_ = target_id;
-    // A level-two spell always draws a level-two slot; a level-one spell draws
-    // one only in its upcast form.
     if (spell.level)
-    {
-        if (upcast || spell.level >= 2)
-            --a.slots2;
-        else
-            --a.slots;
-        a.spent_slot = true;
-    }
+        pay_for_spell(a, verb, spell);
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(upcast ? spell.upcast.extra_dice : 0u);
     if (spell.add_casting_modifier)
-        rolled.bonus = d.casting - 2;
+        rolled.bonus = casting_bonus(d, spell.id) - 2;
     const unsigned instances = spell.instances + (upcast ? spell.upcast.extra_instances : 0u);
-    const int dc = spell_dc(a);
+    const int dc = spell_dc(a, spell.id);
     const auto name = std::string(spell.label);
     switch (spell.pattern)
     {
@@ -4056,7 +4120,8 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             rolled.bonus += d.casting - 2;
         const bool struck =
             attack(a, target, spell.melee ? AttackRange::melee : AttackRange::ranged,
-                   SpellAttack{.dice = rolled, .type = type, .bursts = bursts});
+                   SpellAttack{.dice = rolled, .type = type, .bursts = bursts,
+                               .spell = spell.id});
         // Repelling Blast pushes a Large or smaller creature 10 feet away.
         if (struck && blast && d.repelling_blast && !target.life.dead && def(target).size <= 3)
             push_away(a, target, 2);
@@ -4085,7 +4150,8 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // Re-read the target each pass: it may drop before the later rays.
         for (unsigned ray = 0; ray < instances && actor(target_id).life.hp > 0; ++ray)
             attack(a, actor(target_id), spell.melee ? AttackRange::melee : AttackRange::ranged,
-                   SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage)});
+                   SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage),
+                               .spell = spell.id});
         return;
     case detail::SpellPattern::auto_damage:
     {
@@ -4290,20 +4356,23 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
+        // A level-one spell from a level-one or level-two slot, one slot a
+        // turn, or with Magic Initiate's free cast, which spends no slot.
+        const auto offer_level_one = [&](const std::string & verb, const std::string & label)
+        {
+            if (!a.spent_slot && a.slots > 0)
+                offer(verb, label);
+            if (!a.spent_slot && a.slots2 > 0)
+                offer(verb + "_2", label + " (level 2 slot)");
+            if (a.initiate_casts & initiate_bit(d, spell.id))
+                offer(verb + std::string(detail::initiate_suffix), label + " (Magic Initiate)");
+        };
         if (spell.id == "chromatic_orb")
         {
-            if (a.spent_slot)
-                continue;
             for (const auto type : detail::chromatic_types)
-            {
-                const auto verb = "chromatic_orb_" + std::string(type);
-                const auto label = "Chromatic Orb: " +
-                                   std::string(detail::damage_name(detail::damage_type(type)));
-                if (a.slots > 0)
-                    offer(verb, label);
-                if (a.slots2 > 0)
-                    offer(verb + "_2", label + " (level 2 slot)");
-            }
+                offer_level_one("chromatic_orb_" + std::string(type),
+                                "Chromatic Orb: " +
+                                std::string(detail::damage_name(detail::damage_type(type))));
             continue;
         }
         if (spell.rider == detail::Rider::guidance)
@@ -4332,13 +4401,11 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             offer(std::string(spell.id), std::string(spell.label));
             continue;
         }
-        if (a.spent_slot)
-            continue;
         // A level-two spell is only ever cast from a level-two slot, so it has
         // no separate upcast verb.
         if (spell.level >= 2)
         {
-            if (a.slots2 <= 0)
+            if (a.spent_slot || a.slots2 <= 0)
                 continue;
             if (spell.rider == detail::Rider::dragons_breath)
             {
@@ -4374,19 +4441,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             for (const auto option : detail::command_options)
             {
                 const auto verb = "command_" + std::string(option);
-                const auto label =
-                    "Command: " + command_label(detail::command_option(verb).value());
-                if (a.slots > 0)
-                    offer(verb, label);
-                if (a.slots2 > 0)
-                    offer(verb + "_2", label + " (level 2 slot)");
+                offer_level_one(verb,
+                                "Command: " + command_label(detail::command_option(verb).value()));
             }
             continue;
         }
-        if (a.slots > 0)
-            offer(std::string(spell.id), std::string(spell.label));
-        if (a.slots2 > 0)
-            offer(std::string(spell.id) + "_2", std::string(spell.label) + " (level 2 slot)");
+        offer_level_one(std::string(spell.id), std::string(spell.label));
     }
 }
 
@@ -5520,7 +5580,7 @@ int Session::area_dc(const Actor &caster, const detail::SpellDef &spell) const
         for (const auto &effect : caster.effects.active)
             if (effect.kind == detail::EffectKind::dragons_breath)
                 return spell_dc(actor(effect.source_actor));
-    return spell_dc(caster);
+    return spell_dc(caster, spell.id);
 }
 
 void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::string_view verb,
@@ -5568,7 +5628,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     // Sleep chooses the enemies in its sphere; Color Spray's cone takes every
     // creature in it.
     const bool sleep = spell.rider == detail::Rider::sleep;
-    const int dc = spell_dc(caster);
+    const int dc = spell_dc(caster, spell.id);
     const auto index = index_of(caster.source.id);
     const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
     const auto careful = careful_allies(caster, cells);
@@ -5857,7 +5917,7 @@ void Session::ice_burst(Actor &caster, const Actor &target, bool upcast)
     // The target and each creature within 5 feet of it save against 2d6 Cold
     // (3d6 from a level-two slot).
     const int total = dice({upcast ? 3 : 2, 6, 0});
-    const int dc = spell_dc(caster);
+    const int dc = spell_dc(caster, "ice_knife");
     const auto centre = target.source.cell;
     for (auto &other : actors_)
     {
@@ -5932,13 +5992,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         (void)a.actions.spend(true);
     }
     if (spell.level)
-    {
-        if (aimed.verb.ends_with("_2") || spell.level >= 2)
-            --a.slots2;
-        else
-            --a.slots;
-        a.spent_slot = true;
-    }
+        pay_for_spell(a, aimed.verb, spell);
     if (spell.id == "dragons_breath_exhale")
         log(a.source.name + " exhales Dragon's Breath.",
         {"{name} exhales Dragon's Breath.", {{"name", a.source.name}}});
@@ -6012,7 +6066,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                       : spell.rider == detail::Rider::spike_growth ? ZoneKind::spikes
                       : ZoneKind::plants;
     zones_.push_back({a.source.id, kind, cells, kind == ZoneKind::grease ? elapsed_ms_ + 60000 : 0,
-                      spell_dc(a)});
+                      spell_dc(a, spell.id)});
     if (kind == ZoneKind::grease || kind == ZoneKind::web)
     {
         const auto zone = zones_.back();
@@ -6023,7 +6077,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     }
     if (kind != ZoneKind::plants)
         return;
-    const int dc = spell_dc(a);
+    const int dc = spell_dc(a, spell.id);
     for (auto &other : actors_)
     {
         if (other.life.dead || other.source.id == a.source.id ||
@@ -6336,16 +6390,12 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
         a.nick_origin = 0;
         (void)a.actions.spend(true);
     }
-    if (selection.verb.ends_with("_2") || spell.level >= 2)
-        --a.slots2;
-    else
-        --a.slots;
-    a.spent_slot = true;
+    pay_for_spell(a, selection.verb, spell);
     log(a.source.name + " casts " + std::string(spell.label) + ".",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     if (spell.concentration)
         begin_concentration(a, spell);
-    const int dc = spell_dc(a);
+    const int dc = spell_dc(a, spell.id);
     for (const auto id : selection.chosen)
     {
         auto &target = actor(id);
@@ -6672,7 +6722,7 @@ Dice Session::weapon_dice(const Actor &a, AttackRange range) const
         result.sides = d.versatile_sides;
     // Shillelagh: a d8 plus the spellcasting modifier.
     if (!ranged && shillelagh(a))
-        result = {1, 8, d.casting - 2};
+        result = {1, 8, casting_bonus(d, "shillelagh") - 2};
     if (a.cleave_damage || (a.light_damage && !d.two_weapon_fighting))
         result.bonus = std::min(0, result.bonus);
     return result;
@@ -6912,7 +6962,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
         extend_rage(actor(a.source.id));
-    int bonus = (spell || (!ranged && shillelagh(a)) ? d.casting
+    int bonus = (spell ? casting_bonus(d, spell_attack->spell)
+                 : !ranged && shillelagh(a) ? casting_bonus(d, "shillelagh")
                  : ranged ? d.ranged_bonus
                  : d.melee_bonus) + blessing_die(a) +
                 (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
@@ -7163,7 +7214,7 @@ void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
     // rolls; `casting` is that modifier plus the +2 Proficiency Bonus.
     auto striker = a;
     auto &d = striker.definition;
-    const int modifier = d.casting - 2;
+    const int modifier = casting_bonus(d, "true_strike") - 2;
     d.melee_bonus += modifier - d.melee_ability;
     d.melee_ability = modifier;
     d.melee.bonus = modifier;
@@ -8074,10 +8125,13 @@ const Session::ReactionAnswer *Session::answer_of(EntityId target, Asked asked) 
     return nullptr;
 }
 
+// Shield takes a slot, unless Magic Initiate's free cast pays for it.
 bool Session::can_shield(const Actor &target) const
 {
-    return conscious(target) && target.reaction && (target.slots > 0 || target.slots2 > 0) &&
-           !target.spent_slot && detail::knows_spell(def(target).spells, "shield") &&
+    const bool slot = (target.slots > 0 || target.slots2 > 0) && !target.spent_slot;
+    const bool free = (target.initiate_casts & initiate_bit(def(target), "shield")) != 0;
+    return conscious(target) && target.reaction && (slot || free) &&
+           detail::knows_spell(def(target).spells, "shield") &&
            !detail::incapacitated(target.effects) &&
            !detail::has_effect(target.effects, detail::EffectKind::shield);
 }
@@ -8312,11 +8366,14 @@ void Session::answer_reaction(const Command &command)
     if (command.verb == "shield")
     {
         defender.reaction = false;
-        defender.spent_slot = true;
-        if (defender.slots > 0)
-            --defender.slots;
-        else
-            --defender.slots2;
+        // Magic Initiate's free cast first: it can pay for nothing else, while
+        // a slot could.
+        const auto &shield = *detail::find_spell("shield");
+        const bool free = (defender.initiate_casts & initiate_bit(def(defender), "shield")) != 0;
+        pay_for_spell(defender,
+                      free ? "shield" + std::string(detail::initiate_suffix)
+                      : defender.slots > 0 ? "shield" : "shield_2",
+                      shield);
         detail::apply_poisoned(defender.effects, effect_source(defender), defender.source.name,
                                next_turn_ms(defender), detail::EffectKind::shield);
         log(defender.source.name + " casts Shield.",
@@ -8644,7 +8701,8 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " hurls Produce Flame.",
         {"{name} hurls {spell}.", {{"name", a.source.name}, {"spell", "Produce Flame", true}}});
         (void)attack(a, actor(command.target), AttackRange::ranged,
-                     SpellAttack{.dice = {1, 8, 0}, .type = detail::DamageType::fire});
+                     SpellAttack{.dice = {1, 8, 0}, .type = detail::DamageType::fire,
+                                 .spell = "produce_flame"});
     }
     else if (command.verb == "bardic_inspiration")
     {
@@ -9027,7 +9085,8 @@ std::string Session::save() const
             << std::quoted(a.life.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
             << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
             << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_casts << ' '
-            << a.channel_divinity << ' ' << a.smite_target << ' ' << a.smite_critical << ' '
+            << a.channel_divinity << ' ' << a.initiate_casts << ' ' << a.smite_target << ' '
+            << a.smite_critical << ' '
             << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
             << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
@@ -9212,7 +9271,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.life.recovery.stable_recovery_in_ms >> actor.life.temporary_hp.amount >>
           std::quoted(actor.life.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
           actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
-          actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >> actor.smite_target >>
+          actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >>
+          actor.initiate_casts >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
           actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
@@ -9304,7 +9364,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.life.successes < 0 || actor.life.successes > 3 || actor.life.failures < 0 || actor.life.failures > 4 ||
             actor.lay_on_hands < 0 || actor.lay_on_hands > lay_capacity(definition) ||
             actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
-            actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition))
+            actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition) ||
+            actor.initiate_casts < 0 || (actor.initiate_casts & ~initiate_capacity(definition)))
         throw std::runtime_error("Invalid checkpoint actor state");
     detail::validate_recovery(actor.life);
     detail::validate_temporary_hp(actor.life.temporary_hp);
@@ -10426,10 +10487,6 @@ class Module final : public RulesModule
                 !detail::has_grant(sheet.grants, "feat:savage_attacker")
             },
             {
-                "magic_initiate", "Magic Initiate",
-                "Unavailable: its complete spell-selection feature is not implemented.", false
-            },
-            {
                 "archery", "Archery",
                 "+2 to attack rolls with Ranged weapons. Requires Fighting Style.",
                 detail::has_grant(sheet.grants, "feature:fighting_style") &&
@@ -10460,6 +10517,12 @@ class Module final : public RulesModule
                 "Gain proficiency in any three skills of your choice."
             }
         };
+        if (result.level == 4)
+        {
+            // After Savage Attacker, where the single Magic Initiate entry stood.
+            const auto initiate = detail::magic_initiate_feats(sheet.grants);
+            result.feats.insert(result.feats.begin() + 3, initiate.begin(), initiate.end());
+        }
         if (klass == CharacterClass::paladin)
             result.spells =
         {
@@ -10640,6 +10703,17 @@ class Module final : public RulesModule
             {fighting_style_grant(*choice.fighting_style), source,
              static_cast<unsigned>(next.level), {}});
         }
+        // Magic Initiate's spells are chosen with the level's other spells,
+        // whether the feat comes at level four or from Lessons of the First Ones.
+        if (choice.feat.starts_with("magic_initiate_") && next.level == 4)
+            next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
+        const auto invocations = "class:warlock:invocations:2";
+        if (const auto lessons = choice.training.find(invocations);
+                lessons != choice.training.end())
+            for (const auto &id : lessons->second)
+                if (id.starts_with("lessons_magic_initiate_"))
+                    next.grants.push_back(
+                {"invocation:" + id, invocations, static_cast<unsigned>(next.level), {}});
         return next;
     }
 
@@ -10726,21 +10800,26 @@ class Module final : public RulesModule
             }))
             throw std::runtime_error("Invalid advancement training choice");
             for (const auto &value : values)
-                next.grants.push_back(
             {
-                // Skilled spans both catalogs, so its options carry the prefixed id.
-                id == "feat:skilled"             ? value
-                : id == "class:wizard:scholar" ? "expertise:" + value
-                : id == "subclass:ranger:hunter" ? "prey:" + value
-                : id == "class:barbarian:primal_knowledge" ? "skill:" + value
-                : id == "class:sorcerer:metamagic" ? "metamagic:" + value
-                : id == "class:warlock:invocations:2" ? "invocation:" + value
-                : id == "subclass:bard:lore" ? "skill:" + value
-                : id == "subclass:druid:land" ? "land:" + value
-                : "mastery:" + value,
-                id,
-                static_cast<unsigned>(next.level),
-                {}});
+                const FeatureGrant grant
+                {
+                    // Skilled spans both catalogs, so its options carry the prefixed id.
+                    id == "feat:skilled"             ? value
+                    : id == "class:wizard:scholar" ? "expertise:" + value
+                    : id == "subclass:ranger:hunter" ? "prey:" + value
+                    : id == "class:barbarian:primal_knowledge" ? "skill:" + value
+                    : id == "class:sorcerer:metamagic" ? "metamagic:" + value
+                    : id == "class:warlock:invocations:2" ? "invocation:" + value
+                    : id == "subclass:bard:lore" ? "skill:" + value
+                    : id == "subclass:druid:land" ? "land:" + value
+                    : "mastery:" + value,
+                    id,
+                    static_cast<unsigned>(next.level),
+                    {}};
+                // spell_choice_sheet already granted Lessons' Magic Initiate.
+                if (std::find(next.grants.begin(), next.grants.end(), grant) == next.grants.end())
+                    next.grants.push_back(grant);
+            }
         }
         if (klass == CharacterClass::warlock && next.level == 2)
             next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
@@ -10881,18 +10960,25 @@ class Module final : public RulesModule
             };
             next.ability_adjustments.push_back(std::move(adjustment));
         }
-        if (!choice.feat.empty())
-            next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
+        // spell_choice_sheet already granted Magic Initiate, whose spells it offers.
+        if (const auto feat = detail::advancement_grant(klass, next.level, choice);
+                !choice.feat.empty() && !detail::has_grant(next.grants, feat.id))
+            next.grants.push_back(feat);
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
         {
             next.prepared_spells = sheet.prepared_spells;
+            // A class without spells of its own learns only Magic Initiate's.
+            const auto prepared = detail::prepares_spells(klass)
+                                  ? std::optional(choice.spells) : std::nullopt;
             detail::apply_spell_choices(next,
-                                        SpellChoices{*choice.spell_learning, choice.spells, {}, {}},
+                                        SpellChoices{*choice.spell_learning, prepared, {}, {}},
                                         SpellChoiceContext::advancement,
                                         ChoiceCompleteness::complete);
         }
-        else if (detail::prepares_spells(klass))
+        else if (detail::prepares_spells(klass) ||
+                 !detail::spell_choice_options(next, SpellChoiceContext::advancement)
+                 .learning.empty())
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
                             next.grants, klass,
@@ -11008,6 +11094,8 @@ class Module final : public RulesModule
         actor.arcane += arcane_capacity(actor.definition) - arcane_capacity(old);
         actor.lay_on_hands += lay_capacity(actor.definition) - lay_capacity(old);
         actor.free_casts += free_cast_capacity(actor.definition) - free_cast_capacity(old);
+        // A feat taken now arrives with its free cast; earlier ones keep their bits.
+        actor.initiate_casts |= initiate_capacity(actor.definition) & ~initiate_capacity(old);
         actor.channel_divinity += channel_capacity(actor.definition) - channel_capacity(old);
         actor.hit_dice += actor.definition.level - old.level;
         auto continuation = vitals(actor);
@@ -11112,6 +11200,7 @@ class Module final : public RulesModule
         actor.lay_on_hands = lay_capacity(d);
         actor.free_casts = free_cast_capacity(d);
         actor.channel_divinity = channel_capacity(d);
+        actor.initiate_casts = initiate_capacity(d);
         state = vitals(actor);
     }
 
@@ -11128,6 +11217,7 @@ class Module final : public RulesModule
         for (const auto &descriptor : resource_descriptors)
             if (d.*descriptor.capacity)
                 result.resources.push_back(resource_pool(descriptor, actor, d));
+        add_initiate_pools(result.resources, actor, d);
         for (const auto &choice : arcane_allocations)
             if (can_recover(actor, choice))
                 result.choices.push_back({std::string(choice.id), {std::string(choice.label), {}}});
@@ -11331,6 +11421,9 @@ class Module final : public RulesModule
             // Goodberry gains nothing from a higher slot.
             if (actor.slots2 > 0 && spell.pattern == detail::SpellPattern::heal)
                 actions.push_back({std::string(spell.id) + "_2", {label + " (level 2 slot)", {}}});
+            if (actor.initiate_casts & initiate_bit(d, spell.id))
+                actions.push_back({std::string(spell.id) + std::string(detail::initiate_suffix),
+                                   {label + " (Magic Initiate)", {}}, party});
         }
         return actions;
     }
@@ -11361,21 +11454,17 @@ class Module final : public RulesModule
                                        patient.life, std::min(caster.lay_on_hands, maximum - patient.life.hp),
                                        maximum, can_heal);
         }
-        else if (action == "goodberry")
+        else if (const auto &spell = *detail::find_spell(action); spell.id == "goodberry")
         {
-            --caster.slots;
+            pay_for_spell(caster, action, spell);
             (void)detail::heal_life(patient.life, std::min(10, maximum - patient.life.hp), maximum, can_heal);
         }
         else
         {
-            const auto &spell = *detail::find_spell(action);
             const bool upcast = action.ends_with("_2");
-            if (upcast)
-                --caster.slots2;
-            else
-                --caster.slots;
+            pay_for_spell(caster, action, spell);
             // Disciple of Life adds 2 + the slot's level.
-            int amount = caster.definition.casting - 2 +
+            int amount = casting_bonus(caster.definition, spell.id) - 2 +
                          (caster.definition.life_domain
                           ? 2 + (upcast ? 2 : static_cast<int>(spell.level))
                           : 0);
@@ -11688,10 +11777,7 @@ class Module final : public RulesModule
                     sheet.scores[ability] != sheet.base[ability] + bonuses)
                 throw std::runtime_error("Ability totals disagree with acquired choices");
         }
-        auto spells =
-            detail::prepares_spells(klass)
-            ? detail::casting_ids(access)
-            : detail::known_cantrip_ids(access);
+        auto spells = detail::casting_ids(access);
         std::set<std::string> selected;
         const auto record = [&](std::string id)
         {
@@ -12110,6 +12196,21 @@ class Module final : public RulesModule
                     {"prepared", std::to_string(access.prepared_choices - access.prepared.size())}
                 }});
         }
+        // Magic Initiate: each spell it teaches, with its feat's spell attack bonus.
+        for (const auto &spell : access.initiate)
+        {
+            const auto attack = std::to_string(casting_bonus(d, spell.id));
+            const auto list = spell.source_id.substr(spell.source_id.rfind('_') + 1);
+            const std::string feat = list == "cleric" ? "Magic Initiate (Cleric)"
+                                     : list == "druid" ? "Magic Initiate (Druid)"
+                                     : "Magic Initiate (Wizard)";
+            result.spell_modifiers +=
+                "\n" + feat + ": " + spell.label + "; spell attack bonus " + attack + ".";
+            result.spell_messages.push_back(
+            {
+                "{feat}: {spell}; spell attack bonus {attack}.",
+                {{"feat", feat, true}, {"spell", spell.label, true}, {"attack", attack}}});
+        }
         result.spell_messages.push_back(
         {"Active conditions are shown in the character status.", {}});
         return result;
@@ -12158,7 +12259,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.157", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.158", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

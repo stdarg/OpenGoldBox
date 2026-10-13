@@ -7,6 +7,9 @@ var output := ""
 var originals := {}
 var locales := ["en", "es"]
 const SLOT = "Fighting Style advancement test"
+# Archery in the level-four feat list: after Ability points, Defense, Savage
+# Attacker and the three Magic Initiate lists.
+const ARCHERY = 6
 func _initialize() -> void:
     for arg in OS.get_cmdline_user_args():
         if arg.begins_with("--style-class="): klass = arg.trim_prefix("--style-class=")
@@ -80,8 +83,8 @@ func run_checks() -> void:
                 style.select(selection); style.item_selected.emit(selection); await settle()
             if klass == "fighter" and attained == 4:
                 var feat: OptionButton = level.get_node("Feat")
-                require(not feat.is_item_disabled(4), "Replacing Archery frees independent Archery feat")
-                feat.select(4); feat.item_selected.emit(4); await settle()
+                require(not feat.is_item_disabled(ARCHERY), "Replacing Archery frees independent Archery feat")
+                feat.select(ARCHERY); feat.item_selected.emit(ARCHERY); await settle()
             if klass != "fighter":
                 # Paladins and Rangers now cast spells, so their note describes the class
                 # path through level four rather than listing unavailable features.
@@ -105,7 +108,7 @@ func run_checks() -> void:
                 if klass == "fighter" and attained == 4: selection = 4 if light else 1
                 style.select(selection); style.item_selected.emit(selection); await settle()
             if klass == "fighter" and attained == 4:
-                level.get_node("Feat").select(4); level.get_node("Feat").item_selected.emit(4); await settle()
+                level.get_node("Feat").select(ARCHERY); level.get_node("Feat").item_selected.emit(ARCHERY); await settle()
             if owes_training:
                 level.get_node("AdvancementTraining").select(1); level.get_node("AdvancementTraining").item_selected.emit(1); await settle()
             level.get_node("Confirm").grab_focus(); await key(level, KEY_ENTER)

@@ -311,7 +311,7 @@ void lesser_restoration_checks()
     auto module = rules();
     // Blinded, Paralyzed and Poisoned, with saves the ally cannot make.
     const std::string afflicted =
-        "SRD11 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 4 3 "
+        "SRD12 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 4 3 "
         "1 1 77 99 \"Caster\" 30 60000 6000 2 24 77 99 \"Caster\" 30 60000 6000 "
         "3 32 77 99 \"Caster\" 0 12000 0 0";
     auto plain = battle(*module, cleric(3));
@@ -361,7 +361,7 @@ void aid_expiry_checks()
     const int sheet_maximum = party.member(id).character.sheet().hit_points;
     auto state = party.checkpoint();
     state.roster.front().vitals = {sheet_maximum + 5, false,
-        "SRD11 0 2 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 FX8 2 1 1 21 77 99 \"Caster\" 5 28800000 0 0"
+        "SRD12 0 2 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 1 21 77 99 \"Caster\" 5 28800000 0 0"
     };
     party.restore(state);
     check(party.hit_point_maximum(id) == sheet_maximum + 5, "Aid raises the campaign maximum");

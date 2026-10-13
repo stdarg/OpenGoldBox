@@ -639,8 +639,10 @@ void CharacterCreationView::refresh()
                            d.character_class == "warlock" || d.character_class == "bard" ||
                            d.character_class == "druid")
             ? N_("Choose cantrips and prepared spells. Unfilled choices remain pending; Back preserves your choices.")
-            : d.spells
+            : d.spells && d.character_class == "wizard"
             ? N_("Choose cantrips, spellbook entries and prepared spells. Back preserves your choices.")
+            : d.spells
+            ? N_("Choose the spells Magic Initiate teaches. Unfilled choices remain pending; Back preserves your choices.")
             : N_("Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections.");
     }
     if (icon)

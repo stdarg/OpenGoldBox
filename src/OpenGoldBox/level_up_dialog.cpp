@@ -443,12 +443,12 @@ void LevelUpDialog::advancement_spell_changed(bool, int)
     advancement_changed();
 }
 
-// Spells learned through a Fighting Style (Blessed Warrior's cantrips) leave
-// with it, so a changed style drops picks its learning group no longer offers.
+// Spells learned through a Fighting Style (Blessed Warrior's cantrips) or a
+// feat (Magic Initiate) leave with it, so a changed choice drops picks its
+// learning group no longer offers. A class without spells of its own has a
+// spell page only while such a choice offers some.
 void LevelUpDialog::drop_unoffered_learning()
 {
-    if (!advancement_choice_.spell_learning)
-        return;
     const auto &rules = campaign().rule_module();
     const auto offered =
         rules.spell_choice_options(rules.spell_choice_sheet(
@@ -456,6 +456,15 @@ void LevelUpDialog::drop_unoffered_learning()
                                        advancement_choice_),
                                    opengold::rules::SpellChoiceContext::advancement)
         .learning;
+    if (!campaign().default_advancement(advancing_).spell_learning)
+    {
+        if (offered.empty())
+            advancement_choice_.spell_learning.reset();
+        else if (!advancement_choice_.spell_learning)
+            advancement_choice_.spell_learning.emplace();
+    }
+    if (!advancement_choice_.spell_learning)
+        return;
     std::erase_if(*advancement_choice_.spell_learning, [&](const auto & entry)
     {
         return std::none_of(offered.begin(), offered.end(), [&](const auto & group)
@@ -516,6 +525,8 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     }
     if (advancement_choice_.feat == "skilled")
         advancement_choice_.training["feat:skilled"] = std::move(skilled_picks);
+    // The feat and Lessons of the First Ones can each bring Magic Initiate's spells.
+    drop_unoffered_learning();
     const bool ability = advancement_choice_.feat == "ability_score_improvement";
     for (unsigned i = 0; i < 6; ++i)
     {
@@ -569,7 +580,8 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     if (preview_choice.spell_learning && advancement_page_ != AdvancementPage::spells)
     {
         const auto defaults = campaign().default_advancement(advancing_);
-        preview_choice.spell_learning = defaults.spell_learning;
+        preview_choice.spell_learning =
+            defaults.spell_learning.value_or(opengold::rules::TrainingChoices{});
         preview_choice.spells = defaults.spells;
         // The defaults follow the default Fighting Style; a chosen style's own
         // learning (Blessed Warrior's cantrips) previews with its first options.
@@ -578,12 +590,22 @@ void LevelUpDialog::advancement_changed(std::int64_t)
                                  rules.spell_choice_sheet(campaign().member(advancing_).character.sheet(),
                                      preview_choice),
                                  opengold::rules::SpellChoiceContext::advancement);
+        // Two groups can offer one spell (a Wizard's spellbook and Magic
+        // Initiate), which a stand-in must not learn twice.
+        const auto picked = [&](const std::string & id)
+        {
+            return std::any_of(preview_choice.spell_learning->begin(),
+                               preview_choice.spell_learning->end(), [&](const auto & entry)
+            {
+                return std::find(entry.second.begin(), entry.second.end(), id) !=
+                       entry.second.end();
+            });
+        };
         for (const auto &group : offered.learning)
         {
             auto &fill = (*preview_choice.spell_learning)[group.id];
             for (const auto &option : group.options)
-                if (fill.size() < group.count &&
-                        std::find(fill.begin(), fill.end(), option.id) == fill.end())
+                if (fill.size() < group.count && !picked(option.id))
                     fill.push_back(option.id);
         }
     }

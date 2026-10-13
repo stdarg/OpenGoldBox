@@ -84,6 +84,10 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.158 adds [Magic Initiate](MAGIC-INITIATE.md) from the Acolyte and
+Sage backgrounds, the level-four feat choice and Lessons of the First Ones, with
+its once-per-Long-Rest free cast; vital state becomes `SRD12` and combat
+checkpoints `OGCOMBAT 50`.
 Rules 0.6.157 drops the Musket and Pistol from the Weapon Mastery choices.
 Firearms never appear in Pool of Radiance's world or its shops, so a mastery in
 one could never be used.

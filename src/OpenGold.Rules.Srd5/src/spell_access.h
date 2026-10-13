@@ -6,6 +6,8 @@
 namespace opengold::srd5::detail
 {
 bool is_spell_grant(const rules::FeatureGrant &);
+// A grant a Magic Initiate feat makes: one of its spells or its spellcasting ability.
+bool is_initiate_grant(const rules::FeatureGrant &);
 std::vector<rules::FeatureGrant> without_spell_grants(std::span<const rules::FeatureGrant>);
 std::vector<rules::FeatureGrant>
 starting_spell_grants(CharacterClass klass,
@@ -22,11 +24,26 @@ void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
 // Known and prepared spells as ids. Ids rather than a packed mask because an
 // int caps the catalog at 31 spells.
 std::vector<std::string> known_cantrip_ids(const rules::SpellAccess &);
-// Spells a class feature keeps prepared at this level, outside the prepared count.
+// Spells a class feature or Magic Initiate keeps prepared at this level,
+// outside the prepared count.
 std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned level,
         std::span<const rules::FeatureGrant> grants);
 // Wizards prepare from a spellbook; Clerics and Paladins from their class list.
 bool prepares_spells(CharacterClass klass);
 std::vector<std::string> casting_ids(const rules::SpellAccess &);
+
+// One Magic Initiate feat's spells and the ability it casts them with.
+struct InitiateSpells
+{
+    std::string feat;
+    rules::Ability ability{rules::Ability::intelligence}; // until one is chosen
+    std::vector<std::string> spells;                       // its cantrips and level-one spell
+    std::string free_spell; // the level-one spell, cast once per Long Rest without a slot
+};
+
+std::vector<InitiateSpells> magic_initiate_spells(std::span<const rules::FeatureGrant>);
+// A level-four feat entry for each list, available unless that list's feat is held.
+std::vector<rules::AdvancementOption>
+magic_initiate_feats(std::span<const rules::FeatureGrant> grants);
 } // namespace opengold::srd5::detail
 #endif

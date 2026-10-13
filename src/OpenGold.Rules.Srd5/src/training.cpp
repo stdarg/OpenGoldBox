@@ -389,7 +389,7 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         unsigned level;
         bool needs_blast;
     };
-    static constexpr std::array<Invocation, 10> all{{
+    static constexpr std::array<Invocation, 13> all{{
         {"agonizing_blast", "Agonizing Blast", "Add your Charisma modifier to Eldritch Blast's damage.", 2, true},
         {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1, false},
         {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2, false},
@@ -398,14 +398,22 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         {"fiendish_vigor", "Fiendish Vigor", "Cast False Life on yourself without a slot, for its highest result.", 2, false},
         {"lessons_alert", "Lessons of the First Ones: Alert", "Gain the Alert feat.", 2, false},
         {"lessons_savage_attacker", "Lessons of the First Ones: Savage Attacker", "Gain the Savage Attacker feat.", 2, false},
+        {"lessons_magic_initiate_cleric", "Lessons of the First Ones: Magic Initiate (Cleric)", "Gain the Magic Initiate feat with the Cleric spell list.", 2, false},
+        {"lessons_magic_initiate_druid", "Lessons of the First Ones: Magic Initiate (Druid)", "Gain the Magic Initiate feat with the Druid spell list.", 2, false},
+        {"lessons_magic_initiate_wizard", "Lessons of the First Ones: Magic Initiate (Wizard)", "Gain the Magic Initiate feat with the Wizard spell list.", 2, false},
         {"pact_of_the_blade", "Pact of the Blade", "Your melee weapon is your pact weapon: proficiency, and Charisma for its attack and damage rolls.", 1, false},
         {"repelling_blast", "Repelling Blast", "An Eldritch Blast hit pushes a Large or smaller creature 10 feet away.", 2, true}}};
     for (const auto &invocation : all)
     {
         const auto id = "invocation:" + std::string(invocation.id);
+        // Magic Initiate repeats only with another list, so a list a feat
+        // already gave is not offered again.
+        const auto initiate = std::string_view(invocation.id).starts_with("lessons_magic_initiate_")
+                              ? "feat:" + std::string(invocation.id).substr(8)
+                              : std::string();
         const bool held = std::any_of(grants.begin(), grants.end(), [&](const auto & g)
         {
-            return g.id == id && g.source_id != source;
+            return (g.id == id && g.source_id != source) || (!initiate.empty() && g.id == initiate);
         });
         if (invocation.level <= level && (!invocation.needs_blast || blast) && !held)
             group.options.push_back({std::string(invocation.id), std::string(invocation.label),
