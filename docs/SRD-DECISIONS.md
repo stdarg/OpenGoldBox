@@ -811,3 +811,17 @@ do nothing. The user agreed to drop it, as
 to act on: Blindness/Deafness always blinds. The SRD gives the spell no early
 dismissal, and its extra targets from higher slots arrive with level-three
 slots at character level 5 ([#176](https://github.com/stdarg/OpenGold/issues/176)).
+
+## SPLIT-1 (2026-10-13): aiming darts and rays
+
+The user approved, from screenshots of the real combat screen, aiming Magic
+Missile's darts and Scorching Ray's rays one click at a time
+([#42](https://github.com/stdarg/OpenGold/issues/42)). It extends
+[CLASS-2](#class-2-2026-10-04-choosing-several-targets): each click on a foe
+aims the next dart or ray, the same foe again if wanted; the spell is cast once
+all are aimed (Cast spell stays greyed out until then); Escape cancels for
+nothing. Only foes the spell could hit alone are offered. Each foe takes its
+darts as one simultaneous hit, with one Shield question; rays are separate
+attacks in the order aimed, and a ray aimed at a foe already down is lost. The
+battlefield does not mark aimed foes (the prompt lists them), and there is no
+shortcut that sends the remaining darts at one foe.

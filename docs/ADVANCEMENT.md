@@ -50,8 +50,8 @@ implements only the blindness option of Blindness/Deafness; see
 2d8/4d8. Magic Missile fires three/four darts. Scorching Ray makes three separate
 ranged spell attacks for 2d6 each. Only one spell slot may be spent per turn.
 
-Damage spells currently direct all darts/rays at one target; split targeting is
-unavailable. Channel Divinity, subclasses other than the Fighter's Champion,
+Magic Missile's darts and Scorching Ray's rays are aimed one click at a time,
+at one foe or several ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)). Channel Divinity, subclasses other than the Fighter's Champion,
 concentration spells and broader spells/feats remain outside this increment;
 the [README's current status](../README.md#current-status) lists what each class
 has today.

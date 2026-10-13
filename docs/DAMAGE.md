@@ -28,9 +28,10 @@ All currently supported weapons carry their SRD damage type. Unarmed strikes
 are Bludgeoning. Curated creature attacks have explicit authored damage-type
 rows. Fire Bolt and each Scorching Ray attack deal Fire; each Magic Missile dart
 deals Force. Darts resolve resistance separately before their results are summed,
-retaining the existing per-dart dice and simultaneous HP application. The broader
-Magic Missile conformance work (including simultaneous-dart mortality boundaries,
-split targets, Shield and other casting requirements) remains #168/#42/#41.
+retaining the existing per-dart dice and simultaneous HP application: each foe
+takes all its darts as one hit, so a foe dropped by the first dart takes no
+separate later hit. Darts split among foes follow
+[SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays).
 Existing attack rolls, critical dice, Savage Attacker and spent turn resources
 are preserved. When defenses change an amount, the existing combat log shows
 the type and before/after values, localized in English and Spanish.

@@ -84,6 +84,10 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.161 aims Magic Missile's darts and Scorching Ray's rays one click at
+a time, at one foe or several
+([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays); checks
+in `opengold_wizard_spell_tests`).
 Rules 0.6.160 lets [Fire Bolt](FIRE-BOLT.md) target any creature, like the
 other attack cantrips, and fixes Quickened Spell, which could not quicken a
 spell aimed at any creature (Poison Spray, Ray of Frost, Shocking Grasp, Chill
