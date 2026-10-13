@@ -84,6 +84,9 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.169 applies Bardic Inspiration and Cutting Words without asking
+([BARD-1](SRD-DECISIONS.md#bard-1-2026-10-13-bardic-inspiration-and-cutting-words-without-asking)),
+and adds the die to repeated saves, Concentration saves and checks too.
 Rules 0.6.168 ends Wild Shape when the fight ends or the Druid flees
 ([WILD-1](SRD-DECISIONS.md#wild-1-2026-10-13-wild-shape-lasts-until-the-fight-ends))
 and lets Lay On Hands cure Poisoned in camp.
@@ -210,8 +213,9 @@ Spells. See
 
 ## Bardic Inspiration and Cutting Words
 
-Rules 0.6.124 adds Bardic Inspiration and the Lore Bard's Cutting Words. See
-[Bard](BARD.md#bardic-inspiration-and-cutting-words).
+Rules 0.6.124 adds Bardic Inspiration and the Lore Bard's Cutting Words; rules
+0.6.169 applies both without asking and extends the die to every save and the
+fight's checks. See [Bard](BARD.md#bardic-inspiration-and-cutting-words).
 
 ## Bard spellcasting
 

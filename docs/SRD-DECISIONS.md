@@ -835,3 +835,21 @@ game offers Wild Shape only in fights. A form now ends when the fight ends
 Concentration does ([CLASS-2](#class-2-2026-10-04-choosing-several-targets));
 it is never carried into the next fight. It still ends earlier on Leave Wild
 Shape, another Wild Shape, 0 Hit Points, or a turn begun Incapacitated.
+
+## BARD-1 (2026-10-13): Bardic Inspiration and Cutting Words without asking
+
+Approved by the user, replacing the React/Decline question that both used to
+ask. Asking after every failed roll interrupted play, and could not reach the
+saves rolled outside a command, such as the repeated save at the end of a turn.
+Both now apply on their own, and the combat log shows the die and its result:
+
+- An inspired creature adds its die to the first failed attack roll, save or
+  check that the die could turn into a success. A roll short by more than the
+  die's sides keeps the die.
+- A Lore Bard's Cutting Words subtracts the die from an enemy's attack roll
+  that hit by less than the die's sides, so that it could miss. Only the first
+  Bard able to react does so.
+
+As with [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging), neither
+uses information the player lacks: the roll, its bonus and the target number
+are already in the log.

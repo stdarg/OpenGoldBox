@@ -67,12 +67,15 @@ class ConcentrationState
     {
         std::optional<SaveResult> save;
         std::optional<ConcentrationSource> ended;
+        int inspiration{}; // a Bardic Inspiration die added to the failed save
     };
 
     // damage_taken is post-defense damage, BEFORE subtracting Temporary HP.
     // Check incapacitation/death after applying damage; these end without a roll.
+    // `effects` are the caster's, whose Bardic Inspiration may rescue a failed save.
     DamageResult damage(int damage_taken, int constitution_save, RollModifiers modifiers,
-                        bool incapacitated_or_dead, std::uint64_t &rng)
+                        bool incapacitated_or_dead, std::uint64_t &rng,
+                        const std::vector<Effect> &effects = {})
     {
         if (damage_taken < 0)
             throw std::runtime_error("Invalid concentration damage");
@@ -84,7 +87,9 @@ class ConcentrationState
             return {};
         auto save = saving_throw(Ability::constitution, constitution_save,
                                  std::clamp(damage_taken / 2, 10, 30), modifiers, rng);
-        return {save, save.success ? std::nullopt : stop()};
+        const int inspiration = save.success ? 0 : inspiration_die(effects, save, rng);
+        save.success |= save.natural + save.bonus + inspiration >= save.dc && inspiration;
+        return {save, save.success ? std::nullopt : stop(), inspiration};
     }
 
     std::optional<ConcentrationSource> incapacitate()

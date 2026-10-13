@@ -513,6 +513,29 @@ RollModifiers attack_modifiers(const AttackConditions &conditions)
             conditions.other_disadvantage};
 }
 
+int inspiration_die(const std::vector<Effect> &effects, const SaveResult &failed,
+                    std::uint64_t &rng)
+{
+    const auto found = std::find_if(effects.begin(), effects.end(), [](const auto & e)
+    {
+        return e.kind == EffectKind::inspired && e.remaining_ms;
+    });
+    if (found == effects.end() || found->dc < failed.dc - failed.natural - failed.bonus)
+        return 0;
+    return roll_die(rng, found->dc);
+}
+
+void spend_inspiration(EffectState &effects)
+{
+    const auto found = std::find_if(effects.active.begin(), effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == EffectKind::inspired;
+    });
+    if (found != effects.active.end())
+        effects.active.erase(found);
+}
+
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,
                     std::uint64_t &rng, const EffectObserver &observe)
 {
@@ -542,6 +565,8 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
         for (auto &subject : ordered)
         {
             auto &effects = subject.effects.get().active;
+            // Bardic Inspiration is spent after the walk, which must not erase.
+            bool inspiration_spent = false;
             for (auto &e : effects)
             {
                 e.remaining_ms -= static_cast<unsigned>(step);
@@ -575,6 +600,14 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                                                   e.dc,
                                                   mental_save_modifiers(ability, subject),
                                                   rng);
+                        if (!event.save->success && !inspiration_spent)
+                            event.inspiration = inspiration_die(effects, *event.save, rng);
+                        if (event.inspiration)
+                        {
+                            inspiration_spent = true;
+                            event.save->success = event.save->natural + event.save->bonus +
+                                                  event.inspiration >= event.save->dc;
+                        }
                         event.removed = event.save->success;
                         // A drowsy sleeper that fails falls Unconscious, no more saves.
                         if (!event.save->success && e.kind == EffectKind::drowsy)
@@ -595,6 +628,8 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
             {
                 return !e.remaining_ms;
             });
+            if (inspiration_spent)
+                spend_inspiration(subject.effects.get());
         }
     }
 }

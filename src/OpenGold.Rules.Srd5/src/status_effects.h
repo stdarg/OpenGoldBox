@@ -139,8 +139,8 @@ enum class EffectKind : unsigned
     outlined = 57,
     // Starry Wisp: it cannot be Invisible until the end of the caster's next turn.
     lit = 58,
-    // Bardic Inspiration: `dc` is the die the creature may add to a failed
-    // attack roll or save.
+    // Bardic Inspiration: `dc` is the die added to the creature's next failed
+    // attack roll, save or check that the die could turn into a success.
     inspired = 59,
     // Shillelagh: the caster's Club or Quarterstaff uses the spellcasting
     // ability and a d8.
@@ -235,10 +235,18 @@ struct EffectEvent
     rules::EntityId target{};
     Effect effect;
     std::optional<SaveResult> save;
+    int inspiration{}; // a Bardic Inspiration die added to the failed save
     bool removed{};
 };
 
 using EffectObserver = std::function<void(const EffectEvent &)>;
+
+// Bardic Inspiration's die rolled for a failed save, or 0 when the creature has
+// none or the die could not make up the shortfall.
+[[nodiscard]] int inspiration_die(const std::vector<Effect> &effects, const SaveResult &failed,
+                                  std::uint64_t &rng);
+// Ends the creature's Bardic Inspiration once its die is used.
+void spend_inspiration(EffectState &effects);
 
 // Command's options, numbered as a Command effect stores them in its `dc`.
 enum class CommandOption : int

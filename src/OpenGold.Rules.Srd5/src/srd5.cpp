@@ -1899,9 +1899,7 @@ class Session final : public CombatSession
         hit,      // an attack roll hit: Shield or Deflect Attacks
         missile,  // targeted by Magic Missile: Shield
         redirect, // Deflect Attacks stopped all the damage: redirect it for 1 Focus
-        rebuke,      // an attack damaged a Warlock: Hellish Rebuke
-        inspiration, // an inspired creature failed an attack roll or save
-        cutting      // an enemy's attack roll hit: a Lore Bard's Cutting Words
+        rebuke    // an attack damaged a Warlock: Hellish Rebuke
     };
     struct ReactionQuestion
     {
@@ -1934,10 +1932,11 @@ class Session final : public CombatSession
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
     [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
-    // Bardic Inspiration's die added to a failed roll, if the creature uses it.
-    int inspiration_roll(const Actor &creature);
-    // Cutting Words' die taken from an attack roll, if a Bard uses it.
-    int cutting_words(const Actor &attacker);
+    // Bardic Inspiration's die added to a roll that failed by `shortfall`.
+    int inspiration_roll(const Actor &creature, int shortfall);
+    void log_inspiration(const Actor &inspired, int die, bool success);
+    // Cutting Words' die taken from an attack roll that hit by `margin`.
+    int cutting_words(const Actor &attacker, int margin);
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void perform(const Command &command);
@@ -4547,10 +4546,6 @@ std::vector<Command> Session::legal_commands() const
             add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
         else if (question.asked == Asked::rebuke)
             add(who.source.id, "rebuke", "Cast Hellish Rebuke");
-        else if (question.asked == Asked::inspiration)
-            add(who.source.id, "inspire", "Use Bardic Inspiration");
-        else if (question.asked == Asked::cutting)
-            add(who.source.id, "cutting", "Use Cutting Words");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -5397,9 +5392,15 @@ void Session::damage(Actor &target, int amount, bool critical)
                                def(target).eldritch_mind;
         const auto result = target.concentration.damage(
                                 amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
-                                modifiers, target.life.hp == 0 || target.life.dead, rng_);
+                                modifiers, target.life.hp == 0 || target.life.dead, rng_,
+                                target.effects.active);
         if (result.save)
             log_save(target, *result.save);
+        if (result.inspiration)
+        {
+            detail::spend_inspiration(target.effects);
+            log_inspiration(target, result.inspiration, result.save->success);
+        }
         if (result.ended)
             drop_concentration_effects(target);
     }
@@ -6424,7 +6425,7 @@ void Session::escape_ensnaring(Actor &a)
     const int natural = detail::d20({advantage, false, def(a).lucky}, rng_);
     const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                       guidance_bonus(a, "athletics");
-    const bool escaped = natural + bonus >= vines.dc;
+    bool escaped = natural + bonus >= vines.dc;
     const std::string advantage_label = advantage ? " (advantage)" : "";
     log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + advantage_label +
         " + " + std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
@@ -6439,6 +6440,8 @@ void Session::escape_ensnaring(Actor &a)
             {"dc", std::to_string(vines.dc)}
         }
     });
+    if (!escaped)
+        escaped = inspiration_roll(a, vines.dc - natural - bonus) >= vines.dc - natural - bonus;
     if (!escaped)
         return;
     // Ensnaring Strike ends, and with it the caster's Concentration; Entangle
@@ -7122,14 +7125,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
     bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     // Bardic Inspiration may rescue a miss; Cutting Words may spoil a hit.
-    if (!hit)
+    if (!hit && natural != 1)
     {
-        bonus += inspiration_roll(a);
+        bonus += inspiration_roll(a, armor_class(target) - natural - bonus);
         hit = attack_hits(natural, bonus, armor_class(target));
     }
-    else if (!automatic)
+    else if (hit && !automatic)
     {
-        bonus -= cutting_words(a);
+        bonus -= cutting_words(a, natural + bonus - armor_class(target));
         hit = attack_hits(natural, bonus, armor_class(target));
     }
     const auto damage_type = spell    ? spell_attack->type
@@ -8023,7 +8026,7 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     log_save(target, result);
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
-        if (const int die = inspiration_roll(target))
+        if (const int die = inspiration_roll(target, dc - result.natural - result.bonus))
             result.success = result.natural + result.bonus + die >= dc;
     return result.success;
 }
@@ -8058,6 +8061,8 @@ void Session::advance_turn_time()
         const auto &target = actor(event.target);
         if (event.save)
             log_save(target, *event.save);
+        if (event.inspiration)
+            log_inspiration(target, event.inspiration, event.save->success);
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -8312,9 +8317,7 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
     if (answer_of(target.source.id, asked))
         return;
     const bool askable =
-        asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::inspiration ||
-        asked == Asked::cutting ||
-        (can_shield(target) && !critical) ||
+        asked == Asked::redirect || asked == Asked::rebuke || (can_shield(target) && !critical) ||
         (asked == Asked::hit && can_deflect(target, deflectable));
     if (askable)
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
@@ -8394,34 +8397,44 @@ void Session::bless_fiends(const Actor &fallen)
     }
 }
 
-int Session::inspiration_roll(const Actor &creature)
+int Session::inspiration_roll(const Actor &creature, int shortfall)
 {
+    // Used without asking, and only when the die could make up the shortfall:
+    // the roll and its target number are in the log for the player too.
     auto &inspired = actor(creature.source.id);
     const auto found = std::find_if(inspired.effects.active.begin(), inspired.effects.active.end(),
                                     [](const auto & e)
     {
         return e.kind == detail::EffectKind::inspired;
     });
-    if (found == inspired.effects.active.end() || !conscious(inspired))
-        return 0;
-    ask_reaction(inspired, Asked::inspiration);
-    if (answer_of(inspired.source.id, Asked::inspiration)->verb != "inspire")
+    if (found == inspired.effects.active.end() || !conscious(inspired) || found->dc < shortfall)
         return 0;
     const int sides = found->dc;
     inspired.effects.active.erase(found);
     const int die = roll(sides);
-    log("Bardic Inspiration adds " + std::to_string(die) + " to " + inspired.source.name + "'s roll.",
-    {
-        "Bardic Inspiration adds {amount} to {name}'s roll.",
-        {{"amount", std::to_string(die)}, {"name", inspired.source.name}}
-    });
+    log_inspiration(inspired, die, die >= shortfall);
     return die;
 }
 
-int Session::cutting_words(const Actor &attacker)
+void Session::log_inspiration(const Actor &inspired, int die, bool success)
 {
-    // A Lore Bard who sees the attacker within 60 feet may spend a Reaction and
-    // a Bardic Inspiration use to subtract the die from the attack roll.
+    const auto amount = std::to_string(die);
+    log("Bardic Inspiration adds " + amount + " to " + inspired.source.name + "'s roll" +
+        (success ? ", turning it into a success." : ", not enough to succeed."),
+    {
+        success ? "Bardic Inspiration adds {amount} to {name}'s roll, turning it into a success."
+        : "Bardic Inspiration adds {amount} to {name}'s roll, not enough to succeed.",
+        {{"amount", amount}, {"name", inspired.source.name}}
+    });
+}
+
+int Session::cutting_words(const Actor &attacker, int margin)
+{
+    // A Lore Bard who sees the attacker within 60 feet spends a Reaction and a
+    // Bardic Inspiration use to subtract the die from the attack roll. It is
+    // used without asking, and only when the d6 could turn the hit into a miss.
+    if (margin >= 6)
+        return 0;
     for (auto &bard : actors_)
     {
         if (!def(bard).cutting_words || bard.source.side == attacker.source.side ||
@@ -8429,16 +8442,17 @@ int Session::cutting_words(const Actor &attacker)
                 bard.arcane <= 0 || distance(bard.source.cell, attacker.source.cell) > 60 ||
                 !can_see(bard, attacker))
             continue;
-        ask_reaction(bard, Asked::cutting);
-        if (answer_of(bard.source.id, Asked::cutting)->verb != "cutting")
-            continue;
         bard.reaction = false;
         --bard.arcane;
         const int die = roll(6);
-        log(bard.source.name + " uses Cutting Words: -" + std::to_string(die) + ".",
+        const bool missed = die > margin;
+        const auto amount = std::to_string(die);
+        log(bard.source.name + " uses Cutting Words: -" + amount +
+            (missed ? ", turning the hit into a miss." : "; the attack still hits."),
         {
-            "{name} uses Cutting Words: -{amount}.",
-            {{"name", bard.source.name}, {"amount", std::to_string(die)}}
+            missed ? "{name} uses Cutting Words: -{amount}, turning the hit into a miss."
+            : "{name} uses Cutting Words: -{amount}; the attack still hits.",
+            {{"name", bard.source.name}, {"amount", amount}}
         });
         return die;
     }
@@ -8492,9 +8506,7 @@ void Session::perform(const Command &command)
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return can_shield(other) || def(other).deflect ||
-               detail::knows_spell(def(other).spells, "hellish_rebuke") ||
-               def(other).cutting_words ||
-               detail::has_effect(other.effects, detail::EffectKind::inspired);
+               detail::knows_spell(def(other).spells, "hellish_rebuke");
     });
     if (!askable)
     {
@@ -9606,9 +9618,7 @@ void Session::finish_check(const PendingCheck &check, int boost)
     auto &a = actor(check.actor);
     auto &target = actor(check.target);
     const int total = check.natural + def(a).medicine + check.guidance + boost;
-    const bool success = total >= 10;
-    if (success)
-        detail::stabilize(target.life, rng_);
+    bool success = total >= 10;
     Message message
     {
         "{actor} stabilizes {target}: d20 {roll} + {modifier} + {boost} = {total} vs DC {dc}: {result}.",
@@ -9625,6 +9635,11 @@ void Session::finish_check(const PendingCheck &check, int boost)
         std::to_string(def(a).medicine + check.guidance) + " + " + std::to_string(boost) + " = " +
         std::to_string(total) + " vs DC 10: " + (success ? "success" : "failure"),
         message);
+    // Bardic Inspiration follows the failed check in the log.
+    if (!success)
+        success = inspiration_roll(a, 10 - total) >= 10 - total;
+    if (success)
+        detail::stabilize(target.life, rng_);
 }
 
 void Session::finish_champion_move()
@@ -10287,7 +10302,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
         if (!input || !known_actor(question.target) ||
-                asked > static_cast<unsigned>(Asked::cutting) ||
+                asked > static_cast<unsigned>(Asked::rebuke) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -10298,10 +10313,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
             if (!input || !known_actor(answer.target) ||
-                    kind > static_cast<unsigned>(Asked::cutting) ||
+                    kind > static_cast<unsigned>(Asked::rebuke) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
-                     answer.verb != "inspire" && answer.verb != "cutting" &&
                      answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = static_cast<Asked>(kind);
@@ -12489,7 +12503,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.168", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.169", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
