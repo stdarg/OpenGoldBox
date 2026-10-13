@@ -47,21 +47,20 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         {"alignment", i18n::text(s.alignment)},
         {"background", i18n::text(s.background)}
     });
-    if (!character.creation_data().target_classes.empty())
-    {
-        String goals;
-        const auto options =
-            srd5::character_rules()->choices(rules::CreationField::character_class);
-        for (const auto &id : character.creation_data().target_classes)
-            for (const auto &option : options)
-                if (option.id == id)
-                {
-                    if (!goals.is_empty())
-                        goals += ", ";
-                    goals += i18n::text(option.label);
-                }
+    // The current class is not a future goal.
+    String goals;
+    const auto &draft = character.creation_data();
+    const auto options = srd5::character_rules()->choices(rules::CreationField::character_class);
+    for (const auto &id : draft.target_classes)
+        for (const auto &option : options)
+            if (option.id == id && id != draft.character_class)
+            {
+                if (!goals.is_empty())
+                    goals += ", ";
+                goals += i18n::text(option.label);
+            }
+    if (!goals.is_empty())
         text += i18n::formatted("Future class goals: {classes}\n\n", {{"classes", goals}});
-    }
     rules::TemporaryHitPoints temporary;
     if (member)
         temporary = party->recovery_info(member->id).temporary_hp;

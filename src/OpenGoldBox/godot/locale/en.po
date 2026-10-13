@@ -6,16 +6,16 @@ msgstr "Project-Id-Version: OpenGoldBox\nLanguage: en\nMIME-Version: 1.0\nConten
 msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented."
 msgstr "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:108
+#: src/OpenGoldBox/character_sheet_text.cpp:107
 msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 msgstr "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:77
+#: src/OpenGoldBox/character_sheet_text.cpp:76
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Gold {gold}   XP {xp}"
 msgstr "   Gold {gold}   XP {xp}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:75
+#: src/OpenGoldBox/character_sheet_text.cpp:74
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "   Hit Dice: {level}d{die}"
 msgstr "   Hit Dice: {level}d{die}"
@@ -60,7 +60,7 @@ msgstr " and "
 msgid " or "
 msgstr " or "
 
-#: src/OpenGoldBox/character_sheet_text.cpp:124
+#: src/OpenGoldBox/character_sheet_text.cpp:123
 msgid "* Proficient saving throw"
 msgstr "* Proficient saving throw"
 
@@ -182,7 +182,7 @@ msgstr "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgid "AC {ac}"
 msgstr "AC {ac}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:130
+#: src/OpenGoldBox/character_sheet_text.cpp:129
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}   Speed {speed} ft"
 msgstr "AC {ac}   Speed {speed} ft"
@@ -506,7 +506,7 @@ msgstr "Attribute bonuses: Intelligence, Wisdom, Charisma."
 msgid "Attribute bonuses: Strength, Dexterity, Constitution."
 msgstr "Attribute bonuses: Strength, Dexterity, Constitution."
 
-#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:107
+#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:106
 msgid "Attributes"
 msgstr "Attributes"
 
@@ -1408,7 +1408,7 @@ msgstr "Dart"
 msgid "Dash"
 msgstr "Dash"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:80
+#: src/OpenGoldBox/character_sheet_text.cpp:79
 msgid "Dead"
 msgstr "Dead"
 
@@ -1649,7 +1649,7 @@ msgstr "Elves are long-lived folk with the blood of the Feywild in their veins.\
 msgid "Empowered Spell"
 msgstr "Empowered Spell"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:142
+#: src/OpenGoldBox/character_sheet_text.cpp:141
 msgid "Empty"
 msgstr "Empty"
 
@@ -1824,7 +1824,7 @@ msgstr "Favored Enemy"
 msgid "Feat or ability points"
 msgstr "Feat or ability points"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:96
+#: src/OpenGoldBox/character_sheet_text.cpp:95
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Feat: {feats}"
 msgstr "Feat: {feats}"
@@ -2449,7 +2449,7 @@ msgstr "Invalid Weapon Mastery choices or provenance"
 msgid "Invalid advancement training choice"
 msgstr "Invalid advancement training choice"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:140 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:322
+#: src/OpenGoldBox/character_sheet_text.cpp:139 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:322
 msgid "Inventory"
 msgstr "Inventory"
 
@@ -3513,7 +3513,7 @@ msgstr "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style o
 msgid "Prepared spells: select at least one"
 msgstr "Prepared spells: select at least one"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:102
+#: src/OpenGoldBox/character_sheet_text.cpp:101
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Prepared spells: {spells}"
 msgstr "Prepared spells: {spells}"
@@ -3747,7 +3747,7 @@ msgstr "Read the encounter text, then Continue."
 msgid "Ready"
 msgstr "Ready"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:82
+#: src/OpenGoldBox/character_sheet_text.cpp:81
 msgid "Ready to level up"
 msgstr "Ready to level up"
 
@@ -5377,7 +5377,7 @@ msgstr "ability score improvement"
 msgid "all damage"
 msgstr "all damage"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:86 src/OpenGoldBox/level_up_view.cpp:407
+#: src/OpenGoldBox/character_sheet_text.cpp:85 src/OpenGoldBox/level_up_view.cpp:407
 msgid "archery"
 msgstr "archery"
 
