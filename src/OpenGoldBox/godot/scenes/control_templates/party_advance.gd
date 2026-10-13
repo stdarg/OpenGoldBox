@@ -9,7 +9,8 @@ func place_in_roster(index: int, display_name: String) -> bool:
     var font := list.get_theme_font("font")
     var width := font.get_string_size(display_name, HORIZONTAL_ALIGNMENT_LEFT, -1,
         list.get_theme_font_size("font_size")).x
-    position = Vector2(minf(width + list.get_theme_constant("party_arrow_gap", "OpenGoldMetrics"),
+    position = Vector2(minf(list.call("text_left", index) + width
+        + list.get_theme_constant("party_arrow_gap", "OpenGoldMetrics"),
         list.size.x - list.get_theme_constant("party_arrow_right_inset", "OpenGoldMetrics")),
         y + list.get_theme_constant("party_arrow_offset_y", "OpenGoldMetrics"))
     return position.y >= 0 and position.y + size.y <= list.size.y

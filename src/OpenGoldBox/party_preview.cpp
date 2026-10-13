@@ -196,15 +196,23 @@ void CharacterCreationView::refresh_party()
     auto *list = &required_node<ItemList>(*this, "PartyPanel/Roster");
     list->clear();
     const auto &state = campaign_->state();
+    Array members;
     for (const auto &m : state.roster)
     {
         auto slot = std::find(state.slots.begin(), state.slots.end(), m.id);
         const bool leader = slot != state.slots.end() && m.id == campaign_->leader();
-        list->add_item((leader ? String::utf8("★ ") : String()) + gs(m.character.sheet().name) +
-                       (slot == state.slots.end() ? i18n::text(" (Reserve)") : String()));
+        const auto sheet = m.character.sheet();
+        // The roster has room for the six starting members' photos and identity.
+        const auto title = (leader ? String::utf8("★ ") : String()) + gs(sheet.name) +
+                           (slot == state.slots.end() ? i18n::text(" (Reserve)") : String());
+        list->add_item(title,
+                       portraits_->texture(m.character.appearance(), m.character.creation_data()));
+        members.push_back(PackedStringArray({title, i18n::text(sheet.character_class),
+                                             i18n::text(sheet.race), i18n::text(sheet.gender)}));
         if (leader)
             list->call("mark_leader", list->get_item_count() - 1);
     }
+    list->call("show_members", members);
     auto *items = &required_node<ItemList>(*this, "PartyPanel/Inventory");
     items->clear();
     std::string sheet = i18n::utf8(

@@ -30,6 +30,8 @@ autowrap_mode = 2
 
 [node name="Roster" type="ItemList" parent="."]
 script = ExtResource("97_party_roster")
+max_text_lines = 4
+fixed_icon_size = Vector2i(100, 100)
 anchor_bottom = 1.0
 offset_left = 24
 offset_top = 90

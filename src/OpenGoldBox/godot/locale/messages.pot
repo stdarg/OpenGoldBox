@@ -20,7 +20,7 @@ msgstr ""
 msgid "   Hit Dice: {level}d{die}"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:204
+#: src/OpenGoldBox/party_preview.cpp:207
 msgid " (Reserve)"
 msgstr ""
 
@@ -219,7 +219,7 @@ msgstr ""
 msgid "Acrobatics"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:192
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:404 src/OpenGoldBox/godot/scenes/party_panel.tscn:194
 msgid "Action"
 msgstr ""
 
@@ -514,7 +514,7 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:157
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:159
 msgid "Back to creator"
 msgstr ""
 
@@ -898,7 +898,7 @@ msgstr ""
 msgid "Character"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:227
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:229
 msgid "Character Pool"
 msgstr ""
 
@@ -1331,11 +1331,11 @@ msgstr ""
 msgid "Create a character before saving"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:210
+#: src/OpenGoldBox/party_preview.cpp:218
 msgid "Create a character, finish its sheet, then Add to party.\n\nSix PC positions and two NPC positions. Removed members remain in the roster."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:99
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:101
 msgid "Create character"
 msgstr ""
 
@@ -1428,11 +1428,11 @@ msgstr ""
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1166
+#: src/OpenGoldBox/party_preview.cpp:1174
 msgid "Defeat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1238
+#: src/OpenGoldBox/party_preview.cpp:1246
 msgid "Defeat test"
 msgstr ""
 
@@ -1710,7 +1710,7 @@ msgstr ""
 msgid "Equip"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:123
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:125
 msgid "Equip selected"
 msgstr ""
 
@@ -1731,7 +1731,7 @@ msgstr ""
 msgid "Equipped / "
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:680 src/OpenGoldBox/rolf_tour_view.cpp:416
+#: src/OpenGoldBox/party_preview.cpp:688 src/OpenGoldBox/rolf_tour_view.cpp:416
 msgid "Equipped."
 msgstr ""
 
@@ -1755,7 +1755,7 @@ msgstr ""
 msgid "Exit"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1177
+#: src/OpenGoldBox/party_preview.cpp:1185
 msgid "Exit to OS"
 msgstr ""
 
@@ -1779,7 +1779,7 @@ msgstr ""
 msgid "Explore  /  arrow keys"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:145
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:147
 msgid "Explore New Phlan"
 msgstr ""
 
@@ -1895,7 +1895,7 @@ msgstr ""
 msgid "Finish Long Rest spell choices before combat"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1083
+#: src/OpenGoldBox/party_preview.cpp:1091
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr ""
 
@@ -2425,7 +2425,7 @@ msgstr ""
 msgid "Insight"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1082
+#: src/OpenGoldBox/party_preview.cpp:1090
 msgid "Inspect your party and equipment."
 msgstr ""
 
@@ -2719,7 +2719,7 @@ msgstr ""
 msgid "Load Character"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1170
+#: src/OpenGoldBox/party_preview.cpp:1178
 msgid "Load a saved game to continue."
 msgstr ""
 
@@ -2731,7 +2731,7 @@ msgstr ""
 msgid "Load combat"
 msgstr ""
 
-#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:247 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:629 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
+#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:249 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:629 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
 msgid "Load game"
 msgstr ""
 
@@ -2836,7 +2836,7 @@ msgstr ""
 msgid "Main hand — {item}"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:257
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1433 src/OpenGoldBox/godot/scenes/party_panel.tscn:259
 msgid "Make leader"
 msgstr ""
 
@@ -2992,7 +2992,7 @@ msgstr ""
 msgid "Misty Step"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1190 src/OpenGoldBox/godot/scenes/party_panel.tscn:164
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1190 src/OpenGoldBox/godot/scenes/party_panel.tscn:166
 msgid "Modifiers"
 msgstr ""
 
@@ -3081,7 +3081,7 @@ msgstr ""
 msgid "Neutral Good"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:250
+#: src/OpenGoldBox/party_preview.cpp:258
 msgid "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk."
 msgstr ""
 
@@ -3362,7 +3362,7 @@ msgstr ""
 msgid "Party ({x}, {y})   {direction}"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:151
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:153
 msgid "Party combat"
 msgstr ""
 
@@ -3743,7 +3743,7 @@ msgstr ""
 msgid "Read the encounter text, then Continue."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:181
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:391 src/OpenGoldBox/godot/scenes/party_panel.tscn:183
 msgid "Ready"
 msgstr ""
 
@@ -3767,7 +3767,7 @@ msgstr ""
 msgid "Recover slots"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:117
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:119
 msgid "Recruit preview guard"
 msgstr ""
 
@@ -3792,7 +3792,7 @@ msgstr ""
 msgid "Reduced"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:111
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:113
 msgid "Rejoin party"
 msgstr ""
 
@@ -3800,11 +3800,11 @@ msgstr ""
 msgid "Religion"
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1177
+#: src/OpenGoldBox/party_preview.cpp:1185
 msgid "Reload a Saved Game"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:105
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:107
 msgid "Remove member"
 msgstr ""
 
@@ -4096,7 +4096,7 @@ msgstr ""
 msgid "Save combat"
 msgstr ""
 
-#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:237 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:619 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
+#: src/OpenGoldBox/campaign_save_view.cpp:67 src/OpenGoldBox/godot/scenes/party_panel.tscn:239 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:619 src/OpenGoldBox/rest_dialog_impl.h:30 src/OpenGoldBox/rest_dialog_impl.h:66 src/OpenGoldBox/rolf_tour_view.cpp:151 src/OpenGoldBox/save_slots.cpp:121
 msgid "Save game"
 msgstr ""
 
@@ -4104,7 +4104,7 @@ msgstr ""
 msgid "Save name"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1257 src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/party_panel.tscn:171
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1257 src/OpenGoldBox/godot/scenes/character_creation.tscn:1260 src/OpenGoldBox/godot/scenes/party_panel.tscn:173
 msgid "Saving Throws"
 msgstr ""
 
@@ -5071,7 +5071,7 @@ msgstr ""
 msgid "Unequip"
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/party_panel.tscn:139
+#: src/OpenGoldBox/godot/scenes/party_panel.tscn:141
 msgid "Unequip selected"
 msgstr ""
 
@@ -5351,7 +5351,7 @@ msgstr ""
 msgid "Your party flees the battle."
 msgstr ""
 
-#: src/OpenGoldBox/party_preview.cpp:1168
+#: src/OpenGoldBox/party_preview.cpp:1176
 msgid "Your party has been defeated."
 msgstr ""
 
