@@ -1,8 +1,9 @@
 #include "opengold/campaign_party.h"
-#include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -647,6 +648,49 @@ void spiritual_weapon_checks()
           c->snapshot().spiritual_weapons.empty(),
           "A new Concentration spell ends the force");
 }
+// Channel Divinity's uses are spent in fights, kept by a campaign save, and
+// recovered one by a Short Rest and all by a Long Rest.
+void channel_divinity_rest_checks()
+{
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(cleric(2));
+    const auto uses = [](const CampaignParty & p, MemberId member)
+    {
+        const auto &m = p.member(member);
+        for (const auto &pool : p.rule_module().recovery_info(m.character.sheet(), m.vitals).resources)
+            if (pool.id == "channel_divinity")
+                return static_cast<int>(pool.remaining);
+        return -1;
+    };
+    check(uses(party, id) == 2, "A level-two Cleric has two Channel Divinity uses");
+    for (int fight = 0; fight < 2; ++fight)
+    {
+        Encounter e{{12, 6, std::vector<Terrain>(72)}, party.participants()};
+        e.participants.front().cell = {1, 1};
+        e.participants.push_back({99, "bandit", "Enemy", Side::opposition, {3, 1}});
+        auto c = party.rule_module().create(e, 5);
+        for (unsigned turns = 0; c->snapshot().actor != id && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Cleric's turn");
+        check(submit(*c, "divine_spark", 99), "Divine Spark at the enemy");
+        party.begin_combat();
+        party.apply_combat(c->snapshot());
+        party.end_combat();
+    }
+    check(uses(party, id) == 0, "Both uses are spent after two fights");
+    const auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    const auto bytes = encode_campaign(party, nullptr, "channel");
+    CampaignParty copy(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    copy.restore(decode_campaign(bytes, *srd5::character_rules(), *rules, "channel", nullptr).party);
+    check(uses(copy, id) == 0, "Spent uses survive a campaign save");
+    check(bool(copy.rest(RestKind::short_rest)) && uses(copy, id) == 1,
+          "A Short Rest restores one use");
+    if (copy.state().short_rest)
+        copy.finish_short_rest(copy.state().short_rest->ticket);
+    copy.advance_time(std::chrono::hours{24});
+    check(bool(copy.rest(RestKind::long_rest)) && uses(copy, id) == 2,
+          "A Long Rest restores all of them");
+}
+
 } // namespace
 
 int main()
@@ -654,6 +698,7 @@ int main()
     try
     {
         divine_spark_checks();
+        channel_divinity_rest_checks();
         turn_undead_checks();
         incapacitated_turning_checks();
         life_domain_checks();

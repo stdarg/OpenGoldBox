@@ -33,7 +33,9 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 
 Verification: `opengold_cleric_channel_tests` (no Channel Divinity at level one,
 two uses, healing, harming with a save, Turn Undead needing an Undead, a turned
-zombie fleeing then ending its turn, a checkpoint, damage ending it) and
+zombie fleeing then ending its turn, a checkpoint, damage ending it, uses spent
+in fights kept by a campaign save, one back on a Short Rest and all on a Long
+Rest) and
 `opengold_godot_divine_spark` (A cycle and click, English and Spanish).
 
 ## Life Domain (level 3)

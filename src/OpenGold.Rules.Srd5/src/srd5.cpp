@@ -2221,6 +2221,7 @@ class Session final : public CombatSession
     // Wild Shape's Beast form, kept in step with the wild_shape effect.
     static void refresh_form(Actor &a);
     void end_wild_shape(Actor &a);
+    void change_speed(Actor &a, int old_speed);
     // Land's Aid: thorns in a 10-foot Sphere and flowers that heal one ally.
     void lands_aid(Actor &druid, Cell center);
     // Heat Metal targets only metal armor a creature wears.
@@ -5809,8 +5810,17 @@ void Session::end_wild_shape(Actor &a)
     {
         return e.kind == detail::EffectKind::wild_shape;
     });
+    const int form_speed = def(a).speed;
     a.form.reset();
+    change_speed(a, form_speed);
     log(a.source.name + " leaves Wild Shape.", {"{name} leaves Wild Shape.", {{"name", a.source.name}}});
+}
+
+// A Speed change mid-turn changes the movement left by the difference; movement
+// already spent stays spent (SRD 5.2.1 p. 14).
+void Session::change_speed(Actor &a, int old_speed)
+{
+    a.movement = std::max(0, a.movement + def(a).speed - old_speed);
 }
 
 void Session::lands_aid(Actor &druid, Cell center)
@@ -8752,7 +8762,9 @@ void Session::dispatch(const Command &command)
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::wild_shape,
                                     static_cast<int>(form - detail::beast_forms.data()) + 1);
+        const int druid_speed = def(a).speed;
         refresh_form(a);
+        change_speed(a, druid_speed);
         log(a.source.name + " takes the shape of a " + std::string(form->label) + ".",
         {"{name} takes the shape of a {form}.", {{"name", a.source.name}, {"form", std::string(form->label), true}}});
         // Temporary Hit Points equal to the Druid level.
@@ -9425,8 +9437,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     if (actor.dashes < 0 ||
             actor.dashes > static_cast<int>(!actor.actions.normal) +
             static_cast<int>(actor.rush_used || bonus_dash) +
-            static_cast<int>(actor.surge_used && !actor.actions.surge) ||
-            actor.movement > definition.speed * (1 + actor.dashes))
+            static_cast<int>(actor.surge_used && !actor.actions.surge))
         throw std::runtime_error("Invalid Dash allowance count");
     // The upper bound waits for the effects, read later: Aid raises it.
     if (actor.life.hp < 0 || (actor.life.dead && actor.life.hp > 0) ||
@@ -9434,10 +9445,6 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             // Accepting both extra movement and an unused action lets a later Dash
             // create a state outside the checkpoint's own movement bounds.
             actor.movement < 0 ||
-            actor.movement >
-            definition.speed * (1 + !actor.actions.normal +
-                                static_cast<int>(actor.rush_used || bonus_dash) +
-                                (actor.surge_used && !actor.actions.surge)) ||
             actor.arcane < 0 || actor.arcane > arcane_capacity(definition) || actor.surges < 0 ||
             actor.surges > surge_capacity(definition) ||
             (actor.surge_used && (!definition.surges || actor.surges == definition.surges)) ||
@@ -10264,7 +10271,13 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     if (!input)
         throw std::runtime_error("Invalid checkpoint continuation");
     for (auto &a : session->actors_)
+    {
         refresh_form(a);
+        // Movement is bounded by the current Speed, a Wild Shape form's included,
+        // once for each movement allowance the turn has had.
+        if (a.movement > session->def(a).speed * (1 + a.dashes))
+            throw std::runtime_error("Invalid Dash allowance count");
+    }
     session->light_active_ = saved_light;
     session->nick_active_ = saved_nick;
     session->validate_light();
@@ -12377,7 +12390,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.161", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.162", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -19,7 +19,7 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const char *message)
+void check(bool ok, const std::string &message)
 {
     if (!ok)
         throw std::runtime_error(message);
@@ -455,6 +455,61 @@ void wild_shape_checks()
           "A Bonus Action leaves the form");
 }
 
+// Every Beast form's AC, Speed and attack bonus (SRD 5.2.1 stat blocks), and
+// what the Druid keeps in form: its Hit Points, its Concentration, and armor
+// merged into the form that Heat Metal cannot reach.
+void beast_form_checks()
+{
+    auto module = rules();
+    struct Form
+    {
+        const char *key;
+        int armor_class, speed;
+        const char *bonus;
+    };
+    for (const auto &form : {Form{"wolf", 12, 40, " + 4 vs AC"}, Form{"boar", 11, 40, " + 3 vs AC"},
+            Form{"giant_lizard", 12, 40, " + 4 vs AC"}, Form{"giant_snake", 13, 30, " + 4 vs AC"}
+         })
+    {
+        auto c = battle(*module, druid(2).sheet(), {}, true);
+        const int hp = unit(*c, 1).hit_points;
+        check(submit(*c, std::string("wild_shape_") + form.key) && unit(*c, 1).form == form.key &&
+              unit(*c, 1).armor_class == form.armor_class &&
+              unit(*c, 1).movement_feet == form.speed && unit(*c, 1).hit_points == hp,
+              std::string("The ") + form.key + " form's AC and Speed, keeping the Druid's Hit Points");
+        check(submit(*c, "melee", 98) && logged(*c, form.bonus),
+              std::string("The ") + form.key + " form attacks with its own bonus");
+    }
+
+    // Faerie Fire's Concentration continues in Wild Shape.
+    auto c = battle(*module, druid(3).sheet(), {}, true);
+    check(submit(*c, "faerie_fire") && submit(*c, "area_cast") &&
+          has_condition(*c, 1, "Concentrating"),
+          "The Druid concentrates on Faerie Fire");
+    check(submit(*c, "wild_shape_wolf") && has_condition(*c, 1, "Concentrating"),
+          "Concentration continues in the Wolf's form");
+
+    // A shaped Druid's Chain Mail merges into the form: no metal to heat.
+    const auto caster = module->character_profile(preparing("heat_metal"),
+                        std::vector<std::string> {}).data;
+    const auto knight = module->character_profile(druid(2).sheet(),
+                        std::vector<std::string> {"chain_mail"}).data;
+    auto heat = module->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
+            {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight}
+        }},
+    5);
+    for (unsigned turns = 0; heat->snapshot().actor != 97 && turns < 6; ++turns)
+        check(submit(*heat, "end"), "Reach the Knight's turn");
+    check(submit(*heat, "wild_shape_wolf"), "The Knight takes the Wolf's form");
+    reach(*heat, 1);
+    const auto offers = heat->legal_commands();
+    check(std::none_of(offers.begin(), offers.end(), [](const auto & command)
+    {
+        return command.verb == "heat_metal" && command.target == 97;
+    }), "Heat Metal cannot reach armor merged into a Beast form");
+}
+
 // A creature that the Wolf's opportunity bite knocks Prone must crawl; when it
 // cannot crawl the rest of its route, it stops where it is and the fight goes on.
 void prone_mover_checks()
@@ -527,6 +582,7 @@ int main()
     {
         cantrip_checks();
         poison_spray_checks();
+        beast_form_checks();
         order_checks();
         circle_checks();
         barkskin_checks();

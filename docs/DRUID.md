@@ -79,7 +79,9 @@ ability.
   features and gains Temporary Hit Points equal to its Druid level. The
   Beast's AC, Speed, size, Strength, Dexterity, physical saves and attack
   replace the Druid's; equipment merges into the form (so Heat Metal finds no
-  armor); no spells are cast, but Concentration continues.
+  armor); no spells are cast, but Concentration continues. Taking or leaving a
+  form mid-turn changes the movement left by the difference in Speed; movement
+  already spent stays spent.
   - Wolf: AC 12, Speed 40, Bite +4 for 1d6 + 2 Piercing; Pack Tactics, and a
     hit knocks a Medium or smaller creature Prone.
   - Boar: AC 11, Speed 40, Gore +3 for 1d6 + 1 Piercing; Bloodied Fury
@@ -101,6 +103,8 @@ ability.
   Sphere makes a Constitution save against the spell save DC, taking 2d6
   Necrotic, half on a success; the most wounded ally in it regains 2d6 Hit
   Points. The enemies and the ally are chosen automatically.
-- Verification: `opengold_druid_tests` (the Wolf's AC, Temporary HP, no
-  spells, a checkpoint, the bite and its Prone, leaving the form, and Land's
+- Verification: `opengold_druid_tests` (each form's AC, Speed and attack bonus
+  with the Druid's Hit Points kept, the Wolf's Temporary HP, no spells, a
+  checkpoint, the bite and its Prone, Concentration on Faerie Fire continuing,
+  Heat Metal finding no armor on a shaped Druid, leaving the form, and Land's
   Aid's thorns, healing and spent use).
