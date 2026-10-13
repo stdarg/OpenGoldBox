@@ -1,50 +1,33 @@
-# Complete character portraits
+# Character portraits
 
-The roster contains 324 independently composed portraits: one for every
-combination of 12 classes, nine in-game races, and three genders. The initial
-six were approved for style, the next 30 established class coverage, a further
-36 expanded the choices in every class, and the final 252 fill every missing
-combination. These files are used by the Character Review demo, character pool,
-and party previews. The selector offers optional gender, class, and race filters.
+The catalog contains 972 pixel-art portraits: three for every combination of
+12 classes, nine in-game races, and three genders. The first 324 established
+complete coverage, the second 324 added new character designs, and the latest
+324 show each class in action. The Character Review demo, character pool, and
+party previews use this catalog. The selector can filter by gender, class, and
+race.
 
-Each PNG contains a complete chest-up character on a black background. Faces,
-physiques, poses, and clothing are individually designed rather than assembled
-from interchangeable heads and bodies. Each class has 27 portraits, one per
-race and gender. Nonbinary briefs request androgynous presentation. Bard
-portraits include storytelling, song, dance, poetry, acting, juggling, and
-instrumental performance.
-Real-world ancestry-inspired facial and hair characteristics vary across fantasy
-races and are not game-rule categories or metadata fields.
+Every PNG is a 1254 x 1254 square on a black background. Faces stay readable
+at the portrait picker's smaller size. The action set keeps both eyes visible
+while varying camera angle, pose, clothing, and class activity. Its close-up
+framing gives priority to the face and includes hands, tools, weapons, or spell
+effects where the action calls for them. Nonbinary portraits are briefed for
+androgynous presentation. All characters are adults and fully clothed.
 
-`portraits.json` maps each PNG basename, including its extension, to exactly
-`Class`, `Gender`, and `Race`, using the character creator's display names.
-`prompts.json` records the original six prompts and `roster-prompts.json` records
-the first 30 expansion prompts. `class-expansion-prompts.json` records the next
-36 portraits, with different costumes, poses, ages, physiques, and class
-interpretations. `full-coverage-prompts.json` records the final 252. All use the built-in image generator. The
-original game's local contact sheet informed general palette, framing, and
-readability of the approved six; the expansion uses those approved portraits
-as a rendering-style reference. No extracted original assets are included here.
+`portraits.json` maps each PNG basename to `Class`, `Gender`, and `Race`, using
+the character creator's display names. `prompts.json`,
+`roster-prompts.json`, `class-expansion-prompts.json`, and
+`full-coverage-prompts.json` record prompts for the first 324.
+`second-set-prompts.json` records the second 324. `action-set-prompts.json`
+records the action portraits and names the two earlier portraits for the same
+race, class, and gender combination in each entry's `prior_portraits` field.
+The previous PNGs and their catalog entries remain unchanged.
 
-The four original Orc portraits were subsequently revised to visibly green skin at the
-user's request, retaining their individual ancestry-inspired facial features,
-hair, expressions, costumes, and poses. `orc-green-revision-prompts.json` records
-the built-in image-generation edit prompts. Their basenames and catalog metadata
-remain the same. Later Orcs were generated with green skin from the start.
-Earlier generation prompts document the original versions.
+The four original Orc portraits were revised to visibly green skin at the
+user's request; `orc-green-revision-prompts.json` records those edit prompts.
+Later Orc portraits were generated with green skin from the start.
 
-All 324 PNGs retain the generator's 1254 x 1254 full-resolution output. Pixel-art styling does
-not guarantee a mathematically uniform low-resolution pixel grid. Local review
-previews render each at 88 x 88 as well as enlarged sizes; these are visual
-readability checks, not a claim of a separately
-hand-tuned 88 x 88 asset set.
-
-Coverage includes Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin,
-Ranger, Rogue, Sorcerer, Warlock, and Wizard; Dragonborn, Dwarf, Elf, Gnome,
-Goliath, Halfling, Human, Orc, and Tiefling. Metadata is descriptive and does
-not impose restrictions on character creation.
-
-Validation: all 324 PNGs decode, have unique file hashes, and correspond exactly
-to catalog basenames and recorded prompts. Metadata fields and values match the
-character creator; class, race, and gender coverage was checked. All portraits
-were visually inspected on class contact sheets at portrait-picker size.
+All portraits use the built-in image generator. Pixel-art styling does not
+imply a mathematically uniform low-resolution pixel grid or a separate,
+hand-tuned 88 x 88 asset. Race and gender metadata describe picker options;
+they do not impose character-creation rules.
