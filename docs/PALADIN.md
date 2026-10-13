@@ -99,13 +99,16 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD cmake -DGODOT=godot -DPROJECT=$PWD/src/OpenGo
   policy uses it, before any healing spell, on an ally below half Hit Points.
 - Outside combat it is used from the Camp dialog's **Cast / Use** row, like the
   healing spells ([Camp actions](REST-RESOURCES.md#cast--use-in-camp)).
-- Not yet: spending 5 points to remove Poisoned, because the game has no
-  Poisoned condition yet.
+- **Lay On Hands: cure Poisoned (5)** is a second entry in the Bonus Action
+  list: 5 points end Poisoned on the Paladin or an adjacent ally (rules
+  0.6.163). It is offered in fights only: Poisoned lasts a minute or two, long
+  over before a camp.
 - The pool is saved in the character's vital state (`SRD11`) and in combat
   checkpoints (`OGCOMBAT 37`).
 
 Verification: `opengold_lay_on_hands_tests` (offers, healing amount, spending,
-dying ally, checkpoint, rest and level growth, campaign round trip) and
+dying ally, checkpoint, rest and level growth, campaign round trip, curing
+Poisoned for 5 points only when someone is Poisoned) and
 `opengold_godot_lay_on_hands` (the Bonus Action list, Use and a click on the
 ally, in English and Spanish).
 

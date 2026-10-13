@@ -3415,7 +3415,10 @@ Snapshot Session::snapshot() const
         if (def(a).sneak_level >= 3)
             view.bonus_actions.push_back("steady_aim");
         if (def(a).lay_on_hands)
+        {
             view.bonus_actions.push_back("lay_on_hands");
+            view.bonus_actions.push_back("lay_on_hands_cure");
+        }
         if (def(a).rages)
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
         if (def(a).martial_arts)
@@ -5006,6 +5009,13 @@ std::vector<Command> Session::legal_commands() const
                     other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
+    // Lay On Hands can instead spend 5 points to end Poisoned (SRD 5.2.1 p. 61).
+    if (a.bonus && d.lay_on_hands && a.lay_on_hands >= 5)
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && !other.life.dead &&
+                    has_condition(other, "poisoned") &&
+                    distance(a.source.cell, other.source.cell) <= 5)
+                add(id, "lay_on_hands_cure", "Lay On Hands: cure Poisoned", other.source.id);
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
@@ -9014,6 +9024,23 @@ void Session::dispatch(const Command &command)
         --a.winds;
         heal(a, roll(10) + d.level);
     }
+    else if (command.verb == "lay_on_hands_cure")
+    {
+        auto &target = actor(command.target);
+        a.bonus = false;
+        a.lay_on_hands -= 5;
+        std::erase_if(target.effects.active, [](const auto & e)
+        {
+            return gives_condition(e.kind, "poisoned");
+        });
+        log(a.source.name + " uses Lay On Hands on " + target.source.name + ".",
+        {
+            "{name} uses Lay On Hands on {target}.",
+            {{"name", a.source.name}, {"target", target.source.name}}
+        });
+        log(target.source.name + " is no longer Poisoned.",
+        {"{name} is no longer Poisoned.", {{"name", target.source.name}}});
+    }
     else if (command.verb == "lay_on_hands")
     {
         // Restores what the target is missing, up to the pool; only the
@@ -12390,7 +12417,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.162", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.163", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

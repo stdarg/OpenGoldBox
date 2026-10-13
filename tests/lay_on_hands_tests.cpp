@@ -2,12 +2,14 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -76,7 +78,8 @@ unsigned pool(const CombatSession &c)
 // 10 feet away and an enemy far off. Returns the session on the Paladin's turn.
 std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character &paladin,
                                       const Character &ally, int ally_hp,
-                                      const VitalState *paladin_state = nullptr)
+                                      const VitalState *paladin_state = nullptr,
+                                      const VitalState *ally_state = nullptr)
 {
     const auto paladin_profile = rules.character_profile(paladin.sheet(), {}).data;
     const auto ally_profile = rules.character_profile(ally.sheet(), {}).data;
@@ -89,6 +92,8 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
         {99, "vanguard", "Enemy", Side::opposition, {10, 6}}};
     if (paladin_state)
         setup[0].state = *paladin_state;
+    if (ally_state)
+        setup[1].state = *ally_state;
     auto c = rules.create({{12, 8, std::vector<Terrain>(96)}, setup}, 7);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
     {
@@ -187,11 +192,62 @@ void campaign_checks()
 }
 } // namespace
 
+// Lay On Hands spends 5 points to end Poisoned on the Paladin or an adjacent
+// ally, as a Bonus Action; it needs a Poisoned creature and 5 points.
+void cure_checks()
+{
+    namespace fx = opengold::srd5::detail;
+    auto rules = module();
+    const auto paladin = created("paladin", "Paladin");
+    const auto ally = created("fighter", "Ally");
+    auto vitals = unit(*battle(*rules, paladin, ally, ally.sheet().hit_points), 2).persistent;
+    const auto at = vitals.resources.find("FX8");
+    std::istringstream in(vitals.resources.substr(at));
+    auto effects = fx::read_effects(in);
+    fx::apply_poisoned(effects, {.scope = 5, .actor = 99}, "Enemy", 12000);
+    std::ostringstream out;
+    fx::write_effects(out, effects);
+    vitals.resources.replace(at, std::string::npos, out.str());
+    const auto poisoned = [](const CombatSession & c, EntityId id)
+    {
+        const auto conditions = unit(c, id).conditions;
+        return std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
+        {
+            return condition.source.find("Poisoned") != std::string::npos;
+        });
+    };
+
+    auto c = battle(*rules, paladin, ally, vitals.hit_points, nullptr, &vitals);
+    check(poisoned(*c, 2), "The ally starts Poisoned");
+    const auto offered = c->legal_commands();
+    const auto cure = std::find_if(offered.begin(), offered.end(), [](const auto & command)
+    {
+        return command.verb == "lay_on_hands_cure";
+    });
+    check(cure != offered.end() && cure->target == 2 && std::none_of(offered.begin(), offered.end(),
+            [](const auto & command)
+    {
+        return command.verb == "lay_on_hands" && command.target == 2;
+    }),
+    "An unhurt Poisoned ally is offered the cure, not healing");
+    check(c->submit(*cure) && !poisoned(*c, 2) && pool(*c) == 0 && !unit(*c, 1).bonus_action,
+          "The cure ends Poisoned for 5 points and the Bonus Action");
+    check(module()->restore(c->save())->save() == c->save(), "The cure survives a checkpoint");
+
+    auto plain = battle(*rules, paladin, ally, ally.sheet().hit_points);
+    const auto none = plain->legal_commands();
+    check(std::none_of(none.begin(), none.end(), [](const auto & command)
+    {
+        return command.verb == "lay_on_hands_cure";
+    }), "Nobody Poisoned, no cure");
+}
+
 int main()
 {
     try
     {
         combat_checks();
+        cure_checks();
         campaign_checks();
         write_ui_fixture();
         std::cout << "Lay On Hands tests passed\n";

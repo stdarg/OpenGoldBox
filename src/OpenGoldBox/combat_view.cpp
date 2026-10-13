@@ -1023,8 +1023,8 @@ void CombatView::use_cunning_action()
         required_node<Button>(*this, "UseCunningAction").release_focus();
         select_mode(verb);
     }
-    else if (verb == "lay_on_hands" || verb == "martial_arts" || verb.begins_with("flurry_") ||
-             verb == "bardic_inspiration")
+    else if (verb == "lay_on_hands" || verb == "lay_on_hands_cure" || verb == "martial_arts" ||
+             verb.begins_with("flurry_") || verb == "bardic_inspiration")
     {
         // A touched ally is chosen on the battlefield, like a spell target.
         required_node<Button>(*this, "UseCunningAction").release_focus();
@@ -1734,7 +1734,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         return target != s.combatants.end() && target->cell == cell;
     });
     if (!s.free_movement && !s.effect_targeting && !targets_clicked && mode_ != "stabilize" &&
-            mode_ != "lay_on_hands" && mode_ != "chill_touch" &&
+            mode_ != "lay_on_hands" && mode_ != "lay_on_hands_cure" && mode_ != "chill_touch" &&
             mode_ != "poison_spray" && mode_ != "sacred_flame" &&
             mode_ != "shocking_grasp" && mode_ != "eldritch_blast" && mode_ != "ray_of_frost")
         for (const auto &a : s.combatants)
