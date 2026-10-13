@@ -84,6 +84,13 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.164 gives Gnomes Gnomish Cunning (Advantage on Intelligence, Wisdom
+and Charisma saves, repeated end-of-turn saves included) and makes Gnomes and
+Halflings Small; checked in `opengold_species_tests`. The emptied Gnome lineages
+were cut by SCOPE-2, and Darkvision matters only where the campaign marks dark
+areas, so the Gnome's traits are complete
+([#68](https://github.com/stdarg/OpenGold/issues/68)).
+Rules 0.6.163 lets Lay On Hands spend 5 points to end Poisoned.
 Rules 0.6.162 changes the movement left when a Druid takes or leaves a Wild
 Shape form mid-turn (the Wolf moved 30 feet in the turn it took its 40-foot
 form), and checks checkpoint movement against the form's Speed.

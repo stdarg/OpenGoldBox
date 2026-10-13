@@ -482,6 +482,13 @@ bool has_effect(const EffectState &effects, EffectKind kind)
     });
 }
 
+RollModifiers mental_save_modifiers(Ability ability, const EffectSubject &subject)
+{
+    auto modifiers = saving_modifiers(ability, subject.str_dex_disadvantage, subject.dodge);
+    modifiers.advantage |= subject.mental_advantage && mental(ability);
+    return modifiers;
+}
+
 RollModifiers saving_modifiers(Ability ability, bool armor, bool dodge)
 {
     return {dodge && ability == Ability::dexterity,
@@ -555,9 +562,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         event.save = saving_throw(ability,
                                                   subject.saves[static_cast<unsigned>(ability)] + bless,
                                                   e.dc,
-                                                  saving_modifiers(ability,
-                                                      subject.str_dex_disadvantage,
-                                                      subject.dodge),
+                                                  mental_save_modifiers(ability, subject),
                                                   rng);
                         event.removed = event.save->success;
                         // A drowsy sleeper that fails falls Unconscious, no more saves.

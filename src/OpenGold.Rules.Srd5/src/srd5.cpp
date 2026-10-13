@@ -605,6 +605,7 @@ struct Definition
     bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
+    bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -1166,6 +1167,10 @@ character_definition(std::string_view bytes,
     d.hit_die = die;
     d.constitution = con;
     d.dwarf = race == "Dwarf";
+    d.gnomish_cunning = race == "Gnome";
+    // Gnomes and Halflings are Small.
+    if (race == "Gnome" || race == "Halfling")
+        d.size = 1;
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
     d.rages = klass == CharacterClass::barbarian ? (level >= 3 ? 3 : 2) : 0;
@@ -7951,6 +7956,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     modifiers.advantage |= advantage;
     // Heightened Spell: Disadvantage on the save against the spell.
     modifiers.disadvantage |= heightened_target_ == target.source.id;
+    // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
+    modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
     // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
     modifiers.advantage |= ability == detail::Ability::dexterity && def(target).danger_sense &&
                            !detail::incapacitated(target.effects);
@@ -7992,7 +7999,9 @@ void Session::advance_turn_time()
     {
         subjects.push_back(
         {
-            {a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge},
+            {   a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
+                def(a).gnomish_cunning
+            },
             a.life});
         if (a.life.hp == 0)
             unconscious.push_back(a.source.id);
@@ -11308,7 +11317,7 @@ class Module final : public RulesModule
         for (auto &a : actors)
             subjects.push_back({{
                 a.source.id, a.effects, a.definition.saves, a.life.dead,
-                a.definition.str_dex_disadvantage, false
+                a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning
             },
             a.life});
         auto rng = random_state.value;
@@ -12417,7 +12426,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.163", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.164", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

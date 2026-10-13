@@ -220,6 +220,8 @@ struct EffectSubject
     std::reference_wrapper<EffectState> effects;
     std::array<int, 6> saves{};
     bool dead{}, str_dex_disadvantage{}, dodge{};
+    // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
+    bool mental_advantage{};
 };
 
 struct EffectEvent
@@ -335,6 +337,14 @@ struct AttackConditions
 [[nodiscard]] RollModifiers attack_modifiers(const AttackConditions &conditions);
 // All subjects share one chronological event queue. Advancing 12 seconds once
 // must consume exactly the same rolls as advancing 1 second twelve times.
+// Intelligence, Wisdom or Charisma: the saves Gnomish Cunning favors.
+[[nodiscard]] constexpr bool mental(Ability ability)
+{
+    return ability == Ability::intelligence || ability == Ability::wisdom ||
+           ability == Ability::charisma;
+}
+// A repeated save's modifiers for the subject, Gnomish Cunning included.
+[[nodiscard]] RollModifiers mental_save_modifiers(Ability ability, const EffectSubject &subject);
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,
                     std::uint64_t &rng, const EffectObserver &observe = {});
 void write_effects(std::ostream &out, const EffectState &effects);

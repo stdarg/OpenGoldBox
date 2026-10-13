@@ -242,7 +242,7 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
             {"elf", "Elf",
                 "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: Drow, High Elf or Wood Elf, each with its own magic. Not in the game yet.\n- Fey Ancestry: Advantage on saves against being Charmed. Not in the game yet.\n- Keen Senses: training in Insight, Perception or Survival. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."},
             {"gnome", "Gnome",
-                "Gnomes are small, quick-witted folk with a knack for magic and invention.\n\nRacial traits:\n- Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."},
+                "Gnomes are small, quick-witted folk with a knack for magic and invention.\n\nRacial traits:\n- Small.\n- Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.\n- Darkvision, 60 feet. Not in the game yet."},
             {"goliath", "Goliath",
                 "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests. Not in the game yet."},
             {"halfling", "Halfling",
