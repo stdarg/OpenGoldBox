@@ -59,6 +59,9 @@ are rejected by the rules identity, as the
 
 ## Verification
 
+- `opengold_character_tests` makes a Soldier Cleric and an Acolyte Cleric
+  through the ordinary creator page by page, with their Divine Order, skills,
+  cantrips and prepared spells.
 - `opengold_spell_access_tests` (`tests/cleric_choices_checks.h`): counts,
   eligible spells, rejected preparations, no implicit Cure Wounds, Thaumaturge
   cantrip, required Divine Order, Protector training, Thaumaturge checks,

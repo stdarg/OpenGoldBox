@@ -1105,6 +1105,20 @@ void ordinary_creation_tests()
           holds(druid, "spell:produce_flame") && druid.sheet().prepared_spells.size() == 4 &&
           druid.sheet().training.complete,
           "An ordinary Druid has its Primal Order, two skills, two cantrips and four spells");
+
+    const auto cleric = create_ordinarily("cleric", Ability::wisdom,
+    {
+        {.group = "class:cleric", .option = "medicine", .selected = true},
+        {.group = "class:cleric", .option = "persuasion", .selected = true},
+        {.group = "class:cleric:divine_order", .option = "protector", .selected = true}
+    },
+    {"sacred_flame", "spare_the_dying", "resistance"},
+    {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"});
+    check(holds(cleric, "feature:spellcasting") && holds(cleric, "order:protector") &&
+          holds(cleric, "skill:medicine") && holds(cleric, "skill:persuasion") &&
+          holds(cleric, "spell:sacred_flame") && holds(cleric, "spell:resistance") &&
+          cleric.sheet().prepared_spells.size() == 4 && cleric.sheet().training.complete,
+          "An ordinary Cleric has its Divine Order, two skills, three cantrips and four spells");
 }
 
 } // namespace
