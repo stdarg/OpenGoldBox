@@ -268,6 +268,61 @@ void advancement_checks()
     check(warlock(4).sheet().level == 4, "A Warlock reaches level 4");
 }
 
+// Magical Cunning works once per Long Rest; a Short Rest does not bring it back.
+void magical_cunning_checks()
+{
+    auto module = rules();
+    auto rules_module = module_rules();
+    const auto second = warlock(2);
+    // Casts Hex in a fight that starts from the given vital state.
+    const auto spend_slot = [&](const VitalState &state)
+    {
+        const auto profile =
+            module->character_profile(second.sheet(), std::vector<std::string> {}).data;
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile, state},
+                {98, "target", "Enemy", Side::opposition, {2, 1}}
+            }},
+        5);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Warlock's turn");
+        check(submit(*c, "hex", 98), "Spend a slot on Hex");
+        return unit(*c, 1).persistent;
+    };
+    const auto offered_at_camp = [&](const VitalState &state)
+    {
+        const auto actions = rules_module->camp_actions(second.sheet(), state);
+        return std::any_of(actions.begin(), actions.end(), [](const auto & a)
+        {
+            return a.id == "magical_cunning";
+        });
+    };
+    auto vitals = spend_slot({second.sheet().hit_points, false, {}});
+    std::vector<CampTarget> party{{second.sheet(), vitals}};
+    RandomState random{7};
+    rules_module->use_party_camp_action(second.sheet(), vitals, party, "magical_cunning", random);
+    check(slots(vitals).first == 2, "Magical Cunning restores the spent slot");
+    vitals = spend_slot(vitals);
+    check(!offered_at_camp(vitals), "Magical Cunning is spent until a Long Rest");
+    bool refused = false;
+    try
+    {
+        rules_module->use_party_camp_action(second.sheet(), vitals, party, "magical_cunning",
+                                            random);
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused, "A second Magical Cunning is refused");
+    rules_module->recover_short_rest(vitals, second.sheet());
+    vitals = spend_slot(vitals);
+    check(!offered_at_camp(vitals), "A Short Rest does not restore Magical Cunning");
+    rules_module->recover(vitals, second.sheet());
+    vitals = spend_slot(vitals);
+    check(offered_at_camp(vitals), "A Long Rest restores Magical Cunning");
+}
+
 void invocation_checks()
 {
     auto creation = srd5::character_rules();
@@ -368,6 +423,38 @@ void fiend_checks()
     throw std::runtime_error("No seed drops the weakling");
 }
 
+// Dark One's Blessing also follows an enemy someone else drops within 10 feet
+// of the Warlock, and not one farther away.
+void ally_blessing_checks()
+{
+    auto module = rules();
+    const auto profile =
+        module->character_profile(warlock(3).sheet(), std::vector<std::string> {}).data;
+    // The Warlock (1) at (1,1) and an ally (2) beside a weakling (98) at `foe`.
+    const auto blessed = [&](Cell foe)
+    {
+        for (std::uint64_t seed = 1; seed < 64; ++seed)
+        {
+            auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+                {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                    {2, "target", "Ally", Side::party, {foe.x + 1, foe.y}},
+                    {98, "weakling", "Enemy", Side::opposition, foe}
+                }},
+            seed);
+            for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 4; ++turns)
+                check(submit(*c, "end"), "Reach the ally's turn");
+            check(submit(*c, "melee", 98), "The ally attacks the weakling");
+            if (unit(*c, 98).hit_points > 0)
+                continue;
+            return unit(*c, 1).temporary_hp.amount == 7 &&
+                   logged(*c, "Dark One's Blessing: Warlock gains 7 Temporary Hit Points.");
+        }
+        throw std::runtime_error("No seed lets the ally drop the weakling");
+    };
+    check(blessed({3, 1}), "An ally dropping an enemy 10 feet away blesses the Warlock");
+    check(!blessed({4, 1}), "An enemy dropped 15 feet away does not");
+}
+
 
 
 // The automated policy marks its foe with Hex, then blasts it.
@@ -413,8 +500,10 @@ int main()
         hellish_rebuke_checks();
         rebuke_slot_per_turn_checks();
         advancement_checks();
+        magical_cunning_checks();
         invocation_checks();
         fiend_checks();
+        ally_blessing_checks();
         std::cout << "Warlock tests passed\n";
     }
     catch (const std::exception &e)

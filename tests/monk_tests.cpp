@@ -145,6 +145,47 @@ void martial_arts_checks()
     check(!offered(*armored, "martial_arts"), "Armor ends Martial Arts");
 }
 
+// The most damage a non-critical first hit deals across many seeds.
+int highest_hit(const RulesModule &module, const Character &hero,
+                const std::vector<std::string> &equipment)
+{
+    int highest = 0;
+    for (std::uint64_t seed = 1; seed < 200; ++seed)
+    {
+        auto c = battle(module, hero, equipment, seed);
+        check(submit(*c, "melee", 98), "The Monk attacks");
+        for (const auto &line : attack_lines(*c))
+            if (line.find(" hits for ") != std::string::npos)
+                highest = std::max(highest, number_after(line, " hits for "));
+    }
+    return highest;
+}
+
+// The Martial Arts die (a d6 through level 4) replaces a smaller weapon die
+// and leaves a larger one.
+void martial_arts_die_checks()
+{
+    auto module = rules();
+    check(highest_hit(*module, monk(), {"dagger"}) == 10,
+          "A dagger deals the Martial Arts d6, not its d4: at most 6 + 4");
+    check(highest_hit(*module, monk(), {"quarterstaff"}) == 12,
+          "A two-handed quarterstaff keeps its d8: at most 8 + 4");
+}
+
+// A Shield ends Martial Arts and Unarmored Defense.
+void shield_checks()
+{
+    auto module = rules();
+    auto bare = battle(*module, monk());
+    auto shielded = battle(*module, monk(), {"shield"});
+    check(unit(*bare, 1).armor_class == 16 && unit(*shielded, 1).armor_class == 14,
+          "Unarmored Defense (10 + Dexterity + Wisdom) needs no Shield; an untrained one adds nothing");
+    check(offered(*bare, "martial_arts") && !offered(*shielded, "martial_arts"),
+          "A Shield takes away the Bonus Action Unarmed Strike");
+    check(submit(*shielded, "melee", 98) && number_after(attack_lines(*shielded)[0], " + ") == 1,
+          "With a Shield the Unarmed Strike uses Strength: +2 Proficiency and -1");
+}
+
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
@@ -307,6 +348,8 @@ int main()
     try
     {
         martial_arts_checks();
+        martial_arts_die_checks();
+        shield_checks();
         advancement_checks();
         focus_checks();
         metabolism_checks();

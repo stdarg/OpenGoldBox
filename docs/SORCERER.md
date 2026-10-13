@@ -40,7 +40,9 @@ spellcasting ability; the earlier cantrip work is in
   too; they never raise the points past the maximum. Created slots may exceed
   the usual count and vanish on a Long Rest.
 - Verification: `opengold_sorcerer_tests` (two points at level 2, creating a
-  slot, converting one back, a checkpoint).
+  slot, converting one back, a checkpoint; at level 3 a made level-2 slot and
+  one converted back, a Short Rest that restores no points and a Long Rest
+  that restores them and removes the made slot).
 
 ## Metamagic (level 2)
 

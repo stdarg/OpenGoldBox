@@ -110,14 +110,15 @@ unsigned resource(const CombatSession &c, std::string_view id)
 // The Paladin beside the target with a longsword (and a shortbow, for the
 // ranged case), on the Paladin's turn.
 std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character &hero,
-                                      std::vector<std::string> gear = {"longsword"})
+                                      std::vector<std::string> gear = {"longsword"},
+                                      std::uint64_t seed = 3)
 {
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
     auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
         {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
             {99, "target", "Target", Side::opposition, {2, 1}}
         }},
-    3);
+    seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Paladin's turn");
     check(c->snapshot().actor == 1, "The Paladin acts");
@@ -173,6 +174,44 @@ void divine_smite_checks()
           "The free and slot casts roll the same dice");
     check(smite_damage(*fiend, "divine_smite_free") > free,
           "A Fiend takes an extra 1d8 from the same rolls");
+}
+
+bool logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log();
+    return std::any_of(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+// A smite after a critical hit doubles its dice, as part of the attack's
+// damage: Divine Smite's 2d8 become 4d8, Searing Smite's 1d6 become 2d6.
+void critical_smite_checks()
+{
+    const auto rules = rules_for("humanoid");
+    const auto hero = paladin();
+    int crits = 0, highest_divine = 0, highest_searing = 0;
+    for (std::uint64_t seed = 1; seed < 2000 && crits < 40; ++seed)
+    {
+        auto c = battle(*rules, hero, {"longsword"}, seed);
+        check(submit(*c, "melee", 99), "The Paladin attacks");
+        if (!logged(*c, "CRITICAL"))
+            continue;
+        const bool searing = crits % 2 == 1;
+        ++crits;
+        const int before = unit(*c, 99).hit_points;
+        check(submit(*c, searing ? "searing_smite" : "divine_smite_free", 99),
+              "A smite follows the critical hit");
+        const int damage = before - unit(*c, 99).hit_points;
+        check(damage >= (searing ? 2 : 4) && damage <= (searing ? 12 : 32),
+              "Doubled smite dice stay within their range");
+        (searing ? highest_searing : highest_divine) =
+            std::max(searing ? highest_searing : highest_divine, damage);
+    }
+    check(crits == 40, "Enough critical hits to test");
+    check(highest_divine > 16 && highest_searing > 6,
+          "A critical smite exceeds the most its undoubled dice can deal");
 }
 
 void searing_smite_checks()
@@ -272,6 +311,7 @@ int main()
     {
         window_checks();
         divine_smite_checks();
+        critical_smite_checks();
         searing_smite_checks();
         campaign_checks();
         write_ui_fixture();

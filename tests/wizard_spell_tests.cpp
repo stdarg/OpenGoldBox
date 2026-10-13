@@ -520,6 +520,53 @@ std::size_t count_logged(const CombatSession &c, std::string_view text)
     });
 }
 
+// Potent Cantrip also covers a cantrip's saving throw: a creature that saves
+// against an Evoker's Acid Splash still takes half its damage.
+void potent_save_checks()
+{
+    auto module = rules("creature dodger 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                        "saves dodger 0 30 0 0 0 0\n");
+    for (const unsigned level : {1u, 3u})
+    {
+        auto c = battle(*module,
+                        wizard(level, {"magic_missile"}, {}, {"acid_splash", "fire_bolt", "ray_of_frost"}),
+                        {4, 1}, {11, 5}, 5, {1, 2}, "dodger");
+        check(submit(*c, "acid_splash") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
+              logged(*c, "First Dexterity save"),
+              "Acid Splash calls for a Dexterity save the dodger makes");
+        check(logged(*c, "First takes") == (level == 3),
+              "From level three a saved-against cantrip still deals half damage");
+    }
+}
+
+// Sculpt Spells spares at most 1 + the spell's level allies: two from
+// Burning Hands, so a third ally in the cone saves as usual.
+void sculpt_cap_checks()
+{
+    auto module = rules();
+    const auto profile =
+        module->character_profile(wizard(3, {"magic_missile", "burning_hands"}).sheet(),
+                                  std::vector<std::string> {}).data;
+    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+            {2, "target", "Near", Side::party, {2, 1}},
+            {3, "target", "Upper", Side::party, {3, 0}},
+            {4, "target", "Lower", Side::party, {3, 2}},
+            {98, "target", "First", Side::opposition, {4, 1}}
+        }},
+    5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Wizard's turn");
+    check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast"),
+          "Burning Hands over three allies and an enemy");
+    const auto saves = count_logged(*c, "Near Dexterity save") +
+                       count_logged(*c, "Upper Dexterity save") +
+                       count_logged(*c, "Lower Dexterity save");
+    check(count_logged(*c, "is spared by Sculpt Spells.") == 2 && saves == 1 &&
+          logged(*c, "First Dexterity save"),
+          "Two allies are spared and the third saves");
+}
+
 // The enemy beside the Wizard attacks until a hit asks the Wizard about Shield.
 std::unique_ptr<CombatSession> shield_question(const RulesModule &module)
 {
@@ -1125,7 +1172,9 @@ int main()
         thunderwave_checks();
         shatter_checks();
         potent_cantrip_checks();
+        potent_save_checks();
         sculpt_spells_checks();
+        sculpt_cap_checks();
         mage_armor_checks();
         false_life_checks();
         expeditious_retreat_checks();

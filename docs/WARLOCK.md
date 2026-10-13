@@ -30,7 +30,8 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 - Eldritch Invocations and the Fiend Patron are below.
 - Verification: `opengold_warlock_tests` (one slot and Hex's Bonus Action and
   Necrotic, the Short Rest, Hellish Rebuke's question, checkpoint, save and
-  slot, two slots at level 2 and Magical Cunning at camp, level-2 slots and
+  slot, two slots at level 2 and Magical Cunning at camp, once per Long Rest
+  and not back after a Short Rest, level-2 slots and
   "(level 2 slot)" casting at level 3, level 4), `opengold_eldritch_blast_tests`.
 
 ## Eldritch Invocations
@@ -78,4 +79,5 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   prepared (Suggestion is removed by DM-3); at levels 3–4 the level-1 ones
   are cast with the level-2 Pact Magic slots.
 - Verification: `opengold_warlock_tests` (the grants, the always-prepared
-  spells, 7 Temporary Hit Points from dropping a weakling).
+  spells, 7 Temporary Hit Points from dropping a weakling, and from an ally
+  dropping one 10 feet away but not 15).

@@ -70,7 +70,8 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   they take no damage and no other effect. Adaptation: the allies are chosen
   automatically.
 - Verification: `opengold_wizard_spell_tests` (a missed Fire Bolt at levels one
-  and three, an ally in Burning Hands at levels one and three). The cantrip
+  and three, a saved-against Acid Splash at levels one and three, an ally in
+  Burning Hands at levels one and three, and only two of three allies spared). The cantrip
   tests' exact-damage checks no longer pin a level-three miss.
 
 ## Mage Armor, False Life and Expeditious Retreat

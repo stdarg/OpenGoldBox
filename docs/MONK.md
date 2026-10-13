@@ -17,7 +17,8 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
 - Grapple and Shove are dropped (SRD-DECISIONS).
 - Verification: `opengold_monk_tests` (Dexterity-based Unarmed Strikes and
   their damage, the Bonus Action strike, a dagger as a Monk weapon, no Martial
-  Arts in armor).
+  Arts in armor, a dagger dealing the d6 and a two-handed quarterstaff keeping
+  its d8, and a Shield ending Martial Arts and Unarmored Defense).
 
 ## Levels 2–4
 

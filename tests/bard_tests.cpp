@@ -40,13 +40,13 @@ std::unique_ptr<RulesModule> rules()
 }
 
 // A Bard with Charisma 18, advanced to the given level.
-Character bard(unsigned level = 1)
+Character bard(unsigned level = 1, std::string background = "sage")
 {
     CharacterDraft d;
     d.race = "human";
     d.gender = "female";
     d.character_class = "bard";
-    d.background = "sage";
+    d.background = std::move(background);
     d.alignment = "neutral_good";
     d.name = "Bard";
     d.rolled = true;
@@ -254,6 +254,33 @@ void inspiration_checks()
     throw std::runtime_error("No seed asks about Cutting Words");
 }
 
+// The Bard's Initiative total in a fixed fight: its d20 is the same whatever
+// the Bard's level, so totals differ only by their bonuses.
+int initiative(const RulesModule &module, const Character &hero)
+{
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto c = module.create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
+            {98, "target", "Enemy", Side::opposition, {4, 1}}
+        }},
+    5);
+    return unit(*c, 1).initiative;
+}
+
+// Jack of All Trades adds half the Proficiency Bonus to Initiative from level
+// two (SRD-DECISIONS keeps it for that), unless Alert already adds all of it.
+void jack_of_all_trades_checks()
+{
+    auto module = rules();
+    check(initiative(*module, bard(2)) == initiative(*module, bard(1)) + 1,
+          "Jack of All Trades adds +1 to Initiative at level two");
+    // The Criminal's +2 Dexterity raises the modifier by 1; Alert adds +2.
+    check(initiative(*module, bard(1, "criminal")) == initiative(*module, bard(1)) + 3,
+          "A level-one Criminal Bard adds Alert's Proficiency Bonus");
+    check(initiative(*module, bard(2, "criminal")) == initiative(*module, bard(1, "criminal")),
+          "Jack of All Trades does not add to Alert's whole Proficiency Bonus");
+}
+
 // The automated policy inspires an ally before acting.
 void policy_checks()
 {
@@ -274,6 +301,7 @@ int main()
         spell_checks();
         advancement_checks();
         inspiration_checks();
+        jack_of_all_trades_checks();
         std::cout << "Bard tests passed\n";
     }
     catch (const std::exception &e)

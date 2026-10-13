@@ -225,6 +225,50 @@ void font_of_magic_checks()
     check(module->restore(saved)->save() == saved, "Sorcery Points survive a checkpoint");
 }
 
+// Level-one and level-two slots in a vital state, "SRD12 winds slots slots2 ...".
+std::pair<int, int> stored_slots(const VitalState &state)
+{
+    std::istringstream in(state.resources);
+    std::string magic;
+    int winds{}, first{}, second{};
+    in >> magic >> winds >> first >> second;
+    return {first, second};
+}
+
+unsigned rest_pool(const RulesModule &module, const Character &hero, const VitalState &state)
+{
+    for (const auto &resource : module.recovery_info(hero.sheet(), state).resources)
+        if (resource.id == "sorcery_points")
+            return resource.remaining;
+    throw std::runtime_error("Missing Sorcery Points");
+}
+
+// From level three Font of Magic makes and unmakes level-two slots; a Short
+// Rest leaves Sorcery Points spent, a Long Rest restores them and removes the
+// slots they made.
+void level_two_slot_checks()
+{
+    const auto third = sorcerer(3);
+    auto module = rules();
+    auto c = battle(*module, third);
+    check(pool(*c, "sorcery_points") == 3 && stored_slots(unit(*c, 1).persistent).second == 2 &&
+          !offered(*c, "convert_slot_2"),
+          "Three Sorcery Points and two level-two slots at level three; a full pool takes no more");
+    check(submit(*c, "create_slot_2") && pool(*c, "sorcery_points") == 0 &&
+          stored_slots(unit(*c, 1).persistent).second == 3 && !unit(*c, 1).bonus_action,
+          "A Bonus Action turns 3 Sorcery Points into a third level-two slot");
+    auto state = unit(*c, 1).persistent;
+    check(submit(*c, "convert_slot_2") && pool(*c, "sorcery_points") == 2 &&
+          stored_slots(unit(*c, 1).persistent).second == 2,
+          "A level-two slot becomes 2 Sorcery Points");
+    module->recover_short_rest(state, third.sheet());
+    check(rest_pool(*module, third, state) == 0 && stored_slots(state).second == 3,
+          "A Short Rest restores no Sorcery Points and keeps the made slot");
+    module->recover(state, third.sheet());
+    check(rest_pool(*module, third, state) == 3 && stored_slots(state) == std::pair{4, 2},
+          "A Long Rest restores the points and removes the slot they made");
+}
+
 void metamagic_checks()
 {
     auto module = rules();
@@ -295,6 +339,7 @@ int main()
         innate_sorcery_checks();
         draconic_checks();
         font_of_magic_checks();
+        level_two_slot_checks();
         metamagic_checks();
         std::cout << "Sorcerer tests passed\n";
     }

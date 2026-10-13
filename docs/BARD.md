@@ -32,7 +32,8 @@ ability.
   level-up, and Cutting Words (below).
 - Verification: `opengold_bard_tests` (each spell's save or attack and its
   effect, Advantage against an outlined enemy, the grants at levels 2–4, seven
-  prepared spells), `opengold_spell_table_tests` (Bard probes).
+  prepared spells, Jack of All Trades' +1 to Initiative at level 2 and none on
+  top of Alert), `opengold_spell_table_tests` (Bard probes).
 
 ## Bardic Inspiration and Cutting Words
 

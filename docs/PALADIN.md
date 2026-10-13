@@ -136,7 +136,8 @@ ally, in English and Spanish).
 
 Verification: `opengold_smite_tests` (the window after own-turn melee hits only,
 closing on other commands, free and slot casts, the extra die against a Fiend,
-Searing Smite's burn and save with failing and succeeding saves, checkpoints,
+Searing Smite's burn and save with failing and succeeding saves, doubled smite
+dice after a critical hit, checkpoints,
 Long Rest recovery) and `opengold_godot_smite` (the Bonus Action list after a
 hit and Use, in English and Spanish). Critical doubling is applied but not yet
 forced in a test.
