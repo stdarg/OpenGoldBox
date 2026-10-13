@@ -551,12 +551,113 @@ void roundtrip(const std::filesystem::path &directory)
 }
 } // namespace
 
+// Level-four characters keep every class and feat choice, and their spent
+// feature uses, across a save file. A Fighter Acolyte with Magic Initiate
+// (Cleric) took Magic Initiate (Druid) at level four and spent one free cast.
+void level_four_roundtrip(const std::filesystem::path &directory)
+{
+    const auto rules = module();
+    auto party = std::make_shared<CampaignParty>(module());
+    rules::CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "fighter";
+    d.alignment = "neutral_good";
+    d.background = "acolyte";
+    d.name = "Save test initiate";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.training = {{"class:fighter", {"acrobatics", "history"}},
+        {"class:fighter:fighting_style", {"defense"}}
+    };
+    d.spells = rules::SpellChoices{{{"feat:magic_initiate_cleric:ability", {"wisdom"}},
+            {"feat:magic_initiate_cleric:cantrips", {"sacred_flame", "guidance"}},
+            {"feat:magic_initiate_cleric:spell", {"cure_wounds"}}
+        }, {}, {}, {}};
+    por::CharacterAppearance look;
+    look.portrait = "human-male-fighter-01.png";
+    const auto initiate = party->add_pc(Character(*srd5::character_rules(), d, look));
+    std::vector<MemberId> others;
+    for (const auto *klass : {"cleric", "warlock", "monk", "sorcerer", "wizard"})
+        others.push_back(party->add_pc(character(klass)));
+    party->award_experience(2700, "save:level-four");
+    for (unsigned level = 1; level < 4; ++level)
+    {
+        for (const auto id : others)
+            party->advance(id, party->default_advancement(id));
+        auto choice = party->default_advancement(initiate);
+        if (level == 3)
+        {
+            choice.feat = "magic_initiate_druid";
+            choice.abilities = {};
+            choice.spell_learning = rules::TrainingChoices{
+                {"feat:magic_initiate_druid:ability", {"wisdom"}},
+                {"feat:magic_initiate_druid:cantrips", {"produce_flame", "starry_wisp"}},
+                {"feat:magic_initiate_druid:spell", {"entangle"}}};
+        }
+        party->advance(initiate, choice);
+    }
+    auto state = party->checkpoint();
+    auto &fighter = state.roster.front();
+    check(fighter.character.sheet().level == 4, "The Fighter reaches level four");
+    rules->set_hit_points(fighter.vitals, fighter.character.sheet(), 5);
+    RandomState random{3};
+    rules->use_camp_action(fighter.character.sheet(), fighter.vitals, fighter.character.sheet(),
+                           fighter.vitals, "cure_wounds_initiate", random);
+    party->restore(state);
+    const auto path = directory / "level four.ogs";
+    const auto saved = encode_campaign(*party, nullptr, "fixture-v1");
+    write_campaign_file(path, saved);
+    auto loaded = decode_campaign(read_campaign_file(path), *srd5::character_rules(), *rules,
+                                  "fixture-v1", nullptr);
+    auto replacement = std::make_shared<CampaignParty>(module());
+    replacement->restore(std::move(loaded.party));
+    check(encode_campaign(*replacement, nullptr, "fixture-v1") == saved,
+          "Level-four parties round trip through a save file");
+    for (const auto &member : party->state().roster)
+    {
+        const auto &copy = replacement->member(member.id);
+        check(copy.character.sheet().grants == member.character.sheet().grants &&
+              copy.character.sheet().prepared_spells == member.character.sheet().prepared_spells &&
+              copy.vitals == member.vitals,
+              "Every class and feat choice and every spent use survives reload");
+    }
+    const auto pools = rules->recovery_info(replacement->member(initiate).character.sheet(),
+                                            replacement->member(initiate).vitals).resources;
+    const auto pool = [&](std::string_view id)
+    {
+        for (const auto &p : pools)
+            if (p.id == id)
+                return static_cast<int>(p.remaining);
+        return -1;
+    };
+    check(pool("magic_initiate:cure_wounds") == 0 && pool("magic_initiate:entangle") == 1,
+          "A spent free cast stays spent and the other stays ready after reload");
+    const auto encounter = [](const CampaignParty & p)
+    {
+        rules::Encounter e{{12, 8, std::vector<rules::Terrain>(96)}, p.participants()};
+        e.participants.push_back({99, "bandit", "Bandit", rules::Side::opposition, {10, 6}});
+        return e;
+    };
+    auto combat_a = rules->create(encounter(*party), 17),
+         combat_b = rules->create(encounter(*replacement), 17);
+    for (int i = 0; i < 30 && combat_a->snapshot().outcome == rules::Outcome::ongoing; ++i)
+    {
+        const auto command = choose_demo_command(*combat_a);
+        check(combat_a->submit(command) && combat_b->submit(command) &&
+              combat_a->save() == combat_b->save(),
+              "A level-four fight continues identically after reload");
+    }
+}
+
 int main()
 {
     try
     {
         TestDirectory directory;
         roundtrip(directory.path);
+        level_four_roundtrip(directory.path);
         fog_saves(directory.path);
         file_safety(directory.path);
         std::cout << "Campaign file save tests passed\n";

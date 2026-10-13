@@ -132,7 +132,7 @@ collects one platinum piece from the chosen payer, who
 [makes change](PHLAN.md#coin-payments) from gold and silver when needed.
 Failed services restore the event checkpoint, including any payment. Original
 training requests (PROGRAM 0) and victory services (PROGRAM 8)
-remain unsupported. Manual SRD advancement does not imply payment of an
+remain unsupported; see the [training hall proposal](TRAINING-HALL.md). Manual SRD advancement does not imply payment of an
 original training fee or completion of a training-hall script.
 
 The original temple **COMBAT** request with `6DE2=1` offers the supported
