@@ -47,7 +47,7 @@ namespace
 {
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
     Vector2(-1, 0)};
-const std::array<const char *, 4> direction_name{"North", "East", "South", "West"};
+const std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"), N_("West")};
 
 // The areas the session can enter: the town (0), the Slums (20) and Kuto's
 // Well's plaza (29) and catacombs (32).

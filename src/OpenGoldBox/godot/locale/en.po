@@ -1686,6 +1686,10 @@ msgstr "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRa
 msgid "Each roll must be assigned exactly once"
 msgstr "Each roll must be assigned exactly once"
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:50
+msgid "East"
+msgstr "East"
+
 #: src/OpenGoldBox/combat_view.cpp:2003 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Eldritch Blast"
 msgstr "Eldritch Blast"
@@ -3407,6 +3411,10 @@ msgstr "Nonbinary"
 msgid "Norris the Gray"
 msgstr "Norris the Gray"
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:50
+msgid "North"
+msgstr "North"
+
 #: src/OpenGoldBox/character_creation_view.cpp:704
 msgid "Not present"
 msgstr "Not present"
@@ -4850,6 +4858,10 @@ msgstr "Source: {class} Hit Die and Constitution score {score}. Starting HP: max
 msgid "Source: {class} class, level 1. Saving-throw training adds +2 proficiency to {first} and {second}."
 msgstr "Source: {class} class, level 1. Saving-throw training adds +2 proficiency to {first} and {second}."
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:50
+msgid "South"
+msgstr "South"
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Spare the Dying"
 msgstr "Spare the Dying"
@@ -5523,6 +5535,10 @@ msgstr "Weapon hand"
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Web"
 msgstr "Web"
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:50
+msgid "West"
+msgstr "West"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Whip"
