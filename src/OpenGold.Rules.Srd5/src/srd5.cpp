@@ -4951,13 +4951,20 @@ std::vector<Command> Session::legal_commands() const
             add(id, "ensnaring_strike", "Ensnaring Strike", a.smite_target);
     }
     for (const auto &other : actors_)
+    {
+        const int feet = distance(a.source.cell, other.source.cell);
         for (const auto scope :
                 {
                     detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
                     detail::SpellTarget::self, detail::SpellTarget::enemy
                 })
-            offer_spells(commands, a, other, distance(a.source.cell, other.source.cell), scope,
-                         true);
+            offer_spells(commands, a, other, feet, scope, true);
+        // A spell aimed at any creature, such as a Quickened Poison Spray, needs
+        // the same clear line as in the Action pass.
+        if (line_of_sight(a.source.cell, other.source.cell))
+            offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, true);
+
+    }
     offer_spells(commands, a, a, 0, detail::SpellTarget::area, true);
     if (!a.light_extra && !a.light_origins.empty())
         for (const auto &item : items_)
@@ -12289,7 +12296,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.159", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.160", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

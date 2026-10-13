@@ -71,10 +71,10 @@ bool has(const CombatSession &c, std::string_view verb)
     return false;
 }
 
-Command command(const CombatSession &c, std::string_view verb)
+Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
-        if (a.verb == verb)
+        if (a.verb == verb && (!target || a.target == target))
             return a;
     throw std::runtime_error("Missing command");
 }
@@ -143,7 +143,13 @@ void creation()
     check(has(*c, "fire_bolt") && !has(*c, "magic_missile"),
           "Book/prepared access never grants a free leveled cast when slots are empty");
     const auto before = unit(*c).persistent;
-    check(c->submit(command(*c, "fire_bolt")) && unit(*c).persistent == before,
+    const auto offered = c->legal_commands();
+    check(std::any_of(offered.begin(), offered.end(), [](const auto & a)
+    {
+        return a.verb == "fire_bolt" && a.target == 1;
+    }),
+    "Fire Bolt may target any creature in range, the caster included");
+    check(c->submit(command(*c, "fire_bolt", 99)) && unit(*c).persistent == before,
           "Cantrip casting spends no spell slot or source use");
 }
 

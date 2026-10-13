@@ -6,6 +6,8 @@ wizard-1 @ 5ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     magic_missile|3
     melee|3
@@ -21,6 +23,8 @@ wizard-1 @ 30ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     magic_missile|3
     poison_spray|1
@@ -35,6 +39,8 @@ wizard-1 @ 60ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     magic_missile|3
     poison_spray|1
@@ -47,6 +53,8 @@ wizard-1 @ 120ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     magic_missile|3
     poison_spray|1
@@ -57,6 +65,7 @@ wizard-1 @ 125ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
     poison_spray|1
     ray_of_frost|1
 wizard-4 @ 5ft
@@ -69,6 +78,8 @@ wizard-4 @ 5ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -99,6 +110,8 @@ wizard-4 @ 30ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -122,6 +135,8 @@ wizard-4 @ 60ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -145,6 +160,8 @@ wizard-4 @ 120ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -164,6 +181,7 @@ wizard-4 @ 125ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
     fog_cloud_2|0
     fog_cloud|0
     longstrider_2|1
@@ -361,6 +379,8 @@ sorcerer-1 @ 5ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     innate_sorcery|0
     melee|3
@@ -379,6 +399,8 @@ sorcerer-1 @ 30ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     innate_sorcery|0
     poison_spray|1
@@ -394,6 +416,8 @@ sorcerer-1 @ 60ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     innate_sorcery|0
     poison_spray|1
@@ -407,6 +431,8 @@ sorcerer-1 @ 120ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     innate_sorcery|0
     poison_spray|1
@@ -418,6 +444,7 @@ sorcerer-1 @ 125ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
     innate_sorcery|0
     poison_spray|1
     ray_of_frost|1
@@ -432,6 +459,8 @@ wizard-4+shield @ 5ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -462,6 +491,8 @@ wizard-4+shield @ 30ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -485,6 +516,8 @@ wizard-4+shield @ 60ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -508,6 +541,8 @@ wizard-4+shield @ 120ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
+    fire_bolt|2
     fire_bolt|3
     fog_cloud_2|0
     fog_cloud|0
@@ -527,6 +562,7 @@ wizard-4+shield @ 125ft
     disengage|0
     dodge|0
     end|0
+    fire_bolt|1
     fog_cloud_2|0
     fog_cloud|0
     longstrider_2|1

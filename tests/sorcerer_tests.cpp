@@ -286,6 +286,14 @@ void metamagic_checks()
               "Quickened Spell casts an Action spell as a Bonus Action for 2 Sorcery Points");
     }
     {
+        // A spell that may target any creature quickens too.
+        auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}));
+        check(submit(*c, "metamagic_quickened") && submit(*c, "ray_of_frost", 98) &&
+              logged(*c, "Sorcerer uses Quickened Spell.") && unit(*c, 1).action &&
+              !unit(*c, 1).bonus_action,
+              "Quickened Spell casts Ray of Frost as a Bonus Action");
+    }
+    {
         auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}), "armored");
         check(submit(*c, "metamagic_seeking") && submit(*c, "fire_bolt", 98) &&
               logged(*c, "Seeking Spell rerolls the missed attack.") &&

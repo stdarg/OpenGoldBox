@@ -245,7 +245,7 @@ inline constexpr std::array spell_table
         .level = 0,
         .mask = 1,
         .pattern = SpellPattern::spell_attack,
-        .target = SpellTarget::enemy,
+        .target = SpellTarget::any_creature,
         .range = 120,
         .damage = DamageType::fire,
         .dice = {1, 10, 0}},

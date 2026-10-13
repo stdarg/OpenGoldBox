@@ -642,9 +642,14 @@ void mechanics_tests()
     encounter.participants[1].cell = {6, 2};
     encounter.battlefield.terrain[2 * 12 + 4] = Terrain::obstacle;
     session = hero_first(*module, encounter);
-    check(!offers(*session, "ranged") && !offers(*session, "fire_bolt") &&
-          !offers(*session, "magic_missile"),
-          "Opaque obstacles block weapon and spell targeting");
+    // Fire Bolt can still target the caster itself, so check the enemy.
+    const auto blocked = session->legal_commands();
+    check(!offers(*session, "ranged") && !offers(*session, "magic_missile") &&
+          std::none_of(blocked.begin(), blocked.end(), [](const auto & c)
+    {
+        return c.verb == "fire_bolt" && c.target == 2;
+    }),
+    "Opaque obstacles block weapon and spell targeting");
     encounter.battlefield.terrain[2 * 12 + 4] = Terrain::open;
     session = hero_first(*module, encounter);
     check(offers(*session, "ranged") && offers(*session, "magic_missile"),

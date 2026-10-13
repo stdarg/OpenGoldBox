@@ -355,7 +355,7 @@ void combat()
     s = rules->create(e, 3);
     check(!offers(*s, "blindness") && !offers(*s, "magic_missile") && offers(*s, "fire_bolt"),
           "Blindness blocks sight-required spells; attack spells remain possible");
-    s->submit(command(*s, "fire_bolt"));
+    s->submit(command(*s, "fire_bolt", 2));
     const auto logs = s->snapshot().log();
     check(std::any_of(logs.begin(), logs.end(),
                       [](const auto & l)

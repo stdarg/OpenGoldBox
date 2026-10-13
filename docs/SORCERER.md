@@ -63,7 +63,7 @@ spellcasting ability; the earlier cantrip work is in
 - **Heightened** (2): the spell's target, or the first enemy in its area, has
   Disadvantage on its save against it (repeated saves later are not
   affected yet).
-- **Quickened** (2): Action spells are offered as Bonus Actions.
+- **Quickened** (2): Action spells are offered as Bonus Actions, including those aimed at any creature (Ray of Frost, Poison Spray).
 - **Seeking** (1): a missed spell attack rolls its d20 again, once.
 - **Subtle** is not offered: it only removed spell components, which the game
   does not have ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)).

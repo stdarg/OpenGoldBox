@@ -37,9 +37,8 @@ and 1920×1080.
 Remaining #132 scope includes the other Sorcerer cantrips, leveled spells and
 slots, Innate Sorcery's activation/resources, level 2–4 advancement and replacement
 choices. General components remain #39; higher progression remains #176–178.
-Fire Bolt still uses the existing enemy-creature targeting path; ally/self
-targeting, object targets and ignition remain #166. The other three cantrips
-support legal allied creature targets. This increment closes no parent spell
+All four cantrips can target allied creatures and the caster; Fire Bolt gained
+this in rules 0.6.160 ([Fire Bolt](FIRE-BOLT.md)). This increment closes no parent spell
 or class conformance claim.
 
 Verification: all 44 native/tool checks and 20 headless Godot checks plus eleven
