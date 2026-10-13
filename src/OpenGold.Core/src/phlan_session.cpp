@@ -102,6 +102,73 @@ opengold::Surprise script_surprise(std::uint16_t bits)
         throw EclError("Unsupported encounter surprise " + std::to_string(bits));
     return static_cast<opengold::Surprise>(bits);
 }
+using opengold::rules::Message;
+
+// The English text of a host message, for logs and tests.
+std::string english(const Message &message)
+{
+    auto text = message.source;
+    for (const auto &argument : message.arguments)
+        for (std::size_t at = text.find("{" + argument.name + "}"); at != std::string::npos;
+                at = text.find("{" + argument.name + "}"))
+            text.replace(at, argument.name.size() + 2, argument.value);
+    return text;
+}
+
+std::string english(const std::vector<Message> &messages)
+{
+    std::string text;
+    for (const auto &message : messages)
+        text += (text.empty() ? "" : "\n") + english(message);
+    return text;
+}
+
+// Thousands separated as the halls' fees are written ("1,000").
+std::string amount(std::uint32_t value)
+{
+    auto text = std::to_string(value);
+    for (auto at = text.size(); at > 3; at -= 3)
+        text.insert(at - 3, ",");
+    return text;
+}
+
+Message hall_welcome(opengold::TrainingHall hall)
+{
+    using opengold::TrainingHall;
+    switch (hall)
+    {
+    case TrainingHall::fighters:
+        return {"The Fighters' hall trains Fighters, Barbarians, Paladins and Rangers.", {}};
+    case TrainingHall::clerics:
+        return {"The Clerics' hall trains Clerics and Druids.", {}};
+    case TrainingHall::magic_users:
+        return {"The Magic-users' hall trains Wizards, Sorcerers and Warlocks.", {}};
+    case TrainingHall::thieves:
+        return {"The Thieves' hall trains Rogues, Bards and Monks.", {}};
+    }
+    return {};
+}
+
+// Why a member cannot buy a session or lesson, for the dialogue.
+Message refusal(opengold::TrainingDenial denial, const std::string &name, std::uint32_t fee)
+{
+    using opengold::TrainingDenial;
+    switch (denial)
+    {
+    case TrainingDenial::ready_to_advance:
+        return {"{name} has the experience for the next level: advance from the party roster first.",
+            {{"name", name}}};
+    case TrainingDenial::already_trained:
+        return {"{name} has already trained in this at this level.", {{"name", name}}};
+    case TrainingDenial::highest_level:
+        return {"{name} is at the highest level.", {{"name", name}}};
+    case TrainingDenial::gold:
+        return {"The party's gold cannot pay {fee} gp.", {{"fee", amount(fee)}}};
+    default:
+        return {"{name} cannot train here.", {{"name", name}}};
+    }
+}
+
 } // namespace
 
 void RolfTourSession::configure_town()
@@ -982,6 +1049,8 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     if (snapshot_.phase != TourPhase::awaiting_continue || !ticket ||
             ticket != snapshot_.continue_ticket || choice >= snapshot_.choices.size())
         return false;
+    if (hall_visit_)
+        return choose_at_hall(choice);
     if (temple_request_)
     {
         // The original COMBAT request remains suspended until payment or cancellation.
@@ -1588,6 +1657,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 56:
+        if (arg(0) == 0 && campaign_)
+        {
+            read_character();
+            open_hall(request.id);
+            return true;
+        }
         if (arg(0) != 9 || !campaign_)
             throw EclError("Training/camp service " + std::to_string(arg(0)));
         // The original inn invokes its pre-camp subroutine before PROGRAM 9.
@@ -1614,4 +1689,173 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     ++snapshot_.revision;
     return true;
 }
+void RolfTourSession::open_hall(std::uint64_t request)
+{
+    const auto hall = opengold::training_hall_named(machine_.string(ecl_training_hall_name));
+    if (!hall)
+        throw EclError("Training hall without a known class word");
+    hall_visit_ = HallVisit{request, *hall, 0, {}};
+    show_hall({});
+}
+
+void RolfTourSession::show_hall(std::vector<Message> notice)
+{
+    using opengold::TrainingDenial;
+    auto &visit = *hall_visit_;
+    const auto name_of = [&](opengold::MemberId id)
+    {
+        return campaign_->member(id).character.sheet().name;
+    };
+    auto dialogue = std::move(notice);
+    std::vector<Message> choices;
+    visit.choices.clear();
+    const auto add = [&](Message label, HallChoice choice)
+    {
+        choices.push_back(std::move(label));
+        visit.choices.push_back(std::move(choice));
+    };
+    if (visit.member)
+    {
+        // One line fits above the list; the party's gold shows beside it.
+        if (dialogue.empty())
+            dialogue.push_back({"Choose a lesson for {name}.", {{"name", name_of(visit.member)}}});
+        for (const auto &lesson : campaign_->skill_lessons(visit.member, visit.hall).options)
+            add({lesson.id.starts_with("expertise:") ? "{skill} Expertise ({fee} gp)"
+                 : "{skill} ({fee} gp)",
+                 {   {"skill", lesson.label, true},
+                     {"fee", amount(opengold::skill_training_fee(lesson.id))}
+                 }},
+                {HallChoice::Kind::lesson, visit.member, lesson.id});
+        add({"Back", {}}, {HallChoice::Kind::back});
+    }
+    else
+    {
+        if (dialogue.empty())
+            dialogue.push_back(hall_welcome(visit.hall));
+        for (const auto id : campaign_->state().slots)
+        {
+            if (!id)
+                continue;
+            const auto offer = campaign_->experience_offer(id, visit.hall);
+            if (offer.denial == TrainingDenial::other_hall || offer.denial == TrainingDenial::not_active)
+                continue;
+            const auto name = name_of(id);
+            const auto session = [&]() -> Message
+            {
+                switch (offer.denial)
+                {
+                case TrainingDenial::ready_to_advance:
+                    return {"{name}: session of experience (advance a level first)", {{"name", name}}};
+                case TrainingDenial::already_trained:
+                    return {"{name}: session of experience (bought at this level)", {{"name", name}}};
+                case TrainingDenial::highest_level:
+                    return {"{name}: session of experience (highest level)", {{"name", name}}};
+                default:
+                    return {"{name}: session of experience, {experience} XP ({fee} gp)",
+                        {   {"name", name},
+                            {"experience", amount(offer.experience)},
+                            {"fee", amount(offer.fee)}
+                        }};
+                }
+            }();
+            add(session, {HallChoice::Kind::session, id});
+            const auto lessons = campaign_->skill_lessons(id, visit.hall);
+            if (lessons.options.empty())
+                continue;
+            add(campaign_->skill_training_denial(id, visit.hall) == TrainingDenial::already_trained
+                ? Message{"{name}: skill lesson (learned at this level)", {{"name", name}}}
+                : Message{"{name}: skill lesson", {{"name", name}}},
+                {HallChoice::Kind::lessons, id});
+        }
+        add({"Leave", {}}, {HallChoice::Kind::leave});
+    }
+    snapshot_.host_dialogue = dialogue;
+    snapshot_.dialogue = english(dialogue);
+    snapshot_.host_choices = choices;
+    snapshot_.choices.clear();
+    for (const auto &choice : choices)
+        snapshot_.choices.push_back(english(choice));
+    snapshot_.diagnostic.clear();
+    snapshot_.phase = TourPhase::awaiting_continue;
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+}
+
+bool RolfTourSession::choose_at_hall(std::size_t choice)
+{
+    using opengold::TrainingDenial;
+    auto &visit = *hall_visit_;
+    const auto picked = visit.choices.at(choice);
+    const auto name = picked.member ? campaign_->member(picked.member).character.sheet().name
+                      : std::string{};
+    switch (picked.kind)
+    {
+    case HallChoice::Kind::leave:
+    {
+        if (!machine_.resume_host(visit.request, character_reply(selected_character_)))
+            throw EclError("Training hall reply rejected");
+        hall_visit_.reset();
+        snapshot_.host_dialogue.clear();
+        snapshot_.host_choices.clear();
+        snapshot_.dialogue.clear();
+        snapshot_.phase = TourPhase::running;
+        ++snapshot_.revision;
+        return true;
+    }
+    case HallChoice::Kind::back:
+        visit.member = 0;
+        show_hall({});
+        return true;
+    case HallChoice::Kind::lessons:
+    {
+        const auto denial = campaign_->skill_training_denial(picked.member, visit.hall);
+        if (denial != TrainingDenial::none && denial != TrainingDenial::gold)
+        {
+            show_hall({refusal(denial, name, 0)});
+            return true;
+        }
+        visit.member = picked.member;
+        show_hall({});
+        return true;
+    }
+    case HallChoice::Kind::session:
+    {
+        const auto offer = campaign_->experience_offer(picked.member, visit.hall);
+        if (offer.denial != TrainingDenial::none)
+        {
+            show_hall({refusal(offer.denial, name, offer.fee)});
+            return true;
+        }
+        campaign_->buy_experience(picked.member, visit.hall);
+        show_hall({{"{name} gains {experience} experience.",
+                {{"name", name}, {"experience", amount(offer.experience)}}}});
+        return true;
+    }
+    case HallChoice::Kind::lesson:
+    {
+        const auto fee = opengold::skill_training_fee(picked.grant);
+        auto denial = campaign_->skill_training_denial(picked.member, visit.hall);
+        if (denial == TrainingDenial::none && coins(campaign_->state().wealth, Coin::gold) < fee)
+            denial = TrainingDenial::gold;
+        if (denial != TrainingDenial::none)
+        {
+            show_hall({refusal(denial, name, fee)});
+            return true;
+        }
+        const auto lessons = campaign_->skill_lessons(picked.member, visit.hall).options;
+        const auto lesson = std::find_if(lessons.begin(), lessons.end(), [&](const auto & option)
+        {
+            return option.id == picked.grant;
+        });
+        campaign_->train_skill(picked.member, visit.hall, picked.grant);
+        visit.member = 0;
+        show_hall({{picked.grant.starts_with("expertise:") ? "{name} gains Expertise in {skill}."
+                    : "{name} learns {skill}.",
+                    {{"name", name}, {"skill", lesson->label, true}}}});
+        return true;
+    }
+    }
+    return false;
+}
+
 } // namespace opengold::por

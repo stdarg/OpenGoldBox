@@ -7,9 +7,9 @@ sells **sessions of experience** and teaches **skill lessons**, all paid from
 the party's gold.
 
 **Status.** The halls' rules are in the game and saved with the campaign
-([#9](https://github.com/stdarg/OpenGold/issues/9)). The hall screen is not:
-answering YES at a hall is still refused as unsupported until the proposed
-controls are approved (see [Not in the game yet](#not-in-the-game-yet)).
+([#9](https://github.com/stdarg/OpenGold/issues/9)). Answering YES at a hall
+lists its services in the dialogue, as the temple does
+([At the hall](#at-the-hall)).
 
 ## How training works
 
@@ -102,16 +102,26 @@ rebuilds its skills in the same order and from the same lessons. Each member
 also keeps the level of the last session it bought, so reloading never sells a
 second session at the same level.
 
-## Not in the game yet
+## At the hall
 
-- **The hall screen.** A prototype puts a **Train** button beside each member
-  the hall trains, opening a Training window with the session and the lessons.
-  Its screenshots and three open questions are on the review page,
-  `user-data/reviews/training-hall/index.html` in the main checkout.
-- **`PROGRAM 0`.** The original hall script runs it after YES. Once the screen
-  is approved, it will open the hall, charge only confirmed purchases and then
-  let the script continue, as the temple and inn services do. Until then the
-  hall's YES is reported as unsupported and the event rolls back.
+The original hall script asks "DO YOU WANT TO TRAIN?". **YES** runs its
+`PROGRAM 0`, which lists the hall's services as dialogue choices, the way the
+temple lists its healing:
+
+- One session of experience per member the hall trains, with the experience
+  and fee ("Arden: session of experience, 150 XP (1,000 gp)"), or why it
+  cannot be bought: "(advance a level first)", "(bought at this level)" or
+  "(highest level)".
+- One skill lesson per member, "(learned at this level)" once taken. Choosing
+  it lists the skills and Expertise the hall teaches that member with their
+  fees, and **Back**.
+- **Leave**, which lets the script go on.
+
+Members of another hall's classes are not listed. Choosing a service buys it at
+once from the party's gold and returns to the list with one line saying what
+happened ("Arden gains 150 experience.") or why it was refused ("The party's
+gold cannot pay 500 gp."). The party's gold shows beside the list. A party may
+buy any number of services before leaving.
 
 ## What the original does
 
@@ -143,7 +153,7 @@ The user decided, departing from the original
 3. All gold belongs to the party
    ([#232](https://github.com/stdarg/OpenGold/issues/232), done).
 4. Experience is kept after training.
-5. The hall's services sit on the party roster; screenshots before code.
+5. The hall lists its services in the dialogue, like the temple.
 6. One session per level: half the experience to the next level, 1,000 gp at
    level 1, doubling each level.
 7. One lesson per level: proficiency 250 gp, Expertise 500 gp, from the hall's
@@ -164,5 +174,12 @@ The user decided, departing from the original
   the same order. `RulesModule::hall_training_options` and `train_at_hall`;
   the rules reject a second lesson at one level, a duplicate and Expertise
   without proficiency. `Character::hall_training()` is the saved history.
+- The town: `RolfTourSession::open_hall` handles `PROGRAM 0` (the script's
+  class word is at `ecl_training_hall_name`, `0x982C`); `show_hall` and
+  `choose_at_hall` run the list. Its dialogue and choices are
+  `TourSnapshot::host_dialogue` and `host_choices`, messages the view
+  translates.
 - Saves: campaign format 27, rules 0.6.159.
-- Tests: `opengold_training_hall_tests`.
+- Tests: `opengold_training_hall_tests`, `opengold_party_tests`
+  (`training_hall_service`) and `opengold_godot_training_hall` (original data:
+  the Fighters' hall at (8,0) of the training area, in English and Spanish).

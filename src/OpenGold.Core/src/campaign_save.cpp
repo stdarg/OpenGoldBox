@@ -665,6 +665,7 @@ template <bool Reading> struct SaveCodec
             v.meeting_pose_.reset();
             v.robbed_ = false;
             v.temple_targets_.clear();
+            v.hall_visit_.reset();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.temple_request_ =
             v.shop_request_ = v.damage_request_ = 0;
             v.remaining_delay_ = 0;

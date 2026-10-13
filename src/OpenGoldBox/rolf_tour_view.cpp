@@ -741,7 +741,10 @@ String door_check_notice(const DoorCheck &check)
 // and any checks made against a locked door.
 String event_dialogue(const std::string &resource, const TourSnapshot &s)
 {
-    auto result = rest_notice(resource, s.dialogue);
+    // Our campaign host's own dialogue, such as a training hall's, is
+    // translated from its messages; the script's text is original.
+    auto result = s.host_dialogue.empty() ? rest_notice(resource, s.dialogue)
+                  : i18n::render(s.host_dialogue);
     for (const auto &payment : s.payments)
         result += "\n" + payment_notice(payment);
     for (const auto &check : s.door_checks)
@@ -921,6 +924,9 @@ void RolfTourView::refresh()
                     {"price", item.stored.value}
                 }));
             }
+        else if (!s.host_choices.empty())
+            for (const auto &c : s.host_choices)
+                choices->add_item(i18n::render(c));
         else
             for (const auto &c : s.choices)
                 choices->add_item(s.dialogue == "Choose a party member."

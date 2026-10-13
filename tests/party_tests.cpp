@@ -2324,6 +2324,97 @@ void failed_combat_result_rolls_back()
     }
 }
 
+// Six-bit packed ECL text, as the original scripts store it.
+Bytes packed_text(std::string_view text)
+{
+    Bytes bytes;
+    unsigned bits = 0, held = 0;
+    for (const char c : text)
+    {
+        held = held << 6 | (static_cast<unsigned>(c) & 0x3f);
+        bits += 6;
+        while (bits >= 8)
+        {
+            bits -= 8;
+            bytes.push_back(static_cast<std::uint8_t>(held >> bits));
+            held &= (1u << bits) - 1;
+        }
+    }
+    if (bits)
+        bytes.push_back(static_cast<std::uint8_t>(held << (8 - bits)));
+    return bytes;
+}
+
+// A training hall's YES: the script names its class word, then PROGRAM 0 lists
+// the hall's services until the party leaves (docs/TRAINING-HALL.md).
+void training_hall_service()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    const auto ada = party->add_pc(character("fighter", "Ada"));
+    const auto bea = party->add_pc(character("wizard", "Bea"));
+    party->set_wealth({0, 0, 0, 1300, 0, 0, 0});
+    const auto word = packed_text("FIGHTERS ");
+    Bytes body{9, 128, static_cast<std::uint8_t>(word.size())};
+    body.insert(body.end(), word.begin(), word.end());
+    body.insert(body.end(), {129, 0x2c, 0x98, 56, 0, 0, 9, 0, 1, 1, 0x11, 0x98, 0});
+    auto resources = std::make_shared<por::PhlanResources>();
+    por::RolfTourSession hall({}, program(body), {}, 0x9914, {}, resources);
+    hall.campaign_party(party);
+    settle(hall);
+    hall.explore(por::ExplorationCommand::look);
+    settle(hall);
+    const auto choices = [&]
+    {
+        return hall.snapshot().choices;
+    };
+    const auto pick = [&](std::string_view label)
+    {
+        const auto list = choices();
+        const auto found = std::find(list.begin(), list.end(), label);
+        check(found != list.end(), ("The hall offers " + std::string(label)).c_str());
+        return hall.choose(hall.snapshot().continue_ticket,
+                           static_cast<std::size_t>(found - list.begin()));
+    };
+    check(hall.snapshot().phase == por::TourPhase::awaiting_continue &&
+          choices() == std::vector<std::string> {"Ada: session of experience, 150 XP (1,000 gp)",
+                  "Ada: skill lesson", "Leave"} &&
+          hall.snapshot().dialogue ==
+          "The Fighters' hall trains Fighters, Barbarians, Paladins and Rangers.",
+          "The Fighters' hall lists the Fighter's services, not the Wizard's");
+    check(!hall.choose(hall.snapshot().continue_ticket + 1, 0), "A stale ticket is refused");
+    check(pick("Ada: session of experience, 150 XP (1,000 gp)") &&
+          party->member(ada).experience == 150 && party->state().wealth[3] == 300 &&
+          hall.snapshot().dialogue.starts_with("Ada gains 150 experience.") &&
+          choices().front() == "Ada: session of experience (bought at this level)",
+          "A session grants half the experience to level 2 for 1,000 gp, once a level");
+    check(pick("Ada: session of experience (bought at this level)") &&
+          hall.snapshot().dialogue.starts_with("Ada has already trained in this at this level.") &&
+          party->state().wealth[3] == 300,
+          "A second session at the same level is refused and charges nothing");
+    check(pick("Ada: skill lesson") && choices().back() == "Back" &&
+          hall.snapshot().dialogue == "Choose a lesson for Ada.",
+          "The lesson list opens");
+    const auto lessons = choices();
+    const auto expertise = std::find_if(lessons.begin(), lessons.end(), [](const auto & label)
+    {
+        return label.find("Expertise (500 gp)") != std::string::npos;
+    });
+    check(expertise != lessons.end() && pick(*expertise) &&
+          hall.snapshot().dialogue.starts_with("The party's gold cannot pay 500 gp.") &&
+          party->state().wealth[3] == 300,
+          "Expertise the party cannot afford is refused");
+    check(choices().back() == "Back" && pick("Stealth (250 gp)") &&
+          hall.snapshot().dialogue.starts_with("Ada learns Stealth.") &&
+          party->state().wealth[3] == 50 &&
+          choices()[1] == "Ada: skill lesson (learned at this level)",
+          "A Ranger's Stealth is taught at the Fighters' hall for 250 gp");
+    check(pick("Leave"), "The party leaves");
+    settle(hall);
+    check(hall.can_leave() && hall.script_variable(por::EclAddress{0x9811}) == 1,
+          "Leaving lets the hall's script go on");
+    (void)bea;
+}
+
 void recovery_hosts()
 {
     auto party = std::make_shared<CampaignParty>(module());
@@ -2690,6 +2781,7 @@ int main()
         victory_with_a_monster_left_out();
         monster_picture_before_combat();
         recovery_hosts();
+        training_hall_service();
         reward_reentry();
         std::cout << "Party integration tests passed\n";
         return 0;

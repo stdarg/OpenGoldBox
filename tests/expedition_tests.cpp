@@ -2039,6 +2039,25 @@ void installed_first_expedition(const std::filesystem::path &executable,
         walk_to(shopper.town, shopper.party, 8, 10);
         write_campaign_file(fixture, encode_campaign(*shopper.party, &shopper.town, assets));
     }
+    // tests/training_hall_view_tests.gd steps north into the Fighters' hall at
+    // (8,0) of the training area, with a party in three states: Arden can buy
+    // a session, Bryn must advance first and Cora bought this level's session.
+    if (const auto *fixture = std::getenv("OPENGOLD_HALL_FIXTURE"))
+    {
+        auto trainees = create_party(directory);
+        walk_to(trainees.town, trainees.party, 8, 1);
+        settle(trainees.town, trainees.party);
+        while (trainees.town.snapshot().pose.facing != por::MapDirection::north)
+        {
+            trainees.town.explore(por::ExplorationCommand::turn_right);
+            settle(trainees.town, trainees.party);
+        }
+        auto state = trainees.party->checkpoint();
+        state.roster.at(1).experience = 300;
+        state.roster.at(2).hall_experience_level = 1;
+        trainees.party->restore(std::move(state));
+        write_campaign_file(fixture, encode_campaign(*trainees.party, &trainees.town, assets));
+    }
     general_store_gear(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);

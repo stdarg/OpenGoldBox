@@ -506,7 +506,7 @@ msgstr ""
 msgid "Attributes"
 msgstr ""
 
-#: src/OpenGoldBox/character_creation_view.cpp:461 src/OpenGoldBox/godot/scenes/character_creation.tscn:354 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:54 src/OpenGoldBox/level_up_dialog.cpp:64
+#: src/OpenGoldBox/character_creation_view.cpp:461 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:354 src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:54 src/OpenGoldBox/level_up_dialog.cpp:64
 msgid "Back"
 msgstr ""
 
@@ -761,7 +761,7 @@ msgstr ""
 msgid "Burning acid (Acid Arrow)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:887
+#: src/OpenGoldBox/rolf_tour_view.cpp:890
 msgid "Buy [Enter]"
 msgstr ""
 
@@ -981,7 +981,7 @@ msgstr ""
 msgid "Choose Temporary HP\n\nCurrent: {current} — {current_source}\nNew: {offered} — {offered_source}\n\nThe amounts do not add. The Bonus Action and use are already spent."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:888
+#: src/OpenGoldBox/rolf_tour_view.cpp:891
 msgid "Choose [Enter]"
 msgstr ""
 
@@ -1003,6 +1003,11 @@ msgstr ""
 
 #: src/OpenGoldBox/level_up_lab_view.cpp:290
 msgid "Choose a character and press Create Character."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "Choose a lesson for {name}."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -1384,7 +1389,7 @@ msgstr ""
 msgid "Continue  [Enter]"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:890
+#: src/OpenGoldBox/rolf_tour_view.cpp:893
 msgid "Continue [Enter]"
 msgstr ""
 
@@ -1860,7 +1865,7 @@ msgstr ""
 msgid "Expertise"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:900
+#: src/OpenGoldBox/rolf_tour_view.cpp:903
 msgid "Explore  /  arrow keys"
 msgstr ""
 
@@ -1938,7 +1943,7 @@ msgstr ""
 msgid "Fighter"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:958
+#: src/OpenGoldBox/rolf_tour_view.cpp:964
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Fighter / Level 1 / HP {current}/{maximum}\n{gold} gp / {items}"
 msgstr ""
@@ -2080,11 +2085,11 @@ msgstr ""
 msgid "Fog Cloud (Magic Initiate)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:882
+#: src/OpenGoldBox/rolf_tour_view.cpp:885
 msgid "Following Rolf..."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:898
+#: src/OpenGoldBox/rolf_tour_view.cpp:901
 msgid "Following the guide"
 msgstr ""
 
@@ -2710,6 +2715,10 @@ msgid "Leather Armor"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Leave"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Leave Wild Shape"
 msgstr ""
 
@@ -2717,7 +2726,7 @@ msgstr ""
 msgid "Leave shop"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:892
+#: src/OpenGoldBox/rolf_tour_view.cpp:895
 msgid "Leave temple [Enter]"
 msgstr ""
 
@@ -3271,7 +3280,7 @@ msgstr ""
 msgid "Move up to {feet} feet without Opportunity Attacks or spending normal movement. Other pending effects wait."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:900
+#: src/OpenGoldBox/rolf_tour_view.cpp:903
 msgid "Movement paused"
 msgstr ""
 
@@ -3423,11 +3432,11 @@ msgstr ""
 msgid "Not yet qualified. You may still plan for this class."
 msgstr ""
 
-#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:60 src/OpenGoldBox/rolf_tour_view.cpp:849
+#: src/OpenGoldBox/godot/scenes/rolf_tour.tscn:60 src/OpenGoldBox/rolf_tour_view.cpp:852
 msgid "OPENGOLDBOX  /  Rolf's welcome"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1432 src/OpenGoldBox/rolf_tour_view.cpp:848
+#: src/OpenGoldBox/rolf_tour_view.cpp:1438 src/OpenGoldBox/rolf_tour_view.cpp:851
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "OPENGOLDBOX  /  {district}"
 msgstr ""
@@ -3607,7 +3616,7 @@ msgstr ""
 msgid "Part"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:851
+#: src/OpenGoldBox/rolf_tour_view.cpp:854
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Party ({x}, {y})   {direction}"
 msgstr ""
@@ -3780,7 +3789,7 @@ msgstr ""
 msgid "Press Esc to return"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:881
+#: src/OpenGoldBox/rolf_tour_view.cpp:884
 msgid "Press any key to fight."
 msgstr ""
 
@@ -3788,7 +3797,7 @@ msgstr ""
 msgid "Previously selected training cannot be replaced"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:946
+#: src/OpenGoldBox/rolf_tour_view.cpp:952
 msgid "Prices are per listed item or bundle."
 msgstr ""
 
@@ -4187,7 +4196,7 @@ msgstr ""
 msgid "Restart test"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:879
+#: src/OpenGoldBox/rolf_tour_view.cpp:882
 msgid "Restart with --reset-game-path to choose your Pool of Radiance data folder."
 msgstr ""
 
@@ -4235,7 +4244,7 @@ msgstr ""
 msgid "Rogue skills"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:861
+#: src/OpenGoldBox/rolf_tour_view.cpp:864
 msgid "Rolf  /  Council guide"
 msgstr ""
 
@@ -4555,12 +4564,12 @@ msgstr ""
 msgid "Shoot"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:866
+#: src/OpenGoldBox/rolf_tour_view.cpp:869
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Shop / buying for {name}: party {gold} gp, {count}/16 items"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:858
+#: src/OpenGoldBox/rolf_tour_view.cpp:861
 msgid "Shop / select an item"
 msgstr ""
 
@@ -4972,7 +4981,7 @@ msgstr ""
 msgid "Step of the Wind: Disengage and Dash (1 Focus)"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:895
+#: src/OpenGoldBox/rolf_tour_view.cpp:898
 msgid "Stopped"
 msgstr ""
 
@@ -4984,7 +4993,7 @@ msgstr ""
 msgid "Studded Leather Armor"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:889
+#: src/OpenGoldBox/rolf_tour_view.cpp:892
 msgid "Submit [Enter]"
 msgstr ""
 
@@ -5020,7 +5029,7 @@ msgstr ""
 msgid "Switch the slot level used by Magic Missile, Cure Wounds and Healing Word."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:896
+#: src/OpenGoldBox/rolf_tour_view.cpp:899
 msgid "Tab or number keys: choose the buyer"
 msgstr ""
 
@@ -5103,8 +5112,24 @@ msgstr ""
 msgid "Thaumaturge"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The Clerics' hall trains Clerics and Druids."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The Fighters' hall trains Fighters, Barbarians, Paladins and Rangers."
+msgstr ""
+
 #: src/OpenGoldBox/training_control.h:131
 msgid "The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The Magic-users' hall trains Wizards, Sorcerers and Warlocks."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "The Thieves' hall trains Rogues, Bards and Monks."
 msgstr ""
 
 #: src/OpenGoldBox/combat_view.cpp:2373
@@ -5116,11 +5141,11 @@ msgstr ""
 msgid "The charge adds {damage} damage."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:750
+#: src/OpenGoldBox/rolf_tour_view.cpp:753
 msgid "The door opens."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:751
+#: src/OpenGoldBox/rolf_tour_view.cpp:754
 msgid "The door stays locked."
 msgstr ""
 
@@ -5139,6 +5164,11 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "The party is incapacitated. Defeat."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "The party's gold cannot pay {fee} gp."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:4295
@@ -5343,7 +5373,7 @@ msgstr ""
 msgid "Two-Weapon Fighting"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:857
+#: src/OpenGoldBox/rolf_tour_view.cpp:860
 msgid "Unable to continue"
 msgstr ""
 
@@ -5826,7 +5856,7 @@ msgstr ""
 msgid "{count} gp"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:964 src/OpenGoldBox/rolf_tour_view.cpp:978
+#: src/OpenGoldBox/rolf_tour_view.cpp:970 src/OpenGoldBox/rolf_tour_view.cpp:984
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} item"
 msgid_plural "{count} items"
@@ -5848,12 +5878,12 @@ msgstr ""
 msgid "{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:1429 src/OpenGoldBox/rolf_tour_view.cpp:845
+#: src/OpenGoldBox/rolf_tour_view.cpp:1435 src/OpenGoldBox/rolf_tour_view.cpp:848
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district}    N ↑"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:842
+#: src/OpenGoldBox/rolf_tour_view.cpp:845
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{district} / {direction} view"
 msgstr ""
@@ -5868,12 +5898,12 @@ msgstr ""
 msgid "{hand} — {weapon}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:919
+#: src/OpenGoldBox/rolf_tour_view.cpp:922
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:919
+#: src/OpenGoldBox/rolf_tour_view.cpp:922
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp / cannot be equipped"
 msgstr ""
@@ -5883,12 +5913,12 @@ msgstr ""
 msgid "{item} x{quantity}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:997
+#: src/OpenGoldBox/rolf_tour_view.cpp:1003
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}\n{class} / AC {ac} / HP {current}/{maximum}"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_view.cpp:971
+#: src/OpenGoldBox/rolf_tour_view.cpp:977
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"
 msgstr ""
@@ -6016,6 +6046,11 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:7813
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} cannot regenerate this turn."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} cannot train here."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:6427 src/OpenGold.Rules.Srd5/src/srd5.cpp:6428
@@ -6148,6 +6183,11 @@ msgstr ""
 msgid "{name} flees the battle."
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} gains Expertise in {skill}."
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:3740 src/OpenGold.Rules.Srd5/src/srd5.cpp:3741
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gains Guidance for {skill} checks."
@@ -6156,6 +6196,11 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:3727 src/OpenGold.Rules.Srd5/src/srd5.cpp:3728
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} gains Resistance against {type} damage."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} gains {experience} experience."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/mastery_resolution_impl.h:260 src/OpenGold.Rules.Srd5/src/mastery_resolution_impl.h:261 src/OpenGold.Rules.Srd5/src/srd5.cpp:7046 src/OpenGold.Rules.Srd5/src/srd5.cpp:7047
@@ -6196,6 +6241,16 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:3857 src/OpenGold.Rules.Srd5/src/srd5.cpp:4387
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} has Disadvantage on its next attack roll."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} has already trained in this at this level."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} has the experience for the next level: advance from the party roster first."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:8968
@@ -6246,6 +6301,11 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:2528
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is addled."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} is at the highest level."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:7796
@@ -6351,6 +6411,11 @@ msgstr ""
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:3989
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} is weakened by Bane."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name} learns {skill}."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:5921
@@ -6733,6 +6798,36 @@ msgstr ""
 msgid "{name}: Initiative {total}"
 msgstr ""
 
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: session of experience (advance a level first)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: session of experience (bought at this level)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: session of experience (highest level)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: session of experience, {experience} XP ({fee} gp)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: skill lesson"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{name}: skill lesson (learned at this level)"
+msgstr ""
+
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:5377 src/OpenGold.Rules.Srd5/src/srd5.cpp:5378
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name}: {type} damage {before} -> {after}."
@@ -6746,6 +6841,16 @@ msgstr ""
 #: src/OpenGoldBox/character_creation_view.cpp:684
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{part} / Color-{bank}: choose a color"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{skill} ({fee} gp)"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{skill} Expertise ({fee} gp)"
 msgstr ""
 
 #: src/OpenGoldBox/training_control.h:173

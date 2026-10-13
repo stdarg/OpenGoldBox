@@ -388,6 +388,7 @@ void RolfTourSession::reset_run()
     who_request_ = temple_request_ = damage_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
+    hall_visit_.reset();
     pending_movement_.reset();
     transition_ = message_only_ = false;
     shop_request_ = 0;
@@ -469,6 +470,7 @@ void RolfTourSession::roll_back_event()
     who_request_ = temple_request_ = damage_request_ = 0;
     who_slots_.clear();
     temple_targets_.clear();
+    hall_visit_.reset();
     selected_character_ = saved.selected_character;
     pending_movement_.reset();
     transition_ = false;

@@ -116,6 +116,9 @@ struct TourSnapshot
     unsigned script_id{}, event_runs{}, sprite_id{12};
     unsigned area_id{};
     std::vector<std::string> choices;
+    // Dialogue and choices our campaign host writes (a training hall's
+    // services), for the view to translate; empty while the script speaks.
+    std::vector<opengold::rules::Message> host_dialogue, host_choices;
     bool number_input{};
     std::uint64_t picture_revision{};
     std::bitset<256> visited;
@@ -271,6 +274,33 @@ class RolfTourSession
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
     std::vector<opengold::MemberId> temple_targets_;
+    // A training hall's PROGRAM 0: the script waits on `request` while the
+    // party buys sessions of experience and skill lessons from the list.
+    struct HallChoice
+    {
+        enum class Kind
+        {
+            session,
+            lessons,
+            lesson,
+            back,
+            leave
+        };
+        Kind kind{};
+        opengold::MemberId member{};
+        std::string grant; // a lesson's skill or Expertise grant
+    };
+    struct HallVisit
+    {
+        std::uint64_t request{};
+        opengold::TrainingHall hall{};
+        opengold::MemberId member{}; // whose lessons are listed; 0 lists the services
+        std::vector<HallChoice> choices;
+    };
+    std::optional<HallVisit> hall_visit_;
+    void open_hall(std::uint64_t request);
+    void show_hall(std::vector<opengold::rules::Message> notice);
+    bool choose_at_hall(std::size_t choice);
     std::vector<PartySlot> who_slots_;
     // How a pre-combat meeting ended without a fight, said when its event ends.
     std::string encounter_outcome_;

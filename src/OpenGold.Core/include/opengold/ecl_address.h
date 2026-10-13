@@ -60,6 +60,10 @@ inline constexpr EclAddress ecl_rest_interruption_chance{0x6DD3};
 inline constexpr EclAddress ecl_temple_service{0x6DE2};
 inline constexpr EclAddress ecl_shop_service{0x6E6C};
 
+// A training hall's script stores the class word it trains ("FIGHTERS ") here
+// before PROGRAM 0.
+inline constexpr EclAddress ecl_training_hall_name{0x982C};
+
 // The archive bank (ECLn.DAX) of the script a NEW ECL loads.
 inline constexpr EclAddress ecl_script_bank{0x6E12};
 
