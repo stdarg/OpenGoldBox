@@ -1753,11 +1753,13 @@ class Session final : public CombatSession
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
+            // A Druid still in a Beast form from earlier fights in that form.
+            refresh_form(a);
             a.initiative =
                 detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised, d.lucky},
                             rng_) +
                 d.initiative;
-            a.movement = d.speed;
+            a.movement = a.form ? a.form->speed : d.speed;
             actors_.push_back(std::move(a));
         }
         if (sides.size() != 2 && !restoring)
@@ -12464,7 +12466,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.166", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.167", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

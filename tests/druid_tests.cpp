@@ -2,12 +2,14 @@
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -545,6 +547,72 @@ void beast_form_checks()
     }), "Heat Metal cannot reach armor merged into a Beast form");
 }
 
+// The Druid's vital state with the Wolf's form on, `remaining_ms` left of it,
+// at `hit_points`, and Incapacitated by laughter if asked.
+VitalState shaped(const RulesModule &module, const CharacterSheet &sheet, unsigned remaining_ms,
+                  int hit_points, bool laughing = false)
+{
+    namespace fx = opengold::srd5::detail;
+    auto vitals = unit(*battle(module, sheet), 1).persistent;
+    const auto at = vitals.resources.find("FX8");
+    std::istringstream in(vitals.resources.substr(at));
+    auto effects = fx::read_effects(in);
+    fx::apply_spell_benefit(effects, {.scope = 3, .actor = 1}, "Druid", fx::EffectKind::wild_shape, 1);
+    effects.active.back().remaining_ms = remaining_ms;
+    if (laughing)
+        fx::apply_repeating_condition(effects, fx::EffectKind::laughing, {.scope = 3, .actor = 98},
+                                      "Enemy", {.dc = 38, .first_save_ms = 6000});
+    std::ostringstream out;
+    fx::write_effects(out, effects);
+    vitals.resources.replace(at, std::string::npos, out.str());
+    vitals.hit_points = hit_points;
+    return vitals;
+}
+
+std::unique_ptr<CombatSession> shaped_battle(const RulesModule &module, const CharacterSheet &sheet,
+        const VitalState &vitals, std::uint64_t seed = 5)
+{
+    Participant druid{1, "campaign-character", "Druid", Side::party, {1, 1},
+                      module.character_profile(sheet, {}).data};
+    druid.state = vitals;
+    return module.create({{12, 6, std::vector<Terrain>(72)},
+        {druid, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, seed);
+}
+
+// Wild Shape ends at 0 Hit Points, when the Druid starts a turn
+// Incapacitated, or when it lapses.
+void wild_shape_end_checks()
+{
+    auto module = rules();
+    const auto sheet = druid(2).sheet();
+    // The Druid's turn begins Incapacitated, whenever it comes.
+    auto laughing = shaped_battle(*module, sheet, shaped(*module, sheet, 3600000, 10, true));
+    for (unsigned turns = 0; laughing->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*laughing, "end"), "Reach the Druid's turn");
+    check(laughing->snapshot().actor == 1 && unit(*laughing, 1).form.empty(),
+          "Starting a turn Incapacitated ends the form");
+
+    auto lapsing = shaped_battle(*module, sheet, shaped(*module, sheet, 6000, 10));
+    check(unit(*lapsing, 1).form == "wolf", "A form with six seconds left");
+    for (unsigned turns = 0; turns < 6 && !unit(*lapsing, 1).form.empty(); ++turns)
+        check(submit(*lapsing, "end"), "Let a round pass");
+    check(unit(*lapsing, 1).form.empty(), "The form ends when its time runs out");
+
+    bool dropped = false;
+    for (std::uint64_t seed = 1; seed < 64 && !dropped; ++seed)
+    {
+        auto c = shaped_battle(*module, sheet, shaped(*module, sheet, 3600000, 1), seed);
+        for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the enemy's turn");
+        check(submit(*c, "melee", 1), "The enemy attacks the Wolf");
+        if (unit(*c, 1).hit_points > 0)
+            continue;
+        check(unit(*c, 1).form.empty() && unit(*c, 1).prone, "Dropping to 0 Hit Points ends the form");
+        dropped = true;
+    }
+    check(dropped, "Some seed drops the shaped Druid");
+}
+
 // A creature that the Wolf's opportunity bite knocks Prone must crawl; when it
 // cannot crawl the rest of its route, it stops where it is and the fight goes on.
 void prone_mover_checks()
@@ -619,6 +687,7 @@ int main()
         cantrip_checks();
         poison_spray_checks();
         beast_form_checks();
+        wild_shape_end_checks();
         order_checks();
         circle_checks();
         barkskin_checks();

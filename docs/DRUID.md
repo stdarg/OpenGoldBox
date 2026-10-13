@@ -108,5 +108,7 @@ ability.
 - Verification: `opengold_druid_tests` (each form's AC, Speed and attack bonus
   with the Druid's Hit Points kept, the Wolf's Temporary HP, no spells, a
   checkpoint, the bite and its Prone, Concentration on Faerie Fire continuing,
-  Heat Metal finding no armor on a shaped Druid, leaving the form, and Land's
-  Aid's thorns, healing and spent use).
+  Heat Metal finding no armor on a shaped Druid, leaving the form; the form
+  ending at 0 Hit Points, on a turn begun Incapacitated and when it lapses; and
+  Land's Aid's thorns, healing and spent use). A form carried into a new fight
+  applies from its start (rules 0.6.167; it used to wait for the Druid's turn).
