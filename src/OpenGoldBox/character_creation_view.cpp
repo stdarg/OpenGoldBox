@@ -408,9 +408,10 @@ void CharacterCreationView::refresh()
     show("Training", step == CreationStep::training);
     for (const auto *n :
             {"PortraitGender", "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters",
-             "PortraitScroll", "PortraitPreview"
+             "PortraitScroll"
             })
         show(n, portrait);
+    show("PortraitPreview", portrait || step == CreationStep::sheet);
     if (!portrait)
         show("PortraitZoom", false);
     for (const auto *n :

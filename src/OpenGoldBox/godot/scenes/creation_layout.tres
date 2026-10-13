@@ -3542,6 +3542,42 @@ tracks/294/keys = {
 "update": 0,
 "values": [140.0]
 }
+tracks/295/type = "value"
+tracks/295/imported = false
+tracks/295/enabled = true
+tracks/295/path = NodePath("Description:offset_right")
+tracks/295/interp = 1
+tracks/295/loop_wrap = true
+tracks/295/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [-44.0]
+}
+tracks/296/type = "value"
+tracks/296/imported = false
+tracks/296/enabled = true
+tracks/296/path = NodePath("PortraitPreview:offset_left")
+tracks/296/interp = 1
+tracks/296/loop_wrap = true
+tracks/296/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [-344.0]
+}
+tracks/297/type = "value"
+tracks/297/imported = false
+tracks/297/enabled = true
+tracks/297/path = NodePath("PortraitPreview:offset_bottom")
+tracks/297/interp = 1
+tracks/297/loop_wrap = true
+tracks/297/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [342.0]
+}
 
 [sub_resource type="Animation" id="Animation_race"]
 length = 0.01
@@ -7595,6 +7631,42 @@ tracks/2/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 0,
 "values": [-146.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Description:offset_right")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [-460.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("PortraitPreview:offset_left")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [-444.0]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("PortraitPreview:offset_bottom")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [442.0]
 }
 
 [resource]
