@@ -816,12 +816,22 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
     {
         return routes[index(p)];
     };
-    // A choice of creatures left open casts on those already chosen.
-    if (state.spell_targeting)
+    // A choice of creatures left open casts on those already chosen. Magic
+    // Missile and Scorching Ray cannot be cast early: every dart or ray goes
+    // where the last one went while it can, else at the first creature offered.
+    if (const auto &targeting = state.spell_targeting)
+    {
         for (const auto &command : offered)
-            if (command.verb == (state.spell_targeting->chosen.empty() ? "spell_cancel"
-                                 : "spell_cast"))
+            if (command.verb == (targeting->chosen.empty() ? "spell_cancel" : "spell_cast"))
                 return command;
+        const Command *aim = nullptr;
+        for (const auto &command : offered)
+            if (command.verb == targeting->verb &&
+                    (!aim || command.target == targeting->chosen.back()))
+                aim = &command;
+        if (aim)
+            return *aim;
+    }
     // Paladin's Smite costs no slot, so a Paladin uses it on the first hit it can;
     // slots stay for healing.
     for (const auto &command : offered)

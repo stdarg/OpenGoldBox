@@ -212,9 +212,17 @@ std::string fighting_style_grant(std::string_view style)
 
 // Spells whose creatures are chosen one click at a time (CLASS-2) when they may
 // affect more than one.
+// Magic Missile's darts and Scorching Ray's rays are each aimed at a creature,
+// several at one if the caster likes (SRD 5.2.1 pp. 146, 159).
+bool splits_among_targets(const detail::SpellDef &spell)
+{
+    return spell.id == "magic_missile" || spell.id == "scorching_ray";
+}
+
 bool selects_creatures(const detail::SpellDef &spell)
 {
-    return spell.pattern == detail::SpellPattern::buff || spell.rider == detail::Rider::command ||
+    return splits_among_targets(spell) || spell.pattern == detail::SpellPattern::buff ||
+           spell.rider == detail::Rider::command ||
            (spell.pattern == detail::SpellPattern::save_condition &&
             (spell.instances > 1 || spell.upcast.extra_instances));
 }
@@ -2152,8 +2160,13 @@ class Session final : public CombatSession
     // "_2" level-two slot form and Command's option.
     void resolve_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
                        EntityId target_id);
+    // Darts striking one creature together, as one hit (Magic Missile).
+    // `split`: other creatures take darts too, so the log names this one.
+    void missile_hits(Actor &a, Actor &target, const detail::SpellDef &spell,
+                      const Dice &rolled, unsigned darts, bool split);
+    // `targets` holds one creature, or for a split spell one per dart or ray.
     void cast_resolved_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
-                             EntityId target_id);
+                             std::span<const EntityId> targets);
     void apply_rider(const detail::SpellDef &spell, std::string_view verb, Actor &a, Actor &target,
                      int dc);
     // Command's Approach and Flee: the commanded creature only moves toward or
@@ -3196,11 +3209,13 @@ Snapshot Session::snapshot() const
                 {{"target", t.source.name}, {"damage", std::to_string(amount)}}
             }};
     }
-    if (selection_)
+    // A Shield prompt during the cast comes first; the choice resumes after it.
+    if (selection_ && !s.reaction_pending)
     {
         s.actor = selection_->caster;
         s.spell_targeting = SpellTargeting{selection_->caster, selection_->verb,
-                                           selection_->chosen, selection_maximum(*selection_)};
+                                           selection_->chosen, selection_maximum(*selection_),
+                                           splits_among_targets(*detail::find_spell(selection_->verb))};
     }
     if (area_)
     {
@@ -4046,14 +4061,67 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     end_sanctuary(a);
     const bool was_invisible = invisible(a);
     const auto id = a.source.id;
-    cast_resolved_spell(spell, verb, a, target_id);
+    cast_resolved_spell(spell, verb, a, std::span<const EntityId>(&target_id, 1));
     if (was_invisible)
         end_invisibility(id);
 }
 
-void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
-                                  EntityId target_id)
+void Session::missile_hits(Actor &a, Actor &target, const detail::SpellDef &spell,
+                           const Dice &rolled, unsigned darts, bool split)
 {
+    if (sanctuary_stops(a, target))
+        return;
+    const auto name = std::string(spell.label);
+    if (spell.id == "magic_missile")
+        ask_reaction(target, Asked::missile);
+    if (spell.id == "magic_missile" &&
+            detail::has_effect(target.effects, detail::EffectKind::shield))
+    {
+        log(target.source.name + "'s Shield blocks Magic Missile.",
+        {"{name}'s Shield blocks Magic Missile.", {{"name", target.source.name}}});
+        return;
+    }
+    int total = 0;
+    // Instances resolve separately so resistance applies per instance.
+    for (unsigned n = 0; n < darts; ++n)
+        total += resolved_damage(target, spell.damage, dice(rolled));
+    // The plain English keeps its original lower-case damage word so stored
+    // combat logs stay byte identical. The template uses the translatable
+    // capitalised name, matching the convention in resolved_damage().
+    auto lowered = std::string(detail::damage_name(spell.damage));
+    for (auto &c : lowered)
+        if (c >= 'A' && c <= 'Z')
+            c += 32;
+    if (split)
+        log(a.source.name + " casts " + name + " at " + target.source.name + " for " +
+            std::to_string(total) + " " + lowered + " damage.",
+        {
+            "{name} casts {spell} at {target} for {damage} {type} damage.",
+            {   {"name", a.source.name},
+                {"spell", name, true},
+                {"target", target.source.name},
+                {"damage", std::to_string(total)},
+                {"type", std::string(detail::damage_name(spell.damage)), true}
+            }
+        });
+    else
+        log(a.source.name + " casts " + name + " for " + std::to_string(total) + " " + lowered +
+            " damage.",
+        {
+            "{name} casts {spell} for {damage} {type} damage.",
+            {   {"name", a.source.name},
+                {"spell", name, true},
+                {"damage", std::to_string(total)},
+                {"type", std::string(detail::damage_name(spell.damage)), true}
+            }
+        });
+    damage(target, total);
+}
+
+void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_view verb, Actor &a,
+                                  std::span<const EntityId> targets)
+{
+    const auto target_id = targets.front();
     const auto &d = def(a);
     const bool upcast = verb.ends_with("_2");
     take_metamagic(a, spell);
@@ -4147,48 +4215,38 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         return;
     }
     case detail::SpellPattern::repeat_attack:
-        // Re-read the target each pass: it may drop before the later rays.
-        for (unsigned ray = 0; ray < instances && actor(target_id).life.hp > 0; ++ray)
-            attack(a, actor(target_id), spell.melee ? AttackRange::melee : AttackRange::ranged,
-                   SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage),
-                               .spell = spell.id});
+    {
+        // One ray per aimed target, in the order aimed; a single target takes
+        // them all. Re-read each target: it may drop before its later rays.
+        std::vector<EntityId> rays(targets.begin(), targets.end());
+        if (rays.size() == 1)
+            rays.assign(instances, target_id);
+        for (const auto ray : rays)
+            if (actor(ray).life.hp > 0)
+                attack(a, actor(ray), spell.melee ? AttackRange::melee : AttackRange::ranged,
+                       SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage),
+                                   .spell = spell.id});
         return;
+    }
     case detail::SpellPattern::auto_damage:
     {
-        auto &target = actor(target_id);
-        if (sanctuary_stops(a, target))
-            return;
-        if (spell.id == "magic_missile")
-            ask_reaction(target, Asked::missile);
-        if (spell.id == "magic_missile" &&
-                detail::has_effect(target.effects, detail::EffectKind::shield))
+        // The darts strike together: each creature takes its darts as one hit.
+        std::vector<std::pair<EntityId, unsigned>> struck;
+        for (const auto id : targets)
         {
-            log(target.source.name + "'s Shield blocks Magic Missile.",
-            {"{name}'s Shield blocks Magic Missile.", {{"name", target.source.name}}});
-            return;
+            const auto found = std::find_if(struck.begin(), struck.end(), [&](const auto & entry)
+            {
+                return entry.first == id;
+            });
+            if (found != struck.end())
+                ++found->second;
+            else
+                struck.push_back({id, 1});
         }
-        int total = 0;
-        // Instances resolve separately so resistance applies per instance.
-        for (unsigned n = 0; n < instances; ++n)
-            total += resolved_damage(target, spell.damage, dice(rolled));
-        // The plain English keeps its original lower-case damage word so stored
-        // combat logs stay byte identical. The template uses the translatable
-        // capitalised name, matching the convention in resolved_damage().
-        auto lowered = std::string(detail::damage_name(spell.damage));
-        for (auto &c : lowered)
-            if (c >= 'A' && c <= 'Z')
-                c += 32;
-        log(a.source.name + " casts " + name + " for " + std::to_string(total) + " " + lowered +
-            " damage.",
-        {
-            "{name} casts {spell} for {damage} {type} damage.",
-            {   {"name", a.source.name},
-                {"spell", name, true},
-                {"damage", std::to_string(total)},
-                {"type", std::string(detail::damage_name(spell.damage)), true}
-            }
-        });
-        damage(target, total);
+        if (targets.size() == 1)
+            struck.front().second = instances;
+        for (const auto &[id, darts] : struck)
+            missile_hits(a, actor(id), spell, rolled, darts, struck.size() > 1);
         return;
     }
     case detail::SpellPattern::save_damage:
@@ -4517,10 +4575,21 @@ std::vector<Command> Session::legal_commands() const
     {
         const auto &caster = actor(selection_->caster);
         const auto &spell = *detail::find_spell(selection_->verb);
+        const bool split = splits_among_targets(spell);
         for (const auto &other : actors_)
-            if (!other.life.dead && distance(caster.source.cell, other.source.cell) <= spell.range)
-                add(caster.source.id, selection_->verb, std::string(spell.label), other.source.id);
-        if (!selection_->chosen.empty())
+        {
+            if (other.life.dead || distance(caster.source.cell, other.source.cell) > spell.range)
+                continue;
+            // A dart or ray can only be aimed at a creature the spell could
+            // strike alone; another one may be aimed at it again.
+            if (split && (other.source.side == caster.source.side || other.life.hp <= 0 ||
+                          (spell.requires_sight ? !can_see(caster, other)
+                           : !line_of_sight(caster.source.cell, other.source.cell))))
+                continue;
+            add(caster.source.id, selection_->verb, std::string(spell.label), other.source.id);
+        }
+        // Every dart or ray is aimed before the spell is cast.
+        if (!selection_->chosen.empty() && !split)
             add(caster.source.id, "spell_cast", "Cast spell");
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
@@ -6361,8 +6430,8 @@ void Session::choose_target(const Command &command)
         return;
     }
     auto &chosen = selection_->chosen;
-    if (const auto found = std::find(chosen.begin(), chosen.end(), command.target);
-            found != chosen.end())
+    const auto found = std::find(chosen.begin(), chosen.end(), command.target);
+    if (found != chosen.end() && !splits_among_targets(*detail::find_spell(selection_->verb)))
         chosen.erase(found);
     else
         chosen.push_back(command.target);
@@ -6387,6 +6456,18 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
 {
     const auto &spell = *detail::find_spell(selection.verb);
     const bool quickened = readies(a, Metamagic::quickened, spell);
+    if (splits_among_targets(spell))
+    {
+        if (quickened)
+            a.bonus = false;
+        else
+        {
+            a.nick_origin = 0;
+            (void)a.actions.spend(true);
+        }
+        cast_resolved_spell(spell, selection.verb, a, selection.chosen);
+        return;
+    }
     take_metamagic(a, spell);
     if (casting_with(Metamagic::heightened))
         heightened_target_ = selection.chosen.front();
@@ -12296,7 +12377,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.160", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.161", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -587,6 +587,9 @@ struct SpellTargeting
     std::string verb;
     std::vector<EntityId> chosen;
     unsigned maximum{};
+    // Magic Missile's darts and Scorching Ray's rays: a creature can be chosen
+    // again, and the spell is cast only once all `maximum` are aimed.
+    bool repeats{};
 };
 
 // An area spell being aimed (CLASS-5): `center` is the previewed point and

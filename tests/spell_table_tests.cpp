@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "split_aim.h"
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -364,7 +365,8 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     auto copy = rules.restore(at_range->save());
     const auto before_caster = unit(*at_range, 1);
     const auto before_target = unit(*at_range, target);
-    check(at_range->submit(*offer) && copy->submit(*offer), "The offered ticket resolves");
+    check(submit_aimed(*at_range, *offer) && submit_aimed(*copy, *offer),
+          "The offered ticket resolves");
     check(at_range->save() == copy->save(), "Resolution is deterministic across a restore");
 
     const auto after_caster = unit(*at_range, 1);

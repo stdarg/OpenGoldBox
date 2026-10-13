@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include "split_aim.h"
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -170,7 +171,7 @@ void expectations()
                 check(has(*c, verb), "Full hands never block a spell");
                 auto cast = rules->restore(initial);
                 const auto before = unit(*cast);
-                check(cast->submit(command(*cast, verb)), "The spell resolves normally");
+                check(submit_aimed(*cast, command(*cast, verb)), "The spell resolves normally");
                 check(unit(*cast).armor_class == before.armor_class,
                       "Casting keeps the shield's AC");
                 const unsigned spent = verb == "fire_bolt"                               ? 0

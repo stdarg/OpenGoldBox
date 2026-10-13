@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <utility>
+#include "split_aim.h"
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -882,7 +883,7 @@ void spells()
         {
             check(offers(*combat, "scorching_ray") && offers(*combat, "magic_missile_2"),
                   "Prepared wizard has second-level actions");
-            combat->submit(command(*combat, "scorching_ray"));
+            check(submit_aimed(*combat, command(*combat, "scorching_ray")), "Scorching Ray is cast");
             check(unit(*combat, id).persistent.resources.starts_with("SRD12 0 4 2 "),
                   "Scorching Ray spends exactly one level-two slot");
             const auto bytes = combat->save();

@@ -8,6 +8,7 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include "split_aim.h"
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -228,7 +229,7 @@ void progression()
             "Actual casting availability comes from known cantrips and current preparation, not all book entries");
         auto copy = rules->restore(c->save());
         const auto ticket = command(*c, level == 3 ? "scorching_ray" : "magic_missile");
-        check(c->submit(ticket) && copy->submit(ticket) && c->save() == copy->save(),
+        check(submit_aimed(*c, ticket) && submit_aimed(*copy, ticket) && c->save() == copy->save(),
               "Chosen spell continues exactly after checkpoint restore");
         const auto after = c->save();
         check(!c->submit(ticket) && c->save() == after,

@@ -2460,7 +2460,23 @@ void CombatView::refresh()
             for (const auto &a : s.combatants)
                 if (a.id == id)
                     chosen += (chosen.is_empty() ? "" : ", ") + gs(a.name);
-        required_node<Label>(*this, "Prompt").set_text(
+        const auto &targeting = *s.spell_targeting;
+        String spell;
+        for (const auto &c : demo_->combat().legal_commands())
+            if (c.verb == targeting.verb)
+                spell = i18n::text(c.label);
+        if (targeting.repeats)
+            required_node<Label>(*this, "Prompt").set_text(
+                i18n::format("{spell}: aim {left} more of {maximum}. Aimed at: {chosen}",
+            {
+                {"spell", spell},
+                {"left", static_cast<int64_t>(targeting.maximum - targeting.chosen.size())},
+                {"maximum", static_cast<int64_t>(targeting.maximum)},
+                {"chosen", chosen}
+            }) +
+            "\n" + i18n::text("Click a foe: aim the next at it | Escape: cancel"));
+        else
+            required_node<Label>(*this, "Prompt").set_text(
             i18n::format("Choose up to {maximum} creatures. Chosen: {chosen}",
         {
             {"maximum", static_cast<int64_t>(s.spell_targeting->maximum)},

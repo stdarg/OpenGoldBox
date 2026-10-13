@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
+#include "split_aim.h"
 using namespace opengold;
 using namespace opengold::rules;
 
@@ -192,7 +193,7 @@ void turn_budget_tests()
                 check(session->submit(command(*session, "move", {2, 3})), "Move before attacking");
             const auto before = unit(*session, 1);
             const auto attack = command(*session, verb);
-            check(session->submit(attack), "Offensive action accepted");
+            check(submit_aimed(*session, attack), "Offensive action accepted");
             check(session->snapshot().actor == 1 && !session->snapshot().reaction_pending &&
                   session->snapshot().elapsed_milliseconds == 0,
                   "Attacks and damaging spells retain the active turn without advancing time");
@@ -263,7 +264,7 @@ void turn_budget_tests()
         auto session = hero_first(*module, e);
         auto attack = command(*session, verb);
         attack.target = 2;
-        check(session->submit(attack), "Turning attack or spell accepted");
+        check(submit_aimed(*session, attack), "Turning attack or spell accepted");
         check(!unit(*session, 1).facing_left && !session->snapshot().reaction_pending &&
               session->snapshot().actor == 1,
               "An offensive spell or weapon attack turns only the presentation state");
@@ -626,7 +627,7 @@ void mechanics_tests()
     auto session = hero_first(*module, encounter);
     for (int cast = 0; cast < 2; ++cast)
     {
-        check(session->submit(command(*session, "magic_missile")), "Spell command accepted");
+        check(submit_aimed(*session, command(*session, "magic_missile")), "Spell command accepted");
         check(session->snapshot().outcome != Outcome::ongoing || session->snapshot().actor == 1,
               "Damaging spell preserves remaining turn resources");
         check(!unit(*session, 1).action && unit(*session, 1).movement_feet == 30,
@@ -703,7 +704,7 @@ void mechanics_tests()
         session = hero_first(*module, encounter);
         session->submit(command(*session, "end"));
         check(session->snapshot().actor == 2, "Enemy caster turn");
-        session->submit(command(*session, "magic_missile"));
+        check(submit_aimed(*session, command(*session, "magic_missile")), "Enemy casts");
         const auto before = unit(*session, 1);
         check(before.hit_points < before.max_hit_points, "Damage before healing");
         check(session->submit(command(*session, "end")),
@@ -728,7 +729,7 @@ void mechanics_tests()
             continue;
         auto missile = command(*session, "magic_missile");
         missile.target = 1;
-        check(session->submit(missile), "Target player with spell");
+        check(submit_aimed(*session, missile), "Target player with spell");
         if (unit(*session, 1).hit_points > 0)
             continue;
         check(!unit(*session, 1).dead && session->snapshot().outcome == Outcome::ongoing,
@@ -756,7 +757,7 @@ void mechanics_tests()
             continue;
         auto missile = command(*session, "magic_missile");
         missile.target = 1;
-        session->submit(missile);
+        submit_aimed(*session, missile);
         if (unit(*session, 1).hit_points > 0)
             continue;
         check(!unit(*session, 1).dead && session->snapshot().outcome == Outcome::defeat,

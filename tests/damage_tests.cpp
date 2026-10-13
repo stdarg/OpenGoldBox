@@ -14,6 +14,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include "split_aim.h"
 using namespace opengold;
 using namespace opengold::rules;
 namespace damage = opengold::srd5::detail;
@@ -393,7 +394,7 @@ void weapons_and_spells()
         42);
         turn(*combat, 1);
         const auto verb = weapon.ranged ? "ranged" : "melee";
-        check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
+        check(submit_aimed(*combat, command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Weapon damage uses its SRD type before HP loss");
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
         const auto logs = combat->snapshot().log_messages();
@@ -418,7 +419,7 @@ void weapons_and_spells()
             }},
         42);
         turn(*combat, 1);
-        check(combat->submit(command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
+        check(submit_aimed(*combat, command(*combat, verb, 2)) && unit(*combat, 2).hit_points == 1000,
               "Fire Bolt, Scorching Ray and Magic Missile respect typed immunity");
         check(unit(*combat, 2).hit_points == 1000, "Selected damage remains immune");
         const auto logs = combat->snapshot().log_messages();
@@ -440,8 +441,8 @@ void weapons_and_spells()
     auto raw = base->create(encounter, 42), resisted = protected_rules->create(encounter, 42);
     turn(*raw, 1);
     turn(*resisted, 1);
-    check(raw->submit(command(*raw, "magic_missile", 2)) &&
-          resisted->submit(command(*resisted, "magic_missile", 2)),
+    check(submit_aimed(*raw, command(*raw, "magic_missile", 2)) &&
+          submit_aimed(*resisted, command(*resisted, "magic_missile", 2)),
           "Missile conformance case casts");
     check(rng(*raw) == rng(*resisted),
           "Dart resistance preserves the established per-dart RNG sequence");

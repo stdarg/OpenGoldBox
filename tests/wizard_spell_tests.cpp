@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "split_aim.h"
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -93,7 +94,7 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
         if (command.verb == verb && (!target || command.target == target))
-            return c.submit(command);
+            return submit_aimed(c, command);
     return false;
 }
 
@@ -607,6 +608,88 @@ void shield_checks()
               count_logged(*c, "First -> Wizard") == 1 && unit(*c, 1).hit_points < hp,
               "Declining lets the hit land");
     }
+}
+
+// Magic Missile's darts and Scorching Ray's rays are aimed one click at a time,
+// several at one creature if the player likes, and the spell is cast once all
+// are aimed (SRD 5.2.1 pp. 146, 159).
+void split_target_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(3, {"magic_missile"}, {"scorching_ray", "shatter"});
+    const auto battle = [&]
+    {
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 1},
+                    module->character_profile(hero.sheet(), std::vector<std::string> {}).data},
+                {2, "target", "Ally", Side::party, {1, 3}},
+                {98, "target", "First", Side::opposition, {6, 1}},
+                {99, "target", "Second", Side::opposition, {6, 3}}
+            }},
+        5);
+        reach(*c, 1);
+        return c;
+    };
+    // One click: no helper finishes the aiming here.
+    const auto click = [](CombatSession &c, std::string_view verb, EntityId target)
+    {
+        for (const auto &command : c.legal_commands())
+            if (command.verb == verb && command.target == target)
+                return c.submit(command);
+        return false;
+    };
+    const auto offered = [](const CombatSession &c, std::string_view verb)
+    {
+        std::vector<EntityId> targets;
+        for (const auto &command : c.legal_commands())
+            if (command.verb == verb)
+                targets.push_back(command.target);
+        std::sort(targets.begin(), targets.end());
+        return targets;
+    };
+
+    auto c = battle();
+    const auto before = slots(*c);
+    check(click(*c, "magic_missile", 98) && c->snapshot().spell_targeting &&
+          c->snapshot().spell_targeting->chosen == std::vector<EntityId> {98} &&
+          c->snapshot().spell_targeting->maximum == 3 && slots(*c) == before &&
+          unit(*c, 1).action,
+          "The first click aims the first dart and spends nothing yet");
+    check(offered(*c, "magic_missile") == std::vector<EntityId> {98, 99} &&
+          offered(*c, "spell_cast").empty() && offered(*c, "spell_cancel").size() == 1,
+          "Only foes can be aimed at, and the spell waits for every dart");
+    check(module->restore(c->save())->save() == c->save(), "An unfinished aim survives a checkpoint");
+    check(click(*c, "spell_cancel", 0) && !c->snapshot().spell_targeting && slots(*c) == before &&
+          unit(*c, 1).action,
+          "Cancel spends nothing");
+
+    c = battle();
+    check(click(*c, "magic_missile", 98) && click(*c, "magic_missile", 99) &&
+          c->snapshot().spell_targeting &&
+          c->snapshot().spell_targeting->chosen == std::vector<EntityId> {98, 99},
+          "A second dart can go to another foe");
+    check(click(*c, "magic_missile", 98) && !c->snapshot().spell_targeting,
+          "Clicking a foe again aims another dart at it, and the third dart casts");
+    check(logged(*c, "Wizard casts Magic Missile at First for") &&
+          logged(*c, "Wizard casts Magic Missile at Second for") &&
+          unit(*c, 98).hit_points < 1000 && unit(*c, 99).hit_points < 1000 &&
+          slots(*c).first == before.first - 1 && !unit(*c, 1).action,
+          "Each foe takes its darts as one hit, for one slot and the Action");
+
+    c = battle();
+    for (int dart = 0; dart < 3; ++dart)
+        check(click(*c, "magic_missile", 98), "Every dart at one foe");
+    check(logged(*c, "Wizard casts Magic Missile for") && unit(*c, 99).hit_points == 1000,
+          "All three darts at one foe are one hit, as before");
+
+    c = battle();
+    const auto rays = slots(*c);
+    check(click(*c, "scorching_ray", 98) && click(*c, "scorching_ray", 99) &&
+          click(*c, "scorching_ray", 99) && !c->snapshot().spell_targeting,
+          "Three rays are aimed, then cast");
+    check(count_logged(*c, "Wizard -> First") == 1 && count_logged(*c, "Wizard -> Second") == 2 &&
+          slots(*c).second == rays.second - 1,
+          "Each ray is its own attack at its own foe, for one level-two slot");
 }
 
 void shield_missile_checks()
@@ -1192,6 +1275,7 @@ int main()
         shield_checks();
         shield_missile_checks();
         shield_slot_per_turn_checks();
+        split_target_checks();
         misty_step_checks();
         acid_arrow_checks();
         mind_spike_checks();

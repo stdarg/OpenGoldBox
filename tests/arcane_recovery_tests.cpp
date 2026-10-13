@@ -7,6 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include "split_aim.h"
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -55,7 +56,7 @@ void act(CombatSession &combat, std::string_view verb)
     for (const auto &command : combat.legal_commands())
         if (command.verb == verb)
         {
-            check(combat.submit(command), "Accept baseline command");
+            check(submit_aimed(combat, command), "Accept baseline command");
             return;
         }
     throw std::runtime_error("Missing command: " + std::string(verb));
