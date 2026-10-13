@@ -101,6 +101,9 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.172 offers the Warlock's Pact of the Tome: three cantrips and two
+level-1 spells from any class's list
+([TOME-1](SRD-DECISIONS.md#tome-1-2026-10-13-pact-of-the-tome-without-rituals)).
 Rules 0.6.171 gives the Boar form its charge: 20 feet or more straight toward
 a Medium or smaller target right before a Gore hit adds 1d6 Piercing damage
 and knocks the target Prone.

@@ -334,7 +334,8 @@ void invocation_checks()
         if (group.id == "class:warlock:invocations")
             for (const auto &option : group.options)
                 first.push_back(option.id);
-    check(first == std::vector<std::string> {"armor_of_shadows", "eldritch_mind", "pact_of_the_blade"},
+    check(first == std::vector<std::string> {"armor_of_shadows", "eldritch_mind", "pact_of_the_blade",
+                                              "pact_of_the_tome"},
           "Level 1 offers the invocations without prerequisites");
     auto module = rules();
     {

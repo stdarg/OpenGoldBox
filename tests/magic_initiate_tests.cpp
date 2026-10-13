@@ -529,6 +529,56 @@ void provenance_checks()
 }
 } // namespace
 
+// The Warlock's Pact of the Tome: three cantrips and two level-one spells from
+// any class's list, prepared as Warlock spells, cast with Charisma and Pact
+// Magic slots and never for free (TOME-1 waives the ritual requirement).
+void tome_checks()
+{
+    const auto rules = module();
+    auto d = draft("warlock", "soldier");
+    d.training = {{"class:warlock", {"arcana", "deception"}},
+        {"class:warlock:invocations", {"pact_of_the_tome"}}
+    };
+    d.cantrips = std::vector<std::string> {"eldritch_blast", "chill_touch"};
+    const auto options = srd5::character_rules()->spell_choice_options(d);
+    const auto *cantrips = group(options, "invocation:pact_of_the_tome:cantrips");
+    const auto *spells = group(options, "invocation:pact_of_the_tome:spell");
+    const auto lists = [](const TrainingChoiceGroup * g, std::string_view id)
+    {
+        return std::any_of(g->options.begin(), g->options.end(), [&](const auto & o)
+        {
+            return o.id == id;
+        });
+    };
+    check(cantrips && spells && cantrips->count == 3 && spells->count == 2 &&
+          !group(options, "invocation:pact_of_the_tome:ability"),
+          "The Tome asks for three cantrips and two level-one spells, not an ability");
+    check(lists(cantrips, "sacred_flame") && lists(cantrips, "fire_bolt") &&
+          lists(cantrips, "vicious_mockery") && !lists(cantrips, "eldritch_blast") &&
+          lists(spells, "cure_wounds") && lists(spells, "magic_missile"),
+          "Any class's list, less the cantrips the Warlock already has");
+    d.spells = SpellChoices{{{"invocation:pact_of_the_tome:cantrips",
+                {"fire_bolt", "sacred_flame", "vicious_mockery"}},
+            {"invocation:pact_of_the_tome:spell", {"cure_wounds", "magic_missile"}}
+        },
+        std::vector<std::string> {"hex", "hellish_rebuke"}, {}, {}};
+    const Character warlock(*srd5::character_rules(), d, {});
+    check(has_grant(warlock.sheet(), {"spell:magic_missile", "invocation:pact_of_the_tome", 1,
+                                      {{"access", "always_prepared"}}}),
+          "The Tome's spells are prepared from the invocation");
+    VitalState hurt{warlock.sheet().hit_points - 4, false, {}};
+    auto c = battle(*rules, warlock.sheet(), hurt);
+    check(offered(*c, "fire_bolt") && offered(*c, "sacred_flame") && offered(*c, "magic_missile") &&
+          offered(*c, "cure_wounds") && !offered(*c, "cure_wounds_initiate"),
+          "The Tome's spells are cast with the Pact Magic slot, never for free");
+    const int charisma = warlock.sheet().scores[Ability::charisma] / 2 - 5;
+    check(submit(*c, "fire_bolt", 99) &&
+          logged(*c, " + " + std::to_string(2 + charisma) + " vs AC"),
+          "Fire Bolt from the Tome attacks with Charisma");
+    const auto pools = rules->recovery_info(warlock.sheet(), {}).resources;
+    check(free_cast(pools, "cure_wounds") == -1, "No free cast");
+}
+
 int main()
 {
     try
@@ -539,6 +589,7 @@ int main()
         shield_checks();
         level_four_checks();
         lessons_checks();
+        tome_checks();
         camp_checks();
         provenance_checks();
     }

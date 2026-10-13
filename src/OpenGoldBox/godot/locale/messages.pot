@@ -3555,6 +3555,18 @@ msgid "Pact of the Blade"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pact of the Tome"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pact of the Tome cantrips"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pact of the Tome level 1 spells"
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Padded Armor"
 msgstr ""
 
@@ -5147,6 +5159,10 @@ msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
+msgstr ""
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells."
 msgstr ""
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:820

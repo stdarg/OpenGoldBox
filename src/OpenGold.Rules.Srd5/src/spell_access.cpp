@@ -1,6 +1,7 @@
 #include "spell_access.h"
 #include <algorithm>
 #include <array>
+#include <optional>
 #include <set>
 #include <stdexcept>
 
@@ -323,10 +324,23 @@ struct InitiateList
 {
     std::string_view id, label;
     unsigned list;
+    unsigned cantrips{2}, spells{1};
+    // Fixed for the Pact of the Tome; Magic Initiate's is chosen.
+    std::optional<Ability> ability;
+    bool free_cast{true}; // the level-one spell once per Long Rest without a slot
 };
 
 constexpr std::array initiate_lists{InitiateList{"cleric", "Cleric", cleric_list},
     InitiateList{"druid", "Druid", druid_list}, InitiateList{"wizard", "Wizard", wizard_list}};
+
+// The Warlock's Pact of the Tome, SRD 5.2.1 p. 73: three cantrips and two
+// level-one spells from any class's list, prepared as Warlock spells. Its
+// ritual requirement is waived (TOME-1), since the game has no ritual spells.
+constexpr std::string_view tome_id = "invocation:pact_of_the_tome";
+constexpr unsigned any_list = wizard_list | cleric_list | paladin_list | ranger_list | druid_list |
+                              sorcerer_list | warlock_list | bard_list;
+constexpr InitiateList tome{"pact_of_the_tome", "Pact of the Tome", any_list, 3, 2,
+                            Ability::charisma, false};
 
 constexpr std::string_view initiate_prefix = "feat:magic_initiate_";
 constexpr std::string_view ability_prefix = "spellcasting_ability:";
@@ -335,6 +349,8 @@ constexpr std::array<std::pair<std::string_view, std::string_view>, 3> initiate_
 
 const InitiateList *initiate_list(std::string_view feat)
 {
+    if (feat == tome_id)
+        return &tome;
     if (!feat.starts_with(initiate_prefix))
         return nullptr;
     feat.remove_prefix(initiate_prefix.size());
@@ -352,7 +368,8 @@ bool class_spell_grant(const FeatureGrant &grant)
 
 // The Magic Initiate feats held, as (feat id, acquisition level), in grant
 // order: from a background or level four, or the Warlock's Lessons of the
-// First Ones, which grants the feat its id names.
+// First Ones, which grants the feat its id names. The Pact of the Tome counts
+// as one, under its invocation's id.
 std::vector<std::pair<std::string, unsigned>> initiate_feats(std::span<const FeatureGrant> grants)
 {
     constexpr std::string_view lessons = "invocation:lessons_";
@@ -427,7 +444,9 @@ void add_initiate_access(SpellAccess &result, std::span<const FeatureGrant> gran
                 else
                     ++cantrips;
             }
-        require(abilities <= 1 && cantrips <= 2 && leveled <= 1);
+        const auto &list = *initiate_list(feat);
+        require(abilities <= (list.ability ? 0u : 1u) && cantrips <= list.cantrips &&
+                leveled <= list.spells);
     }
 }
 
@@ -439,7 +458,8 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
         if (acquired != static_cast<unsigned>(sheet.level))
             continue;
         const auto &list = *initiate_list(feat);
-        const auto name = "Magic Initiate (" + std::string(list.label) + ")";
+        const auto name = list.ability ? std::string(list.label)
+                          : "Magic Initiate (" + std::string(list.label) + ")";
         const auto mine = [&](auto predicate)
         {
             return static_cast<unsigned>(std::count_if(sheet.grants.begin(), sheet.grants.end(),
@@ -459,7 +479,7 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
         {
             return g.id.starts_with(ability_prefix);
         }) > 0;
-        if (!ability_chosen)
+        if (!ability_chosen && !list.ability)
         {
             TrainingChoiceGroup group{feat + ":ability", name + ": spellcasting ability", 1, {}};
             group.acquired_level = acquired;
@@ -484,7 +504,7 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
         }
         for (const unsigned spell_level : {0u, 1u})
         {
-            const unsigned owed = spell_level ? 1 : 2;
+            const unsigned owed = spell_level ? list.spells : list.cantrips;
             const auto have = mine([&](const auto & g)
             {
                 return is_spell_grant(g) &&
@@ -493,7 +513,9 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
             if (have >= owed)
                 continue;
             TrainingChoiceGroup group{feat + (spell_level ? ":spell" : ":cantrips"),
-                                      name + (spell_level ? " level 1 spell" : " cantrips"),
+                                      name + (spell_level ? list.spells > 1 ? " level 1 spells"
+                                              : " level 1 spell"
+                                              : " cantrips"),
                                       owed - have, {}};
             group.acquired_level = acquired;
             for (const auto &spell : spells)
@@ -642,7 +664,7 @@ bool is_spell_grant(const FeatureGrant &grant)
 
 bool is_initiate_grant(const FeatureGrant &grant)
 {
-    return grant.source_id.starts_with(initiate_prefix);
+    return grant.source_id.starts_with(initiate_prefix) || grant.source_id == tome_id;
 }
 
 std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> grants)
@@ -1167,6 +1189,9 @@ std::vector<InitiateSpells> magic_initiate_spells(std::span<const FeatureGrant> 
     for (const auto &[feat, acquired] : initiate_feats(grants))
     {
         InitiateSpells entry{feat};
+        const auto &list = *initiate_list(feat);
+        if (list.ability)
+            entry.ability = *list.ability;
         for (const auto &g : grants)
         {
             if (g.source_id != feat)
@@ -1181,7 +1206,7 @@ std::vector<InitiateSpells> magic_initiate_spells(std::span<const FeatureGrant> 
             }
             const auto id = std::string_view(g.id).substr(6);
             entry.spells.emplace_back(id);
-            if (find(id).level)
+            if (find(id).level && list.free_cast)
                 entry.free_spell = id;
         }
         result.push_back(std::move(entry));

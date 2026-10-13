@@ -379,8 +379,8 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
 // Eldritch Invocations a Warlock of the given level qualifies for (SRD 5.2.1
 // pp. 72-74), less those it holds from another entitlement. Agonizing Blast,
 // Eldritch Spear and Repelling Blast improve Eldritch Blast, the Warlock
-// cantrip they suit. Invocations that only cast removed spells, Pact of the
-// Chain and Pact of the Tome (pending) are not offered.
+// cantrip they suit. Invocations that only cast removed spells and Pact of the
+// Chain are not offered.
 TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGrant> grants,
                                        std::string_view source)
 {
@@ -397,7 +397,7 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         unsigned level;
         bool needs_blast;
     };
-    static constexpr std::array<Invocation, 13> all{{
+    static constexpr std::array<Invocation, 14> all{{
         {"agonizing_blast", "Agonizing Blast", "Add your Charisma modifier to Eldritch Blast's damage.", 2, true},
         {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1, false},
         {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2, false},
@@ -410,6 +410,7 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         {"lessons_magic_initiate_druid", "Lessons of the First Ones: Magic Initiate (Druid)", "Gain the Magic Initiate feat with the Druid spell list.", 2, false},
         {"lessons_magic_initiate_wizard", "Lessons of the First Ones: Magic Initiate (Wizard)", "Gain the Magic Initiate feat with the Wizard spell list.", 2, false},
         {"pact_of_the_blade", "Pact of the Blade", "Your melee weapon is your pact weapon: proficiency, and Charisma for its attack and damage rolls.", 1, false},
+        {"pact_of_the_tome", "Pact of the Tome", "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.", 1, false},
         {"repelling_blast", "Repelling Blast", "An Eldritch Blast hit pushes a Large or smaller creature 10 feet away.", 2, true}}};
     for (const auto &invocation : all)
     {

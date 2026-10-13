@@ -853,3 +853,12 @@ Both now apply on their own, and the combat log shows the die and its result:
 As with [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging), neither
 uses information the player lacks: the roll, its bonus and the target number
 are already in the log.
+
+## TOME-1 (2026-10-13): Pact of the Tome without rituals
+
+Approved by the user. The SRD's Pact of the Tome grants three cantrips and two
+level-1 spells with the Ritual tag. Every ritual spell was removed with DM-3 as
+needing a Dungeon Master, so the two level-1 spells are any the game has, from
+any class's list, none of which needs one. They are cast as prepared Warlock
+spells with Pact Magic slots, as the cantrips are cast with Charisma; nothing
+is cast as a ritual. The Book of Shadows as an object is not modeled.

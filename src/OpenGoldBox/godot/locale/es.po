@@ -3555,6 +3555,18 @@ msgid "Pact of the Blade"
 msgstr "Pacto del filo"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pact of the Tome"
+msgstr "Pacto del tomo"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pact of the Tome cantrips"
+msgstr "Trucos del Pacto del tomo"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Pact of the Tome level 1 spells"
+msgstr "Conjuros de nivel 1 del Pacto del tomo"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Padded Armor"
 msgstr "Armadura acolchada"
 
@@ -5148,6 +5160,10 @@ msgstr "Esta parte no aparece en ninguna pose. Elige otra cabeza o cuerpo para u
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 msgstr "Esta partida guardada se creó con una versión preliminar anterior de OpenGoldBox y no se puede cargar."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells."
+msgstr "Tres trucos y dos conjuros de nivel 1 de la lista de cualquier clase, preparados como conjuros de brujo."
 
 #: src/OpenGoldBox/godot/scenes/combat_demo.tscn:820
 msgid "Throw"
