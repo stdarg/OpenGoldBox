@@ -37,8 +37,9 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 ## Eldritch Invocations
 
 - One invocation at creation and two more at level 2 (three through level 4),
-  chosen like other training. Level 1 offers Armor of Shadows, Eldritch Mind
-  and Pact of the Blade; level 2 adds those with a level-2 prerequisite.
+  chosen like other training. Level 1 offers Armor of Shadows, Eldritch Mind,
+  Pact of the Blade and Pact of the Tome; level 2 adds those with a level-2
+  prerequisite.
 - **Agonizing Blast**: + Charisma to Eldritch Blast's damage.
 - **Repelling Blast**: an Eldritch Blast hit pushes a Large or smaller
   creature 10 feet away.
@@ -59,12 +60,18 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 - **Pact of the Blade**: the Warlock's melee weapon is its pact weapon:
   proficiency, and Charisma when that is better. Conjuring the weapon, the
   bond and the damage type choice are not modeled.
-- Not offered: Pact of the Tome (pending), Pact of the Chain and the
-  invocations that only cast removed spells (DM-3); replacing an invocation on
-  gaining a level.
+- **Pact of the Tome** (rules 0.6.172): three cantrips and two level-1 spells
+  from any class's list, chosen on the spell page like Magic Initiate's. They
+  are always prepared Warlock spells: Charisma, and the Pact Magic slots for
+  the level-1 ones, with no free cast. The SRD's ritual requirement is waived
+  ([TOME-1](SRD-DECISIONS.md#tome-1-2026-10-13-pact-of-the-tome-without-rituals)).
+  The book itself is not modeled.
+- Not offered: Pact of the Chain and the invocations that only cast removed
+  spells (DM-3); replacing an invocation on gaining a level.
 - Verification: `opengold_warlock_tests` (the level-1 options, Armor of
   Shadows, Agonizing and Repelling Blast, Fiendish Vigor, Lessons' Alert,
   Pact of the Blade's attack bonus, Devil's Sight in Darkness),
+  `opengold_magic_initiate_tests` (Pact of the Tome's choices and casting),
   `opengold_training_tests` (a Warlock's invocation completes Training).
 
 ## The Fiend Patron (level 3)

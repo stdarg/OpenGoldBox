@@ -2,12 +2,14 @@
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -545,6 +547,94 @@ void beast_form_checks()
     }), "Heat Metal cannot reach armor merged into a Beast form");
 }
 
+// The Druid's vital state with the Wolf's form on, `remaining_ms` left of it,
+// at `hit_points`, and Incapacitated by laughter if asked.
+VitalState shaped(const RulesModule &module, const CharacterSheet &sheet, unsigned remaining_ms,
+                  int hit_points, bool laughing = false)
+{
+    namespace fx = opengold::srd5::detail;
+    auto vitals = unit(*battle(module, sheet), 1).persistent;
+    const auto at = vitals.resources.find("FX8");
+    std::istringstream in(vitals.resources.substr(at));
+    auto effects = fx::read_effects(in);
+    fx::apply_spell_benefit(effects, {.scope = 3, .actor = 1}, "Druid", fx::EffectKind::wild_shape, 1);
+    effects.active.back().remaining_ms = remaining_ms;
+    if (laughing)
+        fx::apply_repeating_condition(effects, fx::EffectKind::laughing, {.scope = 3, .actor = 98},
+                                      "Enemy", {.dc = 38, .first_save_ms = 6000});
+    std::ostringstream out;
+    fx::write_effects(out, effects);
+    vitals.resources.replace(at, std::string::npos, out.str());
+    vitals.hit_points = hit_points;
+    return vitals;
+}
+
+std::unique_ptr<CombatSession> shaped_battle(const RulesModule &module, const CharacterSheet &sheet,
+        const VitalState &vitals, std::uint64_t seed = 5)
+{
+    Participant druid{1, "campaign-character", "Druid", Side::party, {1, 1},
+                      module.character_profile(sheet, {}).data};
+    druid.state = vitals;
+    return module.create({{12, 6, std::vector<Terrain>(72)},
+        {druid, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, seed);
+}
+
+// Wild Shape ends at 0 Hit Points, when the Druid starts a turn
+// Incapacitated, or when it lapses.
+void wild_shape_end_checks()
+{
+    namespace fx = opengold::srd5::detail;
+    auto module = rules();
+    const auto sheet = druid(2).sheet();
+    // The Druid's turn begins Incapacitated, whenever it comes.
+    auto laughing = shaped_battle(*module, sheet, shaped(*module, sheet, 3600000, 10, true));
+    for (unsigned turns = 0; laughing->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*laughing, "end"), "Reach the Druid's turn");
+    check(laughing->snapshot().actor == 1 && unit(*laughing, 1).form.empty(),
+          "Starting a turn Incapacitated ends the form");
+
+    auto lapsing = shaped_battle(*module, sheet, shaped(*module, sheet, 6000, 10));
+    check(unit(*lapsing, 1).form == "wolf", "A form with six seconds left");
+    for (unsigned turns = 0; turns < 6 && !unit(*lapsing, 1).form.empty(); ++turns)
+        check(submit(*lapsing, "end"), "Let a round pass");
+    check(unit(*lapsing, 1).form.empty(), "The form ends when its time runs out");
+
+    // Wild Shape lasts until the fight ends (WILD-1).
+    {
+        Participant druid_in{1, "campaign-character", "Druid", Side::party, {1, 1},
+                             module->character_profile(sheet, {}).data};
+        Participant weak{98, "target", "Enemy", Side::opposition, {2, 1}};
+        weak.state = VitalState{1};
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)}, {druid_in, weak}}, 5);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Druid's turn");
+        check(submit(*c, "wild_shape_wolf") && submit(*c, "melee", 98) &&
+              c->snapshot().outcome == Outcome::victory, "The Wolf wins the fight");
+        const auto vitals = unit(*c, 1).persistent;
+        std::istringstream in(vitals.resources.substr(vitals.resources.find("FX8")));
+        const auto effects = fx::read_effects(in);
+        check(unit(*c, 1).form.empty() && logged(*c, "Druid leaves Wild Shape.") &&
+              std::none_of(effects.active.begin(), effects.active.end(), [](const auto & e)
+        {
+            return e.kind == fx::EffectKind::wild_shape;
+        }), "The form ends with the fight and is not carried to the next");
+    }
+
+    bool dropped = false;
+    for (std::uint64_t seed = 1; seed < 64 && !dropped; ++seed)
+    {
+        auto c = shaped_battle(*module, sheet, shaped(*module, sheet, 3600000, 1), seed);
+        for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the enemy's turn");
+        check(submit(*c, "melee", 1), "The enemy attacks the Wolf");
+        if (unit(*c, 1).hit_points > 0)
+            continue;
+        check(unit(*c, 1).form.empty() && unit(*c, 1).prone, "Dropping to 0 Hit Points ends the form");
+        dropped = true;
+    }
+    check(dropped, "Some seed drops the shaped Druid");
+}
+
 // A creature that the Wolf's opportunity bite knocks Prone must crawl; when it
 // cannot crawl the rest of its route, it stops where it is and the fight goes on.
 void prone_mover_checks()
@@ -569,6 +659,53 @@ void prone_mover_checks()
         check(submit(*c, "end"), "The fight goes on");
     }
     check(covered, "A bite knocked the mover Prone");
+}
+
+// The Boar's charge: moving 20 feet or more straight toward a Medium or
+// smaller target right before a Gore hit adds 1d6 and knocks it Prone. A
+// corridor one square wide keeps every route straight.
+void charge_checks()
+{
+    auto module = rules();
+    std::vector<Terrain> corridor(36, Terrain::obstacle);
+    for (int x = 0; x < 12; ++x)
+        corridor[12 + x] = Terrain::open;
+    // The Boar at (1,1) charges along the corridor at `enemy` on (`at`,1).
+    const auto charge = [&](const std::string &enemy, int at, int stop, std::uint64_t seed,
+                            bool reload)
+    {
+        const auto profile = module->character_profile(druid(2).sheet(), {}).data;
+        auto c = module->create({{12, 3, corridor},
+            {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                {98, enemy, "Enemy", Side::opposition, {at, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Druid's turn");
+        check(submit(*c, "wild_shape_boar") && move_to(*c, Cell{stop, 1}),
+              "The Boar runs down the corridor");
+        if (reload)
+            c = module->restore(c->save());
+        check(submit(*c, "melee", 98), "The Boar gores");
+        return c;
+    };
+    // The first seed whose Gore hits.
+    const auto gore = [&](const std::string &enemy, int at, int stop, bool reload)
+    {
+        for (std::uint64_t seed = 1; seed < 40; ++seed)
+        {
+            auto c = charge(enemy, at, stop, seed, reload);
+            if (logged(*c, " hits for ") || logged(*c, " CRITICAL for "))
+                return c;
+        }
+        throw std::runtime_error("No seed's Gore hits");
+    };
+    const auto c = gore("target", 7, 6, false);
+    check(logged(*c, "The charge adds") && unit(*c, 98).prone,
+          "25 feet straight: 1d6 more and Prone");
+    check(logged(*gore("target", 7, 6, true), "The charge adds"), "The run survives a checkpoint");
+    check(!logged(*gore("target", 5, 4, false), "The charge adds"), "15 feet is too short");
+    check(!logged(*gore("ogre", 7, 6, false), "The charge adds"), "A Large ogre is not charged");
 }
 
 void lands_aid_checks()
@@ -619,6 +756,7 @@ int main()
         cantrip_checks();
         poison_spray_checks();
         beast_form_checks();
+        wild_shape_end_checks();
         order_checks();
         circle_checks();
         barkskin_checks();
@@ -629,6 +767,7 @@ int main()
         creature_equipment_checks();
         wild_shape_checks();
         prone_mover_checks();
+        charge_checks();
         lands_aid_checks();
         policy_checks();
         std::cout << "Druid tests passed\n";

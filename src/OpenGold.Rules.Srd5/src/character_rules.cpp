@@ -246,7 +246,7 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
             {"goliath", "Goliath",
                 "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests. Not in the game yet."},
             {"halfling", "Halfling",
-                "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw. Not in the game yet.\n- Brave: Advantage on saves against being Frightened. Not in the game yet.\n- Halfling Nimbleness: move through the space of larger creatures. Not in the game yet.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."},
+                "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened. Not in the game yet.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."},
             {"human", "Human",
                 "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice. Not in the game yet.\n- Versatile: an Origin feat of your choice. Not in the game yet."},
             {"orc", "Orc",

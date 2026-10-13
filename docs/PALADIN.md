@@ -8,7 +8,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | --- | --- | --- |
 | 1 | Spellcasting | Delivered (rules 0.6.65) |
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
-| 1 | Lay On Hands | Delivered in combat (rules 0.6.66) and in camp (rules 0.6.74); curing Poisoned not yet |
+| 1 | Lay On Hands | Delivered in combat (rules 0.6.66) and in camp (rules 0.6.74); curing Poisoned in combat (rules 0.6.163) and in camp (rules 0.6.168) |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Blessed Warrior delivered (rules 0.6.72) |
 | 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.69) |
 | 3 | Channel Divinity, Oath of Devotion | Delivered (rules 0.6.73): Sacred Weapon and the oath spells; Divine Sense left out (CLASS-4) |
@@ -101,14 +101,15 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD cmake -DGODOT=godot -DPROJECT=$PWD/src/OpenGo
   healing spells ([Camp actions](REST-RESOURCES.md#cast--use-in-camp)).
 - **Lay On Hands: cure Poisoned (5)** is a second entry in the Bonus Action
   list: 5 points end Poisoned on the Paladin or an adjacent ally (rules
-  0.6.163). It is offered in fights only: Poisoned lasts a minute or two, long
-  over before a camp.
+  0.6.163). The Camp dialog's **Cast / Use** row offers it too (rules 0.6.168)
+  while the pool holds 5 points; it refuses a member who is not Poisoned.
 - The pool is saved in the character's vital state (`SRD11`) and in combat
   checkpoints (`OGCOMBAT 37`).
 
 Verification: `opengold_lay_on_hands_tests` (offers, healing amount, spending,
 dying ally, checkpoint, rest and level growth, campaign round trip, curing
-Poisoned for 5 points only when someone is Poisoned) and
+Poisoned for 5 points only when someone is Poisoned),
+`opengold_camp_action_tests` (the cure in camp) and
 `opengold_godot_lay_on_hands` (the Bonus Action list, Use and a click on the
 ally, in English and Spanish).
 

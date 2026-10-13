@@ -84,6 +84,33 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.169 applies Bardic Inspiration and Cutting Words without asking
+([BARD-1](SRD-DECISIONS.md#bard-1-2026-10-13-bardic-inspiration-and-cutting-words-without-asking)),
+and adds the die to repeated saves, Concentration saves and checks too.
+Rules 0.6.168 ends Wild Shape when the fight ends or the Druid flees
+([WILD-1](SRD-DECISIONS.md#wild-1-2026-10-13-wild-shape-lasts-until-the-fight-ends))
+and lets Lay On Hands cure Poisoned in camp.
+Rules 0.6.167 applies a Wild Shape form carried into a fight from its start,
+not from the Druid's first turn, so its AC and Speed count and dropping to 0
+Hit Points ends it.
+Rules 0.6.166 gives Halflings Luck: a d20 that shows 1 is rolled again on
+attack rolls, saving throws (repeated end-of-turn saves and death saves
+included), Initiative and ability checks, in fights and in the campaign. It is
+taken automatically, as AUTO-1 takes other always-better choices, and the log
+says when it rerolled an attack or save. The Halfling issue
+([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
+Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
+since nothing in the game frightens a character yet.
+Rules 0.6.172 offers the Warlock's Pact of the Tome: three cantrips and two
+level-1 spells from any class's list
+([TOME-1](SRD-DECISIONS.md#tome-1-2026-10-13-pact-of-the-tome-without-rituals)).
+Rules 0.6.171 gives the Boar form its charge: 20 feet or more straight toward
+a Medium or smaller target right before a Gore hit adds 1d6 Piercing damage
+and knocks the target Prone.
+Rules 0.6.170 gives Halflings Nimbleness: a Halfling moves through the space
+of a creature larger than itself, friend or foe, but cannot stop there. The
+user kept it on 2026-10-13 although SCOPE-2 dropped the other size-difference
+movement cases.
 Rules 0.6.165 gives Orcs Relentless Endurance: dropped to 0 Hit Points but not
 killed outright, an Orc drops to 1 instead, once per Long Rest (taken
 automatically, as AUTO-1 takes other always-better choices). The spent use is an
@@ -196,8 +223,9 @@ Spells. See
 
 ## Bardic Inspiration and Cutting Words
 
-Rules 0.6.124 adds Bardic Inspiration and the Lore Bard's Cutting Words. See
-[Bard](BARD.md#bardic-inspiration-and-cutting-words).
+Rules 0.6.124 adds Bardic Inspiration and the Lore Bard's Cutting Words; rules
+0.6.169 applies both without asking and extends the die to every save and the
+fight's checks. See [Bard](BARD.md#bardic-inspiration-and-cutting-words).
 
 ## Bard spellcasting
 
@@ -893,7 +921,7 @@ commit-specific findings as historical evidence.
 | E5: Rogue/Monk weapon proficiency | Fixed for implemented weapons | [I01 #20](https://github.com/stdarg/OpenGold/issues/20) |
 | G1: complete class features/advancement | Open; all twelve required | [Level-four milestone #8](https://github.com/stdarg/OpenGold/issues/8) and its class issues |
 | G2: species/background grants | Open | [Species #51](https://github.com/stdarg/OpenGold/issues/51), [backgrounds #50](https://github.com/stdarg/OpenGold/issues/50) |
-| G3: feat entitlements/choices | Open; Grappler removed by SCOPE-2 | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
+| G3: feat entitlements/choices | Complete: Alert, Magic Initiate, Savage Attacker, Skilled, Ability Score Improvement and the four Fighting Style feats (#74–#82); Grappler removed by SCOPE-2; Epic Boons come at level 19, beyond the level-15 cap (SCOPE-1) | [Feats #49](https://github.com/stdarg/OpenGold/issues/49) |
 | G4: spell access/learning/preparation | Partial: Wizard ordinary learning/preparation controls delivered; other source/class routes remain | [F07 #36](https://github.com/stdarg/OpenGold/issues/36) and class-specific integration |
 | G5: spells/shared casting mechanics | Open | [Spell inventory #165](https://github.com/stdarg/OpenGold/issues/165) and named spell/mechanic issues |
 | G6: full progression/multiclassing | Open through level 15 (the cap); multiclassing deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)) | [Higher levels #176](https://github.com/stdarg/OpenGold/issues/176); multiclassing [#179](https://github.com/stdarg/OpenGold/issues/179) deferred |

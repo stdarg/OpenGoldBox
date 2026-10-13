@@ -265,7 +265,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 50;
+constexpr unsigned checkpoint_format = 51;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -596,7 +596,7 @@ struct Definition
     // has; Land's Aid spends them from level 3.
     int wild_shapes{};
     bool lands_aid{};
-    bool prone_bite{}, bloodied_fury{}; // a Beast form's attack traits
+    bool prone_bite{}, bloodied_fury{}, charge{}; // a Beast form's attack traits
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -607,6 +607,8 @@ struct Definition
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
+    bool lucky{}; // Halfling: a d20 test's 1 is rolled again
+    bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -707,6 +709,11 @@ struct Actor
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
     bool spent_slot{}, savage_used{}, facing_left{};
     bool sneak_used{}, aim_used{}, aim_ready{}, moved{};
+    // The straight line just moved along this turn, for a Boar's charge: its
+    // first and last cells, the step repeated and its length. Any command but
+    // moving or a melee attack ends it.
+    Cell run_start{}, run_end{}, run_step{};
+    int run_feet{};
     unsigned selected_weapon{};
     std::vector<unsigned> light_origins;
     unsigned nick_origin{}; // Light weapon used by the current Attack action.
@@ -919,6 +926,7 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.pack_tactics = form.pack_tactics;
     d.prone_bite = form.prone_bite;
     d.bloodied_fury = form.bloodied_fury;
+    d.charge = form.charge;
     return d;
 }
 
@@ -1170,6 +1178,8 @@ character_definition(std::string_view bytes,
     d.dwarf = race == "Dwarf";
     d.gnomish_cunning = race == "Gnome";
     d.relentless = race == "Orc";
+    d.lucky = race == "Halfling";
+    d.nimble = race == "Halfling";
     // Gnomes and Halflings are Small.
     if (race == "Gnome" || race == "Halfling")
         d.size = 1;
@@ -1751,10 +1761,13 @@ class Session final : public CombatSession
             a.facing_left = a.source.facing_left;
             if (a.source.state)
                 restore_vitals(a, *a.source.state);
+            // A Druid still in a Beast form from earlier fights in that form.
+            refresh_form(a);
             a.initiative =
-                detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised}, rng_) +
+                detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised, d.lucky},
+                            rng_) +
                 d.initiative;
-            a.movement = d.speed;
+            a.movement = a.form ? a.form->speed : d.speed;
             actors_.push_back(std::move(a));
         }
         if (sides.size() != 2 && !restoring)
@@ -1894,9 +1907,7 @@ class Session final : public CombatSession
         hit,      // an attack roll hit: Shield or Deflect Attacks
         missile,  // targeted by Magic Missile: Shield
         redirect, // Deflect Attacks stopped all the damage: redirect it for 1 Focus
-        rebuke,      // an attack damaged a Warlock: Hellish Rebuke
-        inspiration, // an inspired creature failed an attack roll or save
-        cutting      // an enemy's attack roll hit: a Lore Bard's Cutting Words
+        rebuke    // an attack damaged a Warlock: Hellish Rebuke
     };
     struct ReactionQuestion
     {
@@ -1929,10 +1940,11 @@ class Session final : public CombatSession
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
     [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
-    // Bardic Inspiration's die added to a failed roll, if the creature uses it.
-    int inspiration_roll(const Actor &creature);
-    // Cutting Words' die taken from an attack roll, if a Bard uses it.
-    int cutting_words(const Actor &attacker);
+    // Bardic Inspiration's die added to a roll that failed by `shortfall`.
+    int inspiration_roll(const Actor &creature, int shortfall);
+    void log_inspiration(const Actor &inspired, int die, bool success);
+    // Cutting Words' die taken from an attack roll that hit by `margin`.
+    int cutting_words(const Actor &attacker, int margin);
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void perform(const Command &command);
@@ -2253,6 +2265,8 @@ class Session final : public CombatSession
     unsigned next_save_ms(EntityId target) const;
     unsigned next_turn_ms(const Actor &target) const;
     void advance_turn_time();
+    // Halfling Luck, logged when it rerolled a 1 (automatic, as AUTO-1).
+    void log_luck(const Actor &a, bool rerolled);
     void log_save(const Actor &target, const detail::SaveResult &result);
     // `advantage` is a feature's own Advantage, such as a Large creature against
     // Ensnaring Strike; conditions and armor are applied here.
@@ -2353,6 +2367,8 @@ class Session final : public CombatSession
     Dice weapon_dice(const Actor &a, AttackRange range) const;
     detail::DamageDieRule weapon_die_rule(const Actor &a, AttackRange range) const;
     void apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved);
+    static void extend_run(Actor &a, Cell from, Cell to);
+    [[nodiscard]] bool charges(const Actor &a, const Actor &target) const;
     bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range, int mode) const;
     bool ally_beside(const Actor &a, const Actor &target) const;
     int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
@@ -2983,6 +2999,8 @@ void Session::run_off_field(Actor &a)
         return;
     }
     end_concentration(a);
+    // Wild Shape lasts until the fight ends (WILD-1); for the one who flees, it has.
+    end_wild_shape(a);
     a.fled = true;
     log(a.source.name + " flees the battle.",
     {"{name} flees the battle.", {{"name", a.source.name}}});
@@ -3153,10 +3171,15 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         // Unconscious actors still occupy space; corpses do not. The mover's
         // current cell is the path origin, not an obstacle. As in the original
         // game, a creature may stop on the downed (dying heroes walling in the
-        // last one could otherwise leave a fight no one can end).
-        if (!other.life.dead && !downed_riser(other) && other.source.id != mover.source.id)
-            occupants.push_back({other.source.cell, other.source.side != mover.source.side,
-                                 unconscious(other), other.life.hp == 0});
+        // last one could otherwise leave a fight no one can end). Halfling
+        // Nimbleness passes through a larger enemy as through an ally: never
+        // stopping there.
+        if (other.life.dead || downed_riser(other) || other.source.id == mover.source.id)
+            continue;
+        const bool nimble_pass = def(mover).nimble && def(other).size > def(mover).size;
+        occupants.push_back({other.source.cell,
+                             other.source.side != mover.source.side && !nimble_pass,
+                             unconscious(other), other.life.hp == 0});
     }
     return {zoned_board(), mover.source.cell, occupants, mover.effects.prone};
 }
@@ -4538,10 +4561,6 @@ std::vector<Command> Session::legal_commands() const
             add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
         else if (question.asked == Asked::rebuke)
             add(who.source.id, "rebuke", "Cast Hellish Rebuke");
-        else if (question.asked == Asked::inspiration)
-            add(who.source.id, "inspire", "Use Bardic Inspiration");
-        else if (question.asked == Asked::cutting)
-            add(who.source.id, "cutting", "Use Cutting Words");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -5388,9 +5407,15 @@ void Session::damage(Actor &target, int amount, bool critical)
                                def(target).eldritch_mind;
         const auto result = target.concentration.damage(
                                 amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
-                                modifiers, target.life.hp == 0 || target.life.dead, rng_);
+                                modifiers, target.life.hp == 0 || target.life.dead, rng_,
+                                target.effects.active);
         if (result.save)
             log_save(target, *result.save);
+        if (result.inspiration)
+        {
+            detail::spend_inspiration(target.effects);
+            log_inspiration(target, result.inspiration, result.save->success);
+        }
         if (result.ended)
             drop_concentration_effects(target);
     }
@@ -6412,10 +6437,10 @@ void Session::escape_ensnaring(Actor &a)
     });
     const auto vines = *found;
     const bool advantage = rage_of(a) || def(a).champion;
-    const int natural = detail::d20({advantage}, rng_);
+    const int natural = detail::d20({advantage, false, def(a).lucky}, rng_);
     const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                       guidance_bonus(a, "athletics");
-    const bool escaped = natural + bonus >= vines.dc;
+    bool escaped = natural + bonus >= vines.dc;
     const std::string advantage_label = advantage ? " (advantage)" : "";
     log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + advantage_label +
         " + " + std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
@@ -6430,6 +6455,8 @@ void Session::escape_ensnaring(Actor &a)
             {"dc", std::to_string(vines.dc)}
         }
     });
+    if (!escaped)
+        escaped = inspiration_roll(a, vines.dc - natural - bonus) >= vines.dc - natural - bonus;
     if (!escaped)
         return;
     // Ensnaring Strike ends, and with it the caster's Concentration; Entangle
@@ -6832,6 +6859,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         else
             result.disadvantage = true;
     }
+    result.lucky = d.lucky;
     return result;
 }
 
@@ -6857,6 +6885,30 @@ Dice Session::weapon_dice(const Actor &a, AttackRange range) const
     if (a.cleave_damage || (a.light_damage && !d.two_weapon_fighting))
         result.bonus = std::min(0, result.bonus);
     return result;
+}
+
+void Session::extend_run(Actor &a, Cell from, Cell to)
+{
+    const Cell step{to.x - from.x, to.y - from.y};
+    if (a.run_feet && a.run_end == from && a.run_step == step)
+        a.run_feet += 5;
+    else
+    {
+        a.run_start = from;
+        a.run_step = step;
+        a.run_feet = 5;
+    }
+    a.run_end = to;
+}
+
+bool Session::charges(const Actor &a, const Actor &target) const
+{
+    // 20 feet or more in one straight line, each step 5 feet closer to the
+    // target, ending where the Boar stands.
+    return def(a).charge && def(target).size <= 2 && a.run_feet >= 20 &&
+           a.run_end == a.source.cell &&
+           distance(a.run_start, target.source.cell) - distance(a.run_end, target.source.cell) ==
+           a.run_feet;
 }
 
 void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
@@ -7088,7 +7140,11 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         return e.kind == detail::EffectKind::guiding_bolt;
     });
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
-    int natural = detail::d20(modifiers, rng_);
+    const bool charging = !spell && !ranged && charges(a, target);
+    a.run_feet = 0;
+    bool lucky_reroll = false;
+    int natural = detail::d20(modifiers, rng_, &lucky_reroll);
+    log_luck(a, lucky_reroll);
     end_invisibility(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
@@ -7110,14 +7166,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
     bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     // Bardic Inspiration may rescue a miss; Cutting Words may spoil a hit.
-    if (!hit)
+    if (!hit && natural != 1)
     {
-        bonus += inspiration_roll(a);
+        bonus += inspiration_roll(a, armor_class(target) - natural - bonus);
         hit = attack_hits(natural, bonus, armor_class(target));
     }
-    else if (!automatic)
+    else if (hit && !automatic)
     {
-        bonus -= cutting_words(a);
+        bonus -= cutting_words(a, natural + bonus - armor_class(target));
         hit = attack_hits(natural, bonus, armor_class(target));
     }
     const auto damage_type = spell    ? spell_attack->type
@@ -7181,6 +7237,13 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("Colossus Slayer adds " + std::to_string(extra) + " damage.",
         {"Colossus Slayer adds {damage} damage.", {{"damage", std::to_string(extra)}}});
     }
+    if (hit && charging)
+    {
+        const int extra = dice({1, 6, 0}, critical_hit(a, target, natural));
+        weapon_damage += extra;
+        log("The charge adds " + std::to_string(extra) + " damage.",
+        {"The charge adds {damage} damage.", {{"damage", std::to_string(extra)}}});
+    }
     // Ray of Enfeeblement: 1d8 less on each of the creature's damage rolls.
     const int enfeebled = hit && detail::has_effect(a.effects, detail::EffectKind::enfeebled)
                           ? roll(8)
@@ -7202,6 +7265,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                              .range = range,
                              .spell = spell,
                              .savage = savage});
+    if (hit && charging && target.life.hp > 0 && !target.effects.prone)
+    {
+        target.effects.prone = true;
+        log(target.source.name + " is knocked Prone.",
+        {"{name} is knocked Prone.", {{"name", target.source.name}}});
+    }
     // A ranged hit's added damage of a second type (the Hobgoblin Warrior's poison).
     if (hit && !spell && ranged && d.ranged_extra.count && !target.life.dead)
     {
@@ -7618,9 +7687,13 @@ void Session::update_outcome()
             return a.fled && a.source.side == Side::party;
         });
         outcome_ = party ? Outcome::victory : party_fled ? Outcome::fled : Outcome::defeat;
-        // Concentration is tracked in combat only; it ends with the combat.
+        // Concentration is tracked in combat only; it ends with the combat, and
+        // so does Wild Shape (WILD-1).
         for (auto &a : actors_)
+        {
             end_concentration(a);
+            end_wild_shape(a);
+        }
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -7808,7 +7881,8 @@ bool Session::begin_turn()
     {
         if (!a.life.stable)
         {
-            const int result = detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects));
+            const int result =
+                detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects), def(a).lucky);
             log(a.source.name + " death save: " + std::to_string(result),
             {
                 "{name} death save: {roll}",
@@ -7838,6 +7912,7 @@ bool Session::begin_turn()
         actor.sneak_used = false;
         actor.aim_used = actor.aim_ready = false;
         actor.moved = false;
+        actor.run_feet = 0;
         actor.light_origins.clear();
         actor.light_extra = 0;
         actor.nick_origin = 0;
@@ -7900,6 +7975,13 @@ unsigned Session::next_save_ms(EntityId target) const
     const auto end = turn_end_ms(index_of(target));
     const auto start = turn_ ? turn_end_ms(turn_ - 1) : 0;
     return end > start ? end - start : detail::round_ms - start + end;
+}
+
+void Session::log_luck(const Actor &a, bool rerolled)
+{
+    if (rerolled)
+        log(a.source.name + " rolls a 1 and rerolls it with Luck.",
+        {"{name} rolls a 1 and rerolls it with Luck.", {{"name", a.source.name}}});
 }
 
 void Session::log_save(const Actor &target, const detail::SaveResult &result)
@@ -7990,13 +8072,16 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged) ||
                                rage_of(target);
     }
+    modifiers.lucky = def(target).lucky;
+    bool lucky_reroll = false;
     auto result = detail::saving_throw(
                       ability, def(target).saves[static_cast<unsigned>(ability)] + bless, dc,
-                      modifiers, rng_);
+                      modifiers, rng_, &lucky_reroll);
+    log_luck(target, lucky_reroll);
     log_save(target, result);
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
-        if (const int die = inspiration_roll(target))
+        if (const int die = inspiration_roll(target, dc - result.natural - result.bonus))
             result.success = result.natural + result.bonus + die >= dc;
     return result.success;
 }
@@ -8018,7 +8103,7 @@ void Session::advance_turn_time()
         subjects.push_back(
         {
             {   a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
-                def(a).gnomish_cunning
+                def(a).gnomish_cunning, def(a).lucky
             },
             a.life});
         if (a.life.hp == 0)
@@ -8031,6 +8116,8 @@ void Session::advance_turn_time()
         const auto &target = actor(event.target);
         if (event.save)
             log_save(target, *event.save);
+        if (event.inspiration)
+            log_inspiration(target, event.inspiration, event.save->success);
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -8174,6 +8261,7 @@ void Session::progress_movement()
         const auto departed = a.source.cell;
         a.source.cell = destination;
         a.moved = true;
+        extend_run(a, departed, destination);
         clear_departed_overlaps();
         ++path_index_;
         reactors_.clear();
@@ -8285,9 +8373,7 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
     if (answer_of(target.source.id, asked))
         return;
     const bool askable =
-        asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::inspiration ||
-        asked == Asked::cutting ||
-        (can_shield(target) && !critical) ||
+        asked == Asked::redirect || asked == Asked::rebuke || (can_shield(target) && !critical) ||
         (asked == Asked::hit && can_deflect(target, deflectable));
     if (askable)
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
@@ -8367,34 +8453,44 @@ void Session::bless_fiends(const Actor &fallen)
     }
 }
 
-int Session::inspiration_roll(const Actor &creature)
+int Session::inspiration_roll(const Actor &creature, int shortfall)
 {
+    // Used without asking, and only when the die could make up the shortfall:
+    // the roll and its target number are in the log for the player too.
     auto &inspired = actor(creature.source.id);
     const auto found = std::find_if(inspired.effects.active.begin(), inspired.effects.active.end(),
                                     [](const auto & e)
     {
         return e.kind == detail::EffectKind::inspired;
     });
-    if (found == inspired.effects.active.end() || !conscious(inspired))
-        return 0;
-    ask_reaction(inspired, Asked::inspiration);
-    if (answer_of(inspired.source.id, Asked::inspiration)->verb != "inspire")
+    if (found == inspired.effects.active.end() || !conscious(inspired) || found->dc < shortfall)
         return 0;
     const int sides = found->dc;
     inspired.effects.active.erase(found);
     const int die = roll(sides);
-    log("Bardic Inspiration adds " + std::to_string(die) + " to " + inspired.source.name + "'s roll.",
-    {
-        "Bardic Inspiration adds {amount} to {name}'s roll.",
-        {{"amount", std::to_string(die)}, {"name", inspired.source.name}}
-    });
+    log_inspiration(inspired, die, die >= shortfall);
     return die;
 }
 
-int Session::cutting_words(const Actor &attacker)
+void Session::log_inspiration(const Actor &inspired, int die, bool success)
 {
-    // A Lore Bard who sees the attacker within 60 feet may spend a Reaction and
-    // a Bardic Inspiration use to subtract the die from the attack roll.
+    const auto amount = std::to_string(die);
+    log("Bardic Inspiration adds " + amount + " to " + inspired.source.name + "'s roll" +
+        (success ? ", turning it into a success." : ", not enough to succeed."),
+    {
+        success ? "Bardic Inspiration adds {amount} to {name}'s roll, turning it into a success."
+        : "Bardic Inspiration adds {amount} to {name}'s roll, not enough to succeed.",
+        {{"amount", amount}, {"name", inspired.source.name}}
+    });
+}
+
+int Session::cutting_words(const Actor &attacker, int margin)
+{
+    // A Lore Bard who sees the attacker within 60 feet spends a Reaction and a
+    // Bardic Inspiration use to subtract the die from the attack roll. It is
+    // used without asking, and only when the d6 could turn the hit into a miss.
+    if (margin >= 6)
+        return 0;
     for (auto &bard : actors_)
     {
         if (!def(bard).cutting_words || bard.source.side == attacker.source.side ||
@@ -8402,16 +8498,17 @@ int Session::cutting_words(const Actor &attacker)
                 bard.arcane <= 0 || distance(bard.source.cell, attacker.source.cell) > 60 ||
                 !can_see(bard, attacker))
             continue;
-        ask_reaction(bard, Asked::cutting);
-        if (answer_of(bard.source.id, Asked::cutting)->verb != "cutting")
-            continue;
         bard.reaction = false;
         --bard.arcane;
         const int die = roll(6);
-        log(bard.source.name + " uses Cutting Words: -" + std::to_string(die) + ".",
+        const bool missed = die > margin;
+        const auto amount = std::to_string(die);
+        log(bard.source.name + " uses Cutting Words: -" + amount +
+            (missed ? ", turning the hit into a miss." : "; the attack still hits."),
         {
-            "{name} uses Cutting Words: -{amount}.",
-            {{"name", bard.source.name}, {"amount", std::to_string(die)}}
+            missed ? "{name} uses Cutting Words: -{amount}, turning the hit into a miss."
+            : "{name} uses Cutting Words: -{amount}; the attack still hits.",
+            {{"name", bard.source.name}, {"amount", amount}}
         });
         return die;
     }
@@ -8465,9 +8562,7 @@ void Session::perform(const Command &command)
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return can_shield(other) || def(other).deflect ||
-               detail::knows_spell(def(other).spells, "hellish_rebuke") ||
-               def(other).cutting_words ||
-               detail::has_effect(other.effects, detail::EffectKind::inspired);
+               detail::knows_spell(def(other).spells, "hellish_rebuke");
     });
     if (!askable)
     {
@@ -8531,6 +8626,8 @@ void Session::dispatch(const Command &command)
     }
     auto &a = actor(command.actor);
     const auto &d = def(a);
+    if (command.verb != "move" && command.verb != "melee")
+        a.run_feet = 0;
     // A smite must follow the hit at once. Resolving that hit's own weapon
     // mastery choice keeps the chance open; any other command ends it.
     if (!is_smite(command.verb) && !command.verb.starts_with("effect_"))
@@ -8613,7 +8710,8 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "stabilize")
     {
-        PendingCheck check{a.source.id, command.target, detail::d20({}, rng_), a.actions.surge};
+        PendingCheck check{a.source.id, command.target, detail::d20({false, false, d.lucky}, rng_),
+                           a.actions.surge};
         check.guidance = guidance_bonus(a, "medicine");
         a.nick_origin = 0;
         a.actions.spend();
@@ -9252,7 +9350,9 @@ std::string Session::save() const
             << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
             << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
             << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked << ' '
-            << a.source.morale << ' ' << a.source.intelligence << ' ';
+            << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
+            << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
+            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -9446,9 +9546,14 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
           actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
           actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
-          actor.source.morale >> actor.source.intelligence;
+          actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
+          actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
+          actor.run_step.y >> actor.run_feet;
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
         throw std::runtime_error("Invalid checkpoint morale");
+    if (actor.run_feet < 0 || actor.run_feet % 5 || actor.run_feet > 5 * 64 * 64 ||
+            std::abs(actor.run_step.x) > 1 || std::abs(actor.run_step.y) > 1)
+        throw std::runtime_error("Invalid checkpoint charge run");
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -9578,9 +9683,7 @@ void Session::finish_check(const PendingCheck &check, int boost)
     auto &a = actor(check.actor);
     auto &target = actor(check.target);
     const int total = check.natural + def(a).medicine + check.guidance + boost;
-    const bool success = total >= 10;
-    if (success)
-        detail::stabilize(target.life, rng_);
+    bool success = total >= 10;
     Message message
     {
         "{actor} stabilizes {target}: d20 {roll} + {modifier} + {boost} = {total} vs DC {dc}: {result}.",
@@ -9597,6 +9700,11 @@ void Session::finish_check(const PendingCheck &check, int boost)
         std::to_string(def(a).medicine + check.guidance) + " + " + std::to_string(boost) + " = " +
         std::to_string(total) + " vs DC 10: " + (success ? "success" : "failure"),
         message);
+    // Bardic Inspiration follows the failed check in the log.
+    if (!success)
+        success = inspiration_roll(a, 10 - total) >= 10 - total;
+    if (success)
+        detail::stabilize(target.life, rng_);
 }
 
 void Session::finish_champion_move()
@@ -10259,7 +10367,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
         if (!input || !known_actor(question.target) ||
-                asked > static_cast<unsigned>(Asked::cutting) ||
+                asked > static_cast<unsigned>(Asked::rebuke) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -10270,10 +10378,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
             if (!input || !known_actor(answer.target) ||
-                    kind > static_cast<unsigned>(Asked::cutting) ||
+                    kind > static_cast<unsigned>(Asked::rebuke) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
-                     answer.verb != "inspire" && answer.verb != "cutting" &&
                      answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = static_cast<Asked>(kind);
@@ -11335,7 +11442,8 @@ class Module final : public RulesModule
         for (auto &a : actors)
             subjects.push_back({{
                 a.source.id, a.effects, a.definition.saves, a.life.dead,
-                a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning
+                a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning,
+                a.definition.lucky
             },
             a.life});
         auto rng = random_state.value;
@@ -11525,7 +11633,8 @@ class Module final : public RulesModule
             // As after a victory, the dying member's saves are rolled at once.
             while (actor.life.hp == 0 && !actor.life.dead && !actor.life.stable)
                 result.death_saves.push_back(
-                    detail::death_save(actor.life, rng, !detail::healing_blocked(actor.effects)));
+                    detail::death_save(actor.life, rng, !detail::healing_blocked(actor.effects),
+                                       actor.definition.lucky));
         }
         state = vitals(actor);
         random_state.value = rng;
@@ -11582,6 +11691,8 @@ class Module final : public RulesModule
             return actions;
         if (d.lay_on_hands && actor.lay_on_hands > 0)
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
+        if (d.lay_on_hands && actor.lay_on_hands >= 5)
+            actions.push_back({"lay_on_hands_cure", {"Lay On Hands: cure Poisoned (5)", {}}});
         // Magical Cunning: a one-minute rite, so a camp action; it needs no
         // target and so takes the whole-party path.
         if (d.magical_cunning && actor.arcane > 0 &&
@@ -11629,6 +11740,21 @@ class Module final : public RulesModule
         auto caster = camp_actor(user, user_state);
         auto healed = self ? caster : camp_actor(target, target_state);
         auto &patient = self ? caster : healed;
+        if (action == "lay_on_hands_cure")
+        {
+            // 5 points end Poisoned on a living member (SRD 5.2.1 p. 61).
+            if (patient.life.dead || !has_condition(patient, "poisoned"))
+                throw std::runtime_error("Lay On Hands cures only a Poisoned member");
+            caster.lay_on_hands -= 5;
+            std::erase_if(patient.effects.active, [](const auto & e)
+            {
+                return gives_condition(e.kind, "poisoned");
+            });
+            user_state = vitals(caster);
+            if (!self)
+                target_state = vitals(healed);
+            return;
+        }
         const int maximum = max_hp(patient);
         if (patient.life.dead || patient.life.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
@@ -11915,14 +12041,10 @@ class Module final : public RulesModule
                                         RandomState &random_state) const override
     {
         const auto modifier = ability_check(sheet, gear, ability, skill);
+        const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
         auto rng = random_state.value;
-        int die = roll_die(rng, 20);
         // Advantage and Disadvantage cancel; either alone rolls a second d20.
-        if (modifier.advantage != modifier.disadvantage)
-        {
-            const int second = roll_die(rng, 20);
-            die = modifier.advantage ? std::max(die, second) : std::min(die, second);
-        }
+        const int die = detail::d20({modifier.advantage, modifier.disadvantage, lucky}, rng);
         random_state.value = rng;
         return {die, die + modifier.total};
     }
@@ -12446,7 +12568,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.165", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.172", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

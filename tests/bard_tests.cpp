@@ -2,7 +2,9 @@
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -32,11 +34,13 @@ std::string read(const std::filesystem::path &p)
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-// A sturdy AC 1 target that hits back.
+// A sturdy AC 1 target that hits back, and a guard of AC 20 that attacks at +4
+// and so often misses, or hits narrowly.
 std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
-                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature guard 20 1000 0 30 4 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 // A level-one Bard draft with Charisma 18 that prepares the given spells.
@@ -137,15 +141,15 @@ bool has_grant(const Character &hero, std::string_view id)
     });
 }
 
-// The Bard (1), an ally (2) and an enemy (98) 15 feet away.
+// The Bard (1), an ally (2) and an enemy (98) 15 feet away, both `creature`.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
-                                      std::uint64_t seed = 5)
+                                      std::uint64_t seed = 5, const std::string &creature = "target")
 {
     const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
-            {2, "target", "Ally", Side::party, {3, 2}},
-            {98, "target", "Enemy", Side::opposition, {4, 1}}
+            {2, creature, "Ally", Side::party, {3, 2}},
+            {98, creature, "Enemy", Side::opposition, {4, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -232,6 +236,24 @@ unsigned inspiration_left(const CombatSession &c)
     throw std::runtime_error("No Bardic Inspiration pool");
 }
 
+// The d20 total and AC of the logged attack line starting `prefix`.
+struct AttackRoll
+{
+    int total{}, ac{};
+};
+
+AttackRoll attack_roll(const CombatSession &c, std::string_view prefix)
+{
+    for (const auto &line : c.snapshot().log())
+        if (line.starts_with(prefix))
+        {
+            int natural = 0, bonus = 0, ac = 0;
+            std::sscanf(line.c_str() + prefix.size(), ": d20 %d + %d vs AC %d", &natural, &bonus, &ac);
+            return {natural == 1 ? -100 : natural + bonus, ac};
+        }
+    throw std::runtime_error("No attack line");
+}
+
 void inspiration_checks()
 {
     auto module = rules();
@@ -242,36 +264,67 @@ void inspiration_checks()
               inspiration_left(*c) == 3 && unit(*c, 1).action,
               "Bardic Inspiration is a Bonus Action; Charisma 18 gives four uses");
     }
-    // The ally (AC 20 against the target's +4) misses often; the die is asked about.
-    bool asked = false;
-    for (std::uint64_t seed = 1; seed < 64 && !asked; ++seed)
-    {
-        auto c = battle(*module, bard(), seed);
-        check(submit(*c, "bardic_inspiration", 2), "Inspire the ally");
-        reach(*c, 2);
-        check(submit(*c, "melee", 98), "The ally attacks");
-        if (!c->snapshot().reaction_pending)
-            continue;
-        check(c->snapshot().actor == 2 && submit(*c, "inspire") &&
-              logged(*c, "Bardic Inspiration adds") && !has_condition(*c, 2, "Inspired"),
-              "A miss asks the inspired ally, who adds the die");
-        asked = true;
-    }
-    check(asked, "Some seed misses with the inspired ally");
-    // The enemy's hit on the ally asks the Lore Bard about Cutting Words.
+    // The guard (+4 against AC 20) misses often. Its die is added without
+    // asking, but only to a miss it could turn into a hit.
+    bool used = false, kept = false;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = battle(*module, bard(3), seed);
-        reach(*c, 98);
-        check(submit(*c, "melee", 2), "The enemy attacks the ally");
-        if (!c->snapshot().reaction_pending)
+        auto c = battle(*module, bard(), seed, "guard");
+        check(submit(*c, "bardic_inspiration", 2), "Inspire the ally");
+        reach(*c, 2);
+        check(submit(*c, "melee", 98) && !c->snapshot().reaction_pending,
+              "The ally attacks; nobody is asked about the die");
+        if (logged(*c, "Bardic Inspiration adds"))
+        {
+            used = true;
+            check(!has_condition(*c, 2, "Inspired"), "The used die is gone");
             continue;
-        check(c->snapshot().actor == 1 && submit(*c, "cutting") &&
-              logged(*c, "Bard uses Cutting Words: -") && !unit(*c, 1).reaction,
-              "Cutting Words spends the Bard's Reaction and a use");
-        return;
+        }
+        const auto miss = attack_roll(*c, "Ally -> Enemy");
+        if (miss.total < miss.ac)
+        {
+            kept = true;
+            check(miss.ac - miss.total > 6 && has_condition(*c, 2, "Inspired"),
+                  "Only a miss the d6 cannot rescue keeps the die");
+        }
     }
-    throw std::runtime_error("No seed asks about Cutting Words");
+    check(used && kept, "Some seeds use the die, others keep it");
+    // An enemy's hit on the ally that a d6 could undo draws the Lore Bard's
+    // Cutting Words, without asking.
+    bool cut = false;
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, bard(3), seed, "guard");
+        reach(*c, 98);
+        check(submit(*c, "melee", 2) && !c->snapshot().reaction_pending,
+              "The enemy attacks the ally; the Bard is not asked");
+        if (!logged(*c, "Bard uses Cutting Words: -"))
+            continue;
+        cut = true;
+        check(!unit(*c, 1).reaction && inspiration_left(*c) == 3,
+              "Cutting Words spends the Bard's Reaction and a use");
+        check(logged(*c, "turning the hit into a miss.") != logged(*c, "the attack still hits."),
+              "The log says whether the attack still hits");
+    }
+    check(cut, "Some seed hits the ally");
+}
+
+// Bardic Inspiration on the saves that are rolled outside a command: the
+// repeated save at the end of a turn and the Concentration save.
+void inspired_save_checks()
+{
+    namespace fx = opengold::srd5::detail;
+    fx::EffectState effects;
+    fx::apply_spell_benefit(effects, {.scope = 1, .actor = 1}, "Bard", fx::EffectKind::inspired, 6);
+    std::uint64_t rng = 7;
+    const fx::SaveResult near{fx::Ability::wisdom, 9, 2, 15, 0, false},
+          far{fx::Ability::wisdom, 2, 2, 15, 0, false};
+    check(fx::inspiration_die(effects.active, far, rng) == 0 && rng == 7,
+          "A save 11 short keeps the die and rolls nothing");
+    const int die = fx::inspiration_die(effects.active, near, rng);
+    check(die >= 1 && die <= 6, "A save 4 short rolls the d6");
+    fx::spend_inspiration(effects);
+    check(!fx::has_effect(effects, fx::EffectKind::inspired), "The die is spent");
 }
 
 // The Bard's Initiative total in a fixed fight: its d20 is the same whatever
@@ -357,6 +410,7 @@ int main()
         spell_checks();
         advancement_checks();
         inspiration_checks();
+        inspired_save_checks();
         jack_of_all_trades_checks();
         std::cout << "Bard tests passed\n";
     }

@@ -238,7 +238,7 @@
   "Finish Long Rest spell choices before combat",
   "Independent spell learning choices are required",
   "No supported missing spell choices.",
-  "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide and weapon mastery remain unavailable.",
+  "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.",
   "Keep current",
   "Retain the class-granted Fighting Style.",
   "Choose a Fighting Style",
@@ -511,8 +511,6 @@
   "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points.",
   "Bardic Inspiration",
   "Inspired",
-  "Use Bardic Inspiration",
-  "Use Cutting Words",
   "Metamagic",
   "1 Sorcery Point: allies in your save spell's area succeed and take no half damage.",
   "1 Sorcery Point: double a spell's range, or Touch becomes 30 feet.",
@@ -719,5 +717,10 @@
   "Gain the Magic Initiate feat with the Wizard spell list.",
   "Spell attacks and save DCs for these spells.",
   "Lay On Hands: cure Poisoned",
-  "Lay On Hands: cure Poisoned (5)"
+  "Lay On Hands: cure Poisoned (5)",
+  "Lay On Hands cures only a Poisoned member",
+  "Pact of the Tome",
+  "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.",
+  "Pact of the Tome cantrips",
+  "Pact of the Tome level 1 spells"
 ]

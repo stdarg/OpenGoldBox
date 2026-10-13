@@ -825,3 +825,40 @@ darts as one simultaneous hit, with one Shield question; rays are separate
 attacks in the order aimed, and a ray aimed at a foe already down is lost. The
 battlefield does not mark aimed foes (the prompt lists them), and there is no
 shortcut that sends the remaining darts at one foe.
+
+## WILD-1 (2026-10-13): Wild Shape lasts until the fight ends
+
+A departure from SRD 5.2.1, approved by the user for simplicity. The SRD's form
+lasts hours equal to half the Druid level, but fights last minutes, and the
+game offers Wild Shape only in fights. A form now ends when the fight ends
+(victory, defeat or flight) and when its Druid flees the battlefield, as
+Concentration does ([CLASS-2](#class-2-2026-10-04-choosing-several-targets));
+it is never carried into the next fight. It still ends earlier on Leave Wild
+Shape, another Wild Shape, 0 Hit Points, or a turn begun Incapacitated.
+
+## BARD-1 (2026-10-13): Bardic Inspiration and Cutting Words without asking
+
+Approved by the user, replacing the React/Decline question that both used to
+ask. Asking after every failed roll interrupted play, and could not reach the
+saves rolled outside a command, such as the repeated save at the end of a turn.
+Both now apply on their own, and the combat log shows the die and its result:
+
+- An inspired creature adds its die to the first failed attack roll, save or
+  check that the die could turn into a success. A roll short by more than the
+  die's sides keeps the die.
+- A Lore Bard's Cutting Words subtracts the die from an enemy's attack roll
+  that hit by less than the die's sides, so that it could miss. Only the first
+  Bard able to react does so.
+
+As with [AUTO-1](#auto-1-2026-09-30-automatic-choices-with-logging), neither
+uses information the player lacks: the roll, its bonus and the target number
+are already in the log.
+
+## TOME-1 (2026-10-13): Pact of the Tome without rituals
+
+Approved by the user. The SRD's Pact of the Tome grants three cantrips and two
+level-1 spells with the Ritual tag. Every ritual spell was removed with DM-3 as
+needing a Dungeon Master, so the two level-1 spells are any the game has, from
+any class's list, none of which needs one. They are cast as prepared Warlock
+spells with Pact Magic slots, as the cantrips are cast with Charisma; nothing
+is cast as a ritual. The Book of Shadows as an object is not modeled.

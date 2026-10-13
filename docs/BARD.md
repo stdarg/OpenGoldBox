@@ -45,17 +45,22 @@ ability.
   feet; uses equal the Charisma modifier (at least one), all back on a Long
   Rest. They share Arcane Recovery's store, which no Bard has. A creature holds
   one die at a time, shown as **Inspired**.
-- When an inspired creature misses with an attack roll or fails a saving
-  throw, play stops and it is asked: "The roll fails. Add your Bardic
-  Inspiration die, or decline." (React/Decline, through the same question as
-  Shield). The die is added and the roll checked again. Ability checks and the
-  repeated saves made at the end of a turn do not ask yet; a creature that
-  declines is not asked again during the same command.
+- Nobody is asked about either die
+  ([BARD-1](SRD-DECISIONS.md#bard-1-2026-10-13-bardic-inspiration-and-cutting-words-without-asking),
+  rules 0.6.169). The log shows each use and what it changed.
+- An inspired creature adds the die to its first failed roll that the die
+  could turn into a success: an attack roll (a natural 1 aside), any saving
+  throw (including the repeated saves at the end of a turn and Concentration
+  saves), and the ability checks rolled in a fight (Medicine to stabilize,
+  Athletics to break free of vines). The log reads, for example, "Bardic
+  Inspiration adds 4 to Mira's roll, turning it into a success." A roll the d6
+  cannot rescue keeps the die for later.
 - **Cutting Words** (College of Lore, level 3, Reaction): when an enemy within
-  60 feet that the Bard sees hits with an attack roll (a critical hit aside),
-  the Bard is asked to subtract its Bardic Inspiration die from the roll,
-  spending a use; the attack may then miss. Using it on a damage roll or an
-  ability check is not modeled.
-- The computer uses both whenever asked.
+  60 feet that the Bard sees hits with an attack roll by less than 6 (a
+  critical hit aside), the Bard subtracts its Bardic Inspiration die from the
+  roll, spending its Reaction and a use. The log says whether the attack then
+  misses. Using it on a damage roll or an enemy's ability check is not
+  modeled.
 - Verification: `opengold_bard_tests` (four uses at Charisma 18, the Bonus
-  Action, the ally asked after a miss, Cutting Words' Reaction and use).
+  Action, the die used only on a miss it could rescue, Cutting Words' Reaction
+  and use, the repeated-save and Concentration helpers).

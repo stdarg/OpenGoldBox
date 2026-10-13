@@ -87,7 +87,12 @@ ability.
   - Wolf: AC 12, Speed 40, Bite +4 for 1d6 + 2 Piercing; Pack Tactics, and a
     hit knocks a Medium or smaller creature Prone.
   - Boar: AC 11, Speed 40, Gore +3 for 1d6 + 1 Piercing; Bloodied Fury
-    (Advantage at half its Hit Points or fewer). The charge is not modeled.
+    (Advantage at half its Hit Points or fewer). Charge (rules 0.6.171): a
+    Gore hit right after moving 20 feet or more in a straight line, each step
+    5 feet closer to a Medium or smaller target, deals 1d6 more Piercing
+    damage and knocks the target Prone. Any command between the run and the
+    Gore, other than moving, ends the run; combat checkpoints keep it
+    (`OGCOMBAT 51`).
   - Giant Lizard (Large): AC 12, Speed 40, Bite +4 for 1d8 + 2 Piercing.
   - Giant Snake (the SRD Constrictor Snake, Large): AC 13, Speed 30, Bite +4
     for 1d8 + 2 Piercing. Constrict is not offered: grappling is not planned
@@ -95,8 +100,10 @@ ability.
   - Large forms take one square until multi-square footprints
     ([#45](https://github.com/stdarg/OpenGold/issues/45)).
 - The form ends on "Leave Wild Shape", another Wild Shape, 0 Hit Points, being
-  Incapacitated at the start of the Druid's turn, or after an hour (half the
-  Druid level in hours from level 4 is not distinguished).
+  Incapacitated at the start of the Druid's turn, fleeing the battlefield, or
+  when the fight ends
+  ([WILD-1](SRD-DECISIONS.md#wild-1-2026-10-13-wild-shape-lasts-until-the-fight-ends),
+  a departure from the SRD's hours; rules 0.6.168).
 - The combat view draws the Druid as the Beast's original combat icon (the
   art research's candidates: Wolf CPIC4 106, Wild Boar CPIC6 120, Giant
   Lizard CPIC8 59, Giant Snake CPIC5 60).
@@ -108,5 +115,7 @@ ability.
 - Verification: `opengold_druid_tests` (each form's AC, Speed and attack bonus
   with the Druid's Hit Points kept, the Wolf's Temporary HP, no spells, a
   checkpoint, the bite and its Prone, Concentration on Faerie Fire continuing,
-  Heat Metal finding no armor on a shaped Druid, leaving the form, and Land's
-  Aid's thorns, healing and spent use).
+  Heat Metal finding no armor on a shaped Druid, leaving the form; the form
+  ending at 0 Hit Points, on a turn begun Incapacitated and when it lapses; and
+  Land's Aid's thorns, healing and spent use). A form carried into a new fight
+  applies from its start (rules 0.6.167; it used to wait for the Druid's turn).
