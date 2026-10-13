@@ -84,6 +84,16 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.159 adds the [training halls'](TRAINING-HALL.md) skill lessons, a
+`training_hall` grant source, and stops Scholar offering Expertise held from
+another source. `opengold_attained_levels_tests` is the final integration
+check for the Fighter ([#89](https://github.com/stdarg/OpenGold/issues/89))
+and the Wizard ([#102](https://github.com/stdarg/OpenGold/issues/102)): a
+created character fights at every level from 1 to 4 using its class's own
+action, the spent use comes back to the party, the campaign reads back exactly
+and the next fight plays out the same, a Short Rest recovers what it should, a
+Long Rest restores everything, and it advances with its class's choices
+(Champion, Evoker, Scholar, the level-four feat).
 Rules 0.6.158 adds [Magic Initiate](MAGIC-INITIATE.md) from the Acolyte and
 Sage backgrounds, the level-four feat choice and Lessons of the First Ones, with
 its once-per-Long-Rest free cast; vital state becomes `SRD12` and combat
