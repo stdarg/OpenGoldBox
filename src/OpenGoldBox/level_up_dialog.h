@@ -63,8 +63,9 @@ class LevelUpDialog : public godot::Window
     void bind_controls();
     [[nodiscard]] opengold::CampaignParty &campaign();
     void advancement_pages();
+    // A choice of several picks (Skilled, Metamagic, invocations) owns a page of
+    // checkboxes, the Skilled page; the single training dropdown never shows one.
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;
-    // The single training dropdown never shows Skilled, which owns a whole page.
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_dropdown_group() const;
     [[nodiscard]] AdvancementPage advancement_next_page(AdvancementPage from) const;
     [[nodiscard]] AdvancementPage advancement_previous_page(AdvancementPage from) const;

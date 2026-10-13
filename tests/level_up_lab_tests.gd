@@ -80,6 +80,32 @@ func run() -> void:
               "Back returns to the first page")
         (dialog.get_node("Cancel") as Button).pressed.emit()
         await settle()
+    # A Sorcerer's two Metamagic options and a Warlock's two invocations are
+    # checked on the dialog's checkbox page; level 2 completes once both are.
+    for id in ["sorcerer", "warlock"]:
+        klass.select(option_index(klass, id)); level.select(0)
+        create.pressed.emit(); await settle()
+        open.pressed.emit(); await settle()
+        var dialog: Window = lab.get_node("LevelUp")
+        var next: Button = dialog.get_node("Confirm")
+        next.pressed.emit(); await settle()
+        var boxes := []
+        for child in (dialog.get_node("SkilledPage/Rows") as VBoxContainer).get_children():
+            if child is CheckBox and child.visible: boxes.append(child)
+        check((dialog.get_node("SkilledPage") as Control).visible and boxes.size() > 2 and
+              (dialog.get_node("SkilledCount") as Label).text.ends_with(": 0/2 selected") and next.disabled,
+              id + " level 2 lists its options to check, none checked yet")
+        for n in range(2):
+            (boxes[n] as CheckBox).button_pressed = true
+            await settle()
+        check((boxes[2] as CheckBox).disabled and not next.disabled, id + " takes exactly two")
+        for page in range(3):
+            if next.disabled or not dialog.visible: break
+            next.pressed.emit(); await settle()
+        check((lab.get_node("Summary") as Label).text.contains("Level 2"), id + " reaches level 2")
+        var sheet := lab.get_node_or_null("CharacterSheet") as Window
+        if sheet and sheet.visible: (sheet.get_node("Close") as Button).pressed.emit(); await settle()
+        if dialog.visible: (dialog.get_node("Cancel") as Button).pressed.emit(); await settle()
     if fighter >= 0:
         klass.select(fighter); level.select(0)
         create.pressed.emit()

@@ -2,3 +2,4 @@
 
 [node name="SkilledChoice" type="CheckBox"]
 theme_type_variation = &"LevelUpChoice"
+autowrap_mode = 3

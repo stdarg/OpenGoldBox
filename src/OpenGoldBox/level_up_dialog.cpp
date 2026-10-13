@@ -106,15 +106,22 @@ void LevelUpDialog::bind_controls()
     confirm->connect("pressed", presentation::guarded(this, &LevelUpDialog::confirm));
 }
 
+namespace
+{
+// Skilled's three proficiencies, a Sorcerer's two Metamagic options and a
+// Warlock's two invocations are checked on their own page; a single pick is a
+// dropdown on the first page.
+bool picks_several(const opengold::rules::TrainingChoiceGroup &group)
+{
+    return group.id == "feat:skilled" || group.count > 1;
+}
+} // namespace
+
 const opengold::rules::TrainingChoiceGroup *
 LevelUpDialog::advancement_skilled_group() const
 {
     const auto found = std::find_if(advancement_options_.training.begin(),
-                                    advancement_options_.training.end(),
-                                    [](const auto & g)
-    {
-        return g.id == "feat:skilled";
-    });
+                                    advancement_options_.training.end(), picks_several);
     return found == advancement_options_.training.end() ? nullptr : &*found;
 }
 
@@ -125,7 +132,7 @@ LevelUpDialog::advancement_dropdown_group() const
                                     advancement_options_.training.end(),
                                     [](const auto & g)
     {
-        return g.id != "feat:skilled";
+        return !picks_several(g);
     });
     return found == advancement_options_.training.end() ? nullptr : &*found;
 }
@@ -240,13 +247,21 @@ void LevelUpDialog::refresh_advancement_skilled()
     if (!group)
         return;
     auto &rows = required_node<VBoxContainer>(*this, "SkilledPage/Rows");
-    const auto &picked = advancement_choice_.training["feat:skilled"];
-    required_node<Label>(*this, "SkilledCount")
-    .set_text(i18n::format("Selected: {count}/{total}",
-    {
-        {"count", static_cast<unsigned>(picked.size())},
-        {"total", group->count}
-    }));
+    const auto &picked = advancement_choice_.training[group->id];
+    auto &count = required_node<Label>(*this, "SkilledCount");
+    if (group->id == "feat:skilled")
+        count.set_text(i18n::format("Selected: {count}/{total}",
+        {
+            {"count", static_cast<unsigned>(picked.size())},
+            {"total", group->count}
+        }));
+    else
+        count.set_text(i18n::format("{choice}: {count}/{total} selected",
+        {
+            {"choice", i18n::text(group->label)},
+            {"count", static_cast<unsigned>(picked.size())},
+            {"total", group->count}
+        }));
     // Hide every row first; the loop below shows only what is still offered, so
     // no reverse name mapping is needed (ids contain underscores of their own).
     for (int n = 0; n < rows.get_child_count(); ++n)
@@ -270,9 +285,15 @@ void LevelUpDialog::refresh_advancement_skilled()
         // Each template has to sit directly inside the i18n::format call: the
         // catalog extractor matches on that call, so a literal behind a ternary
         // is never collected and would ship untranslated.
-        box->set_text(option.id.starts_with("skill:")
-        ? i18n::format("Skill: {name}", {{"name", i18n::text(option.label)}})
-        : i18n::format("Tool: {name}", {{"name", i18n::text(option.label)}}));
+        if (group->id != "feat:skilled")
+            box->set_text(i18n::text(option.label) +
+                          (option.description.empty()
+                           ? String()
+                           : String(" / ") + i18n::text(option.description)));
+        else
+            box->set_text(option.id.starts_with("skill:")
+            ? i18n::format("Skill: {name}", {{"name", i18n::text(option.label)}})
+            : i18n::format("Tool: {name}", {{"name", i18n::text(option.label)}}));
         const bool on = std::find(picked.begin(), picked.end(), option.id) != picked.end();
         box->set_pressed_no_signal(on);
         // A full selection leaves only the chosen three toggleable, so the
@@ -285,12 +306,14 @@ void LevelUpDialog::refresh_advancement_skilled()
 void LevelUpDialog::advancement_skilled_toggled(bool selected, String option)
 {
     const std::string id = option.utf8().get_data();
-    auto &picked = advancement_choice_.training["feat:skilled"];
     const auto *group = advancement_skilled_group();
+    if (!group)
+        return;
+    auto &picked = advancement_choice_.training[group->id];
     if (selected)
     {
         if (std::find(picked.begin(), picked.end(), id) == picked.end() &&
-                (!group || picked.size() < group->count))
+                picked.size() < group->count)
             picked.push_back(id);
     }
     else
@@ -332,6 +355,9 @@ void LevelUpDialog::open(opengold::MemberId id)
     advancing_ = id;
     advancement_options_ = campaign().advancement_options(id);
     advancement_choice_ = campaign().default_advancement(id);
+    // Several picks start empty, as the dropdown starts at "Choose an option".
+    if (const auto *group = advancement_skilled_group())
+        advancement_choice_.training.erase(group->id);
     {
         const presentation::ScopedFlag refreshing(advancement_refreshing_);
         for (const char *name :
@@ -512,9 +538,9 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         // just the ones with a Fighting Style.
         advancement_options_ = campaign().advancement_options(advancing_, advancement_choice_);
     }
-    // Keep the Skilled picks: they come from their own page, not this dropdown,
-    // and switching away from Skilled drops them by dropping the group instead.
-    auto skilled_picks = advancement_choice_.training["feat:skilled"];
+    // Keep the checkbox page's picks: they come from their own page, not this
+    // dropdown, and switching away from Skilled drops them by dropping the group.
+    auto previous = std::move(advancement_choice_.training);
     advancement_choice_.training.clear();
     if (const auto *group = advancement_dropdown_group())
     {
@@ -523,8 +549,8 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         if (index > 0 && static_cast<std::size_t>(index) <= group->options.size())
             advancement_choice_.training[group->id] = {group->options[index - 1].id};
     }
-    if (advancement_choice_.feat == "skilled")
-        advancement_choice_.training["feat:skilled"] = std::move(skilled_picks);
+    if (const auto *group = advancement_skilled_group())
+        advancement_choice_.training[group->id] = std::move(previous[group->id]);
     // The feat and Lessons of the First Ones can each bring Magic Initiate's spells.
     drop_unoffered_learning();
     const bool ability = advancement_choice_.feat == "ability_score_improvement";
@@ -565,7 +591,7 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     if (advancement_page_ == AdvancementPage::choices)
         if (const auto *group = advancement_skilled_group())
         {
-            auto &fill = preview_choice.training["feat:skilled"];
+            auto &fill = preview_choice.training[group->id];
             if (fill.size() != group->count)
             {
                 fill.clear();

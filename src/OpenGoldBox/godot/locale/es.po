@@ -28,7 +28,7 @@ msgstr " (Reserva)"
 msgid " (Savage Attacker)"
 msgstr " (Atacante salvaje)"
 
-#: src/OpenGoldBox/level_up_dialog.cpp:355 src/OpenGoldBox/level_up_dialog.cpp:409 src/OpenGoldBox/level_up_dialog.cpp:501
+#: src/OpenGoldBox/level_up_dialog.cpp:381 src/OpenGoldBox/level_up_dialog.cpp:435 src/OpenGoldBox/level_up_dialog.cpp:527
 msgid " (Unavailable)"
 msgstr " (No disponible)"
 
@@ -1042,7 +1042,7 @@ msgstr "Elige un Estilo de combate válido"
 msgid "Choose an existing folder containing the Pool of Radiance game files."
 msgstr "Elige una carpeta existente con los archivos de Pool of Radiance."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:384
+#: src/OpenGoldBox/level_up_dialog.cpp:410
 msgid "Choose an option"
 msgstr "Elige una opción"
 
@@ -1087,7 +1087,7 @@ msgstr "Elige los conjuros que enseña Iniciado en la magia. Las elecciones sin 
 msgid "Choose up to {maximum} creatures. Chosen: {chosen}"
 msgstr "Elige hasta {maximum} criaturas. Elegidas: {chosen}"
 
-#: src/OpenGoldBox/level_up_dialog.cpp:629
+#: src/OpenGoldBox/level_up_dialog.cpp:655
 msgid "Choose valid options to preview your new HP."
 msgstr "Elige opciones válidas para ver tus nuevos PG."
 
@@ -1369,7 +1369,7 @@ msgstr "Completa las elecciones de conjuros disponibles."
 msgid "Complete the required training choices."
 msgstr "Completa las opciones de entrenamiento requeridas."
 
-#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:240 src/OpenGoldBox/level_up_dialog.cpp:105 src/OpenGoldBox/level_up_dialog.cpp:170
+#: src/OpenGoldBox/godot/scenes/level_up_dialog.tscn:240 src/OpenGoldBox/level_up_dialog.cpp:105 src/OpenGoldBox/level_up_dialog.cpp:177
 msgid "Confirm"
 msgstr "Confirmar"
 
@@ -1960,7 +1960,7 @@ msgstr "Clase de guerrero"
 msgid "Fighter skills"
 msgstr "Habilidades de guerrero"
 
-#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_dialog.cpp:421
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/level_up_dialog.cpp:447
 msgid "Fighting Style"
 msgstr "Estilo de combate"
 
@@ -3100,7 +3100,7 @@ msgstr "Maza a dos manos"
 msgid "Maximum HP includes level {level}, d{die} Hit Die and Constitution modifier {modifier}."
 msgstr "Los PG máximos incluyen el nivel {level}, el Dado de Golpe d{die} y el modificador de Constitución {modifier}."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:617
+#: src/OpenGoldBox/level_up_dialog.cpp:643
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Maximum HP: {old} -> {new} / Current HP: {current}"
 msgstr "PG máximos: {old} -> {new} / PG actuales: {current}"
@@ -3332,7 +3332,7 @@ msgstr "Los nuevos personajes empiezan con 3d6 × 10 po / Guardar partida guarda
 msgid "New Phlan"
 msgstr "Nueva Phlan"
 
-#: src/OpenGoldBox/character_creation_view.cpp:467 src/OpenGoldBox/godot/scenes/character_creation.tscn:366 src/OpenGoldBox/level_up_dialog.cpp:171
+#: src/OpenGoldBox/character_creation_view.cpp:467 src/OpenGoldBox/godot/scenes/character_creation.tscn:366 src/OpenGoldBox/level_up_dialog.cpp:178
 msgid "Next"
 msgstr "Siguiente"
 
@@ -3376,7 +3376,7 @@ msgstr "No se ha asignado una imagen de combate"
 msgid "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0)."
 msgstr "Sin modificadores de equipo. Origen: ataque sin armas y Fuerza {score}. Ataque: modificador de Fuerza +2 por competencia de nivel 1; daño: 1 + modificador de Fuerza (mínimo 0)."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:350
+#: src/OpenGoldBox/level_up_dialog.cpp:376
 msgid "No feat or ability increase at this level"
 msgstr "Este nivel no otorga dotes ni mejoras de características"
 
@@ -3400,7 +3400,7 @@ msgstr "No se aplican modificadores numéricos de raza actualmente."
 msgid "No one else can get away. Your party fights on."
 msgstr "Nadie más puede escapar. Tu grupo sigue luchando."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:398
+#: src/OpenGoldBox/level_up_dialog.cpp:424
 msgid "No spell choices for this class"
 msgstr "Esta clase no tiene conjuros que elegir"
 
@@ -3772,7 +3772,7 @@ msgstr "Conjuros preparados con Enemigo predilecto y PG fijos; Estilo de combate
 msgid "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points."
 msgstr "Conjuros preparados, Imposición de manos y PG fijos; Estilo de combate o Guerrero bendito y Castigo del paladín al nivel 2; Canalizar divinidad, el Juramento de devoción y Arma sagrada al nivel 3. Dote o puntos de característica al nivel 4."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:399
+#: src/OpenGoldBox/level_up_dialog.cpp:425
 msgid "Prepared spells: select at least one"
 msgstr "Conjuros preparados: elige al menos uno"
 
@@ -4519,7 +4519,7 @@ msgstr "Selección: {action}. Haz clic en una casilla resaltada."
 msgid "Selected: {action}. Press Space to use it."
 msgstr "Selección: {action}. Pulsa Espacio para usarla."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:245
+#: src/OpenGoldBox/level_up_dialog.cpp:253
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Selected: {count}/{total}"
 msgstr "Seleccionadas: {count}/{total}"
@@ -4621,7 +4621,7 @@ msgstr "Tamaño: normal"
 msgid "Size: Short"
 msgstr "Tamaño: bajo"
 
-#: src/OpenGoldBox/level_up_dialog.cpp:274
+#: src/OpenGoldBox/level_up_dialog.cpp:295
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Skill: {name}"
 msgstr "Habilidad: {name}"
@@ -5256,7 +5256,7 @@ msgstr "Tiefling"
 msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
 msgstr "Los tieflings llevan la marca de los Planos Inferiores en la sangre y en el porte.\n\nRasgos raciales:\n- Legado infernal: abisal, ctónico o infernal, cada uno con una resistencia y su propia magia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
-#: src/OpenGoldBox/level_up_dialog.cpp:275
+#: src/OpenGoldBox/level_up_dialog.cpp:296
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Tool: {name}"
 msgstr "Herramienta: {name}"
@@ -5841,6 +5841,11 @@ msgstr "Trasfondo {background}"
 msgid "{bonus} from {class} saving throw proficiency."
 msgstr "{bonus} por competencia de {class} en salvaciones."
 
+#: src/OpenGoldBox/level_up_dialog.cpp:259
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{choice}: {count}/{total} selected"
+msgstr "{choice}: {count}/{total} elegidas"
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:698
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{count} cp"
@@ -5928,7 +5933,7 @@ msgstr "{name}\n{class} / CA {ac} / PG {current}/{maximum}"
 msgid "{name} / HP {current}/{maximum}\nparty {gold} gp / {items}"
 msgstr "{name} / PG {current}/{maximum}\ngrupo {gold} po / {items}"
 
-#: src/OpenGoldBox/level_up_dialog.cpp:341
+#: src/OpenGoldBox/level_up_dialog.cpp:367
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{name} / Level {level}"
 msgstr "{name} / Nivel {level}"
