@@ -194,6 +194,65 @@ void turn_undead_checks()
         check(submit(*damaged, "end"), "Reach the zombie");
     check(verbs(*damaged).size() > 2, "Damage ends the turning");
 }
+
+// An enemy Wizard with Hideous Laughter prepared.
+Character laughing_wizard()
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "male";
+    d.character_class = "wizard";
+    d.background = "sage";
+    d.alignment = "neutral_evil";
+    d.name = "Foe";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.cantrips = {"fire_bolt", "ray_of_frost", "chill_touch"};
+    const std::vector<std::string> spells{"magic_missile", "hideous_laughter"};
+    d.spells = SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
+    d.training = {{"class:wizard", {"medicine", "nature"}}};
+    return Character(*srd5::character_rules(), d, {});
+}
+
+// Turn Undead ends once the Cleric is Incapacitated: the zombie stops fleeing.
+void incapacitated_turning_checks()
+{
+    auto module = rules();
+    const auto profile = [&](const Character &who, std::vector<std::string> equipment)
+    {
+        return module->character_profile(who.sheet(), equipment).data;
+    };
+    const auto hero = profile(cleric(2), {"mace"});
+    const auto foe = profile(laughing_wizard(), {});
+    for (std::uint64_t seed = 1; seed < 128; ++seed)
+    {
+        auto c = module->create({{12, 4, std::vector<Terrain>(48)},
+            {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, hero},
+                {98, "campaign-character", "Foe", Side::opposition, {7, 1}, foe},
+                {99, "zombie", "Enemy", Side::opposition, {3, 1}}
+            }},
+        seed);
+        // The turned zombie must move before it may end its turn.
+        const auto reach = [&](EntityId id)
+        {
+            while (c->snapshot().actor != id)
+                check(submit(*c, "end") || submit(*c, "move"), "Pass the turn");
+        };
+        reach(1);
+        check(submit(*c, "turn_undead", 1), "The Cleric uses Turn Undead");
+        if (!logged(*c, "Enemy is turned."))
+            continue;
+        reach(98);
+        check(submit(*c, "hideous_laughter", 1), "The Foe casts Hideous Laughter");
+        if (!logged(*c, "Cleric falls Prone, laughing."))
+            continue;
+        reach(99);
+        check(verbs(*c).size() > 2, "The laughing Cleric's Turn Undead ends");
+        return;
+    }
+    throw std::runtime_error("No seed turns the zombie and makes the Cleric laugh");
+}
 // A level-two Cleric beside a wounded ally and a vanguard, for
 // tests/divine_spark_view_tests.gd. The game loads it with the standard rules content.
 void write_ui_fixture()
@@ -250,19 +309,32 @@ void life_domain_checks()
 void lesser_restoration_checks()
 {
     auto module = rules();
-    const std::string blinded =
-        "SRD11 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 2 1 1 1 77 99 \"Caster\" 13 60000 6000 0";
+    // Blinded, Paralyzed and Poisoned, with saves the ally cannot make.
+    const std::string afflicted =
+        "SRD11 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 FX8 4 3 "
+        "1 1 77 99 \"Caster\" 30 60000 6000 2 24 77 99 \"Caster\" 30 60000 6000 "
+        "3 32 77 99 \"Caster\" 0 12000 0 0";
     auto plain = battle(*module, cleric(3));
-    check(!submit(*plain, "lesser_restoration", 2), "Lesser Restoration needs a Blinded creature");
-    auto c = battle(*module, cleric(3), "target", 5, blinded);
+    check(!submit(*plain, "lesser_restoration_blinded", 2),
+          "Lesser Restoration needs a condition to end");
+    auto c = battle(*module, cleric(3), "target", 5, afflicted);
+    std::vector<std::string> choices;
+    for (const auto &command : c->legal_commands())
+        if (command.verb.starts_with("lesser_restoration") && command.target == 2)
+            choices.push_back(command.label);
+    check(choices == std::vector<std::string> {"Lesser Restoration: Blinded",
+                                               "Lesser Restoration: Paralyzed",
+                                               "Lesser Restoration: Poisoned"
+                                              },
+          "Each of the ally's conditions is a choice");
     const auto conditions = [&]
     {
         return unit(*c, 2).conditions.size();
     };
-    check(conditions() == 1, "The ally starts Blinded");
-    check(submit(*c, "lesser_restoration", 2) && conditions() == 0 && !unit(*c, 1).bonus_action &&
-          unit(*c, 1).action,
-          "Lesser Restoration ends Blinded as a Bonus Action");
+    const auto before = conditions();
+    check(submit(*c, "lesser_restoration_paralyzed", 2) && logged(*c, "Ally is no longer Paralyzed.") &&
+          conditions() == before - 1 && !unit(*c, 1).bonus_action && unit(*c, 1).action,
+          "Lesser Restoration ends the chosen condition as a Bonus Action");
 }
 void aid_checks()
 {
@@ -583,6 +655,7 @@ int main()
     {
         divine_spark_checks();
         turn_undead_checks();
+        incapacitated_turning_checks();
         life_domain_checks();
         lesser_restoration_checks();
         aid_checks();

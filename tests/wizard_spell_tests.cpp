@@ -584,6 +584,37 @@ void shield_missile_checks()
           "Shield stops Magic Missile");
 }
 
+// One spell slot per turn: a Wizard who spent a slot on its own turn cannot
+// spend another on Shield before that turn ends, but may on the next one.
+void shield_slot_per_turn_checks()
+{
+    auto module = rules();
+    bool hit_while_leaving = false;
+    for (std::uint64_t seed = 1; seed < 64 && !hit_while_leaving; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "shield"}), {2, 1}, {11, 5}, seed);
+        check(submit(*c, "magic_missile", 98) && slots(*c).first == 1,
+              "Magic Missile spends the turn's slot");
+        check(move_to(*c, Cell{0, 1}) && submit(*c, "opportunity"),
+              "The Wizard steps away and the enemy takes its Opportunity Attack");
+        check(!offered(*c, "shield"), "No second slot this turn, so no Shield");
+        hit_while_leaving = logged(*c, "First -> Wizard") && logged(*c, "hits for");
+    }
+    check(hit_while_leaving, "Some seed's Opportunity Attack hits the leaving Wizard");
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, wizard(1, {"magic_missile", "shield"}), {2, 1}, {11, 5}, seed);
+        check(submit(*c, "magic_missile", 98), "Magic Missile on the Wizard's turn");
+        reach(*c, 98);
+        check(submit(*c, "melee", 1), "The enemy attacks the Wizard");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(offered(*c, "shield"), "On the enemy's turn the Wizard may spend a slot on Shield");
+        return;
+    }
+    throw std::runtime_error("No seed hits the Wizard on the enemy's turn");
+}
+
 void misty_step_checks()
 {
     auto module = rules();
@@ -679,6 +710,63 @@ void laughter_concentration_checks()
         return;
     }
     throw std::runtime_error("No seed fails the Wisdom save");
+}
+
+// An Incapacitated caster loses Concentration at once, not when time passes.
+void incapacitated_concentration_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(3, {"magic_missile"}, {"blur", "shatter"});
+    const auto foe = wizard(1, {"magic_missile", "hideous_laughter"});
+    const auto profile = [&](const Character &who)
+    {
+        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+    };
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+                {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}
+            }},
+        seed);
+        reach(*c, 1);
+        check(submit(*c, "blur", 1) && has_condition(*c, 1, "Concentrating"), "Blur is cast");
+        reach(*c, 98);
+        check(submit(*c, "hideous_laughter", 1), "The Foe casts Hideous Laughter");
+        if (!logged(*c, "Wizard falls Prone, laughing."))
+            continue;
+        check(logged(*c, "Wizard loses Concentration.") && !has_condition(*c, 1, "Concentrating"),
+              "The laughing Wizard loses Concentration");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Wisdom save");
+}
+
+// A wall stops an area: a creature behind it is outside the sphere, and the
+// sphere cannot be centered where the Wizard has no clear line.
+void area_wall_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(3, {"magic_missile"}, {"shatter", "blindness"});
+    std::vector<Terrain> field(72);
+    for (int y = 0; y < 6; ++y)
+        field[static_cast<std::size_t>(y * 12 + 7)] = Terrain::obstacle;
+    auto c = module->create({{12, 6, field},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 1},
+                module->character_profile(hero.sheet(), std::vector<std::string> {}).data},
+            {98, "target", "First", Side::opposition, {6, 2}},
+            {99, "target", "Second", Side::opposition, {8, 2}}
+        }},
+    5);
+    reach(*c, 1);
+    check(submit(*c, "shatter") && !aim(*c, Cell{9, 2}) && aim(*c, Cell{6, 2}),
+          "Shatter may be centered only where the Wizard has a clear line");
+    const auto sphere = c->snapshot().area_targeting->cells;
+    check(sphere.size() == 15 && has(sphere, {6, 2}) && !has(sphere, {7, 2}) &&
+          !has(sphere, {8, 2}),
+          "The wall cuts the sphere off");
+    check(submit(*c, "area_cast") && logged(*c, "First takes") && !logged(*c, "Second takes"),
+          "The creature behind the wall is untouched");
 }
 
 void blur_checks()
@@ -1054,11 +1142,14 @@ int main()
         web_checks();
         shield_checks();
         shield_missile_checks();
+        shield_slot_per_turn_checks();
         misty_step_checks();
         acid_arrow_checks();
         mind_spike_checks();
         ray_of_enfeeblement_checks();
         laughter_concentration_checks();
+        incapacitated_concentration_checks();
+        area_wall_checks();
         blur_checks();
         mirror_image_checks();
         magic_weapon_checks();

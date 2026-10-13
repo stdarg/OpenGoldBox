@@ -884,7 +884,7 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
     // Restoration only on a Blinded one.
     for (const auto &command : offered)
         if (command.verb == "turn_undead" || command.verb == "preserve_life" ||
-                command.verb == "lesser_restoration" || command.verb == "spare_the_dying")
+                command.verb.starts_with("lesser_restoration_") || command.verb == "spare_the_dying")
             return command;
     if (const auto *command = heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word",
                                                 "healing_word_2"

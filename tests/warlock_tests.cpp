@@ -197,6 +197,42 @@ void hellish_rebuke_checks()
     throw std::runtime_error("No seed hurts the Warlock");
 }
 
+// One spell slot per turn: after Hex on its own turn, the Warlock cannot spend
+// its other slot on Hellish Rebuke until the next creature's turn.
+void rebuke_slot_per_turn_checks()
+{
+    auto module = rules();
+    const auto step_away = [](CombatSession &c)
+    {
+        for (const auto &command : c.legal_commands())
+            if (command.verb == "move" && command.destination == Cell{0, 1})
+                return c.submit(command);
+        return false;
+    };
+    bool hurt_while_leaving = false;
+    for (std::uint64_t seed = 1; seed < 64 && !hurt_while_leaving; ++seed)
+    {
+        auto c = battle(*module, warlock(2), seed);
+        check(submit(*c, "hex", 98), "Hex spends the turn's slot");
+        check(step_away(*c) && submit(*c, "opportunity"),
+              "The Warlock steps away and the enemy takes its Opportunity Attack");
+        check(!offered(*c, "rebuke"), "No second slot this turn, so no Hellish Rebuke");
+        hurt_while_leaving = logged(*c, "Enemy -> Warlock") && logged(*c, "hits for");
+    }
+    check(hurt_while_leaving, "Some seed's Opportunity Attack hurts the leaving Warlock");
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = battle(*module, warlock(2), seed);
+        check(submit(*c, "hex", 98) && submit(*c, "end") && submit(*c, "melee", 1),
+              "Hex, then the enemy attacks");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(offered(*c, "rebuke"), "On the enemy's turn the Warlock may spend its other slot");
+        return;
+    }
+    throw std::runtime_error("No seed hurts the Warlock on the enemy's turn");
+}
+
 void advancement_checks()
 {
     auto module = rules();
@@ -375,6 +411,7 @@ int main()
         policy_checks();
         pact_magic_checks();
         hellish_rebuke_checks();
+        rebuke_slot_per_turn_checks();
         advancement_checks();
         invocation_checks();
         fiend_checks();

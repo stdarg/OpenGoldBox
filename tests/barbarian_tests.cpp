@@ -164,6 +164,50 @@ void rage_checks()
     check(!raging(*c), "A turn without attacking or extending lets the Rage end");
 }
 
+// The Barbarian (1), Restrained by Entangle, beside an enemy (98), carrying Acid.
+std::unique_ptr<CombatSession> entangled(const RulesModule &module)
+{
+    const auto hero = barbarian();
+    Participant barbarian_entry{1, "campaign-character", "Barbarian", Side::party, {1, 1},
+                                module.character_profile(hero.sheet(), std::vector<std::string> {"greataxe"}).data,
+                                VitalState{hero.sheet().hit_points, false,
+                                           "SRD11 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 2 "
+                                           "FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}};
+    barbarian_entry.inventory = {{0, "acid", 3, -1}};
+    auto c = module.create({{12, 6, std::vector<Terrain>(72)},
+        {barbarian_entry, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, 5);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the Barbarian's turn");
+    return c;
+}
+
+// Rage gives Strength checks Advantage, including the escape from Restrained.
+void rage_escape_checks()
+{
+    auto module = rules();
+    auto plain = entangled(*module);
+    check(submit(*plain, "escape") && logged(*plain, "Barbarian Athletics check: d20") &&
+          !logged(*plain, "(advantage)"),
+          "Without Rage the escape check is a plain roll");
+    auto raging_hero = entangled(*module);
+    check(submit(*raging_hero, "rage") && submit(*raging_hero, "escape") &&
+          logged(*raging_hero, "(advantage) + "),
+          "A raging Barbarian's escape check has Advantage");
+}
+
+// Forcing an enemy's saving throw extends a Rage, as an attack roll does.
+void thrown_flask_rage_checks()
+{
+    auto module = rules();
+    auto c = entangled(*module);
+    check(submit(*c, "rage"), "Enter a Rage");
+    reach(*c, 1);
+    check(raging(*c) && submit(*c, "throw_acid", 98) && logged(*c, "Enemy Dexterity save"),
+          "Thrown Acid forces the enemy's Dexterity save");
+    reach(*c, 1);
+    check(raging(*c), "The save extends the Rage through the next turn");
+}
+
 void heavy_armor_checks()
 {
     auto module = rules();
@@ -248,6 +292,8 @@ int main()
     try
     {
         rage_checks();
+        rage_escape_checks();
+        thrown_flask_rage_checks();
         heavy_armor_checks();
         advancement_checks();
         reckless_checks();

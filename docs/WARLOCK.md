@@ -22,7 +22,8 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   Cast Hellish Rebuke at the attacker, or decline." (React/Decline). The
   attacker makes a Dexterity save against 2d10 Fire (3d10 from a level-2
   slot), half on a success. Damage from saving throws and other sources does
-  not prompt it yet.
+  not prompt it yet. Only one spell slot may be spent per turn: a Warlock who
+  spent one on its own turn is not asked before that turn ends.
 - **Magical Cunning** (level 2, once per Long Rest): from the Camp dialog's
   Cast / Use, a one-minute rite restores expended Pact Magic slots, up to half
   the maximum (rounded up). It shares Arcane Recovery's store.

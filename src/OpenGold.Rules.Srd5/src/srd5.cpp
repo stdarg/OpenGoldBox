@@ -916,6 +916,39 @@ constexpr std::array arcane_allocations
     ArcaneAllocation{"arcane_recovery:2:0", "Two level-one spell slots", 2, 0},
     ArcaneAllocation{"arcane_recovery:0:1", "One level-two spell slot", 0, 1}};
 
+// Whether an effect gives the named Lesser Restoration condition.
+bool gives_condition(detail::EffectKind kind, std::string_view condition)
+{
+    if (condition == "blinded")
+        return kind == detail::EffectKind::blindness || kind == detail::EffectKind::dazzled;
+    if (condition == "paralyzed")
+        return kind == detail::EffectKind::hold_person;
+    return kind == detail::EffectKind::poisoned;
+}
+
+std::string condition_name(std::string_view condition)
+{
+    return condition == "blinded" ? "Blinded" : condition == "paralyzed" ? "Paralyzed" : "Poisoned";
+}
+
+bool has_condition(const Actor &a, std::string_view condition)
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
+    {
+        return gives_condition(e.kind, condition);
+    });
+}
+
+// Whether Lesser Restoration has a condition to end on the creature.
+bool restorable(const Actor &a)
+{
+    return std::any_of(detail::restoration_conditions.begin(), detail::restoration_conditions.end(),
+                       [&](std::string_view condition)
+    {
+        return has_condition(a, condition);
+    });
+}
+
 bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
 {
     const auto &d = actor.definition;
@@ -2069,6 +2102,9 @@ class Session final : public CombatSession
     // `origin` is the caster's square, from which cones and cubes extend.
     [[nodiscard]] std::vector<Cell> area_cells(const detail::SpellDef &spell,
             std::string_view verb, Cell origin, Cell center) const;
+    // The area's squares on an open field, before walls block any of them.
+    [[nodiscard]] std::vector<Cell> area_shape(const detail::SpellDef &spell,
+            std::string_view verb, Cell origin, Cell center) const;
     // Whether `viewer` cannot see into the square.
     [[nodiscard]] bool obscured(const Actor &viewer, Cell cell) const;
     // Inside Silence: no Thunder damage.
@@ -2249,6 +2285,8 @@ class Session final : public CombatSession
     void begin_concentration(Actor &caster, const detail::SpellDef &spell);
     void end_concentration(Actor &caster);
     void drop_concentration_effects(const Actor &caster);
+    // An Incapacitated creature loses Concentration and ends its Turn Undead.
+    void end_incapacitated_effects(Actor &a);
     unsigned selection_maximum(const PendingSelection &) const;
     void choose_target(const Command &command);
     void cast_on_selection();
@@ -2905,6 +2943,9 @@ void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear
         "{name} throws {item} at {target}.",
         {{"name", a.source.name}, {"item", label, true}, {"target", target.source.name}}
     });
+    // Forcing an enemy's save on the thrower's own turn extends a Rage.
+    if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
+        extend_rage(a);
     if (saving_throw_succeeds(target, detail::Ability::dexterity, dc))
         return;
     if (gear.effect == detail::ThrownGearEffect::oil)
@@ -3653,6 +3694,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         target.effects.prone = true;
         log(target.source.name + " falls Prone, laughing.",
         {"{name} falls Prone, laughing.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
         return;
     case detail::Rider::sleep:
     case detail::Rider::color_spray:
@@ -3806,6 +3848,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
         log(target.source.name + " is Paralyzed.",
         {"{name} is Paralyzed.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
         return;
     case detail::Rider::guiding_bolt:
     {
@@ -3838,13 +3881,19 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::lesser_restoration:
-        std::erase_if(target.effects.active, [](const auto & e)
+    {
+        const auto condition = *detail::restoration_condition(verb);
+        std::erase_if(target.effects.active, [&](const auto & e)
         {
-            return e.kind == detail::EffectKind::blindness;
+            return gives_condition(e.kind, condition);
         });
-        log(target.source.name + " is no longer Blinded.",
-        {"{name} is no longer Blinded.", {{"name", target.source.name}}});
+        const std::string message = condition == "blinded"     ? "{name} is no longer Blinded."
+                                     : condition == "paralyzed" ? "{name} is no longer Paralyzed."
+                                     : "{name} is no longer Poisoned.";
+        log(target.source.name + " is no longer " + condition_name(condition) + ".",
+        {message, {{"name", target.source.name}}});
         return;
+    }
     case detail::Rider::chill_touch:
     {
         const unsigned slot = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
@@ -4203,8 +4252,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         if (spell.requires_effect_capacity && !detail::can_apply(other.effects))
             continue;
-        // Lesser Restoration has a condition to end only on a Blinded creature.
-        if (spell.rider == detail::Rider::lesser_restoration && !detail::blinded(other.effects))
+        if (spell.rider == detail::Rider::lesser_restoration && !restorable(other))
             continue;
         if (spell.rider == detail::Rider::heat_metal && !wears_metal(other))
             continue;
@@ -4309,6 +4357,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                     offer("reduce", "Reduce");
                 continue;
             }
+            // The caster chooses which one condition to end.
+            if (spell.rider == detail::Rider::lesser_restoration)
+            {
+                for (const auto condition : detail::restoration_conditions)
+                    if (has_condition(other, condition))
+                        offer("lesser_restoration_" + std::string(condition),
+                              "Lesser Restoration: " + condition_name(condition));
+                continue;
+            }
             offer(std::string(spell.id), std::string(spell.label));
             continue;
         }
@@ -4376,12 +4433,20 @@ std::vector<Command> Session::legal_commands() const
         // Misty Step and Flaming Sphere need an unoccupied square.
         const bool open_square = spell.rider == detail::Rider::misty_step ||
                                  spell.rider == detail::Rider::flaming_sphere;
+        // An area centered on a square needs a clear line to that square; a
+        // cone, line or cube spreads from the caster and is only pointed.
+        const bool centered = !spell.cone && !spell.line && !spell.cube;
+        const auto aimable = [&](Cell cell)
+        {
+            return (!open_square || teleport_open(caster, cell)) &&
+                   (!centered || line_of_sight(caster.source.cell, cell));
+        };
         for (int y = 0; y < board_.height; ++y)
             for (int x = 0; x < board_.width; ++x)
                 if (distance(caster.source.cell, Cell{x, y}) <= spell_range(caster, spell) &&
-                        (!open_square || teleport_open(caster, Cell{x, y})))
+                        aimable(Cell{x, y}))
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
-        if (!open_square || teleport_open(caster, area_->center))
+        if (aimable(area_->center))
             add(caster.source.id, "area_cast", "Cast spell");
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
@@ -5163,6 +5228,7 @@ void Session::damage(Actor &target, int amount, bool critical)
     {
         target.effects.prone = true;
         end_wild_shape(target);
+        end_incapacitated_effects(target);
     }
     // Damage ends Turn Undead, Sleep and Charm Person on the creature.
     // Adaptation: any damage ends the charm, not only the charmer's side's.
@@ -5277,6 +5343,20 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
 std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string_view verb,
                                      Cell origin, Cell center) const
 {
+    // An area reaches only the squares with a clear line from its point of
+    // origin: the caster for a cone, line or cube, the aimed square otherwise.
+    const Cell point = spell.cone || spell.line || spell.cube ? origin : center;
+    auto cells = area_shape(spell, verb, origin, center);
+    std::erase_if(cells, [&](Cell cell)
+    {
+        return !line_of_sight(point, cell);
+    });
+    return cells;
+}
+
+std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string_view verb,
+                                     Cell origin, Cell center) const
+{
     std::vector<Cell> cells;
     // The aimed direction from the caster; aiming at the caster faces east.
     const int dx = center.x - origin.x, dy = center.y - origin.y;
@@ -5377,13 +5457,15 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
                 nearest = &other;
         return nearest ? spectral_cell(*nearest, caster.source.cell) : caster.source.cell;
     }
-    // The preview starts on the nearest living enemy in range, else the caster.
+    // The preview starts on the nearest living enemy in range and in clear
+    // line, else the caster.
     Cell best = caster.source.cell;
     int best_feet = spell.range + 1;
     for (const auto &other : actors_)
     {
         const int feet = distance(caster.source.cell, other.source.cell);
-        if (other.source.side != caster.source.side && other.life.hp > 0 && feet < best_feet)
+        if (other.source.side != caster.source.side && other.life.hp > 0 && feet < best_feet &&
+                line_of_sight(caster.source.cell, other.source.cell))
         {
             best = other.source.cell;
             best_feet = feet;
@@ -5520,6 +5602,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
                 detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(other.source.id)});
             log(other.source.name + " grows drowsy.",
             {"{name} grows drowsy.", {{"name", other.source.name}}});
+            end_incapacitated_effects(other);
         }
         else
         {
@@ -6146,7 +6229,8 @@ int Session::guidance_bonus(const Actor &a, std::string_view skill)
 void Session::escape_ensnaring(Actor &a)
 {
     // A Strength (Athletics) check against the spell's DC ends Ensnaring
-    // Strike. A creature's Strength save bonus stands in for Athletics.
+    // Strike. A creature's Strength save bonus stands in for Athletics. Rage
+    // and the Champion's Remarkable Athlete give the check Advantage.
     const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                     [](const auto & e)
     {
@@ -6154,18 +6238,21 @@ void Session::escape_ensnaring(Actor &a)
                e.kind == detail::EffectKind::entangle || e.kind == detail::EffectKind::webbed;
     });
     const auto vines = *found;
-    const int natural = roll(20);
+    const bool advantage = rage_of(a) || def(a).champion;
+    const int natural = detail::d20({advantage}, rng_);
     const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                       guidance_bonus(a, "athletics");
     const bool escaped = natural + bonus >= vines.dc;
-    log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + " + " +
-        std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
+    const std::string advantage_label = advantage ? " (advantage)" : "";
+    log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + advantage_label +
+        " + " + std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
         (escaped ? " (escapes)." : " (still Restrained)."),
     {
-        escaped ? "{name} Athletics check: d20 {roll} + {bonus} vs DC {dc} (escapes)."
-        : "{name} Athletics check: d20 {roll} + {bonus} vs DC {dc} (still Restrained).",
+        escaped ? "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (escapes)."
+        : "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (still Restrained).",
         {   {"name", a.source.name},
             {"roll", std::to_string(natural)},
+            {"advantage", advantage_label, true},
             {"bonus", std::to_string(bonus)},
             {"dc", std::to_string(vines.dc)}
         }
@@ -6408,6 +6495,17 @@ void Session::end_concentration(Actor &caster)
 {
     if (caster.concentration.stop())
         drop_concentration_effects(caster);
+}
+
+void Session::end_incapacitated_effects(Actor &a)
+{
+    end_concentration(a);
+    for (auto &other : actors_)
+        std::erase_if(other.effects.active, [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::turned && e.source_actor == a.source.id &&
+               e.source_scope == scope_;
+    });
 }
 
 void Session::drop_concentration_effects(const Actor &caster)
@@ -7546,8 +7644,11 @@ bool Session::begin_turn()
         if (a.life.hp == 0)
             return false;
     }
+    // One spell slot per turn, whoever's turn it is: a Reaction spell on
+    // another creature's turn may spend a slot again.
     for (auto &actor : actors_)
     {
+        actor.spent_slot = false;
         actor.cleave_used = false;
         actor.colossus_used = actor.horde_used = actor.resistance_used = false;
         actor.horde_origin = 0;
@@ -7579,7 +7680,6 @@ bool Session::begin_turn()
     a.dodge = a.disengaged = false;
     a.movement = def(a).speed;
     a.dashes = 0;
-    a.spent_slot = false;
     a.rush_used = false;
     // Command's Grovel and Halt take the whole turn; Approach and Flee limit
     // the turn's commands instead (obey_command).
@@ -7977,7 +8077,7 @@ const Session::ReactionAnswer *Session::answer_of(EntityId target, Asked asked) 
 bool Session::can_shield(const Actor &target) const
 {
     return conscious(target) && target.reaction && (target.slots > 0 || target.slots2 > 0) &&
-           detail::knows_spell(def(target).spells, "shield") &&
+           !target.spent_slot && detail::knows_spell(def(target).spells, "shield") &&
            !detail::incapacitated(target.effects) &&
            !detail::has_effect(target.effects, detail::EffectKind::shield);
 }
@@ -8133,7 +8233,7 @@ bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
 {
     return warlock.source.side != attacker.source.side && conscious(warlock) &&
            warlock.reaction && !detail::incapacitated(warlock.effects) &&
-           (warlock.slots > 0 || warlock.slots2 > 0) &&
+           (warlock.slots > 0 || warlock.slots2 > 0) && !warlock.spent_slot &&
            detail::knows_spell(def(warlock).spells, "hellish_rebuke") &&
            distance(warlock.source.cell, attacker.source.cell) <= 60 && can_see(warlock, attacker) &&
            !attacker.life.dead;
@@ -8149,6 +8249,7 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
     if (answer_of(warlock.source.id, Asked::rebuke)->verb != "rebuke")
         return;
     warlock.reaction = false;
+    warlock.spent_slot = true;
     const bool second = warlock.slots <= 0;
     --(second ? warlock.slots2 : warlock.slots);
     auto &foe = actor(attacker.source.id);
@@ -8211,6 +8312,7 @@ void Session::answer_reaction(const Command &command)
     if (command.verb == "shield")
     {
         defender.reaction = false;
+        defender.spent_slot = true;
         if (defender.slots > 0)
             --defender.slots;
         else

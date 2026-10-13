@@ -115,8 +115,8 @@ disabled unrelated actions/Grip and absence of combat-save controls. Game EN/ES
 and demo EN are rendered at 1120×800 and 1920×1080.
 
 Strength/Athletics Advantage is available through the existing public skill-check
-query with sourced evidence. No currently implemented action rolls Athletics;
-adding such actions remains outside #88. Supported Fighters have no spell-access
+query with sourced evidence. The escape from Entangle, Web or Ensnaring Strike is
+the only action that rolls Athletics, and it has the Advantage. Supported Fighters have no spell-access
 source: Magic Initiate/multiclass features must later connect their actual spell
 routes and immediate per-hit movement, including multi-attack spells. This batch
 does not claim those future player paths. The current spell critical calculation

@@ -142,6 +142,40 @@ std::uint64_t random_state(const CombatSession &c)
     return result;
 }
 
+// A Fighter of the given level Restrained by Entangle; its escape check's log line.
+std::string escape_line(unsigned level)
+{
+    const auto h = hero(level);
+    const auto rules = custom();
+    auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
+        {   {
+                1, "campaign-character", "Champion", Side::party, {2, 2},
+                rules->character_profile(h.sheet(), std::vector<std::string> {"longsword"}).data,
+                VitalState{h.sheet().hit_points, false,
+                           "SRD11 2 0 0 0 0 0 " + std::to_string(level) +
+                           " 0 0 0 \"\" 0 1 0 0 0 0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}
+            },
+            {2, "dummy", "Target", Side::opposition, {6, 6}}
+        }},
+    1);
+    while (c->snapshot().actor != 1)
+        act(*c, "end");
+    act(*c, "escape");
+    for (const auto &line : c->snapshot().log())
+        if (line.find("Athletics check") != std::string::npos)
+            return line;
+    throw std::runtime_error("No escape check");
+}
+
+// Remarkable Athlete gives the Athletics check that escapes Advantage.
+void athletic_escape()
+{
+    check(escape_line(3).find("(advantage)") != std::string::npos,
+          "The Champion escapes with Advantage");
+    check(escape_line(2).find("(advantage)") == std::string::npos,
+          "A level-two Fighter rolls plainly");
+}
+
 void grants_and_checks()
 {
     auto rules = module();
@@ -567,6 +601,7 @@ int main()
         reaction_continuation();
         campaign_and_cancellation();
         repeated_criticals_and_terrain();
+        athletic_escape();
         fixtures();
         std::cout << "Champion tests passed\n";
         return 0;

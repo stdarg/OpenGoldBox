@@ -1057,8 +1057,8 @@ inline constexpr std::array spell_table
         .range = 30,
         .instances = 3,
         .rider = Rider::aid},
-    // SRD 5.2.1 p. 144: ends one condition on a touched creature; Blinded is
-    // the only one of its four the game has so far.
+    // SRD 5.2.1 p. 144: ends one condition on a touched creature. The game has
+    // Blinded, Paralyzed and Poisoned of its four; nothing deafens yet.
     SpellDef{
         .id = "lesser_restoration",
         .label = "Lesser Restoration",
@@ -1309,6 +1309,23 @@ inline std::optional<DamageType> chromatic_type(std::string_view verb)
     return damage_type(verb);
 }
 
+// The conditions Lesser Restoration ends, each offered as
+// "lesser_restoration_<condition>".
+inline constexpr std::array<std::string_view, 3> restoration_conditions{"blinded", "paralyzed",
+    "poisoned"};
+
+// The condition a Lesser Restoration verb names, if it is one.
+inline std::optional<std::string_view> restoration_condition(std::string_view verb)
+{
+    if (!verb.starts_with("lesser_restoration_"))
+        return std::nullopt;
+    verb.remove_prefix(19);
+    const auto found = std::find(restoration_conditions.begin(), restoration_conditions.end(), verb);
+    if (found == restoration_conditions.end())
+        return std::nullopt;
+    return *found;
+}
+
 // Dragon's Breath's damage types, each offered as "dragons_breath_<type>" and
 // exhaled as "dragons_breath_exhale_<type>".
 inline constexpr std::array<std::string_view, 5> dragon_types{"acid", "cold", "fire",
@@ -1387,6 +1404,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "guidance";
     if (chromatic_type(id))
         id = "chromatic_orb";
+    if (restoration_condition(id))
+        id = "lesser_restoration";
     if (id == "enlarge" || id == "reduce")
         id = "enlarge_reduce";
     if (id == "true_strike_radiant")

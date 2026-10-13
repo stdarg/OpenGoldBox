@@ -14,16 +14,19 @@ Unarmored Defense came earlier; see [Armor](ARMOR.md).
   ("Rage adds 2 damage."); Advantage on Strength saves; no spells (none are
   offered) and no Concentration (entering a Rage ends it).
 - It lasts until the end of the Barbarian's next turn. An attack roll against
-  an enemy on its turn extends it, and so does **Extend Rage** (a Bonus Action
+  an enemy on its turn extends it, so does a thrown Acid, Alchemist's Fire or
+  Oil that makes an enemy save, and so does **Extend Rage** (a Bonus Action
   offered on a later turn). It ends early when the Barbarian is Incapacitated
   or drops to 0 Hit Points.
-- Not modeled: Advantage on Strength checks, the 10-minute limit (no fight
-  lasts that long), extending by forcing a save, and donning armor mid-Rage.
+- Advantage on Strength checks applies to the Athletics check that escapes
+  Entangle, Web or Ensnaring Strike, the only Strength check the game rolls.
+- Not modeled: the 10-minute limit (no fight lasts that long) and donning armor
+  mid-Rage.
 - The computer rages before it fights. Rage and Extend Rage sit in the Bonus
   Action list.
 - Verification: `opengold_barbarian_tests` (the Bonus Action and its use, the
-  Rage Damage, a checkpoint, Resistance, extension by attack and expiry, no
-  Rage in Heavy armor).
+  Rage Damage, a checkpoint, Resistance, extension by attack, by a thrown
+  flask's save and expiry, the escape check's Advantage, no Rage in Heavy armor).
 
 ## Levels 2–4
 

@@ -25,7 +25,8 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
   Undead enemy within 30 feet makes a Wisdom save or is turned for 1 minute:
   Frightened and Incapacitated, it can only move as far from the Cleric as it
   can, takes no Action or Reaction, and the effect ends when it takes damage or
-  the Cleric drops to 0 Hit Points. The current content has no Undead yet.
+  the Cleric is Incapacitated (Paralyzed, Sleep, Hideous Laughter or 0 Hit
+  Points). The current content has no Undead yet.
 - In the game: A cycles to **Divine Spark** (click the creature) or **Turn
   Undead** (Space). The party AI uses Divine Spark on an ally below half Hit
   Points before spending a spell slot, and Turn Undead whenever it is offered.
@@ -49,12 +50,14 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
 - **Life Domain spells**: Aid, Bless, Cure Wounds and Lesser Restoration are
   always prepared from level three and not counted; earlier preparations of
   them free their places.
-- **Lesser Restoration** (level 2, Bonus Action, touch): ends Blinded on an
-  ally, the only one of its conditions the game has so far, so it is offered
-  only on a Blinded ally. The AI uses it whenever it is offered.
+- **Lesser Restoration** (level 2, Bonus Action, touch): ends one condition on
+  an ally: Blinded (Blindness or Color Spray), Paralyzed (Hold Person) or
+  Poisoned. It is offered once for each of these the ally has, as **Lesser
+  Restoration: Blinded** and so on; nothing deafens yet. The AI uses it whenever
+  it is offered.
 - Verification: `opengold_cleric_channel_tests` (the always prepared spells,
   Disciple of Life's +3 from a level-one slot on identical rolls, Preserve
-  Life, Lesser Restoration ending Blinded) and the updated preparation checks in
+  Life, a Lesser Restoration choice for each condition) and the updated preparation checks in
   `opengold_spell_access_tests` and `opengold_spell_component_tests`.
 
 ## Aid

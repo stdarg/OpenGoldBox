@@ -43,8 +43,14 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
   inorganic material is not modeled.
 - The caster is never caught in its own area; allies are, unless an Evoker
   sculpts the spell.
+- Walls block areas (SRD 5.2.1 line of effect): a square is in the area only
+  if a straight line from the point of origin reaches it, the caster for a
+  cone, line or cube, the aimed square for a sphere. A sphere can be centered
+  only on a square the caster has a clear line to. Partial cover is not
+  modeled.
 - Verification: `opengold_wizard_spell_tests` (the cone's seven squares and who
-  is hit, the cube and a 10-foot push, the sphere and who is hit).
+  is hit, the cube and a 10-foot push, the sphere and who is hit, a wall
+  cutting a sphere off).
 
 Verification: the Wizard spellbook, preparation and advancement checks in
 `opengold_spell_access_tests`, `opengold_advancement_tests`,
@@ -155,6 +161,10 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
   +5 AC until the start of the Wizard's next turn, including against the
   triggering attack, which may now miss. Being targeted by Magic Missile asks
   the same way, and a shielded Wizard takes no Magic Missile damage.
+- Only one spell slot may be spent per turn, whoever's turn it is: a Wizard
+  who spent a slot on its own turn is not asked about Shield before that turn
+  ends (an Opportunity Attack as it walks away, for example), but is on the
+  next creature's turn.
 - A critical hit is not asked about, since +5 AC cannot stop it. A Wizard who
   declines is not asked again during the same command (the later rays of one
   Scorching Ray, for example).
