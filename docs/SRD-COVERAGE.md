@@ -101,6 +101,9 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.171 gives the Boar form its charge: 20 feet or more straight toward
+a Medium or smaller target right before a Gore hit adds 1d6 Piercing damage
+and knocks the target Prone.
 Rules 0.6.170 gives Halflings Nimbleness: a Halfling moves through the space
 of a creature larger than itself, friend or foe, but cannot stop there. The
 user kept it on 2026-10-13 although SCOPE-2 dropped the other size-difference

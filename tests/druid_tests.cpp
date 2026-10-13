@@ -661,6 +661,53 @@ void prone_mover_checks()
     check(covered, "A bite knocked the mover Prone");
 }
 
+// The Boar's charge: moving 20 feet or more straight toward a Medium or
+// smaller target right before a Gore hit adds 1d6 and knocks it Prone. A
+// corridor one square wide keeps every route straight.
+void charge_checks()
+{
+    auto module = rules();
+    std::vector<Terrain> corridor(36, Terrain::obstacle);
+    for (int x = 0; x < 12; ++x)
+        corridor[12 + x] = Terrain::open;
+    // The Boar at (1,1) charges along the corridor at `enemy` on (`at`,1).
+    const auto charge = [&](const std::string &enemy, int at, int stop, std::uint64_t seed,
+                            bool reload)
+    {
+        const auto profile = module->character_profile(druid(2).sheet(), {}).data;
+        auto c = module->create({{12, 3, corridor},
+            {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                {98, enemy, "Enemy", Side::opposition, {at, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Druid's turn");
+        check(submit(*c, "wild_shape_boar") && move_to(*c, Cell{stop, 1}),
+              "The Boar runs down the corridor");
+        if (reload)
+            c = module->restore(c->save());
+        check(submit(*c, "melee", 98), "The Boar gores");
+        return c;
+    };
+    // The first seed whose Gore hits.
+    const auto gore = [&](const std::string &enemy, int at, int stop, bool reload)
+    {
+        for (std::uint64_t seed = 1; seed < 40; ++seed)
+        {
+            auto c = charge(enemy, at, stop, seed, reload);
+            if (logged(*c, " hits for ") || logged(*c, " CRITICAL for "))
+                return c;
+        }
+        throw std::runtime_error("No seed's Gore hits");
+    };
+    const auto c = gore("target", 7, 6, false);
+    check(logged(*c, "The charge adds") && unit(*c, 98).prone,
+          "25 feet straight: 1d6 more and Prone");
+    check(logged(*gore("target", 7, 6, true), "The charge adds"), "The run survives a checkpoint");
+    check(!logged(*gore("target", 5, 4, false), "The charge adds"), "15 feet is too short");
+    check(!logged(*gore("ogre", 7, 6, false), "The charge adds"), "A Large ogre is not charged");
+}
+
 void lands_aid_checks()
 {
     auto module = rules();
@@ -720,6 +767,7 @@ int main()
         creature_equipment_checks();
         wild_shape_checks();
         prone_mover_checks();
+        charge_checks();
         lands_aid_checks();
         policy_checks();
         std::cout << "Druid tests passed\n";

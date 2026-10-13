@@ -87,7 +87,12 @@ ability.
   - Wolf: AC 12, Speed 40, Bite +4 for 1d6 + 2 Piercing; Pack Tactics, and a
     hit knocks a Medium or smaller creature Prone.
   - Boar: AC 11, Speed 40, Gore +3 for 1d6 + 1 Piercing; Bloodied Fury
-    (Advantage at half its Hit Points or fewer). The charge is not modeled.
+    (Advantage at half its Hit Points or fewer). Charge (rules 0.6.171): a
+    Gore hit right after moving 20 feet or more in a straight line, each step
+    5 feet closer to a Medium or smaller target, deals 1d6 more Piercing
+    damage and knocks the target Prone. Any command between the run and the
+    Gore, other than moving, ends the run; combat checkpoints keep it
+    (`OGCOMBAT 51`).
   - Giant Lizard (Large): AC 12, Speed 40, Bite +4 for 1d8 + 2 Piercing.
   - Giant Snake (the SRD Constrictor Snake, Large): AC 13, Speed 30, Bite +4
     for 1d8 + 2 Piercing. Constrict is not offered: grappling is not planned

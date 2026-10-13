@@ -265,7 +265,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 50;
+constexpr unsigned checkpoint_format = 51;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -596,7 +596,7 @@ struct Definition
     // has; Land's Aid spends them from level 3.
     int wild_shapes{};
     bool lands_aid{};
-    bool prone_bite{}, bloodied_fury{}; // a Beast form's attack traits
+    bool prone_bite{}, bloodied_fury{}, charge{}; // a Beast form's attack traits
     bool deflect{};       // Monk level 3: Deflect Attacks
     bool open_hand{};     // Warrior of the Open Hand, Monk level 3
     int focus_dc{};       // 8 + Wisdom + Proficiency, for Focus features' saves
@@ -709,6 +709,11 @@ struct Actor
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
     bool spent_slot{}, savage_used{}, facing_left{};
     bool sneak_used{}, aim_used{}, aim_ready{}, moved{};
+    // The straight line just moved along this turn, for a Boar's charge: its
+    // first and last cells, the step repeated and its length. Any command but
+    // moving or a melee attack ends it.
+    Cell run_start{}, run_end{}, run_step{};
+    int run_feet{};
     unsigned selected_weapon{};
     std::vector<unsigned> light_origins;
     unsigned nick_origin{}; // Light weapon used by the current Attack action.
@@ -921,6 +926,7 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.pack_tactics = form.pack_tactics;
     d.prone_bite = form.prone_bite;
     d.bloodied_fury = form.bloodied_fury;
+    d.charge = form.charge;
     return d;
 }
 
@@ -2361,6 +2367,8 @@ class Session final : public CombatSession
     Dice weapon_dice(const Actor &a, AttackRange range) const;
     detail::DamageDieRule weapon_die_rule(const Actor &a, AttackRange range) const;
     void apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved);
+    static void extend_run(Actor &a, Cell from, Cell to);
+    [[nodiscard]] bool charges(const Actor &a, const Actor &target) const;
     bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range, int mode) const;
     bool ally_beside(const Actor &a, const Actor &target) const;
     int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
@@ -6879,6 +6887,30 @@ Dice Session::weapon_dice(const Actor &a, AttackRange range) const
     return result;
 }
 
+void Session::extend_run(Actor &a, Cell from, Cell to)
+{
+    const Cell step{to.x - from.x, to.y - from.y};
+    if (a.run_feet && a.run_end == from && a.run_step == step)
+        a.run_feet += 5;
+    else
+    {
+        a.run_start = from;
+        a.run_step = step;
+        a.run_feet = 5;
+    }
+    a.run_end = to;
+}
+
+bool Session::charges(const Actor &a, const Actor &target) const
+{
+    // 20 feet or more in one straight line, each step 5 feet closer to the
+    // target, ending where the Boar stands.
+    return def(a).charge && def(target).size <= 2 && a.run_feet >= 20 &&
+           a.run_end == a.source.cell &&
+           distance(a.run_start, target.source.cell) - distance(a.run_end, target.source.cell) ==
+           a.run_feet;
+}
+
 void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
 {
     const int natural = resolved.natural, bonus = resolved.bonus, mode = resolved.mode;
@@ -7108,6 +7140,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         return e.kind == detail::EffectKind::guiding_bolt;
     });
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
+    const bool charging = !spell && !ranged && charges(a, target);
+    a.run_feet = 0;
     bool lucky_reroll = false;
     int natural = detail::d20(modifiers, rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
@@ -7203,6 +7237,13 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("Colossus Slayer adds " + std::to_string(extra) + " damage.",
         {"Colossus Slayer adds {damage} damage.", {{"damage", std::to_string(extra)}}});
     }
+    if (hit && charging)
+    {
+        const int extra = dice({1, 6, 0}, critical_hit(a, target, natural));
+        weapon_damage += extra;
+        log("The charge adds " + std::to_string(extra) + " damage.",
+        {"The charge adds {damage} damage.", {{"damage", std::to_string(extra)}}});
+    }
     // Ray of Enfeeblement: 1d8 less on each of the creature's damage rolls.
     const int enfeebled = hit && detail::has_effect(a.effects, detail::EffectKind::enfeebled)
                           ? roll(8)
@@ -7224,6 +7265,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                              .range = range,
                              .spell = spell,
                              .savage = savage});
+    if (hit && charging && target.life.hp > 0 && !target.effects.prone)
+    {
+        target.effects.prone = true;
+        log(target.source.name + " is knocked Prone.",
+        {"{name} is knocked Prone.", {{"name", target.source.name}}});
+    }
     // A ranged hit's added damage of a second type (the Hobgoblin Warrior's poison).
     if (hit && !spell && ranged && d.ranged_extra.count && !target.life.dead)
     {
@@ -7865,6 +7912,7 @@ bool Session::begin_turn()
         actor.sneak_used = false;
         actor.aim_used = actor.aim_ready = false;
         actor.moved = false;
+        actor.run_feet = 0;
         actor.light_origins.clear();
         actor.light_extra = 0;
         actor.nick_origin = 0;
@@ -8213,6 +8261,7 @@ void Session::progress_movement()
         const auto departed = a.source.cell;
         a.source.cell = destination;
         a.moved = true;
+        extend_run(a, departed, destination);
         clear_departed_overlaps();
         ++path_index_;
         reactors_.clear();
@@ -8577,6 +8626,8 @@ void Session::dispatch(const Command &command)
     }
     auto &a = actor(command.actor);
     const auto &d = def(a);
+    if (command.verb != "move" && command.verb != "melee")
+        a.run_feet = 0;
     // A smite must follow the hit at once. Resolving that hit's own weapon
     // mastery choice keeps the chance open; any other command ends it.
     if (!is_smite(command.verb) && !command.verb.starts_with("effect_"))
@@ -9299,7 +9350,9 @@ std::string Session::save() const
             << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
             << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
             << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked << ' '
-            << a.source.morale << ' ' << a.source.intelligence << ' ';
+            << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
+            << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
+            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -9493,9 +9546,14 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
           actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
           actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
-          actor.source.morale >> actor.source.intelligence;
+          actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
+          actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
+          actor.run_step.y >> actor.run_feet;
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
         throw std::runtime_error("Invalid checkpoint morale");
+    if (actor.run_feet < 0 || actor.run_feet % 5 || actor.run_feet > 5 * 64 * 64 ||
+            std::abs(actor.run_step.x) > 1 || std::abs(actor.run_step.y) > 1)
+        throw std::runtime_error("Invalid checkpoint charge run");
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
@@ -12510,7 +12568,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.170", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.171", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
