@@ -91,7 +91,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 {
     godot::String text;
     if (!fixed)
-        text = "\n\n[theme_emphasis]" + tr(N_("Training")) + "[/theme_emphasis]\n" +
+        text = "\n\n[theme_title]" + tr(N_("Training")) + "[/theme_title]\n" +
                tr(profile.complete ? N_("Supported training choices complete")
                   : N_("Training choices pending")) +
                "\n";

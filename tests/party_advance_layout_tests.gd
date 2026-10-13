@@ -6,6 +6,7 @@ func _initialize() -> void:
 
 func run_checks() -> void:
     var list := ItemList.new()
+    list.set_script(load("res://scenes/party_roster.gd"))
     list.size = Vector2(500, 120)
     list.add_item("Ari")
     root.add_child(list)

@@ -104,8 +104,9 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     text += "\n[theme_font=sheet_note]" +
             std::string(i18n::render(s.hp_messages).utf8().get_data()) +
             "[/theme_font]";
+    text += "\n\n[theme_title]" + i18n::utf8("Attributes") + "[/theme_title]";
     text += i18n::utf8(
-                "\n\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]");
+                "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]");
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = opengold::rules::all_abilities[i];
@@ -136,7 +137,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         if (!member->vitals.description.empty())
             text += "\n" + literal(member->vitals.description);
     }
-    text += "\n\n[theme_emphasis]" + i18n::utf8("Inventory") + "[/theme_emphasis]";
+    text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
     if (character.inventory().empty())
         text += "\n" + i18n::utf8("Empty");
     const auto positions =

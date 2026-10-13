@@ -6,9 +6,9 @@ msgstr "Project-Id-Version: OpenGoldBox\nLanguage: en\nMIME-Version: 1.0\nConten
 msgid "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented."
 msgstr "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented."
 
-#: src/OpenGoldBox/character_sheet_text.cpp:107
-msgid "\n\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
-msgstr "\n\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
+#: src/OpenGoldBox/character_sheet_text.cpp:108
+msgid "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
+msgstr "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]"
 
 #: src/OpenGoldBox/character_sheet_text.cpp:77
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -60,7 +60,7 @@ msgstr " and "
 msgid " or "
 msgstr " or "
 
-#: src/OpenGoldBox/character_sheet_text.cpp:123
+#: src/OpenGoldBox/character_sheet_text.cpp:124
 msgid "* Proficient saving throw"
 msgstr "* Proficient saving throw"
 
@@ -182,7 +182,7 @@ msgstr "A wielder of divine magic. Primary ability: Wisdom. Hit Die: d8."
 msgid "AC {ac}"
 msgstr "AC {ac}"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:129
+#: src/OpenGoldBox/character_sheet_text.cpp:130
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "AC {ac}   Speed {speed} ft"
 msgstr "AC {ac}   Speed {speed} ft"
@@ -506,7 +506,7 @@ msgstr "Attribute bonuses: Intelligence, Wisdom, Charisma."
 msgid "Attribute bonuses: Strength, Dexterity, Constitution."
 msgstr "Attribute bonuses: Strength, Dexterity, Constitution."
 
-#: src/OpenGoldBox/character_creation_view.cpp:56
+#: src/OpenGoldBox/character_creation_view.cpp:56 src/OpenGoldBox/character_sheet_text.cpp:107
 msgid "Attributes"
 msgstr "Attributes"
 
@@ -1649,7 +1649,7 @@ msgstr "Elves are long-lived folk with the blood of the Feywild in their veins.\
 msgid "Empowered Spell"
 msgstr "Empowered Spell"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:141
+#: src/OpenGoldBox/character_sheet_text.cpp:142
 msgid "Empty"
 msgstr "Empty"
 
@@ -2449,7 +2449,7 @@ msgstr "Invalid Weapon Mastery choices or provenance"
 msgid "Invalid advancement training choice"
 msgstr "Invalid advancement training choice"
 
-#: src/OpenGoldBox/character_sheet_text.cpp:139 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:322
+#: src/OpenGoldBox/character_sheet_text.cpp:140 src/OpenGoldBox/godot/scenes/rolf_tour.tscn:322
 msgid "Inventory"
 msgstr "Inventory"
 
