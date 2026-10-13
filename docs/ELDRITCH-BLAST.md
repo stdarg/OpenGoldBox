@@ -1,4 +1,4 @@
-# Level-one Warlock Eldritch Blast
+# Eldritch Blast through level 4
 
 Rules 0.6.37 delivers [#224](https://github.com/stdarg/OpenGold/issues/224), a
 bounded child of [Pact Magic #160](https://github.com/stdarg/OpenGold/issues/160)
@@ -18,7 +18,8 @@ spell attack against a living creature within 120 feet, including allies/self.
 A hit deals 1d10 Force damage; criticals double dice. Shared attack modifiers,
 typed defenses, line of effect and armor training apply.
 The Magic action is spent; movement, Bonus Action, Reaction and resources remain.
-V/S metadata is registered; general speech blocking remains #39.
+Spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)).
 
 Profile recipes permit the sourced cantrip. No player combat-save controls exist.
 
@@ -30,17 +31,23 @@ resistance/vulnerability/immunity, range boundaries, occupied hands, armor,
 allies, unconscious targets, atomic rejection, PC/NPC campaign handoff,
 Short/Long Rest save/reload and deterministic internal continuation.
 
-Remaining: targetable objects [#225](https://github.com/stdarg/OpenGold/issues/225),
-Warlock advancement and the rest of Pact Magic #160, Tome and invocations
-[#161](https://github.com/stdarg/OpenGold/issues/161), full selection #37,
-components #39, and higher beams #42/#176–178. The parent #204 stays open;
-level-one evidence does not certify levels two through four or object targets.
+## Levels 1 to 4
 
-Verification: all 42 native/tool checks passed, followed by the final focused
-Eldritch check and all 18 headless Godot checks (nine native prerequisites).
-The asset-backed creator check also passed. English/Spanish creation and combat
-renders cover 1120×800 and 1920×1080. The localized Cast position follows the
-dropdown's actual width; regression checks require separation and fit. Main/demo
-extensions build, and 820 localization messages validate. Logs are in
-`/tmp/eb-regression.log`, `/tmp/eb-final-checks.log`, `/tmp/eb-creator.log` and
-`/tmp/eb-combat-render.log`.
+`eldritch_blast_tests` checks every level from 1 to 4 (2026-10-13). Each
+Warlock is advanced with its ordinary level-up choices, so from level 2 it
+casts with Agonizing Blast, which adds its Charisma modifier to a hit's damage
+(not doubled on a critical). The checks cover the attack bonus, hit, miss and
+critical damage, Force resistance, vulnerability and immunity, atomic
+rejection, PC and NPC campaign handoff, and Short/Long Rest save and reload at
+every level. One beam is fired through level 4; more beams come at level 5
+([#176](https://github.com/stdarg/OpenGold/issues/176)–178). Agonizing Blast
+and Repelling Blast are also checked in `opengold_warlock_tests`
+([WARLOCK.md](WARLOCK.md)).
+
+Eldritch Blast is on the Warlock's list only, so the Warlock is its one class
+route, casting with Charisma. Pact of the Tome, which can take any cantrip,
+is still pending ([#161](https://github.com/stdarg/OpenGold/issues/161)).
+
+Objects are not targets: object targeting was dropped
+([SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features);
+[#225](https://github.com/stdarg/OpenGold/issues/225) closed as not planned).

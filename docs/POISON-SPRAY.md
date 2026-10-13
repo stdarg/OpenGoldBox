@@ -65,19 +65,28 @@ the English creator was checked at minimum size and Spanish at 1920×1080.
 Both native Godot extensions built successfully. No original game art is added
 to the repository.
 
-## Open integration work
+## Routes through level 4
 
-Poison Spray remains partial in [the full spell inventory](SPELL-INVENTORY.md).
-Live speech-blocking sources remain #39. Druid #152, Sorcerer #132, Warlock #160,
-Magic Initiate #75/#200, Pact of the Tome #161, Elf #67, Druidic Warrior #147 and
-Abyssal Tiefling #73 must supply their own grants/abilities and applicable choices.
-Magician access is part of #152. Higher-level scaling remains #176–178.
-Parents #202, #37 and #165 stay open until their remaining acceptance is met.
+Poison Spray is complete through character level 4 for every route the game
+has (2026-10-13, [#202](https://github.com/stdarg/OpenGold/issues/202)). Each
+casts with its own ability:
 
-Rules 0.6.39 also delivers the [level-one Warlock source](WARLOCK-POISON-SPRAY.md)
-with Charisma attacks and explicit selection. Later
-Warlock levels remain #160; parent #202 still tracks other grant integrations.
+| Route | Ability | Evidence |
+| --- | --- | --- |
+| Wizard, levels 1–4 | Intelligence | [poison_spray_tests.cpp](../tests/poison_spray_tests.cpp) |
+| Sorcerer | Charisma | [sorcerer_cantrip_tests.cpp](../tests/sorcerer_cantrip_tests.cpp) |
+| Warlock | Charisma | [warlock_poison_checks.h](../tests/warlock_poison_checks.h) |
+| Druid, including Magician's extra cantrip | Wisdom | [druid_tests.cpp](../tests/druid_tests.cpp) |
+| Ranger's Druidic Warrior, level 2 | Wisdom | [ranger_choices_checks.h](../tests/ranger_choices_checks.h) |
+| Magic Initiate (Druid or Wizard list) | The feat's ability | [MAGIC-INITIATE.md](MAGIC-INITIATE.md) |
 
-Rules 0.6.40 adds the explicit [level-one Sorcerer source](SORCERER-CANTRIPS.md)
-with Charisma casting in #228. References above to remaining Sorcerer access
-now concern later levels and the rest of #132, rather than this delivered route.
+Routes still waiting on content the game does not have yet: High Elf
+([#67](https://github.com/stdarg/OpenGold/issues/67)), Abyssal Tiefling
+([#73](https://github.com/stdarg/OpenGold/issues/73)) and Pact of the Tome
+([#161](https://github.com/stdarg/OpenGold/issues/161)). Each of those issues
+brings Poison Spray with it.
+
+Spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so no
+speech or hand blocker applies. Damage above level 4 is
+[#176](https://github.com/stdarg/OpenGold/issues/176)–178.

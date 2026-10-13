@@ -119,13 +119,36 @@ std::string arg(const Message &m, std::string_view name)
     throw std::runtime_error("Missing attack argument");
 }
 
+// A Warlock of the level, advanced with its ordinary level-up choices
+// (Agonizing Blast and Armor of Shadows at level 2, the Fiend at level 3).
 Character hero(unsigned level = 1, bool learned = true)
 {
-    check(level == 1, "Only real level-one Warlocks supported");
     auto d = draft();
     d.cantrips = learned ? std::vector<std::string> {"eldritch_blast"} :
                  std::vector<std::string> {};
-    return Character(*srd5::character_rules(), d, {});
+    Character created(*srd5::character_rules(), d, {});
+    if (level == 1)
+        return created;
+    CampaignParty party(module());
+    const auto id = party.add_pc(std::move(created));
+    party.award_experience(2700, "eldritch:levels");
+    for (unsigned n = 1; n < level; ++n)
+        party.advance(id, party.default_advancement(id));
+    return party.member(id).character;
+}
+
+int charisma_modifier(const Character &h)
+{
+    return h.sheet().scores[Ability::charisma] / 2 - 5;
+}
+
+bool agonizing(const Character &h)
+{
+    const auto &grants = h.sheet().grants;
+    return std::any_of(grants.begin(), grants.end(), [](const auto & g)
+    {
+        return g.id == "invocation:agonizing_blast";
+    });
 }
 
 auto custom(std::string affinity = {})
@@ -239,7 +262,9 @@ void rolls()
 {
     // Independent SplitMix64 golden values: two initiative rolls, then attack.
     // seed 0: natural 20, 5+8 damage; 13: natural 17, 8 damage; 40: natural 1.
-    for (unsigned level = 1; level <= 1; ++level)
+    check(!agonizing(hero(1)) && agonizing(hero(2)),
+          "Levels 2-4 cast with Agonizing Blast, so its damage is checked too");
+    for (unsigned level = 1; level <= 4; ++level)
         for (unsigned seed :
                 {
                     0u, 13u, 40u
@@ -261,11 +286,13 @@ void rolls()
                 check(arg(hit, "roll") == std::to_string(seed == 0    ? 20
                         : seed == 13 ? 17
                         : 1) &&
-                      arg(hit, "bonus") == "6",
+                      arg(hit, "bonus") == std::to_string(2 + charisma_modifier(h)),
                       "Spell attack uses Charisma and proficiency, not weapon modifier or a save");
-                const int raw = seed == 0    ? 13
-                                : seed == 13 ? 8
-                                : 0,
+                // Agonizing Blast adds Charisma to a hit's damage, not doubled on a critical.
+                const int dice = seed == 0    ? 13
+                                 : seed == 13 ? 8
+                                 : 0,
+                                 raw = dice && agonizing(h) ? dice + charisma_modifier(h) : dice,
                                 expected = defense == "immunity"        ? 0
                                            : defense == "resistance"    ? raw / 2
                                            : defense == "vulnerability" ? raw * 2
@@ -438,7 +465,7 @@ void campaign()
             {
                 false, true
             })
-        for (unsigned level = 1; level <= 1; ++level)
+        for (unsigned level = 1; level <= 4; ++level)
         {
             CampaignParty p(module());
             auto h = hero(level);
@@ -485,8 +512,8 @@ void campaign()
                 CampaignParty again(module());
                 again.restore(decode_campaign(camp, *creation, *rules, "eldritch", nullptr).party);
                 check(encode_campaign(again, nullptr, "eldritch") == camp &&
-                      rules->spell_access(again.member(id).character.sheet()).cantrips.size() ==
-                      1,
+                      rules->spell_access(again.member(id).character.sheet()).cantrips ==
+                      rules->spell_access(p.member(id).character.sheet()).cantrips,
                       "Rest save/reload retains spell choice");
             }
             unsigned quarterstaffs{};
@@ -495,7 +522,8 @@ void campaign()
                     quarterstaffs += item.quantity;
             check(
                 quarterstaffs == 1 && restored.state().wealth[3] == 37 &&
-                rules->spell_access(restored.member(id).character.sheet()).cantrips.size() == 1,
+                rules->spell_access(restored.member(id).character.sheet()).cantrips ==
+                rules->spell_access(p.member(id).character.sheet()).cantrips,
                 "Rest preserves physical equipment, wealth and cast access");
         }
 }

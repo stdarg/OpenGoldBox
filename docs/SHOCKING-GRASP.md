@@ -12,8 +12,7 @@ feet on this grid), including allies/self. Weapon reach does not extend Touch.
 The Magic action deals 1d8 Lightning on a melee spell hit through levels 1–4;
 critical hits double dice. There is no damage ability modifier, metal-armor
 Advantage, adjacent-hostile ranged Disadvantage, saving throw or Concentration.
-Existing typed defenses and V/S hand/armor restrictions apply. Speech blockers
-remain #39.
+Existing typed defenses and armor training apply.
 
 A hit prevents only Opportunity Attacks until the **target's** next turn, even
 if Lightning immunity prevents damage. It neither consumes nor refunds a Reaction.
@@ -36,13 +35,21 @@ critical/miss outcomes, actual metal armor, previously spent Reactions,
 interrupted movement, exact target-turn expiration, mixed codec validation,
 atomic rejection, PC/NPC handoff and rest-save-reload.
 
-Parent #223 stays open for [Sorcerer #132](https://github.com/stdarg/OpenGold/issues/132),
-[High Elf #67](https://github.com/stdarg/OpenGold/issues/67),
-[Magic Initiate #75](https://github.com/stdarg/OpenGold/issues/75),
-[Tome #161](https://github.com/stdarg/OpenGold/issues/161), and
-[Temperate Land #157](https://github.com/stdarg/OpenGold/issues/157), as well as
-remaining component enforcement #39. Full spell selection remains #37;
-higher damage scaling remains #176–178. Native effects do not certify these routes.
+Routes through level 4 (2026-10-13):
+
+| Route | Ability | Evidence |
+| --- | --- | --- |
+| Wizard, levels 1–4 | Intelligence | [shocking_grasp_tests.cpp](../tests/shocking_grasp_tests.cpp) |
+| Sorcerer | Charisma | [sorcerer_cantrip_tests.cpp](../tests/sorcerer_cantrip_tests.cpp), [SORCERER-CANTRIPS.md](SORCERER-CANTRIPS.md) |
+| Temperate Land Druid, level 3, always prepared | Wisdom | [druid_tests.cpp](../tests/druid_tests.cpp) |
+| Magic Initiate (Wizard list) | The feat's ability | [MAGIC-INITIATE.md](MAGIC-INITIATE.md) |
+
+[#223](https://github.com/stdarg/OpenGold/issues/223) asks for every route, so it
+stays open for High Elf ([#67](https://github.com/stdarg/OpenGold/issues/67)) and
+Pact of the Tome ([#161](https://github.com/stdarg/OpenGold/issues/161)), which
+the game does not have yet. Spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so no
+speech or hand blocker applies; higher damage scaling is #176–178.
 
 Verification: all 43 native/tool checks and all 19 headless Godot runtime checks
 plus ten native prerequisites pass. The new creator and existing Wizard creator
@@ -51,7 +58,3 @@ renders were inspected at 1120×800 and 1920×1080. Main/demo extensions build;
 825 localization messages validate. Logs: `/tmp/shocking-regression.log`,
 `/tmp/shocking-creator.log`, `/tmp/shocking-existing-creator.log`, and
 `/tmp/shocking-combat-render.log`; renders `/tmp/opengold-shocking-renders`.
-
-Rules 0.6.40 adds the explicit [level-one Sorcerer source](SORCERER-CANTRIPS.md)
-with Charisma casting in #228. References above to remaining Sorcerer access
-now concern later levels and the rest of #132, rather than this delivered route.

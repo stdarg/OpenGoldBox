@@ -40,7 +40,8 @@ std::unique_ptr<RulesModule> rules()
 }
 
 // A Druid with Wisdom 18 and the given Primal Order, advanced to the given level.
-Character druid(unsigned level = 1, std::string order = "warden")
+Character druid(unsigned level = 1, std::string order = "warden", std::string land = "arid",
+                std::vector<std::string> cantrips = {"produce_flame", "shillelagh"})
 {
     CharacterDraft d;
     d.race = "human";
@@ -54,7 +55,7 @@ Character druid(unsigned level = 1, std::string order = "warden")
         r = {{6, 5, 4, 1}, 3};
     d.rolls[4] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {order}}};
-    d.cantrips = {"produce_flame", "shillelagh"};
+    d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{},
         std::vector<std::string> {"cure_wounds", "entangle", "faerie_fire", "thunderwave"},
         {}, {}};
@@ -62,7 +63,12 @@ Character druid(unsigned level = 1, std::string order = "warden")
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "druid-xp");
     for (unsigned n = 1; n < level; ++n)
-        party.advance(id, party.default_advancement(id));
+    {
+        auto choice = party.default_advancement(id);
+        if (n == 2)
+            choice.training["subclass:druid:land"] = {land};
+        party.advance(id, choice);
+    }
     return party.member(id).character;
 }
 
@@ -181,6 +187,16 @@ void cantrip_checks()
           "Shillelagh attacks with Wisdom (+4) instead of Strength (+2)");
 }
 
+// Poison Spray from the Druid list: a Wisdom spell attack at 30 feet.
+void poison_spray_checks()
+{
+    auto module = rules();
+    const auto sheet = druid(1, "warden", "arid", {"poison_spray", "produce_flame"}).sheet();
+    auto c = battle(*module, sheet);
+    check(submit(*c, "poison_spray", 98) && attack_bonus(*c) == 2 + 4 && !unit(*c, 1).action,
+          "A Druid casts Poison Spray with Wisdom as an Action");
+}
+
 void order_checks()
 {
     auto module = rules();
@@ -215,6 +231,23 @@ void circle_checks()
           "Arid Land's Circle Spells are always prepared");
     auto c = battle(*module, third.sheet());
     check(submit(*c, "fire_bolt", 98), "A Circle cantrip is cast");
+    // Polar Land brings Ray of Frost and Temperate Land Shocking Grasp, cast
+    // with Wisdom like the Druid's other spells.
+    const auto polar = druid(3, "warden", "polar").sheet();
+    check(has_grant(druid(3, "warden", "polar"), "land:polar") &&
+          module->spell_access(polar).always_prepared ==
+          std::vector<std::string> {"fog_cloud", "hold_person", "ray_of_frost"},
+          "Polar Land's Circle Spells are always prepared");
+    auto frost = battle(*module, polar);
+    check(submit(*frost, "ray_of_frost", 98) && attack_bonus(*frost) == 2 + 4,
+          "A Polar Land Druid casts Ray of Frost with Wisdom (+4) and proficiency (+2)");
+    const auto temperate = druid(3, "warden", "temperate").sheet();
+    check(module->spell_access(temperate).always_prepared ==
+          std::vector<std::string> {"misty_step", "shocking_grasp", "sleep"},
+          "Temperate Land's Circle Spells are always prepared");
+    auto grasp = battle(*module, temperate, {}, true);
+    check(submit(*grasp, "shocking_grasp", 98) && attack_bonus(*grasp) == 2 + 4,
+          "A Temperate Land Druid casts Shocking Grasp with Wisdom");
     check(fourth.sheet().level == 4 && module->spell_access(fourth.sheet()).cantrip_choices == 3,
           "A level-four Druid knows a third cantrip");
 }
@@ -493,6 +526,7 @@ int main()
     try
     {
         cantrip_checks();
+        poison_spray_checks();
         order_checks();
         circle_checks();
         barkskin_checks();

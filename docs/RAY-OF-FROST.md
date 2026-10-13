@@ -47,16 +47,23 @@ No player combat-saving controls were added.
   pass. Main and demo extensions build; localization validates 744 messages.
   English/Spanish combat controls were rendered at 1120×800 and 1920×1080.
 
-The spell remains **partial**, and #205 stays open. Speech-blocking enforcement
-belongs to [components #39](https://github.com/stdarg/OpenGold/issues/39).
-Additional access routes remain [Sorcerer #132](https://github.com/stdarg/OpenGold/issues/132),
-[High Elf #67](https://github.com/stdarg/OpenGold/issues/67),
-[Magic Initiate #75](https://github.com/stdarg/OpenGold/issues/75),
-[Pact of the Tome #161](https://github.com/stdarg/OpenGold/issues/161), and
-[Polar Land #157](https://github.com/stdarg/OpenGold/issues/157).
-Full spell selection remains #37; scaling above level 4 remains #176–178.
-See the [spell inventory](SPELL-INVENTORY.md) for the complete grant mapping.
+## Routes through level 4
 
-Rules 0.6.40 adds the explicit [level-one Sorcerer source](SORCERER-CANTRIPS.md)
-with Charisma casting in #228. References above to remaining Sorcerer access
-now concern later levels and the rest of #132, rather than this delivered route.
+Ray of Frost is complete through character level 4 for every route the game
+has (2026-10-13, [#205](https://github.com/stdarg/OpenGold/issues/205)):
+
+| Route | Ability | Evidence |
+| --- | --- | --- |
+| Wizard, levels 1–4 | Intelligence | [ray_of_frost_tests.cpp](../tests/ray_of_frost_tests.cpp) |
+| Sorcerer | Charisma | [sorcerer_cantrip_tests.cpp](../tests/sorcerer_cantrip_tests.cpp), [SORCERER-CANTRIPS.md](SORCERER-CANTRIPS.md) |
+| Polar Land Druid, level 3, always prepared | Wisdom | [druid_tests.cpp](../tests/druid_tests.cpp) |
+| Magic Initiate (Wizard list) | The feat's ability | [magic_initiate_tests.cpp](../tests/magic_initiate_tests.cpp) |
+
+Routes still waiting on content the game does not have yet: High Elf
+([#67](https://github.com/stdarg/OpenGold/issues/67)) and Pact of the Tome
+([#161](https://github.com/stdarg/OpenGold/issues/161)).
+
+Spells have no components
+([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so no
+speech or hand blocker applies. Damage above level 4 is
+[#176](https://github.com/stdarg/OpenGold/issues/176)–178.
