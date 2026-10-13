@@ -55,10 +55,10 @@ auto custom(std::string affinity = {})
                                affinity);
 }
 
-Character hero(std::string klass = "wizard", unsigned level = 1)
+Character hero(std::string klass = "wizard", unsigned level = 1, std::string race = "orc")
 {
     CharacterDraft d;
-    d.race = "orc";
+    d.race = std::move(race);
     d.gender = "female";
     d.character_class = klass;
     d.background = "sage";
@@ -310,7 +310,8 @@ void skipped_caster()
                                (lethal ? std::string("10 20 30") : std::string("1 4 0")) + " 0 0 0 0 0 0 0 0 0 1 0\n");
         for (unsigned seed = 0; seed < 50 && !covered; ++seed)
         {
-            auto h = hero();
+            // Not an Orc: Relentless Endurance would keep it standing.
+            auto h = hero("wizard", 1, "human");
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
                 {   {
                         1,

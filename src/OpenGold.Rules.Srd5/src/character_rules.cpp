@@ -250,7 +250,7 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
             {"human", "Human",
                 "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice. Not in the game yet.\n- Versatile: an Origin feat of your choice. Not in the game yet."},
             {"orc", "Orc",
-                "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest. Not in the game yet.\n- Darkvision, 120 feet. Not in the game yet."},
+                "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest.\n- Darkvision, 120 feet. Not in the game yet."},
             {"tiefling", "Tiefling",
                 "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."}};
     case CreationField::gender:

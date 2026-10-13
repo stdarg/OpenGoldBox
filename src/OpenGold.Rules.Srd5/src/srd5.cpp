@@ -606,6 +606,7 @@ struct Definition
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
+    bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -1168,6 +1169,7 @@ character_definition(std::string_view bytes,
     d.constitution = con;
     d.dwarf = race == "Dwarf";
     d.gnomish_cunning = race == "Gnome";
+    d.relentless = race == "Orc";
     // Gnomes and Halflings are Small.
     if (race == "Gnome" || race == "Halfling")
         d.size = 1;
@@ -5337,6 +5339,22 @@ void Session::damage(Actor &target, int amount, bool critical)
         target.life.recovery = {detail::death_turn_ms, 0};
         if (standing)
             target.rises_on_round = static_cast<int>(round_) + dice({3, 6, 0});
+    }
+    // Relentless Endurance: an Orc dropped to 0 Hit Points but not killed
+    // outright drops to 1 instead, once per Long Rest (always taken, AUTO-1).
+    if (standing && target.life.hp == 0 && !target.life.dead && def(target).relentless &&
+            !detail::has_effect(target.effects, detail::EffectKind::relentless_used) &&
+            detail::can_apply(target.effects))
+    {
+        // Not healing (Chill Touch cannot stop it); the dying clock is cleared.
+        (void)detail::heal_life(target.life, 1, max_hp(target), true);
+        detail::apply_spell_benefit(target.effects, effect_source(target), target.source.name,
+                                    detail::EffectKind::relentless_used, 0);
+        log(target.source.name + " endures: Relentless Endurance leaves 1 Hit Point.",
+        {
+            "{name} endures: Relentless Endurance leaves 1 Hit Point.",
+            {{"name", target.source.name}}
+        });
     }
     if (standing && target.life.hp == 0)
         bless_fiends(target);
@@ -11348,10 +11366,12 @@ class Module final : public RulesModule
             throw std::runtime_error("Long rest requires at least one HP at its start");
         (void)detail::heal_life(actor.life, max_hp(actor), max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
-        // A Long Rest makes Prayer of Healing able to help the creature again.
+        // A Long Rest makes Prayer of Healing able to help the creature again,
+        // and gives an Orc back Relentless Endurance.
         std::erase_if(actor.effects.active, [](const auto & e)
         {
-            return e.kind == detail::EffectKind::prayer_of_healing;
+            return e.kind == detail::EffectKind::prayer_of_healing ||
+                   e.kind == detail::EffectKind::relentless_used;
         });
         actor.winds = d.winds;
         actor.slots = d.slots;
@@ -12426,7 +12446,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.164", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.165", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

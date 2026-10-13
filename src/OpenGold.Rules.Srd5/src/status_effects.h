@@ -161,8 +161,10 @@ enum class EffectKind : unsigned
     // Wild Shape: `dc` is the Beast form, one past its index in beast_forms.
     wild_shape = 67,
     // Guidance: 1d4 on ability checks with one skill; `dc` indexes guidance_skills.
+    guidance = 68,
+    // Relentless Endurance has been used; it returns with a Long Rest.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    guidance = 68
+    relentless_used = 69
 };
 
 // The longest a spell benefit lasts, in milliseconds.

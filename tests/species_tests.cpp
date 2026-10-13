@@ -2,6 +2,8 @@
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
+#include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -116,6 +118,101 @@ void gnome_checks()
           !fx::mental_save_modifiers(fx::Ability::constitution, subject).advantage,
           "Repeated mental saves have Advantage too; others do not");
 }
+CombatantView unit(const CombatSession &c, EntityId id)
+{
+    for (const auto &a : c.snapshot().combatants)
+        if (a.id == id)
+            return a;
+    throw std::runtime_error("Missing combatant");
+}
+
+bool logged(const CombatSession &c, std::string_view text)
+{
+    for (const auto &line : c.snapshot().log())
+        if (line.find(text) != std::string::npos)
+            return true;
+    return false;
+}
+
+std::size_t count_logged(const CombatSession &c, std::string_view text)
+{
+    std::size_t count = 0;
+    for (const auto &line : c.snapshot().log())
+        count += line.find(text) != std::string::npos;
+    return count;
+}
+
+// The bandit attacks the Orc until a blow lands; false if none does.
+bool hit_orc(CombatSession &c)
+{
+    for (unsigned attempt = 0; attempt < 12; ++attempt)
+    {
+        const auto can_attack = [&]
+        {
+            const auto commands = c.legal_commands();
+            return c.snapshot().actor == 98 &&
+                   std::any_of(commands.begin(), commands.end(), [](const auto & command)
+            {
+                return command.verb == "melee" && command.target == 1;
+            });
+        };
+        for (unsigned turns = 0; !can_attack() && turns < 6; ++turns)
+            check(submit(c, "end"), "Reach the bandit's next attack");
+        const int before = unit(c, 1).hit_points;
+        const auto endured = count_logged(c, "Relentless Endurance");
+        if (!submit(c, "melee", 1))
+            throw std::runtime_error("The bandit cannot attack the Orc (HP " +
+                                     std::to_string(before) + ", actor " +
+                                     std::to_string(c.snapshot().actor) + ")");
+        if (unit(c, 1).hit_points < before || count_logged(c, "Relentless Endurance") > endured)
+            return true;
+        check(submit(c, "end"), "The bandit missed; end its turn");
+    }
+    return false;
+}
+
+// Relentless Endurance: an Orc dropped to 0 Hit Points drops to 1 instead,
+// once per Long Rest.
+void orc_checks()
+{
+    const auto rules = module();
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter("orc"));
+    auto state = party.checkpoint();
+    state.roster.front().vitals.hit_points = 1;
+    party.restore(std::move(state));
+    const auto encounter = [&]
+    {
+        Encounter e{{12, 6, std::vector<Terrain>(72)}, party.participants()};
+        e.participants.front().cell = {1, 1};
+        e.participants.push_back({98, "bandit", "Bandit", Side::opposition, {2, 1}});
+        return e;
+    };
+    auto c = rules->create(encounter(), 3);
+    check(hit_orc(*c) && unit(*c, 1).hit_points == 1 && logged(*c, "Relentless Endurance"),
+          "The first blow to drop the Orc leaves it at 1 Hit Point");
+    check(rules->restore(c->save())->save() == c->save(), "The spent trait survives a checkpoint");
+    // The fight so far comes back to the party: the Orc stands at 1 Hit Point.
+    party.begin_combat();
+    party.apply_combat(c->snapshot());
+    party.end_combat();
+    check(hit_orc(*c) && unit(*c, 1).hit_points == 0, "The next blow drops it: once per Long Rest");
+
+    // Before a Long Rest the trait stays spent; after one it is back.
+    auto before_rest = rules->create(encounter(), 3);
+    check(hit_orc(*before_rest) && unit(*before_rest, 1).hit_points == 0,
+          "Without a Long Rest the trait does not return");
+    party.advance_time(std::chrono::hours{24});
+    check(bool(party.rest(RestKind::long_rest)), "The Orc takes a Long Rest");
+    state = party.checkpoint();
+    state.roster.front().vitals.hit_points = 1;
+    party.restore(std::move(state));
+    auto again = rules->create(encounter(), 3);
+    check(hit_orc(*again) && unit(*again, 1).hit_points == 1,
+          "After a Long Rest the Orc endures again");
+    (void)id;
+}
+
 } // namespace
 
 int main()
@@ -123,6 +220,7 @@ int main()
     try
     {
         gnome_checks();
+        orc_checks();
     }
     catch (const std::exception &error)
     {

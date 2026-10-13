@@ -84,6 +84,13 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.165 gives Orcs Relentless Endurance: dropped to 0 Hit Points but not
+killed outright, an Orc drops to 1 instead, once per Long Rest (taken
+automatically, as AUTO-1 takes other always-better choices). The spent use is an
+effect that a Long Rest removes, so no save format changes. With Adrenaline Rush
+already in the game and Darkvision mattering only where the campaign marks dark
+areas, the Orc's traits are complete
+([#72](https://github.com/stdarg/OpenGold/issues/72)).
 Rules 0.6.164 gives Gnomes Gnomish Cunning (Advantage on Intelligence, Wisdom
 and Charisma saves, repeated end-of-turn saves included) and makes Gnomes and
 Halflings Small; checked in `opengold_species_tests`. The emptied Gnome lineages

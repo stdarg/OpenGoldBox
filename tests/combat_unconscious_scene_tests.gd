@@ -24,8 +24,9 @@ func check() -> void:
     for frame in range(8):
         await process_frame
     await keep_initiative(current_scene)
-    # Each enemy command waits 0.65 seconds; the first hero drops after about 2700 frames.
-    for frame in range(4000):
+    # Each enemy command waits 0.65 seconds; the first hero drops after about 2700
+    # frames, later under load or when an Orc's Relentless Endurance holds it up.
+    for frame in range(8000):
         await process_frame
         var combat := current_scene
         if combat == null:
