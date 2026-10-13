@@ -210,7 +210,7 @@ void CombatSpriteDemo::refresh_players()
     for (unsigned variant = 0; variant < player_count; ++variant)
     {
         auto appearance = appearance_;
-        appearance.tall = variant != 0;
+        appearance.icon_size = variant != 0 ? opengold::por::IconSize::regular : opengold::por::IconSize::small;
         for (unsigned pose = 0; pose < 2; ++pose)
         {
             auto &figure = figures_[variant];
@@ -227,7 +227,7 @@ void CombatSpriteDemo::refresh_players()
 void CombatSpriteDemo::refresh_colors()
 {
     auto small = appearance_;
-    small.tall = false;
+    small.icon_size = opengold::por::IconSize::small;
     const auto tall_usage = art_->color_usage(appearance_), small_usage = art_->color_usage(small);
     const auto present = [&](unsigned bank, unsigned part)
     {

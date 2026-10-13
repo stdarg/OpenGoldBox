@@ -67,9 +67,10 @@ func _notification(what: int) -> void:
         grab_focus.call_deferred()
 
 
-# Source portraits are large, so thumbnails are made a few per frame.
+# Source portraits are large, so thumbnails are made a few per frame, and
+# only while the sheet is shown: the other creation pages would lag.
 func _process(_delta: float) -> void:
-    if _pending.is_empty():
+    if _pending.is_empty() or not is_visible_in_tree():
         return
     for made in 8:
         if _pending.is_empty():

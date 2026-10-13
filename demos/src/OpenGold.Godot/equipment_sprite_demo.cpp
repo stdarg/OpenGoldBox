@@ -66,7 +66,7 @@ void EquipmentSpriteDemo::_ready()
         for (auto &roll : draft.rolls)
             roll = {{6, 5, 4, 1}, 3};
         por::CharacterAppearance appearance;
-        appearance.tall = true;
+        appearance.icon_size = por::IconSize::regular;
         appearance.combat_body = 24;
         Character character(*srd5::character_rules(), draft, appearance);
         campaign_ = std::make_unique<CampaignParty>(
