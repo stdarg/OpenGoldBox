@@ -2990,6 +2990,8 @@ void Session::run_off_field(Actor &a)
         return;
     }
     end_concentration(a);
+    // Wild Shape lasts until the fight ends (WILD-1); for the one who flees, it has.
+    end_wild_shape(a);
     a.fled = true;
     log(a.source.name + " flees the battle.",
     {"{name} flees the battle.", {{"name", a.source.name}}});
@@ -7628,9 +7630,13 @@ void Session::update_outcome()
             return a.fled && a.source.side == Side::party;
         });
         outcome_ = party ? Outcome::victory : party_fled ? Outcome::fled : Outcome::defeat;
-        // Concentration is tracked in combat only; it ends with the combat.
+        // Concentration is tracked in combat only; it ends with the combat, and
+        // so does Wild Shape (WILD-1).
         for (auto &a : actors_)
+        {
             end_concentration(a);
+            end_wild_shape(a);
+        }
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -11606,6 +11612,8 @@ class Module final : public RulesModule
             return actions;
         if (d.lay_on_hands && actor.lay_on_hands > 0)
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
+        if (d.lay_on_hands && actor.lay_on_hands >= 5)
+            actions.push_back({"lay_on_hands_cure", {"Lay On Hands: cure Poisoned (5)", {}}});
         // Magical Cunning: a one-minute rite, so a camp action; it needs no
         // target and so takes the whole-party path.
         if (d.magical_cunning && actor.arcane > 0 &&
@@ -11653,6 +11661,21 @@ class Module final : public RulesModule
         auto caster = camp_actor(user, user_state);
         auto healed = self ? caster : camp_actor(target, target_state);
         auto &patient = self ? caster : healed;
+        if (action == "lay_on_hands_cure")
+        {
+            // 5 points end Poisoned on a living member (SRD 5.2.1 p. 61).
+            if (patient.life.dead || !has_condition(patient, "poisoned"))
+                throw std::runtime_error("Lay On Hands cures only a Poisoned member");
+            caster.lay_on_hands -= 5;
+            std::erase_if(patient.effects.active, [](const auto & e)
+            {
+                return gives_condition(e.kind, "poisoned");
+            });
+            user_state = vitals(caster);
+            if (!self)
+                target_state = vitals(healed);
+            return;
+        }
         const int maximum = max_hp(patient);
         if (patient.life.dead || patient.life.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
@@ -12466,7 +12489,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.167", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.168", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -2,10 +2,12 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -122,8 +124,9 @@ void lay_on_hands_checks()
     CampaignParty party(module());
     const auto paladin = party.add_pc(created("paladin", "Paladin", {"cure_wounds"}));
     const auto fighter = party.add_pc(created("fighter", "Fighter", {}));
-    check(action_ids(party, paladin) == std::vector<std::string> {"lay_on_hands", "cure_wounds"},
-          "A Paladin offers Lay On Hands and Cure Wounds in camp");
+    check(action_ids(party, paladin) ==
+          std::vector<std::string> {"lay_on_hands", "lay_on_hands_cure", "cure_wounds"},
+          "A Paladin offers Lay On Hands, its cure and Cure Wounds in camp");
     check(action_ids(party, fighter).empty(), "A Fighter has no camp actions");
 
     const int full = party.member(fighter).character.sheet().hit_points;
@@ -248,6 +251,56 @@ void prayer_of_healing_checks()
     party.use_camp_action(cleric, cleric, "prayer_of_healing");
     check(hp(party, fighters[0]) > 1, "After a Long Rest the prayer heals again");
 }
+// Lay On Hands spends 5 points to end Poisoned in camp too.
+void lay_on_hands_cure_checks()
+{
+    namespace fx = opengold::srd5::detail;
+    CampaignParty party(module());
+    const auto paladin = party.add_pc(created("paladin", "Paladin", {"cure_wounds"}));
+    const auto fighter = party.add_pc(created("fighter", "Fighter", {}));
+    // A fight gives the Fighter a complete vital record; then it is Poisoned.
+    Encounter e{{12, 6, std::vector<Terrain>(72)}, party.participants()};
+    e.participants.push_back({99, "bandit", "Bandit", Side::opposition, {10, 5}});
+    auto fight = party.rule_module().create(e, 3);
+    party.begin_combat();
+    party.apply_combat(fight->snapshot());
+    party.end_combat();
+    auto state = party.checkpoint();
+    auto &vitals = state.roster.at(1).vitals;
+    const auto at = vitals.resources.find("FX8");
+    std::istringstream in(vitals.resources.substr(at));
+    auto effects = fx::read_effects(in);
+    fx::apply_poisoned(effects, {.scope = 9, .actor = 99}, "Bandit", 12000);
+    std::ostringstream out;
+    fx::write_effects(out, effects);
+    vitals.resources.replace(at, std::string::npos, out.str());
+    party.restore(std::move(state));
+    const auto poisoned = [&]
+    {
+        const auto &resources = party.member(fighter).vitals.resources;
+        std::istringstream read(resources.substr(resources.find("FX8")));
+        const auto active = fx::read_effects(read).active;
+        return std::any_of(active.begin(), active.end(), [](const auto & effect)
+        {
+            return effect.kind == fx::EffectKind::poisoned;
+        });
+    };
+    check(poisoned(), "The Fighter is Poisoned");
+    party.use_camp_action(paladin, fighter, "lay_on_hands_cure");
+    check(!poisoned() && remaining(party, paladin, "lay_on_hands") == 0,
+          "The cure ends Poisoned for 5 points");
+    bool refused = false;
+    try
+    {
+        party.use_camp_action(paladin, paladin, "lay_on_hands_cure");
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused, "With the pool spent, the cure is no longer offered");
+}
+
 } // namespace
 
 int main()
@@ -255,6 +308,7 @@ int main()
     try
     {
         lay_on_hands_checks();
+        lay_on_hands_cure_checks();
         spell_checks();
         goodberry_checks();
         prayer_of_healing_checks();

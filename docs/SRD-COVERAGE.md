@@ -84,6 +84,9 @@ Rules 0.6.154 has a script's arrows (`DAMAGE`) meet the member's worn armor
 and shield, as the original engine did, instead of an unarmored AC. A creature
 that surrenders as its turn begins, right after a party member drops, now
 leaves the field at once; its surrender used to leave it standing.
+Rules 0.6.168 ends Wild Shape when the fight ends or the Druid flees
+([WILD-1](SRD-DECISIONS.md#wild-1-2026-10-13-wild-shape-lasts-until-the-fight-ends))
+and lets Lay On Hands cure Poisoned in camp.
 Rules 0.6.167 applies a Wild Shape form carried into a fight from its start,
 not from the Druid's first turn, so its AC and Speed count and dropping to 0
 Hit Points ends it.

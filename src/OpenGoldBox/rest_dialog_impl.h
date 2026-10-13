@@ -382,8 +382,10 @@ void RolfTourView::rest_use()
         campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());
         rest_result_ = action->get_item_text(action->get_selected()) +
                        (party ? String() : ": " + target->get_item_text(target->get_selected())) +
-                       "   " + rest_text(N_("HP restored:")) + " " +
-                       String::num_int64(party_hp() - before);
+                       "   " +
+                       (id == "lay_on_hands_cure"
+                        ? rest_text(N_("No longer Poisoned."))
+                        : rest_text(N_("HP restored:")) + " " + String::num_int64(party_hp() - before));
         refresh_rest();
     }
     catch (const std::exception &e)

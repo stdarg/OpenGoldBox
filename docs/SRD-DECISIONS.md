@@ -825,3 +825,13 @@ darts as one simultaneous hit, with one Shield question; rays are separate
 attacks in the order aimed, and a ray aimed at a foe already down is lost. The
 battlefield does not mark aimed foes (the prompt lists them), and there is no
 shortcut that sends the remaining darts at one foe.
+
+## WILD-1 (2026-10-13): Wild Shape lasts until the fight ends
+
+A departure from SRD 5.2.1, approved by the user for simplicity. The SRD's form
+lasts hours equal to half the Druid level, but fights last minutes, and the
+game offers Wild Shape only in fights. A form now ends when the fight ends
+(victory, defeat or flight) and when its Druid flees the battlefield, as
+Concentration does ([CLASS-2](#class-2-2026-10-04-choosing-several-targets));
+it is never carried into the next fight. It still ends earlier on Leave Wild
+Shape, another Wild Shape, 0 Hit Points, or a turn begun Incapacitated.

@@ -95,8 +95,10 @@ ability.
   - Large forms take one square until multi-square footprints
     ([#45](https://github.com/stdarg/OpenGold/issues/45)).
 - The form ends on "Leave Wild Shape", another Wild Shape, 0 Hit Points, being
-  Incapacitated at the start of the Druid's turn, or after an hour (half the
-  Druid level in hours from level 4 is not distinguished).
+  Incapacitated at the start of the Druid's turn, fleeing the battlefield, or
+  when the fight ends
+  ([WILD-1](SRD-DECISIONS.md#wild-1-2026-10-13-wild-shape-lasts-until-the-fight-ends),
+  a departure from the SRD's hours; rules 0.6.168).
 - The combat view draws the Druid as the Beast's original combat icon (the
   art research's candidates: Wolf CPIC4 106, Wild Boar CPIC6 120, Giant
   Lizard CPIC8 59, Giant Snake CPIC5 60).

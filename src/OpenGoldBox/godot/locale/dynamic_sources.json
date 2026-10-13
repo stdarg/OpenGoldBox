@@ -719,5 +719,6 @@
   "Gain the Magic Initiate feat with the Wizard spell list.",
   "Spell attacks and save DCs for these spells.",
   "Lay On Hands: cure Poisoned",
-  "Lay On Hands: cure Poisoned (5)"
+  "Lay On Hands: cure Poisoned (5)",
+  "Lay On Hands cures only a Poisoned member"
 ]

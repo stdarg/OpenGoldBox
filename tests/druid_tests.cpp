@@ -583,6 +583,7 @@ std::unique_ptr<CombatSession> shaped_battle(const RulesModule &module, const Ch
 // Incapacitated, or when it lapses.
 void wild_shape_end_checks()
 {
+    namespace fx = opengold::srd5::detail;
     auto module = rules();
     const auto sheet = druid(2).sheet();
     // The Druid's turn begins Incapacitated, whenever it comes.
@@ -597,6 +598,27 @@ void wild_shape_end_checks()
     for (unsigned turns = 0; turns < 6 && !unit(*lapsing, 1).form.empty(); ++turns)
         check(submit(*lapsing, "end"), "Let a round pass");
     check(unit(*lapsing, 1).form.empty(), "The form ends when its time runs out");
+
+    // Wild Shape lasts until the fight ends (WILD-1).
+    {
+        Participant druid_in{1, "campaign-character", "Druid", Side::party, {1, 1},
+                             module->character_profile(sheet, {}).data};
+        Participant weak{98, "target", "Enemy", Side::opposition, {2, 1}};
+        weak.state = VitalState{1};
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)}, {druid_in, weak}}, 5);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Druid's turn");
+        check(submit(*c, "wild_shape_wolf") && submit(*c, "melee", 98) &&
+              c->snapshot().outcome == Outcome::victory, "The Wolf wins the fight");
+        const auto vitals = unit(*c, 1).persistent;
+        std::istringstream in(vitals.resources.substr(vitals.resources.find("FX8")));
+        const auto effects = fx::read_effects(in);
+        check(unit(*c, 1).form.empty() && logged(*c, "Druid leaves Wild Shape.") &&
+              std::none_of(effects.active.begin(), effects.active.end(), [](const auto & e)
+        {
+            return e.kind == fx::EffectKind::wild_shape;
+        }), "The form ends with the fight and is not carried to the next");
+    }
 
     bool dropped = false;
     for (std::uint64_t seed = 1; seed < 64 && !dropped; ++seed)
