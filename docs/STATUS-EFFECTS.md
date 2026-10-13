@@ -2,8 +2,9 @@
 
 The first increment implements ordinary ability saving throws and the **Blinded**
 condition through the blindness option of **Blindness/Deafness**, using SRD 5.2.1.
-The deafness option, concentration, other conditions and higher-level casts are
-outside this increment. Existing supported Clerics and Wizards can select
+The deafness option is dropped, since nothing in the game needs hearing
+([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness));
+extra targets from higher slots wait for level-three slots (#176). Existing supported Clerics and Wizards can select
 Blindness when advancing to levels 3–4. It spends an action and a level-two slot.
 
 The caster must see a target within 120 feet with a clear path. The target makes

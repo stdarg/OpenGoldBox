@@ -801,3 +801,13 @@ the player picks when imbuing the weapon: the A cycle offers "Sacred Weapon"
 for its 10 minutes. The party's computer-played members take the weapon's own
 damage.
 
+
+## DEAF-1 (2026-10-13): Blindness/Deafness without Deafness
+
+Deafened makes a creature fail ability checks that need hearing (SRD 5.2.1
+p. 178). Nothing in this game asks for hearing, so the Deafness option would
+do nothing. The user agreed to drop it, as
+[DM-3](#dm-3-2026-10-04-spells-a-crpg-cannot-use) dropped spells with nothing
+to act on: Blindness/Deafness always blinds. The SRD gives the spell no early
+dismissal, and its extra targets from higher slots arrive with level-three
+slots at character level 5 ([#176](https://github.com/stdarg/OpenGold/issues/176)).

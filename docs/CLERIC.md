@@ -149,7 +149,8 @@ zombie fleeing then ending its turn, a checkpoint, damage ending it) and
   aimed like Entangle: a 20-foot-radius sphere, tinted on the map. Creatures
   inside take no Thunder damage. Spells have no components
   ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components)), so
-  it does not stop spellcasting. Deafened is not modeled.
+  it does not stop spellcasting. Deafened is not modeled
+([DEAF-1](SRD-DECISIONS.md#deaf-1-2026-10-13-blindnessdeafness-without-deafness)).
 - Combat checkpoints become `OGCOMBAT 37` (Resistance's once-per-turn use).
 - Verification: `opengold_cleric_channel_tests` (eleven Resistance entries, the
   ward and its 1d4, Silence's sphere and a spell cast inside it), and the
