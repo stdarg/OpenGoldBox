@@ -187,6 +187,41 @@ void cantrip_checks()
           "Shillelagh attacks with Wisdom (+4) instead of Strength (+2)");
 }
 
+// A level-one Druid knows two cantrips (three as a Magician) and prepares four
+// level-one Druid spells; creation refuses anything else.
+void creation_checks()
+{
+    auto module = rules();
+    const auto creation = srd5::character_rules();
+    const auto draft = druid(1).creation_data();
+    const auto access = module->spell_access(druid(1).sheet());
+    check(access.cantrip_choices == 2 && access.prepared_choices == 4 &&
+          creation->cantrip_options(draft).count == 2 &&
+          creation->spell_choice_options(draft).prepared_count == 4,
+          "A level-one Druid knows two cantrips and prepares four spells");
+    for (const auto &bad : std::vector<std::vector<std::string>>
+{
+    {"cure_wounds", "entangle", "faerie_fire", "magic_missile"},
+        {"cure_wounds", "entangle", "faerie_fire", "faerie_fire"},
+        {"cure_wounds", "entangle", "faerie_fire", "barkskin"},
+        {"cure_wounds", "entangle", "faerie_fire", "thunderwave", "goodberry"}
+    })
+    {
+        auto wrong = draft;
+        wrong.spells = SpellChoices{{}, bad, {}, {}};
+        bool refused = false;
+        try
+        {
+            (void)creation->evaluate(wrong, NameRequirement::required);
+        }
+        catch (const std::exception &)
+        {
+            refused = true;
+        }
+        check(refused, "Creation refuses a foreign, repeated, level-two or fifth spell");
+    }
+}
+
 // Poison Spray from the Druid list: a Wisdom spell attack at 30 feet.
 void poison_spray_checks()
 {
@@ -580,6 +615,7 @@ int main()
 {
     try
     {
+        creation_checks();
         cantrip_checks();
         poison_spray_checks();
         beast_form_checks();

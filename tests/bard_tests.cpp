@@ -39,6 +39,26 @@ std::unique_ptr<RulesModule> rules()
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
+// A level-one Bard draft with Charisma 18 that prepares the given spells.
+CharacterDraft bard_draft(std::vector<std::string> prepared)
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "bard";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Bard";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.rolls[5] = {{6, 6, 6, 1}, 3};
+    d.training = {{"class:bard", {"performance", "persuasion", "history"}}};
+    d.cantrips = {"vicious_mockery", "starry_wisp"};
+    d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
+    return d;
+}
+
 // A Bard with Charisma 18, advanced to the given level.
 Character bard(unsigned level = 1, std::string background = "sage")
 {
@@ -291,12 +311,48 @@ void policy_checks()
           "The policy gives the ally Bardic Inspiration first");
 }
 
+// A level-one Bard knows two cantrips and prepares four level-one Bard spells;
+// creation refuses anything else.
+void creation_checks()
+{
+    auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    const auto creation = srd5::character_rules();
+    const auto draft =
+        bard_draft({"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"});
+    const Character hero(*creation, draft, {});
+    const auto access = module->spell_access(hero.sheet());
+    check(access.cantrip_choices == 2 && access.prepared_choices == 4 &&
+          creation->cantrip_options(draft).count == 2 &&
+          creation->spell_choice_options(draft).prepared_count == 4,
+          "A level-one Bard knows two cantrips and prepares four spells");
+    for (const auto &bad : std::vector<std::vector<std::string>>
+{
+    {"dissonant_whispers", "faerie_fire", "healing_word", "magic_missile"},
+        {"dissonant_whispers", "faerie_fire", "healing_word", "healing_word"},
+        {"dissonant_whispers", "faerie_fire", "healing_word", "heat_metal"},
+        {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person", "heroism"}
+    })
+    {
+        bool refused = false;
+        try
+        {
+            (void)creation->evaluate(bard_draft(bad), NameRequirement::required);
+        }
+        catch (const std::exception &)
+        {
+            refused = true;
+        }
+        check(refused, "Creation refuses a foreign, repeated, level-two or fifth spell");
+    }
+}
+
 } // namespace
 
 int main()
 {
     try
     {
+        creation_checks();
         policy_checks();
         spell_checks();
         advancement_checks();

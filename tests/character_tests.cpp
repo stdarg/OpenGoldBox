@@ -1008,6 +1008,105 @@ void art_tests()
                   << " bodies; 14 combat heads, 35 bodies, both sizes and poses\n";
     }
 }
+using rules::Ability;
+using rules::CreationField;
+
+// A character made through the ordinary creator, page by page, as the creation
+// screen makes one: the best roll goes to the class's spellcasting ability.
+Character create_ordinarily(std::string_view klass, Ability best,
+                            const std::vector<ChoiceToggle> &training,
+                            const std::vector<std::string> &cantrips,
+                            const std::vector<std::string> &prepared)
+{
+    CharacterCreator creator(srd5::character_rules(), 7);
+    creator.select(CreationField::race, "human");
+    creator.select(CreationField::gender, "female");
+    creator.name("Ordinary");
+    creator.next();
+    creator.select(CreationField::alignment, "neutral_good");
+    creator.next();
+    creator.roll();
+    const auto &rolls = creator.draft().rolls;
+    unsigned highest = 0;
+    for (unsigned n = 1; n < rolls.size(); ++n)
+        if (rolls[n].total() > rolls[highest].total())
+            highest = n;
+    creator.assign_roll(highest, best);
+    for (unsigned n = 0, ability = 0; n < rolls.size(); ++n)
+    {
+        if (n == highest)
+            continue;
+        if (static_cast<Ability>(ability) == best)
+            ++ability;
+        creator.assign_roll(n, static_cast<Ability>(ability++));
+    }
+    creator.select(CreationField::background, "soldier");
+    creator.next();
+    creator.select(CreationField::character_class, klass);
+    creator.next();
+    for (const auto &toggle : training)
+        creator.training_choice(toggle);
+    creator.next();
+    check(creator.step() == CreationStep::spell_choices, "Training advances to Spell Choices");
+    for (const auto &cantrip : cantrips)
+        creator.cantrip_choice(cantrip, true);
+    for (const auto &spell : prepared)
+        creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
+    check(creator.spell_choices_complete(), "Every owed spell is chosen");
+    creator.next();
+    auto appearance = creator.appearance();
+    appearance.combat_head = 9;
+    appearance.portrait_head = 261;
+    creator.appearance(appearance);
+    creator.next();
+    creator.appearance(appearance);
+    creator.next();
+    check(creator.step() == CreationStep::sheet, "Creation reaches the sheet");
+    return creator.create_character();
+}
+
+bool holds(const Character &hero, std::string_view grant)
+{
+    const auto &grants = hero.sheet().grants;
+    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == grant;
+    });
+}
+
+// A Bard and a Druid made through the ordinary creator receive every grant a
+// level-one character of their class is owed.
+void ordinary_creation_tests()
+{
+    const auto bard = create_ordinarily("bard", Ability::charisma,
+    {
+        {.group = "class:bard", .option = "performance", .selected = true},
+        {.group = "class:bard", .option = "persuasion", .selected = true},
+        {.group = "class:bard", .option = "history", .selected = true}
+    },
+    {"vicious_mockery", "starry_wisp"},
+    {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"});
+    check(holds(bard, "feature:bardic_inspiration") && holds(bard, "feature:spellcasting") &&
+          holds(bard, "skill:performance") && holds(bard, "skill:persuasion") &&
+          holds(bard, "skill:history") && holds(bard, "spell:vicious_mockery") &&
+          bard.sheet().prepared_spells.size() == 4 && bard.sheet().training.complete,
+          "An ordinary Bard has Bardic Inspiration, three skills, two cantrips and four spells");
+
+    const auto druid = create_ordinarily("druid", Ability::wisdom,
+    {
+        {.group = "class:druid", .option = "nature", .selected = true},
+        {.group = "class:druid", .option = "medicine", .selected = true},
+        {.group = "class:druid:primal_order", .option = "warden", .selected = true}
+    },
+    {"produce_flame", "shillelagh"},
+    {"cure_wounds", "entangle", "faerie_fire", "thunderwave"});
+    check(holds(druid, "feature:spellcasting") && holds(druid, "order:warden") &&
+          holds(druid, "skill:nature") && holds(druid, "skill:medicine") &&
+          holds(druid, "spell:produce_flame") && druid.sheet().prepared_spells.size() == 4 &&
+          druid.sheet().training.complete,
+          "An ordinary Druid has its Primal Order, two skills, two cantrips and four spells");
+}
+
 } // namespace
 
 int main()
@@ -1019,6 +1118,7 @@ int main()
         inventory_tests();
         additional_portrait_tests();
         art_tests();
+        ordinary_creation_tests();
         std::cout << "Character tests passed\n";
         return 0;
     }

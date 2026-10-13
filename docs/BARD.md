@@ -10,6 +10,10 @@ ability.
   creation and on gaining a level; a Long Rest changes none. The implemented
   Bard spells through level 2 are on the list. Replacing a spell or cantrip
   on gaining a level is not offered yet.
+- Creation: `opengold_character_tests` makes a Bard through the ordinary
+  creator (three skills, two cantrips, four spells, Bardic Inspiration);
+  `opengold_bard_tests` checks the counts and refuses a foreign, repeated,
+  level-two or fifth spell.
 - **Vicious Mockery** (cantrip): a Wisdom save against 1d6 Psychic; a failure
   also gives Disadvantage on the target's next attack roll before the end of
   its next turn.

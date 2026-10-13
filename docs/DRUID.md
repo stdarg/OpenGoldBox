@@ -34,7 +34,9 @@ ability.
 - Verification: `opengold_druid_tests` (Produce Flame and its hurl,
   Shillelagh's Wisdom attack bonus, Magician's cantrip and Warden's armor,
   the Arid Circle Spells and Fire Bolt, Barkskin's AC, a third cantrip at
-  level 4), `opengold_spell_table_tests` (Druid probes).
+  level 4, the level-one counts and refused preparations),
+  `opengold_character_tests` (a Druid made through the ordinary creator),
+  `opengold_spell_table_tests` (Druid probes).
 
 ## Flame Blade, Moonbeam, Spike Growth and Heat Metal
 
