@@ -1,10 +1,10 @@
-# Training halls (proposal, #9)
+# Training halls (#9)
 
 Pool of Radiance levels characters up only at New Phlan's training halls. In
 OpenGoldBox, characters advance from the party roster's Advance button
-anywhere. This page records what the original game does and the decisions
-needed before [#9](https://github.com/stdarg/OpenGold/issues/9) can implement
-it. The decisions below are approved; nothing is implemented yet.
+anywhere. This page records what the original game does and the approved
+design for [#9](https://github.com/stdarg/OpenGold/issues/9). Nothing is
+implemented yet.
 
 ## What the original does
 
@@ -48,16 +48,32 @@ it. The decisions below are approved; nothing is implemented yet.
 4. **Experience is kept.** Training does not clamp it, unlike the original.
 5. **Controls.** The party roster, with the halls' services beside Advance.
    Screenshots of each state come before any code.
+6. **Experience for sale.** A hall sells one session per level to members of
+   its classes:
+   - A session grants half the experience between the character's level and
+     the next. The other half must be earned, so gold alone never gains a
+     level.
+   - A character with no experience toward the next level can still buy it.
+   - The fee is 1,000 gp at level 1 and doubles at each level.
 
-## Still open
+   | Level | Experience granted | Fee |
+   | --- | --- | --- |
+   | 1 → 2 | 150 | 1,000 gp |
+   | 2 → 3 | 300 | 2,000 gp |
+   | 3 → 4 | 900 | 4,000 gp |
+   | 4 → 5 | 1,900 | 8,000 gp |
+   | 5 → 6 | 3,750 | 16,000 gp |
+   | 6 → 7 | 4,500 | 32,000 gp |
+   | 7 → 8 | 5,500 | 64,000 gp |
+   | 8 → 9 | 7,000 | 128,000 gp |
 
-- **Experience.** What a hall's experience costs, how much it grants and how
-  often it can be bought.
-- **Skills.** Which skills a hall teaches (its classes' skill lists?), at what
-  cost, and how many a character can learn.
-- **Party gold.** Replacing per-character purses touches shops, the temple,
-  the inn, loot, the original scripts' money checks and the save format. It
-  comes before the halls, since they spend the party's gold.
+7. **Skill training.** A hall teaches the skills on its classes' lists, and
+   tools and languages. Proficiency costs 250 gp and Expertise 500 gp. A
+   character learns one per level.
+
+Party gold ([#232](https://github.com/stdarg/OpenGold/issues/232)) comes
+before the halls, since they spend it. These decisions are also listed in
+[DEVIATIONS.md](DEVIATIONS.md).
 
 ## What the decisions unlock
 
