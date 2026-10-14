@@ -28,18 +28,22 @@ constexpr std::string_view hall_training = "training_hall";
 rules::TrainingChoiceGroup hall_training_options(std::span<const rules::FeatureGrant> grants,
         std::span<const CharacterClass> classes);
 std::vector<rules::TrainingChoiceGroup> training_options(const rules::CharacterDraft &draft);
+// `race` is a species id ("elf") or label ("Elf"): it decides the species'
+// own choices, such as the Elf's lineage.
 std::vector<rules::FeatureGrant>
-training_grants(CharacterClass klass, std::string_view background,
+training_grants(CharacterClass klass, std::string_view race, std::string_view background,
                 const rules::TrainingChoices &choices);
 bool is_training_grant(const rules::FeatureGrant &grant);
 std::vector<rules::FeatureGrant> without_training(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> grants,
-                                        CharacterClass klass, std::string_view background);
+                                        CharacterClass klass, std::string_view race,
+                                        std::string_view background);
 rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> grants,
-                                        CharacterClass klass, std::string_view background,
-                                        unsigned level, const rules::AbilityArray<int> &scores);
+                                        CharacterClass klass, std::string_view race,
+                                        std::string_view background, unsigned level,
+                                        const rules::AbilityArray<int> &scores);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
-        CharacterClass klass, std::string_view background,
+        CharacterClass klass, std::string_view race, std::string_view background,
         unsigned level, const rules::AbilityArray<int> &scores,
         rules::Ability ability, std::string_view skill);
 } // namespace opengold::srd5::detail

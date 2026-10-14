@@ -121,6 +121,13 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     if (candidate.cantrips->size() > cantrips.count)
         candidate.cantrips->resize(cantrips.count);
     prune_training(candidate);
+    // A new species starts with the first option of each of its choices,
+    // shown on the race page for the player to change.
+    if (field == CreationField::race)
+        for (const auto &group : rules_->training_options(candidate))
+            if (group.id.starts_with("species:") && !candidate.training.contains(group.id))
+                for (unsigned n = 0; n < group.count && n < group.options.size(); ++n)
+                    candidate.training[group.id].push_back(group.options[n].id);
     draft_ = std::move(candidate);
 }
 
@@ -329,10 +336,35 @@ void CharacterCreator::training_choice(ChoiceToggle toggle)
     draft_ = std::move(candidate);
 }
 
+bool CharacterCreator::species_complete() const
+{
+    for (const auto &group : training_options())
+    {
+        if (!group.id.starts_with("species:"))
+            continue;
+        const auto found = draft_.training.find(group.id);
+        if (group.count && (found == draft_.training.end() || found->second.size() != group.count))
+            return false;
+    }
+    return true;
+}
+
+bool CharacterCreator::has_species_choices() const
+{
+    const auto groups = training_options();
+    return std::any_of(groups.begin(), groups.end(), [](const auto & group)
+    {
+        return group.id.starts_with("species:");
+    });
+}
+
 bool CharacterCreator::training_complete() const
 {
     for (const auto &group : training_options())
     {
+        // A species' choices are made on the race page (species_complete).
+        if (group.id.starts_with("species:"))
+            continue;
         const auto found = draft_.training.find(group.id);
         if (group.count && (found == draft_.training.end() || found->second.size() != group.count))
             return false;

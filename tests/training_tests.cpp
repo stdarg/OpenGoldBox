@@ -410,7 +410,11 @@ void creation_controls()
                              .option = "stealth",
                              .selected = true});
     creator.select(CreationField::character_class, "fighter");
-    check(creator.draft().training.size() == 2,
+    check(std::count_if(creator.draft().training.begin(), creator.draft().training.end(),
+                        [](const auto & entry)
+    {
+        return !entry.first.starts_with("species:");
+    }) == 2,
           "Class change preserves compatible skills and mastery while clearing Rogue-only groups");
     check(!creator.training_complete(), "Fighter requires its own starting style choice");
     creator.training_choice({.group = "class:fighter:fighting_style",
@@ -474,8 +478,12 @@ void creation_controls()
                                  .selected = false});
     });
     creator.restart();
-    check(creator.draft().training.empty() && !creator.training_complete(),
-          "Restart clears training selections");
+    check(std::all_of(creator.draft().training.begin(), creator.draft().training.end(),
+                      [](const auto & entry)
+    {
+        return entry.first.starts_with("species:");
+    }) && !creator.training_complete(),
+    "Restart clears training selections, keeping the species' first options");
 }
 
 void pool_starting_gear()

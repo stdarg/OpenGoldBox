@@ -7,6 +7,9 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <iterator>
+#include <fstream>
+#include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -32,6 +35,12 @@ std::unique_ptr<RulesModule> module()
     return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
 }
 
+std::string read_rules()
+{
+    std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
+    return {std::istreambuf_iterator<char>(in), {}};
+}
+
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
@@ -40,8 +49,9 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
     return false;
 }
 
-// A level-one Fighter of the species, every roll the same.
-Character fighter(std::string race)
+// A level-one Fighter of the species, every roll the same, with the species'
+// creation choices (group id to pick).
+Character fighter(std::string race, std::map<std::string, std::string> species = {})
 {
     CharacterDraft d;
     d.race = std::move(race);
@@ -56,6 +66,8 @@ Character fighter(std::string race)
     d.training = {{"class:fighter", {"acrobatics", "history"}},
         {"class:fighter:fighting_style", {"defense"}}
     };
+    for (const auto &[group, pick] : species)
+        d.training[group] = {pick};
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -291,6 +303,73 @@ void nimbleness_checks()
           "A Small kobold blocks a Halfling");
 }
 
+// A species' creation choices: what each species is offered, and the size,
+// speed, skill and resistance they set (SRD 5.2.1 pp. 84-86).
+void species_choice_checks()
+{
+    const auto rules = module();
+    const auto groups = [](std::string race)
+    {
+        CharacterDraft d;
+        d.race = std::move(race);
+        std::vector<std::string> ids;
+        for (const auto &g : srd5::character_rules()->training_options(d))
+            if (g.id.starts_with("species:"))
+                ids.push_back(g.id);
+        return ids;
+    };
+    check(groups("elf") == std::vector<std::string> {"species:elf:lineage", "species:elf:keen_senses"} &&
+          groups("tiefling") == std::vector<std::string> {"species:tiefling:legacy", "species:tiefling:size"} &&
+          groups("dragonborn") == std::vector<std::string> {"species:dragonborn:ancestry"} &&
+          groups("goliath") == std::vector<std::string> {"species:goliath:ancestry"} &&
+          groups("human") == std::vector<std::string> {"species:human:size", "species:human:skillful"} &&
+          groups("dwarf").empty(),
+          "Each species offers its own choices");
+    const auto speed = [&](const Character &hero)
+    {
+        return rules->character_profile(hero.sheet(), {}).movement_feet;
+    };
+    const auto wood = fighter("elf", {{"species:elf:lineage", "wood_elf"},
+        {"species:elf:keen_senses", "perception"}
+    });
+    check(speed(wood) == 35 && speed(fighter("elf")) == 30, "A Wood Elf moves 35 feet");
+    const auto &skills = wood.sheet().training.skills;
+    check(std::any_of(skills.begin(), skills.end(), [](const auto & s)
+    {
+        return s.id == "perception" && s.proficient;
+    }), "Keen Senses trains Perception");
+
+    // The same fire attack, with the same dice, against each hero: an Infernal
+    // Tiefling and a Red Dragonborn take half what a Human takes.
+    const auto burner = srd5::parse_content(
+                            read_rules() +
+                            "\ncreature burner 10 500 0 30 30 1 8 3 0 0 0 0 0 0 0 0 0 1 0\n"
+                            "damage_types burner fire fire\n");
+    const auto burned = [&](const Character &hero)
+    {
+        auto c = burner->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                    burner->character_profile(hero.sheet(), {}).data},
+                {98, "burner", "Burner", Side::opposition, {2, 1}}
+            }},
+        3);
+        for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the burner's turn");
+        const int before = unit(*c, 1).hit_points;
+        check(submit(*c, "melee", 1), "The burner attacks");
+        return before - unit(*c, 1).hit_points;
+    };
+    const int human = burned(fighter("human"));
+    check(human > 1, "The burner's fire lands on the Human");
+    check(burned(fighter("tiefling", {{"species:tiefling:legacy", "infernal"}})) == human / 2 &&
+          burned(fighter("dragonborn", {{"species:dragonborn:ancestry", "red"}})) == human / 2 &&
+          burned(fighter("dragonborn", {{"species:dragonborn:ancestry", "white"}})) == human,
+          "Infernal and Red Dragonborn heroes resist Fire; a White Dragonborn does not");
+    check(rules->character_profile(fighter("human", {{"species:human:size", "small"}}).sheet(), {})
+          .data != rules->character_profile(fighter("human").sheet(), {}).data,
+          "A Small Human differs from a Medium one");
+}
+
 } // namespace
 
 int main()
@@ -301,6 +380,7 @@ int main()
         orc_checks();
         halfling_checks();
         nimbleness_checks();
+        species_choice_checks();
     }
     catch (const std::exception &error)
     {

@@ -63,6 +63,10 @@ class CharacterCreator
     [[nodiscard]] bool spell_choices_complete() const;
     void cantrip_choice(std::string_view option, bool selected);
     [[nodiscard]] bool training_complete() const;
+    // Whether the species' own choices (an Elf's lineage) are made; the race
+    // page asks for them.
+    [[nodiscard]] bool species_complete() const;
+    [[nodiscard]] bool has_species_choices() const;
     // Rolls the six ability results and, with them, the starting gold.
     void roll();
 

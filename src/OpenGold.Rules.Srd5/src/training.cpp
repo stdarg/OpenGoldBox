@@ -2,6 +2,7 @@
 #include "weapon_mastery.h"
 #include "feature_grants.h"
 #include <algorithm>
+#include <cctype>
 #include <set>
 #include <stdexcept>
 #include <tuple>
@@ -199,11 +200,98 @@ void add_choices(std::vector<FeatureGrant> &grants, const TrainingChoices &choic
     }
 }
 
+// A species id ("elf") from an id or a label ("Elf").
+std::string species_id(std::string_view race)
+{
+    std::string id(race);
+    std::transform(id.begin(), id.end(), id.begin(), [](unsigned char c)
+    {
+        return static_cast<char>(std::tolower(c));
+    });
+    return id;
+}
+
+TrainingChoiceGroup one_of(std::string id, std::string label, std::vector<CreationChoice> options)
+{
+    return {std::move(id), std::move(label), 1, std::move(options),
+            TrainingChoiceControl::single_selection};
+}
+
+// The choices a species makes at creation (SRD 5.2.1 pp. 84-86). Drow,
+// Darkvision and the spells DM-1 removed are not offered.
+std::vector<TrainingChoiceGroup> species_options(std::string_view race)
+{
+    const auto species = species_id(race);
+    std::vector<TrainingChoiceGroup> result;
+    const auto size = [&]
+    {
+        return one_of("species:" + species + ":size", "Size",
+        {   {"medium", "Medium", {}},
+            {"small", "Small", {}}
+        });
+    };
+    if (species == "elf")
+    {
+        result.push_back(one_of("species:elf:lineage", "Elven Lineage",
+        {   {"high_elf", "High Elf", "A Wizard cantrip of your choice."},
+            {"wood_elf", "Wood Elf", "Speed 35 feet; Longstrider from level 3."}
+        }));
+        result.push_back(one_of("species:elf:keen_senses", "Keen Senses",
+        {{"insight", "Insight", {}}, {"perception", "Perception", {}}, {"survival", "Survival", {}}}));
+    }
+    if (species == "tiefling")
+    {
+        result.push_back(one_of("species:tiefling:legacy", "Fiendish Legacy",
+        {   {"abyssal", "Abyssal", "Resistance to Poison; Poison Spray; Ray of Sickness from level 3."},
+            {"chthonic", "Chthonic", "Resistance to Necrotic; Chill Touch; False Life from level 3."},
+            {"infernal", "Infernal", "Resistance to Fire; Fire Bolt; Hellish Rebuke from level 3."}
+        }));
+        result.push_back(size());
+    }
+    if (species == "dragonborn")
+        result.push_back(one_of("species:dragonborn:ancestry", "Draconic Ancestry",
+        {   {"black", "Black", "Acid"}, {"blue", "Blue", "Lightning"}, {"brass", "Brass", "Fire"},
+            {"bronze", "Bronze", "Lightning"}, {"copper", "Copper", "Acid"}, {"gold", "Gold", "Fire"},
+            {"green", "Green", "Poison"}, {"red", "Red", "Fire"}, {"silver", "Silver", "Cold"},
+            {"white", "White", "Cold"}
+        }));
+    if (species == "goliath")
+        result.push_back(one_of("species:goliath:ancestry", "Giant Ancestry",
+        {   {"cloud", "Cloud's Jaunt", "Bonus Action: teleport up to 30 feet to a space you can see."},
+            {"fire", "Fire's Burn", "An attack hit deals 1d10 more Fire damage."},
+            {"frost", "Frost's Chill", "An attack hit deals 1d6 more Cold damage and slows the target by 10 feet."},
+            {"hill", "Hill's Tumble", "An attack hit knocks a Large or smaller target Prone."},
+            {"stone", "Stone's Endurance", "Reaction when hit: reduce the damage by 1d12 + your Constitution modifier."},
+            {"storm", "Storm's Thunder", "Reaction when damaged: deal 1d8 Thunder damage to the attacker within 60 feet."}
+        }));
+    if (species == "human")
+    {
+        result.push_back(size());
+        TrainingChoiceGroup skillful = one_of("species:human:skillful", "Skillful", {});
+        skillful.control = TrainingChoiceControl::checkboxes;
+        for (const auto &skill : skills)
+            skillful.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+        result.push_back(std::move(skillful));
+    }
+    return result;
+}
+
+// The grant prefix of a species choice group's picks.
+std::string_view species_prefix(std::string_view group)
+{
+    return group.ends_with(":lineage")       ? "lineage:"
+           : group.ends_with(":legacy")      ? "legacy:"
+           : group.ends_with(":size")        ? "size:"
+           : group.ends_with(":keen_senses") || group.ends_with(":skillful") ? "skill:"
+           : group == "species:dragonborn:ancestry" ? "dragon:"
+           : "giant:";
+}
+
 // A draft offers its background's choices before any class is chosen.
 std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
-        std::string_view background, const TrainingChoices &choices)
+        std::string_view race, std::string_view background, const TrainingChoices &choices)
 {
-    std::vector<TrainingChoiceGroup> result;
+    std::vector<TrainingChoiceGroup> result = species_options(race);
     if (klass == CharacterClass::fighter)
         result.push_back({"class:fighter:fighting_style",
                           "Fighting Style",
@@ -344,7 +432,11 @@ bool is_training_grant(const FeatureGrant &grant)
     return is_mastery_grant(grant) || grant.id.starts_with("skill:") ||
            grant.id.starts_with("expertise:") || grant.id.starts_with("order:") ||
            grant.id.starts_with("metamagic:") || grant.id.starts_with("invocation:") ||
-           grant.id.starts_with("land:");
+           grant.id.starts_with("land:") ||
+           (grant.source_id.starts_with("species:") &&
+            (grant.id.starts_with("lineage:") || grant.id.starts_with("legacy:") ||
+             grant.id.starts_with("size:") || grant.id.starts_with("dragon:") ||
+             grant.id.starts_with("giant:")));
 }
 
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
@@ -566,25 +658,28 @@ TrainingChoiceGroup hall_training_options(std::span<const FeatureGrant> grants,
 
 std::vector<TrainingChoiceGroup> training_options(const CharacterDraft &draft)
 {
-    return options(draft_class(draft), draft.background, draft.training);
+    return options(draft_class(draft), draft.race, draft.background, draft.training);
 }
 
-std::vector<FeatureGrant> training_grants(CharacterClass klass, std::string_view background,
-        const TrainingChoices &choices)
+std::vector<FeatureGrant> training_grants(CharacterClass klass, std::string_view race,
+        std::string_view background, const TrainingChoices &choices)
 {
     auto result = fixed(background);
-    const auto groups = options(klass, background, choices);
+    const auto groups = options(klass, race, background, choices);
     for (const auto &[id, values] : choices)
-        require(std::any_of(groups.begin(), groups.end(),
-                            [&](const auto & g)
+        require((id.starts_with("species:") && !id.starts_with("species:" + species_id(race) + ":")) ||
+                (std::any_of(groups.begin(), groups.end(),
+                             [&](const auto & g)
     {
         return g.id == id;
     }) &&
-    !values.empty());
+    !values.empty()));
+    // Another species' choices (a draft whose species changed) give nothing.
     for (const auto &group : groups)
         add_choices(
             result, choices, group,
-            group.id.ends_with(":weapon_mastery")        ? "mastery:"
+            group.id.starts_with("species:")             ? species_prefix(group.id)
+            : group.id.ends_with(":weapon_mastery")        ? "mastery:"
             : group.id == "class:fighter:fighting_style" ? "feat:"
             : group.id == divine_order || group.id == "class:druid:primal_order" ? "order:"
             : group.id == "class:warlock:invocations"    ? "invocation:"
@@ -594,7 +689,7 @@ std::vector<FeatureGrant> training_grants(CharacterClass klass, std::string_view
 }
 
 TrainingChoices training_choices(std::span<const FeatureGrant> grants, CharacterClass klass,
-                                 std::string_view background)
+                                 std::string_view race, std::string_view background)
 {
     auto required = fixed(background);
     TrainingChoices choices;
@@ -778,7 +873,9 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 required.erase(found);
                 continue;
             }
-            const auto prefix = grant.source_id.ends_with(":weapon_mastery")        ? "mastery:"
+            const auto prefix = grant.source_id.starts_with("species:")
+                                ? species_prefix(grant.source_id)
+                                : grant.source_id.ends_with(":weapon_mastery")        ? "mastery:"
                                 : grant.source_id == "class:fighter:fighting_style" ? "feat:"
                                 : grant.source_id == divine_order ||
                                   grant.source_id == "class:druid:primal_order" ? "order:"
@@ -803,7 +900,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     starting.erase(std::string(skilled));
     starting.erase(std::string(hall_training));
     starting.erase(mastery_options(klass, 4).id);
-    auto expected = training_grants(klass, background, starting);
+    auto expected = training_grants(klass, race, background, starting);
     const auto order = [](const FeatureGrant & a, const FeatureGrant & b)
     {
         return std::tie(a.id, a.source_id, a.level) < std::tie(b.id, b.source_id, b.level);
@@ -815,15 +912,18 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
 }
 
 TrainingProfile training_profile(std::span<const FeatureGrant> grants, CharacterClass klass,
-                                 std::string_view background, unsigned level,
-                                 const AbilityArray<int> &scores)
+                                 std::string_view race, std::string_view background,
+                                 unsigned level, const AbilityArray<int> &scores)
 {
-    const auto choices = training_choices(grants, klass, background);
-    const auto groups = options(klass, background, choices);
+    const auto choices = training_choices(grants, klass, race, background);
+    const auto groups = options(klass, race, background, choices);
     TrainingProfile result;
     result.complete = true;
+    // The creation screen asks for a species' choices before leaving its page;
+    // the rules accept a character made without them (then without their benefits).
     for (const auto &group : groups)
-        result.complete &= selected(choices, group.id).size() == group.count;
+        if (!group.id.starts_with("species:"))
+            result.complete &= selected(choices, group.id).size() == group.count;
     const auto mastery = mastery_choices(grants, klass, level);
     if (level >= 4)
     {
@@ -875,11 +975,11 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
 }
 
 AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, CharacterClass klass,
-                                   std::string_view background, unsigned level,
-                                   const AbilityArray<int> &scores, Ability ability,
-                                   std::string_view skill)
+                                   std::string_view race, std::string_view background,
+                                   unsigned level, const AbilityArray<int> &scores,
+                                   Ability ability, std::string_view skill)
 {
-    (void)training_profile(grants, klass, background, level, scores);
+    (void)training_profile(grants, klass, race, background, level, scores);
     return check_modifier(grants, scores, level, ability, skill);
 }
 SwapOffer option_swap_offer(const CharacterSheet &sheet)

@@ -1291,6 +1291,33 @@ character_definition(std::string_view bytes,
     std::string background;
     in >> std::quoted(background);
     const auto grants = detail::read_grants(in);
+    // A species' creation choices: size, a Wood Elf's speed and a Tiefling's
+    // or Dragonborn's resistance.
+    const auto chose = [&](std::string_view id)
+    {
+        return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == id;
+        });
+    };
+    if (chose("size:small"))
+        d.size = 1;
+    if (chose("lineage:wood_elf"))
+        d.speed = 35;
+    using detail::DamageType;
+    for (const auto &[choice, type] : std::initializer_list<std::pair<std::string_view, DamageType>>
+{
+    {"legacy:abyssal", DamageType::poison}, {"legacy:chthonic", DamageType::necrotic},
+        {"legacy:infernal", DamageType::fire}, {"dragon:black", DamageType::acid},
+        {"dragon:copper", DamageType::acid}, {"dragon:blue", DamageType::lightning},
+        {"dragon:bronze", DamageType::lightning}, {"dragon:brass", DamageType::fire},
+        {"dragon:gold", DamageType::fire}, {"dragon:red", DamageType::fire},
+        {"dragon:green", DamageType::poison}, {"dragon:silver", DamageType::cold},
+        {"dragon:white", DamageType::cold}
+    })
+    if (chose(choice))
+        d.affinities.push_back({detail::AffinityKind::resistance, type,
+                                "species/" + std::string(choice)});
     for (const auto &feat : detail::magic_initiate_spells(grants))
     {
         for (const auto &spell : feat.spells)
@@ -1414,7 +1441,7 @@ character_definition(std::string_view bytes,
         hands = hands - d.weapon_hands + 2;
         d.weapon_hands = 2;
     }
-    const auto training = detail::training_profile(grants, klass,
+    const auto training = detail::training_profile(grants, klass, race,
                           background, level, scores);
     d.medicine = std::find_if(training.skills.begin(), training.skills.end(),
                               [](const auto & skill)
@@ -10665,7 +10692,7 @@ class Module final : public RulesModule
         candidate.grants.insert(last_skill.base(),
                                 FeatureGrant{std::string(grant), std::string(detail::hall_training),
                                              static_cast<unsigned>(sheet.level), {}});
-        candidate.training = detail::training_profile(candidate.grants, klass,
+        candidate.training = detail::training_profile(candidate.grants, klass, candidate.race,
             detail::background_id(candidate.background),
             candidate.level, candidate.scores);
         (void)character_profile(candidate, {});
@@ -10715,7 +10742,7 @@ class Module final : public RulesModule
         {
             return std::find(always.begin(), always.end(), id) != always.end();
         });
-        candidate.training = detail::training_profile(candidate.grants, klass,
+        candidate.training = detail::training_profile(candidate.grants, klass, candidate.race,
             detail::background_id(candidate.background),
             candidate.level, candidate.scores);
         (void)character_profile(candidate, {});
@@ -11374,7 +11401,7 @@ class Module final : public RulesModule
                  .learning.empty())
             throw std::runtime_error("Independent spell learning choices are required");
         next.training = detail::training_profile(
-                            next.grants, klass,
+                            next.grants, klass, next.race,
                             detail::background_id(next.background), next.level, next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[Ability::constitution]);
         next.hit_points =
@@ -12156,7 +12183,7 @@ class Module final : public RulesModule
         if (sheet.identity != character_rules()->identity() || sheet.level < 1 || sheet.level > 4)
             throw std::runtime_error("Unsupported character rules identity or level");
         const auto klass = detail::class_of(sheet);
-        (void)detail::training_profile(sheet.grants, klass,
+        (void)detail::training_profile(sheet.grants, klass, sheet.race,
                                        detail::background_id(sheet.background), sheet.level,
                                        sheet.scores);
         const auto features_only =
@@ -12721,7 +12748,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.176", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.177", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

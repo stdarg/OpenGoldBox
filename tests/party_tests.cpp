@@ -652,6 +652,11 @@ void goliath_occupancy()
     const auto human = character();
     auto draft = human.creation_data();
     draft.race = "goliath";
+    // The Human's own choices (size, Skillful) do not carry over.
+    std::erase_if(draft.training, [](const auto & entry)
+    {
+        return entry.first.starts_with("species:");
+    });
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft, human.appearance()));
     auto participants = party.participants();

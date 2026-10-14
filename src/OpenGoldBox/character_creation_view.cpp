@@ -406,6 +406,7 @@ void CharacterCreationView::refresh()
     show("TrainingFixed", step == CreationStep::training);
     show("TrainingFixedTitle", step == CreationStep::training);
     show("Training", step == CreationStep::training);
+    show("SpeciesChoices", step == CreationStep::race && creator_->has_species_choices());
     for (const auto *n :
             {"PortraitGender", "PortraitClass", "PortraitRace", "PortraitIdentity", "PortraitFilters",
              "PortraitScroll"
@@ -471,7 +472,7 @@ void CharacterCreationView::refresh()
          !rules::class_eligible(creator_->rules(), d, d.character_class)) ||
         (step == CreationStep::training && !creator_->training_complete()) ||
         (step == CreationStep::spell_choices && !creator_->spell_choices_complete()) ||
-        (step == CreationStep::race && d.name.empty()));
+        (step == CreationStep::race && (d.name.empty() || !creator_->species_complete())));
     required_node<Label>(*this, "Status").set_text(error_);
     std::string instructions;
     if (choosing)
@@ -611,6 +612,10 @@ void CharacterCreationView::refresh()
             required_node<Label>(*this, gs("TotalScore" + std::to_string(i)))
             .set_text(s ? gs(std::to_string(s->scores[ability])) : String("--"));
         }
+    if (step == CreationStep::race && creator_->has_species_choices())
+        presentation::refresh_training_controls(
+            *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
+            i18n::text, {}, true);
     if (step == CreationStep::training)
     {
         presentation::refresh_training_controls(

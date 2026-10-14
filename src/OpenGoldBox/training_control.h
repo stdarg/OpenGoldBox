@@ -182,22 +182,37 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
 
 // The scene owns every node. Reuse controls across refreshes so toggling does
 // not destroy the focused checkbox or its keyboard navigation position.
+// The training choices of the Training page, or with `species` the species'
+// own choices on the race page (in "SpeciesChoices").
 template <class Translate>
 void refresh_training_controls(godot::Node &parent, const opengold::CharacterCreator &creator,
                                const godot::Callable &toggled, const Translate &tr,
-                               const opengold::rules::TrainingChoices &locked = {})
+                               const opengold::rules::TrainingChoices &locked = {},
+                               bool species = false)
 {
     using namespace godot;
-    auto *rows = &required_node<VBoxContainer>(parent, "Training/Rows");
-    auto fixed = creator.draft();
-    fixed.training.clear();
-    required_node<Label>(parent, "TrainingFixedTitle").set_text(tr(N_("Fixed training")));
-    required_node<RichTextLabel>(parent, "TrainingFixed")
-    .call("render", training_summary(
-                   creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
-                   tr, true));
-    const auto groups = creator.training_options();
-    const auto sheet = creator.sheet();
+    const String container = species ? "SpeciesChoices" : "Training";
+    auto *rows = &required_node<VBoxContainer>(parent, container + String("/Rows"));
+    if (!species)
+    {
+        auto fixed = creator.draft();
+        fixed.training.clear();
+        required_node<Label>(parent, "TrainingFixedTitle").set_text(tr(N_("Fixed training")));
+        required_node<RichTextLabel>(parent, "TrainingFixed")
+        .call("render",
+              training_summary(
+                  creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
+                  tr, true));
+    }
+    auto groups = creator.training_options();
+    std::erase_if(groups, [&](const auto & group)
+    {
+        return group.id.starts_with("species:") != species;
+    });
+    // The race page comes before the scores are rolled, so a species choice
+    // shows its own description rather than what it adds to the sheet.
+    const auto sheet = species ? std::optional<opengold::rules::CharacterSheet>{}
+                       : std::optional(creator.sheet());
     for (auto i = static_cast<unsigned>(groups.size()); i < static_cast<unsigned>(rows->get_child_count()); ++i)
         required_node<Control>(*rows, String("Group") + String::num_uint64(i)).hide();
     for (unsigned i = 0; i < groups.size(); ++i)
@@ -295,7 +310,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                 (!single && !selected && picked.size() >= group.count));
             check->show();
             check->set_tooltip_text(training_source(group.id, tr));
-            benefit->set_text(training_benefit(group, option, sheet, tr));
+            benefit->set_text(sheet ? training_benefit(group, option, *sheet, tr)
+                              : option.description.empty() ? String()
+                              : tr(option.description));
             benefit->show();
         }
     }
@@ -324,7 +341,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
     String signature;
     for (const auto &group : groups)
         signature += training_string(group.id) + ";";
-    required_node<ScrollContainer>(parent, "Training").call("reset_for", signature);
+    auto &scroll = required_node<ScrollContainer>(parent, container);
+    if (scroll.has_method("reset_for"))
+        scroll.call("reset_for", signature);
     unsigned first = 0;
     for (unsigned i = 0; i < groups.size(); ++i)
         if (groups[i].control == opengold::rules::TrainingChoiceControl::single_selection)

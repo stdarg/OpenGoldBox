@@ -221,7 +221,7 @@ class CreatorRules final : public CharacterRules
     AbilityCheckModifier ability_check(const CharacterSheet &sheet, Ability ability,
                                        std::string_view skill) const override
     {
-        return detail::ability_check(sheet.grants, detail::class_of(sheet),
+        return detail::ability_check(sheet.grants, detail::class_of(sheet), sheet.race,
                                      detail::background_id(sheet.background), sheet.level,
                                      sheet.scores, ability, skill);
     }
@@ -419,7 +419,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     s.alignment = label(CreationField::alignment, d.alignment);
     s.background = label(CreationField::background, d.background);
     s.grants = detail::starting_grants(klass, d.race, d.background);
-    const auto training = detail::training_grants(klass, d.background, d.training);
+    const auto training = detail::training_grants(klass, d.race, d.background, d.training);
     s.grants.insert(s.grants.end(), training.begin(), training.end());
     if (name == NameRequirement::required && (d.name.empty() || d.name.size() > 160 ||
                          d.name.find_first_not_of(" \t\r\n") == std::string::npos ||
@@ -563,7 +563,7 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                        (racial_hp ? " + 1 (Dwarven Toughness)" : "") + " = " +
                        std::to_string(s.hit_points) + " HP";
     s.training =
-        detail::training_profile(s.grants, klass, d.background, s.level, s.scores);
+        detail::training_profile(s.grants, klass, d.race, d.background, s.level, s.scores);
     const auto spells = detail::starting_spell_grants(klass, d.cantrips);
     s.grants.insert(s.grants.end(), spells.begin(), spells.end());
     using enum detail::CharacterClass;

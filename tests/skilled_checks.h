@@ -71,10 +71,11 @@ void options_and_grants()
     check(group != with.training.end() && group->count == 3,
           "Selecting Skilled opens a page of three");
     check(group->acquired_level == 4, "Skilled proficiencies are acquired at level four");
-    unsigned already = 0;
+    std::set<std::string> held;
     for (const auto &g : sheet.grants)
         if (g.id.starts_with("skill:"))
-            ++already;
+            held.insert(g.id);
+    const auto already = static_cast<unsigned>(held.size());
     check(already && group->options.size() == 18 - already,
           "Every skill not already held is offered exactly once");
     for (const auto &option : group->options)
