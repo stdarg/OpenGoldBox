@@ -754,6 +754,9 @@ void asi_conformance()
                         check(bool(restored.rest(RestKind::short_rest)),
                               "Advanced character can Short Rest");
                         restored.finish_short_rest(restored.state().short_rest->ticket);
+                        // A Hunter Ranger may change its Hunter's Prey.
+                        if (restored.state().training_rest)
+                            restored.keep_rest_training(restored.state().training_rest->ticket, id);
                         check(bool(restored.rest(RestKind::long_rest)),
                               "Advanced character can Long Rest");
                         check(restored.member(id).character.sheet().grants == sheet.grants,

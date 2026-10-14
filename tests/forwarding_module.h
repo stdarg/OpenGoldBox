@@ -102,10 +102,10 @@ class ForwardingModule : public rules::RulesModule
         return rules_->experience_for_level(level);
     }
 
-    std::optional<rules::TrainingReplacementOptions>
-    rest_training_options(const rules::CharacterSheet &sheet) const override
+    std::vector<rules::TrainingReplacementOptions>
+    rest_training_options(const rules::CharacterSheet &sheet, rules::RestKind kind) const override
     {
-        return rules_->rest_training_options(sheet);
+        return rules_->rest_training_options(sheet, kind);
     }
 
     rules::TrainingChoices replace_rest_training(rules::CharacterSheet &sheet,

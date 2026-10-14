@@ -135,11 +135,12 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
                     ShortRestSession{ticket, state.time_minutes, state.subminute_milliseconds, {}};
             state.spell_rest->members.push_back(id);
         }
-        if (rules_->rest_training_options(member.character.sheet()))
+        if (!rules_->rest_training_options(member.character.sheet(), RestKind::long_rest).empty())
         {
             if (!state.training_rest)
                 state.training_rest =
                     ShortRestSession{ticket, state.time_minutes, state.subminute_milliseconds, {}};
+            state.training_after_short_rest = false;
             state.training_rest->members.push_back(id);
         }
         result.members.push_back(id);
@@ -204,6 +205,17 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
 void CampaignParty::finish_short_rest(RestTicket ticket)
 {
     require_rest_ticket(ticket);
+    // Choices a Short Rest can change (the Hunter's Prey) are offered next.
+    auto session = std::move(*state_.short_rest);
     state_.short_rest.reset();
+    std::erase_if(session.members, [&](MemberId id)
+    {
+        return rules_->rest_training_options(member(id).character.sheet(),
+                                             RestKind::short_rest).empty();
+    });
+    if (session.members.empty())
+        return;
+    state_.training_rest = std::move(session);
+    state_.training_after_short_rest = true;
 }
 } // namespace opengold

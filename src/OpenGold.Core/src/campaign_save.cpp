@@ -15,7 +15,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 27;
+constexpr unsigned campaign_format = 28;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -318,7 +318,8 @@ template <bool Reading> struct SaveCodec
 
     void rest(Visited<PartyState> v)
     {
-        fields(v.next_rest_session, v.short_rest, v.spell_rest, v.training_rest);
+        fields(v.next_rest_session, v.short_rest, v.spell_rest, v.training_rest,
+               v.training_after_short_rest);
     }
 
     void field(Visited<rules::VitalState> v)

@@ -384,7 +384,7 @@ void run()
                     p.end_combat();
                 }
                 const auto saved = encode_campaign(p, nullptr, "style-routes");
-                check(saved.starts_with("OPENGOLD-CAMPAIGN 27\n"),
+                check(saved.starts_with("OPENGOLD-CAMPAIGN 28\n"),
                       "Style history is written in the current campaign format");
                 CampaignParty restored(rogue_attack_checks::rules_module());
                 restored.restore(
@@ -393,6 +393,10 @@ void run()
                       "All class/ownership histories replay exactly");
                 check(bool(restored.rest(RestKind::short_rest)), "Style character Short Rest");
                 restored.finish_short_rest(restored.state().short_rest->ticket);
+                // A Hunter Ranger may change its Hunter's Prey.
+                if (restored.state().training_rest)
+                    for (const auto member : restored.state().training_rest->members)
+                        restored.keep_rest_training(restored.state().training_rest->ticket, member);
                 check(bool(restored.rest(RestKind::long_rest)), "Style character Long Rest");
             }
 

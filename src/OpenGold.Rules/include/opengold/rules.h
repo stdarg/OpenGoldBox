@@ -746,9 +746,13 @@ class RulesModule
     roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
                        std::string_view skill, RandomState &random_state) const = 0;
     [[nodiscard]] virtual unsigned experience_for_level(unsigned level) const = 0;
-    [[nodiscard]] virtual std::optional<TrainingReplacementOptions>
-    rest_training_options(const CharacterSheet &) const = 0;
-    // Returns the effective source-group selections after applying a legal edit.
+    // The choices a finished rest lets the character change, each with its
+    // current picks; empty when there are none.
+    [[nodiscard]] virtual std::vector<TrainingReplacementOptions>
+    rest_training_options(const CharacterSheet &, RestKind) const = 0;
+    // Applies a legal edit: the selections name every pick of each choice they
+    // change, and a choice they leave out keeps its picks. Returns the changed
+    // choices' selections by group.
     virtual TrainingChoices replace_rest_training(CharacterSheet &,
             std::span<const std::string>) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>

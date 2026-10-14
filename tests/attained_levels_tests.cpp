@@ -224,6 +224,9 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
                               label + ": a Short Rest recovers " + pool.id);
         if (party.state().short_rest)
             party.finish_short_rest(party.state().short_rest->ticket);
+        // A Hunter Ranger may change its Hunter's Prey after a Short Rest too.
+        if (party.state().training_rest)
+            party.keep_rest_training(party.state().training_rest->ticket, id);
         party.advance_time(std::chrono::hours{24});
         check(bool(party.rest(RestKind::long_rest)), label + ": a Long Rest completes");
         if (party.state().spell_rest)

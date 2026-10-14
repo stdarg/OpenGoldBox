@@ -10625,24 +10625,21 @@ class Module final : public RulesModule
         return {};
     }
 
-    std::optional<TrainingReplacementOptions>
-    rest_training_options(const CharacterSheet &sheet) const override
+    std::vector<TrainingReplacementOptions>
+    rest_training_options(const CharacterSheet &sheet, RestKind kind) const override
     {
-        const auto klass = detail::class_of(sheet);
-        auto group = detail::mastery_options(klass, 1);
-        if (!group.count)
-            return {};
-        if (sheet.level >= 4)
-            group.count += detail::mastery_options(klass, 4).count;
-        const auto choices = detail::mastery_choices(sheet.grants, klass, sheet.level);
-        std::vector<std::string> selected;
-        for (const auto &[source, values] : choices)
-            selected.insert(selected.end(), values.begin(), values.end());
-        if (selected.size() != group.count)
-            return {}; // Nothing to replace until every mastery is chosen.
-        group.id = "weapon_mastery";
-        return TrainingReplacementOptions{std::move(group), std::move(selected),
-                                          detail::mastery_replacements(klass)};
+        // Weapon Mastery and the Druid's land change after a Long Rest; the
+        // Hunter's Prey after any rest (SRD 5.2.1 pp. 46, 59).
+        std::vector<TrainingReplacementOptions> result;
+        if (kind == RestKind::long_rest)
+            if (auto mastery = mastery_rest_choice(sheet))
+                result.push_back(std::move(*mastery));
+        if (auto prey = subclass_rest_choice(sheet, detail::hunters_prey_options()))
+            result.push_back(std::move(*prey));
+        if (kind == RestKind::long_rest)
+            if (auto land = subclass_rest_choice(sheet, detail::land_options()))
+                result.push_back(std::move(*land));
+        return result;
     }
 
     TrainingChoiceGroup hall_training_options(const CharacterSheet &sheet,
@@ -10678,18 +10675,52 @@ class Module final : public RulesModule
     TrainingChoices replace_rest_training(CharacterSheet &sheet,
                                           std::span<const std::string> selected) const override
     {
-        if (!rest_training_options(sheet))
-            throw std::runtime_error("No completed Weapon Mastery training to replace");
+        // A Long Rest offers every choice a rest can change.
+        const auto offered = rest_training_options(sheet, RestKind::long_rest);
+        if (offered.empty())
+            throw std::runtime_error("No completed training choice to replace");
         const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
-        candidate.grants = detail::replace_masteries(sheet.grants, klass, sheet.level, selected);
+        std::vector<std::string> unclaimed(selected.begin(), selected.end());
+        TrainingChoices changed;
+        for (const auto &choice : offered)
+        {
+            std::vector<std::string> picks;
+            std::erase_if(unclaimed, [&](const auto & id)
+            {
+                const bool mine = std::any_of(choice.group.options.begin(),
+                                              choice.group.options.end(),
+                                              [&](const auto & option)
+                {
+                    return option.id == id;
+                });
+                if (mine)
+                    picks.push_back(id);
+                return mine;
+            });
+            if (picks.empty())
+                continue;
+            if (choice.group.id == "weapon_mastery")
+                candidate.grants = detail::replace_masteries(candidate.grants, klass,
+                                   candidate.level, picks);
+            else
+                replace_subclass_choice(candidate, choice.group.id, picks);
+            changed[choice.group.id] = std::move(picks);
+        }
+        if (!unclaimed.empty())
+            throw std::runtime_error("Not a choice this rest can change");
+        // A new land's Circle Spells are always prepared, so they leave the list.
+        const auto always = detail::always_prepared_spells(klass, candidate.level, candidate.grants);
+        std::erase_if(candidate.prepared_spells, [&](const auto & id)
+        {
+            return std::find(always.begin(), always.end(), id) != always.end();
+        });
         candidate.training = detail::training_profile(candidate.grants, klass,
             detail::background_id(candidate.background),
             candidate.level, candidate.scores);
-        auto choices = detail::mastery_choices(candidate.grants, klass, candidate.level);
         (void)character_profile(candidate, {});
         sheet = std::move(candidate);
-        return choices;
+        return changed;
     }
 
     AdvancementOptions advancement_options(const CharacterSheet &sheet) const override
@@ -10760,15 +10791,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::ranger && result.level == 3)
             result.training = {{
                 "subclass:ranger:hunter", "Hunter's Prey", 1,
-                {   {
-                        "colossus_slayer", "Colossus Slayer",
-                        "Once per turn, a weapon hit deals 1d8 extra damage to a creature missing any Hit Points."
-                    },
-                    {
-                        "horde_breaker", "Horde Breaker",
-                        "Once per turn, after a weapon attack, attack another creature within 5 feet of the first target."
-                    }
-                },
+                detail::hunters_prey_options().options,
                 TrainingChoiceControl::single_selection
             }
         };
@@ -12574,6 +12597,58 @@ class Module final : public RulesModule
 
   private:
     std::shared_ptr<const Content> content_;
+
+    // Weapon Mastery's picks, once every one is chosen.
+    static std::optional<TrainingReplacementOptions> mastery_rest_choice(const CharacterSheet &sheet)
+    {
+        const auto klass = detail::class_of(sheet);
+        auto group = detail::mastery_options(klass, 1);
+        if (!group.count)
+            return {};
+        if (sheet.level >= 4)
+            group.count += detail::mastery_options(klass, 4).count;
+        const auto choices = detail::mastery_choices(sheet.grants, klass, sheet.level);
+        std::vector<std::string> selected;
+        for (const auto &[source, values] : choices)
+            selected.insert(selected.end(), values.begin(), values.end());
+        if (selected.size() != group.count)
+            return {}; // Nothing to replace until every mastery is chosen.
+        group.id = "weapon_mastery";
+        return TrainingReplacementOptions{std::move(group), std::move(selected),
+                                          detail::mastery_replacements(klass)};
+    }
+
+    // A subclass's single choice, stored as a grant sourced from its group
+    // ("prey:colossus_slayer" from "subclass:ranger:hunter"), once it is made.
+    static std::string_view subclass_choice_prefix(std::string_view group)
+    {
+        return group == "subclass:ranger:hunter" ? "prey:" : "land:";
+    }
+
+    static std::optional<TrainingReplacementOptions>
+    subclass_rest_choice(const CharacterSheet &sheet, TrainingChoiceGroup group)
+    {
+        const auto prefix = subclass_choice_prefix(group.id);
+        const auto made = std::find_if(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+        {
+            return g.source_id == group.id && g.id.starts_with(prefix);
+        });
+        if (made == sheet.grants.end())
+            return {};
+        std::vector<std::string> selected{made->id.substr(prefix.size())};
+        return TrainingReplacementOptions{std::move(group), std::move(selected), 1};
+    }
+
+    static void replace_subclass_choice(CharacterSheet &sheet, const std::string &group,
+                                        const std::vector<std::string> &picks)
+    {
+        if (picks.size() != 1)
+            throw std::runtime_error("Choose one option");
+        const auto prefix = subclass_choice_prefix(group);
+        for (auto &g : sheet.grants)
+            if (g.source_id == group && g.id.starts_with(prefix))
+                g.id = std::string(prefix) + picks.front();
+    }
 };
 } // namespace
 
@@ -12615,7 +12690,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.174", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.175", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

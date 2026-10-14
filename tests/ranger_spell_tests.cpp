@@ -1,7 +1,9 @@
 #include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -43,7 +45,7 @@ std::unique_ptr<RulesModule> rules()
 }
 
 // A level-one Ranger who prepared the named spells; Hunter's Mark is always prepared.
-Character ranger(std::vector<std::string> prepared)
+Character ranger(std::vector<std::string> prepared, std::vector<std::string> masteries = {})
 {
     CharacterDraft d;
     d.race = "human";
@@ -56,6 +58,8 @@ Character ranger(std::vector<std::string> prepared)
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
+    if (!masteries.empty())
+        d.training["class:ranger:weapon_mastery"] = std::move(masteries);
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -182,10 +186,10 @@ void longstrider_checks()
     check(unit(*c, 1).movement_feet == before + 10, "Longstrider lasts into later turns");
 }
 // A level-three Hunter with the chosen Hunter's Prey option.
-Character hunter(std::string prey)
+Character hunter(std::string prey, std::vector<std::string> masteries = {})
 {
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
-    const auto id = party.add_pc(ranger({"cure_wounds"}));
+    const auto id = party.add_pc(ranger({"cure_wounds"}, std::move(masteries)));
     party.award_experience(900, "hunter-xp");
     party.advance(id, party.default_advancement(id));
     auto third = party.default_advancement(id);
@@ -517,6 +521,76 @@ void fog_cloud_checks()
 }
 } // namespace
 
+// The Hunter's Prey can change after a Short or a Long Rest (SRD 5.2.1 p. 59);
+// Weapon Mastery only after a Long Rest. Both survive a save.
+void hunters_prey_rest_checks()
+{
+    const auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(hunter("colossus_slayer", {"longsword", "shortbow"}));
+    const auto prey = [&]
+    {
+        const auto &grants = party.member(id).character.sheet().grants;
+        return std::find_if(grants.begin(), grants.end(), [](const auto & g)
+        {
+            return g.id.starts_with("prey:");
+        })->id;
+    };
+    const auto roundtrip = [&]
+    {
+        const auto bytes = encode_campaign(party, nullptr, "prey-rest");
+        CampaignParty next(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+        next.restore(decode_campaign(bytes, *srd5::character_rules(), *rules, "prey-rest",
+                                     nullptr).party);
+        check(encode_campaign(next, nullptr, "prey-rest") == bytes, "The rest edits replay exactly");
+    };
+    check(bool(party.rest(RestKind::short_rest)), "A Short Rest");
+    party.finish_short_rest(party.state().short_rest->ticket);
+    const auto offered = rules->rest_training_options(party.member(id).character.sheet(),
+                         RestKind::short_rest);
+    check(party.state().training_rest && party.state().training_after_short_rest &&
+          offered.size() == 1 && offered.front().group.id == "subclass:ranger:hunter" &&
+          offered.front().selected == std::vector<std::string> {"colossus_slayer"},
+          "After a Short Rest the Hunter's Prey alone may change");
+    roundtrip(); // with the Short Rest's choice still open
+    const auto ticket = party.state().training_rest->ticket;
+    const auto mastery = rules->rest_training_options(party.member(id).character.sheet(),
+                         RestKind::long_rest).front();
+    bool refused = false;
+    try
+    {
+        auto changed = mastery.selected;
+        changed.push_back("horde_breaker");
+        party.replace_rest_training(ticket, id, changed);
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused && prey() == "prey:colossus_slayer", "A Short Rest does not touch Weapon Mastery");
+    party.replace_rest_training(ticket, id, std::vector<std::string> {"horde_breaker"});
+    check(prey() == "prey:horde_breaker" && !party.state().training_rest,
+          "The Short Rest changes the Hunter's Prey");
+    roundtrip();
+
+    party.advance_time(std::chrono::hours{24});
+    check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
+    if (party.state().spell_rest)
+        party.keep_rest_spells(id);
+    const auto both = rules->rest_training_options(party.member(id).character.sheet(),
+                      RestKind::long_rest);
+    check(both.size() == 2 && both[0].group.id == "weapon_mastery" &&
+          both[1].group.id == "subclass:ranger:hunter",
+          "After a Long Rest Weapon Mastery and the Hunter's Prey may change");
+    party.replace_rest_training(party.state().training_rest->ticket, id,
+                                std::vector<std::string> {"colossus_slayer"});
+    check(prey() == "prey:colossus_slayer" &&
+          rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest)
+          .front().selected == both.front().selected,
+          "A choice the edit leaves out keeps its picks");
+    roundtrip();
+}
+
 int main()
 {
     try
@@ -526,6 +600,7 @@ int main()
         slot_cast_checks();
         longstrider_checks();
         hunters_prey_option_checks();
+        hunters_prey_rest_checks();
         colossus_slayer_checks();
         horde_breaker_checks();
         hunters_lore_checks();

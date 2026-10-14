@@ -1061,21 +1061,27 @@ void RolfTourView::refresh_rest_training()
     const auto &rest = *campaign_->state().training_rest;
     const auto id = rest.members.front();
     const auto &sheet = campaign_->member(id).character.sheet();
-    const auto options = campaign_->rule_module().rest_training_options(sheet);
-    if (!options)
+    const auto options = rest_training_choices(id);
+    if (options.empty())
         throw std::runtime_error("Missing rest training options");
     if (rest_training_member_ != id || rest_training_ticket_ != rest.ticket)
     {
         rest_training_member_ = id;
         rest_training_ticket_ = rest.ticket;
-        rest_training_choice_ = options->selected;
+        rest_training_choice_.clear();
+        for (const auto &choice : options)
+            rest_training_choice_.insert(rest_training_choice_.end(), choice.selected.begin(),
+                                         choice.selected.end());
     }
-    w->set_title(rest_text(options->group.label));
-    presentation::required_node<Label>(*w,
-                                       "Title").set_text(presentation::training_string(sheet.name) + " / " +
-                                               rest_text(options->group.label));
+    String labels;
+    for (const auto &choice : options)
+        labels += (labels.is_empty() ? String() : String(", ")) + rest_text(choice.group.label);
+    w->set_title(labels);
+    presentation::required_node<Label>(*w, "Title").set_text(
+        presentation::training_string(sheet.name) + " / " + labels);
     presentation::refresh_training_replacement(
-        *w, *options, rest_training_choice_,
+        *w, std::span<const opengold::rules::TrainingReplacementOptions>(options),
+        rest_training_choice_,
         presentation::guarded(this, &RolfTourView::rest_training_toggled), rest_text);
     try
     {
@@ -1099,9 +1105,43 @@ void RolfTourView::refresh_rest_training()
     }
 }
 
+std::vector<opengold::rules::TrainingReplacementOptions>
+RolfTourView::rest_training_choices(opengold::MemberId id) const
+{
+    return campaign_->rule_module().rest_training_options(
+               campaign_->member(id).character.sheet(),
+               campaign_->state().training_after_short_rest ? opengold::RestKind::short_rest
+               : opengold::RestKind::long_rest);
+}
+
 void RolfTourView::rest_training_toggled(bool selected, String option)
 {
     const std::string id = option.utf8().get_data();
+    // A single pick works like radio buttons: choosing one drops the other, and
+    // the chosen one cannot be cleared.
+    for (const auto &choice : rest_training_choices(rest_training_member_))
+    {
+        const auto &options = choice.group.options;
+        if (choice.group.count != 1 || std::none_of(options.begin(), options.end(),
+                [&](const auto & o)
+    {
+        return o.id == id;
+    }))
+        continue;
+        if (selected)
+            std::erase_if(rest_training_choice_, [&](const auto & picked)
+        {
+            return std::any_of(options.begin(), options.end(), [&](const auto & o)
+            {
+                return o.id == picked;
+            });
+        });
+        else
+        {
+            refresh_rest_training();
+            return;
+        }
+    }
     if (selected)
     {
         if (std::find(rest_training_choice_.begin(), rest_training_choice_.end(), id) ==

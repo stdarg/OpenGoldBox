@@ -888,7 +888,7 @@ std::string payload(std::string body)
         hash ^= c;
         hash *= 1099511628211ULL;
     }
-    return "OPENGOLD-CAMPAIGN 27\n" + std::to_string(hash) + '\n' + body;
+    return "OPENGOLD-CAMPAIGN 28\n" + std::to_string(hash) + '\n' + body;
 }
 
 void malformed_continuation()
@@ -899,7 +899,7 @@ void malformed_continuation()
     const auto good = saved(party);
     auto body = good.substr(good.find('\n', good.find('\n') + 1) + 1);
     // The Short Rest continuation is followed by no spell or training rest records.
-    const std::string tail = "2 1 1 1 60 0 1 1 ", later = "0 0 ";
+    const std::string tail = "2 1 1 1 60 0 1 1 ", later = "0 0 0 ";
     check(body.ends_with(tail + later), "Independent fixture locates the Short Rest continuation");
     const auto prefix = body.substr(0, body.size() - tail.size() - later.size());
     for (const auto bad :

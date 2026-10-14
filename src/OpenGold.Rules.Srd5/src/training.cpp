@@ -449,6 +449,22 @@ TrainingChoiceGroup lore_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
+// Hunter's Prey: the Hunter Ranger's choice at level three (SRD 5.2.1 p. 59).
+TrainingChoiceGroup hunters_prey_options()
+{
+    TrainingChoiceGroup group{"subclass:ranger:hunter", "Hunter's Prey", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 3;
+    group.options = {
+        {   "colossus_slayer", "Colossus Slayer",
+            "Once per turn, a weapon hit deals 1d8 extra damage to a creature missing any Hit Points."
+        },
+        {   "horde_breaker", "Horde Breaker",
+            "Once per turn, after a weapon attack, attack another creature within 5 feet of the first target."
+        }};
+    return group;
+}
+
 // Circle of the Land: the land type that picks the Circle Spells (SRD 5.2.1 p. 46).
 TrainingChoiceGroup land_options()
 {

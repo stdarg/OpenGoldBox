@@ -128,6 +128,8 @@ struct PartyState
     std::optional<ShortRestSession> spell_rest; // Completed-rest choices, consumed once per member.
     std::optional<ShortRestSession>
     training_rest; // Rule-owned training replacements after spell choices.
+    // The training_rest follows a Short Rest, which changes fewer choices.
+    bool training_after_short_rest{};
 };
 
 // One shared campaign value store. Sessions share this owner, never separate PCs.

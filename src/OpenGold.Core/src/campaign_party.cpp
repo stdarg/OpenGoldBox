@@ -823,6 +823,20 @@ PartyMember CampaignParty::preview_rest_training(RestTicket ticket, MemberId id,
             rest->completed_subminute_milliseconds != state_.subminute_milliseconds ||
             std::find(rest->members.begin(), rest->members.end(), id) == rest->members.end())
         throw std::runtime_error("No completed Long Rest training choice");
+    // A Short Rest changes only some choices; the rules accept any of them.
+    const auto offered = rules_->rest_training_options(
+                             member(id).character.sheet(),
+                             state_.training_after_short_rest ? RestKind::short_rest : RestKind::long_rest);
+    for (const auto &pick : selections)
+        if (std::none_of(offered.begin(), offered.end(), [&](const auto & choice)
+    {
+        return std::any_of(choice.group.options.begin(), choice.group.options.end(),
+                           [&](const auto & option)
+        {
+            return option.id == pick;
+        });
+        }))
+    throw std::runtime_error("Not a choice this rest can change");
     auto candidate = member(id);
     candidate.character.replace_rest_training(*rules_, selections, ticket.session);
     rules_->validate_character_state(candidate.character.sheet(), candidate.vitals);
@@ -843,10 +857,15 @@ void CampaignParty::replace_rest_training(RestTicket ticket, MemberId id,
 void CampaignParty::keep_rest_training(RestTicket ticket, MemberId id)
 {
     // Keeping the current legal set consumes exactly the same entitlement.
-    const auto options = rules_->rest_training_options(member(id).character.sheet());
-    if (!options)
+    const auto options = rules_->rest_training_options(
+                             member(id).character.sheet(),
+                             state_.training_after_short_rest ? RestKind::short_rest : RestKind::long_rest);
+    if (options.empty())
         throw std::runtime_error("No Long Rest training choice to decline");
-    replace_rest_training(ticket, id, options->selected);
+    std::vector<std::string> current;
+    for (const auto &choice : options)
+        current.insert(current.end(), choice.selected.begin(), choice.selected.end());
+    replace_rest_training(ticket, id, current);
 }
 
 void CampaignParty::advance_time(std::chrono::milliseconds elapsed)
@@ -1175,8 +1194,12 @@ void CampaignParty::validate(const PartyState &state)
             if (!active.contains(id) || !members.insert(id).second)
                 throw std::runtime_error("Invalid training-choice rest member");
             const auto &m = member_in(state, id);
-            if (!m.last_rest_minutes || *m.last_rest_minutes != rest.completed_minutes ||
-                    m.last_rest_subminute_milliseconds != rest.completed_subminute_milliseconds ||
+            // Only a Long Rest is recorded as the member's last rest.
+            const bool rested = state.training_after_short_rest ||
+                                (m.last_rest_minutes && *m.last_rest_minutes == rest.completed_minutes &&
+                                 m.last_rest_subminute_milliseconds ==
+                                 rest.completed_subminute_milliseconds);
+            if (!rested ||
                     std::any_of(m.character.training_edits().begin(),
                                 m.character.training_edits().end(),
                                 [&](const auto & e)
@@ -1223,7 +1246,10 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
         {
             const auto &m = member_in(state, id);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest ||
-                    !rules.rest_training_options(m.character.sheet()))
+                    rules.rest_training_options(m.character.sheet(),
+                                                state.training_after_short_rest
+                                                ? RestKind::short_rest
+                                                : RestKind::long_rest).empty())
                 throw std::runtime_error("Invalid Long Rest training eligibility");
         }
     if (state.spell_rest)

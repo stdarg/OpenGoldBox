@@ -100,7 +100,8 @@ void run()
                 script_reads_after_rest(party, id);
             party = roundtrip(party);
             const auto ticket = party.state().training_rest->ticket;
-            const auto options = *rules->rest_training_options(party.member(id).character.sheet());
+            const auto options = rules->rest_training_options(party.member(id).character.sheet(),
+                                RestKind::long_rest).front();
             auto selected = options.selected;
             for (const auto &o : options.group.options)
                 if (std::find(selected.begin(), selected.end(), o.id) == selected.end())
@@ -168,7 +169,7 @@ void run()
                 party.replace_rest_training(ticket, id, selected);
             });
             party = roundtrip(party);
-            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 27\n"),
+            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 28\n"),
                   "Actual training history uses the current campaign format");
             party.advance_time(std::chrono::minutes(24 * 60));
             check(bool(party.rest(RestKind::long_rest)),
@@ -202,7 +203,8 @@ void run()
           "Rest edit replays before later Fighter entitlement");
     p.advance_time(std::chrono::minutes(24 * 60));
     check(bool(p.rest(RestKind::long_rest)), "Level4 qualified rest starts");
-    const auto options = *rules->rest_training_options(p.member(id).character.sheet());
+    const auto options = rules->rest_training_options(p.member(id).character.sheet(),
+                                RestKind::long_rest).front();
     check(options.group.count == 4 && options.replacement_limit == 1,
           "Fourth-kind capacity retains Fighter one-replacement limit");
     auto selected = options.selected;

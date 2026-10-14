@@ -154,16 +154,18 @@ void RolfTourView::check_mastery_rest_controls()
             }
             else if (phase == 3)
             {
-                const auto original = *campaign_->rule_module().rest_training_options(
-                                          campaign_->member(rest_training_member_).character.sheet());
+                const auto original = campaign_->rule_module().rest_training_options(
+                                          campaign_->member(rest_training_member_).character.sheet(),
+                                          opengold::RestKind::long_rest).front();
                 auto *box = &presentation::required_node<CheckBox>(*w,
                     "Choices/Rows/" + presentation::training_string(original.selected.front()));
                 check(box->has_focus(), "Keyboard deselection preserves checkbox focus");
                 check(!box->is_pressed(), "Keyboard Space toggles the selected checkbox");
                 check(presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "Incomplete mastery selections disable Apply");
-                const auto options = *campaign_->rule_module().rest_training_options(
-                                         campaign_->member(rest_training_member_).character.sheet());
+                const auto options = campaign_->rule_module().rest_training_options(
+                                         campaign_->member(rest_training_member_).character.sheet(),
+                                         opengold::RestKind::long_rest).front();
                 for (const auto &o : options.group.options)
                     if (std::find(options.selected.begin(), options.selected.end(), o.id) ==
                             options.selected.end())

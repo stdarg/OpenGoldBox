@@ -4,6 +4,7 @@
 #include "opengold/srd5.h"
 #include "status_effects.h"
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -708,6 +709,40 @@ void charge_checks()
     check(!logged(*gore("ogre", 7, 6, false), "The charge adds"), "A Large ogre is not charged");
 }
 
+// The Circle of the Land's land changes after a Long Rest, not a Short Rest
+// (SRD 5.2.1 p. 46); its Circle Spells change with it.
+void land_rest_checks()
+{
+    auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+    CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
+    const auto id = party.add_pc(druid(3, "warden", "arid"));
+    check(bool(party.rest(RestKind::short_rest)), "A Short Rest");
+    party.finish_short_rest(party.state().short_rest->ticket);
+    check(!party.state().training_rest, "A Short Rest does not change the land");
+    party.advance_time(std::chrono::hours{24});
+    check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
+    if (party.state().spell_rest)
+        party.keep_rest_spells(id);
+    const auto offered = rules->rest_training_options(party.member(id).character.sheet(),
+                         RestKind::long_rest);
+    check(offered.size() == 1 && offered.front().group.id == "subclass:druid:land" &&
+          offered.front().selected == std::vector<std::string> {"arid"},
+          "After a Long Rest the land may change");
+    party.replace_rest_training(party.state().training_rest->ticket, id,
+                                std::vector<std::string> {"polar"});
+    const auto &sheet = party.member(id).character.sheet();
+    check(has_grant(party.member(id).character, "land:polar") &&
+          !has_grant(party.member(id).character, "land:arid"),
+          "The Druid's land is now Polar");
+    const auto access = rules->spell_choice_options(sheet, SpellChoiceContext::long_rest);
+    check(std::none_of(access.preparation.begin(), access.preparation.end(), [](const auto & o)
+    {
+        return o.id == "fog_cloud" || o.id == "hold_person";
+    }) && std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), "fog_cloud") ==
+    sheet.prepared_spells.end(),
+    "Polar Circle Spells are always prepared, outside the Druid's own list");
+}
+
 void lands_aid_checks()
 {
     auto module = rules();
@@ -769,6 +804,7 @@ int main()
         prone_mover_checks();
         charge_checks();
         lands_aid_checks();
+        land_rest_checks();
         policy_checks();
         std::cout << "Druid tests passed\n";
     }

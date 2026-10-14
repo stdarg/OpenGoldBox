@@ -178,6 +178,8 @@ class RolfTourView : public godot::Control
     opengold::MemberId rest_spell_member_{};
     opengold::rules::SpellChoices rest_spell_choice_;
     void refresh_rest_training();
+    [[nodiscard]] std::vector<opengold::rules::TrainingReplacementOptions>
+    rest_training_choices(opengold::MemberId id) const;
     void rest_training_toggled(bool selected, godot::String option);
     void rest_training_apply();
     void rest_training_keep();

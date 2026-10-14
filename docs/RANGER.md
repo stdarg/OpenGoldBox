@@ -11,7 +11,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 | 1 | Weapon Mastery | Delivered earlier ([Weapon Mastery](WEAPON-MASTERY.md)) |
 | 2 | Deft Explorer | Nothing to deliver in levels 1–4 ([2026-09-30 simplification](SRD-DECISIONS.md#2026-09-30-simplification)) |
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Druidic Warrior delivered (rules 0.6.76) |
-| 3 | Ranger Subclass (Hunter) | Delivered (rules 0.6.77); changing Hunter's Prey after a rest not yet |
+| 3 | Ranger Subclass (Hunter) | Delivered (rules 0.6.77); Hunter's Prey changes after a rest (rules 0.6.175) |
 | 4 | Ability Score Improvement | Delivered earlier |
 
 ## Spellcasting
@@ -68,8 +68,12 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
     party AI uses it whenever it is offered.
 - **Hunter's Lore**: marking a creature with Hunter's Mark logs its damage
   Immunities, Resistances and Vulnerabilities (or that it has none).
-- Not yet: replacing the Hunter's Prey option after a Short or Long Rest; the
-  rest window replaces only Weapon Mastery so far.
+- After a Short or Long Rest the rest window offers the **Hunter's Prey** as
+  its own section, picked like a radio button: Keep current or Apply training
+  (rules 0.6.175). After a Long Rest the window shows Weapon Mastery first,
+  then the Hunter's Prey; after a Short Rest only the Hunter's Prey. A choice
+  left as it was keeps its picks. Verification: `opengold_ranger_spell_tests`
+  (`hunters_prey_rest_checks`, including a save with the choice still open).
 - Combat checkpoints became `OGCOMBAT 33` (each actor's once-per-turn Hunter's
   Prey state and Horde Breaker's first target).
 - Verification: `opengold_ranger_spell_tests` (the level-three choice and an

@@ -2058,6 +2058,46 @@ void installed_first_expedition(const std::filesystem::path &executable,
         trainees.party->restore(std::move(state));
         write_campaign_file(fixture, encode_campaign(*trainees.party, &trainees.town, assets));
     }
+    // A level-3 Hunter Ranger and a level-3 Circle of the Land Druid saved
+    // right after a Long Rest ("-long.ogs") and a Short Rest ("-short.ogs"),
+    // with the choices those rests can change still open, for screenshots.
+    if (const auto *fixture = std::getenv("OPENGOLD_REST_CHOICE_FIXTURE"))
+    {
+        auto party = std::make_shared<CampaignParty>(module());
+        auto ranger = character("Bryn", 3, "ranger").creation_data();
+        ranger.training["class:ranger:weapon_mastery"] = {"longsword", "shortbow"};
+        const auto bryn = party->add_pc(Character(*srd5::character_rules(), ranger, {}));
+        const auto elin = party->add_pc(character("Elin", 4, "druid"));
+        party->award_experience(1800, "rest-choices");
+        for (unsigned level = 2; level <= 3; ++level)
+        {
+            auto ranger = party->default_advancement(bryn);
+            auto druid = party->default_advancement(elin);
+            if (level == 3)
+            {
+                ranger.training["subclass:ranger:hunter"] = {"colossus_slayer"};
+                druid.training["subclass:druid:land"] = {"arid"};
+            }
+            party->advance(bryn, ranger);
+            party->advance(elin, druid);
+        }
+        auto town = por::RolfTourSession::load(directory);
+        town.campaign_party(party);
+        settle(town, party);
+        const auto base = std::filesystem::path(fixture);
+        const auto after_rest = party->checkpoint();
+        check(bool(party->rest(RestKind::long_rest)), "The fixture party takes a Long Rest");
+        for (const auto id : {bryn, elin})
+            if (party->state().spell_rest)
+                party->keep_rest_spells(id);
+        write_campaign_file(std::filesystem::path(base).concat("-long.ogs"),
+                            encode_campaign(*party, &town, assets));
+        party->restore(after_rest);
+        check(bool(party->rest(RestKind::short_rest)), "The fixture party takes a Short Rest");
+        party->finish_short_rest(party->state().short_rest->ticket);
+        write_campaign_file(std::filesystem::path(base).concat("-short.ogs"),
+                            encode_campaign(*party, &town, assets));
+    }
     general_store_gear(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);

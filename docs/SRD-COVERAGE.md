@@ -101,6 +101,8 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.175 lets the rest window change the Hunter's Prey after any rest
+and the Druid's land after a Long Rest (campaign format 28).
 Rules 0.6.174 lets Scorching Ray strike a downed party member.
 Rules 0.6.173 turns a Scorching Ray ray whose foe has dropped to another foe
 ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)).

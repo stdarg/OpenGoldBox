@@ -27,8 +27,10 @@ ability.
   type is a Training choice at level-up. Its Circle Spells are always
   prepared: Arid (Blur, Burning Hands, Fire Bolt), Polar (Fog Cloud, Hold
   Person, Ray of Frost), Temperate (Misty Step, Shocking Grasp, Sleep) or
-  Tropical (Acid Splash, Ray of Sickness, Web). The land is not changed on a
-  Long Rest.
+  Tropical (Acid Splash, Ray of Sickness, Web). After a Long Rest, not a
+  Short Rest, the rest window offers the land again (rules 0.6.175); a spell
+  the new land makes always prepared leaves the prepared list
+  (`opengold_druid_tests`, `land_rest_checks`).
 - Druidic and Wild Companion are removed (SRD-DECISIONS). Wild Shape and
   Land's Aid are below.
 - Verification: `opengold_druid_tests` (Produce Flame and its hurl,
