@@ -14,15 +14,20 @@ on its first option, so a new character is always complete.
 | Species | Choice | Options |
 | --- | --- | --- |
 | Elf | Elven Lineage | High Elf, Wood Elf (no Drow: [DROW-1](SRD-DECISIONS.md#drow-1-2026-10-14-no-drow-lineage-for-now)) |
-| Elf | Keen Senses | Insight, Perception or Survival |
+| Elf | Keen Senses | Insight, Perception or Survival, less a background skill |
 | Elf, Tiefling | Spellcasting ability | Intelligence, Wisdom or Charisma |
 | High Elf | Cantrip | any Wizard cantrip in the game |
 | Tiefling | Fiendish Legacy | Abyssal, Chthonic, Infernal |
 | Tiefling, Human | Size | Medium or Small |
 | Dragonborn | Draconic Ancestry | the ten dragons |
 | Goliath | Giant Ancestry | Cloud, Fire, Frost, Hill, Stone, Storm |
-| Human | Skillful | any skill |
-| Human | Versatile | an Origin feat the background does not give: Skilled (its three skills checked below it), Alert, Magic Initiate (Cleric, Druid or Wizard; spells on the spell page) or Savage Attacker |
+| Human | Skillful | any skill the background does not give |
+| Human | Versatile | an Origin feat the background does not give: Skilled (three skills checked below it, apart from the background's and Skillful's), Alert, Magic Initiate (Cleric, Druid or Wizard; spells on the spell page) or Savage Attacker |
+
+The class's skill list then leaves out the skills these choices took
+([SKILL-1](SRD-DECISIONS.md#skill-1-2026-10-14-no-repeated-skill-picks)). A new
+background that gives one of Skilled's skills takes it away, and the creator
+refills the choice with the first skill left.
 
 A sheet stores each choice as a grant (`lineage:`, `legacy:`, `size:`,
 `skill:`, `dragon:`, `giant:`, `spellcasting_ability:`, `cantrip:`).

@@ -944,3 +944,16 @@ The user decided that Divine Spark always deals Radiant damage to an enemy;
 the SRD's choice of Necrotic is not offered. The game used to pick whichever
 type the target took more of after its resistances, which the player cannot
 see. This may change later (a choice in the A cycle, as True Strike offers).
+
+## SKILL-1 (2026-10-14): no repeated skill picks
+
+The user chose that a later skill list leaves out the skills the character
+already has, as the level-4 Skilled feat already did, so no pick is wasted on
+a repeat. Creation lists them in this order, each leaving out what comes
+before: the background's two skills, Keen Senses, Skillful, Versatile's
+Skilled, then the class's list. Rogue Expertise may take any of them.
+
+- If the class's list has fewer skills left than it chooses (a Human Acolyte
+  Cleric whose Skillful and Skilled took History, Medicine and Persuasion),
+  it offers every skill not held instead, so creation can always finish.
+- [Class skills](CLASS-SKILLS.md), [Species](SPECIES.md#choices-at-creation).

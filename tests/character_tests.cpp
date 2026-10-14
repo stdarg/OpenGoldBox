@@ -1122,8 +1122,8 @@ void ordinary_creation_tests()
 
     const auto warlock = create_ordinarily("warlock", Ability::charisma,
     {
-        {.group = "class:warlock", .option = "arcana", .selected = true},
-        {.group = "class:warlock", .option = "deception", .selected = true},
+        {.group = "class:warlock", .option = "history", .selected = true},
+        {.group = "class:warlock", .option = "investigation", .selected = true},
         {.group = "class:warlock:invocations", .option = "armor_of_shadows", .selected = true}
     },
     {"eldritch_blast", "chill_touch"},

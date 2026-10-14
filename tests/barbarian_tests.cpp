@@ -54,7 +54,7 @@ Character barbarian(unsigned level = 1)
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.training = {{"class:barbarian", {"athletics", "perception"}},
+    d.training = {{"class:barbarian", {"nature", "perception"}},
         {"class:barbarian:weapon_mastery", {"greataxe", "handaxe"}}
     };
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));

@@ -70,7 +70,7 @@ CharacterDraft draft(std::string klass, std::string background)
                 adjustments[n].bonuses[Ability::charisma] == 1)
             d.adjustment = n;
     if (d.character_class == "fighter")
-        d.training = {{"class:fighter", {"acrobatics", "history"}},
+        d.training = {{"class:fighter", {"acrobatics", "perception"}},
             {"class:fighter:fighting_style", {"defense"}}
         };
     return d;

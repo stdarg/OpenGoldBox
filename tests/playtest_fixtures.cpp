@@ -49,9 +49,9 @@ CharacterSheet caster(std::string klass, unsigned ability, std::vector<std::stri
     if (klass == "druid")
         d.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {"warden"}}};
     if (klass == "bard")
-        d.training = {{"class:bard", {"performance", "persuasion", "history"}}};
+        d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     if (klass == "wizard")
-        d.training = {{"class:wizard", {"arcana", "history"}}};
+        d.training = {{"class:wizard", {"investigation", "medicine"}}};
     d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     CampaignParty party(module_rules());

@@ -16,10 +16,7 @@ Character hero_for(bool feat = false, bool negative = false, std::string klass =
             roll = {{2, 2, 1, 1}, 3};
     if (klass == "wizard")
         d.cantrips = std::vector<std::string> {"fire_bolt"};
-    auto creation = srd5::character_rules();
-    for (const auto &group : creation->training_options(d))
-        for (unsigned i = 0; i < group.count; ++i)
-            d.training[group.id].push_back(group.options.at(i).id);
+    choose_first_options(d);
     if (klass == "rogue")
     {
         d.training = choices();

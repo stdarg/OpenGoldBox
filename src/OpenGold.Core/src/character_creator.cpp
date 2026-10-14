@@ -133,20 +133,27 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     prune_training(candidate);
     // A new species starts with the first option of each of its choices,
     // shown on the race page for the player to change. A choice another field
-    // took away (Versatile's feat, when the background gives that feat) is
-    // refilled the same way.
+    // took away (Versatile's feat, when the background gives that feat; a
+    // Skilled skill the new background gives) is refilled the same way.
     // A filled choice can bring another (Versatile's Skilled, its skills).
     for (bool filled = true; filled;)
     {
         filled = false;
         for (const auto &group : rules_->training_options(candidate))
         {
-            if (!group.id.starts_with("species:") || !selected_species(candidate, group.id).empty())
+            // A partial choice the player left, untouched by this change, stays.
+            const auto picked = selected_species(candidate, group.id);
+            if (!group.id.starts_with("species:") || picked.size() >= group.count ||
+                    (!picked.empty() && picked == selected_species(draft_, group.id)))
                 continue;
             auto &picks = candidate.training[group.id];
-            for (unsigned n = 0; n < group.count && n < group.options.size(); ++n)
-                picks.push_back(group.options[n].id);
-            filled |= !picks.empty();
+            for (const auto &option : group.options)
+                if (picks.size() < group.count &&
+                        std::find(picks.begin(), picks.end(), option.id) == picks.end())
+                {
+                    picks.push_back(option.id);
+                    filled = true;
+                }
             if (picks.empty())
                 candidate.training.erase(group.id);
         }

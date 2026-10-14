@@ -60,7 +60,7 @@ Character created(std::string klass, std::string name, std::vector<std::string> 
     if (!prepared.empty())
         d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     if (klass == "paladin")
-        d.training = {{"class:paladin", {"athletics", "insight"}}};
+        d.training = {{"class:paladin", {"athletics", "medicine"}}};
     if (klass == "ranger")
         d.training = {{"class:ranger", {"athletics", "nature", "perception"}}};
     if (klass == "cleric")

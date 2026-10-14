@@ -58,7 +58,7 @@ CharacterDraft bard_draft(std::vector<std::string> prepared)
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.rolls[5] = {{6, 6, 6, 1}, 3};
-    d.training = {{"class:bard", {"performance", "persuasion", "history"}}};
+    d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     return d;
@@ -78,7 +78,7 @@ Character bard(unsigned level = 1, std::string background = "sage")
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.rolls[5] = {{6, 6, 6, 1}, 3};
-    d.training = {{"class:bard", {"performance", "persuasion", "history"}}};
+    d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
     d.spells = SpellChoices{{},
         std::vector<std::string> {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"},

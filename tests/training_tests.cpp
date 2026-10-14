@@ -59,7 +59,7 @@ CharacterDraft draft(std::string klass = "rogue", std::string background = "crim
 
 TrainingChoices choices()
 {
-    return {{"class:rogue", {"acrobatics", "investigation", "perception", "persuasion"}},
+    return {{"class:rogue", {"deception", "investigation", "perception", "persuasion"}},
         {"class:rogue:expertise", {"stealth", "perception"}},
         {"class:rogue:weapon_mastery", {"dagger", "shortbow"}}};
 }
@@ -80,13 +80,22 @@ void complete_mastery(CharacterDraft &d)
         }
 }
 
-// Fills every still-open training group with its first legal options.
+// Fills every still-open training group with its first legal options, asking
+// again after each group: a pick leaves later skill lists shorter.
 void choose_first_options(CharacterDraft &d)
 {
-    for (const auto &group : srd5::character_rules()->training_options(d))
-        if (!d.training.contains(group.id))
-            for (unsigned i = 0; i < group.count; ++i)
-                d.training[group.id].push_back(group.options.at(i).id);
+    for (bool filled = true; filled;)
+    {
+        filled = false;
+        for (const auto &group : srd5::character_rules()->training_options(d))
+            if (!d.training.contains(group.id))
+            {
+                for (unsigned i = 0; i < group.count; ++i)
+                    d.training[group.id].push_back(group.options.at(i).id);
+                filled = true;
+                break;
+            }
+    }
 }
 
 Character hero(const CharacterDraft &d)
@@ -166,11 +175,13 @@ unsigned expected_skill_count(std::string_view klass)
     return klass == "rogue" ? 4 : klass == "bard" || klass == "ranger" ? 3 : 2;
 }
 
-std::vector<std::string> chosen_class_skills(std::string_view klass)
+// The two skills a background gives.
+std::set<std::string> background_skills(std::string_view background)
 {
-    auto list = expected_class_skills(klass);
-    list.resize(expected_skill_count(klass));
-    return list;
+    return background == "acolyte"    ? std::set<std::string> {"insight", "religion"}
+           : background == "criminal" ? std::set<std::string> {"sleight_of_hand", "stealth"}
+           : background == "sage"     ? std::set<std::string> {"arcana", "history"}
+           : std::set<std::string> {"athletics", "intimidation"};
 }
 
 void all_class_skills()
@@ -206,15 +217,21 @@ void all_class_skills()
                 offered.push_back(o.id);
             std::sort(offered.begin(), offered.end());
             auto expected = expected_class_skills(klass.id);
+            std::erase_if(expected, [&](const auto & id)
+            {
+                return background_skills(bg).contains(id);
+            });
             std::sort(expected.begin(), expected.end());
-            check(offered == expected, "Exact class skill list includes no omissions or additions");
+            check(offered == expected,
+                  "Exact class skill list, less the background's skills, includes no omissions or additions");
             if (klass.id != "rogue")
                 check(!hero(d).sheet().training.complete,
                       "New class skill choices are required, not invented");
             complete_mastery(d);
             for (const auto &first : expected)
             {
-                auto selected = chosen_class_skills(klass.id);
+                std::vector<std::string> selected(expected.begin(),
+                                                  expected.begin() + expected_skill_count(klass.id));
                 if (std::find(selected.begin(), selected.end(), first) == selected.end())
                     selected.back() = first;
                 d.training["class:" + klass.id] = selected;
@@ -233,7 +250,7 @@ void all_class_skills()
                           "Class skill has exact level-one provenance");
                     check(item.bonus == h.sheet().modifiers[item.ability] +
                           (item.expertise ? 4 : 2),
-                          "Overlapping background and class grants add proficiency once");
+                          "A class skill adds proficiency once");
                 }
                 auto bad = d;
                 bad.training["class:" + klass.id][1] = selected.front();
@@ -303,7 +320,13 @@ void all_class_skills()
         {
             CharacterCreator creator(srd5::character_rules(), 42);
             creator.select(CreationField::character_class, from.id);
-            auto expected = chosen_class_skills(from.id);
+            // The class's first offers; the defaults' held skills are left out.
+            std::vector<std::string> expected;
+            for (const auto &group : creator.training_options())
+                if (group.id == "class:" + from.id)
+                    for (const auto &option : group.options)
+                        if (expected.size() < group.count)
+                            expected.push_back(option.id);
             for (const auto &id : expected)
                 creator.training_choice({.group = "class:" + from.id,
                                          .option = id,
@@ -376,7 +399,7 @@ void creation_controls()
     check(creator.training_complete() && creator.sheet().training.complete,
           "Every required choice permits completion");
     const auto before = creator.draft().training;
-    creator.training_choice({.group = "class:rogue", .option = "acrobatics", .selected = true});
+    creator.training_choice({.group = "class:rogue", .option = "deception", .selected = true});
     rejects(
         [&]
     {
@@ -421,7 +444,7 @@ void creation_controls()
                              .option = "defense",
                              .selected = true});
     check(creator.draft().training.at("class:fighter") ==
-          std::vector<std::string>({"acrobatics", "persuasion"}),
+          std::vector<std::string>({"persuasion", "perception"}),
           "Class change keeps the first two valid selected skills");
     creator.training_choice({.group = "class:fighter:weapon_mastery",
                              .option = "longsword",
@@ -474,7 +497,7 @@ void creation_controls()
         [&]
     {
         creator.training_choice({.group = "class:rogue",
-                                 .option = "acrobatics",
+                                 .option = "deception",
                                  .selected = false});
     });
     creator.restart();
@@ -658,10 +681,73 @@ void grants_and_checks()
         check(creation->ability_check(later, Ability::dexterity, "stealth").total == 3 + 2 * bonus,
               "Expertise uses the character-level proficiency table");
     }
+    // The class list leaves out a skill the background gives.
     d.training["class:rogue"] = {"stealth", "investigation", "perception", "persuasion"};
-    sheet = hero(d).sheet();
-    check(skill(sheet, "stealth").sources.size() == 3 && skill(sheet, "stealth").bonus == 7,
-          "Overlapping class/background skill and Expertise grants do not stack bonuses");
+    rejects(
+        [&]
+    {
+        (void)hero(d);
+    });
+}
+
+// The ids a training group offers.
+std::vector<std::string> offered(const CharacterDraft &d, std::string_view group)
+{
+    std::vector<std::string> ids;
+    for (const auto &g : srd5::character_rules()->training_options(d))
+        if (g.id == group)
+            for (const auto &option : g.options)
+                ids.push_back(option.id);
+    return ids;
+}
+
+bool contains(const std::vector<std::string> &ids, std::string_view id)
+{
+    return std::find(ids.begin(), ids.end(), id) != ids.end();
+}
+
+// A later skill list leaves out the skills the character already has: the
+// background's, then the species' picks, so no pick repeats one.
+void held_skills()
+{
+    auto elf = draft("cleric", "acolyte");
+    elf.race = "elf";
+    check(offered(elf, "species:elf:keen_senses") == std::vector<std::string> {"perception", "survival"},
+          "Keen Senses leaves out the Acolyte's Insight");
+
+    auto human = draft("cleric", "acolyte");
+    human.training["species:human:skillful"] = {"history"};
+    human.training["species:human:versatile"] = {"skilled"};
+    const auto skillful = offered(human, "species:human:skillful");
+    check(skillful.size() == 16 && !contains(skillful, "insight") && !contains(skillful, "religion"),
+          "Skillful leaves out the background's skills");
+    const auto skilled = offered(human, "species:human:skilled");
+    check(skilled.size() == 15 && !contains(skilled, "history") && !contains(skilled, "insight"),
+          "Skilled leaves out the background's and Skillful's skills");
+    check(offered(human, "class:cleric") == std::vector<std::string> {"medicine", "persuasion"},
+          "The class list leaves out the background's and the species' skills");
+
+    // Skilled took the rest of the Cleric's list: any skill not held is offered.
+    human.training["species:human:skilled"] = {"medicine", "persuasion", "nature"};
+    const auto fallback = offered(human, "class:cleric");
+    check(fallback.size() == 12 && contains(fallback, "acrobatics") && !contains(fallback, "nature") &&
+          !contains(fallback, "medicine"),
+          "Too few class skills left: every skill not held is offered");
+    human.training["class:cleric"] = {"acrobatics", "stealth"};
+    human.training["class:cleric:divine_order"] = {"protector"};
+    check(hero(human).sheet().training.complete, "The traded skills complete training");
+
+    // A new background that gives a Skilled pick takes it away; the creator
+    // refills the choice with the first skill left.
+    CharacterCreator creator(srd5::character_rules(), 42);
+    creator.select(CreationField::race, "human");
+    creator.select(CreationField::background, "acolyte");
+    const auto before = creator.draft().training.at("species:human:skilled");
+    check(contains(before, "arcana"), "The default Skilled picks include Arcana");
+    creator.select(CreationField::background, "sage");
+    const auto after = creator.draft().training.at("species:human:skilled");
+    check(after.size() == 3 && !contains(after, "arcana") && creator.species_complete(),
+          "A Skilled pick the background now gives is replaced");
 }
 
 void invalid_choices()
@@ -747,7 +833,7 @@ void persistence()
           "Choice order, source grants and wounded state round trip exactly");
     for (const auto &bad :
             {
-                corrupt(bytes, "\"acrobatics\"", "\"arcana\""),
+                corrupt(bytes, "\"deception\"", "\"arcana\""),
                 corrupt(bytes, "\"skill:stealth\"", "\"tool:thieves_tools\"")
             })
         rejects(
@@ -932,14 +1018,14 @@ void remaining_backgrounds()
             });
             if (klass.id == "rogue")
             {
-                d.training = {{"class:rogue", {first, "acrobatics", "perception", "persuasion"}},
+                d.training = {{"class:rogue", {"deception", "acrobatics", "perception", "persuasion"}},
                     {"class:rogue:expertise", {first, second}}
                 };
                 sheet = hero(d).sheet();
                 check(
-                    skill(sheet, first).bonus == 7 && skill(sheet, first).sources.size() == 3 &&
+                    skill(sheet, first).bonus == 7 && skill(sheet, first).sources.size() == 2 &&
                     skill(sheet, second).bonus == (acolyte ? 7 : 6),
-                    "Rogue Expertise accepts background skills; overlapping class and background grants do not stack");
+                    "Rogue Expertise accepts background skills");
             }
         }
     CampaignParty party(module());
@@ -1028,7 +1114,7 @@ void starting_styles()
                 });
                 continue;
             }
-            d.training["class:fighter"] = {"athletics", "history"};
+            d.training["class:fighter"] = {"athletics", "perception"};
             complete_mastery(d);
             auto c = hero(d);
             const auto &sheet = c.sheet();
@@ -1221,6 +1307,7 @@ int main(int argc, char **argv)
         run(preset_training, "preset_training");
         run(pool_starting_gear, "pool_starting_gear");
         run(grants_and_checks, "grants_and_checks");
+        run(held_skills, "held_skills");
         run(invalid_choices, "invalid_choices");
         run(persistence, "persistence");
         if (failed)

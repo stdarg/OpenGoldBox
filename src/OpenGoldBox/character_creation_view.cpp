@@ -1649,7 +1649,7 @@ void CharacterCreationView::check_run()
         if (creator_->step() != CreationStep::training
                 || !required_node<Button>(*this, "Next").is_disabled())
             throw std::runtime_error("Qualified Fighter must complete Training first");
-        required_node<CheckBox>(*this, "Training/Rows/Group1/athletics").set_pressed(true);
+        required_node<CheckBox>(*this, "Training/Rows/Group1/perception").set_pressed(true);
         required_node<CheckBox>(*this, "Training/Rows/Group1/history").set_pressed(true);
         required_node<CheckBox>(*this, "Training/Rows/Group0/archery").set_pressed(true);
         // A Fighter also masters three weapons.

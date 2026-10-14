@@ -12,9 +12,7 @@ CampaignParty party()
         if (d.character_class == "rogue")
             d.training = choices();
         else
-            for (const auto &g : srd5::character_rules()->training_options(d))
-                for (unsigned i = 0; i < g.count; ++i)
-                    d.training[g.id].push_back(g.options.at(i).id);
+            choose_first_options(d);
         auto h = hero(d);
         h.add_item({.definition_id = "dagger", .name = "Dagger", .quantity = 2});
         const auto id = p.add_pc(std::move(h));
@@ -98,15 +96,7 @@ void grants()
                 })
         {
             auto d = draft(klass, criminal ? "criminal" : "sage");
-            if (d.character_class == "rogue")
-            {
-                d.training = choices();
-                d.training["class:rogue:expertise"] = {"investigation", "perception"};
-            }
-            for (const auto &group : creation->training_options(d))
-                if (!d.training.contains(group.id))
-                    for (unsigned i = 0; i < group.count; ++i)
-                        d.training[group.id].push_back(group.options.at(i).id);
+            choose_first_options(d);
             CampaignParty p(module());
             const auto id = p.add_pc(hero(d));
             p.award_experience(2700, "alert-feat");

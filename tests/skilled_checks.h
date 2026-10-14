@@ -10,9 +10,7 @@ CampaignParty ready(const char *klass, const char *background)
     d.name = std::string("Skilled ") + klass;
     if (std::string_view(klass) == "wizard")
         d.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost"};
-    for (const auto &g : srd5::character_rules()->training_options(d))
-        for (unsigned i = 0; i < g.count; ++i)
-            d.training[g.id].push_back(g.options.at(i).id);
+    choose_first_options(d);
     const auto id = p.add_pc(hero(d));
     p.award_experience(2700, "skilled-acceptance");
     for (unsigned level = 2; level <= 3; ++level)
@@ -80,7 +78,7 @@ void options_and_grants()
           "Every skill not already held is offered exactly once");
     for (const auto &option : group->options)
         check(!grant(sheet, option.id), "An already-known proficiency is never offered");
-    p.advance(1, pick(p, {"skill:arcana", "skill:nature", "skill:medicine"}));
+    p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:medicine"}));
     const auto next = p.member(1).character.sheet();
     check(next.level == 4, "Skilled advancement completes");
     // The Human also has Versatile's Skilled, from its species.
@@ -94,7 +92,7 @@ void options_and_grants()
           feat_grant->choices.empty(),
           "Skilled records its entitlement as provenance and stores no sub-choices");
     for (const auto *id :
-            {"skill:arcana", "skill:nature", "skill:medicine"
+            {"skill:survival", "skill:nature", "skill:medicine"
             })
     {
         const auto *g = grant(next, id);
@@ -110,7 +108,7 @@ void check_effects()
     auto p = ready("fighter", "criminal");
     const auto before = p.member(1).character.sheet();
     const auto cold = probe(before, Ability::intelligence, "nature");
-    p.advance(1, pick(p, {"skill:nature", "skill:arcana", "skill:medicine"}));
+    p.advance(1, pick(p, {"skill:nature", "skill:survival", "skill:medicine"}));
     const auto after = p.member(1).character.sheet();
     const auto warm = probe(after, Ability::intelligence, "nature");
     check(warm.proficiency > cold.proficiency && warm.total > cold.total,
@@ -131,19 +129,19 @@ void rejections()
     // Duplicate, short, long, unknown, unprefixed, and already-known picks.
     rejects([&]
     {
-        p.advance(1, pick(p, {"skill:arcana", "skill:arcana", "skill:nature"}));
+        p.advance(1, pick(p, {"skill:survival", "skill:survival", "skill:nature"}));
     });
     rejects([&]
     {
-        p.advance(1, pick(p, {"skill:arcana", "skill:nature"}));
+        p.advance(1, pick(p, {"skill:survival", "skill:nature"}));
     });
     rejects([&]
     {
-        p.advance(1, pick(p, {"skill:arcana", "skill:nature", "skill:religion", "skill:medicine"}));
+        p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:religion", "skill:medicine"}));
     });
     rejects([&]
     {
-        p.advance(1, pick(p, {"skill:arcana", "skill:nature", "skill:not_a_skill"}));
+        p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:not_a_skill"}));
     });
     rejects([&]
     {
@@ -151,11 +149,11 @@ void rejections()
     });
     rejects([&]
     {
-        p.advance(1, pick(p, {"skill:stealth", "skill:nature", "skill:arcana"}));
+        p.advance(1, pick(p, {"skill:stealth", "skill:nature", "skill:survival"}));
     });
     rejects([&]
     {
-        p.advance(1, pick(p, {"tool:thieves_tools", "skill:nature", "skill:arcana"}));
+        p.advance(1, pick(p, {"tool:thieves_tools", "skill:nature", "skill:survival"}));
     });
     auto bare = p.default_advancement(1);
     bare.feat = "skilled";
@@ -164,7 +162,7 @@ void rejections()
     {
         p.advance(1, bare);
     });
-    auto paid = pick(p, {"skill:arcana", "skill:nature", "skill:medicine"});
+    auto paid = pick(p, {"skill:survival", "skill:nature", "skill:medicine"});
     paid.abilities[Ability::strength] = 2;
     rejects([&]
     {
@@ -172,7 +170,7 @@ void rejections()
     });
     check(p.member(1).character.sheet().level == 3,
           "Every rejected Skilled choice leaves the character untouched");
-    p.advance(1, pick(p, {"skill:arcana", "skill:nature", "skill:medicine"}));
+    p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:medicine"}));
     check(p.member(1).character.sheet().level == 4,
           "A valid choice still applies after rejections");
 }
@@ -180,7 +178,7 @@ void rejections()
 void persistence()
 {
     auto p = ready("wizard", "sage");
-    p.advance(1, pick(p, {"skill:stealth", "skill:perception", "skill:insight"}));
+    p.advance(1, pick(p, {"skill:stealth", "skill:perception", "skill:survival"}));
     const auto sheet = p.member(1).character.sheet();
     check(p.rule_module().character_profile(sheet, {}).data.starts_with("PC42 "),
           "A Skilled profile is written in the current profile format");

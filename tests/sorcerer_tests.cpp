@@ -64,7 +64,7 @@ Character sorcerer(unsigned level = 1, std::vector<std::string> metamagic = {},
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.training = {{"class:sorcerer", {"arcana", "insight"}}};
+    d.training = {{"class:sorcerer", {"deception", "insight"}}};
     d.cantrips = {"sorcerous_burst", "fire_bolt", "ray_of_frost", "shocking_grasp"};
     d.spells = SpellChoices{{}, prepared, {}, {}};
     CampaignParty party(module_rules());

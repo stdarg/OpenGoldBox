@@ -5,6 +5,7 @@
 #include "spell_table.h"
 #include <algorithm>
 #include <cctype>
+#include <initializer_list>
 #include <set>
 #include <stdexcept>
 #include <tuple>
@@ -221,6 +222,35 @@ TrainingChoiceGroup one_of(std::string id, std::string label, std::vector<Creati
             TrainingChoiceControl::single_selection};
 }
 
+// The skills a draft holds before a later list offers more: the background's,
+// and the picks of the species' skill groups named. A later list leaves them
+// out, so no pick repeats a skill.
+std::set<std::string> held_skills(std::string_view race, std::string_view background,
+                                  const TrainingChoices &choices,
+                                  std::initializer_list<std::string_view> groups)
+{
+    std::set<std::string> held;
+    for (const auto &grant : fixed(background))
+        held.insert(grant.id.substr(6));
+    for (const auto group : groups)
+        for (const auto &skill : selected(choices, "species:" + species_id(race) + ":" + std::string(group)))
+            held.insert(skill);
+    return held;
+}
+
+// A checkbox group of every skill not in `held`.
+TrainingChoiceGroup skill_group(std::string id, std::string label, unsigned count,
+                                const std::set<std::string> &held)
+{
+    TrainingChoiceGroup group = one_of(std::move(id), std::move(label), {});
+    group.count = count;
+    group.control = TrainingChoiceControl::checkboxes;
+    for (const auto &skill : skills)
+        if (!held.contains(std::string(skill.id)))
+            group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+    return group;
+}
+
 // The choices a species makes at creation (SRD 5.2.1 pp. 84-86). Drow
 // (DROW-1), Darkvision and the spells DM-1 removed are not offered.
 std::vector<TrainingChoiceGroup> species_options(std::string_view race,
@@ -250,8 +280,14 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
         {   {"high_elf", "High Elf", "A Wizard cantrip of your choice."},
             {"wood_elf", "Wood Elf", "Speed 35 feet; Longstrider from level 3."}
         }));
-        result.push_back(one_of("species:elf:keen_senses", "Keen Senses",
-        {{"insight", "Insight", {}}, {"perception", "Perception", {}}, {"survival", "Survival", {}}}));
+        auto keen = one_of("species:elf:keen_senses", "Keen Senses",
+        {{"insight", "Insight", {}}, {"perception", "Perception", {}}, {"survival", "Survival", {}}});
+        const auto background_skills = held_skills(race, background, choices, {});
+        std::erase_if(keen.options, [&](const auto & option)
+        {
+            return background_skills.contains(option.id);
+        });
+        result.push_back(std::move(keen));
         result.push_back(ability());
         // A High Elf's Wizard cantrip (it takes the removed Prestidigitation's place, DM-1).
         const auto &lineage = selected(choices, "species:elf:lineage");
@@ -291,11 +327,8 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
     if (species == "human")
     {
         result.push_back(size());
-        TrainingChoiceGroup skillful = one_of("species:human:skillful", "Skillful", {});
-        skillful.control = TrainingChoiceControl::checkboxes;
-        for (const auto &skill : skills)
-            skillful.options.push_back({std::string(skill.id), std::string(skill.label), {}});
-        result.push_back(std::move(skillful));
+        result.push_back(skill_group("species:human:skillful", "Skillful", 1,
+                                     held_skills(race, background, choices, {})));
         // Versatile: an Origin feat, other than the one the background gives.
         // Skilled comes first, the creator's default: it changes no fight.
         auto versatile = one_of("species:human:versatile", "Versatile",
@@ -311,20 +344,11 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
             return background_feat(background) == "feat:" + option.id;
         });
         result.push_back(std::move(versatile));
-        // Skilled's three skills, apart from the one Skillful took.
+        // Skilled's three skills, apart from the background's and Skillful's.
         const auto &feat = selected(choices, "species:human:versatile");
         if (std::find(feat.begin(), feat.end(), "skilled") != feat.end())
-        {
-            TrainingChoiceGroup skilled = one_of("species:human:skilled", "Skilled", {});
-            skilled.count = 3;
-            skilled.control = TrainingChoiceControl::checkboxes;
-            const auto &skillful_pick = selected(choices, "species:human:skillful");
-            for (const auto &skill : skills)
-                if (std::find(skillful_pick.begin(), skillful_pick.end(), skill.id) ==
-                        skillful_pick.end())
-                    skilled.options.push_back({std::string(skill.id), std::string(skill.label), {}});
-            result.push_back(std::move(skilled));
-        }
+            result.push_back(skill_group("species:human:skilled", "Skilled", 3,
+                                         held_skills(race, background, choices, {"skillful"})));
     }
     return result;
 }
@@ -406,19 +430,24 @@ std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
                                   {},
                                   TrainingChoiceControl::checkboxes,
                                   "class_skills"};
+        const auto held = held_skills(race, background, choices, {"keen_senses", "skillful", "skilled"});
         for (const auto &skill : skills)
-            if (data->skills.empty() ||
-                    std::find(data->skills.begin(), data->skills.end(), skill.id) != data->skills.end())
+            if (!held.contains(std::string(skill.id)) && (data->skills.empty() ||
+                    std::find(data->skills.begin(), data->skills.end(), skill.id) != data->skills.end()))
                 group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+        // Too few of the class's skills left: any skill not held, as the
+        // SRD lets a repeated proficiency be traded for another.
+        if (group.options.size() < group.count)
+            group.options = skill_group({}, {}, 0, held).options;
         result.push_back(std::move(group));
     }
     if (klass == CharacterClass::rogue)
     {
         TrainingChoiceGroup group{std::string(expertise), "Rogue Expertise", 2, {}};
-        const auto known = fixed(background);
+        const auto known = held_skills(race, background, choices, {"keen_senses", "skillful", "skilled"});
         const auto &picked = selected(choices, rogue);
         for (const auto &s : skills)
-            if (source(known, "skill:" + std::string(s.id)) ||
+            if (known.contains(std::string(s.id)) ||
                     std::find(picked.begin(), picked.end(), s.id) != picked.end())
                 group.options.push_back({std::string(s.id), std::string(s.label), {}});
         result.push_back(std::move(group));

@@ -22,8 +22,12 @@ Except Bard, each class uses its specified list. Fighter includes Persuasion;
 Wizard includes Nature. The rules catalog and independent test expectations
 record every permitted skill. Rogue's prior list and dependent Expertise remain
 unchanged. A class choice records `skill:<id>` from `class:<id>` at level one.
-Duplicate choices and out-of-list skills reject. Overlapping background/class
-proficiency keeps both sources and contributes proficiency only once.
+Duplicate choices and out-of-list skills reject. The list leaves out skills the
+character already has from its background or its species' choices (Keen
+Senses, Skillful, Versatile's Skilled), so no pick repeats one
+([SKILL-1](SRD-DECISIONS.md#skill-1-2026-10-14-no-repeated-skill-picks)). When
+fewer of the class's skills are left than it chooses, the list offers every
+skill not held instead.
 
 ## Player path
 

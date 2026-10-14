@@ -315,7 +315,7 @@ void campaign()
     auto draft = hero().creation_data();
     draft.training = {{"class:fighter:fighting_style", {"archery"}},
         {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-        {"class:fighter", {"athletics", "history"}}
+        {"class:fighter", {"perception", "history"}}
     };
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {})),

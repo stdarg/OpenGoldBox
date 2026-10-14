@@ -64,7 +64,7 @@ Character warlock(unsigned level = 1, std::vector<std::string> first = {},
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.rolls[5] = {{6, 6, 6, 1}, 3};
-    d.training = {{"class:warlock", {"arcana", "deception"}}};
+    d.training = {{"class:warlock", {"investigation", "deception"}}};
     if (!first.empty())
         d.training["class:warlock:invocations"] = first;
     d.cantrips = {"eldritch_blast", "chill_touch"};

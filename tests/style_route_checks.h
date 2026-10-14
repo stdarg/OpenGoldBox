@@ -7,10 +7,7 @@ using rogue_attack_checks::unit;
 Character starter(std::string klass, std::string style = "defense")
 {
     auto d = draft(klass, "soldier");
-    const auto creation = srd5::character_rules();
-    for (const auto &group : creation->training_options(d))
-        for (unsigned i = 0; i < group.count; ++i)
-            d.training[group.id].push_back(group.options.at(i).id);
+    choose_first_options(d);
     if (klass == "fighter")
         d.training["class:fighter:fighting_style"] = {style};
     return hero(d);
