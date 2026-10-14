@@ -19,8 +19,9 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 - **Divine Spark** (Action, another creature the Cleric can see within 30
   feet): roll 1d8 + Wisdom modifier. An ally regains that many Hit Points; an
   enemy makes a Constitution save and takes that much Radiant damage, half on a
-  success. Necrotic is used instead when the target resists Radiant more (the SRD
-  leaves the choice to the Cleric; this takes the better one).
+  success. The SRD lets the Cleric choose Necrotic instead; the game always
+  deals Radiant
+  ([SPARK-1](SRD-DECISIONS.md#spark-1-2026-10-14-divine-spark-always-radiant)).
 - **Turn Undead** (Action, offered when an Undead enemy is within 30 feet): each
   Undead enemy within 30 feet makes a Wisdom save or is turned for 1 minute:
   Frightened and Incapacitated, it can only move as far from the Cleric as it

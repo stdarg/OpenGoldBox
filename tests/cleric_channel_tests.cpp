@@ -33,7 +33,8 @@ std::string read(const std::filesystem::path &p)
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-// A sturdy AC 1 target that hits back, and an Undead zombie of the same build.
+// A sturdy AC 1 target that hits back, an Undead zombie, a poisonous viper and
+// a shade that resists Radiant, all of the same build.
 std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
@@ -41,7 +42,9 @@ std::unique_ptr<RulesModule> rules()
                                "creature zombie 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                "type zombie undead\n" +
                                "creature viper 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "damage_types viper poison poison\n");
+                               "damage_types viper poison poison\n" +
+                               "creature shade 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "affinity shade radiant_ward resistance radiant\n");
 }
 
 
@@ -145,6 +148,11 @@ void divine_spark_checks()
           logged(*harm, "Radiant damage") && unit(*harm, 99).hit_points < 1000,
           "Divine Spark harms an enemy, a Constitution save for half");
     check(!submit(*harm, "turn_undead", 1), "Turn Undead needs an Undead");
+
+    auto resisted = battle(*module, cleric(2), "shade");
+    check(submit(*resisted, "divine_spark", 99) && logged(*resisted, "Radiant damage") &&
+          !logged(*resisted, "Necrotic damage"),
+          "Divine Spark deals Radiant even to a creature that resists it (SPARK-1)");
 }
 
 // A battle in which Turn Undead turned the zombie: the first seed whose

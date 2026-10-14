@@ -937,3 +937,10 @@ Versatile (the same day): a Human picks an Origin feat other than its
 background's on the race page; Skilled's three skills are checked there too,
 and Magic Initiate's spells are chosen on the spell page. Skilled is offered
 first, so it is the creator's suggestion.
+
+## SPARK-1 (2026-10-14): Divine Spark always Radiant
+
+The user decided that Divine Spark always deals Radiant damage to an enemy;
+the SRD's choice of Necrotic is not offered. The game used to pick whichever
+type the target took more of after its resistances, which the player cannot
+see. This may change later (a choice in the A cycle, as True Strike offers).

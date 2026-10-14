@@ -6569,8 +6569,8 @@ void Session::preserve_life(Actor &cleric)
 
 void Session::divine_spark(Actor &cleric, Actor &target)
 {
-    // 1d8 + Wisdom modifier: restored to an ally, or Radiant (Necrotic if the
-    // target resists Radiant more) to an enemy, halved on a Constitution save.
+    // 1d8 + Wisdom modifier: restored to an ally, or Radiant to an enemy (the
+    // SRD's Necrotic is not offered, SPARK-1), halved on a Constitution save.
     const int total = std::max(0, roll(8) + def(cleric).casting - 2);
     log(cleric.source.name + " uses Divine Spark on " + target.source.name + ".",
     {
@@ -6582,14 +6582,7 @@ void Session::divine_spark(Actor &cleric, Actor &target)
         heal(target, total);
         return;
     }
-    const auto taken = [&](detail::DamageType type)
-    {
-        const std::array parts{detail::DamagePart{type, 100}};
-        return detail::resolve_damage(parts, affinities(target)).total;
-    };
-    const auto type = taken(detail::DamageType::necrotic) > taken(detail::DamageType::radiant)
-                      ? detail::DamageType::necrotic
-                      : detail::DamageType::radiant;
+    const auto type = detail::DamageType::radiant;
     const bool saved = saving_throw_succeeds(target, detail::Ability::constitution,
                        spell_dc(cleric));
     const int amount = resolved_damage(target, type, saved ? total / 2 : total);
@@ -13161,7 +13154,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.182", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.183", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
