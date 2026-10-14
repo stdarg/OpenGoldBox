@@ -8,8 +8,8 @@ ability.
 - Druids prepare spells from the Druid list like Clerics: two cantrips (three
   from level 4) and 4/5/6/7 prepared spells, with full-caster slots, chosen at
   creation and on gaining a level; a Long Rest may change them. The
-  implemented Druid spells through level 2 are on the list. Replacing a
-  cantrip on gaining a level is not offered yet.
+  implemented Druid spells through level 2 are on the list. A cantrip may be
+  replaced on gaining a level ([Replacing choices](LEVEL-SWAPS.md)).
 - **Primal Order** (level 1), chosen with the Training controls:
   **Magician** learns one more Druid cantrip; **Warden** trains Martial
   weapons and Medium armor.

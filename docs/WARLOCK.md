@@ -12,7 +12,8 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   on a Short Rest: one level-1 slot at level 1, two at level 2, then two
   level-2 slots at levels 3–4, which also cast level-1 spells (offered as
   "(level 2 slot)"). The implemented Warlock spells through level 2 are on
-  the list. Replacing a spell or cantrip on gaining a level is not offered yet.
+  the list. On gaining a level one cantrip, one spell and one invocation may be
+  replaced ([Replacing choices](LEVEL-SWAPS.md)).
 - **Hex** (level 1, Bonus Action, Concentration): the cursed creature takes
   1d6 more Necrotic damage from each of the Warlock's attack-roll hits; once
   it drops, **Move Hex** curses another as a Bonus Action. The chosen

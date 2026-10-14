@@ -10,8 +10,9 @@ spellcasting ability; the earlier cantrip work is in
   cantrips (five from level 4) and 2/4/6/7 prepared spells at levels 1–4,
   chosen at creation and on gaining a level; a Long Rest changes none. Their
   slots match a Wizard's. The implemented Sorcerer spells through level 2 are
-  on the list (Mind Spike included, as the inventory records). Replacing one
-  prepared spell or cantrip on gaining a level is not offered yet.
+  on the list (Mind Spike included, as the inventory records). On gaining a
+  level one cantrip and one spell may be replaced
+  ([Replacing choices](LEVEL-SWAPS.md)).
 - **Sorcerous Burst** (cantrip): a spell attack for 1d8 of a chosen type,
   offered once per type (Acid, Cold, Fire, Lightning, Poison, Psychic,
   Thunder); each 8 rolls another d8, up to the Charisma modifier in extra dice.

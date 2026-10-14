@@ -47,8 +47,8 @@ English and Spanish).
 - At level two the Fighting Style dropdown also offers **Blessed Warrior**
   instead of a Fighting Style feat. The Paladin learns two Cleric cantrips,
   cast with Charisma, chosen on the level-up Spell Choices page ("Blessed
-  Warrior cantrips"). Replacing one on later Paladin levels is not offered yet
-  (the shared level-up replacement gap).
+  Warrior cantrips"). One may be replaced with another Cleric cantrip on each
+  later Paladin level ([Replacing choices](LEVEL-SWAPS.md)).
 - Changing the style on the first page drops the cantrip picks with it.
 - A new rules call, `spell_choice_sheet`, gives the level-up page the sheet
   with the chosen style, so the page offers exactly what the level-up applies.
@@ -204,5 +204,5 @@ Verification: `opengold_spell_access_tests` (`tests/paladin_choices_checks.h`)
 checks counts, eligible and rejected preparations, Charisma, the Spell Choices
 step, slots and prepared spells through level 4, locked level-up preparation
 and a save round trip. `tests/training_view_tests.gd` confirms a Paladin reaches
-Spell Choices after Training. The one-swap rest rule is tested once a second
-Paladin spell exists.
+Spell Choices after Training. `paladin_choices_checks.h` tests the one-swap
+Long Rest rule.

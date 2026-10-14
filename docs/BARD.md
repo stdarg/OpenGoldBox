@@ -8,8 +8,8 @@ ability.
 - Bards prepare spells from the Bard list like Clerics: two cantrips (three
   from level 4) and 4/5/6/7 prepared spells, with full-caster slots, chosen at
   creation and on gaining a level; a Long Rest changes none. The implemented
-  Bard spells through level 2 are on the list. Replacing a spell or cantrip
-  on gaining a level is not offered yet.
+  Bard spells through level 2 are on the list. On gaining a level one cantrip
+  and one spell may be replaced ([Replacing choices](LEVEL-SWAPS.md)).
 - Creation: `opengold_character_tests` makes a Bard through the ordinary
   creator (three skills, two cantrips, four spells, Bardic Inspiration);
   `opengold_bard_tests` checks the counts and refuses a foreign, repeated,

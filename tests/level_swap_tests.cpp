@@ -82,13 +82,21 @@ struct Party
         result.cantrip_swap = cantrip;
         result.spell_swap = spell;
         result.option_swap = option;
+        return filled(std::move(result), spell.replaced, option.replacement);
+    }
+
+    // The choice with its training and spell picks filled with the first
+    // options, leaving out a replaced spell and a swapped-in option.
+    AdvancementChoice filled(AdvancementChoice result, std::string_view replaced_spell = {},
+                             std::string_view taken_option = {}) const
+    {
         // Two picks are owed at level two; the dialog asks for them.
         for (const auto &group : party->rule_module().advancement_options(sheet(), result).training)
         {
             auto &picks = result.training[group.id];
             picks.clear();
             for (const auto &o : group.options)
-                if (picks.size() < group.count && o.id != option.replacement)
+                if (picks.size() < group.count && o.id != taken_option)
                     picks.push_back(o.id);
         }
         if (result.spell_learning)
@@ -99,6 +107,7 @@ struct Party
             for (const auto &group : offered.learning)
             {
                 auto &fill = (*result.spell_learning)[group.id];
+                fill.clear();
                 for (const auto &o : group.options)
                     if (fill.size() < group.count)
                         fill.push_back(o.id);
@@ -106,7 +115,7 @@ struct Party
             // The locked list follows the swap; free places take the first offers.
             result.spells = offered.locked_prepared;
             for (const auto &o : offered.preparation)
-                if (result.spells.size() < offered.prepared_count && o.id != spell.replaced &&
+                if (result.spells.size() < offered.prepared_count && o.id != replaced_spell &&
                         std::find(result.spells.begin(), result.spells.end(), o.id) ==
                         result.spells.end())
                     result.spells.push_back(o.id);
@@ -252,6 +261,42 @@ void other_class_checks()
     check(fighter.cantrip_swap.replaceable.empty() && fighter.option_swap.replaceable.empty(),
           "A Fighter has nothing to swap");
 }
+
+// A Bard swaps a cantrip and a spell on gaining a level (#126).
+void bard_checks()
+{
+    Party p("bard");
+    const auto options = p.options();
+    const auto cantrip = first(options.cantrip_swap);
+    const auto spell = first(options.spell_swap);
+    p.advance(p.choice(cantrip, spell, {}));
+    check(has(p.sheet(), "spell:" + cantrip.replacement) &&
+          !has(p.sheet(), "spell:" + cantrip.replaced),
+          "The Bard's cantrip is replaced");
+    check(prepared(p.sheet(), spell.replacement) && !prepared(p.sheet(), spell.replaced),
+          "The Bard's spell is replaced");
+    p.roundtrip();
+}
+
+// Blessed Warrior's and Druidic Warrior's cantrips: one may be replaced with
+// another of the same list on a later level (#140, #147).
+void warrior_cantrip_checks(std::string_view klass, std::string_view style)
+{
+    Party p(klass);
+    auto second = p.party->default_advancement(p.id);
+    second.fighting_style = style;
+    p.advance(p.filled(std::move(second)));
+    const auto options = p.options();
+    check(options.cantrip_swap.replaceable.size() == 2 &&
+          !options.cantrip_swap.replacements.empty(),
+          std::string(style) + " offers both cantrips for replacement");
+    const auto cantrip = first(options.cantrip_swap);
+    p.advance(p.choice(cantrip, {}, {}));
+    check(has(p.sheet(), "spell:" + cantrip.replacement) &&
+          !has(p.sheet(), "spell:" + cantrip.replaced),
+          std::string(style) + "'s cantrip is replaced");
+    p.roundtrip();
+}
 } // namespace
 
 int main()
@@ -261,6 +306,9 @@ int main()
         sorcerer_checks();
         warlock_checks();
         other_class_checks();
+        bard_checks();
+        warrior_cantrip_checks("paladin", "blessed_warrior");
+        warrior_cantrip_checks("ranger", "druidic_warrior");
     }
     catch (const std::exception &error)
     {

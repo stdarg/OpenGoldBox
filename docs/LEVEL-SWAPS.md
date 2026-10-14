@@ -45,6 +45,7 @@ place is free to choose again.
 ## Verification
 
 `opengold_level_swap_tests` (each class's offers, each swap's effect, a
-refused swap, Pact of the Tome in and out, save replay) and
+refused swap, Pact of the Tome in and out, a Bard's cantrip and spell, Blessed
+and Druidic Warrior cantrips, save replay) and
 `opengold_godot_level_up_lab` (a Sorcerer's cantrip swap through the window,
 seen again in the next level's list).

@@ -66,10 +66,13 @@ The game has no half or three-quarters cover
 so Sacred Flame's exception to those save bonuses has nothing to act on; total
 cover (no line of sight) is rejected as before.
 
-Verbal blockers (#39), Magic Initiate (#75/#200), Pact of the Tome, the
-Thaumaturge and Blessed Warrior grant Sacred Flame through their own choices.
+Spells have no components ([CLASS-11](SRD-DECISIONS.md#class-11-2026-10-06-no-spell-components))
+and the game has no partial cover ([COVER-1](SRD-DECISIONS.md#cover-1-2026-10-14-no-half-or-three-quarters-cover)),
+so neither the speech rule nor the cover exception has anything to act on.
+Magic Initiate, Pact of the Tome, the Thaumaturge and Blessed Warrior grant
+Sacred Flame through their own choices.
 Cleric preparation, Divine Order and the fourth selection are in
 [Cleric preparation](CLERIC-PREPARATION.md). A cantrip is replaced on gaining a
 level as [Replacing choices](LEVEL-SWAPS.md) describes. Higher-level damage scaling
 remains #176–178. The zero-HP save rule does not complete all conditions in #35.
-The [spell inventory](SPELL-INVENTORY.md) therefore records this path as partial.
+Sacred Flame is complete through level 4.

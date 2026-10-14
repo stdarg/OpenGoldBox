@@ -48,8 +48,9 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 
 - At level two the Fighting Style dropdown also offers **Druidic Warrior**
   instead of a Fighting Style feat: two Druid cantrips, cast with Wisdom, chosen
-  on the level-up Spell Choices page ("Druidic Warrior cantrips"). Replacing
-  one on later Ranger levels is not offered yet. It works like the Paladin's
+  on the level-up Spell Choices page ("Druidic Warrior cantrips"). One may be
+  replaced with another Druid cantrip on each later Ranger level
+  ([Replacing choices](LEVEL-SWAPS.md)). It works like the Paladin's
   [Blessed Warrior](PALADIN.md#blessed-warrior), through the same level-up page,
   whose Godot check covers both.
 - Verification: `opengold_spell_access_tests` (the offer, Druid cantrips only, a
