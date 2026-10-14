@@ -28,7 +28,11 @@ const DIRECTION_STEPS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.L
 @onready var status: Label = $Margin/Tabs/ArtCatalog/Status
 @onready var map_picker: OptionButton = $Margin/Tabs/MapBrowser/MapToolbar/MapPicker
 @onready var profile_picker: OptionButton = $Margin/Tabs/MapBrowser/MapToolbar/ProfilePicker
-@onready var map_grid: Control = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapCenter/MapGrid
+@onready var map_grid: Control = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapCenter/MapGrid
+@onready var legend_wall: Label = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend/LegendWall
+@onready var legend_door: Label = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend/LegendDoor
+@onready var legend_event: Label = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend/LegendEvent
+@onready var legend_pose: Label = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend/LegendPose
 @onready var pose_summary: Label = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PoseSummary
 @onready var facing_picker: OptionButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow/FacingPicker
 @onready var first_person: Control = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FirstPersonPanel/FirstPerson
@@ -56,6 +60,10 @@ var selected_map_entry := -1
 var visible_samples: Array = []
 
 func _ready() -> void:
+    legend_wall.add_theme_color_override("font_color", map_grid.get_theme_color("wall", "MapGrid"))
+    legend_door.add_theme_color_override("font_color", map_grid.get_theme_color("door", "MapGrid"))
+    legend_event.add_theme_color_override("font_color", map_grid.get_theme_color("event", "MapGrid"))
+    legend_pose.add_theme_color_override("font_color", map_grid.get_theme_color("selected", "MapGrid"))
     archive_filter.item_selected.connect(func(_index: int): _rebuild_grid())
     view_filter.item_selected.connect(func(_index: int): _rebuild_grid())
     search.text_changed.connect(func(_text: String): _rebuild_grid())
@@ -112,6 +120,8 @@ func _ready() -> void:
     for argument in OS.get_cmdline_user_args():
         if argument.begins_with("--viewer-check="):
             call_deferred("_run_check", argument.trim_prefix("--viewer-check="))
+        elif argument.begins_with("--viewer-capture="):
+            call_deferred("_run_viewer_capture", argument.trim_prefix("--viewer-capture="))
         elif argument.begins_with("--map-check="):
             call_deferred("_run_map_check", argument.trim_prefix("--map-check="))
         elif argument.begins_with("--map-capture="):
@@ -126,7 +136,8 @@ func _load_failure(message: String) -> void:
     map_export.disabled = true
     map_status.text = message
     for argument in OS.get_cmdline_user_args():
-        if argument.begins_with("--viewer-check=") or argument.begins_with("--map-check=") or \
+        if argument.begins_with("--viewer-check=") or argument.begins_with("--viewer-capture=") or \
+                argument.begins_with("--map-check=") or \
                 argument.begins_with("--map-capture="):
             push_error(message)
             get_tree().quit(1)
@@ -228,23 +239,52 @@ func _navigate(delta: int) -> void:
     var position := visible_indices.find(selected_entry)
     _select_visible(clampi(position + delta, 0, visible_indices.size() - 1))
 
-func _input(event: InputEvent) -> void:
-    if tabs.current_tab == 1 and event is InputEventKey and event.pressed and not event.echo:
-        _map_key(event)
+func _navigate_row(direction: int) -> void:
+    if visible_indices.is_empty():
+        return
+    var target := visible_indices.find(selected_entry) + direction * _contact_columns()
+    if target >= 0 and target < visible_indices.size():
+        _select_visible(target)
 
-func _unhandled_key_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
     if not event is InputEventKey or not event.pressed or event.echo:
         return
     if tabs.current_tab == 1:
+        _map_key(event)
+    else:
+        _catalog_key(event)
+
+func _catalog_key(event: InputEventKey) -> void:
+    if save_dialog.visible or visible_indices.is_empty():
         return
-    if get_viewport().gui_get_focus_owner() == search:
+    var focused := get_viewport().gui_get_focus_owner()
+    if focused is LineEdit or focused is OptionButton:
         return
-    if event.keycode == KEY_LEFT:
-        _navigate(-1)
-        get_viewport().set_input_as_handled()
-    elif event.keycode == KEY_RIGHT:
-        _navigate(1)
-        get_viewport().set_input_as_handled()
+    if focused is TabBar and (event.keycode == KEY_LEFT or event.keycode == KEY_RIGHT):
+        return
+    match event.keycode:
+        KEY_LEFT:
+            _navigate(-1)
+        KEY_RIGHT:
+            _navigate(1)
+        KEY_UP:
+            _navigate_row(-1)
+        KEY_DOWN:
+            _navigate_row(1)
+        _:
+            return
+    get_viewport().set_input_as_handled()
+
+func _contact_columns() -> int:
+    if contact_grid.item_count < 2:
+        return 1
+    var first_row_y := contact_grid.get_item_rect(0).position.y
+    var columns := 1
+    for index in range(1, contact_grid.item_count):
+        if contact_grid.get_item_rect(index).position.y != first_row_y:
+            break
+        columns += 1
+    return columns
 
 func _export_name(entry: Dictionary) -> String:
     return "%s_record-%d_appearance-%02d_%s.png" % [
@@ -413,7 +453,7 @@ func _map_key(event: InputEventKey) -> void:
             map_facing = (map_facing + 2) % 4
         KEY_UP:
             if not _advance_map_pose():
-                map_status.text = "A wall, door or map boundary blocks forward movement."
+                map_status.text = "The map boundary blocks forward movement."
                 get_viewport().set_input_as_handled()
                 return
         _:
@@ -427,15 +467,6 @@ func _advance_map_pose() -> bool:
     var target := map_pose + step
     if target.x < 0 or target.x >= 16 or target.y < 0 or target.y >= 16:
         return false
-    var from: Dictionary = map_cell(selected_map, selected_profile,
-                                    map_pose.x, map_pose.y, 6)
-    var to: Dictionary = map_cell(selected_map, selected_profile,
-                                  target.x, target.y, 6)
-    var edge: Dictionary = from["faces"][map_facing]
-    var back: Dictionary = to["faces"][(map_facing + 2) % 4]
-    if int(edge["wall_id"]) != 0 or int(edge["door_code"]) != 0 or \
-            int(back["wall_id"]) != 0 or int(back["door_code"]) != 0:
-        return false
     map_pose = target
     return true
 
@@ -444,6 +475,47 @@ func _run_check(output_path: String) -> void:
         push_error("Expected 2,100 source perspective pieces; got %d" % catalog_entries.size())
         get_tree().quit(1)
         return
+    await get_tree().process_frame
+    var columns := _contact_columns()
+    if columns != 5:
+        push_error("Expected five contact-sheet columns at the default window size; got %d" % columns)
+        get_tree().quit(1)
+        return
+    _select_visible(columns + 1)
+    contact_grid.grab_focus()
+    var vertical := InputEventKey.new()
+    vertical.keycode = KEY_UP
+    vertical.pressed = true
+    Input.parse_input_event(vertical)
+    await get_tree().process_frame
+    if selected_entry != 1:
+        push_error("Up arrow did not select the tile in the previous row")
+        get_tree().quit(1)
+        return
+    vertical.keycode = KEY_DOWN
+    Input.parse_input_event(vertical)
+    await get_tree().process_frame
+    if selected_entry != columns + 1:
+        push_error("Down arrow did not select the tile in the next row")
+        get_tree().quit(1)
+        return
+    _select_visible(2)
+    vertical.keycode = KEY_UP
+    Input.parse_input_event(vertical)
+    await get_tree().process_frame
+    if selected_entry != 2:
+        push_error("Up arrow changed columns at the first row")
+        get_tree().quit(1)
+        return
+    _select_visible(visible_indices.size() - 3)
+    vertical.keycode = KEY_DOWN
+    Input.parse_input_event(vertical)
+    await get_tree().process_frame
+    if selected_entry != visible_indices.size() - 3:
+        push_error("Down arrow changed columns at the last row")
+        get_tree().quit(1)
+        return
+    _select_visible(0)
     var first := selected_entry
     _navigate(1)
     if selected_entry != first + 1:
@@ -477,7 +549,7 @@ func _run_check(output_path: String) -> void:
         push_error("Exported PNG differs from the original decoded pixels")
         get_tree().quit(1)
         return
-    print("Tile art viewer checks passed: %d pieces; navigation, waterfront search and PNG export" % catalog_entries.size())
+    print("Tile art viewer checks passed: %d pieces; five columns, arrow navigation, waterfront search and PNG export" % catalog_entries.size())
     get_tree().quit()
 
 func _run_map_check(output_path: String) -> void:
@@ -515,6 +587,29 @@ func _run_map_check(output_path: String) -> void:
     _select_map(phlan)
     if map_grid.cells.size() != 256:
         _map_check_fail("Top-down map does not contain 256 cells")
+        return
+    map_pose = Vector2i(8, 8)
+    map_facing = 3
+    var west: Dictionary = map_cell(phlan, 0, 8, 8, 6)["faces"][3]
+    _refresh_map_view()
+    map_grid.grab_focus()
+    await get_tree().process_frame
+    var advance := InputEventKey.new()
+    advance.keycode = KEY_UP
+    advance.pressed = true
+    Input.parse_input_event(advance)
+    await get_tree().process_frame
+    if int(west["wall_id"]) == 0 or map_pose != Vector2i(7, 8):
+        _map_check_fail("Forward inspection failed: wall=%s pose=%s focus=%s" % [
+            west["wall_id"], map_pose, get_viewport().gui_get_focus_owner()
+        ])
+        return
+    map_pose = Vector2i(0, 0)
+    _refresh_map_view()
+    Input.parse_input_event(advance)
+    await get_tree().process_frame
+    if map_pose != Vector2i(0, 0):
+        _map_check_fail("Forward inspection crossed the map boundary")
         return
     var found := false
     for y in 16:
@@ -580,12 +675,25 @@ func _run_map_check(output_path: String) -> void:
     if map_facing != 1:
         _map_check_fail("Right arrow did not turn the map view as it does in the game")
         return
-    print("Map browser checks passed: 29 maps, alternate profile, keyboard turn, map jump, first-person picks and PNG export")
+    print("Map browser checks passed: 29 maps, wall traversal, alternate profile, keyboard turn, map jump, first-person picks and PNG export")
     get_tree().quit()
 
 func _map_check_fail(message: String) -> void:
     push_error(message)
     get_tree().quit(1)
+
+func _run_viewer_capture(output_path: String) -> void:
+    tabs.current_tab = 0
+    await RenderingServer.frame_post_draw
+    var result := get_viewport().get_texture().get_image().save_png(output_path)
+    if result != OK:
+        push_error("Art catalog screenshot failed: %s" % error_string(result))
+        get_tree().quit(1)
+        return
+    print("Art catalog screenshot saved: %s · %d columns · %s grid" % [
+        output_path, _contact_columns(), contact_grid.size
+    ])
+    get_tree().quit()
 
 func _run_map_capture(output_path: String) -> void:
     tabs.current_tab = 1

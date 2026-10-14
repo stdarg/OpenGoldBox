@@ -5,7 +5,8 @@ first person wall artwork and exploration maps. It is a separate Godot project u
 is not linked into the game. It reads your installed DAX files at runtime; no
 original artwork is included in this repository.
 
-The **Art Catalog** tab's contact grid shows every stored perspective piece from `WALLDEF1` through
+The **Art Catalog** tab's contact grid uses five columns at the default window
+size. It shows every stored perspective piece from `WALLDEF1` through
 `WALLDEF8`, including doors, gateways, waterfront/dock art, and other area
 variations. Each item identifies its source archive, record, appearance number,
 and view. The preview uses the source pixels with nearest neighbor scaling.
@@ -17,9 +18,10 @@ to a wall set.
 The **Map Browser** tab loads all 29 decoded GEO maps, including New Phlan,
 Slums, and Kuto's Well. Pick a map, then use the arrow keys as in exploration:
 Left and Right turn, Up moves forward, and Down turns around. Forward movement
-obeys wall, door, and map-edge collisions. Click the top-down map to jump to any
-cell for inspection. The map shows walls in blue, doors in gold, event bytes as
-purple dots, and the current pose in yellow.
+passes through walls and doors for inspection, stopping only at map edges.
+Click the top-down map to jump to any cell. The map shows walls in blue, doors
+in gold, cells with a nonzero event or indoor byte as purple dots, and the
+current pose in yellow. A legend below the map explains each marker.
 
 The first-person view uses the game's original 88 × 88 perspective compositor.
 Click a visible wall or door in that view. The panel below it shows the exact
@@ -59,7 +61,8 @@ import may crash on exit after writing the list; that is harmless.)
 
 In Art Catalog, use the archive and view filters or the Find field to narrow the contact grid.
 Select a thumbnail to inspect it. Previous and Next move through the currently
-visible items; Left and Right are shortcuts when the Find field is not focused.
+visible items; Left and Right move one piece, while Up and Down move one row
+in the same column when the Find field and filter controls are not focused.
 Export PNG opens a save dialog with a filename that includes source, record,
 appearance and view.
 
@@ -73,9 +76,9 @@ neighboring walls, or encounter sprites.
 
 ## Check
 
-After building, this command loads all wall records, exercises Previous and
-Next, finds the waterfront art, exports its near-front image, and checks the PNG
-pixel data:
+After building, this command loads all wall records, checks the five-column
+contact sheet and arrow navigation, finds the waterfront art, exports its
+near-front image, and checks the PNG pixel data:
 
 ```bash
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --viewer-check=/tmp/opengold-waterfront.png
@@ -84,14 +87,15 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_vi
 The output PNG is local test output. The viewer never writes into the original
 game directory unless that path is explicitly chosen in the export dialog.
 
-The map check loads all 29 maps, renders their first-person views, checks the
-alternate artwork profile, clicks a source piece, verifies PNG pixels, and jumps
-on the top-down map:
+The map check loads all 29 maps, renders their first-person views, checks
+traversal through a wall and the alternate artwork profile, clicks a source
+piece, verifies PNG pixels, and jumps on the top-down map:
 
 ```bash
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --map-check=/tmp/opengold-map-piece.png
 ```
 
 For a visual review, run Godot with a display and append
-`-- --map-capture=/tmp/opengold-map-browser.png` instead. It opens the map tab,
-selects one visible piece, saves the full tool window as a PNG, and exits.
+`-- --viewer-capture=/tmp/opengold-art-catalog.png` or
+`-- --map-capture=/tmp/opengold-map-browser.png`. Each saves the full tool window
+as a PNG and exits; the map capture selects one visible piece first.

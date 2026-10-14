@@ -86,7 +86,7 @@ placeholder_text = "Archive, record, appearance or view"
 [node name="Split" type="HSplitContainer" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 size_flags_vertical = 3
-split_offset = 690
+split_offset = 970
 theme_override_constants/separation = 18
 
 [node name="ContactGrid" type="ItemList" parent="Margin/Tabs/ArtCatalog/Split"]
@@ -96,7 +96,7 @@ size_flags_horizontal = 3
 select_mode = 0
 icon_mode = 0
 fixed_icon_size = Vector2i(88, 88)
-max_columns = 3
+max_columns = 5
 same_column_width = true
 fixed_column_width = 170
 max_text_lines = 2
@@ -181,7 +181,7 @@ clip_text = true
 
 [node name="MapHelp" type="Label" parent="Margin/Tabs/MapBrowser"]
 layout_mode = 2
-text = "Arrow keys: Up moves forward, Left/Right turn, Down turns around. Click the map to jump; click a piece in the first-person view to inspect its art."
+text = "Arrow keys: Up moves forward through walls, Left/Right turn, Down turns around. Click the map to jump; click a first-person piece to inspect it."
 autowrap_mode = 3
 
 [node name="MapSplit" type="HSplitContainer" parent="Margin/Tabs/MapBrowser"]
@@ -196,10 +196,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="MapCenter" type="CenterContainer" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel"]
+[node name="MapColumn" type="VBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="MapGrid" type="Control" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapCenter"]
+[node name="MapCenter" type="CenterContainer" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MapGrid" type="Control" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapCenter"]
 custom_minimum_size = Vector2(550, 550)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -208,6 +213,31 @@ focus_mode = 2
 mouse_filter = 0
 mouse_default_cursor_shape = 2
 script = ExtResource("2")
+
+[node name="MapLegend" type="HBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="LegendTitle" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend"]
+layout_mode = 2
+text = "Legend:"
+
+[node name="LegendWall" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend"]
+layout_mode = 2
+text = "━ Wall"
+
+[node name="LegendDoor" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend"]
+layout_mode = 2
+text = "━ Door"
+
+[node name="LegendEvent" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend"]
+layout_mode = 2
+text = "● Event/indoor"
+
+[node name="LegendPose" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend"]
+layout_mode = 2
+text = "□→ Position / facing"
 
 [node name="DetailColumn" type="VBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit"]
 custom_minimum_size = Vector2(540, 600)
