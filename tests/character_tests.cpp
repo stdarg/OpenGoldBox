@@ -1074,8 +1074,8 @@ bool holds(const Character &hero, std::string_view grant)
     });
 }
 
-// A Bard and a Druid made through the ordinary creator receive every grant a
-// level-one character of their class is owed.
+// A Bard, a Druid, a Cleric and a Warlock made through the ordinary creator
+// receive every grant a level-one character of their class is owed.
 void ordinary_creation_tests()
 {
     const auto bard = create_ordinarily("bard", Ability::charisma,
@@ -1119,6 +1119,20 @@ void ordinary_creation_tests()
           holds(cleric, "spell:sacred_flame") && holds(cleric, "spell:resistance") &&
           cleric.sheet().prepared_spells.size() == 4 && cleric.sheet().training.complete,
           "An ordinary Cleric has its Divine Order, two skills, three cantrips and four spells");
+
+    const auto warlock = create_ordinarily("warlock", Ability::charisma,
+    {
+        {.group = "class:warlock", .option = "arcana", .selected = true},
+        {.group = "class:warlock", .option = "deception", .selected = true},
+        {.group = "class:warlock:invocations", .option = "armor_of_shadows", .selected = true}
+    },
+    {"eldritch_blast", "chill_touch"},
+    {"hex", "hellish_rebuke"});
+    check(holds(warlock, "feature:pact_magic") && holds(warlock, "invocation:armor_of_shadows") &&
+          holds(warlock, "skill:arcana") && holds(warlock, "skill:deception") &&
+          holds(warlock, "spell:eldritch_blast") && holds(warlock, "spell:chill_touch") &&
+          warlock.sheet().prepared_spells.size() == 2 && warlock.sheet().training.complete,
+          "An ordinary Warlock has an invocation, two skills, two cantrips and two spells");
 }
 
 } // namespace

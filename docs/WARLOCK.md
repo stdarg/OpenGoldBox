@@ -34,7 +34,10 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   Necrotic, the Short Rest, Hellish Rebuke's question, checkpoint, save and
   slot, two slots at level 2 and Magical Cunning at camp, once per Long Rest
   and not back after a Short Rest, level-2 slots and
-  "(level 2 slot)" casting at level 3, level 4), `opengold_eldritch_blast_tests`.
+  "(level 2 slot)" casting at level 3, level 4, Hellish Rebuke after Magic
+  Missile), `opengold_eldritch_blast_tests`, and `opengold_character_tests`
+  (a Warlock made page by page in the ordinary creator gets Pact Magic, its
+  invocation, two skills, two cantrips and two spells).
 
 ## Eldritch Invocations
 
