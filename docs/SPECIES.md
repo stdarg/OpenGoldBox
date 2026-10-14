@@ -58,3 +58,11 @@ resources show "Breath Weapon" with the uses left.
 The combat screen has no control for aimed actions beyond its fixed buttons
 yet, so Breath Weapon, like Land's Aid, is resolved by the rules but not yet
 offered on screen.
+
+## Saves against conditions
+
+Dwarven Resilience (Advantage against Poisoned), Fey Ancestry (against
+Charmed) and Brave (against Frightened) have nothing to act on yet: no save in
+the game makes a party member Poisoned or Frightened, and Charm Person, the
+only charm, already gives its target Advantage while the caster's side fights
+it. A new save against one of those conditions must check the trait.

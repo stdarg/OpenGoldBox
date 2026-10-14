@@ -1719,8 +1719,8 @@ msgid "Dragonborn"
 msgstr "Dracónido"
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:238
-msgid "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance. Not in the game yet.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half. Not in the game yet.\n- Damage Resistance to your ancestry's damage type. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
-msgstr "Los dracónidos descienden de dragones, cuyo poder se nota en sus escamas y en su aliento.\n\nRasgos raciales:\n- Ascendencia dracónica: un tipo de dragón que fija el daño de tu aliento y tu resistencia. Aún no está en el juego.\n- Arma de aliento: en lugar de un ataque, un cono de 15 pies o una línea de 30 pies de 1d10 de daño, con salvación de Destreza para la mitad. Aún no está en el juego.\n- Resistencia al tipo de daño de tu ascendencia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
+msgid "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half, twice per Long Rest.\n- Damage Resistance to your ancestry's damage type.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los dracónidos descienden de dragones, cuyo poder se nota en sus escamas y en su aliento.\n\nRasgos raciales:\n- Ascendencia dracónica: un tipo de dragón que fija el daño de tu aliento y tu resistencia.\n- Arma de aliento: en lugar de un ataque, un cono de 15 pies o una línea de 30 pies de 1d10 de daño, con salvación de Destreza para la mitad, dos veces por descanso largo.\n- Resistencia al tipo de daño de tu ascendencia.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
 #: src/OpenGoldBox/character_creation_view.cpp:188
 msgid "Drop a roll here. Drag a filled box onto another ability to swap."
@@ -1764,8 +1764,8 @@ msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr "Dureza enana: +{hp} PG máximos."
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:240
-msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage. Its Advantage on saves against being Poisoned is not in the game yet.\n- Darkvision, 120 feet. Not in the game yet."
-msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno. Su ventaja en las salvaciones contra quedar envenenado aún no está en el juego.\n- Visión en la oscuridad, 120 pies. Aún no está en el juego."
+msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned.\n- Darkvision, 120 feet. Not in the game yet."
+msgstr "Los enanos son gente robusta y resistente, tan duradera como la piedra que trabajan.\n\nRasgos raciales:\n- Dureza enana: 1 punto de golpe más en cada nivel.\n- Resiliencia enana: resistencia al daño de veneno y ventaja en las salvaciones contra quedar envenenado.\n- Visión en la oscuridad, 120 pies. Aún no está en el juego."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Each roll must be assigned exactly once"
@@ -1808,8 +1808,8 @@ msgid "Elven Lineage"
 msgstr "Linaje élfico"
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:242
-msgid "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: Drow, High Elf or Wood Elf, each with its own magic. Not in the game yet.\n- Fey Ancestry: Advantage on saves against being Charmed. Not in the game yet.\n- Keen Senses: training in Insight, Perception or Survival. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
-msgstr "Los elfos son gente longeva con la sangre del Feywild en las venas.\n\nRasgos raciales:\n- Trance: la magia no puede dormirte.\n- Linaje élfico: drow, alto elfo o elfo del bosque, cada uno con su propia magia. Aún no está en el juego.\n- Ascendencia feérica: ventaja en las salvaciones contra quedar hechizado. Aún no está en el juego.\n- Sentidos agudos: entrenamiento en Perspicacia, Percepción o Supervivencia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
+msgid "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: High Elf or Wood Elf, each with its own magic.\n- Fey Ancestry: Advantage on saves against being Charmed.\n- Keen Senses: training in Insight, Perception or Survival.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los elfos son gente longeva con la sangre del Feywild en las venas.\n\nRasgos raciales:\n- Trance: la magia no puede dormirte.\n- Linaje élfico: alto elfo o elfo del bosque, cada uno con su propia magia.\n- Ascendencia feérica: ventaja en las salvaciones contra quedar hechizado.\n- Sentidos agudos: entrenamiento en Perspicacia, Percepción o Supervivencia.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:109 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Empowered Spell"
@@ -2450,8 +2450,8 @@ msgid "Halfling"
 msgstr "Mediano"
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:248
-msgid "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened. Not in the game yet.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."
-msgstr "Los medianos son gente pequeña y alegre, conocida por su valor y su suerte extraordinaria.\n\nRasgos raciales:\n- Suerte: vuelve a tirar un 1 en una tirada de ataque, prueba de característica o tirada de salvación.\n- Valiente: ventaja en las salvaciones contra quedar asustado. Aún no está en el juego.\n- Agilidad de mediano: atraviesa el espacio de criaturas más grandes, sin detenerte en él.\n- Sigiloso por naturaleza: escóndete tras criaturas más grandes. Aún no está en el juego."
+msgid "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."
+msgstr "Los medianos son gente pequeña y alegre, conocida por su valor y su suerte extraordinaria.\n\nRasgos raciales:\n- Suerte: vuelve a tirar un 1 en una tirada de ataque, prueba de característica o tirada de salvación.\n- Valiente: ventaja en las salvaciones contra quedar asustado.\n- Agilidad de mediano: atraviesa el espacio de criaturas más grandes, sin detenerte en él.\n- Sigiloso por naturaleza: escóndete tras criaturas más grandes. Aún no está en el juego."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Halt"
@@ -2598,8 +2598,8 @@ msgid "Human"
 msgstr "Humano"
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:250
-msgid "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice. Not in the game yet.\n- Versatile: an Origin feat of your choice. Not in the game yet."
-msgstr "Los humanos son gente ambiciosa y adaptable que se encuentra en todas las tierras.\n\nRasgos raciales:\n- Ingenioso: inspiración heroica tras cada descanso largo. Aún no está en el juego.\n- Hábil: entrenamiento en una habilidad a tu elección. Aún no está en el juego.\n- Versátil: una dote de origen a tu elección. Aún no está en el juego."
+msgid "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice.\n- Versatile: an Origin feat of your choice. Not in the game yet."
+msgstr "Los humanos son gente ambiciosa y adaptable que se encuentra en todas las tierras.\n\nRasgos raciales:\n- Ingenioso: inspiración heroica tras cada descanso largo. Aún no está en el juego.\n- Hábil: entrenamiento en una habilidad a tu elección.\n- Versátil: una dote de origen a tu elección. Aún no está en el juego."
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:7509 src/OpenGold.Rules.Srd5/src/srd5.cpp:7510
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
@@ -5454,8 +5454,8 @@ msgid "Tiefling"
 msgstr "Tiefling"
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:254
-msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
-msgstr "Los tieflings llevan la marca de los Planos Inferiores en la sangre y en el porte.\n\nRasgos raciales:\n- Legado infernal: abisal, ctónico o infernal, cada uno con una resistencia y su propia magia. Aún no está en el juego.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
+msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic.\n- Darkvision, 60 feet. Not in the game yet."
+msgstr "Los tieflings llevan la marca de los Planos Inferiores en la sangre y en el porte.\n\nRasgos raciales:\n- Legado infernal: abisal, ctónico o infernal, cada uno con una resistencia y su propia magia.\n- Visión en la oscuridad, 60 pies. Aún no está en el juego."
 
 #: src/OpenGoldBox/level_up_dialog.cpp:436
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.

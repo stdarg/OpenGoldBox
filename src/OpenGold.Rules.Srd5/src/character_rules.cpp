@@ -236,23 +236,23 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
         // in the game yet where the rules do not apply them. Traits SCOPE-2 and
         // DM-1 left out are not listed.
         return {{"dragonborn", "Dragonborn",
-                "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance. Not in the game yet.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half. Not in the game yet.\n- Damage Resistance to your ancestry's damage type. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."},
+                "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half, twice per Long Rest.\n- Damage Resistance to your ancestry's damage type.\n- Darkvision, 60 feet. Not in the game yet."},
             {"dwarf", "Dwarf",
-                "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage. Its Advantage on saves against being Poisoned is not in the game yet.\n- Darkvision, 120 feet. Not in the game yet."},
+                "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned.\n- Darkvision, 120 feet. Not in the game yet."},
             {"elf", "Elf",
-                "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: Drow, High Elf or Wood Elf, each with its own magic. Not in the game yet.\n- Fey Ancestry: Advantage on saves against being Charmed. Not in the game yet.\n- Keen Senses: training in Insight, Perception or Survival. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."},
+                "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: High Elf or Wood Elf, each with its own magic.\n- Fey Ancestry: Advantage on saves against being Charmed.\n- Keen Senses: training in Insight, Perception or Survival.\n- Darkvision, 60 feet. Not in the game yet."},
             {"gnome", "Gnome",
                 "Gnomes are small, quick-witted folk with a knack for magic and invention.\n\nRacial traits:\n- Small.\n- Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.\n- Darkvision, 60 feet. Not in the game yet."},
             {"goliath", "Goliath",
                 "Goliaths are towering folk descended from giants.\n\nRacial traits:\n- Speed of 35 feet.\n- Giant Ancestry: a boon from cloud, fire, frost, hill, stone or storm giants, used a few times between Long Rests. Not in the game yet."},
             {"halfling", "Halfling",
-                "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened. Not in the game yet.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."},
+                "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."},
             {"human", "Human",
-                "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice. Not in the game yet.\n- Versatile: an Origin feat of your choice. Not in the game yet."},
+                "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice.\n- Versatile: an Origin feat of your choice. Not in the game yet."},
             {"orc", "Orc",
                 "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest.\n- Darkvision, 120 feet. Not in the game yet."},
             {"tiefling", "Tiefling",
-                "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."}};
+                "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic.\n- Darkvision, 60 feet. Not in the game yet."}};
     case CreationField::gender:
         return {{"female", "Female",
                 "Gender does not change attributes or restrict class or appearance choices."

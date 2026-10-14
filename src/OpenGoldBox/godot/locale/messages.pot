@@ -1719,7 +1719,7 @@ msgid "Dragonborn"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:238
-msgid "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance. Not in the game yet.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half. Not in the game yet.\n- Damage Resistance to your ancestry's damage type. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgid "Dragonborn trace their line to dragons, whose power shows in their scales and their breath.\n\nRacial traits:\n- Draconic Ancestry: a kind of dragon that sets your breath's damage and your resistance.\n- Breath Weapon: in place of an attack, a 15-foot cone or 30-foot line of 1d10 damage, Dexterity save for half, twice per Long Rest.\n- Damage Resistance to your ancestry's damage type.\n- Darkvision, 60 feet. Not in the game yet."
 msgstr ""
 
 #: src/OpenGoldBox/character_creation_view.cpp:188
@@ -1764,7 +1764,7 @@ msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:240
-msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage. Its Advantage on saves against being Poisoned is not in the game yet.\n- Darkvision, 120 feet. Not in the game yet."
+msgid "Dwarves are stout, hardy folk, as enduring as the stone they work.\n\nRacial traits:\n- Dwarven Toughness: 1 more Hit Point at every level.\n- Dwarven Resilience: Resistance to Poison damage, and Advantage on saves against being Poisoned.\n- Darkvision, 120 feet. Not in the game yet."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -1808,7 +1808,7 @@ msgid "Elven Lineage"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:242
-msgid "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: Drow, High Elf or Wood Elf, each with its own magic. Not in the game yet.\n- Fey Ancestry: Advantage on saves against being Charmed. Not in the game yet.\n- Keen Senses: training in Insight, Perception or Survival. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgid "Elves are long-lived folk with the blood of the Feywild in their veins.\n\nRacial traits:\n- Trance: magic cannot put you to sleep.\n- Elven Lineage: High Elf or Wood Elf, each with its own magic.\n- Fey Ancestry: Advantage on saves against being Charmed.\n- Keen Senses: training in Insight, Perception or Survival.\n- Darkvision, 60 feet. Not in the game yet."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:109 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -2450,7 +2450,7 @@ msgid "Halfling"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:248
-msgid "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened. Not in the game yet.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."
+msgid "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures. Not in the game yet."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -2598,7 +2598,7 @@ msgid "Human"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:250
-msgid "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice. Not in the game yet.\n- Versatile: an Origin feat of your choice. Not in the game yet."
+msgid "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice.\n- Versatile: an Origin feat of your choice. Not in the game yet."
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/srd5.cpp:7509 src/OpenGold.Rules.Srd5/src/srd5.cpp:7510
@@ -5454,7 +5454,7 @@ msgid "Tiefling"
 msgstr ""
 
 #: src/OpenGold.Rules.Srd5/src/character_rules.cpp:254
-msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic. Not in the game yet.\n- Darkvision, 60 feet. Not in the game yet."
+msgid "Tieflings carry the mark of the Lower Planes in their blood and bearing.\n\nRacial traits:\n- Fiendish Legacy: Abyssal, Chthonic or Infernal, each with a resistance and its own magic.\n- Darkvision, 60 feet. Not in the game yet."
 msgstr ""
 
 #: src/OpenGoldBox/level_up_dialog.cpp:436
