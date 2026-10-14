@@ -898,3 +898,26 @@ action. The user decided:
   than a whisper).
 
 See [Hide](HIDE.md).
+
+## ADAPT-1 (2026-10-14): Sorcerer and Ranger adaptations approved
+
+The user approved five adaptations already in the game:
+
+- **Empowered Spell:** the rerolled damage dice are chosen for the player: the
+  lowest dice below their average, up to the Charisma modifier (at least one).
+- **Careful Spell:** the protected allies are chosen for the player.
+- **Hunter's Mark:** the free cast (Favored Enemy) is not offered while a
+  living creature still carries the Ranger's mark; Move Hunter's Mark moves it.
+- **Horde Breaker:** only the turn's first weapon target is excluded, not
+  every creature attacked that turn.
+- **Ensnaring Strike:** only the Restrained creature may try the Strength
+  (Athletics) check to escape, not a creature beside it.
+
+See [Sorcerer](SORCERER.md) and [Ranger](RANGER.md).
+
+## DROW-1 (2026-10-14): no Drow lineage for now
+
+The user decided not to offer the Drow elven lineage at this time. An Elf
+chooses High Elf or Wood Elf. (The Drow's Dancing Lights was removed by DM-3,
+its Darkvision matters only where the campaign marks dark areas, and only its
+level-3 Faerie Fire would have had an effect.)

@@ -218,8 +218,8 @@ TrainingChoiceGroup one_of(std::string id, std::string label, std::vector<Creati
             TrainingChoiceControl::single_selection};
 }
 
-// The choices a species makes at creation (SRD 5.2.1 pp. 84-86). Drow,
-// Darkvision and the spells DM-1 removed are not offered.
+// The choices a species makes at creation (SRD 5.2.1 pp. 84-86). Drow
+// (DROW-1), Darkvision and the spells DM-1 removed are not offered.
 std::vector<TrainingChoiceGroup> species_options(std::string_view race,
         const TrainingChoices &choices)
 {

@@ -73,8 +73,10 @@ spellcasting ability; the earlier cantrip work is in
   or Thunder); a spell dealing one of those deals the chosen one instead.
 - **Twinned** (1): a spell that takes one more creature from a higher slot
   (Charm Person, for one) takes one more.
-- Adaptations: Empowered's rerolls and Careful's allies are chosen for the
-  player; replacing an option on gaining a level is not offered yet.
+- Adaptations ([ADAPT-1](SRD-DECISIONS.md#adapt-1-2026-10-14-sorcerer-and-ranger-adaptations-approved)):
+  Empowered's rerolls and Careful's allies are chosen for the player. A
+  Metamagic option may be replaced on gaining a level
+  ([Replacing choices](LEVEL-SWAPS.md)).
 - The default level-up now fills every training choice it offers.
 - Verification: `opengold_sorcerer_tests` (two options at level 2;
   readying and a checkpoint; Quickened's Bonus Action and cost; Seeking's

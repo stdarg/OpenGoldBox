@@ -113,7 +113,7 @@ list column intentionally does not absorb subclass or species additions.
 | Evoker | Level-3 Evocation Savant adds Wizard Evocation spellbook choices no higher than level 2; acquisition must follow the feature rather than automatic preparation | 82 | [#101](https://github.com/stdarg/OpenGold/issues/101) |
 | Shadows | Armor of Shadows: Mage Armor on self without a slot | 72 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
 | Vigor | Fiendish Vigor at Warlock level 2: False Life on self without a slot, maximizing its die | 73 | [#161](https://github.com/stdarg/OpenGold/issues/161) |
-| Drow | Dancing Lights at character level 1; Faerie Fire at 3 | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
+| Drow | Dancing Lights at character level 1; Faerie Fire at 3 | 84–85 | Not offered ([DROW-1](SRD-DECISIONS.md#drow-1-2026-10-14-no-drow-lineage-for-now)) |
 | High | High Elf's Prestidigitation is removed by DM-1; it starts with a Wizard cantrip instead, replaceable at a Long Rest | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
 | HighFixed | High Elf gains Detect Magic at character level 3 | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |
 | Wood | Longstrider at character level 3 (level-1 Druidcraft removed by DM-1) | 84–85 | [#67](https://github.com/stdarg/OpenGold/issues/67) |

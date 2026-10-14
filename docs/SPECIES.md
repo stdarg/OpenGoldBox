@@ -13,7 +13,7 @@ on its first option, so a new character is always complete.
 
 | Species | Choice | Options |
 | --- | --- | --- |
-| Elf | Elven Lineage | High Elf, Wood Elf |
+| Elf | Elven Lineage | High Elf, Wood Elf (no Drow: [DROW-1](SRD-DECISIONS.md#drow-1-2026-10-14-no-drow-lineage-for-now)) |
 | Elf | Keen Senses | Insight, Perception or Survival |
 | Elf, Tiefling | Spellcasting ability | Intelligence, Wisdom or Charisma |
 | High Elf | Cantrip | any Wizard cantrip in the game |
