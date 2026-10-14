@@ -746,5 +746,8 @@
   "{name} learns {skill}.",
   "Choose a lesson for {name}.",
   "Once per turn, a weapon hit deals 1d8 extra damage to a creature missing any Hit Points.",
-  "Once per turn, after a weapon attack, attack another creature within 5 feet of the first target."
+  "Once per turn, after a weapon attack, attack another creature within 5 feet of the first target.",
+  "Agonizing Blast, Eldritch Spear and Repelling Blast need Eldritch Blast.",
+  "Choose a listed replacement",
+  "An invocation cannot be both swapped in and chosen"
 ]

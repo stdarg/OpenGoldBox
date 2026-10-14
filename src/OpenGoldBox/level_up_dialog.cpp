@@ -95,6 +95,14 @@ void LevelUpDialog::bind_controls()
             "toggled",
             presentation::guarded(this, &LevelUpDialog::advancement_spell_changed).bind(i));
     }
+    for (const char *name :
+            {
+                "SwapCantrip", "SwapCantripWith", "SwapSpell", "SwapSpellWith", "SwapOption",
+                "SwapOptionWith"
+            })
+        required_node<OptionButton>(*this, String("SwapPage/") + name)
+        .connect("item_selected",
+                 presentation::guarded(this, &LevelUpDialog::advancement_swap_changed));
     auto *note = &required_node<Label>(*this, "Note");
     note->set_text(i18n::text(N_(
                                   "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version.")));
@@ -142,6 +150,8 @@ LevelUpDialog::advancement_next_page(AdvancementPage from) const
 {
     if (from == AdvancementPage::choices && advancement_skilled_group())
         return AdvancementPage::skilled;
+    if ((from == AdvancementPage::choices || from == AdvancementPage::skilled) && has_swaps())
+        return AdvancementPage::swaps;
     if (from != AdvancementPage::spells && advancement_choice_.spell_learning)
         return AdvancementPage::spells;
     return from;
@@ -150,9 +160,136 @@ LevelUpDialog::advancement_next_page(AdvancementPage from) const
 LevelUpDialog::AdvancementPage
 LevelUpDialog::advancement_previous_page(AdvancementPage from) const
 {
-    if (from == AdvancementPage::spells && advancement_skilled_group())
+    if (from == AdvancementPage::spells && has_swaps())
+        return AdvancementPage::swaps;
+    if ((from == AdvancementPage::spells || from == AdvancementPage::swaps) &&
+            advancement_skilled_group())
         return AdvancementPage::skilled;
     return AdvancementPage::choices;
+}
+
+bool LevelUpDialog::has_swaps() const
+{
+    const auto &o = advancement_options_;
+    const std::array offers{&o.cantrip_swap, &o.spell_swap, &o.option_swap};
+    return std::any_of(offers.begin(), offers.end(), [](const auto * offer)
+    {
+        return !offer->replaceable.empty() && !offer->replacements.empty();
+    });
+}
+
+namespace
+{
+// What the row asks the player to replace, by the offer's kind.
+String swap_question(const std::string &kind)
+{
+    return kind == "Cantrip"   ? i18n::text(N_("Replace a cantrip"))
+           : kind == "Spell"   ? i18n::text(N_("Replace a spell"))
+           : kind == "Metamagic" ? i18n::text(N_("Replace a Metamagic option"))
+           : i18n::text(N_("Replace an Eldritch Invocation"));
+}
+} // namespace
+
+void LevelUpDialog::refresh_swaps()
+{
+    // The invocations picked at this level are not offered again.
+    const auto picked = advancement_choice_.training.find("class:warlock:invocations:2");
+    const auto chosen = [&](const std::string & id)
+    {
+        return picked != advancement_choice_.training.end() &&
+               std::find(picked->second.begin(), picked->second.end(), id) != picked->second.end();
+    };
+    const auto row = [&](const char *name, const opengold::rules::SwapOffer & offer,
+                         const opengold::rules::LevelSwap & swap)
+    {
+        const String base(name);
+        const bool shown = !offer.replaceable.empty() && !offer.replacements.empty();
+        for (const auto &suffix : {String("Label"), String(), String("WithLabel"), String("With")})
+            required_node<Control>(*this, String("SwapPage/") + base + suffix).set_visible(shown);
+        if (!shown)
+            return;
+        required_node<Label>(*this, String("SwapPage/") + base + String("Label")).set_text(swap_question(offer.label));
+        required_node<Label>(*this, String("SwapPage/") + base + String("WithLabel")).set_text(i18n::text(N_("With")));
+        auto &replaced = required_node<OptionButton>(*this, String("SwapPage/") + base);
+        replaced.clear();
+        replaced.add_item(i18n::text(N_("Keep current")));
+        replaced.set_item_metadata(0, String());
+        for (const auto &o : offer.replaceable)
+        {
+            replaced.add_item(i18n::text(o.label));
+            replaced.set_item_metadata(replaced.get_item_count() - 1, String::utf8(o.id.c_str()));
+            if (o.id == swap.replaced)
+                replaced.select(replaced.get_item_count() - 1);
+        }
+        if (swap.replaced.empty())
+            replaced.select(0);
+        auto &replacement = required_node<OptionButton>(*this, String("SwapPage/") + base + String("With"));
+        replacement.clear();
+        replacement.add_item(i18n::text(N_("Choose an option")));
+        replacement.set_item_metadata(0, String());
+        replacement.select(0);
+        for (const auto &o : offer.replacements)
+        {
+            if (chosen(o.id))
+                continue;
+            replacement.add_item(i18n::text(o.label) +
+                                 (o.description.empty() ? String()
+                                  : String(" / ") + i18n::text(o.description)));
+            replacement.set_item_metadata(replacement.get_item_count() - 1,
+                                          String::utf8(o.id.c_str()));
+            if (o.id == swap.replacement)
+                replacement.select(replacement.get_item_count() - 1);
+        }
+        replacement.set_disabled(swap.replaced.empty());
+    };
+    const presentation::ScopedFlag refreshing(advancement_refreshing_);
+    row("SwapCantrip", advancement_options_.cantrip_swap, swap_rows_[0]);
+    row("SwapSpell", advancement_options_.spell_swap, swap_rows_[1]);
+    row("SwapOption", advancement_options_.option_swap, swap_rows_[2]);
+}
+
+void LevelUpDialog::advancement_swap_changed(std::int64_t)
+{
+    if (advancement_refreshing_)
+        return;
+    const std::array<const char *, 3> names{"SwapCantrip", "SwapSpell", "SwapOption"};
+    const auto value = [&](const String & node)
+    {
+        auto &dropdown = required_node<OptionButton>(*this, String("SwapPage/") + node);
+        const auto index = dropdown.get_selected();
+        return index <= 0 ? std::string()
+               : std::string(String(dropdown.get_item_metadata(index)).utf8().get_data());
+    };
+    swap_incomplete_ = false;
+    std::array<opengold::rules::LevelSwap, 3> complete{};
+    for (std::size_t n = 0; n < names.size(); ++n)
+    {
+        const String base(names[n]);
+        auto &row = swap_rows_[n];
+        const auto replaced = value(base);
+        // Another cantrip to replace starts its replacement over.
+        row.replacement = replaced == row.replaced ? value(base + String("With")) : std::string();
+        row.replaced = replaced;
+        if (row.replaced.empty())
+            row.replacement.clear();
+        swap_incomplete_ |= !row.replaced.empty() && row.replacement.empty();
+        if (!row.replacement.empty())
+            complete[n] = row;
+    }
+    // A spell swap changes the list the level's spell choices start from.
+    const auto before = advancement_choice_.spell_swap;
+    advancement_choice_.cantrip_swap = complete[0];
+    advancement_choice_.spell_swap = complete[1];
+    advancement_choice_.option_swap = complete[2];
+    auto &spells = advancement_choice_.spells;
+    if (!before.replacement.empty())
+        std::replace(spells.begin(), spells.end(), before.replacement, before.replaced);
+    if (const auto &now = advancement_choice_.spell_swap; !now.replacement.empty())
+    {
+        std::erase(spells, now.replacement);
+        std::replace(spells.begin(), spells.end(), now.replaced, now.replacement);
+    }
+    advancement_changed();
 }
 
 void LevelUpDialog::advancement_pages()
@@ -169,6 +306,9 @@ void LevelUpDialog::advancement_pages()
     .set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
     required_node<Control>(*this, "SkilledCount")
     .set_visible(skilled && advancement_page_ == AdvancementPage::skilled);
+    required_node<Control>(*this, "SwapPage").set_visible(advancement_page_ == AdvancementPage::swaps);
+    if (advancement_page_ == AdvancementPage::swaps)
+        refresh_swaps();
     // Back appears on any page after the first rather than only a Wizard's
     // spell page, so a non-Wizard taking Skilled can still step back.
     required_node<Button>(*this, "Back").set_visible(!on_first);
@@ -355,6 +495,8 @@ void LevelUpDialog::open(opengold::MemberId id)
     advancing_ = id;
     advancement_options_ = campaign().advancement_options(id);
     advancement_choice_ = campaign().default_advancement(id);
+    swap_rows_ = {};
+    swap_incomplete_ = false;
     // Several picks start empty, as the dropdown starts at "Choose an option".
     if (const auto *group = advancement_skilled_group())
         advancement_choice_.training.erase(group->id);
@@ -646,8 +788,9 @@ void LevelUpDialog::advancement_changed(std::int64_t)
             {"new", preview.character.sheet().hit_points},
             {"current", preview.vitals.hit_points}
         }));
-        required_node<Label>(*this, "Error").set_text("");
-        required_node<Button>(*this, "Confirm").set_disabled(false);
+        required_node<Label>(*this, "Error").set_text(
+            swap_incomplete_ ? i18n::text(N_("Choose what replaces it, or keep current.")) : String());
+        required_node<Button>(*this, "Confirm").set_disabled(swap_incomplete_);
     }
     catch (const std::exception &e)
     {

@@ -1153,9 +1153,11 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
         for (const auto &group : remaining.learning)
             if (!group.options.empty() && group.count)
                 throw std::runtime_error("Complete the available spell choices.");
-        if (options.may_prepare)
-            require(candidate.prepared_spells.size() ==
-                    std::min<std::size_t>(access.prepared_choices, remaining.preparation.size()));
+        // A place left open, such as one a swap freed, is a choice to finish.
+        if (options.may_prepare &&
+                candidate.prepared_spells.size() !=
+                std::min<std::size_t>(access.prepared_choices, remaining.preparation.size()))
+            throw std::runtime_error("Complete the available spell choices.");
     }
     sheet = std::move(candidate);
 }
@@ -1266,4 +1268,109 @@ std::vector<std::string> casting_ids(const SpellAccess &access)
             result.push_back(id);
     return result;
 }
+namespace
+{
+bool offers(std::span<const AdvancementOption> options, std::string_view id)
+{
+    return std::any_of(options.begin(), options.end(), [&](const auto & o)
+    {
+        return o.id == id;
+    });
+}
+
+// A swap is legal when both ids come from the offer, or neither is given.
+bool swap_allowed(const LevelSwap &swap, const SwapOffer &offer)
+{
+    if (swap.replaced.empty() && swap.replacement.empty())
+        return false;
+    if (!offers(offer.replaceable, swap.replaced) || !offers(offer.replacements, swap.replacement))
+        throw std::runtime_error("Choose a listed replacement");
+    return true;
+}
+} // namespace
+
+SwapOffer cantrip_swap_offer(const CharacterSheet &sheet)
+{
+    SwapOffer offer{"Cantrip", {}, {}};
+    const auto *caster = prepared_caster(class_of(sheet));
+    if (!caster || sheet.level >= 4)
+        return offer;
+    const auto known = [&](std::string_view id)
+    {
+        return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+        {
+            return g.id == "spell:" + std::string(id);
+        });
+    };
+    for (const auto &g : sheet.grants)
+        if (g.source_id == caster->source && is_spell_grant(g))
+        {
+            const auto &spell = find(std::string_view(g.id).substr(6));
+            if (!spell.level)
+                offer.replaceable.push_back({std::string(spell.id), std::string(spell.label), {}});
+        }
+    if (offer.replaceable.empty())
+        return offer;
+    for (const auto &spell : spells)
+        if (!spell.level && (spell.lists & caster->cantrip_list) && !known(spell.id))
+            offer.replacements.push_back({std::string(spell.id), std::string(spell.label), {}});
+    return offer;
+}
+
+SwapOffer spell_swap_offer(const CharacterSheet &sheet)
+{
+    SwapOffer offer{"Spell", {}, {}};
+    const auto klass = class_of(sheet);
+    const auto *caster = prepared_caster(klass);
+    if (!caster || caster->rest_change != PreparedCaster::RestChange::none || sheet.level >= 4)
+        return offer;
+    const auto next = sheet.level + 1u;
+    const auto always = always_prepared_spells(klass, next, sheet.grants);
+    const auto taken = [&](std::string_view id)
+    {
+        return std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), id) !=
+               sheet.prepared_spells.end() ||
+               std::find(always.begin(), always.end(), id) != always.end() ||
+               std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+        {
+            return g.id == "spell:" + std::string(id);
+        });
+    };
+    for (const auto &id : sheet.prepared_spells)
+        if (std::find(always.begin(), always.end(), id) == always.end())
+            offer.replaceable.push_back({id, std::string(find(id).label), {}});
+    if (offer.replaceable.empty())
+        return offer;
+    for (const auto &spell : spells)
+        if (spell.level >= 1 && spell.level <= caster->highest_slot[next - 1] &&
+                (spell.lists & caster->list) && !taken(spell.id))
+            offer.replacements.push_back({std::string(spell.id), std::string(spell.label), {}});
+    return offer;
+}
+
+void apply_cantrip_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOffer &offer)
+{
+    if (!swap_allowed(swap, offer))
+        return;
+    // The replacement takes the replaced cantrip's place and acquisition level.
+    for (auto &g : sheet.grants)
+        if (g.id == "spell:" + swap.replaced && is_spell_grant(g) && !is_initiate_grant(g))
+        {
+            g.id = "spell:" + swap.replacement;
+            return;
+        }
+    throw std::runtime_error("No such cantrip to replace");
+}
+
+void apply_spell_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOffer &offer)
+{
+    if (!swap_allowed(swap, offer))
+        return;
+    const auto found = std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(),
+                                 swap.replaced);
+    if (found == sheet.prepared_spells.end())
+        throw std::runtime_error("No such spell to replace");
+    *found = swap.replacement;
+}
+
 } // namespace opengold::srd5::detail

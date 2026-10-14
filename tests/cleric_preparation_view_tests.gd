@@ -5,6 +5,12 @@ var output := ""
 var originals := {}
 var locales := ["en", "es"]
 const SLOT = "Cleric choices test"
+# A Cleric may replace a cantrip on gaining a level (docs/LEVEL-SWAPS.md);
+# these checks keep it and go on to the spells.
+func past_swaps(level: Window) -> void:
+    if level.get_node("SwapPage").visible:
+        await press("LevelUp/Confirm")
+
 func _initialize() -> void:
     for arg in OS.get_cmdline_user_args():
         if arg == "--cleric-demo": locales = ["en"]
@@ -65,7 +71,7 @@ func run_checks() -> void:
         await press("PartyPanel/Roster/Advance1")
         var level: Window = current_scene.get_node("LevelUp")
         require(not level.get_node("Spell0").visible, "The old Cleric spell checkboxes are gone")
-        await press("LevelUp/Confirm")
+        await press("LevelUp/Confirm"); await past_swaps(level)
         require(level.get_node("SpellChoicesPage").visible and level.get_node("Back").visible, "Cleric second page presents prepared spells")
         var rows = level.get_node("SpellChoicesPage/Rows")
         for spell in ["cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"]:
@@ -74,7 +80,7 @@ func run_checks() -> void:
         require(rows.get_node("prepared/Count").text == heading + " (5 / 5)", "Level two prepares five")
         await press("LevelUp/Confirm")
         require(not level.visible, "Cleric level two completes")
-        await press("PartyPanel/Roster/Advance1"); await press("LevelUp/Confirm")
+        await press("PartyPanel/Roster/Advance1"); await press("LevelUp/Confirm"); await past_swaps(level)
         var blind: CheckBox = rows.get_node("prepared/blindness")
         require(blind.visible and blind.button_pressed and not blind.disabled, "Level three proposes a new level-two spell")
         blind.set_pressed(false); await settle()

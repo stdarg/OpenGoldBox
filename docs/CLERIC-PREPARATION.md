@@ -28,8 +28,9 @@ Rules module 0.6.63. SRD 5.2.1 Cleric, levels 1–4; counts as recorded in the
   ([GUIDE-1](SRD-DECISIONS.md#guide-1-2026-10-12-guidance-restored)), enough
   for every Cleric's choices except a level-four Thaumaturge's fifth, which stays
   pending. The level-four cantrip is a learning group at level-up.
-  Replacing a cantrip on gaining a Cleric level waits for a second implemented
-  cantrip; it is not offered at a Long Rest.
+  Replacing a cantrip on gaining a Cleric level is offered when another Cleric
+  cantrip is available ([Replacing choices](LEVEL-SWAPS.md)); it is not
+  offered at a Long Rest.
 - **Divine Order** (level 1, required):
   - Protector: training with Martial weapons and Heavy armor. Weapon
     proficiency, armor penalties and the shield bonus read this grant.

@@ -166,6 +166,14 @@ struct SpellChoiceOptions
     bool may_prepare{}, may_replace{};
 };
 
+// One known choice replaced on gaining a level (SRD 5.2.1): the replaced id
+// and its replacement, both empty to keep everything.
+struct LevelSwap
+{
+    std::string replaced, replacement;
+    bool operator==(const LevelSwap &) const = default;
+};
+
 struct AdvancementChoice
 {
     std::string feat;
@@ -175,6 +183,8 @@ struct AdvancementChoice
     std::optional<std::string>
     fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
     std::optional<TrainingChoices> spell_learning; // Required for Wizards; absent otherwise.
+    // A cantrip, a known spell, and an Eldritch Invocation or Metamagic option.
+    LevelSwap cantrip_swap, spell_swap, option_swap;
     bool operator==(const AdvancementChoice &) const = default;
 };
 
@@ -184,12 +194,22 @@ struct AdvancementOption
     bool available{true};
 };
 
+// What gaining a level lets the character replace, and with what; empty
+// lists when it cannot. `label` names the kind ("Cantrip", "Metamagic").
+struct SwapOffer
+{
+    std::string label;
+    std::vector<AdvancementOption> replaceable, replacements;
+    bool operator==(const SwapOffer &) const = default;
+};
+
 struct AdvancementOptions
 {
     unsigned level{};
     std::vector<AdvancementOption> feats, spells, fighting_styles;
     std::vector<TrainingChoiceGroup> training;
     std::string description;
+    SwapOffer cantrip_swap, spell_swap, option_swap;
 };
 
 struct LearnedSpell

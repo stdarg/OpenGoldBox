@@ -45,6 +45,62 @@ follow_focus = true
 theme_type_variation = &"VBoxContainerGap10"
 size_flags_horizontal = 3
 
+[node name="SwapPage" type="VBoxContainer" parent="."]
+offset_left = 24.0
+offset_top = 70.0
+offset_right = 676.0
+offset_bottom = 545.0
+visible = false
+theme_type_variation = &"VBoxContainerGap10"
+
+[node name="SwapCantripLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapCantrip" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
+[node name="SwapCantripWithLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapCantripWith" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
+[node name="SwapSpellLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapSpell" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
+[node name="SwapSpellWithLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapSpellWith" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
+[node name="SwapOptionLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapOption" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
+[node name="SwapOptionWithLabel" type="Label" parent="SwapPage"]
+layout_mode = 2
+
+[node name="SwapOptionWith" type="OptionButton" parent="SwapPage"]
+layout_mode = 2
+clip_text = true
+fit_to_longest_item = false
+
 [node name="Back" type="Button" parent="."]
 offset_left = 236.0
 offset_top = 610.0

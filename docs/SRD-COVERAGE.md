@@ -101,6 +101,9 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.176 lets a character replace a cantrip, a spell, an Eldritch
+Invocation or a Metamagic option on gaining a level
+([Replacing choices](LEVEL-SWAPS.md); campaign format 29).
 Rules 0.6.175 lets the rest window change the Hunter's Prey after any rest
 and the Druid's land after a Long Rest (campaign format 28).
 Rules 0.6.174 lets Scorching Ray strike a downed party member.
@@ -561,8 +564,8 @@ prepared spells from the Cleric list at creation, level-up and after each Long
 Rest (4/5/6/7, implemented spells only, the rest pending); a required Divine
 Order (Protector training, Thaumaturge cantrip and Arcana/Religion bonus); and
 the level-four cantrip as a pending choice. Clerics no longer know Cure Wounds
-implicitly. Cantrip replacement on gaining a level waits for a second Cleric
-cantrip. Evidence and limits: [Cleric preparation](CLERIC-PREPARATION.md).
+implicitly. Cantrip replacement on gaining a level: [Replacing choices](LEVEL-SWAPS.md).
+Evidence and limits: [Cleric preparation](CLERIC-PREPARATION.md).
 
 ## Wizard spell learning and preparation controls
 

@@ -4,6 +4,7 @@
 #include "opengold/campaign_party.h"
 #include <godot_cpp/classes/window.hpp>
 #include <exception>
+#include <array>
 #include <functional>
 
 // The level-up window: its pages, the choices made on them and the preview of
@@ -48,6 +49,7 @@ class LevelUpDialog : public godot::Window
     {
         choices,
         skilled,
+        swaps,
         spells
     };
 
@@ -70,6 +72,15 @@ class LevelUpDialog : public godot::Window
     [[nodiscard]] AdvancementPage advancement_next_page(AdvancementPage from) const;
     [[nodiscard]] AdvancementPage advancement_previous_page(AdvancementPage from) const;
     void refresh_advancement_skilled();
+    // A cantrip, spell, invocation or Metamagic option the level lets the
+    // character replace (SRD 5.2.1), on its own page before the spells.
+    [[nodiscard]] bool has_swaps() const;
+    void refresh_swaps();
+    void advancement_swap_changed(std::int64_t unused = 0);
+    // The cantrip, spell and option rows as picked. A row with something to
+    // replace but no replacement yet stays out of the choice until complete.
+    std::array<opengold::rules::LevelSwap, 3> swap_rows_{};
+    bool swap_incomplete_{};
     void advancement_skilled_toggled(bool selected, godot::String option);
     void advancement_back();
     void advancement_learning_toggled(bool selected, godot::String group, godot::String option);

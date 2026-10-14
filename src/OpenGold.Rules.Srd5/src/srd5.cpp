@@ -10944,6 +10944,12 @@ class Module final : public RulesModule
                                            const AdvancementChoice &choice) const override
     {
         auto options = advancement_options(sheet);
+        if (options.level)
+        {
+            options.cantrip_swap = detail::cantrip_swap_offer(sheet);
+            options.spell_swap = detail::spell_swap_offer(sheet);
+            options.option_swap = detail::option_swap_offer(sheet);
+        }
         // Skilled's proficiency page exists only while Skilled is the selection,
         // so switching away from it drops the group and its unconfirmed picks.
         if (choice.feat == "skilled" && options.level == 4)
@@ -11065,6 +11071,23 @@ class Module final : public RulesModule
             {fighting_style_grant(*choice.fighting_style), source,
              static_cast<unsigned>(next.level), {}});
         }
+        // A cantrip, spell, invocation or Metamagic option replaced on gaining
+        // the level changes what the level's spell choices offer.
+        detail::apply_cantrip_swap(next, choice.cantrip_swap, detail::cantrip_swap_offer(sheet));
+        detail::apply_spell_swap(next, choice.spell_swap, detail::spell_swap_offer(sheet));
+        detail::apply_option_swap(next, choice.option_swap, detail::option_swap_offer(sheet));
+        const auto held = [&](std::string_view id)
+        {
+            return std::any_of(next.grants.begin(), next.grants.end(), [&](const auto & g)
+            {
+                return g.id == id;
+            });
+        };
+        if (!held("spell:eldritch_blast") &&
+                (held("invocation:agonizing_blast") || held("invocation:eldritch_spear") ||
+                 held("invocation:repelling_blast")))
+            throw std::runtime_error(
+                "Agonizing Blast, Eldritch Spear and Repelling Blast need Eldritch Blast.");
         // Magic Initiate's spells are chosen with the level's other spells,
         // whether the feat comes at level four or from Lessons of the First Ones.
         if (choice.feat.starts_with("magic_initiate_") && next.level == 4)
@@ -11140,8 +11163,16 @@ class Module final : public RulesModule
         }
         if (!options.spells.empty() && choice.spells.empty())
             throw std::runtime_error("Choose at least one supported spell");
+        // A swapped-in invocation cannot also be one of the level's new picks.
+        if (const auto picks = choice.training.find("class:warlock:invocations:2");
+                picks != choice.training.end() && !choice.option_swap.replacement.empty() &&
+                std::find(picks->second.begin(), picks->second.end(),
+                          choice.option_swap.replacement) != picks->second.end())
+            throw std::runtime_error("An invocation cannot be both swapped in and chosen");
         auto actor = actor_from(old, state);
         auto next = spell_choice_sheet(sheet, choice);
+        // The list after a spell swap; the level's choices then add to it.
+        const auto prepared_before = next.prepared_spells;
         for (const auto &[id, values] : choice.training)
         {
             const auto group = std::find_if(options.training.begin(), options.training.end(),
@@ -11329,7 +11360,7 @@ class Module final : public RulesModule
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
         {
-            next.prepared_spells = sheet.prepared_spells;
+            next.prepared_spells = prepared_before;
             // A class without spells of its own learns only Magic Initiate's.
             const auto prepared = detail::prepares_spells(klass)
                                   ? std::optional(choice.spells) : std::nullopt;
@@ -12690,7 +12721,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.175", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.176", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

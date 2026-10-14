@@ -106,6 +106,50 @@ func run() -> void:
         var sheet := lab.get_node_or_null("CharacterSheet") as Window
         if sheet and sheet.visible: (sheet.get_node("Close") as Button).pressed.emit(); await settle()
         if dialog.visible: (dialog.get_node("Cancel") as Button).pressed.emit(); await settle()
+    # Gaining level 2, a Sorcerer may replace a cantrip and a spell on the
+    # Replace page; the spell page then fills the place the swap freed.
+    klass.select(option_index(klass, "sorcerer")); level.select(0)
+    create.pressed.emit(); await settle()
+    open.pressed.emit(); await settle()
+    var up: Window = lab.get_node("LevelUp")
+    var go: Button = up.get_node("Confirm")
+    go.pressed.emit(); await settle()
+    var picks := []
+    for child in (up.get_node("SkilledPage/Rows") as VBoxContainer).get_children():
+        if child is CheckBox and child.visible: picks.append(child)
+    for n in range(2):
+        (picks[n] as CheckBox).button_pressed = true
+        await settle()
+    go.pressed.emit(); await settle()
+    check((up.get_node("SwapPage") as Control).visible, "The Replace page follows the Metamagic picks")
+    var cantrip: OptionButton = up.get_node("SwapPage/SwapCantrip")
+    var with: OptionButton = up.get_node("SwapPage/SwapCantripWith")
+    check(cantrip.get_item_text(0) == "Keep current" and with.disabled, "Nothing is replaced until chosen")
+    cantrip.select(1); cantrip.item_selected.emit(1); await settle()
+    check(go.disabled and not with.disabled, "A replaced cantrip waits for its replacement")
+    var old_cantrip := cantrip.get_item_text(1)
+    var new_cantrip := with.get_item_text(1)
+    with.select(1); with.item_selected.emit(1); await settle()
+    check(not go.disabled and cantrip.selected == 1, "The swap is complete and stays shown")
+    go.pressed.emit(); await settle()
+    var rows: VBoxContainer = up.get_node("SpellChoicesPage/Rows")
+    for box in rows.get_node("prepared").get_children():
+        if box is CheckBox and not box.button_pressed and not box.disabled and go.disabled:
+            box.button_pressed = true
+            await settle()
+    check(not go.disabled, "The spell page completes")
+    go.pressed.emit(); await settle()
+    check((lab.get_node("CharacterSheet/Text") as RichTextLabel).text.contains("Level 2"),
+          "The Sorcerer reaches level 2")
+    (lab.get_node("CharacterSheet/Close") as Button).pressed.emit(); await settle()
+    # The next level's Replace list names the new cantrip, not the old one.
+    open.pressed.emit(); await settle()
+    go.pressed.emit(); await settle()
+    var known := []
+    for n in range(cantrip.item_count): known.append(cantrip.get_item_text(n))
+    check((up.get_node("SwapPage") as Control).visible and new_cantrip in known and not old_cantrip in known,
+          "The swapped cantrip is known: " + old_cantrip + " -> " + new_cantrip + " in " + str(known))
+    (up.get_node("Cancel") as Button).pressed.emit(); await settle()
     if fighter >= 0:
         klass.select(fighter); level.select(0)
         create.pressed.emit()

@@ -2,8 +2,7 @@
 
 Rules **0.6.23** adds a playable Cleric path for
 [#203](https://github.com/stdarg/OpenGold/issues/203), using the creation and
-combat controls approved in questions 15–16. The issue remains open only for
-replacing a cantrip on gaining a level (see Remaining acceptance).
+combat controls approved in questions 15–16.
 
 ## Rules and controls
 
@@ -70,7 +69,7 @@ cover (no line of sight) is rejected as before.
 Verbal blockers (#39), Magic Initiate (#75/#200), Pact of the Tome, the
 Thaumaturge and Blessed Warrior grant Sacred Flame through their own choices.
 Cleric preparation, Divine Order and the fourth selection are in
-[Cleric preparation](CLERIC-PREPARATION.md). Replacing a cantrip on gaining a
-level is still to come. Higher-level damage scaling
+[Cleric preparation](CLERIC-PREPARATION.md). A cantrip is replaced on gaining a
+level as [Replacing choices](LEVEL-SWAPS.md) describes. Higher-level damage scaling
 remains #176–178. The zero-HP save rule does not complete all conditions in #35.
 The [spell inventory](SPELL-INVENTORY.md) therefore records this path as partial.

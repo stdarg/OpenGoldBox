@@ -14,6 +14,13 @@ rules::TrainingChoiceGroup hunters_prey_options();
 rules::TrainingChoiceGroup invocation_options(unsigned level,
         std::span<const rules::FeatureGrant> grants, std::string_view source);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
+// Gaining a level lets a Warlock replace one invocation with another it
+// qualifies for, and a Sorcerer one Metamagic option (SRD 5.2.1). Offered for
+// the sheet before the level is gained.
+rules::SwapOffer option_swap_offer(const rules::CharacterSheet &);
+// Apply a swap from the offer to the sheet of the new level; throws unless the
+// offer has it. A replaced invocation records the level it was taken at.
+void apply_option_swap(rules::CharacterSheet &, const rules::LevelSwap &, const rules::SwapOffer &);
 // The grant source of skills and Expertise a training hall teaches.
 constexpr std::string_view hall_training = "training_hall";
 // What a hall teaches a member of `classes`: proficiency in a skill on any of

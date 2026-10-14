@@ -599,6 +599,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     auto required = fixed(background);
     TrainingChoices choices;
     std::vector<FeatureGrant> actual;
+    bool swapped_first_invocation = false;
     // Style selections emit feats; keep them in feature validation as well.
     for (const auto &grant : grants)
         if (is_training_grant(grant) || grant.source_id == "class:fighter:fighting_style")
@@ -683,9 +684,10 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
             }
             if (grant.source_id == "class:warlock:invocations:2")
             {
-                require(klass == CharacterClass::warlock && grant.level == 2 &&
+                // Level two, or the later level it was taken at in a swap.
+                require(klass == CharacterClass::warlock && grant.level >= 2 &&
                         grant.choices.empty());
-                const auto group = invocation_options(2, grants, grant.source_id);
+                const auto group = invocation_options(grant.level, grants, grant.source_id);
                 require(std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
                 {
@@ -746,6 +748,23 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 selected.push_back(grant.id.substr(10));
                 continue;
             }
+            // The level-1 invocation, swapped on gaining a later level for
+            // any invocation open at that level.
+            if (grant.source_id == "class:warlock:invocations" && grant.level > 1)
+            {
+                require(klass == CharacterClass::warlock && grant.choices.empty());
+                const auto group = invocation_options(grant.level, grants, grant.source_id);
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "invocation:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.empty());
+                selected.push_back(grant.id.substr(11));
+                swapped_first_invocation = true;
+                continue;
+            }
             const bool replacement = klass == CharacterClass::fighter &&
                                      grant.source_id == "class:fighter:fighting_style";
             require((grant.level == 1 || (replacement && grant.level <= 4)) &&
@@ -776,6 +795,9 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:warlock:invocations:2");
+    // A swapped level-1 invocation is checked above, not as a starting choice.
+    if (swapped_first_invocation)
+        starting.erase("class:warlock:invocations");
     starting.erase("subclass:bard:lore");
     starting.erase("subclass:druid:land");
     starting.erase(std::string(skilled));
@@ -828,6 +850,8 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
         result.complete &= lore.size() == 3;
     const auto &invocations = selected(choices, "class:warlock:invocations:2");
     require(invocations.empty() || level >= 2);
+    for (const auto &g : grants)
+        require(!g.source_id.starts_with("class:warlock:invocations") || g.level <= level);
     const auto &metamagic = selected(choices, "class:sorcerer:metamagic");
     require(metamagic.empty() || level >= 2);
     if (klass == CharacterClass::sorcerer && level >= 2)
@@ -858,4 +882,90 @@ AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, Charact
     (void)training_profile(grants, klass, background, level, scores);
     return check_modifier(grants, scores, level, ability, skill);
 }
+SwapOffer option_swap_offer(const CharacterSheet &sheet)
+{
+    const auto klass = class_of(sheet);
+    if (sheet.level >= 4)
+        return {};
+    const auto next = static_cast<unsigned>(sheet.level) + 1;
+    const auto held = [&](std::string_view prefix, std::string_view source)
+    {
+        std::vector<std::string> ids;
+        for (const auto &g : sheet.grants)
+            if (g.source_id.starts_with(source) && g.id.starts_with(prefix))
+                ids.push_back(g.id.substr(prefix.size()));
+        return ids;
+    };
+    if (klass == CharacterClass::warlock)
+    {
+        SwapOffer offer{"Eldritch Invocation", {}, {}};
+        // Every invocation's label, whatever its prerequisites.
+        const std::vector<FeatureGrant> blast{{"spell:eldritch_blast", "", 1, {}}};
+        const auto all = invocation_options(4, blast, "");
+        for (const auto &id : held("invocation:", "class:warlock:invocations"))
+            for (const auto &option : all.options)
+                if (option.id == id)
+                    offer.replaceable.push_back({option.id, option.label, option.description});
+        if (offer.replaceable.empty())
+            return offer;
+        // Held invocations come from other sources than this one, so none is offered.
+        for (const auto &option : invocation_options(next, sheet.grants, "swap").options)
+            offer.replacements.push_back({option.id, option.label, option.description});
+        return offer;
+    }
+    if (klass == CharacterClass::sorcerer)
+    {
+        SwapOffer offer{"Metamagic", {}, {}};
+        const auto known = held("metamagic:", "class:sorcerer:metamagic");
+        for (const auto &option : metamagic_options().options)
+        {
+            const bool mine = std::find(known.begin(), known.end(), option.id) != known.end();
+            (mine ? offer.replaceable : offer.replacements)
+            .push_back({option.id, option.label, option.description});
+        }
+        if (offer.replaceable.empty())
+            offer.replacements.clear();
+        return offer;
+    }
+    return {};
+}
+
+void apply_option_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOffer &offer)
+{
+    if (swap.replaced.empty() && swap.replacement.empty())
+        return;
+    const auto listed = [](std::span<const AdvancementOption> options, std::string_view id)
+    {
+        return std::any_of(options.begin(), options.end(), [&](const auto & o)
+        {
+            return o.id == id;
+        });
+    };
+    if (!listed(offer.replaceable, swap.replaced) || !listed(offer.replacements, swap.replacement))
+        throw std::runtime_error("Choose a listed replacement");
+    const bool invocation = offer.label == "Eldritch Invocation";
+    const std::string prefix = invocation ? "invocation:" : "metamagic:";
+    const std::string source = invocation ? "class:warlock:invocations" : "class:sorcerer:metamagic";
+    const auto found = std::find_if(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+    {
+        return g.source_id.starts_with(source) && g.id == prefix + swap.replaced;
+    });
+    require(found != sheet.grants.end());
+    found->id = prefix + swap.replacement;
+    if (!invocation)
+        return;
+    // Taken at this level: Pact of the Tome's or Magic Initiate's spells are
+    // chosen now, and a replaced one's spells go with it.
+    found->level = static_cast<unsigned>(sheet.level);
+    const std::string picks = swap.replaced == "pact_of_the_tome" ? "invocation:pact_of_the_tome"
+                              : swap.replaced.starts_with("lessons_magic_initiate_")
+                              ? "feat:" + swap.replaced.substr(8)
+                              : std::string();
+    if (!picks.empty())
+        std::erase_if(sheet.grants, [&](const auto & g)
+    {
+        return g.source_id == picks;
+    });
+}
+
 } // namespace opengold::srd5::detail

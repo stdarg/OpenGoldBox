@@ -67,7 +67,8 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   ([TOME-1](SRD-DECISIONS.md#tome-1-2026-10-13-pact-of-the-tome-without-rituals)).
   The book itself is not modeled.
 - Not offered: Pact of the Chain and the invocations that only cast removed
-  spells (DM-3); replacing an invocation on gaining a level.
+  spells (DM-3). An invocation, cantrip or spell can be replaced on gaining a
+  level ([Replacing choices](LEVEL-SWAPS.md)).
 - Verification: `opengold_warlock_tests` (the level-1 options, Armor of
   Shadows, Agonizing and Repelling Blast, Fiendish Vigor, Lessons' Alert,
   Pact of the Blade's attack bonus, Devil's Sight in Darkness),
