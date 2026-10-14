@@ -822,7 +822,10 @@ aims the next dart or ray, the same foe again if wanted; the spell is cast once
 all are aimed (Cast spell stays greyed out until then); Escape cancels for
 nothing. Only foes the spell could hit alone are offered. Each foe takes its
 darts as one simultaneous hit, with one Shield question; rays are separate
-attacks in the order aimed, and a ray aimed at a foe already down is lost. The
+attacks in the order aimed. A ray aimed at a foe already down turns to the
+next aimed foe still standing, else to the nearest foe it could have been aimed
+at, and is lost only when there is none (the user's choice on 2026-10-14; the
+SRD leaves it open; rules 0.6.173). The
 battlefield does not mark aimed foes (the prompt lists them), and there is no
 shortcut that sends the remaining darts at one foe.
 

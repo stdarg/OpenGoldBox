@@ -101,6 +101,8 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.173 turns a Scorching Ray ray whose foe has dropped to another foe
+([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)).
 Rules 0.6.172 offers the Warlock's Pact of the Tome: three cantrips and two
 level-1 spells from any class's list
 ([TOME-1](SRD-DECISIONS.md#tome-1-2026-10-13-pact-of-the-tome-without-rituals)).

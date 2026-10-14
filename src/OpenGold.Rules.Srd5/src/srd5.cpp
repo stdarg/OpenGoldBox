@@ -4251,15 +4251,49 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     case detail::SpellPattern::repeat_attack:
     {
         // One ray per aimed target, in the order aimed; a single target takes
-        // them all. Re-read each target: it may drop before its later rays.
+        // them all. A ray whose target has dropped turns to the next aimed foe
+        // still standing, else to the nearest foe it could have been aimed at
+        // (SPLIT-1); with none left it is lost.
         std::vector<EntityId> rays(targets.begin(), targets.end());
         if (rays.size() == 1)
             rays.assign(instances, target_id);
-        for (const auto ray : rays)
-            if (actor(ray).life.hp > 0)
-                attack(a, actor(ray), spell.melee ? AttackRange::melee : AttackRange::ranged,
-                       SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage),
-                                   .spell = spell.id});
+        const auto standing = [&](EntityId id)
+        {
+            return actor(id).life.hp > 0;
+        };
+        const auto nearest = [&]() -> EntityId
+        {
+            const Actor *best = nullptr;
+            for (const auto &other : actors_)
+            {
+                if (other.life.dead || other.life.hp <= 0 || other.source.side == a.source.side ||
+                        distance(a.source.cell, other.source.cell) > spell.range ||
+                        (spell.requires_sight ? !can_see(a, other)
+                         : !line_of_sight(a.source.cell, other.source.cell)))
+                    continue;
+                const int feet = distance(a.source.cell, other.source.cell);
+                if (!best || feet < distance(a.source.cell, best->source.cell))
+                    best = &other;
+            }
+            return best ? best->source.id : 0;
+        };
+        for (std::size_t n = 0; n < rays.size(); ++n)
+        {
+            auto ray = rays[n];
+            if (!standing(ray))
+            {
+                const auto next = std::find_if(rays.begin() + static_cast<std::ptrdiff_t>(n) + 1,
+                                               rays.end(), standing);
+                ray = next != rays.end() ? *next : nearest();
+                if (!ray)
+                    continue;
+                log("The ray turns to " + actor(ray).source.name + ".",
+                {"The ray turns to {target}.", {{"target", actor(ray).source.name}}});
+            }
+            attack(a, actor(ray), spell.melee ? AttackRange::melee : AttackRange::ranged,
+                   SpellAttack{.dice = rolled, .type = cast_damage_type(spell.damage),
+                               .spell = spell.id});
+        }
         return;
     }
     case detail::SpellPattern::auto_damage:
@@ -12568,7 +12602,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.172", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.173", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

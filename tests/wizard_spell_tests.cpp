@@ -692,6 +692,48 @@ void split_target_checks()
           "Each ray is its own attack at its own foe, for one level-two slot");
 }
 
+// A ray whose foe dropped turns to the next aimed foe still standing, else to
+// the nearest foe it could have been aimed at (SPLIT-1, as the user decided).
+void ray_retarget_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(3, {"magic_missile"}, {"scorching_ray", "shatter"});
+    const auto cast = [&](std::vector<EntityId> aims, std::uint64_t seed)
+    {
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 1},
+                    module->character_profile(hero.sheet(), std::vector<std::string> {}).data},
+                {97, "weakling", "Weakling", Side::opposition, {6, 1}},
+                {98, "target", "Near", Side::opposition, {3, 1}},
+                {99, "target", "Far", Side::opposition, {8, 3}}
+            }},
+        seed);
+        reach(*c, 1);
+        for (const auto aim : aims)
+            for (const auto &command : c->legal_commands())
+                if (command.verb == "scorching_ray" && command.target == aim)
+                {
+                    check(c->submit(command), "A ray is aimed");
+                    break;
+                }
+        return c;
+    };
+    // The first seed whose first ray drops the Weakling.
+    std::uint64_t seed = 1;
+    for (; seed < 40; ++seed)
+        if (unit(*cast({97, 97, 97}, seed), 97).hit_points <= 0 &&
+                count_logged(*cast({97, 97, 97}, seed), "Wizard -> Weakling") == 1)
+            break;
+    check(seed < 40, "Some seed's first ray drops the Weakling");
+    auto c = cast({97, 97, 97}, seed);
+    check(count_logged(*c, "The ray turns to Near.") == 2 && count_logged(*c, "Wizard -> Near") == 2,
+          "With no other aimed foe, the rays turn to the nearest foe");
+    c = cast({97, 97, 99}, seed);
+    check(count_logged(*c, "The ray turns to Far.") == 1 && count_logged(*c, "Wizard -> Far") == 2 &&
+          count_logged(*c, "Wizard -> Near") == 0,
+          "A ray turns to the next aimed foe before a nearer one");
+}
+
 void shield_missile_checks()
 {
     auto module = rules();
@@ -1276,6 +1318,7 @@ int main()
         shield_missile_checks();
         shield_slot_per_turn_checks();
         split_target_checks();
+        ray_retarget_checks();
         misty_step_checks();
         acid_arrow_checks();
         mind_spike_checks();
