@@ -2159,6 +2159,11 @@ class Session final : public CombatSession
         check
     };
     int cutting_words(const Actor &roller, int margin, CutRoll roll = CutRoll::attack);
+    // Cutting Words' die taken from a damage roll of `amount` that would drop
+    // `target`, on the Bard's side, to 0 Hit Points (CUT-1).
+    int cut_damage(const Actor &roller, const Actor &target, int amount, detail::DamageType type);
+    // A Lore Bard who may use Cutting Words against the roller, or none.
+    Actor *cutting_bard(const Actor &roller);
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void clouds_jaunt(Actor &goliath, Cell destination);
@@ -7812,11 +7817,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (enfeebled)
         log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
         {"Ray of Enfeeblement subtracts {damage} damage.", {{"damage", std::to_string(enfeebled)}}});
-    const int amount =
-        hit ? deflected(a, target,
-                        std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
-                        damage_type, ranged)
-        : 0;
+    int rolled = std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled);
+    if (hit)
+        rolled = std::max(0, rolled - cut_damage(a, target, rolled, damage_type));
+    const int amount = hit ? deflected(a, target, rolled, damage_type, ranged) : 0;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
                              .bonus = bonus,
@@ -7836,8 +7840,9 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (hit && !spell && ranged && d.ranged_extra.count && !target.life.dead)
     {
         const auto type = d.ranged_extra_type;
-        const int extra = resolved_damage(target, type,
-                                          dice(d.ranged_extra, critical_hit(a, target, natural)));
+        const int extra_roll = dice(d.ranged_extra, critical_hit(a, target, natural));
+        const int extra = resolved_damage(target, type, std::max(0, extra_roll -
+                                          cut_damage(a, target, extra_roll, type)));
         const auto name = std::string(detail::damage_name(type));
         log(target.source.name + " takes " + std::to_string(extra) + " " + name + " damage.",
         {
@@ -9076,40 +9081,79 @@ void Session::log_inspiration(const Actor &inspired, int die, bool success)
     });
 }
 
-int Session::cutting_words(const Actor &roller, int margin, CutRoll cut)
+Actor *Session::cutting_bard(const Actor &roller)
 {
     // A Lore Bard who sees the roller within 60 feet spends a Reaction and a
-    // Bardic Inspiration use to subtract the die from the roll. It is used
-    // without asking, and only when the d6 could turn the success into a failure.
+    // Bardic Inspiration use to subtract the die from the roll.
+    for (auto &bard : actors_)
+        if (def(bard).cutting_words && bard.source.side != roller.source.side &&
+                conscious(bard) && bard.reaction && !detail::incapacitated(bard.effects) &&
+                bard.arcane > 0 && distance(bard.source.cell, roller.source.cell) <= 60 &&
+                can_see(bard, roller))
+            return &bard;
+    return nullptr;
+}
+
+int Session::cutting_words(const Actor &roller, int margin, CutRoll cut)
+{
+    // It is used without asking, and only when the d6 could turn the success
+    // into a failure.
     if (margin >= 6)
         return 0;
-    for (auto &bard : actors_)
+    auto *const bard = cutting_bard(roller);
+    if (!bard)
+        return 0;
+    bard->reaction = false;
+    --bard->arcane;
+    const int die = roll(6);
+    const bool failed = die > margin;
+    const auto amount = std::to_string(die);
+    const bool attack = cut == CutRoll::attack;
+    const std::string outcome =
+        attack ? (failed ? ", turning the hit into a miss." : "; the attack still hits.")
+        : (failed ? ", turning the success into a failure." : "; the check still succeeds.");
+    log(bard->source.name + " uses Cutting Words: -" + amount + outcome,
     {
-        if (!def(bard).cutting_words || bard.source.side == roller.source.side ||
-                !conscious(bard) || !bard.reaction || detail::incapacitated(bard.effects) ||
-                bard.arcane <= 0 || distance(bard.source.cell, roller.source.cell) > 60 ||
-                !can_see(bard, roller))
-            continue;
-        bard.reaction = false;
-        --bard.arcane;
-        const int die = roll(6);
-        const bool failed = die > margin;
-        const auto amount = std::to_string(die);
-        const bool attack = cut == CutRoll::attack;
-        const std::string outcome =
-            attack ? (failed ? ", turning the hit into a miss." : "; the attack still hits.")
-            : (failed ? ", turning the success into a failure." : "; the check still succeeds.");
-        log(bard.source.name + " uses Cutting Words: -" + amount + outcome,
-        {
-            attack ? (failed ? "{name} uses Cutting Words: -{amount}, turning the hit into a miss."
-                      : "{name} uses Cutting Words: -{amount}; the attack still hits.")
-            : (failed ? "{name} uses Cutting Words: -{amount}, turning the success into a failure."
-               : "{name} uses Cutting Words: -{amount}; the check still succeeds."),
-            {{"name", bard.source.name}, {"amount", amount}}
-        });
-        return die;
-    }
-    return 0;
+        attack ? (failed ? "{name} uses Cutting Words: -{amount}, turning the hit into a miss."
+                  : "{name} uses Cutting Words: -{amount}; the attack still hits.")
+        : (failed ? "{name} uses Cutting Words: -{amount}, turning the success into a failure."
+           : "{name} uses Cutting Words: -{amount}; the check still succeeds."),
+        {{"name", bard->source.name}, {"amount", amount}}
+    });
+    return die;
+}
+
+int Session::cut_damage(const Actor &roller, const Actor &target, int amount,
+                        detail::DamageType type)
+{
+    // Used without asking, and only when the roll would drop the target to 0
+    // Hit Points and the d6 could keep it standing (CUT-1). The estimate
+    // counts resistances and Temporary Hit Points, nothing rolled later.
+    const auto taken = [&](int rolled)
+    {
+        const std::array parts{detail::DamagePart{type, std::max(0, rolled)}};
+        return detail::resolve_damage(parts, affinities(target)).total;
+    };
+    const int standing = target.life.hp + target.life.temporary_hp.amount;
+    if (target.life.hp <= 0 || taken(amount) < standing || taken(amount - 6) >= standing)
+        return 0;
+    auto *const bard = cutting_bard(roller);
+    if (!bard || bard->source.side != target.source.side)
+        return 0;
+    bard->reaction = false;
+    --bard->arcane;
+    const int die = roll(6);
+    const bool saved = taken(amount - die) < standing;
+    const auto cut = std::to_string(die);
+    log(bard->source.name + " uses Cutting Words: -" + cut + " damage" +
+        (saved ? ", keeping " + target.source.name + " standing." : ", not enough to save " +
+         target.source.name + "."),
+    {
+        saved ? "{name} uses Cutting Words: -{amount} damage, keeping {target} standing."
+        : "{name} uses Cutting Words: -{amount} damage, not enough to save {target}.",
+        {{"name", bard->source.name}, {"amount", cut}, {"target", target.source.name}}
+    });
+    return die;
 }
 
 bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
@@ -13458,7 +13502,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.189", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.190", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

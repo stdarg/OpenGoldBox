@@ -968,3 +968,12 @@ remain. Likewise, when the feat's picks are made first, a Thaumaturge's class
 cantrips are the ones left. Either way the character knows every Cleric cantrip
 in the game. The level-up lab, which filled every group to its full count,
 could not make an Acolyte Cleric before this.
+
+## CUT-1 (2026-10-14): Cutting Words against lethal damage
+
+Cutting Words may also lessen a damage roll (SRD 5.2.1). As with attack rolls
+and checks ([BARD-1](#bard-1-2026-10-13-bardic-inspiration-and-cutting-words-without-asking)),
+the user chose that it is used without asking, and only when the roll would
+drop a member of the Bard's side to 0 Hit Points and the d6 could keep it
+standing. The damage roll is shown before it is dealt, as at a table, so the
+choice reads nothing hidden. See [Bard](BARD.md#bardic-inspiration-and-cutting-words).

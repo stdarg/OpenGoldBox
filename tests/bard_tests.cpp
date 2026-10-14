@@ -359,6 +359,47 @@ void cutting_check_checks()
     throw std::runtime_error("No seed's search nearly finds the Bard");
 }
 
+// Cutting Words against a damage roll that would drop the Bard's side to 0 Hit
+// Points, and only one the d6 could change (CUT-1).
+void cutting_damage_checks()
+{
+    // A brute that always hits for 1d4 + 2.
+    const auto module = srd5::parse_content(
+                            read(root / "data/rules/srd-5.2.1/combat.rules") +
+                            "\ncreature brute 10 50 0 30 20 1 4 2 0 0 0 0 0 0 0 0 0 1 0\n");
+    const auto hero = bard(3);
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    // The brute's attack on the Bard with `hit_points` left.
+    const auto struck = [&](int hit_points, std::uint64_t seed)
+    {
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Bard", Side::party, {1, 1}, profile,
+                    VitalState{hit_points, false, {}, {}}},
+                {98, "brute", "Brute", Side::opposition, {2, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+            check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the brute's turn");
+        check(c->submit(choose_demo_command(*c)), "The brute attacks");
+        return c;
+    };
+    bool saved = false;
+    for (std::uint64_t seed = 1; seed < 60 && !saved; ++seed)
+    {
+        const auto c = struck(5, seed);
+        if (!logged(*c, "Bard uses Cutting Words: -"))
+            continue;
+        check(logged(*c, "damage, keeping Bard standing.") && unit(*c, 1).hit_points > 0 &&
+              !unit(*c, 1).reaction && inspiration_left(*c) == 3,
+              "Cutting Words on a lethal roll keeps the Bard standing, for a Reaction and a use");
+        saved = true;
+    }
+    check(saved, "A 5 or 6 against 5 Hit Points brings Cutting Words");
+    for (std::uint64_t seed = 1; seed < 20; ++seed)
+        check(!logged(*struck(7, seed), "Cutting Words"),
+              "No roll of 3 to 6 can drop the Bard from 7 Hit Points; the die is kept");
+}
+
 // Bardic Inspiration on the saves that are rolled outside a command: the
 // repeated save at the end of a turn and the Concentration save.
 void inspired_save_checks()
@@ -462,6 +503,7 @@ int main()
         inspiration_checks();
         inspired_save_checks();
         cutting_check_checks();
+        cutting_damage_checks();
         jack_of_all_trades_checks();
         std::cout << "Bard tests passed\n";
     }

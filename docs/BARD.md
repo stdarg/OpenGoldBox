@@ -63,7 +63,13 @@ ability.
   than 6: an Athletics check to break free of vines or webs, or a Search that
   would find a hidden creature of the Bard's side (measured against the
   best-hidden one it would find); the log says whether the check then fails.
-  Using it on a damage roll is not modeled.
+  On an enemy's damage roll it is used only when the damage would drop a
+  member of the Bard's side, the Bard included, to 0 Hit Points and the d6
+  could keep it standing ([CUT-1](SRD-DECISIONS.md#cut-1-2026-10-14-cutting-words-against-lethal-damage)).
+  The estimate counts the target's resistances and Temporary Hit Points. It
+  covers an attack's damage and a ranged hit's added poison, the damage rolls
+  the game's monsters make.
 - Verification: `opengold_bard_tests` (four uses at Charisma 18, the Bonus
   Action, the die used only on a miss it could rescue, Cutting Words' Reaction
-  and use, Cutting Words against a monster's Search, the repeated-save and Concentration helpers).
+  and use, Cutting Words against a monster's Search and a lethal damage roll,
+  the repeated-save and Concentration helpers).
