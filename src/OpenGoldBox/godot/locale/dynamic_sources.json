@@ -790,5 +790,11 @@
   "Reaction when hit: reduce the damage by 1d12 + your Constitution modifier.",
   "Storm's Thunder",
   "Reaction when damaged: deal 1d8 Thunder damage to the attacker within 60 feet.",
-  "Skillful"
+  "Skillful",
+  "Spellcasting ability",
+  "Attack rolls and save DCs of your lineage's spells.",
+  "High Elf cantrip",
+  "Intelligence",
+  "Wisdom",
+  "Charisma"
 ]

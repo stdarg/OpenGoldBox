@@ -318,8 +318,10 @@ void species_choice_checks()
                 ids.push_back(g.id);
         return ids;
     };
-    check(groups("elf") == std::vector<std::string> {"species:elf:lineage", "species:elf:keen_senses"} &&
-          groups("tiefling") == std::vector<std::string> {"species:tiefling:legacy", "species:tiefling:size"} &&
+    check(groups("elf") == std::vector<std::string> {"species:elf:lineage", "species:elf:keen_senses",
+                                                     "species:elf:ability"} &&
+          groups("tiefling") == std::vector<std::string> {"species:tiefling:legacy", "species:tiefling:size",
+                                                          "species:tiefling:ability"} &&
           groups("dragonborn") == std::vector<std::string> {"species:dragonborn:ancestry"} &&
           groups("goliath") == std::vector<std::string> {"species:goliath:ancestry"} &&
           groups("human") == std::vector<std::string> {"species:human:size", "species:human:skillful"} &&
@@ -370,6 +372,80 @@ void species_choice_checks()
           "A Small Human differs from a Medium one");
 }
 
+// Lineage spells (SRD 5.2.1 pp. 84, 86): a Tiefling's cantrip and, from level
+// 3, its spell with a free cast each Long Rest; a High Elf's chosen Wizard
+// cantrip; both cast with the ability chosen for the lineage.
+void lineage_spell_checks()
+{
+    const auto rules = module();
+    const auto offered = [](const CombatSession &c, std::string_view verb)
+    {
+        const auto commands = c.legal_commands();
+        return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+        {
+            return command.verb == verb;
+        });
+    };
+    const auto fight = [&](const Character &hero)
+    {
+        auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                    rules->character_profile(hero.sheet(), std::vector<std::string> {}).data},
+                {98, "bandit", "Bandit", Side::opposition, {2, 1}}
+            }},
+        3);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the hero's turn");
+        return c;
+    };
+    const std::map<std::string, std::string> infernal{{"species:tiefling:legacy", "infernal"},
+        {"species:tiefling:ability", "charisma"}
+    };
+    auto c = fight(fighter("tiefling", infernal));
+    check(offered(*c, "fire_bolt"), "An Infernal Tiefling Fighter knows Fire Bolt");
+    check(submit(*c, "fire_bolt", 98) && logged(*c, "Hero -> Bandit: d20 ") &&
+          logged(*c, " + 4 vs AC"),
+          "Fire Bolt attacks with Charisma (+2) and proficiency (+2)");
+    auto high = fight(fighter("elf", {{"species:elf:lineage", "high_elf"},
+        {"species:elf:ability", "intelligence"}, {"species:elf:cantrip", "ray_of_frost"}
+    }));
+    check(offered(*high, "ray_of_frost") && !offered(*fight(fighter("elf")), "ray_of_frost"),
+          "A High Elf casts the Wizard cantrip it chose");
+
+    // At level 3 the Tiefling gains Hellish Rebuke, cast once per Long Rest
+    // without a slot: a Fighter has no slots.
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter("tiefling", infernal));
+    party.award_experience(900, "lineage-xp");
+    party.advance(id, party.default_advancement(id));
+    party.advance(id, party.default_advancement(id));
+    const auto &sheet = party.member(id).character.sheet();
+    const auto pools = rules->recovery_info(sheet, party.member(id).vitals).resources;
+    check(std::any_of(pools.begin(), pools.end(), [](const auto & pool)
+    {
+        return pool.id == "magic_initiate:hellish_rebuke" && pool.remaining == 1 &&
+               pool.label.source == "Lineage: {spell}";
+    }), "Level 3 brings Hellish Rebuke's free cast");
+    auto rebuke = rules->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                rules->character_profile(sheet, std::vector<std::string> {}).data},
+            {98, "bandit", "Bandit", Side::opposition, {2, 1}}
+        }},
+    3);
+    bool asked = false;
+    for (unsigned attempt = 0; attempt < 12 && !asked; ++attempt)
+    {
+        for (unsigned turns = 0; rebuke->snapshot().actor != 98 && turns < 6; ++turns)
+            check(submit(*rebuke, "end"), "Reach the bandit's turn");
+        check(submit(*rebuke, "melee", 1), "The bandit attacks");
+        asked = offered(*rebuke, "rebuke");
+        if (!asked)
+            check(submit(*rebuke, "end"), "The bandit ends its turn");
+    }
+    check(asked && submit(*rebuke, "rebuke") && logged(*rebuke, "casts Hellish Rebuke at Bandit"),
+          "A hit asks about Hellish Rebuke, paid by the free cast");
+}
+
 } // namespace
 
 int main()
@@ -381,6 +457,7 @@ int main()
         halfling_checks();
         nimbleness_checks();
         species_choice_checks();
+        lineage_spell_checks();
     }
     catch (const std::exception &error)
     {

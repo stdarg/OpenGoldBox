@@ -920,6 +920,30 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass kl
 {
     auto result = class_spell_access(grants, klass, level, prepared);
     add_initiate_access(result, grants, level);
+    // A lineage's spells, unless the character already knows them otherwise.
+    const auto known = [&](std::string_view id)
+    {
+        const auto named = [&](const auto & s)
+        {
+            return s.id == id;
+        };
+        return std::any_of(result.cantrips.begin(), result.cantrips.end(), named) ||
+               std::any_of(result.initiate.begin(), result.initiate.end(), named) ||
+               std::find(result.prepared.begin(), result.prepared.end(), id) != result.prepared.end();
+    };
+    for (const auto &lineage : lineage_spells(grants, level))
+        for (const auto &id : lineage.spells)
+        {
+            if (known(id))
+                continue;
+            const auto &spell = find(id);
+            result.initiate.push_back({std::string(spell.id), std::string(spell.label), lineage.feat,
+                                       spell.level ? 3u : 1u});
+            if (spell.level && std::find(result.always_prepared.begin(),
+                                         result.always_prepared.end(), id) ==
+                    result.always_prepared.end())
+                result.always_prepared.emplace_back(spell.id);
+        }
     return result;
 }
 
@@ -1182,6 +1206,11 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
             if (find(id).level && std::find(result.begin(), result.end(), id) == result.end())
                 result.emplace_back(id);
         }
+    // So is a lineage's, from level 3.
+    for (const auto &lineage : lineage_spells(grants, level))
+        if (!lineage.free_spell.empty() &&
+                std::find(result.begin(), result.end(), lineage.free_spell) == result.end())
+            result.push_back(lineage.free_spell);
     return result;
 }
 
@@ -1371,6 +1400,58 @@ void apply_spell_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOf
     if (found == sheet.prepared_spells.end())
         throw std::runtime_error("No such spell to replace");
     *found = swap.replacement;
+}
+
+std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants, unsigned level)
+{
+    const auto chose = [&](std::string_view id) -> const FeatureGrant *
+    {
+        const auto found = std::find_if(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == id;
+        });
+        return found == grants.end() ? nullptr : &*found;
+    };
+    const auto ability_of = [&](std::string_view species, Ability fallback)
+    {
+        for (const auto &[id, value] : {std::pair{"intelligence", Ability::intelligence},
+                                        std::pair{"wisdom", Ability::wisdom},
+                                        std::pair{"charisma", Ability::charisma}
+                                       })
+            if (const auto *g = chose("spellcasting_ability:" + std::string(id));
+                    g && g->source_id == "species:" + std::string(species) + ":ability")
+                return value;
+        return fallback;
+    };
+    struct Legacy
+    {
+        std::string_view choice, cantrip, third;
+    };
+    constexpr std::array legacies{Legacy{"legacy:abyssal", "poison_spray", "ray_of_sickness"},
+        Legacy{"legacy:chthonic", "chill_touch", "false_life"},
+        Legacy{"legacy:infernal", "fire_bolt", "hellish_rebuke"}};
+    std::vector<InitiateSpells> result;
+    for (const auto &legacy : legacies)
+        if (chose(legacy.choice))
+        {
+            InitiateSpells entry{"species:tiefling", ability_of("tiefling", Ability::charisma),
+                                 {std::string(legacy.cantrip)}, {}};
+            if (level >= 3)
+            {
+                entry.spells.emplace_back(legacy.third);
+                entry.free_spell = legacy.third;
+            }
+            result.push_back(std::move(entry));
+        }
+    if (chose("lineage:high_elf"))
+        for (const auto &g : grants)
+            if (g.source_id == "species:elf:cantrip" && g.id.starts_with("cantrip:"))
+                result.push_back({"species:elf", ability_of("elf", Ability::intelligence),
+                                  {g.id.substr(8)}, {}});
+    if (chose("lineage:wood_elf") && level >= 3)
+        result.push_back({"species:elf", ability_of("elf", Ability::intelligence),
+                          {"longstrider"}, "longstrider"});
+    return result;
 }
 
 } // namespace opengold::srd5::detail

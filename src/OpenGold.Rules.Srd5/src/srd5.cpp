@@ -577,6 +577,8 @@ struct Definition
     // Proficiency Bonus) of each spell it teaches, and each feat's level-one
     // spell in feat order, cast once per Long Rest without a slot.
     std::map<std::string, int, std::less<>> initiate_casting;
+    // The free casts that come from a lineage rather than Magic Initiate.
+    std::set<std::string, std::less<>> lineage_spells;
     std::vector<std::string> initiate_spells;
     int sorcery_points{}; // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
@@ -947,7 +949,8 @@ void add_initiate_pools(std::vector<rules::ResourcePool> &pools, const Actor &ac
 {
     for (std::size_t n = 0; n < d.initiate_spells.size(); ++n)
         pools.push_back({"magic_initiate:" + d.initiate_spells[n],
-            {   "Magic Initiate: {spell}",
+            {   d.lineage_spells.contains(d.initiate_spells[n]) ? "Lineage: {spell}"
+                : "Magic Initiate: {spell}",
                 {{"spell", std::string(detail::find_spell(d.initiate_spells[n])->label), true}}
             },
             (actor.initiate_casts >> n) & 1 ? 1u : 0u, 1u, 0u});
@@ -1318,12 +1321,19 @@ character_definition(std::string_view bytes,
     if (chose(choice))
         d.affinities.push_back({detail::AffinityKind::resistance, type,
                                 "species/" + std::string(choice)});
-    for (const auto &feat : detail::magic_initiate_spells(grants))
+    // Magic Initiate's and a lineage's spells: their own ability, and a free
+    // cast of the leveled one each Long Rest.
+    auto gifts = detail::magic_initiate_spells(grants);
+    for (auto &lineage : detail::lineage_spells(grants, level))
+        gifts.push_back(std::move(lineage));
+    for (const auto &feat : gifts)
     {
         for (const auto &spell : feat.spells)
             d.initiate_casting.emplace(spell, 2 + ability_modifier(scores[feat.ability]));
         if (!feat.free_spell.empty())
             d.initiate_spells.push_back(feat.free_spell);
+        if (feat.feat.starts_with("species:"))
+            d.lineage_spells.insert(feat.free_spell);
     }
     // A stored spell is the class's at this level, or one Magic Initiate teaches.
     const auto allowed = allowed_spells(klass, level);
@@ -8591,9 +8601,11 @@ int Session::cutting_words(const Actor &attacker, int margin)
 
 bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
 {
+    // A slot, or an Infernal Tiefling's free cast.
+    const bool free = (warlock.initiate_casts & initiate_bit(def(warlock), "hellish_rebuke")) != 0;
     return warlock.source.side != attacker.source.side && conscious(warlock) &&
            warlock.reaction && !detail::incapacitated(warlock.effects) &&
-           (warlock.slots > 0 || warlock.slots2 > 0) && !warlock.spent_slot &&
+           (free || ((warlock.slots > 0 || warlock.slots2 > 0) && !warlock.spent_slot)) &&
            detail::knows_spell(def(warlock).spells, "hellish_rebuke") &&
            distance(warlock.source.cell, attacker.source.cell) <= 60 && can_see(warlock, attacker) &&
            !attacker.life.dead;
@@ -8609,16 +8621,25 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
     if (answer_of(warlock.source.id, Asked::rebuke)->verb != "rebuke")
         return;
     warlock.reaction = false;
-    warlock.spent_slot = true;
-    const bool second = warlock.slots <= 0;
-    --(second ? warlock.slots2 : warlock.slots);
+    // The free cast first: it can pay for nothing else.
+    const auto bit = initiate_bit(def(warlock), "hellish_rebuke");
+    const bool free = (warlock.initiate_casts & bit) != 0;
+    const bool second = !free && warlock.slots <= 0;
+    if (free)
+        warlock.initiate_casts &= ~bit;
+    else
+    {
+        warlock.spent_slot = true;
+        --(second ? warlock.slots2 : warlock.slots);
+    }
     auto &foe = actor(attacker.source.id);
     log(warlock.source.name + " casts Hellish Rebuke at " + foe.source.name + ".",
     {
         "{name} casts Hellish Rebuke at {target}.",
         {{"name", warlock.source.name}, {"target", foe.source.name}}
     });
-    const bool saved = saving_throw_succeeds(foe, detail::Ability::dexterity, spell_dc(warlock));
+    const bool saved = saving_throw_succeeds(foe, detail::Ability::dexterity,
+                                          spell_dc(warlock, "hellish_rebuke"));
     const int rolled = dice({second ? 3 : 2, 10, 0});
     const int amount = resolved_damage(foe, detail::DamageType::fire, saved ? rolled / 2 : rolled);
     log(foe.source.name + " takes " + std::to_string(amount) + " Fire damage.",
@@ -12748,7 +12769,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.177", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.178", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

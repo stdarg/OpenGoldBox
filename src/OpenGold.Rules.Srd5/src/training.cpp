@@ -1,6 +1,7 @@
 #include "training.h"
 #include "weapon_mastery.h"
 #include "feature_grants.h"
+#include "spell_access.h"
 #include <algorithm>
 #include <cctype>
 #include <set>
@@ -219,10 +220,20 @@ TrainingChoiceGroup one_of(std::string id, std::string label, std::vector<Creati
 
 // The choices a species makes at creation (SRD 5.2.1 pp. 84-86). Drow,
 // Darkvision and the spells DM-1 removed are not offered.
-std::vector<TrainingChoiceGroup> species_options(std::string_view race)
+std::vector<TrainingChoiceGroup> species_options(std::string_view race,
+        const TrainingChoices &choices)
 {
     const auto species = species_id(race);
     std::vector<TrainingChoiceGroup> result;
+    // The ability an Elf's or a Tiefling's lineage spells are cast with.
+    const auto ability = [&]
+    {
+        return one_of("species:" + species + ":ability", "Spellcasting ability",
+        {   {"intelligence", "Intelligence", "Attack rolls and save DCs of your lineage's spells."},
+            {"wisdom", "Wisdom", "Attack rolls and save DCs of your lineage's spells."},
+            {"charisma", "Charisma", "Attack rolls and save DCs of your lineage's spells."}
+        });
+    };
     const auto size = [&]
     {
         return one_of("species:" + species + ":size", "Size",
@@ -238,6 +249,15 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race)
         }));
         result.push_back(one_of("species:elf:keen_senses", "Keen Senses",
         {{"insight", "Insight", {}}, {"perception", "Perception", {}}, {"survival", "Survival", {}}}));
+        result.push_back(ability());
+        // A High Elf's Wizard cantrip (it takes the removed Prestidigitation's place, DM-1).
+        const auto &lineage = selected(choices, "species:elf:lineage");
+        if (std::find(lineage.begin(), lineage.end(), "high_elf") != lineage.end())
+        {
+            auto cantrip = starting_cantrip_options(CharacterClass::wizard);
+            result.push_back(one_of("species:elf:cantrip", "High Elf cantrip",
+                                    std::move(cantrip.options)));
+        }
     }
     if (species == "tiefling")
     {
@@ -247,6 +267,7 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race)
             {"infernal", "Infernal", "Resistance to Fire; Fire Bolt; Hellish Rebuke from level 3."}
         }));
         result.push_back(size());
+        result.push_back(ability());
     }
     if (species == "dragonborn")
         result.push_back(one_of("species:dragonborn:ancestry", "Draconic Ancestry",
@@ -280,6 +301,8 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race)
 std::string_view species_prefix(std::string_view group)
 {
     return group.ends_with(":lineage")       ? "lineage:"
+           : group.ends_with(":ability")     ? "spellcasting_ability:"
+           : group.ends_with(":cantrip")     ? "cantrip:"
            : group.ends_with(":legacy")      ? "legacy:"
            : group.ends_with(":size")        ? "size:"
            : group.ends_with(":keen_senses") || group.ends_with(":skillful") ? "skill:"
@@ -291,7 +314,7 @@ std::string_view species_prefix(std::string_view group)
 std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
         std::string_view race, std::string_view background, const TrainingChoices &choices)
 {
-    std::vector<TrainingChoiceGroup> result = species_options(race);
+    std::vector<TrainingChoiceGroup> result = species_options(race, choices);
     if (klass == CharacterClass::fighter)
         result.push_back({"class:fighter:fighting_style",
                           "Fighting Style",
@@ -436,7 +459,8 @@ bool is_training_grant(const FeatureGrant &grant)
            (grant.source_id.starts_with("species:") &&
             (grant.id.starts_with("lineage:") || grant.id.starts_with("legacy:") ||
              grant.id.starts_with("size:") || grant.id.starts_with("dragon:") ||
-             grant.id.starts_with("giant:")));
+             grant.id.starts_with("giant:") || grant.id.starts_with("spellcasting_ability:") ||
+             grant.id.starts_with("cantrip:")));
 }
 
 std::vector<FeatureGrant> without_training(std::span<const FeatureGrant> grants)
