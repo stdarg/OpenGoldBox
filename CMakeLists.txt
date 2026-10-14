@@ -578,6 +578,7 @@ target_compile_definitions(opengold_encounter_balance PRIVATE OPENGOLD_SOURCE_DI
 if(OPENGOLD_BUILD_GODOT)
     set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_subdirectory(demos/src/OpenGold.Godot)
+    add_subdirectory(dev_tools/tile_art_viewer/native)
 endif()
 
 if(OPENGOLD_BUILD_GAME)

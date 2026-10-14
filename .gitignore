@@ -17,6 +17,8 @@
 demos/godot/.godot/
 demos/godot/*.tmp
 demos/godot/bin/
+dev_tools/tile_art_viewer/godot/.godot/
+dev_tools/tile_art_viewer/godot/bin/
 
 # Local user data and derived original-game assets
 /user-data/

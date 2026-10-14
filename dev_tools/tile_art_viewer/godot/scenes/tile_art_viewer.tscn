@@ -1,0 +1,155 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/tile_art_viewer.gd" id="1"]
+
+[node name="TileArtViewer" type="WallArtCatalog"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.07, 0.10, 0.125, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="Column" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Margin/Column"]
+layout_mode = 2
+theme_type_variation = &"ViewerTitle"
+text = "First Person Tile Art"
+
+[node name="Help" type="Label" parent="Margin/Column"]
+layout_mode = 2
+text = "Browse original wall, door, gateway, waterfront and other map artwork. Select a thumbnail or use Previous / Next."
+
+[node name="Filters" type="HBoxContainer" parent="Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ArchiveLabel" type="Label" parent="Margin/Column/Filters"]
+layout_mode = 2
+text = "Archive"
+
+[node name="ArchiveFilter" type="OptionButton" parent="Margin/Column/Filters"]
+layout_mode = 2
+custom_minimum_size = Vector2(190, 38)
+
+[node name="ViewLabel" type="Label" parent="Margin/Column/Filters"]
+layout_mode = 2
+text = "View"
+
+[node name="ViewFilter" type="OptionButton" parent="Margin/Column/Filters"]
+layout_mode = 2
+custom_minimum_size = Vector2(165, 38)
+
+[node name="SearchLabel" type="Label" parent="Margin/Column/Filters"]
+layout_mode = 2
+text = "Find"
+
+[node name="Search" type="LineEdit" parent="Margin/Column/Filters"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Archive, record, appearance or view"
+
+[node name="Split" type="HSplitContainer" parent="Margin/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 690
+theme_override_constants/separation = 18
+
+[node name="ContactGrid" type="ItemList" parent="Margin/Column/Split"]
+custom_minimum_size = Vector2(520, 500)
+layout_mode = 2
+size_flags_horizontal = 3
+select_mode = 0
+icon_mode = 0
+fixed_icon_size = Vector2i(88, 88)
+max_columns = 3
+same_column_width = true
+fixed_column_width = 170
+max_text_lines = 2
+allow_reselect = true
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 14
+
+[node name="PreviewColumn" type="VBoxContainer" parent="Margin/Column/Split"]
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Identity" type="Label" parent="Margin/Column/Split/PreviewColumn"]
+layout_mode = 2
+theme_type_variation = &"ViewerIdentity"
+text = "Select an image"
+autowrap_mode = 3
+
+[node name="Source" type="Label" parent="Margin/Column/Split/PreviewColumn"]
+layout_mode = 2
+text = ""
+
+[node name="PreviewPanel" type="PanelContainer" parent="Margin/Column/Split/PreviewColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Preview" type="TextureRect" parent="Margin/Column/Split/PreviewColumn/PreviewPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Column/Split/PreviewColumn"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Previous" type="Button" parent="Margin/Column/Split/PreviewColumn/Actions"]
+layout_mode = 2
+text = "← Previous"
+
+[node name="Next" type="Button" parent="Margin/Column/Split/PreviewColumn/Actions"]
+layout_mode = 2
+text = "Next →"
+
+[node name="Export" type="Button" parent="Margin/Column/Split/PreviewColumn/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Export PNG…"
+
+[node name="Status" type="Label" parent="Margin/Column"]
+layout_mode = 2
+text = "Loading original game artwork…"
+autowrap_mode = 3
+
+[node name="SaveDialog" type="FileDialog" parent="."]
+title = "Export original tile art as PNG"
+size = Vector2i(800, 540)
+ok_button_text = "Export"
+file_mode = 4
+access = 2
+filters = PackedStringArray("*.png ; PNG image")

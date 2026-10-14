@@ -1,0 +1,10 @@
+[configuration]
+entry_symbol = "tile_art_viewer_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+windows.x86_64 = "res://bin/opengold_tile_art_viewer.dll"
+linux.x86_64 = "res://bin/opengold_tile_art_viewer.so"
+linux.arm64 = "res://bin/opengold_tile_art_viewer.so"
+macos = "res://bin/opengold_tile_art_viewer.dylib"
