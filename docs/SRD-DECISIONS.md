@@ -977,3 +977,12 @@ the user chose that it is used without asking, and only when the roll would
 drop a member of the Bard's side to 0 Hit Points and the d6 could keep it
 standing. The damage roll is shown before it is dealt, as at a table, so the
 choice reads nothing hidden. See [Bard](BARD.md#bardic-inspiration-and-cutting-words).
+
+## AID-1 (2026-10-14): Aid in camp chooses its targets
+
+Pool of Radiance's camp heals the party without asking who. The user asked to
+keep that feel, so Aid cast from the Camp dialog picks its three targets as
+Prayer of Healing picks its five: the members with the lowest Hit Point
+maximum who are not already aided, the caster included. In a fight the player
+still clicks Aid's targets ([CLASS-2](#class-2-2026-10-04-choosing-several-targets)).
+See [Cleric](CLERIC.md#aid).

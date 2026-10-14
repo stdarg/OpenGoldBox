@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -251,6 +252,50 @@ void prayer_of_healing_checks()
     party.use_camp_action(cleric, cleric, "prayer_of_healing");
     check(hp(party, fighters[0]) > 1, "After a Long Rest the prayer heals again");
 }
+// Aid in camp: the three members with the lowest Hit Point maximum not
+// already aided each gain 5 to it and to their Hit Points (AID-1).
+void aid_checks()
+{
+    CampaignParty party(module());
+    const auto cleric = party.add_pc(created("cleric", "Cleric", {"cure_wounds", "healing_word",
+                                     "bless", "shield_of_faith"
+                                                                 }));
+    party.award_experience(900, "aid-xp");
+    party.advance(cleric, party.default_advancement(cleric));
+    // The Life Domain's Aid is always prepared from level three.
+    party.advance(cleric, party.default_advancement(cleric));
+    std::vector<MemberId> fighters;
+    for (const auto *name : {"First", "Second", "Third"})
+        fighters.push_back(party.add_pc(created("fighter", name, {})));
+    // A level-one Cleric has the lowest maximum.
+    const auto low = party.add_pc(created("cleric", "Low", {"cure_wounds", "healing_word", "bless",
+                                          "shield_of_faith"
+                                                           }));
+    const auto actions = party.camp_actions(cleric);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "aid" && a.whole_party;
+    }), "Aid is a whole-party camp spell");
+    std::map<MemberId, int> before;
+    for (const auto id : {cleric, fighters[0], fighters[1], fighters[2], low})
+        before[id] = party.hit_point_maximum(id);
+    check(before[low] < before[fighters[0]] && before[fighters[2]] < before[cleric],
+          "The level-one Cleric's maximum is lowest, the level-three Cleric's highest");
+    party.use_camp_action(cleric, cleric, "aid");
+    check(party.hit_point_maximum(low) == before[low] + 5 && hp(party, low) == before[low] + 5 &&
+          party.hit_point_maximum(fighters[0]) == before[fighters[0]] + 5 &&
+          party.hit_point_maximum(fighters[1]) == before[fighters[1]] + 5 &&
+          party.hit_point_maximum(fighters[2]) == before[fighters[2]] &&
+          party.hit_point_maximum(cleric) == before[cleric] &&
+          remaining(party, cleric, "spell_slot:2") == 1,
+          "Aid raises the three lowest maximums by 5 from one level-two slot");
+    party.use_camp_action(cleric, cleric, "aid");
+    check(party.hit_point_maximum(fighters[2]) == before[fighters[2]] + 5 &&
+          party.hit_point_maximum(cleric) == before[cleric] + 5 &&
+          party.hit_point_maximum(low) == before[low] + 5,
+          "A second Aid passes over the members already aided");
+}
+
 // Lay On Hands spends 5 points to end Poisoned in camp too.
 void lay_on_hands_cure_checks()
 {
@@ -312,6 +357,7 @@ int main()
         spell_checks();
         goodberry_checks();
         prayer_of_healing_checks();
+        aid_checks();
         std::cout << "Camp action tests passed\n";
     }
     catch (const std::exception &e)

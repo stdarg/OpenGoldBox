@@ -75,10 +75,13 @@ Rest) and
 - `RulesModule::hit_point_maximum` and `CampaignParty::hit_point_maximum` give
   the raised maximum; the campaign's checks, healing, the temple, the rest
   dialog, the party panel and the combat roster use it.
-- Not yet: casting Aid from the Camp dialog (it would need several targets
-  there).
+- **In camp** Aid is in the Camp dialog's Cast / Use list. As Pool of
+  Radiance's camp heals without asking, the game picks its targets: the three
+  members with the lowest Hit Point maximum not already aided, the caster
+  included ([AID-1](SRD-DECISIONS.md#aid-1-2026-10-14-aid-in-camp-chooses-its-targets)).
 - Verification: `opengold_cleric_channel_tests` (two creatures raised by 5, a
-  checkpoint, the campaign maximum and its end after 8 hours).
+  checkpoint, the campaign maximum and its end after 8 hours) and
+  `opengold_camp_action_tests` (the camp targets and a second cast).
 
 ## Guiding Bolt, Bane and Spare the Dying
 

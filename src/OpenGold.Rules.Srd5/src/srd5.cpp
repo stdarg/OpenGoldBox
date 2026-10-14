@@ -12721,8 +12721,10 @@ class Module final : public RulesModule
             return actions;
         for (const auto &spell : detail::spell_table)
         {
+            // Aid's eight hours outlast a fight, so it is cast in camp too.
             if ((spell.pattern != detail::SpellPattern::heal &&
-                    spell.pattern != detail::SpellPattern::camp) ||
+                    spell.pattern != detail::SpellPattern::camp &&
+                    spell.rider != detail::Rider::aid) ||
                     !detail::knows_spell(d.spells, spell.id))
                 continue;
             const std::string label(spell.label);
@@ -12836,6 +12838,34 @@ class Module final : public RulesModule
         state = vitals(caster);
     }
 
+    // Aid in camp: the game chooses, as Pool of Radiance's camp heals without
+    // asking, the three members with the lowest Hit Point maximum not already
+    // aided (AID-1).
+    static void camp_aid(const std::string &caster_name, std::vector<Actor *> members)
+    {
+        std::erase_if(members, [](const Actor * a)
+        {
+            return a->life.dead || detail::hit_point_bonus(a->effects) >= 5 ||
+                   !detail::can_apply(a->effects);
+        });
+        if (members.empty())
+            throw std::runtime_error("No member can be helped by it now");
+        std::stable_sort(members.begin(), members.end(), [](const Actor * x, const Actor * y)
+        {
+            return max_hp(*x) < max_hp(*y);
+        });
+        if (members.size() > 3)
+            members.resize(3);
+        for (auto *member : members)
+        {
+            // Camp effects carry scope 1: there is no encounter to source them.
+            detail::apply_spell_benefit(member->effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        caster_name, detail::EffectKind::aid, 5);
+            (void)detail::heal_life(member->life, 5, max_hp(*member),
+                                    !detail::healing_blocked(member->effects));
+        }
+    }
+
     // Prayer of Healing: the five most hurt members it has not healed since
     // their last Long Rest each regain 2d8 + the spellcasting modifier.
     void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
@@ -12873,6 +12903,15 @@ class Module final : public RulesModule
         return &member.state.get() == &user_state;
     }))
         chosen.erase(chosen.begin());
+        if (action == "aid")
+        {
+            camp_aid(user.name, chosen);
+            --caster.slots2;
+            user_state = vitals(caster);
+            for (auto &[actor, state] : members)
+                *state = vitals(actor);
+            return;
+        }
         std::erase_if(chosen, [](const Actor * a)
         {
             return a->life.dead || a->life.hp >= max_hp(*a) ||
@@ -13639,7 +13678,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.191", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.192", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
