@@ -22,8 +22,23 @@ trace their distinctive ornament, silhouette, or color arrangement.
 
 ## Run
 
-From the repository root, build the shared native decoder and register it with
-this Godot project once:
+From the repository root, run:
+
+```bash
+./dev_tools/replacement_art_creator/run.sh
+```
+
+This builds the native extension, registers it with Godot on first run, and
+opens the creator. It uses `OPENGOLD_GAME_DIR` or `~/POOLRAD` when available
+for the Reference tab. Pass another game-data directory as an argument, or set
+`GODOT_BIN` if Godot is outside `PATH` and the standard macOS app location:
+
+```bash
+./dev_tools/replacement_art_creator/run.sh /path/to/POOLRAD
+```
+
+The manual commands to build the shared native decoder and register it with
+this Godot project are:
 
 ```bash
 cmake -S . -B build/tile-art-viewer -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF

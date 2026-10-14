@@ -71,7 +71,22 @@ instead of pairing descriptions with the wrong images.
 
 ## Build and run on macOS or Linux
 
-From the repository root, with CMake, Ninja, Python, Git and Godot 4.5+ installed:
+From the repository root, run:
+
+```bash
+./dev_tools/tile_art_viewer/run.sh
+```
+
+The script builds the native extension, registers it with Godot on first run,
+and opens the viewer. It uses `OPENGOLD_GAME_DIR` or `~/POOLRAD` for your local
+game files. To use another directory, pass it as an argument:
+
+```bash
+./dev_tools/tile_art_viewer/run.sh /path/to/POOLRAD
+```
+
+Set `GODOT_BIN` if Godot is outside `PATH` and the standard macOS app location.
+CMake, Ninja, Python, Git, and Godot 4.5+ are required. The manual commands are:
 
 ```bash
 cmake -S . -B build/tile-art-viewer -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF
