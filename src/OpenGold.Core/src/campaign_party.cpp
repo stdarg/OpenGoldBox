@@ -635,8 +635,7 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id)
 ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) const
 {
     const auto &m = member(id);
-    const auto &sheet = m.character.sheet();
-    const auto next_level = rules_->advancement_options(sheet).level;
+    const auto next_level = this->next_level(m);
     ExperienceOffer offer;
     if (next_level)
     {
@@ -721,9 +720,15 @@ bool CampaignParty::can_advance(MemberId id) const
     if (combat_ || state_.short_rest || state_.spell_rest || state_.training_rest)
         return false;
     const auto &m = member(id);
-    const auto options = rules_->advancement_options(m.character.sheet());
-    return !m.vitals.dead && options.level &&
-           m.experience >= rules_->experience_for_level(options.level);
+    const auto level = next_level(m);
+    return !m.vitals.dead && level && m.experience >= rules_->experience_for_level(level);
+}
+
+unsigned CampaignParty::next_level(const PartyMember &m) const
+{
+    const auto level = rules_->advancement_options(m.character.sheet()).level;
+    const auto hall = training_hall_for_class(m.character.creation_data().character_class);
+    return hall && level > hall_level_limit(*hall) ? 0 : level;
 }
 
 rules::AdvancementOptions

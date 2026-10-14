@@ -26,6 +26,11 @@ enum class TrainingHall
 // The hall a script names in its "WE TRAIN ONLY ..." text ("FIGHTERS ").
 [[nodiscard]] std::optional<TrainingHall> training_hall_named(std::string_view script_name);
 
+// The highest level a hall's classes reach in the campaign: Phlan's Training
+// Hall trains "8th level fighter, 9th level thief, and 6th level cleric and
+// magic-user" (CAP-1, Pool of Radiance manual).
+[[nodiscard]] unsigned hall_level_limit(TrainingHall hall);
+
 // A session of experience costs 1,000 gp at level 1 and doubles at each level.
 [[nodiscard]] std::uint32_t experience_session_fee(unsigned level);
 

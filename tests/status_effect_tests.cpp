@@ -513,11 +513,13 @@ void campaign()
     check(restored.rest(), "Eligible rest remains supported");
     // A Human finishes the Long Rest with Heroic Inspiration, which stays.
     for (const auto &m : restored.state().roster)
-        check(std::all_of(effects(m.vitals).active.begin(), effects(m.vitals).active.end(),
-                          [](const auto & e)
     {
-        return e.kind == fx::EffectKind::heroic_inspiration;
-    }), "Rest advances lasting effects for entire roster");
+        const auto lasting = effects(m.vitals);
+        check(std::all_of(lasting.active.begin(), lasting.active.end(), [](const auto & e)
+        {
+            return e.kind == fx::EffectKind::heroic_inspiration;
+        }), "Rest advances lasting effects for entire roster");
+    }
     const auto rest_save = encode_campaign(restored, nullptr, "conditions");
     CampaignParty rested_copy(module());
     rested_copy.restore(

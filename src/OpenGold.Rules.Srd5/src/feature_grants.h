@@ -18,6 +18,11 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
 rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                       const rules::AdvancementChoice &choice);
 std::vector<rules::AdvancementOption> fighting_styles();
+// The class and subclass features gained on reaching `level`, from level 5 on
+// (SRD 5.2.1 class tables); choices such as feats are granted separately.
+std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level);
+// The Champion's Additional Fighting Style (level 7): its feat's source.
+inline constexpr std::string_view champion_style = "subclass:fighter:champion:fighting_style";
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id);
 
 struct GrantEffects

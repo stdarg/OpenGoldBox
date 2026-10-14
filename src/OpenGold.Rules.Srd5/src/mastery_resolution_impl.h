@@ -115,6 +115,7 @@ void Session::offer_mastery(const Actor &a, const Actor &target, int natural, At
         }
     PendingMastery m{a.source.id, target.source.id, kind, natural, ranged, false,
                      key,         a.source.cell};
+    m.tactical = tactical_mastery_ && tactical_mastery_->actor == a.source.id;
     if (!mastery_available(m))
     {
         bool possible = false;
@@ -221,10 +222,25 @@ bool Session::use_effect(const Command &command)
         const auto m = *mastery_;
         mastery_.reset();
         auto &target = actor(m.target);
+        const auto start = target.source.cell;
+        // Pushed as far as it could go short of 10 feet, into a wall, an
+        // obstacle or a creature, it hits what stopped it.
+        const auto offered = push_cells(m);
+        const int moved = distance(start, command.destination);
+        const Cell beyond{command.destination.x + (command.destination.x > start.x) -
+                          (command.destination.x < start.x),
+                          command.destination.y + (command.destination.y > start.y) -
+                          (command.destination.y < start.y)};
+        const bool blocked = std::none_of(offered.begin(), offered.end(), [&](Cell cell)
+        {
+            return distance(start, cell) > moved;
+        }) && blocks_push(beyond, target.source.id);
         target.source.cell = command.destination;
         clear_departed_overlaps();
         log(target.source.name + " is pushed.",
         {"{name} is pushed.", {{"name", target.source.name}}});
+        if (blocked && moved < 10)
+            slam(target, 10 - moved);
     }
     else if (command.item >= 2)
     {
@@ -316,7 +332,12 @@ void Session::validate_mastery_state() const
         const auto attacking = mastery_actor(m);
         const auto &d = def(attacking);
         const auto range = m.ranged ? AttackRange::ranged : AttackRange::melee;
-        if (weapon_mastery(attacking, range) != m.kind ||
+        // Tactical Master's Push or Slow replaced a mastery the weapon has.
+        const bool mastery_ok =
+            m.tactical ? d.tactical_master && weapon_mastery(attacking, range) != detail::Mastery::none &&
+            (m.kind == detail::Mastery::push || m.kind == detail::Mastery::slow)
+            : weapon_mastery(attacking, range) == m.kind;
+        if (!mastery_ok ||
                 distance(m.origin, t->source.cell) > (m.ranged ? d.long_range : d.reach) ||
                 !line_of_sight(m.origin, t->source.cell) ||
                 (!(d.champion && m.natural == 19) &&

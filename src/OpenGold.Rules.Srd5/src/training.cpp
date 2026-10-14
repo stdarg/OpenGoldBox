@@ -455,12 +455,16 @@ std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
     if (klass)
     {
         auto group = mastery_options(*klass, 1);
-        const auto &later = selected(choices, mastery_options(*klass, 4).id);
-        std::erase_if(group.options,
-                      [&](const auto & option)
+        for (const auto acquired : mastery_levels)
         {
-            return std::find(later.begin(), later.end(), option.id) != later.end();
-        });
+            if (acquired == 1)
+                continue;
+            const auto &later = selected(choices, mastery_source(*klass, acquired));
+            std::erase_if(group.options, [&](const auto & option)
+            {
+                return std::find(later.begin(), later.end(), option.id) != later.end();
+            });
+        }
         if (group.count)
             result.push_back(std::move(group));
     }
@@ -846,7 +850,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
         if (is_training_grant(grant) || grant.source_id == "class:fighter:fighting_style" ||
                 grant.source_id == "species:human:versatile")
         {
-            if (is_mastery_grant(grant) && grant.level == 4)
+            if (is_mastery_grant(grant) && grant.level > 1)
             {
                 choices[grant.source_id].push_back(grant.id.substr(8));
                 continue;
@@ -1063,7 +1067,9 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     starting.erase("subclass:druid:land");
     starting.erase(std::string(skilled));
     starting.erase(std::string(hall_training));
-    starting.erase(mastery_options(klass, 4).id);
+    for (const auto acquired : mastery_levels)
+        if (acquired > 1)
+            starting.erase(mastery_source(klass, acquired));
     auto expected = training_grants(klass, race, background, starting);
     const auto order = [](const FeatureGrant & a, const FeatureGrant & b)
     {
@@ -1089,12 +1095,13 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
         if (!group.id.starts_with("species:"))
             result.complete &= selected(choices, group.id).size() == group.count;
     const auto mastery = mastery_choices(grants, klass, level);
-    if (level >= 4)
-    {
-        const auto extra = mastery_options(klass, 4);
-        if (extra.count)
-            result.complete &= selected(choices, extra.id).size() == extra.count;
-    }
+    for (const auto acquired : mastery_levels)
+        if (acquired > 1 && acquired <= level)
+        {
+            const auto extra = mastery_options(klass, acquired);
+            if (extra.count)
+                result.complete &= selected(choices, extra.id).size() == extra.count;
+        }
     for (const auto &g : grants)
         if (is_mastery_grant(g))
         {

@@ -93,4 +93,24 @@ CharacterClass class_of(const rules::CharacterSheet &sheet)
         throw std::runtime_error("Unknown class");
     return *character_class;
 }
+
+unsigned level_cap(CharacterClass character_class)
+{
+    return character_class == CharacterClass::fighter ? 10 : 4;
+}
+
+bool gains_feat(CharacterClass character_class, unsigned level)
+{
+    return level == 4 || level == 8 || level == 12 || level == 16 || level == 19 ||
+           (character_class == CharacterClass::fighter && (level == 6 || level == 14)) ||
+           (character_class == CharacterClass::rogue && level == 10);
+}
+
+unsigned feats_by(CharacterClass character_class, unsigned level)
+{
+    unsigned count = 0;
+    for (unsigned n = 1; n <= level; ++n)
+        count += gains_feat(character_class, n) ? 1 : 0;
+    return count;
+}
 } // namespace opengold::srd5::detail

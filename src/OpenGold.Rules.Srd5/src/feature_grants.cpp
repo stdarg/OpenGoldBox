@@ -117,6 +117,33 @@ rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
     return result;
 }
 
+std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level)
+{
+    std::vector<rules::FeatureGrant> result;
+    const auto add = [&](std::string_view id, std::string_view source)
+    {
+        result.push_back({std::string(id), std::string(source), level, {}});
+    };
+    if (klass == CharacterClass::fighter)
+    {
+        if (level == 5)
+        {
+            add("feature:extra_attack", "class:fighter");
+            add("feature:tactical_shift", "class:fighter");
+        }
+        if (level == 7)
+            add("feature:additional_fighting_style", "subclass:fighter:champion");
+        if (level == 9)
+        {
+            add("feature:indomitable", "class:fighter");
+            add("feature:tactical_master", "class:fighter");
+        }
+        if (level == 10)
+            add("feature:heroic_warrior", "subclass:fighter:champion");
+    }
+    return result;
+}
+
 std::vector<rules::AdvancementOption> fighting_styles()
 {
     return
@@ -145,7 +172,7 @@ bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
 GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, CharacterClass klass,
                              std::string_view race, std::string_view background, unsigned level)
 {
-    require(level >= 1 && level <= 4 && grants.size() <= 32);
+    require(level >= 1 && level <= level_cap(klass) && grants.size() <= 64);
     require(background == "acolyte" || background == "criminal" || background == "sage" ||
             background == "soldier");
     auto required = starting_grants(klass, race, background);
@@ -253,6 +280,9 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         required.push_back({"feature:improved_critical", "subclass:fighter:champion", 3, {}});
         required.push_back({"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}});
     }
+    for (unsigned gained = 5; gained <= level; ++gained)
+        for (auto &grant : higher_level_features(klass, gained))
+            required.push_back(std::move(grant));
     std::set<std::string> nonrepeatable;
     std::set<std::pair<std::string, unsigned>> entitlements;
     GrantEffects effects;
@@ -279,6 +309,15 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                      grant.id == "feat:magic_initiate_wizard"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == champion_style)
+        {
+            // The Champion's second Fighting Style feat, chosen at level 7.
+            require(klass == CharacterClass::fighter && grant.level == 7 && grant.choices.empty() &&
+                    (grant.id == "feat:defense" || grant.id == "feat:archery" ||
+                     grant.id == "feat:great_weapon_fighting" ||
+                     grant.id == "feat:two_weapon_fighting"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == "subclass:ranger:hunter")
         {
             // Hunter's Prey: one of its two options, chosen at level three.
@@ -303,7 +342,7 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         }
         else
         {
-            require(grant.level == 4 &&
+            require(gains_feat(klass, grant.level) &&
                     grant.source_id == class_source(klass) + ":ability_score_improvement");
             require(entitlements.emplace(grant.source_id, grant.level).second);
             ++advancement_count;
@@ -352,7 +391,9 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({class_source(klass) + ":fighting_style", 0}));
     if (klass == CharacterClass::ranger && level >= 3)
         require(entitlements.contains({"subclass:ranger:hunter", 0}));
-    require(required.empty() && advancement_count == (level == 4 ? 1u : 0u));
+    if (klass == CharacterClass::fighter && level >= 7)
+        require(entitlements.contains({std::string(champion_style), 0}));
+    require(required.empty() && advancement_count == feats_by(klass, level));
     return effects;
 }
 

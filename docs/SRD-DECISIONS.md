@@ -1031,6 +1031,33 @@ class's cap rises to 10 only when its features work. Decisions on the
   squares open to the sky (the original's per-square interior flag; see
   [outdoor areas](OUTDOOR-AREAS.md)). The Scoured Lands are barren, with no
   Overgrowth, until Yarash is defeated.
-- **Corpses** of fallen creatures stay on the map square where they fell, with
-  their time of death (Animate Dead, Revivify, Raise Dead); how long they stay
-  is still open.
+- **Corpses** of fallen enemies are cleaned up when the fight ends, so
+  Animate Dead raises them only during the fight. A dead party member keeps
+  its time of death for Revivify and Raise Dead.
+- **Indomitable** (Fighter 9) is used without asking, like Heroic Inspiration
+  ([HEROIC-1](#heroic-1-2026-10-14-heroic-inspiration-without-asking)).
+- **Slow's spell failure:** the user does not want a random 25% chance; a
+  slowed caster's spells fail through a saving throw instead. How exactly is
+  still to be settled when Slow is built.
+
+## CAP-1 (2026-10-14): the original Training Hall's limits
+
+Pool of Radiance's manual (p. 6) says Phlan's Training Hall trains up to "8th
+level fighter, 9th level thief, and 6th level cleric and magic-user". The
+user chose to keep those limits. A character stops at its class group's
+limit (the hall that trains it, [TRAINING-HALL](TRAINING-HALL.md)): Fighter,
+Barbarian, Paladin and Ranger at 8; Rogue, Bard and Monk at 9; Cleric, Druid,
+Wizard, Sorcerer and Warlock at 6. The rules still carry each class to its own
+cap ([LEVELS-1](#levels-1-2026-10-14-levels-510)); this limits the campaign,
+in place of [SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)'s
+playable cap of 15.
+
+## PUSH-1 (2026-10-14): pushed into a wall
+
+The SRD gives no damage for a push that a wall stops. The user approved one,
+on the scale of the SRD's falling damage: a creature pushed into a wall, an
+obstacle or another creature takes 1d6 Bludgeoning damage for each 10 feet, or
+part of it, the push could not cover, up to 3d6. It applies to every push in
+the game: Thunderwave, Repelling Blast, Gust of Wind, the Open Hand's push,
+the Push mastery (when the creature is pushed as far as it can go) and, when
+built, Telekinesis. The battlefield's edge is open ground, not a wall.

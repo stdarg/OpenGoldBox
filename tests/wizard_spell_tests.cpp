@@ -184,6 +184,37 @@ void thunderwave_checks()
     throw std::runtime_error("No seed fails the Constitution save");
 }
 
+// A creature pushed into a wall takes 1d6 Bludgeoning for each 10 feet, or
+// part of it, the push could not cover (PUSH-1).
+void thunderwave_wall_checks()
+{
+    auto module = rules();
+    const auto hero = wizard(1, {"magic_missile", "thunderwave"});
+    const auto profile = module->character_profile(hero.sheet(), {}).data;
+    std::vector<Terrain> walled(72);
+    walled[1 * 12 + 4] = Terrain::obstacle; // a wall at (4, 1)
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = module->create({{12, 6, walled},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+                {98, "target", "First", Side::opposition, {2, 1}},
+                {99, "target", "Second", Side::opposition, {9, 4}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+            check(submit(*c, "end"), "Reach the Wizard's turn");
+        check(submit(*c, "thunderwave") && aim(*c, Cell{2, 1}) && submit(*c, "area_cast"),
+              "Thunderwave east toward the wall");
+        if (!logged(*c, "First is pushed 5 feet."))
+            continue;
+        check(unit(*c, 98).cell == Cell{3, 1} &&
+              logged(*c, "First slams into an obstacle and takes "),
+              "Stopped 5 feet short by the wall, it takes 1d6 Bludgeoning");
+        return;
+    }
+    throw std::runtime_error("No seed fails the Constitution save");
+}
+
 void shatter_checks()
 {
     auto module = rules();
@@ -1320,6 +1351,7 @@ int main()
     {
         burning_hands_checks();
         thunderwave_checks();
+        thunderwave_wall_checks();
         shatter_checks();
         potent_cantrip_checks();
         potent_save_checks();

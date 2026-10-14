@@ -8,6 +8,9 @@ namespace opengold::srd5::detail
 struct ActionBudget
 {
     bool normal{true}, surge{};
+    // Extra Attack: the current Attack action's attacks after its first.
+    // Spending another action ends that Attack action.
+    unsigned extra_attacks{};
 
     bool available(bool magic = false) const
     {
@@ -16,6 +19,7 @@ struct ActionBudget
 
     bool spend(bool magic = false)
     {
+        extra_attacks = 0;
         if (!magic && surge)
         {
             surge = false;
@@ -27,6 +31,15 @@ struct ActionBudget
             return true;
         }
         return false;
+    }
+
+    // Makes one of the Attack action's later attacks, if one is left.
+    bool attack_again()
+    {
+        if (!extra_attacks)
+            return false;
+        --extra_attacks;
+        return true;
     }
 };
 } // namespace opengold::srd5::detail

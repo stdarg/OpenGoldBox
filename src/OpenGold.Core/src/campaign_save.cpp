@@ -368,7 +368,8 @@ template <bool Reading> struct SaveCodec
                 por::CharacterAppearance appearance;
                 int level{};
                 fields(draft, appearance, level);
-                require(level >= 1 && level <= 4, "Unsupported saved character level");
+                // The rules module bounds each class's level; this bounds the format.
+                require(level >= 1 && level <= 20, "Unsupported saved character level");
                 std::vector<rules::AdvancementChoice> history;
                 std::vector<SpellChoiceEdit> edits;
                 std::vector<TrainingChoiceEdit> training;

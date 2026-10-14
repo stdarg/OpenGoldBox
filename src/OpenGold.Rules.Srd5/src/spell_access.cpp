@@ -560,7 +560,7 @@ unsigned cantrips_at(const PreparedCaster &caster, std::span<const FeatureGrant>
 SpellAccess prepared_access(const PreparedCaster &caster, std::span<const FeatureGrant> grants,
                             unsigned level, std::span<const std::string> prepared)
 {
-    require(level >= 1 && level <= 4);
+    require(level >= 1 && level <= level_cap(caster.klass));
     // "class:cleric:spellcasting" is granted by the "class:cleric" Spellcasting feature.
     const std::string feature_source(caster.source.substr(0, caster.source.rfind(':')));
     require(std::find(grants.begin(), grants.end(),
@@ -962,7 +962,7 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
         require(std::none_of(grants.begin(), grants.end(), class_spell_grant));
         return result; // Each other class's preparation policy has its own issue.
     }
-    require(level >= 1 && level <= 4);
+    require(level >= 1 && level <= level_cap(klass));
     require(std::find(grants.begin(), grants.end(),
                       FeatureGrant{"feature:spellcasting", "class:wizard", 1, {}}) != grants.end());
     result.cantrip_choices = level == 4 ? 4 : 3;

@@ -50,5 +50,17 @@ enum class CharacterClass
 // checkpoints do; this is where rules recover the class from it. Throws for a
 // label no class has, rather than treating the character as classless.
 [[nodiscard]] CharacterClass class_of(const rules::CharacterSheet &sheet);
+
+// The highest level the class reaches: 10 once its features through level 10
+// work, 4 until then (LEVELS-1).
+[[nodiscard]] unsigned level_cap(CharacterClass character_class);
+
+// Whether the class gains an Ability Score Improvement, or another feat, on
+// reaching the level: 4 and 8 for every class, 6 for a Fighter too, 10 for a
+// Rogue too (SRD 5.2.1 class tables).
+[[nodiscard]] bool gains_feat(CharacterClass character_class, unsigned level);
+
+// How many feats the class has gained by the level.
+[[nodiscard]] unsigned feats_by(CharacterClass character_class, unsigned level);
 } // namespace opengold::srd5::detail
 #endif

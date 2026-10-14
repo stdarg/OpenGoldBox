@@ -50,6 +50,21 @@ std::vector<std::string_view> hall_classes(TrainingHall hall)
     return result;
 }
 
+unsigned hall_level_limit(TrainingHall hall)
+{
+    switch (hall)
+    {
+    case TrainingHall::fighters:
+        return 8;
+    case TrainingHall::thieves:
+        return 9;
+    case TrainingHall::clerics:
+    case TrainingHall::magic_users:
+        return 6;
+    }
+    return 0;
+}
+
 std::optional<TrainingHall> training_hall_named(std::string_view script_name)
 {
     for (const auto &[name, hall] : script_halls)

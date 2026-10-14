@@ -6,6 +6,12 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 114 spells of levels 3–5 with a proposed triage) are in the
 [inventory](LEVELS-5-10-INVENTORY.md).
 
+## Progress
+
+- Proficiency Bonus by level everywhere: done.
+- Fighter to level 10 with Extra Attack: done ([Fighter](FIGHTER.md)). In the
+  campaign a Fighter stops at 8 ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
+
 ## How the work runs
 
 As for levels 1–4 ([CLASS-1](SRD-DECISIONS.md#class-1-2026-10-04-finishing-levels-14-for-all-classes)):

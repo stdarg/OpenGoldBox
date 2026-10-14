@@ -566,6 +566,8 @@ struct Definition
     int reach{5};
     Dice ranged;
     int range{}, long_range{}, winds{}, slots{}, casting{}, level{}, slots2{};
+    int extra_attacks{}; // Extra Attack: attacks after the Attack action's first
+    int indomitable{};   // Indomitable's uses per Long Rest
     // Known and prepared spells, by id. Not a bitmask: an int caps the catalog
     // at 31 spells and the level-four milestone needs 139.
     std::vector<std::string> spells;
@@ -654,6 +656,7 @@ struct Definition
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool naturally_stealthy{}; // Halfling: a larger creature is enough to hide behind
+    bool tactical_shift{}, tactical_master{}, heroic_warrior{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -864,7 +867,9 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"bardic_inspiration", "Bardic Inspiration", &Actor::arcane,
         &Definition::bardic_inspiration, 0, true},
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
-        &Definition::metabolism, 0, false}};
+        &Definition::metabolism, 0, false},
+    ResourceDescriptor{"indomitable", "Indomitable", &Actor::arcane, &Definition::indomitable, 0,
+        true}};
 
 // Whether a level-up takes Lessons of the First Ones' Skilled, as a new
 // invocation or one swapped in.
@@ -942,7 +947,7 @@ int surge_capacity(const Definition &d)
 // once per Long Rest.
 int arcane_capacity(const Definition &d)
 {
-    return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration;
+    return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -1153,6 +1158,8 @@ struct ChampionMove
     Cell origin;
     bool triggered{}, cleave{}, helpless{};
     Cell trigger_origin{}, target_origin{};
+    // Tactical Shift (Fighter 5): the same free move, after Second Wind.
+    bool shift{};
 };
 
 struct PendingMastery
@@ -1164,6 +1171,7 @@ struct PendingMastery
     std::string weapon;
     Cell origin;
     unsigned thrown_item{};
+    bool tactical{}; // Tactical Master replaced the weapon's own mastery
 };
 
 struct EffectReaction
@@ -1189,9 +1197,10 @@ struct PendingCheck
 };
 
 // `draconic`: a Draconic Sorcerer gains its level in Hit Points from level 3.
-int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers, bool draconic)
+int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<const int> modifiers,
+                       bool draconic)
 {
-    if (modifiers.empty() || modifiers.size() > 4 ||
+    if (modifiers.empty() || modifiers.size() > detail::level_cap(klass) ||
             std::any_of(modifiers.begin(), modifiers.end(),
                         [](int n)
 {
@@ -1203,7 +1212,9 @@ int maximum_hit_points(int die, bool dwarf, std::span<const int> modifiers, bool
     for (std::size_t i = 1; i < modifiers.size(); ++i)
     {
         const int increase = modifiers[i] - modifiers[i - 1];
-        if (increase < 0 || increase > 1 || (i != 3 && increase))
+        // Constitution rises only with a feat level's ability points.
+        if (increase < 0 || increase > 1 ||
+                (increase && !detail::gains_feat(klass, static_cast<unsigned>(i + 1))))
             throw std::runtime_error("Invalid Constitution advancement history");
         // SRD p. 23: gain HP first, then apply a new modifier per attained level.
         hp += std::max(1, die / 2 + 1 + modifiers[i - 1]) + increase * static_cast<int>(i + 1);
@@ -1239,7 +1250,7 @@ character_definition(std::string_view bytes,
     in >> std::quoted(class_label) >> std::quoted(race);
     for (auto &score : scores)
         in >> score;
-    if (!in || level < 1 || level > 4 || features > 63 ||
+    if (!in || level < 1 || level > 20 || features > 63 ||
             std::any_of(scores.begin(), scores.end(),
                         [](int n)
 {
@@ -1250,6 +1261,8 @@ character_definition(std::string_view bytes,
     if (!character_class)
         throw std::runtime_error("Unknown class");
     const CharacterClass klass = *character_class;
+    if (level > detail::level_cap(klass))
+        throw std::runtime_error("Invalid character profile");
     const auto races = character_rules()->choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
                      [&](const auto & r)
@@ -1274,7 +1287,7 @@ character_definition(std::string_view bytes,
                     : (klass == CharacterClass::wizard || klass == CharacterClass::sorcerer) ? 6
                     : 8;
     Definition d;
-    d.hp = maximum_hit_points(die, race == "Dwarf", hp_modifiers,
+    d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
                               klass == CharacterClass::sorcerer);
     d.hit_die = die;
     d.constitution = con;
@@ -1332,6 +1345,11 @@ character_definition(std::string_view bytes,
     d.melee_bonus = proficiency + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
     d.champion = klass == CharacterClass::fighter && level >= 3;
+    d.extra_attacks = klass == CharacterClass::fighter && level >= 5 ? 1 : 0;
+    d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
+    d.tactical_master = klass == CharacterClass::fighter && level >= 9;
+    d.heroic_warrior = klass == CharacterClass::fighter && level >= 10;
+    d.indomitable = klass == CharacterClass::fighter && level >= 9 ? 1 : 0;
     d.arcane = klass == CharacterClass::wizard ? 1 : 0;
     d.lay_on_hands = klass == CharacterClass::paladin ? 5 * level : 0;
     d.channel_divinity = (klass == CharacterClass::paladin && level >= 3) ||
@@ -1350,7 +1368,8 @@ character_definition(std::string_view bytes,
     d.great_weapon_fighting = (features & 8) != 0;
     d.two_weapon_fighting = (features & 16) != 0;
     d.surges = klass == CharacterClass::fighter && level >= 2 ? 1 : 0;
-    d.winds = klass == CharacterClass::fighter ? (level == 4 ? 3 : 2) : 0;
+    // Second Wind: 2 uses, 3 from level 4, 4 from level 10.
+    d.winds = klass == CharacterClass::fighter ? (level >= 10 ? 4 : level >= 4 ? 3 : 2) : 0;
     // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
     d.slots = klass == CharacterClass::warlock ? (level <= 2 ? static_cast<int>(level) : 0)
               : (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
@@ -1640,11 +1659,18 @@ character_definition(std::string_view bytes,
                          detail::race_id(race), background, level);
     if (effects.feats != features)
         throw std::runtime_error("Character effects disagree with acquired grants");
-    const int initial_con = ability_modifier(scores[Ability::constitution] -
-                                             effects.abilities[Ability::constitution]);
+    // Each level's Constitution modifier: the score before any feat, plus
+    // what the Ability Score Improvements gained by that level gave it.
     for (unsigned i = 0; i < level; ++i)
-        if (hp_modifiers[i] != (i == 3 ? con : initial_con))
+    {
+        int score = scores[Ability::constitution] - effects.abilities[Ability::constitution];
+        for (const auto &g : grants)
+            if (g.id == "feat:ability_score_improvement" && g.level <= i + 1)
+                if (const auto raised = g.choices.find("constitution"); raised != g.choices.end())
+                    score += raised->second == "2" ? 2 : 1;
+        if (hp_modifiers[i] != ability_modifier(score))
             throw std::runtime_error("HP history disagrees with acquired ability choices");
+    }
     if (race == "Dwarf")
         d.affinities.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                                 "species:dwarf/trait:dwarven_resilience"});
@@ -1844,6 +1870,28 @@ bool wears_shield(const Definition &d)
            d.equipment_keys.end();
 }
 
+// Tactical Master's three masteries, by the attack verbs' suffixes, with
+// their commands' labels.
+struct TacticalOption
+{
+    std::string_view suffix;
+    detail::Mastery kind;
+    std::string_view melee_label, ranged_label;
+};
+constexpr std::array<TacticalOption, 3> tactical_masteries{
+    {   {"push", detail::Mastery::push, "Melee attack (Push)", "Ranged attack (Push)"},
+        {"sap", detail::Mastery::sap, "Melee attack (Sap)", "Ranged attack (Sap)"},
+        {"slow", detail::Mastery::slow, "Melee attack (Slow)", "Ranged attack (Slow)"}
+    }};
+
+// An attack the Attack action makes, which Extra Attack repeats; Reckless
+// Attack and the pact weapon's damage types arrive here as "melee".
+bool attack_action(std::string_view verb)
+{
+    return verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot" ||
+           verb.starts_with("throw");
+}
+
 bool turns_to_attack(std::string_view verb)
 {
     // A caster turns toward a foe, not toward an ally being healed, so every
@@ -2041,6 +2089,14 @@ class Session final : public CombatSession
     // The damage type a Pact of the Blade attack being resolved deals instead
     // of its weapon's; set only during that attack.
     std::optional<detail::DamageType> pact_damage_;
+    // Tactical Master (Fighter 9): the mastery the attacker uses for one attack
+    // instead of its weapon's own.
+    struct TacticalMastery
+    {
+        EntityId actor{};
+        detail::Mastery kind{};
+    };
+    std::optional<TacticalMastery> tactical_mastery_;
     std::optional<PendingMastery> mastery_;
     // Creatures chosen so far for a spell that affects several (CLASS-2).
     struct PendingSelection
@@ -2492,6 +2548,12 @@ class Session final : public CombatSession
                      const std::vector<Cell> &cells, int dc);
     [[nodiscard]] int area_dc(const Actor &caster, const detail::SpellDef &spell) const;
     void push_away(const Actor &from, Actor &target, int squares);
+    // A pushed creature stopped by a wall, an obstacle or another creature with
+    // `short_feet` of its push left takes 1d6 Bludgeoning for each 10 feet or
+    // part of it, up to 3d6 (PUSH-1).
+    void slam(Actor &target, int short_feet);
+    // Whether a wall, an obstacle or another creature stands in `cell` (on the board).
+    bool blocks_push(Cell cell, EntityId pushed) const;
     // Whether `other` may make an Opportunity Attack on `moving` stepping from
     // `from` to `to`.
     bool provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const;
@@ -5472,6 +5534,96 @@ std::vector<Command> Session::legal_commands() const
                             offer("light_throw", "nick_throw");
                     }
             }
+    // Tactical Master: the attack with Push, Sap or Slow, other than the
+    // weapon's own mastery.
+    const auto offer_tactical = [&](AttackRange range, bool in_reach, const Actor & other)
+    {
+        const auto own = weapon_mastery(a, range);
+        if (!d.tactical_master || !in_reach || own == detail::Mastery::none)
+            return;
+        const bool melee = range == AttackRange::melee;
+        for (const auto &option : tactical_masteries)
+            if (option.kind != own)
+                add(id, std::string(melee ? "melee_" : "ranged_") + std::string(option.suffix),
+                    std::string(melee ? option.melee_label : option.ranged_label), other.source.id);
+    };
+    // The Attack action's attacks on one foe, with the Magic actions that
+    // attack (which need the Action itself); Extra Attack offers the weapon
+    // attacks again after the action's first attack.
+    const auto offer_attacks = [&](const Actor & other, int feet)
+    {
+        // A Wild Shape form cannot wield its equipment (SRD 5.2.1), so it
+        // draws no Torch or bow and throws no flask.
+        const bool wields_equipment = !a.form;
+        // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
+        // can be equipped with each attack of the Attack action).
+        if (wields_equipment && feet <= 5 && carries(a, "torch"))
+            add(id, "torch", "Torch attack", other.source.id);
+        // A carried bow or crossbow is drawn as part of the attack, too.
+        if (const auto bow = wields_equipment ? carried_ranged_weapon(a) : std::string_view{};
+                !bow.empty() && feet <= detail::weapon(bow)->long_range)
+            add(id, "shoot", "Shoot", other.source.id);
+        for (const auto &gear : detail::thrown_gear_items)
+            if (wields_equipment && feet <= detail::thrown_gear_range &&
+                    a.thrown_gear_left[static_cast<std::size_t>(gear.effect)])
+                add(id, "throw_" + std::string(gear.key), "Throw " + std::string(gear.label),
+                    other.source.id);
+        if (wields_equipment && physical_inventory_)
+            for (const auto &item : items_)
+                if (item.holder == id)
+                    if (const auto *w = detail::weapon(item.definition);
+                            w && w->thrown && feet <= w->long_range)
+                    {
+                        add(id, "throw", "Throw", other.source.id);
+                        commands.back().item = item.id;
+                    }
+        if (feet <= d.reach)
+            add(id, "melee",
+                a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
+                : "Melee attack",
+                other.source.id);
+        // Pact of the Blade: the pact weapon may deal Necrotic, Psychic
+        // or Radiant damage instead of its own type.
+        if (feet <= d.reach && d.pact_of_the_blade && d.melee.count && !d.ranged_weapon &&
+                !d.weapon_label.empty())
+        {
+            add(id, "melee_necrotic", "Melee attack (Necrotic)", other.source.id);
+            add(id, "melee_psychic", "Melee attack (Psychic)", other.source.id);
+            add(id, "melee_radiant", "Melee attack (Radiant)", other.source.id);
+        }
+        offer_tactical(AttackRange::melee, feet <= d.reach, other);
+        // Flame Blade: a melee spell attack with the blade as an Action.
+        if (feet <= 5 && a.actions.available(true) &&
+                detail::has_effect(a.effects, detail::EffectKind::flame_blade))
+            add(id, "flame_blade_strike", "Flame Blade attack", other.source.id);
+        // Produce Flame: the flame in hand is hurled as an Action.
+        if (feet <= 60 && a.actions.available(true) &&
+                detail::has_effect(a.effects, detail::EffectKind::produce_flame))
+            add(id, "hurl_flame", "Hurl flame (Produce Flame)", other.source.id);
+        // Reckless Attack: chosen with the turn's first attack roll, which
+        // is the Attack action's first attack.
+        if (feet <= d.reach && d.reckless && strength_attack(a, AttackRange::melee))
+            add(id, "reckless", "Reckless attack", other.source.id);
+        // True Strike: the cantrip's attack with the melee weapon in hand.
+        if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
+                detail::knows_spell(d.spells, "true_strike") && a.actions.available(true))
+        {
+            add(id, "true_strike", "True Strike", other.source.id);
+            add(id, "true_strike_radiant", "True Strike (Radiant)", other.source.id);
+        }
+        if (d.range > 0 && feet <= d.long_range)
+        {
+            add(id, "ranged", "Ranged attack", other.source.id);
+            offer_tactical(AttackRange::ranged, true, other);
+        }
+    };
+    // Extra Attack: the Attack action's later attacks, once its first is made.
+    if (!a.actions.available() && a.actions.extra_attacks > 0)
+        for (const auto &other : actors_)
+            if (!other.life.dead && other.source.side != a.source.side &&
+                    (other.life.hp > 0 || may_rise(other)) &&
+                    line_of_sight(a.source.cell, other.source.cell))
+                offer_attacks(other, distance(a.source.cell, other.source.cell));
     if (a.actions.available())
     {
         offer_spells(commands, a, a, 0, detail::SpellTarget::area, false);
@@ -5529,66 +5681,7 @@ std::vector<Command> Session::legal_commands() const
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
             if (other.source.side != a.source.side && (other.life.hp > 0 || may_rise(other)))
             {
-                // A Wild Shape form cannot wield its equipment (SRD 5.2.1), so it
-                // draws no Torch or bow and throws no flask.
-                const bool wields_equipment = !a.form;
-                // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
-                // can be equipped with each attack of the Attack action).
-                if (wields_equipment && feet <= 5 && carries(a, "torch"))
-                    add(id, "torch", "Torch attack", other.source.id);
-                // A carried bow or crossbow is drawn as part of the attack, too.
-                if (const auto bow = wields_equipment ? carried_ranged_weapon(a) : std::string_view{};
-                        !bow.empty() && feet <= detail::weapon(bow)->long_range)
-                    add(id, "shoot", "Shoot", other.source.id);
-                for (const auto &gear : detail::thrown_gear_items)
-                    if (wields_equipment && feet <= detail::thrown_gear_range &&
-                            a.thrown_gear_left[static_cast<std::size_t>(gear.effect)])
-                        add(id, "throw_" + std::string(gear.key), "Throw " + std::string(gear.label),
-                            other.source.id);
-                if (wields_equipment && physical_inventory_)
-                    for (const auto &item : items_)
-                        if (item.holder == id)
-                            if (const auto *w = detail::weapon(item.definition);
-                                    w && w->thrown && feet <= w->long_range)
-                            {
-                                add(id, "throw", "Throw", other.source.id);
-                                commands.back().item = item.id;
-                            }
-                if (feet <= d.reach)
-                    add(id, "melee",
-                        a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
-                        : "Melee attack",
-                        other.source.id);
-                // Pact of the Blade: the pact weapon may deal Necrotic, Psychic
-                // or Radiant damage instead of its own type.
-                if (feet <= d.reach && d.pact_of_the_blade && d.melee.count && !d.ranged_weapon &&
-                        !d.weapon_label.empty())
-                {
-                    add(id, "melee_necrotic", "Melee attack (Necrotic)", other.source.id);
-                    add(id, "melee_psychic", "Melee attack (Psychic)", other.source.id);
-                    add(id, "melee_radiant", "Melee attack (Radiant)", other.source.id);
-                }
-                // Flame Blade: a melee spell attack with the blade as an Action.
-                if (feet <= 5 && a.actions.available(true) &&
-                        detail::has_effect(a.effects, detail::EffectKind::flame_blade))
-                    add(id, "flame_blade_strike", "Flame Blade attack", other.source.id);
-                // Produce Flame: the flame in hand is hurled as an Action.
-                if (feet <= 60 && a.actions.available(true) &&
-                        detail::has_effect(a.effects, detail::EffectKind::produce_flame))
-                    add(id, "hurl_flame", "Hurl flame (Produce Flame)", other.source.id);
-                // Reckless Attack: chosen with the turn's first attack roll, which
-                // through level four is the Attack action's one attack.
-                if (feet <= d.reach && d.reckless && strength_attack(a, AttackRange::melee))
-                    add(id, "reckless", "Reckless attack", other.source.id);
-                // True Strike: the cantrip's attack with the melee weapon in hand.
-                if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
-                        detail::knows_spell(d.spells, "true_strike") && a.actions.available(true))
-                {
-                    add(id, "true_strike", "True Strike", other.source.id);
-                    add(id, "true_strike_radiant", "True Strike (Radiant)", other.source.id);
-                }
-                if (d.range > 0 && feet <= d.long_range)
-                    add(id, "ranged", "Ranged attack", other.source.id);
+                offer_attacks(other, feet);
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
             }
             // A downed foe is struck only by Scorching Ray (the user's call);
@@ -6523,6 +6616,38 @@ void Session::push_away(const Actor &from, Actor &target, int squares)
             "{name} is pushed {feet} feet.",
             {{"name", target.source.name}, {"feet", std::to_string(5 * moved)}}
         });
+    // The battlefield's edge is open ground beyond, not a wall.
+    if (const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
+            moved < squares && (sx || sy) && board_.contains(next))
+        slam(target, 5 * (squares - moved));
+}
+
+bool Session::blocks_push(Cell cell, EntityId pushed) const
+{
+    return board_.contains(cell) &&
+           (board_.at(cell) == Terrain::obstacle ||
+            std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return !other.life.dead && other.source.id != pushed && other.source.cell == cell;
+    }));
+}
+
+void Session::slam(Actor &target, int short_feet)
+{
+    if (short_feet <= 0 || target.life.dead)
+        return;
+    const int dice = std::min(3, (short_feet + 9) / 10);
+    int rolled = 0;
+    for (int n = 0; n < dice; ++n)
+        rolled += roll(6);
+    const int amount = resolved_damage(target, detail::DamageType::bludgeoning, rolled);
+    log(target.source.name + " slams into an obstacle and takes " + std::to_string(amount) +
+        " Bludgeoning damage.",
+    {
+        "{name} slams into an obstacle and takes {damage} Bludgeoning damage.",
+        {{"name", target.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(target, amount);
 }
 
 bool Session::provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const
@@ -7443,9 +7568,13 @@ detail::Mastery Session::weapon_mastery(const Actor &a, AttackRange range) const
         return detail::Mastery::none;
     for (const auto &key : d.equipment_keys)
         if (const auto *weapon = detail::weapon(key))
-            return std::find(d.masteries.begin(), d.masteries.end(), key) != d.masteries.end()
-                   ? weapon->mastery
-                   : detail::Mastery::none;
+        {
+            if (std::find(d.masteries.begin(), d.masteries.end(), key) == d.masteries.end())
+                return detail::Mastery::none;
+            return tactical_mastery_ && tactical_mastery_->actor == a.source.id
+                   ? tactical_mastery_->kind
+                   : weapon->mastery;
+        }
     return detail::Mastery::none;
 }
 
@@ -8570,6 +8699,17 @@ bool Session::begin_turn()
                 effect.dc > a.life.temporary_hp.amount)
             detail::grant_temporary_hp(a.life, {effect.dc, "spell:heroism"},
                                        TemporaryHpChoice::use_new);
+    // Heroic Warrior (Champion 10): Heroic Inspiration at the start of each
+    // turn in a fight, when the Fighter lacks it.
+    if (def(a).heroic_warrior && conscious(a) &&
+            !detail::has_effect(a.effects, detail::EffectKind::heroic_inspiration) &&
+            detail::can_apply(a.effects))
+    {
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::heroic_inspiration, 0);
+        log(a.source.name + " gains Heroic Inspiration (Heroic Warrior).",
+        {"{name} gains Heroic Inspiration (Heroic Warrior).", {{"name", a.source.name}}});
+    }
     // Burning: 1d4 Fire damage at the start of each turn until put out.
     if (a.burning && !a.life.dead)
     {
@@ -8796,6 +8936,20 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
             result.success = result.natural + result.bonus >= dc;
             log_save(target, result);
         }
+    // Indomitable: the Fighter rerolls a failed save it could still pass,
+    // adding its Fighter level, without asking, as Heroic Inspiration does.
+    if (auto &fighter = actor(target.source.id);
+            !result.success && def(fighter).indomitable && fighter.arcane > 0 &&
+            conscious(fighter) && result.bonus + def(fighter).level + 20 >= dc)
+    {
+        --fighter.arcane;
+        result.natural = roll(20);
+        result.bonus += def(fighter).level;
+        result.success = result.natural + result.bonus >= dc;
+        log(fighter.source.name + " uses Indomitable and rolls the save again.",
+        {"{name} uses Indomitable and rolls the save again.", {{"name", fighter.source.name}}});
+        log_save(target, result);
+    }
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
         if (const int die = inspiration_roll(target, dc - result.natural - result.bonus))
@@ -9533,6 +9687,18 @@ void Session::dispatch(const Command &command)
         dispatch(melee);
         return;
     }
+    // Tactical Master: Push, Sap or Slow in place of the weapon's mastery.
+    for (const auto &option : tactical_masteries)
+        for (const std::string_view base : {"melee", "ranged"})
+            if (command.verb == std::string(base) + "_" + std::string(option.suffix))
+            {
+                tactical_mastery_ = TacticalMastery{command.actor, option.kind};
+                auto plain = command;
+                plain.verb = base;
+                dispatch(plain);
+                tactical_mastery_.reset();
+                return;
+            }
     if (command.verb == "melee_necrotic" || command.verb == "melee_psychic" ||
             command.verb == "melee_radiant")
     {
@@ -10074,6 +10240,20 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         --a.winds;
         heal(a, roll(10) + d.level);
+        // Tactical Shift: up to half Speed without provoking Opportunity Attacks.
+        if (const int feet = std::max(0, d.speed - detail::speed_penalty(a.effects)) / 2;
+                d.tactical_shift && feet > 0 && conscious(a))
+        {
+            champion_move_ = ChampionMove{.actor = a.source.id, .target = a.source.id,
+                                          .remaining = feet, .origin = a.source.cell,
+                                          .shift = true};
+            log("Tactical Shift: " + a.source.name + " may move " + std::to_string(feet) +
+                " feet without provoking Opportunity Attacks.",
+            {
+                "Tactical Shift: {name} may move {feet} feet without provoking Opportunity Attacks.",
+                {{"name", a.source.name}, {"feet", std::to_string(feet)}}
+            });
+        }
     }
     else if (command.verb == "lay_on_hands_cure")
     {
@@ -10130,8 +10310,15 @@ void Session::dispatch(const Command &command)
     }
     else
     {
-        a.nick_origin = 0;
-        (void)a.actions.spend(detail::find_spell(command.verb) != nullptr);
+        // Extra Attack: a later attack of the same Attack action spends nothing.
+        const bool attacking = attack_action(command.verb);
+        if (!attacking || !a.actions.attack_again())
+        {
+            a.nick_origin = 0;
+            (void)a.actions.spend(detail::find_spell(command.verb) != nullptr);
+            if (attacking)
+                a.actions.extra_attacks = static_cast<unsigned>(d.extra_attacks);
+        }
         if (command.verb == "dash")
         {
             a.movement += d.speed;
@@ -10265,7 +10452,8 @@ std::string Session::save() const
             << a.hit_dice << ' ' << a.life.recovery.death_save_in_ms << ' '
             << detail::encode_stable_recovery(a.life.recovery) << ' ' << a.life.temporary_hp.amount << ' '
             << std::quoted(a.life.temporary_hp.source_id) << ' ' << a.rushes << ' ' << a.rush_used
-            << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' ' << a.dashes
+            << ' ' << a.surges << ' ' << a.surge_used << ' ' << a.actions.surge << ' '
+            << a.actions.extra_attacks << ' ' << a.dashes
             << ' ' << a.arcane << ' ' << a.lay_on_hands << ' ' << a.free_casts << ' '
             << a.channel_divinity << ' ' << a.initiate_casts << ' ' << a.smite_target << ' '
             << a.smite_critical << ' '
@@ -10329,7 +10517,7 @@ std::string Session::save() const
     {
         const auto &c = *champion_move_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
-            << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << '\n';
+            << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << ' ' << c.shift << '\n';
     }
     out << static_cast<bool>(graze_) << '\n';
     if (graze_)
@@ -10345,7 +10533,7 @@ std::string Session::save() const
         out << m.actor << ' ' << m.target << ' ' << static_cast<unsigned>(m.kind) << ' '
             << m.natural << ' '
             << m.ranged << ' ' << m.targeting << ' ' << std::quoted(m.weapon) << ' '
-            << m.origin.x << ' ' << m.origin.y << ' ' << m.thrown_item << '\n';
+            << m.origin.x << ' ' << m.origin.y << ' ' << m.thrown_item << ' ' << m.tactical << '\n';
     }
     const auto extra = [&](const ChampionMove & c)
     {
@@ -10455,7 +10643,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.hit_dice >> actor.life.recovery.death_save_in_ms >>
           actor.life.recovery.stable_recovery_in_ms >> actor.life.temporary_hp.amount >>
           std::quoted(actor.life.temporary_hp.source_id) >> actor.rushes >> actor.rush_used >>
-          actor.surges >> actor.surge_used >> actor.actions.surge >> actor.dashes >> actor.arcane >>
+          actor.surges >> actor.surge_used >> actor.actions.surge >> actor.actions.extra_attacks >>
+          actor.dashes >> actor.arcane >>
           actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >>
           actor.initiate_casts >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
@@ -10529,6 +10718,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             static_cast<int>(actor.rush_used || bonus_dash) +
             static_cast<int>(actor.surge_used && !actor.actions.surge))
         throw std::runtime_error("Invalid Dash allowance count");
+    // Extra Attack's attacks follow an Attack action already taken.
+    if (actor.actions.extra_attacks > static_cast<unsigned>(definition.extra_attacks) ||
+            (actor.actions.extra_attacks && actor.actions.normal && !actor.surge_used))
+        throw std::runtime_error("Invalid Extra Attack count");
     // The upper bound waits for the effects, read later: Aid raises it.
     if (actor.life.hp < 0 || (actor.life.dead && actor.life.hp > 0) ||
             // Dash spends the action before adding a second movement allowance.
@@ -10719,6 +10912,19 @@ void Session::validate_champion_move() const
     {
         return a.source.id == c.actor;
     });
+    if (c.shift)
+    {
+        // Tactical Shift: the turn's Fighter, after its Second Wind.
+        const int budget = who == actors_.end() ? 0
+                           : std::max(0, def(*who).speed - detail::speed_penalty(who->effects)) / 2;
+        if (who == actors_.end() || !def(*who).tactical_shift || !conscious(*who) ||
+                c.actor != actors_[turn_].source.id || c.target != c.actor || c.natural ||
+                c.spell || c.triggered || who->bonus || pending() || c.remaining < 0 ||
+                c.remaining > budget || !board_.contains(c.origin) ||
+                distance(c.origin, who->source.cell) > budget - c.remaining)
+            throw std::runtime_error("Invalid Tactical Shift movement");
+        return;
+    }
     const auto target = std::find_if(actors_.begin(), actors_.end(),
                                      [&](const auto & a)
     {
@@ -11156,7 +11362,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         ChampionMove c;
         input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
-              c.origin.y;
+              c.origin.y >> c.shift;
         if (!input)
             throw std::runtime_error("Invalid Champion movement checkpoint");
         session->champion_move_ = c;
@@ -11177,7 +11383,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         PendingMastery m;
         unsigned kind{};
         input >> m.actor >> m.target >> kind >> m.natural >> m.ranged >> m.targeting >>
-              std::quoted(m.weapon) >> m.origin.x >> m.origin.y >> m.thrown_item;
+              std::quoted(m.weapon) >> m.origin.x >> m.origin.y >> m.thrown_item >> m.tactical;
         m.kind = static_cast<detail::Mastery>(kind);
         session->mastery_ = std::move(m);
     }
@@ -11494,8 +11700,10 @@ class Module final : public RulesModule
 
     unsigned experience_for_level(unsigned level) const override
     {
-        static constexpr unsigned thresholds[] {0, 0, 300, 900, 2700};
-        if (level < 1 || level > 4)
+        // SRD 5.2.1 p. 23, through level 10.
+        static constexpr unsigned thresholds[] {0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000,
+                                                48000, 64000};
+        if (level < 1 || level > 10)
             throw std::runtime_error("Unsupported character level");
         return thresholds[level];
     }
@@ -11506,7 +11714,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::wizard && sheet.level >= 2)
             return {detail::scholar_options(sheet.grants)};
         if (klass == CharacterClass::fighter && sheet.level >= 4)
-            return {detail::mastery_options(CharacterClass::fighter, 4, sheet.grants)};
+            return later_masteries(klass, sheet);
         if (klass == CharacterClass::sorcerer && sheet.level >= 2)
             return {detail::metamagic_options()};
         if (klass == CharacterClass::bard && sheet.level >= 3)
@@ -11516,9 +11724,8 @@ class Module final : public RulesModule
         if (klass == CharacterClass::barbarian && sheet.level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
-            if (sheet.level >= 4)
-                groups.push_back(
-                    detail::mastery_options(CharacterClass::barbarian, 4, sheet.grants));
+            for (auto &group : later_masteries(klass, sheet))
+                groups.push_back(std::move(group));
             return groups;
         }
         return {};
@@ -11624,9 +11831,10 @@ class Module final : public RulesModule
 
     AdvancementOptions advancement_options(const CharacterSheet &sheet) const override
     {
-        // Every class advances to level four; class_of rejects a label no class has.
+        // Each class advances to its cap (LEVELS-1); class_of rejects a label
+        // no class has.
         const auto klass = detail::class_of(sheet);
-        if (sheet.level >= 4)
+        if (static_cast<unsigned>(sheet.level) >= detail::level_cap(klass))
             return {};
         AdvancementOptions result;
         result.level = sheet.level + 1;
@@ -11670,8 +11878,20 @@ class Module final : public RulesModule
         }
         if (klass == CharacterClass::wizard && result.level == 2)
             result.training = {detail::scholar_options(sheet.grants)};
-        if (klass == CharacterClass::fighter && result.level == 4)
-            result.training = {detail::mastery_options(CharacterClass::fighter, 4, sheet.grants)};
+        if (klass == CharacterClass::fighter && (result.level == 4 || result.level == 10))
+            result.training = {
+                detail::mastery_options(CharacterClass::fighter, result.level, sheet.grants)};
+        // The Champion's Additional Fighting Style: a Fighting Style feat it
+        // does not have yet.
+        if (klass == CharacterClass::fighter && result.level == 7)
+        {
+            TrainingChoiceGroup group{std::string(detail::champion_style), "Additional Fighting Style",
+                                      1, {}, TrainingChoiceControl::single_selection};
+            for (const auto &style : detail::fighting_styles())
+                if (!detail::has_grant(sheet.grants, "feat:" + style.id))
+                    group.options.push_back({style.id, style.label, style.description});
+            result.training = {std::move(group)};
+        }
         if (klass == CharacterClass::barbarian && result.level == 3)
             result.training = {detail::primal_knowledge_options(sheet.grants)};
         if (klass == CharacterClass::sorcerer && result.level == 2)
@@ -11708,6 +11928,17 @@ class Module final : public RulesModule
         if (klass == CharacterClass::fighter && result.level == 3)
             result.description =
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
+        if (klass == CharacterClass::fighter && result.level == 5)
+            result.description =
+                "Extra Attack: two attacks with each Attack action.\nTactical Shift: after Second Wind, move up to half Speed without provoking Opportunity Attacks.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::fighter && result.level == 7)
+            result.description = "Champion: a second Fighting Style feat.";
+        if (klass == CharacterClass::fighter && result.level == 9)
+            result.description =
+                "Indomitable: once per Long Rest, reroll a failed saving throw, adding your Fighter level.\nTactical Master: an attack may use Push, Sap or Slow instead of its weapon's mastery.\nProficiency Bonus +4.";
+        if (klass == CharacterClass::fighter && result.level == 10)
+            result.description =
+                "Champion: Heroic Inspiration at the start of each of your turns in a fight, when you lack it.\nA fifth Weapon Mastery, and a fourth Second Wind.";
         if (klass == CharacterClass::rogue && result.level >= 3)
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
@@ -11729,7 +11960,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::ranger)
             result.description =
                 "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
-        if (result.level == 4)
+        if (detail::gains_feat(klass, result.level))
             result.feats =
         {
             {
@@ -11770,15 +12001,20 @@ class Module final : public RulesModule
                 "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn.",
                 !detail::has_grant(sheet.grants, "feat:alert")
             },
-            // Repeatable: availability does not exclude already holding it. Only
-            // one level-four entitlement exists, so a second acquisition is not
-            // reachable yet; the entitlement check rejects reusing this one.
+            // Repeatable in the SRD; the game takes it once from a feat
+            // level (a Human's Versatile Skilled aside), since its skills are
+            // recorded as one group.
             {
                 "skilled", "Skilled",
-                "Gain proficiency in any three skills of your choice."
+                "Gain proficiency in any three skills of your choice.",
+                std::none_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
+                {
+                    return g.id == "feat:skilled" &&
+                           g.source_id.ends_with(":ability_score_improvement");
+                })
             }
         };
-        if (result.level == 4)
+        if (detail::gains_feat(klass, result.level))
         {
             // After Savage Attacker, where the single Magic Initiate entry stood.
             const auto initiate = detail::magic_initiate_feats(sheet.grants);
@@ -11851,7 +12087,8 @@ class Module final : public RulesModule
         }
         // Skilled's proficiency page exists only while Skilled is the selection,
         // so switching away from it drops the group and its unconfirmed picks.
-        if (choice.feat == "skilled" && options.level == 4)
+        if (choice.feat == "skilled" && options.level &&
+                detail::gains_feat(detail::class_of(sheet), options.level))
             options.training.push_back(detail::skilled_options(sheet.grants));
         // Lessons of the First Ones' Skilled asks for its skills when it is
         // taken, as a new invocation or a replacement.
@@ -11919,7 +12156,7 @@ class Module final : public RulesModule
                         choice.spells.end())
                     choice.spells.push_back(spell.id);
         }
-        if (options.level == 4)
+        if (detail::gains_feat(klass, options.level))
         {
             choice.feat = "ability_score_improvement";
             const Ability primary =
@@ -11996,7 +12233,8 @@ class Module final : public RulesModule
                     throw std::runtime_error("A blast invocation needs the cantrip it improves.");
         // Magic Initiate's spells are chosen with the level's other spells,
         // whether the feat comes at level four or from Lessons of the First Ones.
-        if (choice.feat.starts_with("magic_initiate_") && next.level == 4)
+        if (choice.feat.starts_with("magic_initiate_") &&
+                detail::gains_feat(klass, static_cast<unsigned>(next.level)))
             next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
         const auto invocations = "class:warlock:invocations:2";
         if (const auto lessons = choice.training.find(invocations);
@@ -12035,7 +12273,7 @@ class Module final : public RulesModule
                 throw std::runtime_error("An ability increase cannot exceed 2");
             points += n;
         }
-        if (options.level == 4)
+        if (detail::gains_feat(klass, options.level))
         {
             const auto feat = std::find_if(options.feats.begin(), options.feats.end(),
                                            [&](const auto & f)
@@ -12052,7 +12290,7 @@ class Module final : public RulesModule
                 throw std::runtime_error("Choose exactly three Skilled proficiencies");
         }
         else if (!choice.feat.empty() || points)
-            throw std::runtime_error("Feats and ability points are available at level 4");
+            throw std::runtime_error("Feats and ability points come only at the class's feat levels");
         // Classes that prepare spells validate their choices through
         // apply_spell_choices below, against the whole class list.
         std::set<std::string> selected;
@@ -12114,6 +12352,7 @@ class Module final : public RulesModule
                     : id == "invocation:lessons_skilled" ? value
                     : id == "subclass:bard:lore" ? "skill:" + value
                     : id == "subclass:druid:land" ? "land:" + value
+                    : id == detail::champion_style ? "feat:" + value
                     : "mastery:" + value,
                     id,
                     static_cast<unsigned>(next.level),
@@ -12197,6 +12436,8 @@ class Module final : public RulesModule
         }
         if (klass == CharacterClass::rogue && next.level == 2)
             next.grants.push_back({"feature:cunning_action", "class:rogue", 2, {}});
+        for (auto &grant : detail::higher_level_features(klass, static_cast<unsigned>(next.level)))
+            next.grants.push_back(std::move(grant));
         if (klass == CharacterClass::fighter && next.level == 2)
         {
             next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
@@ -12247,7 +12488,8 @@ class Module final : public RulesModule
                 throw std::runtime_error("Ability scores cannot exceed 20");
             next.modifiers[ability] = ability_modifier(next.scores[ability]);
             next.saving_throws[ability] =
-                next.modifiers[ability] + (next.save_proficiencies[ability] ? 2 : 0);
+                next.modifiers[ability] +
+                (next.save_proficiencies[ability] ? 2 + (static_cast<int>(next.level) - 1) / 4 : 0);
         }
         if (points)
         {
@@ -12290,7 +12532,7 @@ class Module final : public RulesModule
                             detail::background_id(next.background), next.level, next.scores);
         next.hit_point_modifiers.push_back(next.modifiers[Ability::constitution]);
         next.hit_points =
-            maximum_hit_points(next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
+            maximum_hit_points(klass, next.hit_die, next.race == "Dwarf", next.hit_point_modifiers,
                                klass == CharacterClass::sorcerer);
         if (next.race == "Dwarf")
         {
@@ -13112,9 +13354,11 @@ class Module final : public RulesModule
     CharacterProfile character_profile(const CharacterSheet &sheet,
                                        std::span<const std::string> gear) const override
     {
-        if (sheet.identity != character_rules()->identity() || sheet.level < 1 || sheet.level > 4)
+        if (sheet.identity != character_rules()->identity() || sheet.level < 1)
             throw std::runtime_error("Unsupported character rules identity or level");
         const auto klass = detail::class_of(sheet);
+        if (static_cast<unsigned>(sheet.level) > detail::level_cap(klass))
+            throw std::runtime_error("Unsupported character rules identity or level");
         (void)detail::training_profile(sheet.grants, klass, sheet.race,
                                        detail::background_id(sheet.background), sheet.level,
                                        sheet.scores);
@@ -13128,16 +13372,27 @@ class Module final : public RulesModule
         const unsigned features = effects.feats;
         if (std::cmp_not_equal(sheet.hit_point_modifiers.size(), sheet.level))
             throw std::runtime_error("HP history does not match character advancement");
-        const bool asi = detail::has_grant(sheet.grants, "feat:ability_score_improvement");
-        if (sheet.ability_adjustments.size() != (asi ? 2u : 1u))
+        // After the background's, one adjustment for each Ability Score
+        // Improvement, in level order, together adding what the grants record.
+        std::vector<unsigned> asi_levels;
+        for (const auto &g : sheet.grants)
+            if (g.id == "feat:ability_score_improvement")
+                asi_levels.push_back(g.level);
+        std::sort(asi_levels.begin(), asi_levels.end());
+        if (sheet.ability_adjustments.size() != 1 + asi_levels.size())
             throw std::runtime_error("Ability sources disagree with acquired grants");
-        if (asi)
+        AbilityArray<int> raised{};
+        for (std::size_t i = 0; i < asi_levels.size(); ++i)
         {
-            const auto &adjustment = sheet.ability_adjustments.back();
-            if (adjustment.source_id != "feat:ability_score_improvement" || adjustment.level != 4 ||
-                    adjustment.bonuses != effects.abilities)
+            const auto &adjustment = sheet.ability_adjustments[i + 1];
+            if (adjustment.source_id != "feat:ability_score_improvement" ||
+                    adjustment.level != asi_levels[i])
                 throw std::runtime_error("Ability sources disagree with acquired choices");
+            for (const auto ability : all_abilities)
+                raised[ability] += adjustment.bonuses[ability];
         }
+        if (raised != effects.abilities)
+            throw std::runtime_error("Ability sources disagree with acquired choices");
         for (const auto ability : all_abilities)
         {
             const auto bonuses =
@@ -13586,6 +13841,18 @@ class Module final : public RulesModule
   private:
     std::shared_ptr<const Content> content_;
 
+    // The Weapon Mastery kinds learned after level 1, through the sheet's level.
+    static std::vector<TrainingChoiceGroup> later_masteries(CharacterClass klass,
+            const CharacterSheet &sheet)
+    {
+        std::vector<TrainingChoiceGroup> groups;
+        for (const auto acquired : detail::mastery_levels)
+            if (acquired > 1 && acquired <= static_cast<unsigned>(sheet.level))
+                if (auto group = detail::mastery_options(klass, acquired, sheet.grants); group.count)
+                    groups.push_back(std::move(group));
+        return groups;
+    }
+
     // Weapon Mastery's picks, once every one is chosen.
     static std::optional<TrainingReplacementOptions> mastery_rest_choice(const CharacterSheet &sheet)
     {
@@ -13593,8 +13860,9 @@ class Module final : public RulesModule
         auto group = detail::mastery_options(klass, 1);
         if (!group.count)
             return {};
-        if (sheet.level >= 4)
-            group.count += detail::mastery_options(klass, 4).count;
+        for (const auto acquired : detail::mastery_levels)
+            if (acquired > 1 && acquired <= static_cast<unsigned>(sheet.level))
+                group.count += detail::mastery_options(klass, acquired).count;
         const auto choices = detail::mastery_choices(sheet.grants, klass, sheet.level);
         std::vector<std::string> selected;
         for (const auto &[source, values] : choices)
@@ -13678,7 +13946,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.192", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.193", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

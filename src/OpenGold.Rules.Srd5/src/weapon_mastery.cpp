@@ -15,7 +15,7 @@ void require(bool value)
 
 unsigned count(CharacterClass klass, unsigned acquired)
 {
-    if (acquired == 4)
+    if (acquired == 4 || acquired == 10)
         return klass == CharacterClass::fighter || klass == CharacterClass::barbarian ? 1 : 0;
     if (acquired != 1)
         return 0;
@@ -120,6 +120,11 @@ rules::TrainingChoices mastery_choices(std::span<const rules::FeatureGrant> gran
     return result;
 }
 
+std::string mastery_source(CharacterClass klass, unsigned acquired_level)
+{
+    return source(klass, acquired_level);
+}
+
 unsigned mastery_replacements(CharacterClass klass)
 {
     return klass == CharacterClass::fighter || klass == CharacterClass::barbarian ? 1
@@ -133,13 +138,10 @@ std::vector<rules::FeatureGrant> replace_masteries(std::span<const rules::Featur
         CharacterClass klass, unsigned level,
         std::span<const std::string> selected)
 {
-    require(level <= 4);
+    require(level <= 20);
     const auto previous = mastery_choices(grants, klass, level);
     unsigned capacity = 0;
-    for (const unsigned acquired :
-            {
-                1u, 4u
-            })
+    for (const unsigned acquired : mastery_levels)
         if (acquired <= level)
         {
             const auto n = count(klass, acquired);

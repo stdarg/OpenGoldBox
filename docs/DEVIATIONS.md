@@ -66,7 +66,8 @@ are implemented; their screen is not yet
 ([#9](https://github.com/stdarg/OpenGold/issues/9)).
 
 - **Levels anywhere.** The original raised levels only at a training hall, for
-  1,000 gp. OpenGoldBox raises them from the roster's Advance button anywhere.
+  1,000 gp. OpenGoldBox raises them from the roster's Advance button anywhere,
+  up to the hall's original limits ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
 - **Halls sell experience.** One session per level grants half the experience
   to the next level, for 1,000 gp at level 1, doubling at each level.
 - **Halls train skills.** Skills from the hall's classes' lists: proficiency
