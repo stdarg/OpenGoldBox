@@ -2270,6 +2270,30 @@ class Session final : public CombatSession
     std::size_t path_index_{};
     std::vector<EntityId> reactors_;
     std::size_t reactor_index_{};
+    // A creature moving outside its own turn (Dissonant Whispers' flight),
+    // with the feet it has left; path_ and reactors_ then follow it.
+    struct Flight
+    {
+        EntityId actor{};
+        int remaining{};
+    };
+    std::optional<Flight> flight_;
+
+    // The creature path_ moves: the fleeing one, or the one whose turn it is.
+    Actor &mover()
+    {
+        return flight_ ? actor(flight_->actor) : actors_[turn_];
+    }
+
+    const Actor &mover() const
+    {
+        return flight_ ? actor(flight_->actor) : actors_[turn_];
+    }
+
+    int mover_budget(const Actor &m) const
+    {
+        return flight_ ? flight_->remaining : movement_left(m);
+    }
 
     const Definition &def(const Actor &a) const
     {
@@ -2466,6 +2490,12 @@ class Session final : public CombatSession
                      const std::vector<Cell> &cells, int dc);
     [[nodiscard]] int area_dc(const Actor &caster, const detail::SpellDef &spell) const;
     void push_away(const Actor &from, Actor &target, int squares);
+    // Whether `other` may make an Opportunity Attack on `moving` stepping from
+    // `from` to `to`.
+    bool provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const;
+    // Dissonant Whispers' flight from `from` within `budget` feet: the
+    // farthest square, by the route that provokes fewest Opportunity Attacks.
+    std::vector<Cell> flight_route(const Actor &from, const Actor &target, int budget) const;
     void ice_burst(Actor &caster, const Actor &target, bool upcast);
     void condition_area(Actor &caster, const detail::SpellDef &spell,
                         const std::vector<Cell> &cells);
@@ -2973,7 +3003,7 @@ bool Session::weapon_reaction(const Actor &a, const Definition &weapon) const
 {
     if (!pending() || path_index_ >= path_.size())
         return false;
-    return distance(a.source.cell, actors_[turn_].source.cell) <= weapon.reach &&
+    return distance(a.source.cell, mover().source.cell) <= weapon.reach &&
            distance(a.source.cell, path_[path_index_]) > weapon.reach;
 }
 
@@ -4130,11 +4160,21 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // Its Reaction carries it as far from the caster as it can.
         if (!target.reaction || detail::incapacitated(target.effects))
             return;
+    {
         target.reaction = false;
         log(target.source.name + " flees from " + a.source.name + ".",
         {"{name} flees from {caster}.", {{"name", target.source.name}, {"caster", a.source.name}}});
-        push_away(a, target, std::max(0, def(target).speed - detail::speed_penalty(target.effects)) / 5);
+        // It moves with its Reaction, so leaving a reach provokes as any move.
+        const int budget = std::max(0, def(target).speed - detail::speed_penalty(target.effects));
+        auto route = flight_route(a, target, budget);
+        if (route.empty() || !path_.empty())
+            return;
+        flight_ = Flight{target.source.id, budget};
+        path_ = std::move(route);
+        path_index_ = 0;
+        progress_movement();
         return;
+    }
     case detail::Rider::starry_wisp:
     {
         const auto index = index_of(a.source.id);
@@ -5084,7 +5124,7 @@ std::vector<Command> Session::legal_commands() const
         });
         add_weapons(*reactor, true);
         if (weapon_reaction(*reactor, def(*reactor)))
-            add(pending(), "opportunity", "Opportunity attack", actors_[turn_].source.id);
+            add(pending(), "opportunity", "Opportunity attack", mover().source.id);
         add(pending(), "decline", "Decline reaction");
         return filtered();
     }
@@ -6483,6 +6523,84 @@ void Session::push_away(const Actor &from, Actor &target, int squares)
         });
 }
 
+bool Session::provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const
+{
+    return other.source.side != moving.source.side && conscious(other) && other.reaction &&
+           !detail::has_effect(other.effects, detail::EffectKind::turned) &&
+           !detail::incapacitated(other.effects) && !detail::opportunity_blocked(other.effects) &&
+           !charmed_by(other, moving.source.id) && has_weapon_reaction(other, from, to) &&
+           can_see(other, moving);
+}
+
+std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, int budget) const
+{
+    // Squares are searched by feet spent, keeping for each square and spend
+    // the route with the fewest Opportunity Attacks provoked.
+    const auto grid = movement_grid(target);
+    const int width = board_.width, cells = board_.width * board_.height, spends = budget / 5 + 1;
+    constexpr int unreached = std::numeric_limits<int>::max();
+    struct Visit
+    {
+        int provoked = unreached;
+        int previous = -1;
+    };
+    std::vector<Visit> visits(static_cast<std::size_t>(cells * spends));
+    const auto at = [&](Cell c, int feet)
+    {
+        return static_cast<std::size_t>((c.y * width + c.x) * spends + feet / 5);
+    };
+    const auto cell_of = [&](std::size_t visit)
+    {
+        const int square = static_cast<int>(visit) / spends;
+        return Cell{square % width, square / width};
+    };
+    visits[at(target.source.cell, 0)].provoked = 0;
+    for (int feet = 0; feet < budget; feet += 5)
+        for (int square = 0; square < cells; ++square)
+        {
+            const Cell here{square % width, square / width};
+            const auto &visit = visits[at(here, feet)];
+            if (visit.provoked == unreached)
+                continue;
+            for (int dy = -1; dy <= 1; ++dy)
+                for (int dx = -1; dx <= 1; ++dx)
+                {
+                    const Cell next{here.x + dx, here.y + dy};
+                    const auto cost = (dx || dy) && board_.contains(next)
+                                      ? grid.step_cost(here, next) : std::nullopt;
+                    if (!cost || feet + *cost > budget)
+                        continue;
+                    const auto provoked = static_cast<int>(std::count_if(
+                                              actors_.begin(), actors_.end(), [&](const auto & other)
+                    {
+                        return provokes(other, target, here, next);
+                    }));
+                    auto &reached = visits[at(next, feet + *cost)];
+                    if (visit.provoked + provoked < reached.provoked)
+                        reached = {visit.provoked + provoked, static_cast<int>(at(here, feet))};
+                }
+        }
+    // The farthest square it may stop on, then the safest route, then the shortest.
+    std::size_t best = at(target.source.cell, 0);
+    const auto better = [&](std::size_t candidate)
+    {
+        const auto a = cell_of(candidate), b = cell_of(best);
+        const int far = distance(from.source.cell, a), best_far = distance(from.source.cell, b);
+        if (far != best_far)
+            return far > best_far;
+        return visits[candidate].provoked < visits[best].provoked;
+    };
+    for (std::size_t visit = 0; visit < visits.size(); ++visit)
+        if (visits[visit].provoked != unreached && grid.can_stop_at(cell_of(visit)) && better(visit))
+            best = visit;
+    std::vector<Cell> route;
+    for (auto visit = best; visits[visit].previous >= 0;
+            visit = static_cast<std::size_t>(visits[visit].previous))
+        route.push_back(cell_of(visit));
+    std::reverse(route.begin(), route.end());
+    return route;
+}
+
 void Session::cast_area()
 {
     const auto aimed = *area_;
@@ -7587,12 +7705,13 @@ damage(target, amount, critical);
         else
             champion_move_ = move;
     }
-    if (pending() == a.source.id && actors_[turn_].life.hp == 0 && (effect_waiting() || champion_move_))
+    if (pending() == a.source.id && mover().life.hp == 0 && (effect_waiting() || champion_move_))
     {
         path_.clear();
         path_index_ = 0;
         reactors_.clear();
         reactor_index_ = 0;
+        flight_.reset();
     }
 }
 
@@ -8241,12 +8360,13 @@ void Session::finish_reaction()
     update_outcome();
     if (outcome_ == Outcome::ongoing)
     {
-        if (actors_[turn_].life.hp == 0)
+        if (mover().life.hp == 0)
         {
             path_.clear();
             path_index_ = 0;
             reactors_.clear();
             reactor_index_ = 0;
+            flight_.reset();
         }
         else if (!pending() && !stop_illegal_route())
             progress_movement();
@@ -8824,19 +8944,14 @@ void Session::end_turn()
 
 void Session::progress_movement()
 {
-    auto &a = actors_[turn_];
+    auto &a = mover();
     const auto grid = movement_grid(a);
     while (path_index_ < path_.size() && a.life.hp > 0)
     {
         const auto destination = path_[path_index_];
         if (reactors_.empty() && !a.disengaged)
             for (const auto &other : actors_)
-                if (other.source.side != a.source.side && conscious(other) && other.reaction &&
-                        !detail::has_effect(other.effects, detail::EffectKind::turned) &&
-                        !detail::incapacitated(other.effects) &&
-                        !detail::opportunity_blocked(other.effects) &&
-                        !charmed_by(other, a.source.id) &&
-                        has_weapon_reaction(other, a.source.cell, destination) && can_see(other, a))
+                if (provokes(other, a, a.source.cell, destination))
                     reactors_.push_back(other.source.id);
         if (pending())
             return;
@@ -8850,13 +8965,19 @@ void Session::progress_movement()
             break;
         }
         const auto cost = grid.step_cost(a.source.cell, destination);
-        if (!cost || *cost > movement_left(a))
+        if (!cost || *cost > mover_budget(a))
             throw std::logic_error("Invalid accepted movement path");
-        a.movement -= *cost;
         const auto departed = a.source.cell;
         a.source.cell = destination;
-        a.moved = true;
-        extend_run(a, departed, destination);
+        // A flight spends the Reaction, not the creature's own movement.
+        if (flight_)
+            flight_->remaining -= *cost;
+        else
+        {
+            a.movement -= *cost;
+            a.moved = true;
+            extend_run(a, departed, destination);
+        }
         clear_departed_overlaps();
         ++path_index_;
         reactors_.clear();
@@ -8884,6 +9005,7 @@ void Session::progress_movement()
     path_index_ = 0;
     reactors_.clear();
     reactor_index_ = 0;
+    flight_.reset();
 }
 
 bool Session::submit(const Command &command)
@@ -10170,6 +10292,7 @@ std::string Session::save() const
     for (auto id : reactors_)
         out << id << ' ';
     out << '\n';
+    out << (flight_ ? flight_->actor : 0) << ' ' << (flight_ ? flight_->remaining : 0) << '\n';
     out << log_.size() << '\n';
     for (const auto &entry : log_)
         out << std::quoted(entry.english) << '\n';
@@ -10482,6 +10605,18 @@ void Session::restore_movement(std::istream &input)
             throw std::runtime_error("Invalid checkpoint reactor");
         reactors_.push_back(id);
     }
+    // A fleeing creature, paused on an Opportunity Attack.
+    Flight flight;
+    input >> flight.actor >> flight.remaining;
+    const bool fleeing = std::any_of(actors_.begin(), actors_.end(), [&](const auto & actor)
+    {
+        return actor.source.id == flight.actor && conscious(actor);
+    });
+    if (!input || (flight.actor && (!fleeing || flight.remaining < 0 || flight.remaining > 120 ||
+                                    path_.empty())) || (!flight.actor && flight.remaining))
+        throw std::runtime_error("Invalid checkpoint flight");
+    if (flight.actor)
+        flight_ = flight;
 }
 
 void Session::finish_check(const PendingCheck &check, int boost)
@@ -10539,10 +10674,10 @@ bool Session::stop_illegal_route()
 {
     if (path_index_ >= path_.size())
         return false;
-    const auto &mover = actors_[turn_];
-    const auto grid = movement_grid(mover);
-    auto cell = mover.source.cell;
-    int budget = movement_left(mover);
+    const auto &moving = mover();
+    const auto grid = movement_grid(moving);
+    auto cell = moving.source.cell;
+    int budget = mover_budget(moving);
     bool valid = true, leaves_field = false;
     for (auto i = path_index_; i < path_.size(); ++i)
     {
@@ -10568,6 +10703,7 @@ bool Session::stop_illegal_route()
     path_index_ = 0;
     reactors_.clear();
     reactor_index_ = 0;
+    flight_.reset();
     return true;
 }
 
@@ -10615,7 +10751,7 @@ void Session::validate_champion_move() const
                distance(c.triggered ? c.trigger_origin : c.origin,
                         c.triggered ? c.target_origin : target->source.cell) <= 5)) ||
             (pending() ? (pending() != c.actor || who->reaction ||
-                          (!c.cleave && c.target != actors_[turn_].source.id))
+                          (!c.cleave && c.target != mover().source.id))
              : (c.actor != actors_[turn_].source.id &&
                 !((c.cleave ? actors_[turn_].life.hp == 0
                    : c.target == actors_[turn_].source.id && target->life.hp == 0) &&
@@ -10669,7 +10805,7 @@ void Session::validate_graze() const
             distance(a->source.cell, t->source.cell) > def(*a).reach ||
             !line_of_sight(a->source.cell, t->source.cell) || check_choice_ ||
             temporary_offer_ || champion_move_ || outcome_ != Outcome::ongoing ||
-            (pending() ? (pending() != g.actor || a->reaction || g.target != actors_[turn_].source.id)
+            (pending() ? (pending() != g.actor || a->reaction || g.target != mover().source.id)
              : (g.actor != actors_[turn_].source.id ||
                 (a->actions.normal && (!a->surge_used || a->actions.surge)))))
         throw std::runtime_error("Invalid pending Graze");
@@ -10767,10 +10903,11 @@ void Session::validate_restored_state() const
             if (other.source.id <= actor.source.id || other.life.dead ||
                     actor.source.cell != other.source.cell)
                 continue;
+            const auto &moving = this->mover();
             const bool in_transit =
                 pending() && path_index_ > 0 &&
-                path_[path_index_ - 1] == mover.source.cell &&
-                (actor.source.id == mover.source.id || other.source.id == mover.source.id);
+                path_[path_index_ - 1] == moving.source.cell &&
+                (actor.source.id == moving.source.id || other.source.id == moving.source.id);
             if ((in_transit && (actor.source.side == other.source.side || unconscious(actor) ||
                                 unconscious(other))) ||
                     actor.involuntary_overlap || other.involuntary_overlap ||
@@ -10796,28 +10933,28 @@ void Session::validate_restored_state() const
 
 void Session::validate_pending_movement() const
 {
-    auto mover = actors_[turn_];
+    auto moving = mover();
     if (effect_reaction_origin_)
     {
-        mover.source.cell = effect_reaction_origin_->mover;
-        mover.effects.prone = effect_reaction_origin_->prone;
+        moving.source.cell = effect_reaction_origin_->mover;
+        moving.effects.prone = effect_reaction_origin_->prone;
     }
-    if (outcome_ != Outcome::ongoing || mover.disengaged)
+    if (outcome_ != Outcome::ongoing || moving.disengaged)
         throw std::runtime_error("Invalid pending movement");
     std::vector<detail::Occupant> occupants;
     for (const auto &other : actors_)
-        if (!other.life.dead && !downed_riser(other) && other.source.id != mover.source.id)
+        if (!other.life.dead && !downed_riser(other) && other.source.id != moving.source.id)
             occupants.push_back({effect_reaction_origin_ && other.source.id == pending()
                                  ? effect_reaction_origin_->source
                                  : champion_move_ && other.source.id == champion_move_->actor
                                  ? champion_move_->origin
                                  : other.source.cell,
-                                 other.source.side != mover.source.side, unconscious(other),
+                                 other.source.side != moving.source.side, unconscious(other),
                                  other.life.hp == 0});
-    const detail::MovementGrid grid{board_, mover.source.cell, occupants, mover.effects.prone};
-    auto cell = mover.source.cell;
+    const detail::MovementGrid grid{board_, moving.source.cell, occupants, moving.effects.prone};
+    auto cell = moving.source.cell;
     int remaining =
-        effect_reaction_origin_ ? effect_reaction_origin_->movement : movement_left(mover);
+        effect_reaction_origin_ ? effect_reaction_origin_->movement : mover_budget(moving);
     // Only the suffix remains to be travelled. The prefix is history and has
     // already spent its movement budget; charging for it again breaks restores.
     for (auto i = path_index_; i < path_.size(); ++i)
@@ -10844,15 +10981,15 @@ void Session::validate_pending_movement() const
         {
             auto original = actor;
             original.source.cell = effect_reaction_origin_->source;
-            if (actor.source.side == mover.source.side || actor.reaction ||
-                    !has_weapon_reaction(original, mover.source.cell, path_[path_index_]))
+            if (actor.source.side == moving.source.side || actor.reaction ||
+                    !has_weapon_reaction(original, moving.source.cell, path_[path_index_]))
                 throw std::runtime_error("Invalid mastery reaction trigger");
             continue;
         }
         if (champion_move_ && i == reactor_index_ && actor.source.id == champion_move_->actor)
         {
-            if (actor.source.side == mover.source.side ||
-                    distance(champion_move_->origin, mover.source.cell) > def(actor).reach ||
+            if (actor.source.side == moving.source.side ||
+                    distance(champion_move_->origin, moving.source.cell) > def(actor).reach ||
                     distance(champion_move_->origin, path_[path_index_]) <= def(actor).reach)
                 throw std::runtime_error("Invalid Champion reaction origin");
             continue;
@@ -10860,9 +10997,9 @@ void Session::validate_pending_movement() const
         if (detail::opportunity_blocked(actor.effects) || actor.life.hp == 0 ||
                 (!actor.reaction && !(graze_ && graze_->actor == actor.source.id &&
                                       i == reactor_index_)) ||
-                actor.source.side == mover.source.side ||
-                !has_weapon_reaction(actor, mover.source.cell, path_[path_index_]) ||
-                !can_see(actor, mover))
+                actor.source.side == moving.source.side ||
+                !has_weapon_reaction(actor, moving.source.cell, path_[path_index_]) ||
+                !can_see(actor, moving))
             throw std::runtime_error("Invalid checkpoint opportunity attack");
     }
 }
@@ -13502,7 +13639,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.190", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.191", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

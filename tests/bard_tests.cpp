@@ -167,6 +167,50 @@ void reach(CombatSession &c, EntityId id)
         check(submit(c, "end"), "End a turn");
 }
 
+// The enemy fleeing Dissonant Whispers leaves the ally's reach: the ally may
+// make an Opportunity Attack, and the flight then goes on (SRD 5.2.1).
+void flight_checks(const RulesModule &module, CombatSession &c)
+{
+    check(c.snapshot().reaction_pending && !unit(c, 98).reaction,
+          "The flight spends the Reaction and pauses on the ally's Opportunity Attack");
+    const auto saved = c.save();
+    const auto restored = module.restore(saved);
+    check(restored->save() == saved, "A checkpoint keeps the paused flight");
+    check(submit(c, "opportunity", 98) && logged(c, "Ally -> Enemy: d20"),
+          "The ally attacks the fleeing enemy");
+    check(!c.snapshot().reaction_pending && unit(c, 98).cell.x > 4 && c.snapshot().actor == 1,
+          "The flight goes on after the attack, and the Bard's turn continues");
+    check(submit(*restored, "decline") && unit(*restored, 98).cell.x > 4,
+          "Declined, the flight goes on from the checkpoint");
+}
+
+// The flight's safest route: of the squares farthest from the Bard, one
+// reached without passing the ally's reach, so nothing provokes.
+void safest_flight_checks()
+{
+    const auto module = rules();
+    const auto hero = bard();
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    for (std::uint64_t seed = 1; seed < 64; ++seed)
+    {
+        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Bard", Side::party, {1, 2}, profile},
+                {2, "target", "Ally", Side::party, {6, 1}},
+                {98, "target", "Enemy", Side::opposition, {4, 2}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the Bard's turn");
+        check(submit(*c, "dissonant_whispers", 98), "The Bard casts Dissonant Whispers");
+        if (!logged(*c, "Enemy flees from Bard."))
+            continue;
+        check(!c->snapshot().reaction_pending && unit(*c, 98).cell.x == 10,
+              "The enemy runs 30 feet round the ally's reach, provoking nothing");
+        return;
+    }
+    throw std::runtime_error("No seed's save fails");
+}
+
 void spell_checks()
 {
     auto module = rules();
@@ -192,8 +236,7 @@ void spell_checks()
             if (logged(*c, "Enemy flees from Bard."))
             {
                 fled = true;
-                check(unit(*c, 98).cell.x > 4 && !unit(*c, 98).reaction,
-                      "A failed save spends the Reaction running away");
+                flight_checks(*module, *c);
             }
         }
         {
@@ -504,6 +547,7 @@ int main()
         inspired_save_checks();
         cutting_check_checks();
         cutting_damage_checks();
+        safest_flight_checks();
         jack_of_all_trades_checks();
         std::cout << "Bard tests passed\n";
     }

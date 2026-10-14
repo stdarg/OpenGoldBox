@@ -21,8 +21,10 @@ ability.
   target cannot be Invisible until the end of the Bard's next turn ("Lit").
 - **Dissonant Whispers** (level 1): a Wisdom save against 3d6 Psychic, half on
   a success; on a failure the target spends its Reaction moving as far from
-  the Bard as its Speed allows. Adaptation: that flight provokes no
-  Opportunity Attacks yet.
+  the Bard as its Speed allows, by the safest route: of the farthest squares,
+  the one reached past the fewest enemy reaches. Leaving a reach still
+  provokes an Opportunity Attack, asked with React and Decline as for any
+  move; the flight goes on after it, and then the Bard's turn.
 - **Faerie Fire** (level 1, also Druid, Concentration): a 20-foot cube; each
   creature in it that fails a Dexterity save is **Outlined**: attack rolls
   against it have Advantage when the attacker sees it, and it cannot be
