@@ -300,6 +300,15 @@ text = "Facing"
 custom_minimum_size = Vector2(145, 38)
 layout_mode = 2
 
+[node name="LoadReplacement" type="Button" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
+layout_mode = 2
+text = "Load replacement pack…"
+
+[node name="ShowReplacement" type="CheckButton" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
+layout_mode = 2
+disabled = true
+text = "Show new art"
+
 [node name="FirstPersonPanel" type="PanelContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
 custom_minimum_size = Vector2(380, 380)
 layout_mode = 2
@@ -377,3 +386,8 @@ ok_button_text = "Export"
 file_mode = 4
 access = 2
 filters = PackedStringArray("*.png ; PNG image")
+
+[node name="ReplacementDialog" type="FileDialog" parent="."]
+title = "Select folder containing exported replacement sets"
+file_mode = 2
+access = 2

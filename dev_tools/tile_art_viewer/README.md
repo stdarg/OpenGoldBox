@@ -46,6 +46,14 @@ control gives keyboard users another way to select one. Export PNG saves that
 piece at its source resolution with transparency. Only the clicked or selected
 piece appears in the details panel; changing position or facing clears it.
 
+For new art review, the Map Browser can load replacement sets exported by the
+separate [Replacement Art Creator](../replacement_art_creator/README.md). Press
+**Load replacement pack…** and select the parent folder of exported sets, then
+toggle **Show new art**. The 352 × 352 preview follows the game's draw order;
+missing appearances still use artwork decoded locally from your installation.
+Switch back to the original view for exact source-piece picking and export.
+The replacement pack contains only the new PNGs and their manifests.
+
 The map's artwork selector shows inspection profiles derived from decoded area
 scripts and their `LOAD PIECES` instructions. Some maps inherit a prior wall set
 or have unresolved script operands; Lizard Men Keep exposes two observed sets.

@@ -1,0 +1,21 @@
+config_version=5
+
+[application]
+config/name="OpenGold Replacement Art Creator"
+run/main_scene="res://scenes/replacement_art_creator.tscn"
+config/features=PackedStringArray("4.5")
+
+[display]
+window/size/viewport_width=1500
+window/size/viewport_height=950
+window/size/window_width_override=1500
+window/size/window_height_override=950
+window/stretch/mode="canvas_items"
+
+[gui]
+theme/custom="res://themes/creator.tres"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false

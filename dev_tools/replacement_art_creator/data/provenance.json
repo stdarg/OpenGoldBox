@@ -1,0 +1,28 @@
+{
+  "created_at": "2026-10-14",
+  "generator": "Codex built-in imagegen",
+  "original_game_images_supplied_to_generator": false,
+  "style_observation": "The prompt describes pixel-art craft density observed in this project's art/portraits. No portrait or original game PNG was supplied as an image input.",
+  "inputs": [
+    {
+      "file": "godot/art/base_stone.png",
+      "sha256": "ecc142211a4d6a3c404fa80ccb84c16c2cb8e75e2c57682883848e93367f85ec",
+      "prompt": "Use case: stylized-concept. Asset type: original pixel-art wall material for a fantasy first-person dungeon tool. Create a square, straight-on, orthographic elevation of an ORIGINAL rugged stone wall. The entire canvas is wall surface, with no perspective, floor, ceiling, doorway, window, characters, text, symbols, heraldry, or border. Pixel art with crisp deliberately placed pixels, rich but restrained hand-shaded stone textures, clear clusters rather than smooth gradients, similar craft density to modern high-resolution RPG pixel-art portraits. Distinctive visual direction: warm umber and muted slate stones with scattered thin mineral-green seams; irregular large masonry blocks and small chips, no iconic fantasy motifs. Even lighting from upper left. Pattern should be horizontally repeatable; left and right edges meet naturally. 1:1 square."
+    },
+    {
+      "file": "godot/art/door_overlay.png",
+      "sha256": "cf8217097ee072cf569e63e8f8dfaacc4a88f0528fbf969cdc175af2b3be0583",
+      "prompt": "Use case: stylized-concept. Asset type: original pixel-art overlay for a fantasy wall creator. A single tall, closed wooden door with a sturdy asymmetrical stone frame, viewed perfectly straight-on and orthographic. Centered and isolated on actual transparent background, full door and frame visible with breathing room, no surrounding wall, floor, sky, characters, text, emblem or logo. Crisp deliberate pixel clusters and rich hand-shaded material detail like modern RPG portrait pixel art. Warm umber wood, muted slate stone, restrained mineral-green highlights. Entirely original design, no recognizable franchise motifs. Square canvas."
+    },
+    {
+      "file": "godot/art/arch_overlay.png",
+      "sha256": "1dada9d4b111bdbded850c033186b9c01d7d2adc651bcc4a1d55631f65b2d3d6",
+      "prompt": "Use case: stylized-concept. Asset type: original pixel-art overlay for a fantasy wall creator. A single tall open arched passage frame of weathered warm-umber and slate masonry, viewed perfectly straight-on and orthographic. Centered, full frame visible, inside the arch is transparent negative space and outside the masonry frame is actual transparent background. No closed door, no wall background, no floor, sky, characters, text, emblem or logo. Crisp deliberate pixel clusters and rich hand-shaded material detail like modern RPG portrait pixel art. Subtle mineral-green highlights. Entirely original design. Square canvas."
+    },
+    {
+      "file": "godot/art/river_marker_overlay.png",
+      "sha256": "6c051226ffc2d646c494c10dba579ebc4c434af69eaf19bf511f097cc253c85f",
+      "prompt": "Use case: stylized-concept. Asset type: original pixel-art overlay for a fantasy wall creator. A single original carved stone landmark relief shaped as an abstract branching river and three offset stars, cut into a rough oval slab, viewed perfectly straight-on and orthographic. Centered and isolated on actual transparent background, full relief visible. No surrounding wall, floor, sky, characters, text, emblem, logo or recognizable franchise motif. Crisp deliberate pixel clusters and rich hand-shaded material detail like modern RPG portrait pixel art. Warm umber and muted slate stone, tiny mineral-green inlays. Square canvas."
+    }
+  ]
+}

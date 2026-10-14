@@ -1,0 +1,30 @@
+{
+  "WALLDEF1.DAX:1:1": {
+    "title": "Open masonry arch",
+    "kind": "opening",
+    "brief": "An original open passage in weathered masonry. Warm umber and slate stones with restrained mineral-green accents. Clear sightline through the arch; no emblems or recognizable franchise motifs.",
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/arch_overlay.png"
+  },
+  "WALLDEF1.DAX:1:4": {
+    "title": "Rugged masonry",
+    "kind": "solid",
+    "brief": "An original rugged stone wall. Large irregular masonry in warm umber and muted slate, with small chips and restrained mineral-green seams. No symbols or recognizable franchise motifs.",
+    "base": "res://art/base_stone.png",
+    "feature": ""
+  },
+  "WALLDEF1.DAX:1:5": {
+    "title": "Closed wooden door",
+    "kind": "door",
+    "brief": "An original closed wooden door in weathered masonry. Asymmetric stone frame and sturdy wood joinery, with warm umber and slate tones. No symbols or recognizable franchise motifs.",
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png"
+  },
+  "WALLDEF1.DAX:5:3": {
+    "title": "River marker",
+    "kind": "landmark",
+    "brief": "An original abstract carved stone relief suggesting a branching river and three stars. Inset into weathered masonry. No religious symbol, heraldry, lettering, or recognizable franchise motif.",
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/river_marker_overlay.png"
+  }
+}

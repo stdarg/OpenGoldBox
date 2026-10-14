@@ -19,11 +19,14 @@ demos/godot/*.tmp
 demos/godot/bin/
 dev_tools/tile_art_viewer/godot/.godot/
 dev_tools/tile_art_viewer/godot/bin/
+dev_tools/replacement_art_creator/godot/.godot/
+dev_tools/replacement_art_creator/godot/art/*.png.import
 
 # Local user data and derived original-game assets
 /user-data/
 /testdata/local/
 *.png
+!dev_tools/replacement_art_creator/godot/art/*.png
 
 # Newly generated OpenGoldBox portrait artwork (not extracted game assets)
 !/data/art/portraits/*.png
