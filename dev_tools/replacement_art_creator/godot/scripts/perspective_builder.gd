@@ -23,6 +23,10 @@ static func build(base_path: String, feature_path: String, kind: String) -> Arra
     front.resize(56 * SCALE, 64 * SCALE, Image.INTERPOLATE_NEAREST)
     if kind == "opening":
         _cut_arch(front)
+    elif kind == "rect_opening":
+        front.fill_rect(Rect2i(58, 36, 108, 220), Color.TRANSPARENT)
+    elif kind == "cave_opening":
+        _cut_cave(front)
     if not feature_path.is_empty():
         var feature := _load_png(feature_path)
         if feature == null or feature.is_empty():
@@ -61,10 +65,20 @@ static func _feature_box(kind: String) -> Rect2i:
             return Rect2i(30, 4, 164, 248)
         "landmark":
             return Rect2i(54, 35, 116, 172)
+        "facade", "rect_opening", "cave_opening":
+            return Rect2i(0, 0, 56 * SCALE, 64 * SCALE)
     return Rect2i(0, 0, 0, 0)
 
+static func _cut_cave(front: Image) -> void:
+    for y in range(26, 234):
+        for x in range(35, 189):
+            var dx := (float(x) - 112.0) / 76.0
+            var dy := (float(y) - 132.0) / 106.0
+            if dx * dx + dy * dy < 1.0:
+                front.set_pixel(x, y, Color.TRANSPARENT)
+
 static func _cut_arch(front: Image) -> void:
-    # Cut independent geometry behind the original arch overlay. Its center
+    # Cut independent geometry behind the generated arch overlay. Its center
     # remains transparent so a later wall can be seen through it.
     for y in range(58, 256):
         var half_width := 40.0

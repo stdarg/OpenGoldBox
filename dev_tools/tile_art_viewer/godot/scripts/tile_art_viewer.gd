@@ -1121,8 +1121,9 @@ func _run_metadata_check(output_path: String) -> void:
 
 func _run_replacement_check(folder: String) -> void:
     _load_replacement_pack(folder)
-    if replacement_sets.size() != 4 or not show_replacement.button_pressed:
-        _map_check_fail("Replacement pack did not load four pilot appearances")
+    if (replacement_sets.size() != 4 and replacement_sets.size() != 168) or \
+            not show_replacement.button_pressed:
+        _map_check_fail("Replacement pack did not load the expected appearances")
         return
     var row: Dictionary = {}
     for candidate in metadata_rows:
@@ -1158,7 +1159,7 @@ func _run_replacement_check(folder: String) -> void:
     if first_person.source_image.get_size() != Vector2i(88, 88):
         _map_check_fail("Switching back did not restore original inspection")
         return
-    print("Replacement review passed: four sets loaded, high-resolution map preview, original inspection restored")
+    print("Replacement review passed: %d sets loaded, high-resolution map preview, original inspection restored" % replacement_sets.size())
     get_tree().quit()
 
 func _map_check_fail(message: String) -> void:

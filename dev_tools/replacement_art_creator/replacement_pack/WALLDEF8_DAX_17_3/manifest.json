@@ -1,0 +1,21 @@
+{
+  "appearance_key": "WALLDEF8.DAX:17:3",
+  "brief": "Original pixel-art cavern opening for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs.",
+  "canvas_height": 352,
+  "canvas_width": 352,
+  "files": {
+    "Far extension": "far_extension.png",
+    "Far front": "far_front.png",
+    "Far left": "far_left.png",
+    "Far right": "far_right.png",
+    "Middle front": "middle_front.png",
+    "Middle left": "middle_left.png",
+    "Middle right": "middle_right.png",
+    "Near front": "near_front.png",
+    "Near left": "near_left.png",
+    "Near right": "near_right.png"
+  },
+  "format": "opengold-replacement-art-v1",
+  "kind": "cave_opening",
+  "title": "Cavern opening"
+}

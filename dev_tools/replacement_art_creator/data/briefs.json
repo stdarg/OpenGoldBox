@@ -6,6 +6,14 @@
     "base": "res://art/base_stone.png",
     "feature": "res://art/arch_overlay.png"
   },
+  "WALLDEF1.DAX:1:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open stone doorway",
+    "brief": "Original pixel-art open stone doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs.",
+    "draft_wall_prompt": "Create brand-new original pixel art. \nUse crisp deliberate pixel clusters, rich hand-shaded materials, and a straight-on orthographic view. This is for a 352 x 352 fantasy first-person view. No text, logos, franchise motifs, or source-game imagery. Create only a plain square backing wall material that fills the canvas. Omit the door, opening, landmark, or other feature. Make left and right edges compatible."
+  },
   "WALLDEF1.DAX:1:4": {
     "title": "Rugged masonry",
     "kind": "solid",
@@ -20,11 +28,1152 @@
     "base": "res://art/base_stone.png",
     "feature": "res://art/door_overlay.png"
   },
+  "WALLDEF1.DAX:3:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale weathered masonry",
+    "brief": "Original pixel-art pale weathered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:3:2": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale masonry with wooden door",
+    "brief": "Original pixel-art pale masonry with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:3:3": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Pale masonry arch",
+    "brief": "Original pixel-art pale masonry arch for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:3:4": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_ivy.png",
+    "kind": "facade",
+    "title": "Vine covered masonry",
+    "brief": "Original pixel-art vine covered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:3:5": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Vine covered masonry with door",
+    "brief": "Original pixel-art vine covered masonry with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:5:1": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_temple_door.png",
+    "kind": "facade",
+    "title": "Brick facade with columns and door",
+    "brief": "Original pixel-art brick facade with columns and door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:5:2": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_civic_columns.png",
+    "kind": "facade",
+    "title": "Brick wall with pale columns",
+    "brief": "Original pixel-art brick wall with pale columns for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
   "WALLDEF1.DAX:5:3": {
     "title": "River marker",
     "kind": "landmark",
     "brief": "An original abstract carved stone relief suggesting a branching river and three stars. Inset into weathered masonry. No religious symbol, heraldry, lettering, or recognizable franchise motif.",
     "base": "res://art/base_stone.png",
     "feature": "res://art/river_marker_overlay.png"
+  },
+  "WALLDEF1.DAX:5:4": {
+    "base": "res://art/base_water.png",
+    "feature": "res://art/feature_pier.png",
+    "kind": "facade",
+    "title": "Waterfront railing",
+    "brief": "Original pixel-art waterfront railing for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF1.DAX:5:5": {
+    "base": "res://art/base_mosaic_wall.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Abstract ceramic mosaic",
+    "brief": "Original pixel-art abstract ceramic mosaic for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:1:1": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Open masonry passage",
+    "brief": "Original pixel-art open masonry passage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:1:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open stone doorway",
+    "brief": "Original pixel-art open stone doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:2:2": {
+    "base": "res://art/base_timber_planks.png",
+    "feature": "res://art/feature_blue_window.png",
+    "kind": "landmark",
+    "title": "Timber wall with blue window",
+    "brief": "Original pixel-art timber wall with blue window for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:2:3": {
+    "base": "res://art/base_timber_planks.png",
+    "feature": "res://art/feature_timber_facade.png",
+    "kind": "facade",
+    "title": "Timber facade with door and window",
+    "brief": "Original pixel-art timber facade with door and window for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:2:4": {
+    "base": "res://art/base_timber_planks.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Vertical timber wall",
+    "brief": "Original pixel-art vertical timber wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:2:5": {
+    "base": "res://art/base_timber_planks.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Timber wall with wooden door",
+    "brief": "Original pixel-art timber wall with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:4:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_storefront.png",
+    "kind": "facade",
+    "title": "Storefront with awning",
+    "brief": "Original pixel-art storefront with awning for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:4:2": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale irregular stone",
+    "brief": "Original pixel-art pale irregular stone for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:4:3": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_storefront.png",
+    "kind": "facade",
+    "title": "Storefront door and window",
+    "brief": "Original pixel-art storefront door and window for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:4:4": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale stone wall",
+    "brief": "Original pixel-art pale stone wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:4:5": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale stone doorway",
+    "brief": "Original pixel-art pale stone doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:9:1": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_double_door.png",
+    "kind": "facade",
+    "title": "Broad timber double doors",
+    "brief": "Original pixel-art broad timber double doors for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:9:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal molding",
+    "brief": "Original pixel-art stone wall with teal molding for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:9:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open doorway with steps",
+    "brief": "Original pixel-art open doorway with steps for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:9:4": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal top trim",
+    "brief": "Original pixel-art stone wall with teal top trim for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:19:1": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_civic_entrance.png",
+    "kind": "facade",
+    "title": "Civic brick facade with barred entrance",
+    "brief": "Original pixel-art civic brick facade with barred entrance for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:19:2": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Weathered red brick",
+    "brief": "Original pixel-art weathered red brick for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:19:3": {
+    "base": "res://art/base_bookcase.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Colorful bookcase",
+    "brief": "Original pixel-art colorful bookcase for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:19:4": {
+    "base": "res://art/base_bookcase.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Tall library shelves",
+    "brief": "Original pixel-art tall library shelves for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:19:5": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Brick wall with wooden door",
+    "brief": "Original pixel-art brick wall with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:23:1": {
+    "base": "res://art/base_water.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Blue water",
+    "brief": "Original pixel-art blue water for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:23:2": {
+    "base": "res://art/base_water.png",
+    "feature": "res://art/feature_pier.png",
+    "kind": "facade",
+    "title": "Wooden waterfront railing",
+    "brief": "Original pixel-art wooden waterfront railing for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF2.DAX:23:3": {
+    "base": "res://art/base_reedy_bank.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Foliage on low earthen bank",
+    "brief": "Original pixel-art foliage on low earthen bank for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:1": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Rough open stone gateway",
+    "brief": "Original pixel-art rough open stone gateway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal molding",
+    "brief": "Original pixel-art stone wall with teal molding for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Trimmed stone wall with door",
+    "brief": "Original pixel-art trimmed stone wall with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:4": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_ivy.png",
+    "kind": "facade",
+    "title": "Vine covered masonry",
+    "brief": "Original pixel-art vine covered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:5": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Vine covered masonry with door",
+    "brief": "Original pixel-art vine covered masonry with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:6": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Plain pale stone",
+    "brief": "Original pixel-art plain pale stone for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:7": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale stone arched door",
+    "brief": "Original pixel-art pale stone arched door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:8": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Plain pale stone",
+    "brief": "Original pixel-art plain pale stone for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:9": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_storefront.png",
+    "kind": "facade",
+    "title": "Storefront with awning",
+    "brief": "Original pixel-art storefront with awning for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:10": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_storefront.png",
+    "kind": "facade",
+    "title": "Storefront door and window",
+    "brief": "Original pixel-art storefront door and window for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:11": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_civic_windows.png",
+    "kind": "facade",
+    "title": "Brick civic facade with blue windows",
+    "brief": "Original pixel-art brick civic facade with blue windows for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:12": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_blue_entrance.png",
+    "kind": "facade",
+    "title": "Brick hall with blue entrance",
+    "brief": "Original pixel-art brick hall with blue entrance for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:13": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_temple_door.png",
+    "kind": "facade",
+    "title": "Brick facade with columns and door",
+    "brief": "Original pixel-art brick facade with columns and door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:14": {
+    "base": "res://art/base_water.png",
+    "feature": "res://art/feature_pier.png",
+    "kind": "facade",
+    "title": "Wooden waterfront railing",
+    "brief": "Original pixel-art wooden waterfront railing for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:0:15": {
+    "base": "res://art/base_water.png",
+    "feature": "res://art/feature_waterfront_wall.png",
+    "kind": "facade",
+    "title": "Pale waterfront wall",
+    "brief": "Original pixel-art pale waterfront wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:1:1": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Open masonry passage",
+    "brief": "Original pixel-art open masonry passage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:3:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale weathered masonry",
+    "brief": "Original pixel-art pale weathered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:3:2": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale masonry with wooden door",
+    "brief": "Original pixel-art pale masonry with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF3.DAX:3:4": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_ivy.png",
+    "kind": "facade",
+    "title": "Vine covered masonry",
+    "brief": "Original pixel-art vine covered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:1:1": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Open masonry passage",
+    "brief": "Original pixel-art open masonry passage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:1:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_fountain.png",
+    "kind": "landmark",
+    "title": "Stone fountain",
+    "brief": "Original pixel-art stone fountain for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:1:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open stone doorway",
+    "brief": "Original pixel-art open stone doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:3:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale weathered masonry",
+    "brief": "Original pixel-art pale weathered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:3:2": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale masonry with wooden door",
+    "brief": "Original pixel-art pale masonry with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:3:3": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Pale masonry arch",
+    "brief": "Original pixel-art pale masonry arch for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:3:4": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_ivy.png",
+    "kind": "facade",
+    "title": "Vine covered masonry",
+    "brief": "Original pixel-art vine covered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:3:5": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Vine covered masonry with door",
+    "brief": "Original pixel-art vine covered masonry with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:5:1": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_temple_door.png",
+    "kind": "facade",
+    "title": "Brick facade with columns and door",
+    "brief": "Original pixel-art brick facade with columns and door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:5:2": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_civic_columns.png",
+    "kind": "facade",
+    "title": "Brick wall with pale columns",
+    "brief": "Original pixel-art brick wall with pale columns for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:5:3": {
+    "base": "res://art/base_redbrick.png",
+    "feature": "res://art/feature_shrine.png",
+    "kind": "landmark",
+    "title": "Violet glass shrine",
+    "brief": "Original pixel-art violet glass shrine for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:5:4": {
+    "base": "res://art/base_water.png",
+    "feature": "res://art/feature_pier.png",
+    "kind": "facade",
+    "title": "Waterfront railing",
+    "brief": "Original pixel-art waterfront railing for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:5:5": {
+    "base": "res://art/base_mosaic_wall.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Abstract ceramic mosaic",
+    "brief": "Original pixel-art abstract ceramic mosaic for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:9:1": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_double_door.png",
+    "kind": "facade",
+    "title": "Broad timber double doors",
+    "brief": "Original pixel-art broad timber double doors for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:9:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal molding",
+    "brief": "Original pixel-art stone wall with teal molding for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:9:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open doorway with steps",
+    "brief": "Original pixel-art open doorway with steps for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:9:4": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal top trim",
+    "brief": "Original pixel-art stone wall with teal top trim for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:9:5": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Trimmed stone wall with door",
+    "brief": "Original pixel-art trimmed stone wall with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:20:1": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Low broken battlement",
+    "brief": "Original pixel-art low broken battlement for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:20:2": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_recessed_lamp.png",
+    "kind": "landmark",
+    "title": "Stone wall with colored lamp",
+    "brief": "Original pixel-art stone wall with colored lamp for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:20:4": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Broken stone battlement",
+    "brief": "Original pixel-art broken stone battlement for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:20:5": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Broken battlement with wooden door",
+    "brief": "Original pixel-art broken battlement with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:1": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Rough stone archway",
+    "brief": "Original pixel-art rough stone archway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:2": {
+    "base": "res://art/feature_stone_cross.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Weathered stone cross",
+    "brief": "Original pixel-art weathered stone cross for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:3": {
+    "base": "res://art/feature_gravestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rounded gravestone",
+    "brief": "Original pixel-art rounded gravestone for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:4": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Mottled gray rock",
+    "brief": "Original pixel-art mottled gray rock for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:5": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Uneven gray stone blocks",
+    "brief": "Original pixel-art uneven gray stone blocks for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:6": {
+    "base": "res://art/base_stone_panels.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Stone wall with recessed panels",
+    "brief": "Original pixel-art stone wall with recessed panels for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:7": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "res://art/feature_double_door.png",
+    "kind": "facade",
+    "title": "Wide battlement gate",
+    "brief": "Original pixel-art wide battlement gate for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:8": {
+    "base": "res://art/feature_iron_fence.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Wrought iron fence",
+    "brief": "Original pixel-art wrought iron fence for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:9": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Rough open stone gateway",
+    "brief": "Original pixel-art rough open stone gateway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF4.DAX:21:10": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Stone wall with wooden door",
+    "brief": "Original pixel-art stone wall with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:1:1": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Open masonry passage",
+    "brief": "Original pixel-art open masonry passage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_temple_door.png",
+    "kind": "facade",
+    "title": "Tall wooden gate",
+    "brief": "Original pixel-art tall wooden gate for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:2": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Pale stone archway and steps",
+    "brief": "Original pixel-art pale stone archway and steps for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:3": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Plain pale stone",
+    "brief": "Original pixel-art plain pale stone for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:4": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale stone arched door",
+    "brief": "Original pixel-art pale stone arched door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:5": {
+    "base": "res://art/base_pale_broken_wall.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Broken pale stone wall",
+    "brief": "Original pixel-art broken pale stone wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:6": {
+    "base": "res://art/base_bookcase.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Books in pale wall",
+    "brief": "Original pixel-art books in pale wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:7": {
+    "base": "res://art/base_foliage.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Dense pale flowering foliage",
+    "brief": "Original pixel-art dense pale flowering foliage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:8": {
+    "base": "res://art/base_foliage.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Narrow hedge",
+    "brief": "Original pixel-art narrow hedge for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:9": {
+    "base": "res://art/base_foliage.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Leafy thicket",
+    "brief": "Original pixel-art leafy thicket for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF5.DAX:24:10": {
+    "base": "res://art/base_water.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Small water patch",
+    "brief": "Original pixel-art small water patch for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:2:4": {
+    "base": "res://art/base_timber_planks.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Vertical timber wall",
+    "brief": "Original pixel-art vertical timber wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:2:5": {
+    "base": "res://art/base_timber_planks.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Timber wall with wooden door",
+    "brief": "Original pixel-art timber wall with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:6:1": {
+    "base": "res://art/base_palisade.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pointed timber palisade",
+    "brief": "Original pixel-art pointed timber palisade for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:6:2": {
+    "base": "res://art/base_palisade.png",
+    "feature": "res://art/feature_palisade_gate.png",
+    "kind": "facade",
+    "title": "Palisade gate",
+    "brief": "Original pixel-art palisade gate for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:6:3": {
+    "base": "res://art/base_palisade.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Barred timber palisade",
+    "brief": "Original pixel-art barred timber palisade for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:6:4": {
+    "base": "res://art/base_palisade.png",
+    "feature": "res://art/feature_palisade_gate.png",
+    "kind": "facade",
+    "title": "Crossbar palisade gate",
+    "brief": "Original pixel-art crossbar palisade gate for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:6:5": {
+    "base": "res://art/base_palisade.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Upright timber stakes",
+    "brief": "Original pixel-art upright timber stakes for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:9:1": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_double_door.png",
+    "kind": "facade",
+    "title": "Broad timber double doors",
+    "brief": "Original pixel-art broad timber double doors for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:9:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal molding",
+    "brief": "Original pixel-art stone wall with teal molding for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:9:4": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal top trim",
+    "brief": "Original pixel-art stone wall with teal top trim for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:9:5": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Trimmed stone wall with door",
+    "brief": "Original pixel-art trimmed stone wall with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:17:1": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Jagged red cavern",
+    "brief": "Original pixel-art jagged red cavern for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF6.DAX:17:2": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Iron rich cavern fissures",
+    "brief": "Original pixel-art iron rich cavern fissures for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:1:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open stone doorway",
+    "brief": "Original pixel-art open stone doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:3:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale weathered masonry",
+    "brief": "Original pixel-art pale weathered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:3:3": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Pale masonry arch",
+    "brief": "Original pixel-art pale masonry arch for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:7:1": {
+    "base": "res://art/base_woven_wall.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Golden reed wall",
+    "brief": "Original pixel-art golden reed wall for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:7:2": {
+    "base": "res://art/base_woven_wall.png",
+    "feature": "",
+    "kind": "rect_opening",
+    "title": "Reed wall with dark doorway",
+    "brief": "Original pixel-art reed wall with dark doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:7:5": {
+    "base": "res://art/base_low_woven_barrier.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Low woven barrier",
+    "brief": "Original pixel-art low woven barrier for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:8:1": {
+    "base": "res://art/base_tree_path.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Woodland path",
+    "brief": "Original pixel-art woodland path for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:8:2": {
+    "base": "res://art/feature_tree.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Slender leafy tree",
+    "brief": "Original pixel-art slender leafy tree for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:8:3": {
+    "base": "res://art/feature_tree.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Leafy tree with visible trunk",
+    "brief": "Original pixel-art leafy tree with visible trunk for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:8:4": {
+    "base": "res://art/base_foliage.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Dense green thicket",
+    "brief": "Original pixel-art dense green thicket for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:23:1": {
+    "base": "res://art/base_water.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Blue water",
+    "brief": "Original pixel-art blue water for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF7.DAX:23:2": {
+    "base": "res://art/base_water.png",
+    "feature": "res://art/feature_pier.png",
+    "kind": "facade",
+    "title": "Wooden waterfront railing",
+    "brief": "Original pixel-art wooden waterfront railing for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:1:1": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Open masonry passage",
+    "brief": "Original pixel-art open masonry passage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:1:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_fountain.png",
+    "kind": "landmark",
+    "title": "Stone fountain",
+    "brief": "Original pixel-art stone fountain for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:1:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open stone doorway",
+    "brief": "Original pixel-art open stone doorway for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:1:4": {
+    "base": "res://art/base_stone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Rugged masonry",
+    "brief": "Original pixel-art rugged masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:1:5": {
+    "base": "res://art/base_stone.png",
+    "feature": "res://art/door_overlay.png",
+    "kind": "door",
+    "title": "Closed wooden door",
+    "brief": "Original pixel-art closed wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:3:1": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Pale weathered masonry",
+    "brief": "Original pixel-art pale weathered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:3:2": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Pale masonry with wooden door",
+    "brief": "Original pixel-art pale masonry with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:3:3": {
+    "base": "res://art/base_pale_limestone.png",
+    "feature": "res://art/arch_overlay.png",
+    "kind": "opening",
+    "title": "Pale masonry arch",
+    "brief": "Original pixel-art pale masonry arch for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:3:4": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_ivy.png",
+    "kind": "facade",
+    "title": "Vine covered masonry",
+    "brief": "Original pixel-art vine covered masonry for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:3:5": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Vine covered masonry with door",
+    "brief": "Original pixel-art vine covered masonry with door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:9:1": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_double_door.png",
+    "kind": "facade",
+    "title": "Broad timber double doors",
+    "brief": "Original pixel-art broad timber double doors for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:9:2": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal molding",
+    "brief": "Original pixel-art stone wall with teal molding for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:9:3": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_stone_gate.png",
+    "kind": "rect_opening",
+    "title": "Open doorway with steps",
+    "brief": "Original pixel-art open doorway with steps for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:9:4": {
+    "base": "res://art/base_bluegray_limewash.png",
+    "feature": "res://art/feature_cyan_trim.png",
+    "kind": "facade",
+    "title": "Stone wall with teal top trim",
+    "brief": "Original pixel-art stone wall with teal top trim for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:17:1": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Jagged red cavern",
+    "brief": "Original pixel-art jagged red cavern for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:17:2": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Iron rich cavern fissures",
+    "brief": "Original pixel-art iron rich cavern fissures for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:17:3": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "res://art/feature_cave_opening.png",
+    "kind": "cave_opening",
+    "title": "Cavern opening",
+    "brief": "Original pixel-art cavern opening for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:17:4": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "res://art/feature_cave_opening.png",
+    "kind": "cave_opening",
+    "title": "Ochre cavern passage",
+    "brief": "Original pixel-art ochre cavern passage for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:17:5": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Cavern wooden door",
+    "brief": "Original pixel-art cavern wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:18:1": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Dark red cavern",
+    "brief": "Original pixel-art dark red cavern for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:18:2": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "res://art/feature_ladder.png",
+    "kind": "facade",
+    "title": "Cavern ladder",
+    "brief": "Original pixel-art cavern ladder for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:18:3": {
+    "base": "res://art/base_brown_rock.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Mottled brown cavern",
+    "brief": "Original pixel-art mottled brown cavern for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:18:4": {
+    "base": "res://art/base_red_cavern.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Cavern arched door",
+    "brief": "Original pixel-art cavern arched door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:18:5": {
+    "base": "res://art/base_brown_rock.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Brown cavern wooden door",
+    "brief": "Original pixel-art brown cavern wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:20:1": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Low broken battlement",
+    "brief": "Original pixel-art low broken battlement for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:20:2": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_recessed_lamp.png",
+    "kind": "landmark",
+    "title": "Stone wall with colored lamp",
+    "brief": "Original pixel-art stone wall with colored lamp for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:20:3": {
+    "base": "res://art/base_gray_rock.png",
+    "feature": "res://art/feature_lamp_steps.png",
+    "kind": "facade",
+    "title": "Stone steps and colored lamp",
+    "brief": "Original pixel-art stone steps and colored lamp for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:20:4": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Broken stone battlement",
+    "brief": "Original pixel-art broken stone battlement for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:20:5": {
+    "base": "res://art/base_broken_battlement.png",
+    "feature": "res://art/feature_narrow_door.png",
+    "kind": "door",
+    "title": "Broken battlement with wooden door",
+    "brief": "Original pixel-art broken battlement with wooden door for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:23:1": {
+    "base": "res://art/base_water.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Blue water",
+    "brief": "Original pixel-art blue water for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:23:3": {
+    "base": "res://art/base_reedy_bank.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Foliage on low earthen bank",
+    "brief": "Original pixel-art foliage on low earthen bank for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
+  },
+  "WALLDEF8.DAX:23:4": {
+    "base": "res://art/base_reedy_bank.png",
+    "feature": "",
+    "kind": "solid",
+    "title": "Reeds along earthen bank",
+    "brief": "Original pixel-art reeds along earthen bank for a fantasy first-person map. Use the listed independent source sprites; avoid existing game motifs."
   }
 }

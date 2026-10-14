@@ -28,6 +28,7 @@ dev_tools/replacement_art_creator/godot/art/*.png.import
 /testdata/local/
 *.png
 !dev_tools/replacement_art_creator/godot/art/*.png
+!dev_tools/replacement_art_creator/replacement_pack/**/*.png
 
 # Newly generated OpenGoldBox portrait artwork (not extracted game assets)
 !/data/art/portraits/*.png

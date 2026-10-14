@@ -3,8 +3,12 @@
 This separate Godot tool lists 210 technical appearance IDs, stores independent
 briefs, imports newly created PNGs, projects each appearance into the ten
 renderer slots, previews a synthetic corridor, and exports replacement sets.
-The four included pilot appearances use newly generated art; their input
-prompts and file hashes are in [`data/provenance.json`](data/provenance.json).
+The included [`replacement_pack`](replacement_pack) covers all 168 appearances
+visible in the current map catalog, with ten new perspective PNGs per
+appearance. Four earlier pilot appearances are retained. Their prompts and
+hashes are in [`data/provenance.json`](data/provenance.json); the 45 new source
+PNGs and exact Codex imagegen prompts are recorded in
+[`data/source_art_provenance.json`](data/source_art_provenance.json).
 
 The **Reference** tab decodes original artwork from your local game files with
 the existing Tile Art Viewer extension. It shows all ten source pieces for the
@@ -63,9 +67,9 @@ between Reference and Create.
 
 ## Create a replacement
 
-1. Choose an appearance on the left. The four pilot entries already have new
-   art; all other entries start blank.
-2. Write a new title and brief, choose Solid, Door, Opening, or Landmark, and
+1. Choose an appearance on the left. Used appearances have assigned new art;
+   wholly unused appearances remain blank.
+2. Write a new title and brief, choose the appropriate art kind, and
    press **Save brief**. **Copy wall prompt** and **Copy feature prompt** copy
    source-independent prompts for Codex's built-in imagegen. The image
    generation runs through Codex, outside this app.
@@ -79,7 +83,7 @@ between Reference and Create.
    into a subfolder of the chosen directory. Repeated exports create numbered
    folders, preserving earlier versions.
 
-The logical first-person canvas is 88 × 88. This pilot works at 4× resolution:
+The logical first-person canvas is 88 × 88. The pack works at 4× resolution:
 352 × 352 pixels for a composed view and 4× the original width and height for
 each perspective slot. The geometry follows
 `src/OpenGold.Core/src/exploration_view.cpp`; the imported material and feature
@@ -92,10 +96,12 @@ feature distortion, or unwanted repetition appear.
 ## Review in a real map
 
 The existing Tile Art Viewer can load a folder of exported sets. In its **Map
-Browser**, press **Load replacement pack…**, choose the parent export folder,
+Browser**, press **Load replacement pack…**, choose
+`dev_tools/replacement_art_creator/replacement_pack`,
 then toggle **Show new art**. The map preview uses the same draw order at 4×
 resolution. Appearances without a new set display the user's locally decoded
-original art for context; the exported pack contains only new art. The latest
+original art for context; the included pack has sets for every appearance
+marked used by the current catalog. It contains only new art. The latest
 numbered export of each appearance wins when several versions are present.
 Turn off **Show new art** to restore the original clickable source-piece
 inspection. The replacement view is a visual preview; source-piece picking is
@@ -117,9 +123,10 @@ GDExtension registration; its existing README describes this behavior.
 
 ```bash
 /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --creator-check=/tmp/opengold-replacement-pilot
+python3 dev_tools/replacement_art_creator/assign_used_art.py --check-pack
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --reference-check=/tmp/opengold-reference-check
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --usage-check
-OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/tile_art_viewer/godot -- --replacement-check=/tmp/opengold-replacement-pilot
+OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/tile_art_viewer/godot -- --replacement-check=/path/to/replacement_pack
 ```
 
 The first check builds four complete pilot sets, validates their dimensions and
@@ -127,9 +134,18 @@ the arch transparency, and writes previews to `/tmp`. The reference check
 loads all original pieces and saves a description into a temporary CSV copy.
 The usage check verifies the list filters, appearance status, and unused-piece
 labels against the catalog metadata.
-The viewer check loads the replacement pack, renders it at a mapped location,
-and checks that switching back restores the original inspector.
+The pack audit checks all 168 used appearances, 168 manifests, and 1,680
+perspective PNG dimensions. The viewer check loads the replacement pack,
+renders it at a mapped location, and checks that switching back restores the
+original inspector.
+
+To rebuild the pack from the new source sprites and briefs, export to an empty
+folder:
+
+```bash
+/Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --export-used=/path/to/new/export/folder
+```
 
 This tool and pack preview do not yet change the game's runtime art loader.
-Game integration should follow visual review of the pilot and a decision on
-how a replacement pack is selected at launch.
+The 42 appearances marked wholly unused by current inspection profiles have
+no replacement sets. Conditional or future map paths may require more art.

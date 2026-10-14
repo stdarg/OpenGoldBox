@@ -4,7 +4,7 @@ const Builder = preload("res://scripts/perspective_builder.gd")
 const INDEX_PATH := "../data/appearance_index.csv"
 const BRIEFS_PATH := "../data/briefs.json"
 const METADATA_PATH := "../../tile_art_viewer/data/tile_art_catalog.csv"
-const KINDS := ["solid", "door", "opening", "landmark"]
+const KINDS := ["solid", "door", "opening", "landmark", "facade", "rect_opening", "cave_opening"]
 const CSV_COLUMNS := [
     "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",
     "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
@@ -113,6 +113,8 @@ func _ready() -> void:
     for argument in OS.get_cmdline_user_args():
         if argument.begins_with("--creator-check="):
             call_deferred("_run_check", argument.trim_prefix("--creator-check="))
+        elif argument.begins_with("--export-used="):
+            call_deferred("_export_used", argument.trim_prefix("--export-used="))
         elif argument.begins_with("--creator-capture="):
             call_deferred("_capture", argument.trim_prefix("--creator-capture="))
         elif argument.begins_with("--reference-check="):
@@ -622,6 +624,39 @@ func _export_set(folder: String, key: String, images: Array[Image]) -> String:
         return "Cannot write export manifest."
     file.store_string(JSON.stringify(manifest, "  ") + "\n")
     return ""
+
+func _export_used(folder: String) -> void:
+    if not usage_ready:
+        push_error("Cannot export used art without the Art Catalog usage data.")
+        get_tree().quit(1)
+        return
+    var count := 0
+    for key in keys:
+        if int(used_views_by_key.get(key, 0)) == 0:
+            continue
+        var record: Dictionary = records.get(key, {})
+        if record.is_empty():
+            push_error("Used appearance lacks a brief: %s" % key)
+            get_tree().quit(1)
+            return
+        var images: Array[Image] = Builder.build(str(record.get("base", "")),
+                str(record.get("feature", "")), str(record.get("kind", "solid")))
+        if images.size() != 10:
+            push_error("Used appearance lacks ten views: %s" % key)
+            get_tree().quit(1)
+            return
+        var error := _export_set(folder, key, images)
+        if not error.is_empty():
+            push_error(error)
+            get_tree().quit(1)
+            return
+        count += 1
+    if count != 168:
+        push_error("Expected 168 used appearances, exported %d." % count)
+        get_tree().quit(1)
+        return
+    print("Exported %d used appearance sets (%d perspective PNGs)." % [count, count * 10])
+    get_tree().quit()
 
 func _run_check(output_folder: String) -> void:
     var pilot_keys := ["WALLDEF1.DAX:1:4", "WALLDEF1.DAX:1:5",

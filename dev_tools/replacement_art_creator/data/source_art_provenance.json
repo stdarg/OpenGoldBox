@@ -1,0 +1,323 @@
+{
+  "generated_on": "2026-10-14",
+  "method": "Independent textual descriptions; no original DAX art was supplied to image generation. New source sprites were projected into ten perspective views with the Godot replacement-art creator.",
+  "assets": {
+    "godot/art/base_bluegray_limewash.png": {
+      "sha256": "d4611ccd26443598f4a558ff31969763ebc33627f89261f631cdbc558ae4d941",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Use case: stylized-concept. Asset type: original pixel-art wall material for a fantasy first-person exploration game. Create a square, straight-on orthographic view of a completely new weathered blue-gray limewashed stone wall. Fill the entire canvas with wall; no perspective, floor, sky, ceiling, door, window, arch, characters, symbols, text, logos, or frame. Crisp deliberate pixel clusters and hand-shaded texture in the high-resolution pixel-art craft style of the game's new portraits, with subtle muted teal mineral seams and warm ochre flecks. Large irregular masonry joins that remain horizontally compatible across the left and right edges. The visual design must stand alone and avoid any recognizable existing game motif. 1:1 square."
+      ]
+    },
+    "godot/art/base_bookcase.png": {
+      "sha256": "480e61b73d514d9bbec632b39d5030e933434061ed4b19470c08a1d4c93ff4c1",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art square orthographic straight-on wall panel of a sturdy dark walnut bookcase filled with many colorful but unmarked books, a few scroll tubes and empty gaps, deep shadows between shelves. Architectural material filling canvas edge to edge, clear horizontal shelf rhythm at small size. No figures, text, logos, symbol, surrounding wall, floor or perspective. Crisp deliberate pixel clusters, limited jewel-tone palette, independent design."
+      ]
+    },
+    "godot/art/base_broken_battlement.png": {
+      "sha256": "e23c0fa42116d8a9f7b2e5af12b84593e6bba69e7b6d99c091234db5fd04cf12",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art straight-on orthographic wall panel for a fantasy ruined fort: low gray stone battlement with an uneven broken upper silhouette, deep dark gaps between stone teeth, weathered blue-gray coping stones, shadowed lower masonry. Fills width of square canvas, top third may be transparent sky-free void above the broken edge. Crisp deliberate pixel clusters and limited palette. No door, figures, symbols, text, logos or copied motif. Entirely independent design.",
+        "Edit this newly generated original pixel-art battlement asset. Keep the gray stone ruined battlement exactly as it is. Remove the pale checkerboard from the entire area above the broken wall and make that whole area fully transparent alpha. Preserve the full straight-on wall silhouette and square framing. No new objects, no text, no logos."
+      ]
+    },
+    "godot/art/base_brown_rock.png": {
+      "sha256": "eff7f15fad578972c1c40d6e67b653d7307ef2c29de8e44ea0286f0fbf3ff192",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Square orthographic straight-on original high-resolution PIXEL ART natural rock wall material for a fantasy first-person dungeon. Mottled brown ochre and charcoal volcanic stone, rough mineral layers, deep crevices. Fill edge to edge with repeatable rock texture. Deliberate crisp pixel clusters and limited palette. No sky, floor, door, opening, furniture, symbols, text, logos, characters, border, or perspective. Entirely independent design. 1:1."
+      ]
+    },
+    "godot/art/base_foliage.png": {
+      "sha256": "e6e14a28700472e8b720ef86199b01bfe1f454543c2b2bb2700bc05f47b4c093",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art dense hedge material for a fantasy first-person map. Square orthographic straight-on wall of layered olive, emerald and sage leaves with scattered pale blossoms and shadow pockets, dense edge-to-edge texture, visually repeatable. Crisp deliberate square pixel clusters and limited palette. No tree trunk, sky, ground, building, characters, text, symbols or logos. Entirely new independent design. 1:1."
+      ]
+    },
+    "godot/art/base_gray_rock.png": {
+      "sha256": "0969b1856bbc52cc55e97baee6ec14fb3230bb2c1a7d853210d14f557ce8bfed",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Square orthographic straight-on original high-resolution PIXEL ART natural rock wall material for a fantasy first-person dungeon. Irregular gray slate and granite blocks, cool shadow crevices, occasional moss flecks. Fill edge to edge with repeatable rock texture. Deliberate crisp pixel clusters and limited palette. No sky, floor, door, opening, furniture, symbols, text, logos, characters, border, or perspective. Entirely independent design. 1:1."
+      ]
+    },
+    "godot/art/base_low_woven_barrier.png": {
+      "sha256": "8cccf6930c88ef706112b5fae6b6658a511ab99e3bc98aefd9ad72dcbbe94e11",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent wall-slot sprite for a fantasy settlement: a LOW barrier of golden woven reeds between weathered timber stakes, top edge at about the middle of the square canvas, lower half filled by woven wall, upper half fully transparent. Straight-on orthographic elevation, spans full width. Crisp deliberate square pixel clusters, no people, sky, buildings, text, logos or recognizable game motif. Entirely independent design. 1:1 square."
+      ]
+    },
+    "godot/art/base_mosaic_wall.png": {
+      "sha256": "7765ba892122c5d3338a91a10a01596df4128536d8ed991f05c543055349bd17",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Square orthographic straight-on original high-resolution PIXEL ART mosaic wall material for a fantasy civic building. Small irregular ceramic tesserae in dusty indigo, terracotta, ivory, and green forming a completely abstract nonfigurative rhythm; worn grout. Fill edge to edge, repeatable. Deliberate crisp pixel clusters and limited palette. No recognizable symbol, figure, lettering, logo, frame, door, floor, or perspective. Entirely independent design. 1:1."
+      ]
+    },
+    "godot/art/base_pale_broken_wall.png": {
+      "sha256": "5a7de4a1c1a0b0a0d103ceed13a02d9e17415ae6a066339298b0ffca00c14d17",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Edit this newly generated original pixel-art ruined battlement. Preserve the broken upper silhouette, wall structure, and fully transparent sky area. Change the masonry throughout to pale chalk limestone with warm light-gray mortar and subtle golden weathering; remove blue trim. Straight-on orthographic wall, crisp pixel clusters. No figures, writing, logos or copied motifs."
+      ],
+      "edited_from": "godot/art/base_broken_battlement.png"
+    },
+    "godot/art/base_pale_limestone.png": {
+      "sha256": "beeba6f302b82e8ad77d28be61b875b0f50b7b3f1108eba07a50f1448428f4e3",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel art texture for a fantasy first-person corridor. Square orthographic straight-on WALL MATERIAL filling the entire canvas: chalky pale limestone blocks with irregular large joints, weathering, warm gray shadows, faint amber mineral flecks. Cohesive repeatable material, no perspective, no floor, sky, door, windows, trim, text, figures, logos, or recognizable game motifs. Clean deliberate square pixel clusters and limited hand-shaded palette; strong readable silhouette at small size. 1:1."
+      ]
+    },
+    "godot/art/base_palisade.png": {
+      "sha256": "a6d876079f09d989f2864a3c1f382f2ea2ac4ca2e6e55bb1b3a029d58db3b89c",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art wall material for a fantasy frontier settlement. Square orthographic straight-on view of a row of rough upright chestnut-wood palisade stakes, staggered pointed tops, dark lashings and small gaps, weathered red-ochre tips. Dense fence fills width edge to edge and most of height, muted shadow background between stakes. Crisp deliberate square pixel clusters and limited palette. No gate, floor, sky, characters, emblems, text or logos. Entirely new independent design. 1:1."
+      ]
+    },
+    "godot/art/base_red_cavern.png": {
+      "sha256": "e32ba10d88b773532500fcb57a14a2469313d7013c6532a3ceb56aa15c303a7e",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel art texture for a fantasy first-person cavern. Square orthographic straight-on NATURAL ROCK WALL MATERIAL filling the entire canvas: jagged iron-rich red shale and basalt, black recesses, scattered ochre strata, rough crystalline chips. Cohesive repeatable material, no perspective, no floor, sky, door, opening, ladder, text, figures, logos, or recognizable game motifs. Clean deliberate square pixel clusters and limited hand-shaded palette; strong readability at small size. 1:1."
+      ]
+    },
+    "godot/art/base_redbrick.png": {
+      "sha256": "fb9d8acf8a27d9afc8b222b7dc2e3047a490e1b188d01f1c6bbccc78007e2478",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel art texture for a fantasy first-person corridor. Square orthographic straight-on WALL MATERIAL filling the entire canvas: russet and burnt-sienna handmade brick, irregular mortar joints, a few weathered chips, subtle cool shadow pixels. Cohesive repeatable material, no perspective, no floor, sky, door, windows, columns, text, figures, logos, or recognizable game motifs. Clean deliberate square pixel clusters and limited hand-shaded palette; strong readability at small size. 1:1."
+      ]
+    },
+    "godot/art/base_reedy_bank.png": {
+      "sha256": "623f7dcf0b6abdd2d392f289694fabc4d9c6f1f46bd163dd40a56cc436596ea3",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent wall-slot sprite for a fantasy waterfront: low orange-brown earthen bank with tufts of green reeds and small stones, upper two thirds transparent, bank spans full width along bottom. Straight-on orthographic elevation, readable at 56 by 64 pixels. Crisp deliberate square pixel clusters, no people, water, sky, text, logos or recognizable game motif. Entirely independent design. 1:1 square."
+      ]
+    },
+    "godot/art/base_stone_panels.png": {
+      "sha256": "a0f5d65aaa4f8c1ced20d7fc3d085ad9d00603bbe136771b99f8619032d5234a",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art wall panel for a fantasy dungeon, square orthographic straight-on view: gray cut-stone wall with four rectangular dark recessed panels separated by weathered vertical stone mullions, subtle cool mineral highlights. Fill canvas edge to edge, clear simple four-panel structure. Crisp deliberate square pixel clusters, no doors, figures, text, symbols, logos, perspective or recognizable motif. Entirely independent design."
+      ]
+    },
+    "godot/art/base_timber_planks.png": {
+      "sha256": "47cbc657c8a92d8188ff3d7ff2992584986a4847ca17823b8690e3d53e56f506",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel art texture for a fantasy first-person corridor. Square orthographic straight-on WALL MATERIAL filling the entire canvas: vertical dark honey-brown timber planks, uneven grain, a few wood pegs, muted amber highlight and deep blue-brown seams. Cohesive repeatable material, no perspective, no floor, sky, door, windows, trim, text, figures, logos, or recognizable game motifs. Clean deliberate square pixel clusters and limited hand-shaded palette; strong readability at small size. 1:1."
+      ]
+    },
+    "godot/art/base_tree_path.png": {
+      "sha256": "05a2736ce8482805baa148e5e3c547662f43a55a0d076016e567b670c4ca9326",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art square wall-slot scene for a fantasy first-person forest map: two asymmetric leafy green trees framing a clear central ochre dirt path that recedes only gently, distant dark foliage beyond. Front-facing composition designed to read in a 56 by 64 game tile, vivid but restrained natural colors. Crisp deliberate square pixel clusters, no people, buildings, signs, text, logos or recognizable game motif. Entirely independent design. 1:1 square."
+      ]
+    },
+    "godot/art/base_water.png": {
+      "sha256": "350d77961db7bd8b903c2ac77046e7a5690f896a2c23b1420e6b8150e4f84565",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art water material for a fantasy first-person map. Square orthographic straight-on flat plane of deep cobalt and teal water, small bright ripples and foam flecks, no shoreline. Fill canvas edge to edge with a visually repeatable pattern. Crisp deliberate square pixel clusters and limited palette. No perspective horizon, sky, wall, pier, characters, text, symbols or logos. Entirely new independent design. 1:1."
+      ]
+    },
+    "godot/art/base_woven_wall.png": {
+      "sha256": "296b0c695a54a9ae7fd0c8e0277ea739c16e1a60794da8773c854e3a6f9cd2b6",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Square orthographic straight-on original high-resolution PIXEL ART wall material for a fantasy settlement. Tight golden reed weaving between weathered vertical wooden supports, honey and straw tones, dark seams. Fill edge to edge; coherent repeatable wall. Deliberate crisp pixel clusters and limited palette. No sky, floor, door, opening, symbols, text, logos, characters, border, or perspective. Entirely independent design. 1:1."
+      ]
+    },
+    "godot/art/feature_blue_entrance.png": {
+      "sha256": "299fa90a72be5b794288c32adae044ab72d5838ca7e91d6e8a139f0b6d44279e",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent architectural overlay for a fantasy brick civic hall: a broad dark-blue recessed entrance reached by three low pale-stone steps, framed by modest cool-gray columns and a simple lintel. Straight-on orthographic elevation, fills most square canvas, transparent exterior for separate red-brick wall. Crisp deliberate pixel clusters, no door leaf, figure, heraldry, text, logo or recognizable motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_blue_window.png": {
+      "sha256": "2351a0fc3537681109d8617926b8bdaae420f166f0c80cd5f9cdc7ba97e37a53",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "An original high-resolution pixel-art transparent PNG sprite for a fantasy first-person game: ONE small square leaded-glass window glowing muted cobalt blue, plain dark timber frame and shallow sill. Straight-on orthographic elevation, centered in canvas, window occupies about 58% of canvas width and 55% height. Fully transparent empty space outside the window; no wall, door, floor, sky, characters, words, symbols, logos, or recognizable motifs. Crisp deliberate square pixel clusters and limited palette. 1:1 square canvas."
+      ]
+    },
+    "godot/art/feature_cave_opening.png": {
+      "sha256": "868c5635689e98ea1e85a05570292a363706cd59ebfd734d0402b5212f607100",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy cave wall: jagged irregular opening framed by iron-rich red rock ledges, dark empty center that is TRANSPARENT so another corridor can be seen through it, a little ochre dirt along the bottom. Straight-on orthographic elevation, central feature fills most square canvas, exterior transparent for separate red-rock texture. Crisp deliberate square pixel clusters, no figures, symbols, writing, logos or copied motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_civic_columns.png": {
+      "sha256": "ca46a258cf277ebf0158452c16d4d34017496f65d888bc7ab3e0dc70c33bef82",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy building front: two slender pale limestone columns at left and right edges with simple square capitals, an understated carved lintel spanning the top, and short worn steps along the bottom. Large open transparent central area for a separate door or wall texture. Straight-on orthographic elevation, architectural feature fills square canvas. Crisp pixel clusters, terracotta shadow accents. No background wall, door, figures, emblems, writing, logos or copied ornament. Entirely new design."
+      ]
+    },
+    "godot/art/feature_civic_entrance.png": {
+      "sha256": "293527eecd922ff605b3c46c8f74c32bed97d289f40f65451eee58bf1f9b547c",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent facade overlay for a fantasy civic building: two tall dark cobalt windows flanking a CENTRAL barred iron entrance between pale limestone pilasters, simple horizontal lintel and low step. Front-facing orthographic elevation filling square canvas; exterior transparent for separate red brick wall. Crisp deliberate square pixel clusters, no figures, heraldry, signs, text, logos or recognizable game motifs. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_civic_windows.png": {
+      "sha256": "4b526464d98fc3714e1bf9ebd3d714f5b0395518f972a848c320147f4cde129f",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent building facade overlay: two tall dark cobalt-glass windows set between three slender pale limestone pilasters above a plain shallow step, front-facing orthographic elevation filling a square canvas. Exterior transparent for separate russet brick material to show. Crisp deliberate square pixel clusters, no door, people, heraldry, text, logos or recognizable game motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_cyan_trim.png": {
+      "sha256": "cf393b198886c36a134f91751bac2078be19f1734b6b1703a2dbca5221930ae2",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy first-person wall: slender weathered teal-blue mineral bands around left and right edges with a restrained horizontal molding at the top. Large clear transparent center allows a separate stone wall texture to show. Straight-on orthographic elevation, architectural feature touches canvas edges. Crisp deliberate square pixel clusters, no door, figures, words, logos, heraldry, familiar symbols or background wall. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_double_door.png": {
+      "sha256": "131c3e7741f6c19629b679ec09bd3c1f9d1a8b61578643ddd254b60efde3acf6",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "An original high-resolution pixel-art transparent PNG sprite for a fantasy first-person game: ONE broad pair of CLOSED heavy wooden double doors, unequal vertical oak boards, blue-gray iron strap hinges, simple twin handles, narrow stone lintel and jamb. Full architectural feature visible top to bottom, straight-on orthographic elevation, centered and occupying about 90% width and 95% height. Transparent empty space outside doorway; no background wall, floor, sky, characters, words, heraldry, logos, or recognizable motifs. Crisp deliberate pixel clusters and limited palette. Square 1:1 canvas."
+      ]
+    },
+    "godot/art/feature_fountain.png": {
+      "sha256": "115adb2cb6cfb7cfc344828156d29a8e46f9c408bffe2f2b4fc372facf4fddca",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy first-person scene: small white limestone fountain with a gentle narrow upward jet and a shallow indigo-blue basin, seen straight-on in orthographic elevation. Centered and occupying lower three quarters of a square canvas, complete silhouette, transparent exterior. No background wall, floor, sky, figures, text, symbols, logos or copied motif. Crisp pixel clusters, cool blue water and worn pale stone, entirely independent design."
+      ]
+    },
+    "godot/art/feature_gravestone.png": {
+      "sha256": "9c8235c5ca55079e6029c36535bffd0d6601607224f527d780afcea92490b51d",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy graveyard: ONE simple rounded weathered slate gravestone standing in sparse green grass, with no inscription or carved symbol. Complete silhouette, centered in square canvas, about half width and three quarters height, transparent exterior. Front-facing orthographic elevation, crisp deliberate pixel clusters and muted gray-green palette. No figures, text, logo or familiar motif. Entirely new design."
+      ]
+    },
+    "godot/art/feature_iron_fence.png": {
+      "sha256": "76213f118bd34c3d0f9df951a9aaaa62cc6a7b06d50080ba4255468be0aa288a",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy first-person graveyard: long simple wrought-iron fence with evenly spaced slender spear-point uprights and two horizontal rails, weathered charcoal metal, front-facing orthographic elevation. Fence spans width of square canvas, rises to about three quarters height, transparent exterior. Crisp deliberate pixel clusters, no cemetery scene, figures, text, emblems, logos or copied motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_ivy.png": {
+      "sha256": "f8ce0a60cbd1f996ee6e56b9aa1eee32889c85e3e67c182eacbcf398f8a06029",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "An original high-resolution pixel-art transparent PNG overlay for a fantasy first-person game: irregular climbing ivy vines and leaves draping down from upper left and upper right corners, with a few tendrils crossing center but ample open transparent space so a wall remains visible. Straight-on orthographic elevation. Deep olive, sage and muted golden green. Transparent background; no wall, door, floor, sky, characters, words, logos, or symbols. Crisp deliberate square pixel clusters and limited palette. Entirely independent design, 1:1 square canvas."
+      ]
+    },
+    "godot/art/feature_ladder.png": {
+      "sha256": "93d043ffc98a58395740ae7299be5bb91e550d26318a2197ccc63c2723a490bd",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy cave wall: ONE tall pale wooden ladder with uneven rungs and worn rails, straight-on orthographic elevation, centered and occupying roughly half canvas width and full height. Transparent exterior so separate red rock texture can show. Crisp deliberate square pixel clusters, no figures, writing, symbols, logos or recognizable game motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_lamp_steps.png": {
+      "sha256": "8b37158669c1f495c27c2f3129610a9932c3cf80158a44daf31e6e00949ae705",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent facade overlay for a fantasy first-person ruined wall: three low gray stone steps leading up to a small recessed lantern with blue and red glass panes in a plain stone niche. Straight-on orthographic elevation, full feature visible across square canvas, exterior transparent for separate gray masonry material. Crisp deliberate square pixel clusters, no figures, letters, emblems, logos or recognizable game motifs. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_narrow_door.png": {
+      "sha256": "2fe9af4ef8e7c3db05ea32651c67a7459ba44c9c87b5e55758825c9e33673c5f",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "An original high-resolution pixel-art transparent PNG sprite for a fantasy first-person game: ONE tall narrow CLOSED wooden door with dark oak boards, iron hinges and a plain ring pull, surrounded by a slim weathered pale-stone jamb. Full door visible from top to bottom, straight-on orthographic elevation, centered and occupying about 70% of canvas width and 94% height. Transparent empty space outside the door and jamb; no background wall, floor, sky, characters, words, symbols, logos or frame. Crisp deliberate pixel clusters, warm wood and cool stone palette, entirely independent design. Square 1:1 canvas."
+      ]
+    },
+    "godot/art/feature_palisade_gate.png": {
+      "sha256": "d2ffc9b7e51d3eccc862bdeb4aaeb0abe37c824726127412ae0e28294d15966f",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy frontier fence: central sturdy closed gate of vertical weathered chestnut stakes with pointed red-brown tops, two pale crossbars, plain blue-gray iron latch at right. Front-facing orthographic elevation, gate centered and covers about 70% canvas width and full height, exterior transparent so separate palisade texture remains visible. Crisp deliberate square pixel clusters, no figures, symbols, writing, logos or recognizable motifs. Entirely original design."
+      ]
+    },
+    "godot/art/feature_pier.png": {
+      "sha256": "55bd6d6b5b19d2fce8631d436c599bed0e6022dcabf6c2d8a8a423c1359421d9",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy first-person waterfront: a short weathered wooden pier railing, horizontal rail crossing several stout posts, simple iron chain links between posts, front-facing orthographic elevation. It spans most width of square canvas, positioned across lower half, transparent exterior so blue water can show behind. Crisp deliberate pixel clusters, muted chestnut and iron gray palette. No scenery, boat, character, text, symbols, logos or copied motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_recessed_lamp.png": {
+      "sha256": "654b6ba7b6eddac0bd154987a36ab147d9871eb6cfb08418de652d43f3437d56",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy dungeon wall: ONE small recessed lantern fixture with an angular blue-gray iron frame, deep shadow niche, ruby and cobalt glass panes glowing faintly. Centered in square canvas, fixture about half width and half height; surrounding area transparent for separate stone texture. Straight-on orthographic elevation, crisp deliberate pixel clusters. No writing, glyph, figure, logo or recognizable game motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_shrine.png": {
+      "sha256": "507891f5a0f2b478f574c9ed5ca3e42bbbe598cb7f5538ed4b9b3cfd94057223",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy first-person architectural scene: a small abstract violet-glass shrine lantern in a simple red-brick alcove, glowing gently, flanked by modest pale stone trim. Centered upright feature, complete silhouette, around half canvas width and three quarters height, transparent space outside. No deity, heraldry, religious mark, familiar icon, figures, letters, logo, background wall or floor. Straight-on orthographic elevation, crisp deliberate pixel clusters, entirely original design."
+      ]
+    },
+    "godot/art/feature_stone_cross.png": {
+      "sha256": "4e4b35f0722316d84170e92197bd566394469590294cae733d89670d52dac394",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy graveyard: ONE plain weathered gray stone cross rising from sparse green grass, no inscription or ornament, complete silhouette centered in square canvas, about half width and three quarters height, transparent exterior. Front-facing orthographic elevation, crisp deliberate pixel clusters, restrained gray-green palette. No figures, text, logo or familiar game motif. Entirely new design."
+      ]
+    },
+    "godot/art/feature_stone_gate.png": {
+      "sha256": "4ee494d493018795a8b28205599520ec4ede072bc8b94c343b087c7d4fcc1862",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy first-person ruin: broad open gateway with rough chipped pale-gray stone jambs and a simple flat lintel, a few shallow stairs visible through the center, complete front-facing orthographic elevation. Central passage area is transparent; outside gateway is transparent. Strong readable silhouette, fills most square canvas. Crisp deliberate pixel clusters, no background wall, sky, figures, text, heraldry, logos or copied motifs. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_storefront.png": {
+      "sha256": "2265bc907da68f4edc532bcb6c94d32d9a5bb4b10a051b6e206d24b894f6fc4b",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy first-person street wall: modest woven striped amber-and-indigo awning across the upper third, a small cobalt leaded window on the left and a narrow plain wooden shop door on the right, pale stone jamb accents. Straight-on orthographic building elevation, full feature visible on square canvas, transparent exterior so a separate wall texture shows. Crisp pixel clusters, no signs or writing, figures, logos, recognizable motifs or perspective. Entirely new design."
+      ]
+    },
+    "godot/art/feature_temple_door.png": {
+      "sha256": "28d06bbb5b790af29f659422d153cd9a70fc8c9022379e7fafdba01bf4b816ca",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent overlay for a fantasy building wall: tall closed arched wooden door centered between two slim ivory limestone columns, a shallow geometric lintel and three low steps, straight-on orthographic elevation. Complete feature fills most square canvas, exterior transparent for a separate red-brick wall texture. Crisp deliberate square pixel clusters, restrained russet and ivory palette, no deity, religious mark, heraldry, figures, text, logos or copied ornament. Entirely original design."
+      ]
+    },
+    "godot/art/feature_timber_facade.png": {
+      "sha256": "744834510dccf0ae792e870667fee1e93a3fcd5bf2b3c77b15f235cc6fdd98a3",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent facade overlay for a fantasy timber building: one small muted-blue leaded window left of a narrow closed arched oak door, modest carved wood lintel, straight-on orthographic elevation. Both features fully visible and arranged across square canvas, exterior transparent for a separate vertical-plank wall material. Crisp deliberate pixel clusters, no awning, sign, writing, heraldry, figures, logos or copied motif. Entirely independent design."
+      ]
+    },
+    "godot/art/feature_tree.png": {
+      "sha256": "f93027b229b83582a578bfa5c6ba20b6236a6cf975a84fb7a39f6b3124a17550",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent sprite for a fantasy first-person map. ONE slender deciduous tree with asymmetrical leafy emerald and moss-green crown and a visible crooked brown trunk, full silhouette from roots to highest leaf, centered in square canvas. Straight-on orthographic elevation, transparent exterior, strong readability at small size. Crisp deliberate square pixel clusters and limited palette. No landscape, sky, ground, other tree, characters, text, symbols or logos. Entirely new independent design. 1:1."
+      ]
+    },
+    "godot/art/feature_waterfront_wall.png": {
+      "sha256": "44709d9323e7666619e14c140710138931e7956b16e7ad46ed4a39395c814f7e",
+      "tool": "Codex built-in image_gen",
+      "prompts": [
+        "Original high-resolution pixel-art transparent wall-slot sprite for a fantasy harbor: LOW pale limestone quay wall spanning full width across the lower half of a square canvas, weathered blocks and an uneven top edge, upper half fully transparent to reveal separate blue water behind. Straight-on orthographic elevation, crisp deliberate square pixel clusters. No posts, boats, figures, text, logos or recognizable game motifs. Entirely independent design."
+      ]
+    }
+  }
+}
