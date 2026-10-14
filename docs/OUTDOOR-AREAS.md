@@ -13,7 +13,7 @@ bit: evidence for an indoor flag". OpenGold already reads it as
 marked, square by square, which squares have a roof and which have open sky.
 
 I exported every map with the existing tool (`build-game/opengold_maps
-/Users/edmond/POOLRAD`) and counted the flag. I also counted it over the
+$OPENGOLD_GAME_DIR`) and counted the flag. I also counted it over the
 walkable region (a flood fill across open edges and doors), because unused
 "rock" around dungeons is often left unflagged. Map-to-script links come from
 `build-game/opengold_scripts --inspect` (`LOAD FILES`, `LOAD PIECES`, text).
@@ -101,4 +101,4 @@ the book's printed page numbers.
 Scratchpad scripts (data analysis only, not repo tools):
 `indoor.py maps.json [grid]` (counts and grids), `reach.py maps.json` (walkable
 components), `wid.py maps.json GEOn.DAX:r` (flag and wall IDs per square), after
-`build-game/opengold_maps /Users/edmond/POOLRAD > maps.json`.
+`build-game/opengold_maps $OPENGOLD_GAME_DIR > maps.json`.
