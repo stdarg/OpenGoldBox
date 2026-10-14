@@ -1,6 +1,8 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
+#include "spell_table.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -15,6 +17,7 @@
 
 using namespace opengold;
 using namespace opengold::rules;
+namespace fx = opengold::srd5::detail;
 
 namespace
 {
@@ -337,6 +340,47 @@ void metamagic_checks()
     }
 }
 
+// Heightened Spell (#134): the target saves with Disadvantage against the
+// spell for as long as it lasts, its repeated saves included.
+void heightened_checks()
+{
+    auto module = rules();
+    auto c = battle(*module, sorcerer(2, {"heightened", "quickened"}, {"magic_missile", "sleep"}));
+    check(submit(*c, "metamagic_heightened") && submit(*c, "sleep") && submit(*c, "area_cast") &&
+          logged(*c, "Sorcerer uses Heightened Spell.") && logged(*c, "Enemy Wisdom save"),
+          "Heightened Sleep asks the enemy to save");
+    const auto saved = c->save();
+    check(module->restore(saved)->save() == saved, "The mark survives a checkpoint");
+
+    // From the same dice, the marked creature's repeated save never rolls
+    // higher, and sometimes lower.
+    const auto repeated_roll = [](std::uint64_t seed, bool marked)
+    {
+        const fx::EffectSource caster{.scope = 1, .actor = 7};
+        fx::EffectState effects;
+        fx::apply_blindness(effects, caster, "Caster", {.dc = 13, .first_save_ms = 1000});
+        if (marked)
+            fx::apply_spell_benefit(effects, caster, "Caster", fx::EffectKind::heightened,
+                                    fx::spell_index("blindness"));
+        std::array<fx::EffectSubject, 1> subject{{{1, effects, {}}}};
+        int natural = 0;
+        fx::elapse_effects(subject, 1000, seed, [&](const auto & event)
+        {
+            if (event.save)
+                natural = event.save->natural;
+        });
+        return natural;
+    };
+    bool lower = false;
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        const int plain = repeated_roll(seed, false), heightened = repeated_roll(seed, true);
+        check(plain && heightened && heightened <= plain,
+              "A Heightened repeated save takes the lower of two d20s");
+        lower |= heightened < plain;
+    }
+    check(lower, "Disadvantage lowers some repeated saves");
+}
 } // namespace
 
 int main()
@@ -349,6 +393,7 @@ int main()
         font_of_magic_checks();
         level_two_slot_checks();
         metamagic_checks();
+        heightened_checks();
         std::cout << "Sorcerer tests passed\n";
     }
     catch (const std::exception &e)

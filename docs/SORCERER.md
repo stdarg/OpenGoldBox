@@ -62,8 +62,12 @@ spellcasting ability; the earlier cantrip work is in
 - **Extended** (1): a Concentration spell lasts twice as long, with Advantage
   on the saves to keep it.
 - **Heightened** (2): the spell's target, or the first enemy in its area, has
-  Disadvantage on its save against it (repeated saves later are not
-  affected yet).
+  Disadvantage on every save against it while it lasts: the first one, the
+  repeated saves of Blindness, Hold Person, Sleep, Hideous Laughter (also when
+  damaged) and Ray of Enfeeblement, and later saves against Moonbeam, Flaming
+  Sphere, Heat Metal, Gust of Wind, Grease and Web. The creature carries an
+  unseen mark naming the caster and the spell for up to 10 minutes; casting the
+  spell again replaces it.
 - **Quickened** (2): Action spells are offered as Bonus Actions, including those aimed at any creature (Ray of Frost, Poison Spray).
 - **Seeking** (1): a missed spell attack rolls its d20 again, once.
 - **Subtle** is not offered: it only removed spell components, which the game
@@ -81,4 +85,5 @@ spellcasting ability; the earlier cantrip work is in
 - Verification: `opengold_sorcerer_tests` (two options at level 2;
   readying and a checkpoint; Quickened's Bonus Action and cost; Seeking's
   reroll; Distant's Touch at 30 feet; Transmuted's Cold; Careful sparing an
-  ally; Twinned's second creature).
+  ally; Twinned's second creature; Heightened Sleep's mark through a
+  checkpoint and the lower of two d20s on a repeated save).

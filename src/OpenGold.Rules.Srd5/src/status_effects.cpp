@@ -1,6 +1,7 @@
 #include "status_effects.h"
 #include "damage.h"
 #include "dice.h"
+#include "spell_table.h"
 #include <algorithm>
 #include <charconv>
 #include <iomanip>
@@ -178,6 +179,38 @@ void apply_ray_of_frost(EffectState &effects, EffectSource source,
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::ray_of_frost, 0, duration_ms, 0});
 }
+
+bool heightened_against(const EffectState &effects, std::uint64_t source_scope,
+                        rules::EntityId source_actor, std::string_view spell)
+{
+    const int index = spell_index(spell);
+    return std::any_of(effects.active.begin(), effects.active.end(), [&](const auto & e)
+    {
+        return e.kind == EffectKind::heightened && e.source_scope == source_scope &&
+               e.source_actor == source_actor && e.dc == index;
+    });
+}
+
+namespace
+{
+// The spell whose repeated save a lasting effect calls for.
+std::string_view repeated_save_spell(EffectKind kind)
+{
+    switch (kind)
+    {
+    case EffectKind::blindness:
+        return "blindness";
+    case EffectKind::hold_person:
+        return "hold_person";
+    case EffectKind::drowsy:
+        return "sleep";
+    case EffectKind::laughing:
+        return "hideous_laughter";
+    default:
+        return "ray_of_enfeeblement";
+    }
+}
+} // namespace
 
 void apply_frosts_chill(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms)
@@ -393,6 +426,7 @@ int benefit_value_limit(EffectKind kind)
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden ? 40
+           : kind == EffectKind::heightened ? static_cast<int>(spell_table.size()) - 1
            : 10;
 }
 
@@ -447,6 +481,7 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
+    case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes
     case EffectKind::metamagic:
         return 6000; // the rest of the turn, cleared when it ends
@@ -615,11 +650,13 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                                     : 0;
                         if (has_effect(subject.effects.get(), EffectKind::bane))
                             bless -= roll_die(rng, 4);
+                        auto modifiers = mental_save_modifiers(ability, subject);
+                        modifiers.disadvantage |=
+                            heightened_against(subject.effects.get(), e.source_scope,
+                                               e.source_actor, repeated_save_spell(e.kind));
                         event.save = saving_throw(ability,
                                                   subject.saves[static_cast<unsigned>(ability)] + bless,
-                                                  e.dc,
-                                                  mental_save_modifiers(ability, subject),
-                                                  rng);
+                                                  e.dc, modifiers, rng);
                         if (!event.save->success && !inspiration_spent)
                             event.inspiration = inspiration_die(effects, *event.save, rng);
                         if (event.inspiration)
@@ -675,7 +712,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::frosts_chill))
+    if (value > static_cast<unsigned>(EffectKind::heightened))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

@@ -2511,9 +2511,18 @@ class Session final : public CombatSession
     void log_luck(const Actor &a, bool rerolled);
     void log_save(const Actor &target, const detail::SaveResult &result);
     // `advantage` is a feature's own Advantage, such as a Large creature against
-    // Ensnaring Strike; conditions and armor are applied here.
+    // Ensnaring Strike, and `disadvantage` a lasting spell's Heightened Spell;
+    // conditions and armor are applied here.
     bool saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
-                               bool advantage = false);
+                               bool advantage = false, bool disadvantage = false);
+    // Heightened Spell: the creature saves against the caster's spell with
+    // Disadvantage for as long as it lasts.
+    void mark_heightened(const Actor &caster, const detail::SpellDef &spell);
+    [[nodiscard]] bool heightened_against(const Actor &target, const Actor &caster,
+                                          std::string_view spell) const
+    {
+        return detail::heightened_against(target.effects, scope_, caster.source.id, spell);
+    }
     detail::MovementGrid movement_grid(const Actor &mover) const;
     // The board with spell zones applied, as movement and the view see it.
     [[nodiscard]] Battlefield zoned_board() const;
@@ -4412,6 +4421,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     take_metamagic(a, spell);
     if (casting_with(Metamagic::heightened))
         heightened_target_ = target_id;
+    mark_heightened(a, spell);
     if (spell.level)
         pay_for_spell(a, verb, spell);
     auto rolled = spell.dice;
@@ -5775,7 +5785,11 @@ void Session::damage(Actor &target, int amount, bool critical)
     for (std::size_t n = 0; n < target.effects.active.size() && target.life.hp > 0; ++n)
         if (target.effects.active[n].kind == detail::EffectKind::laughing &&
                 saving_throw_succeeds(target, detail::Ability::wisdom, target.effects.active[n].dc,
-                                      true))
+                                      true,
+                                      detail::heightened_against(
+                                          target.effects, target.effects.active[n].source_scope,
+                                          target.effects.active[n].source_actor,
+                                          "hideous_laughter")))
         {
             target.effects.active.erase(target.effects.active.begin() +
                                         static_cast<std::ptrdiff_t>(n));
@@ -6162,7 +6176,8 @@ void Session::blow(const Zone &line, Actor &creature)
     if (creature.life.dead || creature.life.hp == 0 || creature.source.id == line.caster)
         return;
     const auto &caster = actor(line.caster);
-    if (!saving_throw_succeeds(creature, detail::Ability::strength, spell_dc(caster)))
+    if (!saving_throw_succeeds(creature, detail::Ability::strength, spell_dc(caster), false,
+                               heightened_against(creature, caster, "gust_of_wind")))
         push_away(caster, creature, 3);
 }
 
@@ -6181,7 +6196,8 @@ void Session::sphere_burns(const Actor &caster, Actor &creature)
     if (creature.life.dead || creature.life.hp == 0)
         return;
     const auto &spell = *detail::find_spell("flaming_sphere");
-    const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster));
+    const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
+                       heightened_against(creature, caster, spell.id));
     const int rolled = dice({spell.dice.count, spell.dice.sides, 0});
     const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
     log(creature.source.name + " takes " + std::to_string(amount) +
@@ -6288,7 +6304,8 @@ void Session::heat_metal(const Actor &caster, Actor &creature)
     });
     damage(creature, amount);
     if (creature.life.dead || creature.life.hp == 0 || !detail::can_apply(creature.effects) ||
-            saving_throw_succeeds(creature, spell.save, spell_dc(caster)))
+            saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
+                                  heightened_against(creature, caster, spell.id)))
         return;
     detail::apply_poisoned(creature.effects, effect_source(caster), caster.source.name,
                            next_turn_ms(caster), detail::EffectKind::scorched);
@@ -6339,7 +6356,8 @@ void Session::moonbeam_burns(const Zone &beam, Actor &creature)
         detail::apply_poisoned(creature.effects, effect_source(caster), caster.source.name,
                                rest_of_turn, detail::EffectKind::moonlit);
     const auto &spell = *detail::find_spell("moonbeam");
-    const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster));
+    const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
+                       heightened_against(creature, caster, spell.id));
     const int rolled = dice(spell.dice);
     const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
     log(creature.source.name + " takes " + std::to_string(amount) + " Radiant damage from the Moonbeam.",
@@ -6376,7 +6394,10 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
              : detail::has_effect(creature.effects, detail::EffectKind::webbed) ||
              !detail::can_apply(creature.effects)))
         return false;
-    if (saving_throw_succeeds(creature, detail::Ability::dexterity, zone.save_dc))
+    // Grease outlasts its caster, so its mark is found by the caster's id.
+    const bool heightened = detail::heightened_against(creature.effects, scope_, zone.caster,
+                            grease ? "grease" : "web");
+    if (saving_throw_succeeds(creature, detail::Ability::dexterity, zone.save_dc, false, heightened))
         return false;
     if (grease)
     {
@@ -6551,6 +6572,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                 if (!heightened_target_ && !other.life.dead && other.source.cell == cell &&
                         other.source.side != a.source.side)
                     heightened_target_ = other.source.id;
+    mark_heightened(a, spell);
     if (spell.rider == detail::Rider::flaming_sphere)
     {
         begin_concentration(a, spell);
@@ -6939,6 +6961,7 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
     take_metamagic(a, spell);
     if (casting_with(Metamagic::heightened))
         heightened_target_ = selection.chosen.front();
+    mark_heightened(a, spell);
     if (quickened)
         a.bonus = false;
     else
@@ -7964,6 +7987,24 @@ bool Session::readies(const Actor &a, Metamagic option, const detail::SpellDef &
            a.lay_on_hands >= metamagic_cost(option);
 }
 
+void Session::mark_heightened(const Actor &caster, const detail::SpellDef &spell)
+{
+    // A new cast of the spell replaces the old one's mark.
+    const int index = detail::spell_index(spell.id);
+    for (auto &other : actors_)
+        std::erase_if(other.effects.active, [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::heightened && e.source_scope == scope_ &&
+               e.source_actor == caster.source.id && e.dc == index;
+    });
+    if (!heightened_target_)
+        return;
+    auto &target = actor(heightened_target_);
+    if (detail::can_apply(target.effects))
+        detail::apply_spell_benefit(target.effects, effect_source(caster), caster.source.name,
+                                    detail::EffectKind::heightened, index);
+}
+
 void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
 {
     casting_metamagic_.reset();
@@ -8532,7 +8573,7 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
 }
 
 bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
-                                    bool advantage)
+                                    bool advantage, bool disadvantage)
 {
     if (detail::paralyzed(target.effects) && !unconscious(target) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
@@ -8574,7 +8615,7 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
     // Heightened Spell: Disadvantage on the save against the spell.
-    modifiers.disadvantage |= heightened_target_ == target.source.id;
+    modifiers.disadvantage |= heightened_target_ == target.source.id || disadvantage;
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
     // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
@@ -13390,7 +13431,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.185", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.186", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

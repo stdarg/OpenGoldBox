@@ -1470,6 +1470,14 @@ inline const SpellDef *find_spell(std::string_view id)
     return nullptr;
 }
 
+// The spell's place in spell_table, which names it in a saved effect; -1 if
+// there is none.
+inline int spell_index(std::string_view id)
+{
+    const auto *spell = find_spell(id);
+    return spell ? static_cast<int>(spell - spell_table.data()) : -1;
+}
+
 // `mask` is a wire encoding, not the identity of a spell. It exists only so
 // authored creature rows in combat.rules can still be read. An int holds at
 // most 31 of them, which is why it is not the internal representation: a row

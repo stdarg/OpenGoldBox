@@ -173,8 +173,11 @@ enum class EffectKind : unsigned
     // Heroic Inspiration, which a Human gains on finishing a Long Rest.
     heroic_inspiration = 72,
     // Frost's Chill: Speed 10 feet lower until the Goliath's next turn.
+    frosts_chill = 73,
+    // Heightened Spell: Disadvantage on every save against one spell of the
+    // source's; `dc` is the spell's spell_index().
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    frosts_chill = 73
+    heightened = 74
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -306,6 +309,9 @@ void apply_ray_of_frost(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 void apply_frosts_chill(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
+// Whether Heightened Spell marked the creature for the source's spell.
+[[nodiscard]] bool heightened_against(const EffectState &effects, std::uint64_t source_scope,
+                                      rules::EntityId source_actor, std::string_view spell);
 [[nodiscard]] bool sapped(const EffectState &effects);
 [[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source);
 [[nodiscard]] bool has_attack_mastery(const EffectState &effects);
