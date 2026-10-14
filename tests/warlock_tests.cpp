@@ -33,12 +33,13 @@ std::string read(const std::filesystem::path &p)
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-// A sturdy AC 1 target that hits back.
+// A sturdy AC 1 target that hits back, and one that casts Magic Missile.
 std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature weakling 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "creature caster 1 1000 0 30 0 1 4 0 0 0 0 0 0 0 0 2 5 1 4\n");
 }
 
 std::unique_ptr<RulesModule> module_rules()
@@ -198,6 +199,23 @@ void hellish_rebuke_checks()
         return;
     }
     throw std::runtime_error("No seed hurts the Warlock");
+}
+
+// Damage without an attack roll, Magic Missile's darts, also calls for
+// Hellish Rebuke: one question after the spell (#164).
+void rebuke_spell_damage_checks()
+{
+    auto module = rules();
+    // At level three the Warlock outlasts three darts.
+    auto c = battle(*module, warlock(3), 5, "caster");
+    check(submit(*c, "end"), "The enemy's turn");
+    // Each of the three darts is aimed at the Warlock.
+    for (unsigned dart = 0; dart < 3 && !c->snapshot().reaction_pending; ++dart)
+        check(submit(*c, "magic_missile", 1), "The enemy aims a dart");
+    check(c->snapshot().reaction_pending && offered(*c, "rebuke"),
+          "The darts' damage asks about Hellish Rebuke");
+    check(submit(*c, "rebuke") && logged(*c, "Warlock casts Hellish Rebuke at Enemy.") &&
+          !offered(*c, "rebuke"), "One Hellish Rebuke answers the spell");
 }
 
 // One spell slot per turn: after Hex on its own turn, the Warlock cannot spend
@@ -594,6 +612,7 @@ int main()
         policy_checks();
         pact_magic_checks();
         hellish_rebuke_checks();
+        rebuke_spell_damage_checks();
         rebuke_slot_per_turn_checks();
         advancement_checks();
         magical_cunning_checks();

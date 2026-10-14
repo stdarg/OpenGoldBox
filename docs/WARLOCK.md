@@ -18,13 +18,14 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   1d6 more Necrotic damage from each of the Warlock's attack-roll hits; once
   it drops, **Move Hex** curses another as a Bonus Action. The chosen
   ability's Disadvantage on checks has no use here.
-- **Hellish Rebuke** (level 1, Reaction): when an attack damages the Warlock
-  and the attacker is within 60 feet and seen, play stops: "You are hurt.
-  Cast Hellish Rebuke at the attacker, or decline." (React/Decline). The
-  attacker makes a Dexterity save against 2d10 Fire (3d10 from a level-2
-  slot), half on a success. Damage from saving throws and other sources does
-  not prompt it yet. Only one spell slot may be spent per turn: a Warlock who
-  spent one on its own turn is not asked before that turn ends.
+- **Hellish Rebuke** (level 1, Reaction): when a creature within 60 feet that
+  the Warlock sees damages it, play stops: "You are hurt. Cast Hellish Rebuke
+  at the attacker, or decline." (React/Decline). The creature makes a
+  Dexterity save against 2d10 Fire (3d10 from a level-2 slot), half on a
+  success. An attack asks right after it; a spell or other damage, once the
+  command is done ([Reactions to damage](REACTIONS.md)). Only one spell slot
+  may be spent per turn: a Warlock who spent one on its own turn is not asked
+  before that turn ends.
 - **Magical Cunning** (level 2, once per Long Rest): from the Camp dialog's
   Cast / Use, a one-minute rite restores expended Pact Magic slots, up to half
   the maximum (rounded up). It shares Arcane Recovery's store.

@@ -75,15 +75,12 @@ like Hellish Rebuke, except Cloud's Jaunt.
   the Goliath's next turn, or knocks a Large or smaller creature Prone (not
   asked when it already is). A Critical Hit doubles the boon's die. A spell
   with several attack rolls, such as Scorching Ray, asks once.
-- **Stone's Endurance:** when an attack is about to damage the Goliath, React
-  lessens the damage by 1d12 + Constitution modifier.
-- **Storm's Thunder:** when an attack damages the Goliath and the attacker is
-  within 60 feet, React deals it 1d8 Thunder damage.
+- **Stone's Endurance:** when any damage is about to reach the Goliath, React
+  lessens it by 1d12 + Constitution modifier.
+- **Storm's Thunder:** when a creature within 60 feet damages the Goliath,
+  React deals it 1d8 Thunder damage ([Reactions to damage](REACTIONS.md)).
 
-Stone's Endurance and Storm's Thunder answer only an attack's damage so far,
-as Hellish Rebuke does; damage from a save or an area waits on
-[#164](https://github.com/stdarg/OpenGold/issues/164). The Quick-play AI uses
-each boon at its first chance.
+The Quick-play AI uses each boon at its first chance.
 
 ## Saves against conditions
 

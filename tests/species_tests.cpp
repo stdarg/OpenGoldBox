@@ -651,24 +651,26 @@ void heroic_inspiration_checks()
 }
 
 // A Goliath of the ancestry beside an AC 1 creature with 1000 Hit Points
-// that hits back with +20 ("Near"), and a Huge one ("Giant") on its other side.
+// that hits back with +20 ("Near") or casts Magic Missile, and a Huge one
+// ("Giant") on its other side.
 struct GoliathFight
 {
     std::unique_ptr<RulesModule> rules = srd5::parse_content(
             read_rules() +
             "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
             "creature huge 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-            "size huge huge\n");
+            "size huge huge\n" +
+            "creature caster 1 1000 0 30 0 1 4 0 0 0 0 0 0 0 0 2 5 1 4\n");
     Character hero;
     std::unique_ptr<CombatSession> c;
 
-    explicit GoliathFight(std::string boon, std::uint64_t seed = 3)
+    explicit GoliathFight(std::string boon, std::string near = "target", std::uint64_t seed = 3)
         : hero(fighter("goliath", {{"species:goliath:ancestry", std::move(boon)}}))
     {
         c = rules->create({{12, 6, std::vector<Terrain>(72)},
             {   {1, "campaign-character", "Hero", Side::party, {1, 1},
                     rules->character_profile(hero.sheet(), std::vector<std::string> {}).data},
-                {98, "target", "Near", Side::opposition, {2, 1}},
+                {98, std::move(near), "Near", Side::opposition, {2, 1}},
                 {99, "huge", "Giant", Side::opposition, {0, 1}}
             }},
         seed);
@@ -812,6 +814,15 @@ void giant_ancestry_checks()
           submit(*storm.c, "storms_thunder") &&
           logged(*storm.c, "Hero uses Storm's Thunder: Near takes ") && storm.uses_left() == 1,
           "Storm's Thunder strikes back at Near");
+
+    // Damage without an attack roll is endured too (#164).
+    GoliathFight darts("stone", "caster");
+    darts.reach(98);
+    for (unsigned dart = 0; dart < 3 && !darts.c->snapshot().reaction_pending; ++dart)
+        check(submit(*darts.c, "magic_missile", 1), "Near aims a dart at the hero");
+    check(darts.offered("stones_endurance") &&
+          submit(*darts.c, "stones_endurance") && logged(*darts.c, "Hero uses Stone's Endurance: "),
+          "Stone's Endurance lessens a Magic Missile dart");
 
     GoliathFight cloud("cloud");
     cloud.reach(1);

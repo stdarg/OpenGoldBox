@@ -2123,6 +2123,18 @@ class Session final : public CombatSession
     };
     std::optional<PendingReaction> reaction_prompt_;
     std::vector<ReactionAnswer> reaction_answers_;
+    // Creatures damaged during the command, each with the creature acting then
+    // (the one whose turn it is, or one making an Opportunity Attack). Hellish
+    // Rebuke and Storm's Thunder answer them after the attack or the command.
+    struct DamageTaken
+    {
+        EntityId target{}, source{};
+    };
+    std::vector<DamageTaken> damage_taken_;
+    void answer_damage();
+    // True while perform() can undo the command to ask a question; damage
+    // from turns ended outside it (a creature fled or fell) asks nothing.
+    bool askable_{};
     [[nodiscard]] const ReactionAnswer *answer_of(EntityId target, Asked asked) const;
     [[nodiscard]] bool can_shield(const Actor &target) const;
     [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
@@ -5664,7 +5676,13 @@ void Session::damage(Actor &target, int amount, bool critical)
 {
     if (!amount || target.life.dead)
         return;
+    amount = endured(target, amount);
+    if (!amount)
+        return;
     const bool standing = target.life.hp > 0;
+    const auto source = pending() ? pending() : actors_[turn_].source.id;
+    if (standing && source != target.source.id)
+        damage_taken_.push_back({target.source.id, source});
     const detail::DamageOptions options{
         .critical = critical,
         .dies_at_zero = target.source.side == Side::opposition && !def(target).regeneration};
@@ -7750,10 +7768,9 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
         {"Ray of Enfeeblement subtracts {damage} damage.", {{"damage", std::to_string(enfeebled)}}});
     const int amount =
-        hit ? endured(target,
-                      deflected(a, target,
-                                std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
-                                damage_type, ranged))
+        hit ? deflected(a, target,
+                        std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
+                        damage_type, ranged)
         : 0;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
@@ -7826,11 +7843,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (hit && amount > 0 && target.life.hp > 0)
         giant_boon(a, target, critical_hit(a, target, natural, spell));
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
-    if (hit && amount > 0 && target.life.hp > 0)
-    {
-        rebuke(a, target);
-        storms_thunder(a, target);
-    }
+    answer_damage();
     return hit;
 }
 
@@ -9143,7 +9156,7 @@ void Session::giant_boon(const Actor &attacker, Actor &target, bool critical)
 int Session::endured(Actor &goliath, int amount)
 {
     // Stone's Endurance: 1d12 + Constitution modifier less damage.
-    if (amount <= 0 || !can_use_giant_reaction(goliath, GiantBoon::stone))
+    if (amount <= 0 || !askable_ || !can_use_giant_reaction(goliath, GiantBoon::stone))
         return amount;
     ask_reaction(goliath, Asked::endure);
     if (answer_of(goliath.source.id, Asked::endure)->verb != "stones_endurance")
@@ -9195,6 +9208,19 @@ void Session::clouds_jaunt(Actor &goliath, Cell destination)
     {"{name} uses Cloud's Jaunt.", {{"name", goliath.source.name}}});
 }
 
+void Session::answer_damage()
+{
+    // Indexed: a Reaction's own damage is recorded too, though only against
+    // the creature acting, which never answers itself.
+    for (std::size_t n = 0; n < damage_taken_.size(); ++n)
+    {
+        const auto [target, source] = damage_taken_[n];
+        rebuke(actor(source), actor(target));
+        storms_thunder(actor(source), actor(target));
+    }
+    damage_taken_.clear();
+}
+
 void Session::perform(const Command &command)
 {
     casting_metamagic_.reset();
@@ -9205,9 +9231,11 @@ void Session::perform(const Command &command)
                detail::knows_spell(def(other).spells, "hellish_rebuke") ||
                def(other).giant != GiantBoon::none;
     });
+    damage_taken_.clear();
     if (!askable)
     {
         dispatch(command);
+        damage_taken_.clear();
         reaction_answers_.clear();
         return;
     }
@@ -9216,7 +9244,10 @@ void Session::perform(const Command &command)
     const Session before = *this;
     try
     {
+        askable_ = true;
         dispatch(command);
+        answer_damage();
+        askable_ = false;
         reaction_answers_.clear();
     }
     catch (const ReactionQuestion &question)
@@ -13359,7 +13390,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.184", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.185", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
