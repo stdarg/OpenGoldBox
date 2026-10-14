@@ -11,4 +11,11 @@ add_custom_command(TARGET opengold_tile_art_viewer POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${CMAKE_CURRENT_SOURCE_DIR}/tile_art_viewer.gdextension"
         "${PROJECT_SOURCE_DIR}/dev_tools/tile_art_viewer/godot/bin/tile_art_viewer.gdextension")
+add_custom_target(opengold_replacement_art_creator
+    COMMAND "${CMAKE_COMMAND}" -E make_directory
+        "${PROJECT_SOURCE_DIR}/dev_tools/replacement_art_creator/godot/bin"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "$<TARGET_FILE:opengold_tile_art_viewer>"
+        "${PROJECT_SOURCE_DIR}/dev_tools/replacement_art_creator/godot/bin/$<TARGET_FILE_NAME:opengold_tile_art_viewer>"
+    DEPENDS opengold_tile_art_viewer)
 opengold_enable_warnings("${CMAKE_CURRENT_SOURCE_DIR}")

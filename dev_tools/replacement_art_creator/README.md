@@ -1,30 +1,57 @@
 # Replacement Art Creator
 
-This separate Godot tool builds new first-person wall art without opening the
-original game files. It lists the 210 technical appearance IDs, stores
-independent briefs, imports newly created PNGs, projects each appearance into
-the ten renderer slots, previews a synthetic corridor, and exports replacement
-sets. The four included pilot appearances use newly generated art; their input
+This separate Godot tool lists 210 technical appearance IDs, stores independent
+briefs, imports newly created PNGs, projects each appearance into the ten
+renderer slots, previews a synthetic corridor, and exports replacement sets.
+The four included pilot appearances use newly generated art; their input
 prompts and file hashes are in [`data/provenance.json`](data/provenance.json).
 
-The creator does **not** read the original tile-art descriptions or PNGs. The
-technical IDs in `data/appearance_index.csv` link a new design to a game slot.
-They contain no source image descriptions. Refer to the original catalog only
-when assigning a broad function such as wall, door, or passage; write a new
-brief before creating artwork. Do not use original PNGs as image-generation
-inputs or trace their distinctive ornament, silhouette, or color arrangement.
+The **Reference** tab decodes original artwork from your local game files with
+the existing Tile Art Viewer extension. It shows all ten source pieces for the
+selected appearance and lets you edit the corresponding description in the
+existing [`tile_art_catalog.csv`](../tile_art_viewer/data/tile_art_catalog.csv).
+The **Create** tab keeps its independent brief and prompt fields separate.
+Original pixels and catalog descriptions are never inserted into prompts or
+replacement exports. Use the reference to verify a broad function such as
+wall, door, or passage; do not use original PNGs as image-generation inputs or
+trace their distinctive ornament, silhouette, or color arrangement.
 
 ## Run
 
-From the repository root:
+From the repository root, build the shared native decoder and register it with
+this Godot project once:
 
 ```bash
-/Applications/Godot_mono.app/Contents/MacOS/Godot --path dev_tools/replacement_art_creator/godot
+cmake -S . -B build/tile-art-viewer -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF
+cmake --build build/tile-art-viewer --target opengold_replacement_art_creator -j6
+/Applications/Godot_mono.app/Contents/MacOS/Godot --headless --editor --path dev_tools/replacement_art_creator/godot --import --quit
+OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --path dev_tools/replacement_art_creator/godot
 ```
 
-On Linux, substitute the installed `godot` executable. The creator needs
-Godot 4.5 or newer. It needs no game files, CMake build, API key, or network
-connection.
+On this Mac, `/Users/edmond/POOLRAD` is the game-file path. On Linux,
+substitute the installed `godot` executable. The creator needs Godot 4.5 or
+newer. A first headless editor import may crash on exit after registering the
+extension; the viewer's README describes the same behavior. If
+`OPENGOLD_GAME_DIR` is unset or unavailable, the Create tab still works and
+the Reference tab explains why original art is unavailable.
+
+## Review and correct a description
+
+1. Select an appearance on the left, then open **Reference**. Its ten thumbnails
+   are the original perspective pieces from your local game files.
+2. Select a piece. The large preview, source size, map-use label, and existing
+   Art Catalog description update together.
+3. Edit the description and press **Save descriptions to CSV**. Changes to
+   several pieces can be saved together. Saving updates the existing Art
+   Catalog CSV in this checkout; no original PNG is written to the repository.
+   If another window changes the CSV meanwhile, reopen the creator before
+   saving so those edits are not overwritten.
+
+Descriptions are per perspective piece, so the ten pieces of one appearance
+may have separate text. The selected appearance remains the same when switching
+between Reference and Create.
+
+## Create a replacement
 
 1. Choose an appearance on the left. The four pilot entries already have new
    art; all other entries start blank.
@@ -80,13 +107,15 @@ GDExtension registration; its existing README describes this behavior.
 
 ```bash
 /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --creator-check=/tmp/opengold-replacement-pilot
+OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --reference-check=/tmp/opengold-reference-check
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/tile_art_viewer/godot -- --replacement-check=/tmp/opengold-replacement-pilot
 ```
 
 The first check builds four complete pilot sets, validates their dimensions and
-the arch transparency, and writes previews to `/tmp`. The second loads that
-pack, renders it at a mapped location, and checks that switching back restores
-the original inspector.
+the arch transparency, and writes previews to `/tmp`. The reference check
+loads all original pieces and saves a description into a temporary CSV copy.
+The viewer check loads the replacement pack, renders it at a mapped location,
+and checks that switching back restores the original inspector.
 
 This tool and pack preview do not yet change the game's runtime art loader.
 Game integration should follow visual review of the pilot and a decision on

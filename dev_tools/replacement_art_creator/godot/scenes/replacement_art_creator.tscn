@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/replacement_art_creator.gd" id="1"]
 
-[node name="ReplacementArtCreator" type="Control"]
+[node name="ReplacementArtCreator" type="WallArtCatalog"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -76,118 +76,124 @@ allow_reselect = true
 layout_mode = 2
 text = "Loading appearances…"
 
-[node name="Editor" type="VBoxContainer" parent="Margin/Main/Split"]
+[node name="Tabs" type="TabContainer" parent="Margin/Main/Split"]
+custom_minimum_size = Vector2(870, 500)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Create" type="VBoxContainer" parent="Margin/Main/Split/Tabs"]
 custom_minimum_size = Vector2(870, 500)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="Identity" type="Label" parent="Margin/Main/Split/Editor"]
+[node name="Identity" type="Label" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 theme_type_variation = &"ViewerIdentity"
 text = "Select an appearance"
 
-[node name="Fields" type="HBoxContainer" parent="Margin/Main/Split/Editor"]
+[node name="Fields" type="HBoxContainer" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="TitleLabel" type="Label" parent="Margin/Main/Split/Editor/Fields"]
+[node name="TitleLabel" type="Label" parent="Margin/Main/Split/Tabs/Create/Fields"]
 layout_mode = 2
 text = "New title"
 
-[node name="TitleEdit" type="LineEdit" parent="Margin/Main/Split/Editor/Fields"]
+[node name="TitleEdit" type="LineEdit" parent="Margin/Main/Split/Tabs/Create/Fields"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Original art title"
 
-[node name="KindLabel" type="Label" parent="Margin/Main/Split/Editor/Fields"]
+[node name="KindLabel" type="Label" parent="Margin/Main/Split/Tabs/Create/Fields"]
 layout_mode = 2
 text = "Form"
 
-[node name="KindPicker" type="OptionButton" parent="Margin/Main/Split/Editor/Fields"]
+[node name="KindPicker" type="OptionButton" parent="Margin/Main/Split/Tabs/Create/Fields"]
 custom_minimum_size = Vector2(185, 36)
 layout_mode = 2
 
-[node name="BriefLabel" type="Label" parent="Margin/Main/Split/Editor"]
+[node name="BriefLabel" type="Label" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 text = "Independent creative brief"
 
-[node name="BriefEdit" type="TextEdit" parent="Margin/Main/Split/Editor"]
+[node name="BriefEdit" type="TextEdit" parent="Margin/Main/Split/Tabs/Create"]
 custom_minimum_size = Vector2(0, 95)
 layout_mode = 2
 wrap_mode = 1
 placeholder_text = "Describe the new design without referring to original artwork."
 
-[node name="BriefActions" type="HBoxContainer" parent="Margin/Main/Split/Editor"]
+[node name="BriefActions" type="HBoxContainer" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="SaveBrief" type="Button" parent="Margin/Main/Split/Editor/BriefActions"]
+[node name="SaveBrief" type="Button" parent="Margin/Main/Split/Tabs/Create/BriefActions"]
 layout_mode = 2
 text = "Save brief"
 
-[node name="CopyWallPrompt" type="Button" parent="Margin/Main/Split/Editor/BriefActions"]
+[node name="CopyWallPrompt" type="Button" parent="Margin/Main/Split/Tabs/Create/BriefActions"]
 layout_mode = 2
 text = "Copy wall prompt"
 
-[node name="CopyFeaturePrompt" type="Button" parent="Margin/Main/Split/Editor/BriefActions"]
+[node name="CopyFeaturePrompt" type="Button" parent="Margin/Main/Split/Tabs/Create/BriefActions"]
 layout_mode = 2
 text = "Copy feature prompt"
 
-[node name="ArtActions" type="HBoxContainer" parent="Margin/Main/Split/Editor"]
+[node name="ArtActions" type="HBoxContainer" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ImportBase" type="Button" parent="Margin/Main/Split/Editor/ArtActions"]
+[node name="ImportBase" type="Button" parent="Margin/Main/Split/Tabs/Create/ArtActions"]
 layout_mode = 2
 text = "Import wall PNG…"
 
-[node name="ImportFeature" type="Button" parent="Margin/Main/Split/Editor/ArtActions"]
+[node name="ImportFeature" type="Button" parent="Margin/Main/Split/Tabs/Create/ArtActions"]
 layout_mode = 2
 text = "Import feature PNG…"
 
-[node name="BuildViews" type="Button" parent="Margin/Main/Split/Editor/ArtActions"]
+[node name="BuildViews" type="Button" parent="Margin/Main/Split/Tabs/Create/ArtActions"]
 layout_mode = 2
 text = "Build ten views"
 
-[node name="ExportSet" type="Button" parent="Margin/Main/Split/Editor/ArtActions"]
+[node name="ExportSet" type="Button" parent="Margin/Main/Split/Tabs/Create/ArtActions"]
 layout_mode = 2
 text = "Export selected set…"
 
-[node name="Sources" type="Label" parent="Margin/Main/Split/Editor"]
+[node name="Sources" type="Label" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 text = "No new art imported."
 autowrap_mode = 3
 
-[node name="PreviewSplit" type="HSplitContainer" parent="Margin/Main/Split/Editor"]
+[node name="PreviewSplit" type="HSplitContainer" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
 size_flags_vertical = 3
 split_offset = 425
 theme_override_constants/separation = 12
 
-[node name="CorridorColumn" type="VBoxContainer" parent="Margin/Main/Split/Editor/PreviewSplit"]
+[node name="CorridorColumn" type="VBoxContainer" parent="Margin/Main/Split/Tabs/Create/PreviewSplit"]
 custom_minimum_size = Vector2(350, 370)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="DepthRow" type="HBoxContainer" parent="Margin/Main/Split/Editor/PreviewSplit/CorridorColumn"]
+[node name="DepthRow" type="HBoxContainer" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="DepthLabel" type="Label" parent="Margin/Main/Split/Editor/PreviewSplit/CorridorColumn/DepthRow"]
+[node name="DepthLabel" type="Label" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn/DepthRow"]
 layout_mode = 2
 text = "Synthetic corridor"
 
-[node name="DepthPicker" type="OptionButton" parent="Margin/Main/Split/Editor/PreviewSplit/CorridorColumn/DepthRow"]
+[node name="DepthPicker" type="OptionButton" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn/DepthRow"]
 custom_minimum_size = Vector2(140, 36)
 layout_mode = 2
 
-[node name="CorridorPanel" type="PanelContainer" parent="Margin/Main/Split/Editor/PreviewSplit/CorridorColumn"]
+[node name="CorridorPanel" type="PanelContainer" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CorridorPreview" type="TextureRect" parent="Margin/Main/Split/Editor/PreviewSplit/CorridorColumn/CorridorPanel"]
+[node name="CorridorPreview" type="TextureRect" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn/CorridorPanel"]
 custom_minimum_size = Vector2(352, 352)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -195,17 +201,17 @@ size_flags_vertical = 3
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PiecesColumn" type="VBoxContainer" parent="Margin/Main/Split/Editor/PreviewSplit"]
+[node name="PiecesColumn" type="VBoxContainer" parent="Margin/Main/Split/Tabs/Create/PreviewSplit"]
 custom_minimum_size = Vector2(400, 370)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="PiecesLabel" type="Label" parent="Margin/Main/Split/Editor/PreviewSplit/PiecesColumn"]
+[node name="PiecesLabel" type="Label" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/PiecesColumn"]
 layout_mode = 2
 text = "Ten perspective pieces · select to inspect"
 
-[node name="PieceGrid" type="ItemList" parent="Margin/Main/Split/Editor/PreviewSplit/PiecesColumn"]
+[node name="PieceGrid" type="ItemList" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/PiecesColumn"]
 custom_minimum_size = Vector2(390, 235)
 layout_mode = 2
 size_flags_vertical = 3
@@ -217,21 +223,102 @@ same_column_width = true
 fixed_column_width = 75
 max_text_lines = 2
 
-[node name="PieceName" type="Label" parent="Margin/Main/Split/Editor/PreviewSplit/PiecesColumn"]
+[node name="PieceName" type="Label" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/PiecesColumn"]
 layout_mode = 2
 text = "Select a piece"
 
-[node name="PiecePanel" type="PanelContainer" parent="Margin/Main/Split/Editor/PreviewSplit/PiecesColumn"]
+[node name="PiecePanel" type="PanelContainer" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/PiecesColumn"]
 custom_minimum_size = Vector2(0, 130)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PiecePreview" type="TextureRect" parent="Margin/Main/Split/Editor/PreviewSplit/PiecesColumn/PiecePanel"]
+[node name="PiecePreview" type="TextureRect" parent="Margin/Main/Split/Tabs/Create/PreviewSplit/PiecesColumn/PiecePanel"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 expand_mode = 1
 stretch_mode = 5
+
+[node name="Reference" type="VBoxContainer" parent="Margin/Main/Split/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ReferenceIntro" type="Label" parent="Margin/Main/Split/Tabs/Reference"]
+layout_mode = 2
+text = "Original art from your local game files · descriptions save to the Art Catalog CSV"
+
+[node name="ReferenceStatus" type="Label" parent="Margin/Main/Split/Tabs/Reference"]
+layout_mode = 2
+text = "Loading source reference…"
+autowrap_mode = 3
+
+[node name="ReferenceSplit" type="HSplitContainer" parent="Margin/Main/Split/Tabs/Reference"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 405
+theme_override_constants/separation = 12
+
+[node name="ReferencePieces" type="VBoxContainer" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit"]
+custom_minimum_size = Vector2(385, 400)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ReferencePiecesLabel" type="Label" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePieces"]
+layout_mode = 2
+text = "Original perspective pieces · select one"
+
+[node name="ReferenceGrid" type="ItemList" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePieces"]
+layout_mode = 2
+size_flags_vertical = 3
+select_mode = 0
+icon_mode = 0
+fixed_icon_size = Vector2i(80, 80)
+max_columns = 2
+same_column_width = true
+fixed_column_width = 145
+max_text_lines = 2
+
+[node name="ReferencePreviewColumn" type="VBoxContainer" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit"]
+custom_minimum_size = Vector2(430, 400)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ReferenceIdentity" type="Label" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn"]
+layout_mode = 2
+theme_type_variation = &"ViewerIdentity"
+text = "Select an appearance"
+
+[node name="ReferenceUsage" type="Label" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn"]
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="ReferencePanel" type="PanelContainer" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ReferencePreview" type="TextureRect" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn/ReferencePanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ReferenceDescriptionLabel" type="Label" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn"]
+layout_mode = 2
+text = "Art Catalog description for this piece"
+
+[node name="ReferenceDescription" type="TextEdit" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn"]
+custom_minimum_size = Vector2(0, 105)
+layout_mode = 2
+wrap_mode = 1
+
+[node name="SaveReferenceDescription" type="Button" parent="Margin/Main/Split/Tabs/Reference/ReferenceSplit/ReferencePreviewColumn"]
+layout_mode = 2
+text = "Save descriptions to CSV"
+disabled = true
 
 [node name="Status" type="Label" parent="Margin/Main"]
 layout_mode = 2
