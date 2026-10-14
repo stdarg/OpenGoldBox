@@ -12838,9 +12838,9 @@ class Module final : public RulesModule
         state = vitals(caster);
     }
 
-    // Aid in camp: the game chooses, as Pool of Radiance's camp heals without
-    // asking, the three members with the lowest Hit Point maximum not already
-    // aided (AID-1).
+    // Aid in camp: the game chooses, as Pool of Radiance's group spells do,
+    // the three members with the lowest Hit Point maximum not already aided
+    // (AID-1).
     static void camp_aid(const std::string &caster_name, std::vector<Actor *> members)
     {
         std::erase_if(members, [](const Actor * a)
