@@ -163,8 +163,11 @@ enum class EffectKind : unsigned
     // Guidance: 1d4 on ability checks with one skill; `dc` indexes guidance_skills.
     guidance = 68,
     // Relentless Endurance has been used; it returns with a Long Rest.
+    relentless_used = 69,
+    // A species trait used per Long Rest (a Dragonborn's Breath Weapon): `dc`
+    // counts the uses spent since the last one.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    relentless_used = 69
+    trait_uses = 70
 };
 
 // The longest a spell benefit lasts, in milliseconds.

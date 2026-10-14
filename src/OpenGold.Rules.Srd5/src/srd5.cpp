@@ -609,6 +609,9 @@ struct Definition
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
+    // Dragonborn: the Breath Weapon's damage type, from the Draconic Ancestry.
+    std::optional<detail::DamageType> breath;
+    int trait_uses{}; // uses of a species trait per Long Rest (Breath Weapon)
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -954,6 +957,30 @@ void add_initiate_pools(std::vector<rules::ResourcePool> &pools, const Actor &ac
                 {{"spell", std::string(detail::find_spell(d.initiate_spells[n])->label), true}}
             },
             (actor.initiate_casts >> n) & 1 ? 1u : 0u, 1u, 0u});
+}
+
+// Uses of a species trait spent since the last Long Rest.
+int trait_uses_spent(const Actor &a)
+{
+    for (const auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::trait_uses)
+            return effect.dc;
+    return 0;
+}
+
+int trait_uses_left(const Actor &a)
+{
+    return a.definition.trait_uses - trait_uses_spent(a);
+}
+
+// A species trait's uses, shown with the class resources.
+void add_trait_pool(std::vector<rules::ResourcePool> &pools, const Actor &actor,
+                    const Definition &d)
+{
+    if (d.breath)
+        pools.push_back({"breath_weapon", {"Breath Weapon", {}},
+                         static_cast<unsigned>(std::max(0, trait_uses_left(actor))),
+                         static_cast<unsigned>(d.trait_uses), 0u});
 }
 
 // Pays for a leveled spell: with Magic Initiate's free cast, or from a slot
@@ -1319,8 +1346,16 @@ character_definition(std::string_view bytes,
         {"dragon:white", DamageType::cold}
     })
     if (chose(choice))
+    {
         d.affinities.push_back({detail::AffinityKind::resistance, type,
                                 "species/" + std::string(choice)});
+        // Breath Weapon: as many uses as the Proficiency Bonus.
+        if (choice.starts_with("dragon:"))
+        {
+            d.breath = type;
+            d.trait_uses = 2 + (static_cast<int>(level) - 1) / 4;
+        }
+    }
     // Magic Initiate's and a lineage's spells: their own ability, and a free
     // cast of the leveled one each Long Rest.
     auto gifts = detail::magic_initiate_spells(grants);
@@ -2280,6 +2315,8 @@ class Session final : public CombatSession
     void change_speed(Actor &a, int old_speed);
     // Land's Aid: thorns in a 10-foot Sphere and flowers that heal one ally.
     void lands_aid(Actor &druid, Cell center);
+    void breath_weapon(Actor &dragonborn, const PendingArea &aimed);
+    void spend_trait_use(Actor &a);
     // Heat Metal targets only metal armor a creature wears.
     [[nodiscard]] bool wears_metal(const Actor &creature) const;
     // Heat Metal's 2d8 Fire and Constitution save.
@@ -3528,6 +3565,7 @@ Snapshot Session::snapshot() const
             if (descriptor.combat_view && def(a).*descriptor.capacity)
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
         add_initiate_pools(view.resources, a, def(a));
+        add_trait_pool(view.resources, a, a.definition);
         // Explicit display order: this list feeds the combat cantrip dropdown,
         // so its order is observable in the UI and is not the table's order.
         for (const auto *id :
@@ -5208,6 +5246,14 @@ std::vector<Command> Session::legal_commands() const
                         commands.push_back({revision_, id, 0,
                                             "dragons_breath_exhale_" + std::string(type),
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
+        // Breath Weapon takes the place of the Attack action's one attack.
+        if (def(a).breath && trait_uses_left(a) > 0 && a.actions.available())
+        {
+            commands.push_back({revision_, id, 0, "breath_weapon_cone", "Breath Weapon (cone)",
+                                Cell{}, 0, true});
+            commands.push_back({revision_, id, 0, "breath_weapon_line", "Breath Weapon (line)",
+                                Cell{}, 0, true});
+        }
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
         if (shield_blocks_bow(a))
@@ -5656,17 +5702,18 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
             }
         return cells;
     }
-    // A line two squares wide from the caster toward the aim.
+    // A line two squares wide, or one, from the caster toward the aim.
     if (spell.line)
     {
         const double length = std::sqrt(ax * ax + ay * ay);
+        const double right_edge = spell.narrow_line ? 0.5 : 1.0;
         for (int y = 0; y < board_.height; ++y)
             for (int x = 0; x < board_.width; ++x)
             {
                 const double vx = x - origin.x, vy = y - origin.y;
                 const double along = (vx * ax + vy * ay) / length;
                 const double across = (vx * ay - vy * ax) / length;
-                if (along > 0 && along * 5 <= spell.line && across > -0.5 && across <= 1.0)
+                if (along > 0 && along * 5 <= spell.line && across > -0.5 && across <= right_edge)
                     cells.push_back({x, y});
             }
         return cells;
@@ -5794,6 +5841,9 @@ std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::Spell
 
 int Session::area_dc(const Actor &caster, const detail::SpellDef &spell) const
 {
+    // Breath Weapon: 8 + the Constitution modifier + the Proficiency Bonus.
+    if (spell.id.starts_with("breath_weapon_"))
+        return 8 + def(caster).constitution + 2 + (def(caster).level - 1) / 4;
     // A breath given by Dragon's Breath uses the spell caster's save DC.
     if (spell.id == "dragons_breath_exhale")
         for (const auto &effect : caster.effects.active)
@@ -5813,7 +5863,9 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(verb.ends_with("_2") ? spell.upcast.extra_dice : 0u);
     const int total = spell_dice(caster, rolled);
-    const auto damage_type = cast_damage_type(detail::dragon_type(verb).value_or(spell.damage));
+    const auto damage_type = spell.id.starts_with("breath_weapon_")
+                             ? *def(caster).breath
+                             : cast_damage_type(detail::dragon_type(verb).value_or(spell.damage));
     const auto type = std::string(detail::damage_name(damage_type));
     // Careful Spell: the chosen allies succeed and so take no half damage.
     const auto careful = careful_allies(caster, cells);
@@ -6201,9 +6253,39 @@ void Session::cast_area()
     end_sanctuary(a);
     const bool was_invisible = invisible(a);
     const auto id = a.source.id;
-    cast_aimed_area(a, aimed);
+    if (aimed.verb.starts_with("breath_weapon_"))
+        breath_weapon(a, aimed);
+    else
+        cast_aimed_area(a, aimed);
     if (was_invisible)
         end_invisibility(id);
+}
+
+void Session::breath_weapon(Actor &dragonborn, const PendingArea &aimed)
+{
+    // The exhalation replaces the Attack action's one attack; Extra Attack,
+    // which would leave others, comes after the level cap.
+    dragonborn.nick_origin = 0;
+    (void)dragonborn.actions.spend();
+    spend_trait_use(dragonborn);
+    log(dragonborn.source.name + " uses Breath Weapon.",
+    {"{name} uses Breath Weapon.", {{"name", dragonborn.source.name}}});
+    const auto &breath = *detail::find_spell(aimed.verb);
+    damage_area(dragonborn, breath, aimed.verb,
+                area_cells(breath, aimed.verb, dragonborn.source.cell, aimed.center),
+                area_dc(dragonborn, breath));
+}
+
+void Session::spend_trait_use(Actor &a)
+{
+    for (auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::trait_uses)
+        {
+            ++effect.dc;
+            return;
+        }
+    detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                detail::EffectKind::trait_uses, 1);
 }
 
 void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
@@ -11624,11 +11706,12 @@ class Module final : public RulesModule
         (void)detail::heal_life(actor.life, max_hp(actor), max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
         // A Long Rest makes Prayer of Healing able to help the creature again,
-        // and gives an Orc back Relentless Endurance.
+        // and gives back Relentless Endurance and a species trait's uses.
         std::erase_if(actor.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::prayer_of_healing ||
-                   e.kind == detail::EffectKind::relentless_used;
+                   e.kind == detail::EffectKind::relentless_used ||
+                   e.kind == detail::EffectKind::trait_uses;
         });
         actor.winds = d.winds;
         actor.slots = d.slots;
@@ -11662,6 +11745,7 @@ class Module final : public RulesModule
             if (d.*descriptor.capacity)
                 result.resources.push_back(resource_pool(descriptor, actor, d));
         add_initiate_pools(result.resources, actor, d);
+        add_trait_pool(result.resources, actor, d);
         for (const auto &choice : arcane_allocations)
             if (can_recover(actor, choice))
                 result.choices.push_back({std::string(choice.id), {std::string(choice.label), {}}});
@@ -12769,7 +12853,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.178", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.179", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

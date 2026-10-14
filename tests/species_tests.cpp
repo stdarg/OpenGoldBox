@@ -446,6 +446,76 @@ void lineage_spell_checks()
           "A hit asks about Hellish Rebuke, paid by the free cast");
 }
 
+// Breath Weapon: a Red Dragonborn exhales a 5-foot-wide line of fire in place
+// of its attack, DC 8 + Constitution + Proficiency Bonus, twice per Long Rest.
+void breath_weapon_checks()
+{
+    // Targets with 1000 Hit Points that do not fight back.
+    const auto rules = srd5::parse_content(read_rules() +
+                                           "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    const auto hero = fighter("dragonborn", {{"species:dragonborn:ancestry", "red"}});
+    const auto pools = rules->recovery_info(hero.sheet(), {}).resources;
+    check(std::any_of(pools.begin(), pools.end(), [](const auto & pool)
+    {
+        return pool.id == "breath_weapon" && pool.remaining == 2 && pool.capacity == 2 &&
+               !pool.short_rest_recovery;
+    }), "Breath Weapon has two uses, restored only by a Long Rest");
+    auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                rules->character_profile(hero.sheet(), std::vector<std::string> {}).data},
+            {98, "target", "Near", Side::opposition, {2, 1}},
+            {99, "target", "Aside", Side::opposition, {2, 0}}
+        }},
+    3);
+    const auto offered = [&](std::string_view verb)
+    {
+        const auto commands = c->legal_commands();
+        return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+        {
+            return command.verb == verb;
+        });
+    };
+    const auto aim = [&](Cell cell)
+    {
+        for (const auto &command : c->legal_commands())
+            if (command.verb == "area_move" && command.destination == cell)
+                return c->submit(command);
+        return false;
+    };
+    const auto breathe = [&]
+    {
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "end"), "Reach the hero's turn");
+        return offered("breath_weapon_cone") && submit(*c, "breath_weapon_line") &&
+               aim(Cell{7, 1}) && submit(*c, "area_cast");
+    };
+    check(breathe() && logged(*c, "Hero uses Breath Weapon.") &&
+          logged(*c, "Near Dexterity save: d20 ") && logged(*c, " vs DC 12 (") &&
+          logged(*c, " Fire damage.") && !logged(*c, "Aside Dexterity save"),
+          "The line burns the creature in it and misses the one beside it");
+    check(!offered("breath_weapon_line") && !offered("melee"),
+          "The breath takes the place of the turn's attack");
+    check(submit(*c, "end") && breathe(), "A second use on the next turn");
+    check(submit(*c, "end"), "The hero ends the turn");
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the hero's turn");
+    check(!offered("breath_weapon_cone") && offered("melee"), "Both uses are spent");
+    VitalState state;
+    for (const auto &unit : c->snapshot().combatants)
+        if (unit.id == 1)
+            state = unit.persistent;
+    const auto uses_left = [&]
+    {
+        for (const auto &pool : rules->recovery_info(hero.sheet(), state).resources)
+            if (pool.id == "breath_weapon")
+                return pool.remaining;
+        throw std::runtime_error("No Breath Weapon pool");
+    };
+    check(uses_left() == 0, "The spent uses outlast the fight");
+    rules->recover(state, hero.sheet());
+    check(uses_left() == 2, "A Long Rest restores both uses");
+}
+
 } // namespace
 
 int main()
@@ -458,6 +528,7 @@ int main()
         nimbleness_checks();
         species_choice_checks();
         lineage_spell_checks();
+        breath_weapon_checks();
     }
     catch (const std::exception &error)
     {

@@ -157,6 +157,7 @@ struct SpellDef
     bool humanoid_only{}; // offered only against a Humanoid
     bool not_self{};      // offered only on another creature
     int line{};           // or the length of a 10-foot-wide line from the caster, feet
+    bool narrow_line{};   // the line is 5 feet wide instead
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -892,6 +893,32 @@ inline constexpr std::array spell_table
         .damage = DamageType::fire,
         .dice = {3, 6, 0},
         .cone = 15},
+    // A Dragonborn's Breath Weapon (SRD 5.2.1 p. 84), aimed in place of an
+    // attack as "breath_weapon_cone" or "breath_weapon_line"; its damage type
+    // is the Draconic Ancestry's, and its die grows only from level 5.
+    SpellDef{
+        .id = "breath_weapon_cone",
+        .label = "Breath Weapon",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 15,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .dice = {1, 10, 0},
+        .cone = 15},
+    SpellDef{
+        .id = "breath_weapon_line",
+        .label = "Breath Weapon",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 30,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .dice = {1, 10, 0},
+        .line = 30,
+        .narrow_line = true},
     // Land's Aid (SRD 5.2.1 p. 46), aimed by a Circle of the Land Druid as
     // "lands_aid" with a use of Wild Shape. No one learns it as a spell.
     SpellDef{

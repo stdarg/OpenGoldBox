@@ -1,0 +1,60 @@
+# Species
+
+The species traits a party member gets from SRD 5.2.1 pp. 83-86, as the game
+plays them. [SRD-DECISIONS](SRD-DECISIONS.md) records the traits that were cut
+(Elf Trance, Goliath Powerful Build and Large Form, Dragonborn Draconic Flight,
+Dwarf Stonecunning, the Forest and Rock Gnome lineages, Tiefling Thaumaturgy and
+High Elf Prestidigitation).
+
+## Choices at creation
+
+The race page lists each species' choices under its description. Each starts
+on its first option, so a new character is always complete.
+
+| Species | Choice | Options |
+| --- | --- | --- |
+| Elf | Elven Lineage | High Elf, Wood Elf |
+| Elf | Keen Senses | Insight, Perception or Survival |
+| Elf, Tiefling | Spellcasting ability | Intelligence, Wisdom or Charisma |
+| High Elf | Cantrip | any Wizard cantrip in the game |
+| Tiefling | Fiendish Legacy | Abyssal, Chthonic, Infernal |
+| Tiefling, Human | Size | Medium or Small |
+| Dragonborn | Draconic Ancestry | the ten dragons |
+| Goliath | Giant Ancestry | Cloud, Fire, Frost, Hill, Stone, Storm |
+| Human | Skillful | any skill |
+
+A sheet stores each choice as a grant (`lineage:`, `legacy:`, `size:`,
+`skill:`, `dragon:`, `giant:`, `spellcasting_ability:`, `cantrip:`).
+
+- **Small:** a Small Tiefling or Human is Small for the rules that ask.
+- **Wood Elf:** Speed 35 feet; Longstrider at level 3.
+- **Resistances:** the Fiendish Legacy's (Poison, Necrotic or Fire) and the
+  Draconic Ancestry's damage type.
+
+## Lineage spells
+
+An Elf's or Tiefling's lineage spells use the chosen spellcasting ability and
+are always prepared. The cantrip comes at level 1 (a Tiefling's from its legacy,
+the High Elf's chosen Wizard cantrip); the level-1 spell comes at level 3 and
+is cast once per Long Rest without a slot (a Tiefling's Hellish Rebuke, Ray of
+Sickness or False Life; a Wood Elf's Longstrider). A class with slots may also
+cast it with a slot. The rest window shows the free cast as "Lineage: {spell}".
+
+## Breath Weapon
+
+A Dragonborn replaces the Attack action's attack with a 15-foot Cone or a
+30-foot Line 5 feet wide, chosen each time (`breath_weapon_cone`,
+`breath_weapon_line`). Each creature in the area makes a Dexterity save against
+8 + Constitution modifier + Proficiency Bonus and takes 1d10 damage of the
+ancestry's type, or half on a success. The die grows only at level 5, past the
+level cap. Since no character makes Extra Attack's second attack before level 5,
+the breath spends the Action.
+
+Uses equal the Proficiency Bonus (2 through level 4) and return with a Long
+Rest. The spent count is a lasting effect (`trait_uses`), cleared by a Long
+Rest like the Orc's Relentless Endurance; the rest window and the combat
+resources show "Breath Weapon" with the uses left.
+
+The combat screen has no control for aimed actions beyond its fixed buttons
+yet, so Breath Weapon, like Land's Aid, is resolved by the rules but not yet
+offered on screen.
