@@ -101,6 +101,14 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.180 adds [Hide](HIDE.md): the Hide action, the Rogue's Cunning
+Action Hide, the Search action and Halfling Naturally Stealthy, with enemies
+finding a hidden creature by Passive Perception
+([HIDE-1](SRD-DECISIONS.md#hide-1-2026-10-14-finding-hidden-creatures); checks in
+`opengold_hide_tests`).
+Rules 0.6.179 gives the Dragonborn its Breath Weapon; 0.6.178 the Elf's and
+Tiefling's lineage spells; 0.6.177 the species' creation choices (lineage,
+legacy, ancestry, size, Keen Senses, Skillful). See [Species](SPECIES.md).
 Rules 0.6.176 lets a character replace a cantrip, a spell, an Eldritch
 Invocation or a Metamagic option on gaining a level
 ([Replacing choices](LEVEL-SWAPS.md); campaign format 29).

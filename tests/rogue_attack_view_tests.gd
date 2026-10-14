@@ -61,7 +61,7 @@ func run_checks() -> void:
             await load_fixture("aim-available")
             var choices: OptionButton = current_scene.get_node("CunningAction")
             var use_bonus: Button = current_scene.get_node("UseCunningAction")
-            require(choices.visible and choices.item_count == 3 and not choices.is_item_disabled(2), "Steady Aim joins existing Bonus Action choices")
+            require(choices.visible and choices.item_count == 4 and choices.is_item_disabled(2) and not choices.is_item_disabled(3), "Steady Aim joins existing Bonus Action choices; Hide is unavailable in sight")
             require(choices.focus_mode == Control.FOCUS_ALL and use_bonus.focus_mode == Control.FOCUS_ALL, "Bonus controls support keyboard focus")
             if demo:
                 require(choices.position.x == 214 and choices.size.x == 200 and use_bonus.position.x == 424 and use_bonus.size.x == 240, "Approved demo Bonus Action widths/placement")
@@ -79,7 +79,7 @@ func run_checks() -> void:
             choices.grab_focus(); await key(KEY_ENTER)
             require(choices.get_popup().visible, "Keyboard opens Bonus Action choices")
             choices.get_popup().set_focused_item(1); await key(KEY_DOWN); await key(KEY_ENTER)
-            require(choices.selected == 2, "Keyboard selects Steady Aim")
+            require(choices.selected == 3, "Keyboard skips the unavailable Hide and selects Steady Aim")
             require(not use_bonus.disabled, "Selected legal Steady Aim can activate")
             await capture(locale + "-" + str(size.x) + "-aim", root)
             await press(root, use_bonus)

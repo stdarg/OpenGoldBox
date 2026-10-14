@@ -89,6 +89,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "leave_wild_shape"  ? "Leave Wild Shape"
             : verb == "cunning_dash"        ? "Dash"
             : verb == "cunning_disengage" ? "Disengage"
+            : verb == "cunning_hide"      ? "Hide"
             : verb == "lay_on_hands"      ? "Lay On Hands"
             : verb == "lay_on_hands_cure" ? "Lay On Hands: cure Poisoned (5)"
             : verb == "rage"              ? "Rage"

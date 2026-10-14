@@ -878,3 +878,23 @@ or obstacle between two creatures is total cover (no line of sight, so no
 attack or targeted spell), and nothing grants half (+2) or three-quarters (+5)
 cover to AC or Dexterity saves. Rules that refer to partial cover, such as
 Sacred Flame ignoring it, have nothing to act on.
+
+## HIDE-1 (2026-10-14): finding hidden creatures
+
+SRD 5.2.1 leaves finding a hidden creature to the DM, apart from the Search
+action. The user decided:
+
+- **Passive Perception finds.** Whenever a hidden creature is in an enemy's
+  clear view (line of sight, neither square Heavily Obscured, the enemy
+  conscious and not Blinded), an enemy whose Passive Perception (10 + its
+  Perception bonus) reaches the Stealth total finds it at once, without a
+  roll. The Search action (a Wisdom (Perception) check against the Stealth
+  total) finds each hidden enemy in the searcher's clear view.
+- **Monsters never guess.** The AI does not target or approach a hidden
+  creature; with no other enemy left it takes the Search action.
+- **Any spell ends hiding.** Spells have no components (CLASS-11), so
+  "casting a spell with a Verbal component" becomes casting any spell. An attack
+  roll ends hiding as the SRD says, and so does a Breath Weapon (a sound louder
+  than a whisper).
+
+See [Hide](HIDE.md).

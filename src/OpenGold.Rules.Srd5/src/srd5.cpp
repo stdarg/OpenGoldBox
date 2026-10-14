@@ -614,12 +614,16 @@ struct Definition
     int trait_uses{}; // uses of a species trait per Long Rest (Breath Weapon)
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
+    bool naturally_stealthy{}; // Halfling: a larger creature is enough to hide behind
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
     bool finesse{}, ranged_weapon{};
     int medicine{};
     int athletics{}; // a character's Strength (Athletics) check bonus
+    // Wisdom (Perception) and Dexterity (Stealth) check bonuses; a creature's
+    // Perception comes from its stat block.
+    int perception{}, stealth{};
     detail::DamageType melee_type{detail::DamageType::bludgeoning},
            ranged_type{detail::DamageType::bludgeoning};
     std::vector<detail::DamageAffinity> affinities;
@@ -959,6 +963,15 @@ void add_initiate_pools(std::vector<rules::ResourcePool> &pools, const Actor &ac
             (actor.initiate_casts >> n) & 1 ? 1u : 0u, 1u, 0u});
 }
 
+// A hidden creature's Stealth total: the DC to find it.
+int stealth_total(const Actor &a)
+{
+    for (const auto &effect : a.effects.active)
+        if (effect.kind == detail::EffectKind::hidden)
+            return effect.dc;
+    return 0;
+}
+
 // Uses of a species trait spent since the last Long Rest.
 int trait_uses_spent(const Actor &a)
 {
@@ -1210,6 +1223,7 @@ character_definition(std::string_view bytes,
     d.relentless = race == "Orc";
     d.lucky = race == "Halfling";
     d.nimble = race == "Halfling";
+    d.naturally_stealthy = race == "Halfling";
     // Gnomes and Halflings are Small.
     if (race == "Gnome" || race == "Halfling")
         d.size = 1;
@@ -1500,6 +1514,18 @@ character_definition(std::string_view bytes,
         return skill.id == "athletics";
     })
     ->bonus;
+    d.perception = std::find_if(training.skills.begin(), training.skills.end(),
+                                [](const auto & skill)
+    {
+        return skill.id == "perception";
+    })
+    ->bonus;
+    d.stealth = std::find_if(training.skills.begin(), training.skills.end(),
+                             [](const auto & skill)
+    {
+        return skill.id == "stealth";
+    })
+    ->bonus;
     for (const auto &grant : grants)
     {
         if (detail::is_mastery_grant(grant))
@@ -1662,7 +1688,13 @@ VitalState vitals(const Actor &a)
         << a.life.temporary_hp.amount << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' '
         << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
         << a.free_casts << ' ' << a.channel_divinity << ' ' << a.initiate_casts << ' ';
-    detail::write_effects(out, a.effects);
+    // A creature hides from one fight's enemies; it is not hidden after it.
+    auto effects = a.effects;
+    std::erase_if(effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::hidden;
+    });
+    detail::write_effects(out, effects);
     std::string description;
     if (a.definition.slots)
         description = "Level-one spell slots: " + std::to_string(a.slots) + " / " +
@@ -2169,22 +2201,49 @@ class Session final : public CombatSession
     }
 
     // Heavily Obscured squares block sight into and out of them.
-    bool can_see(const Actor &a, const Actor &b) const
+    bool clear_view(const Actor &a, const Actor &b) const
     {
         return conscious(a) && !detail::blinded(a.effects) && !obscured(a, a.source.cell) &&
-               !obscured(a, b.source.cell) && line_of_sight(a.source.cell, b.source.cell) &&
-               !unseen(a, b);
+               !obscured(a, b.source.cell) && line_of_sight(a.source.cell, b.source.cell);
     }
 
-    // An Invisible creature hides from all but those with See Invisibility.
+    bool can_see(const Actor &a, const Actor &b) const
+    {
+        return clear_view(a, b) && !unseen(a, b);
+    }
+
+    // An Invisible creature hides from all but those with See Invisibility; a
+    // hidden one has the Invisible condition until it is found.
     static bool unseen(const Actor &viewer, const Actor &target)
     {
         // Faerie Fire and Starry Wisp keep a creature from being Invisible.
-        return detail::has_effect(target.effects, detail::EffectKind::invisible) &&
+        return (detail::has_effect(target.effects, detail::EffectKind::invisible) ||
+                hidden(target)) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility) &&
                !detail::has_effect(target.effects, detail::EffectKind::outlined) &&
                !detail::has_effect(target.effects, detail::EffectKind::lit);
     }
+
+    [[nodiscard]] static bool hidden(const Actor &a)
+    {
+        return detail::has_effect(a.effects, detail::EffectKind::hidden);
+    }
+
+    // Hide (SRD 5.2.1, HIDE-1): out of every enemy's line of sight, or Heavily
+    // Obscured from it, a DC 15 Dexterity (Stealth) check hides the creature;
+    // the total is the DC to find it.
+    [[nodiscard]] bool can_hide(const Actor &a) const;
+    void hide(Actor &a);
+    // The Search action: a Wisdom (Perception) check finds each hidden enemy
+    // in clear view whose Stealth total it reaches.
+    void search(Actor &searcher);
+    // An enemy in clear view whose Passive Perception reaches a hidden
+    // creature's Stealth total finds it (HIDE-1).
+    void notice_hidden();
+    void find_hidden(Actor &hider, const Actor &finder);
+    // Hiding ends after its creature makes an attack roll, casts any spell
+    // (HIDE-1) or makes a loud noise, such as a Breath Weapon.
+    void end_hiding(EntityId id);
 
     // Invisibility ends right after its creature casts a spell, once any attack
     // roll the spell makes has had the benefit; casting Invisibility on oneself
@@ -3400,6 +3459,7 @@ Snapshot Session::snapshot() const
                                    "torch") != def(a).equipment_keys.end();
         view.burning = a.burning;
         view.oiled = a.oiled_until_round >= static_cast<int>(round_);
+        view.hidden = hidden(a);
         view.panicked = a.panicked;
         view.spells = def(a).spells;
         view.can_flee = a.source.side == Side::party && conscious(a) && !a.must_stay &&
@@ -3515,7 +3575,7 @@ Snapshot Session::snapshot() const
         if (a.panicked)
             view.conditions.push_back({"Fleeing in panic", {}});
         if (def(a).cunning)
-            view.bonus_actions = {"cunning_dash", "cunning_disengage"};
+            view.bonus_actions = {"cunning_dash", "cunning_disengage", "cunning_hide"};
         if (def(a).sneak_level >= 3)
             view.bonus_actions.push_back("steady_aim");
         if (def(a).lay_on_hands)
@@ -3678,7 +3738,8 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::barkskin, "Barkskin"},
                     std::pair{detail::EffectKind::flame_blade, "Flame Blade"},
                     std::pair{detail::EffectKind::heated, "Heated (Heat Metal)"},
-                    std::pair{detail::EffectKind::scorched, "Scorched (Heat Metal)"}
+                    std::pair{detail::EffectKind::scorched, "Scorched (Heat Metal)"},
+                    std::pair{detail::EffectKind::hidden, "Hidden"}
                 })
             if (detail::has_effect(a.effects, kind))
             {
@@ -4173,6 +4234,7 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     cast_resolved_spell(spell, verb, a, std::span<const EntityId>(&target_id, 1));
     if (was_invisible)
         end_invisibility(id);
+    end_hiding(id);
 }
 
 void Session::missile_hits(Actor &a, Actor &target, const detail::SpellDef &spell,
@@ -4903,6 +4965,8 @@ std::vector<Command> Session::legal_commands() const
     {
         add(id, "cunning_dash", "Cunning Action: Dash");
         add(id, "cunning_disengage", "Cunning Action: Disengage");
+        if (can_hide(a))
+            add(id, "cunning_hide", "Cunning Action: Hide");
     }
     if (a.bonus && a.rushes > 0)
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
@@ -5256,6 +5320,13 @@ std::vector<Command> Session::legal_commands() const
         }
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
+        if (can_hide(a))
+            add(id, "hide", "Hide");
+        if (std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.side != a.source.side && hidden(other);
+        }))
+        add(id, "search", "Search");
         if (shield_blocks_bow(a))
             add(id, "doff_shield", "Take off shield");
         if (a.burning)
@@ -6259,6 +6330,7 @@ void Session::cast_area()
         cast_aimed_area(a, aimed);
     if (was_invisible)
         end_invisibility(id);
+    end_hiding(id);
 }
 
 void Session::breath_weapon(Actor &dragonborn, const PendingArea &aimed)
@@ -6686,6 +6758,7 @@ void Session::cast_on_selection()
     cast_selected(a, selection);
     if (was_invisible)
         end_invisibility(id);
+    end_hiding(id);
 }
 
 void Session::cast_selected(Actor &a, const PendingSelection &selection)
@@ -6821,6 +6894,115 @@ void Session::end_invisibility(EntityId id)
 }))
     log(a.source.name + " is no longer Invisible.",
     {"{name} is no longer Invisible.", {{"name", a.source.name}}});
+}
+
+bool Session::can_hide(const Actor &a) const
+{
+    if (hidden(a) || a.source.character_profile.empty())
+        return false;
+    // Naturally Stealthy: a creature at least one size larger also blocks
+    // the view (the viewer itself aside).
+    return std::none_of(actors_.begin(), actors_.end(), [&](const auto & enemy)
+    {
+        if (enemy.source.side == a.source.side || !conscious(enemy) ||
+                obscured(enemy, enemy.source.cell) || obscured(enemy, a.source.cell))
+            return false;
+        auto board = board_;
+        if (def(a).naturally_stealthy)
+            for (const auto &other : actors_)
+                if (!other.life.dead && other.source.id != a.source.id &&
+                        other.source.id != enemy.source.id && def(other).size > def(a).size)
+                    board.terrain[other.source.cell.y * board_.width + other.source.cell.x] =
+                        Terrain::obstacle;
+        return detail::has_line_of_sight(board, enemy.source.cell, a.source.cell);
+    });
+}
+
+void Session::hide(Actor &a)
+{
+    // Armor that hinders stealth gives the check Disadvantage.
+    constexpr int dc = 15;
+    const auto &d = def(a);
+    bool lucky_reroll = false;
+    const int natural = detail::d20({false, d.stealth_disadvantage, d.lucky}, rng_, &lucky_reroll);
+    log_luck(a, lucky_reroll);
+    int total = natural + d.stealth;
+    const std::string disadvantage = d.stealth_disadvantage ? " (disadvantage)" : "";
+    log(a.source.name + " Stealth check: d20 " + std::to_string(natural) + disadvantage + " + " +
+        std::to_string(d.stealth) + " vs DC 15.",
+    {
+        "{name} Stealth check: d20 {roll}{disadvantage} + {bonus} vs DC {dc}.",
+        {   {"name", a.source.name},
+            {"roll", std::to_string(natural)},
+            {"disadvantage", disadvantage, true},
+            {"bonus", std::to_string(d.stealth)},
+            {"dc", std::to_string(dc)}
+        }
+    });
+    if (total < dc)
+        total += inspiration_roll(a, dc - total);
+    if (total < dc)
+    {
+        log(a.source.name + " fails to hide.", {"{name} fails to hide.", {{"name", a.source.name}}});
+        return;
+    }
+    detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                detail::EffectKind::hidden, std::min(total, 40));
+    log(a.source.name + " is hidden (Stealth " + std::to_string(total) + ").",
+    {"{name} is hidden (Stealth {total}).", {{"name", a.source.name}, {"total", std::to_string(total)}}});
+}
+
+void Session::search(Actor &searcher)
+{
+    const auto &d = def(searcher);
+    bool lucky_reroll = false;
+    const int natural = detail::d20({false, false, d.lucky}, rng_, &lucky_reroll);
+    log_luck(searcher, lucky_reroll);
+    const int total = natural + d.perception;
+    log(searcher.source.name + " searches: Perception d20 " + std::to_string(natural) + " + " +
+        std::to_string(d.perception) + " = " + std::to_string(total) + ".",
+    {
+        "{name} searches: Perception d20 {roll} + {bonus} = {total}.",
+        {   {"name", searcher.source.name},
+            {"roll", std::to_string(natural)},
+            {"bonus", std::to_string(d.perception)},
+            {"total", std::to_string(total)}
+        }
+    });
+    for (auto &other : actors_)
+        if (other.source.side != searcher.source.side && hidden(other) &&
+                clear_view(searcher, other) && total >= stealth_total(other))
+            find_hidden(other, searcher);
+}
+
+void Session::notice_hidden()
+{
+    for (auto &hider : actors_)
+        for (const auto &enemy : actors_)
+            if (hidden(hider) && enemy.source.side != hider.source.side &&
+                    clear_view(enemy, hider) && 10 + def(enemy).perception >= stealth_total(hider))
+                find_hidden(hider, enemy);
+}
+
+void Session::find_hidden(Actor &hider, const Actor &finder)
+{
+    std::erase_if(hider.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::hidden;
+    });
+    log(finder.source.name + " finds " + hider.source.name + ".",
+    {"{finder} finds {name}.", {{"finder", finder.source.name}, {"name", hider.source.name}}});
+}
+
+void Session::end_hiding(EntityId id)
+{
+    auto &a = actor(id);
+    if (std::erase_if(a.effects.active, [](const auto & e)
+{
+    return e.kind == detail::EffectKind::hidden;
+}))
+    log(a.source.name + " is no longer hidden.",
+    {"{name} is no longer hidden.", {{"name", a.source.name}}});
 }
 
 void Session::end_sanctuary(Actor &a)
@@ -7312,6 +7494,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     int natural = detail::d20(modifiers, rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
     end_invisibility(a.source.id);
+    end_hiding(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
         extend_rage(actor(a.source.id));
@@ -8477,6 +8660,7 @@ bool Session::submit(const Command &command)
             answer_reaction(command);
         else
             perform(command);
+        notice_hidden();
         // Revisions are command tickets; zero is reserved for invalid commands.
         // Unsigned wrap is defined, but must skip that reserved value.
         if (++revision_ == 0)
@@ -8715,6 +8899,7 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
         --(second ? warlock.slots2 : warlock.slots);
     }
     auto &foe = actor(attacker.source.id);
+    end_hiding(warlock.source.id);
     log(warlock.source.name + " casts Hellish Rebuke at " + foe.source.name + ".",
     {
         "{name} casts Hellish Rebuke at {target}.",
@@ -8783,6 +8968,7 @@ void Session::answer_reaction(const Command &command)
                       shield);
         detail::apply_poisoned(defender.effects, effect_source(defender), defender.source.name,
                                next_turn_ms(defender), detail::EffectKind::shield);
+        end_hiding(defender.source.id);
         log(defender.source.name + " casts Shield.",
         {"{name} casts {spell}.", {{"name", defender.source.name}, {"spell", "Shield", true}}});
     }
@@ -8950,6 +9136,11 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " uses Steady Aim.",
         {"{name} uses Steady Aim.", {{"name", a.source.name}}});
     }
+    else if (command.verb == "cunning_hide")
+    {
+        a.bonus = false;
+        hide(a);
+    }
     else if (command.verb == "cunning_dash" || command.verb == "cunning_disengage")
     {
         a.bonus = false;
@@ -9051,6 +9242,7 @@ void Session::dispatch(const Command &command)
         }
         if (was_invisible)
             end_invisibility(a.source.id);
+        end_hiding(a.source.id);
     }
     else if (command.verb == "flame_blade_strike")
     {
@@ -9224,6 +9416,7 @@ void Session::dispatch(const Command &command)
         const auto &spell = *detail::find_spell("hunters_mark");
         a.bonus = false;
         --a.free_casts;
+        end_hiding(a.source.id);
         log(a.source.name + " casts Hunter's Mark (Favored Enemy).",
         {"{name} casts Hunter's Mark (Favored Enemy).", {{"name", a.source.name}}});
         begin_concentration(a, spell);
@@ -9423,6 +9616,10 @@ void Session::dispatch(const Command &command)
             a.dodge = true;
             log(a.source.name + " dodges.", {"{name} dodges.", {{"name", a.source.name}}});
         }
+        else if (command.verb == "hide")
+            hide(a);
+        else if (command.verb == "search")
+            search(a);
         else if (command.verb == "disengage")
         {
             a.disengaged = true;
@@ -12853,7 +13050,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.179", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.180", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -12994,6 +13191,20 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 throw std::runtime_error("Unknown ranged extra damage fields: " + key);
             continue;
         }
+        if (tag == "perception")
+        {
+            const auto found = content.definitions.find(key);
+            int bonus{};
+            row >> bonus;
+            if (!row || found == content.definitions.end() || bonus < -5 || bonus > 20 ||
+                    !trait_rows.insert(tag + " " + key).second)
+                throw std::runtime_error("Invalid Perception: " + key);
+            found->second.perception = bonus;
+            row >> std::ws;
+            if (!row.eof())
+                throw std::runtime_error("Unknown Perception fields: " + key);
+            continue;
+        }
         if (tag == "multiattack")
         {
             const auto found = content.definitions.find(key);
@@ -13106,6 +13317,11 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     }
     if (content.definitions.empty())
         throw std::runtime_error("Empty rules content");
+    // A creature without the Perception skill uses its Wisdom save, which is
+    // its Wisdom modifier unless it is proficient.
+    for (auto &[key, definition] : content.definitions)
+        if (!trait_rows.contains("perception " + key))
+            definition.perception = definition.saves[4];
     return std::make_unique<Module>(std::move(content));
 }
 } // namespace opengold::srd5

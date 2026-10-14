@@ -55,9 +55,8 @@ Rest. The spent count is a lasting effect (`trait_uses`), cleared by a Long
 Rest like the Orc's Relentless Endurance; the rest window and the combat
 resources show "Breath Weapon" with the uses left.
 
-The combat screen has no control for aimed actions beyond its fixed buttons
-yet, so Breath Weapon, like Land's Aid, is resolved by the rules but not yet
-offered on screen.
+In combat, A cycles to "Breath Weapon (cone)" or "Breath Weapon (line)";
+Space or a click starts aiming it, as for an area spell.
 
 ## Saves against conditions
 
@@ -66,3 +65,8 @@ Charmed) and Brave (against Frightened) have nothing to act on yet: no save in
 the game makes a party member Poisoned or Frightened, and Charm Person, the
 only charm, already gives its target Advantage while the caster's side fights
 it. A new save against one of those conditions must check the trait.
+
+## Naturally Stealthy
+
+A Halfling may [Hide](HIDE.md) when the only thing between it and an enemy is
+a creature at least one size larger.

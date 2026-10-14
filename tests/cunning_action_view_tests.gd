@@ -60,7 +60,7 @@ func run_checks() -> void:
         await load_fixture("available")
         var choice: OptionButton = current_scene.get_node("CunningAction")
         var button: Button = current_scene.get_node("UseCunningAction")
-        require(choice.item_count == 2, "Only implemented Dash and Disengage choices")
+        require(choice.item_count == 3, "Dash, Disengage and Hide choices")
         require(current_scene.get_node("CunningActionLabel").text == ("Bonus Action" if locale == "en" else "Acción adicional"), "Approved translated Bonus Action label")
         require(button.text == ("Use Bonus Action" if locale == "en" else "Usar acción adicional"), "Translated activation control")
         for size in [Vector2i(1120, 800), Vector2i(1920, 1080)]:

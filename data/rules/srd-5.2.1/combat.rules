@@ -132,3 +132,10 @@ ranged_extra_damage slums-hobgoblin 3 4 poison
 # adjacent squares only (MELEE-1), so the Troll's 10-foot reach is not used.
 regeneration troll 15
 multiattack troll 3
+# perception creature bonus: the Perception skill of a stat block that has it
+# (Passive Perception is 10 + bonus); others use their Wisdom save (HIDE-1).
+perception scout 5
+perception lizardfolk 3
+perception troll 5
+perception norris-the-gray 0
+perception slums-magic-user 1

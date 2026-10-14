@@ -738,6 +738,7 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
 // the commands open to it. It submits nothing, so it takes no session
 // (Effective C++ Item 32).
 Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered);
+Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered);
 } // namespace
 
 Command choose_demo_command(const CombatSession &session)
@@ -747,7 +748,51 @@ Command choose_demo_command(const CombatSession &session)
 
 namespace
 {
+// The AI does not know where a hidden enemy is (HIDE-1): it chooses as if the
+// enemy were absent, and with no other enemy left it takes the Search action.
 Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered)
+{
+    const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                     [&](const auto & a)
+    {
+        return a.id == state.actor;
+    });
+    const auto hidden_enemy = [&](EntityId id)
+    {
+        return std::any_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
+        {
+            return a.id == id && a.hidden && active != state.combatants.end() &&
+                   a.side != active->side;
+        });
+    };
+    if (std::none_of(state.combatants.begin(), state.combatants.end(), [&](const auto & a)
+{
+    return hidden_enemy(a.id);
+    }))
+    return choose_in_sight(state, offered);
+    auto seen = state;
+    std::erase_if(seen.combatants, [&](const auto & a)
+    {
+        return hidden_enemy(a.id);
+    });
+    std::vector<Command> open;
+    std::copy_if(offered.begin(), offered.end(), std::back_inserter(open), [&](const auto & c)
+    {
+        return !hidden_enemy(c.target);
+    });
+    const bool enemy_left = std::any_of(seen.combatants.begin(), seen.combatants.end(),
+                                        [&](const auto & a)
+    {
+        return a.side != active->side && a.conscious;
+    });
+    if (!enemy_left)
+        for (const auto &command : open)
+            if (command.verb == "search")
+                return command;
+    return choose_in_sight(seen, open);
+}
+
+Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered)
 {
     if (offered.empty())
         throw std::runtime_error("No legal combat command");

@@ -166,8 +166,11 @@ enum class EffectKind : unsigned
     relentless_used = 69,
     // A species trait used per Long Rest (a Dragonborn's Breath Weapon): `dc`
     // counts the uses spent since the last one.
+    trait_uses = 70,
+    // Hidden by the Hide action: Invisible until found; `dc` is the Stealth
+    // total an enemy's Perception must reach.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    trait_uses = 70
+    hidden = 71
 };
 
 // The longest a spell benefit lasts, in milliseconds.

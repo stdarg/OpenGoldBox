@@ -369,13 +369,14 @@ void apply_searing_smite(EffectState &effects, EffectSource source,
                               EffectKind::searing_smite, dc, 60000, 0});
 }
 
-// The largest value a benefit carries: a damage type for Resistance, else a
-// bonus of at most 10.
+// The largest value a benefit carries: a damage type for Resistance, a
+// hidden creature's Stealth total, else a bonus of at most 10.
 int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::metamagic ? 15
+           : kind == EffectKind::hidden ? 40
            : 10;
 }
 
@@ -401,6 +402,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::wild_shape:
     case EffectKind::invisible:
     case EffectKind::see_invisibility:
+    case EffectKind::hidden:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -653,10 +655,10 @@ namespace
 {
 // A saved effect kind, checked before it becomes an EffectKind so the reader
 // compares kinds rather than casting numbers (Effective C++ Item 27).
-// trait_uses is the last kind.
+// hidden is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::trait_uses))
+    if (value > static_cast<unsigned>(EffectKind::hidden))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

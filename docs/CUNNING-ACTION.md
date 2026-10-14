@@ -2,9 +2,9 @@
 
 Scope: [#218](https://github.com/stdarg/OpenGold/issues/218). SRD 5.2.1,
 printed pp. 61–62, gives Rogues Cunning Action at level two: on their turn they
-can Dash, Disengage or Hide as a Bonus Action. This increment implements Dash
-and Disengage. Hide and its prerequisite hidden-state rules remain
-[#219](https://github.com/stdarg/OpenGold/issues/219); parent #113 stays open.
+can Dash, Disengage or Hide as a Bonus Action. This increment implemented Dash
+and Disengage; [Hide](HIDE.md) followed in
+[#219](https://github.com/stdarg/OpenGold/issues/219).
 The Rogue attacks batch extends ordinary advancement through level four. Full
 Rogue completion remains #116; see [Rogue attacks](ROGUE-ATTACKS.md).
 
