@@ -21,11 +21,16 @@ From the repository root, with CMake, Ninja, Python, Git and Godot 4.5+ installe
 ```bash
 cmake -S . -B build/tile-art-viewer -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENGOLD_BUILD_GODOT=ON -DOPENGOLD_BUILD_TESTS=OFF
 cmake --build build/tile-art-viewer --target opengold_tile_art_viewer -j6
+godot --headless --editor --path dev_tools/tile_art_viewer/godot --import --quit
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --path dev_tools/tile_art_viewer/godot
 ```
 
 On this Mac, replace `godot` with
 `/Applications/Godot_mono.app/Contents/MacOS/Godot` if it is not on `PATH`.
+The import step is needed once per checkout: Godot loads the native extension
+only after an import lists it in `.godot/extension_list.cfg`. Without it the
+viewer stops with "Could not find base class WallArtCatalog". (The headless
+import may crash on exit after writing the list; that is harmless.)
 `OPENGOLD_GAME_DIR` must point to the folder containing the `WALLDEF*.DAX` and
 `8X8D*.DAX` files. Archive names are matched without case sensitivity.
 
