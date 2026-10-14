@@ -14,6 +14,9 @@ rules::TrainingChoiceGroup hunters_prey_options();
 rules::TrainingChoiceGroup invocation_options(unsigned level,
         std::span<const rules::FeatureGrant> grants, std::string_view source);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
+// Lessons of the First Ones' Skilled, taken at `level`: three skills.
+rules::TrainingChoiceGroup lessons_skilled_options(std::span<const rules::FeatureGrant> grants,
+        unsigned level);
 // Gaining a level lets a Warlock replace one invocation with another it
 // qualifies for, and a Sorcerer one Metamagic option (SRD 5.2.1). Offered for
 // the sheet before the level is gained.

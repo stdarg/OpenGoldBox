@@ -6,6 +6,7 @@
 #include <exception>
 #include <array>
 #include <functional>
+#include <vector>
 
 // The level-up window: its pages, the choices made on them and the preview of
 // the result. Its state is its own; the campaign view supplies the campaign
@@ -57,6 +58,9 @@ class LevelUpDialog : public godot::Window
     std::function<void()> advanced_;
     FailureReport report_;
     AdvancementPage advancement_page_{};
+    // Which checkbox page is showing when several choices need them (a
+    // Warlock's invocations, then Lessons of the First Ones' Skilled).
+    std::size_t skilled_index_{};
     opengold::MemberId advancing_{};
     opengold::rules::AdvancementOptions advancement_options_;
     opengold::rules::AdvancementChoice advancement_choice_;
@@ -67,10 +71,25 @@ class LevelUpDialog : public godot::Window
     void advancement_pages();
     // A choice of several picks (Skilled, Metamagic, invocations) owns a page of
     // checkboxes, the Skilled page; the single training dropdown never shows one.
+    [[nodiscard]] std::vector<const opengold::rules::TrainingChoiceGroup *>
+    advancement_skilled_groups() const;
+    // The group on the showing checkbox page.
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_dropdown_group() const;
-    [[nodiscard]] AdvancementPage advancement_next_page(AdvancementPage from) const;
-    [[nodiscard]] AdvancementPage advancement_previous_page(AdvancementPage from) const;
+    // A page, and for a checkbox page which of the groups it shows.
+    struct AdvancementStep
+    {
+        AdvancementPage page{};
+        std::size_t index{};
+        bool operator==(const AdvancementStep &) const = default;
+    };
+    // The pages in order: the first, the checkbox pages, the Replace page, a
+    // checkbox page a replacement brings, the spells.
+    [[nodiscard]] std::vector<AdvancementStep> advancement_steps() const;
+    [[nodiscard]] AdvancementStep current_step() const;
+    [[nodiscard]] AdvancementStep advancement_next_step() const;
+    [[nodiscard]] AdvancementStep advancement_previous_step() const;
+    void show_step(AdvancementStep step);
     void refresh_advancement_skilled();
     // A cantrip, spell, invocation or Metamagic option the level lets the
     // character replace (SRD 5.2.1), on its own page before the spells.

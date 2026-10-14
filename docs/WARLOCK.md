@@ -41,12 +41,17 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   chosen like other training. Level 1 offers Armor of Shadows, Eldritch Mind,
   Pact of the Blade and Pact of the Tome; level 2 adds those with a level-2
   prerequisite.
-- **Agonizing Blast**: + Charisma to Eldritch Blast's damage.
-- **Repelling Blast**: an Eldritch Blast hit pushes a Large or smaller
+- **Agonizing Blast**: + Charisma to the chosen cantrip's damage.
+- **Repelling Blast**: a hit with the chosen cantrip pushes a Large or smaller
   creature 10 feet away.
-- **Eldritch Spear**: Eldritch Blast reaches 30 feet farther per Warlock level.
-  These three apply to Eldritch Blast, the Warlock cantrip they suit, and are
-  taken once each (adaptation: no other cantrip, not repeated).
+- **Eldritch Spear**: the chosen cantrip reaches 30 feet farther per Warlock
+  level.
+  Each names a damaging Warlock cantrip the Warlock knows (Pact of the Tome's
+  count), offered as "Agonizing Blast (Fire Bolt)" and so on, and may be taken
+  again for another cantrip. Repelling Blast is offered only for a cantrip with
+  an attack roll, the only kind that hits, and Eldritch Spear only for one with
+  a range of 10 feet or more. Replacing the cantrip is refused while a blast
+  invocation still names it.
 - **Armor of Shadows**: an Action casts Mage Armor on the Warlock without a slot.
 - **Fiendish Vigor**: an Action casts False Life on the Warlock without a slot,
   for 12 Temporary Hit Points.
@@ -54,13 +59,16 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 - **Devil's Sight**: the Warlock sees through magical Darkness, which is now
   its own zone (Fog Cloud still hides everything); it attacks into Darkness
   with Advantage while its target cannot see it.
-- **Lessons of the First Ones**: Alert, Savage Attacker or
+- **Lessons of the First Ones**: Alert, Savage Attacker, Skilled or
   [Magic Initiate](MAGIC-INITIATE.md) with a list the Warlock does not already
-  have; its spells are chosen on the level-up dialog's spell page. Skilled's
-  further choices are not offered here.
+  have; its spells are chosen on the level-up dialog's spell page, and
+  Skilled's three skills on a checkbox page after the invocations (or after
+  the Replace page, when it replaces another invocation).
 - **Pact of the Blade**: the Warlock's melee weapon is its pact weapon:
-  proficiency, and Charisma when that is better. Conjuring the weapon, the
-  bond and the damage type choice are not modeled.
+  proficiency, and Charisma when that is better. Each attack may deal Necrotic,
+  Psychic or Radiant damage instead of the weapon's type: A cycles to "Melee
+  attack (Necrotic)" and the others. Conjuring the weapon and the bond are not
+  modeled.
 - **Pact of the Tome** (rules 0.6.172): three cantrips and two level-1 spells
   from any class's list, chosen on the spell page like Magic Initiate's. They
   are always prepared Warlock spells: Charisma, and the Pact Magic slots for
@@ -72,7 +80,10 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   level ([Replacing choices](LEVEL-SWAPS.md)).
 - Verification: `opengold_warlock_tests` (the level-1 options, Armor of
   Shadows, Agonizing and Repelling Blast, Fiendish Vigor, Lessons' Alert,
-  Pact of the Blade's attack bonus, Devil's Sight in Darkness),
+  Pact of the Blade's attack bonus, Devil's Sight in Darkness; blast
+  invocations for each cantrip, Agonizing Blast on Chill Touch, Lessons'
+  Skilled and the pact weapon's Radiant damage),
+  `opengold_godot_level_up_lab` (Skilled's page after the invocations),
   `opengold_magic_initiate_tests` (Pact of the Tome's choices and casting),
   `opengold_training_tests` (a Warlock's invocation completes Training).
 

@@ -125,12 +125,23 @@ bool picks_several(const opengold::rules::TrainingChoiceGroup &group)
 }
 } // namespace
 
+std::vector<const opengold::rules::TrainingChoiceGroup *>
+LevelUpDialog::advancement_skilled_groups() const
+{
+    std::vector<const opengold::rules::TrainingChoiceGroup *> groups;
+    for (const auto &group : advancement_options_.training)
+        if (picks_several(group))
+            groups.push_back(&group);
+    return groups;
+}
+
 const opengold::rules::TrainingChoiceGroup *
 LevelUpDialog::advancement_skilled_group() const
 {
-    const auto found = std::find_if(advancement_options_.training.begin(),
-                                    advancement_options_.training.end(), picks_several);
-    return found == advancement_options_.training.end() ? nullptr : &*found;
+    const auto groups = advancement_skilled_groups();
+    if (groups.empty())
+        return nullptr;
+    return groups[std::min(skilled_index_, groups.size() - 1)];
 }
 
 const opengold::rules::TrainingChoiceGroup *
@@ -145,27 +156,58 @@ LevelUpDialog::advancement_dropdown_group() const
     return found == advancement_options_.training.end() ? nullptr : &*found;
 }
 
-LevelUpDialog::AdvancementPage
-LevelUpDialog::advancement_next_page(AdvancementPage from) const
+std::vector<LevelUpDialog::AdvancementStep> LevelUpDialog::advancement_steps() const
 {
-    if (from == AdvancementPage::choices && advancement_skilled_group())
-        return AdvancementPage::skilled;
-    if ((from == AdvancementPage::choices || from == AdvancementPage::skilled) && has_swaps())
-        return AdvancementPage::swaps;
-    if (from != AdvancementPage::spells && advancement_choice_.spell_learning)
-        return AdvancementPage::spells;
-    return from;
+    // Lessons of the First Ones' Skilled taken as a replacement asks for its
+    // skills after the Replace page that chose it.
+    const auto after_swaps = [&](const opengold::rules::TrainingChoiceGroup & group)
+    {
+        return group.id == "invocation:lessons_skilled" &&
+               advancement_choice_.option_swap.replacement == "lessons_skilled";
+    };
+    const auto groups = advancement_skilled_groups();
+    std::vector<AdvancementStep> steps{{AdvancementPage::choices, 0}};
+    for (std::size_t i = 0; i < groups.size(); ++i)
+        if (!after_swaps(*groups[i]))
+            steps.push_back({AdvancementPage::skilled, i});
+    if (has_swaps())
+        steps.push_back({AdvancementPage::swaps, 0});
+    for (std::size_t i = 0; i < groups.size(); ++i)
+        if (after_swaps(*groups[i]))
+            steps.push_back({AdvancementPage::skilled, i});
+    if (advancement_choice_.spell_learning)
+        steps.push_back({AdvancementPage::spells, 0});
+    return steps;
 }
 
-LevelUpDialog::AdvancementPage
-LevelUpDialog::advancement_previous_page(AdvancementPage from) const
+LevelUpDialog::AdvancementStep LevelUpDialog::current_step() const
 {
-    if (from == AdvancementPage::spells && has_swaps())
-        return AdvancementPage::swaps;
-    if ((from == AdvancementPage::spells || from == AdvancementPage::swaps) &&
-            advancement_skilled_group())
-        return AdvancementPage::skilled;
-    return AdvancementPage::choices;
+    return {advancement_page_,
+            advancement_page_ == AdvancementPage::skilled ? skilled_index_ : 0};
+}
+
+LevelUpDialog::AdvancementStep LevelUpDialog::advancement_next_step() const
+{
+    const auto steps = advancement_steps();
+    const auto at = std::find(steps.begin(), steps.end(), current_step());
+    if (at == steps.end())
+        return steps.front();
+    return at + 1 == steps.end() ? *at : *(at + 1);
+}
+
+LevelUpDialog::AdvancementStep LevelUpDialog::advancement_previous_step() const
+{
+    const auto steps = advancement_steps();
+    const auto at = std::find(steps.begin(), steps.end(), current_step());
+    return at == steps.end() || at == steps.begin() ? steps.front() : *(at - 1);
+}
+
+void LevelUpDialog::show_step(AdvancementStep step)
+{
+    advancement_page_ = step.page;
+    skilled_index_ = step.index;
+    advancement_pages();
+    advancement_changed();
 }
 
 bool LevelUpDialog::has_swaps() const
@@ -313,7 +355,7 @@ void LevelUpDialog::advancement_pages()
     // spell page, so a non-Wizard taking Skilled can still step back.
     required_node<Button>(*this, "Back").set_visible(!on_first);
     required_node<Button>(*this, "Confirm")
-    .set_text(advancement_next_page(advancement_page_) == advancement_page_
+    .set_text(advancement_next_step() == current_step()
               ? i18n::text(N_("Confirm"))
               : i18n::text(N_("Next")));
     for (const char *name :
@@ -464,9 +506,7 @@ void LevelUpDialog::advancement_skilled_toggled(bool selected, String option)
 
 void LevelUpDialog::advancement_back()
 {
-    advancement_page_ = advancement_previous_page(advancement_page_);
-    advancement_pages();
-    advancement_changed();
+    show_step(advancement_previous_step());
 }
 
 void LevelUpDialog::advancement_learning_toggled(bool selected, String group, String option)
@@ -492,13 +532,14 @@ void LevelUpDialog::advancement_learning_toggled(bool selected, String group, St
 void LevelUpDialog::open(opengold::MemberId id)
 {
     advancement_page_ = AdvancementPage::choices;
+    skilled_index_ = 0;
     advancing_ = id;
     advancement_options_ = campaign().advancement_options(id);
     advancement_choice_ = campaign().default_advancement(id);
     swap_rows_ = {};
     swap_incomplete_ = false;
     // Several picks start empty, as the dropdown starts at "Choose an option".
-    if (const auto *group = advancement_skilled_group())
+    for (const auto *group : advancement_skilled_groups())
         advancement_choice_.training.erase(group->id);
     {
         const presentation::ScopedFlag refreshing(advancement_refreshing_);
@@ -691,8 +732,14 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         if (index > 0 && static_cast<std::size_t>(index) <= group->options.size())
             advancement_choice_.training[group->id] = {group->options[index - 1].id};
     }
-    if (const auto *group = advancement_skilled_group())
+    for (const auto *group : advancement_skilled_groups())
         advancement_choice_.training[group->id] = std::move(previous[group->id]);
+    // An invocation picked or swapped in can bring a choice of its own
+    // (Lessons of the First Ones' Skilled), so the options follow the picks.
+    advancement_options_ = campaign().advancement_options(advancing_, advancement_choice_);
+    for (const auto *group : advancement_skilled_groups())
+        if (!advancement_choice_.training.contains(group->id))
+            advancement_choice_.training[group->id] = std::move(previous[group->id]);
     // The feat and Lessons of the First Ones can each bring Magic Initiate's spells.
     drop_unoffered_learning();
     const bool ability = advancement_choice_.feat == "ability_score_improvement";
@@ -730,9 +777,12 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     // transaction, so a page the player has not reached yet must preview with a
     // valid stand-in rather than blocking the way to it. Once the Skilled page is
     // showing, the real picks apply and an incomplete three gates Confirm.
-    if (advancement_page_ == AdvancementPage::choices)
-        if (const auto *group = advancement_skilled_group())
+    const auto steps = advancement_steps();
+    const auto now = std::find(steps.begin(), steps.end(), current_step());
+    for (auto later = now == steps.end() ? steps.end() : now + 1; later != steps.end(); ++later)
+        if (later->page == AdvancementPage::skilled)
         {
+            const auto *group = advancement_skilled_groups()[later->index];
             auto &fill = preview_choice.training[group->id];
             if (fill.size() != group->count)
             {
@@ -817,11 +867,9 @@ void LevelUpDialog::confirm()
         return;
     // Confirm doubles as Next until the last page; only then does it apply the
     // whole advancement in one transaction.
-    if (const auto next = advancement_next_page(advancement_page_); next != advancement_page_)
+    if (const auto next = advancement_next_step(); next != current_step())
     {
-        advancement_page_ = next;
-        advancement_pages();
-        advancement_changed();
+        show_step(next);
         return;
     }
     try

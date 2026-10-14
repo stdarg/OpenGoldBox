@@ -106,6 +106,45 @@ func run() -> void:
         var sheet := lab.get_node_or_null("CharacterSheet") as Window
         if sheet and sheet.visible: (sheet.get_node("Close") as Button).pressed.emit(); await settle()
         if dialog.visible: (dialog.get_node("Cancel") as Button).pressed.emit(); await settle()
+    # A Warlock taking Lessons of the First Ones' Skilled checks its three
+    # skills on a second checkbox page after the invocations.
+    klass.select(option_index(klass, "warlock")); level.select(0)
+    create.pressed.emit(); await settle()
+    open.pressed.emit(); await settle()
+    var lessons_dialog: Window = lab.get_node("LevelUp")
+    var onward: Button = lessons_dialog.get_node("Confirm")
+    onward.pressed.emit(); await settle()
+    var invocations := []
+    for child in (lessons_dialog.get_node("SkilledPage/Rows") as VBoxContainer).get_children():
+        if child is CheckBox and child.visible: invocations.append(child)
+    var skilled_box: CheckBox = null
+    var other_box: CheckBox = null
+    for box in invocations:
+        if (box as CheckBox).text.begins_with("Lessons of the First Ones: Skilled"): skilled_box = box
+        elif other_box == null: other_box = box
+    check(skilled_box != null, "Lessons of the First Ones offers Skilled")
+    skilled_box.button_pressed = true; await settle()
+    other_box.button_pressed = true; await settle()
+    onward.pressed.emit(); await settle()
+    check((lessons_dialog.get_node("SkilledCount") as Label).text.ends_with(": 0/3 selected") and onward.disabled,
+          "Skilled's own page follows the invocations")
+    var skills := []
+    for child in (lessons_dialog.get_node("SkilledPage/Rows") as VBoxContainer).get_children():
+        if child is CheckBox and child.visible: skills.append(child)
+    for n in range(3):
+        (skills[n] as CheckBox).button_pressed = true
+        await settle()
+    check(not onward.disabled, "Three skills complete the page")
+    (lessons_dialog.get_node("Back") as Button).pressed.emit(); await settle()
+    check((lessons_dialog.get_node("SkilledCount") as Label).text.ends_with(": 2/2 selected"),
+          "Back returns to the invocations, still checked")
+    for page in range(4):
+        if onward.disabled or not lessons_dialog.visible: break
+        onward.pressed.emit(); await settle()
+    check((lab.get_node("Summary") as Label).text.contains("Level 2"), "The Warlock with Skilled reaches level 2")
+    var lessons_sheet := lab.get_node_or_null("CharacterSheet") as Window
+    if lessons_sheet and lessons_sheet.visible: (lessons_sheet.get_node("Close") as Button).pressed.emit(); await settle()
+    if lessons_dialog.visible: (lessons_dialog.get_node("Cancel") as Button).pressed.emit(); await settle()
     # Gaining level 2, a Sorcerer may replace a cantrip and a spell on the
     # Replace page; the spell page then fills the place the swap freed.
     klass.select(option_index(klass, "sorcerer")); level.select(0)

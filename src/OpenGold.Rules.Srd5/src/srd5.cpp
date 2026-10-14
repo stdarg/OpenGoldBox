@@ -584,8 +584,10 @@ struct Definition
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
     bool pact_magic{};    // Warlock: slots of one level, back on a Short Rest
     // Eldritch Invocations.
-    bool agonizing_blast{}, armor_of_shadows{}, devils_sight{}, eldritch_mind{},
-         eldritch_spear{}, fiendish_vigor{}, pact_of_the_blade{}, repelling_blast{};
+    bool armor_of_shadows{}, devils_sight{}, eldritch_mind{}, fiendish_vigor{},
+         pact_of_the_blade{};
+    // The cantrips Agonizing Blast, Eldritch Spear and Repelling Blast improve.
+    std::set<std::string, std::less<>> agonizing, eldritch_spear, repelling;
     int magical_cunning{}; // Warlock level 2: once per Long Rest, in Actor::arcane
     // Fiend Patron, Warlock level 3: Temporary Hit Points when an enemy drops.
     int dark_ones_blessing{};
@@ -826,6 +828,17 @@ constexpr std::array resource_descriptors
         &Definition::bardic_inspiration, 0, true},
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
         &Definition::metabolism, 0, false}};
+
+// Whether a level-up takes Lessons of the First Ones' Skilled, as a new
+// invocation or one swapped in.
+bool takes_lessons_skilled(const AdvancementChoice &choice)
+{
+    const auto picks = choice.training.find("class:warlock:invocations:2");
+    return choice.option_swap.replacement == "lessons_skilled" ||
+           (picks != choice.training.end() &&
+            std::find(picks->second.begin(), picks->second.end(), "lessons_skilled") !=
+            picks->second.end());
+}
 
 // The Hit Point maximum with Aid's increase.
 int max_hp(const Actor &a)
@@ -1399,14 +1412,21 @@ character_definition(std::string_view bytes,
             return g.id == "invocation:" + std::string(id);
         });
     };
-    d.agonizing_blast = invoked("agonizing_blast");
+    for (const auto &grant : grants)
+        for (auto &[prefix, cantrips] :
+                std::initializer_list<std::pair<std::string_view, std::set<std::string, std::less<>> *>>
+    {
+        {"invocation:agonizing_blast:", &d.agonizing},
+        {"invocation:eldritch_spear:", &d.eldritch_spear},
+        {"invocation:repelling_blast:", &d.repelling}
+    })
+    if (grant.id.starts_with(prefix))
+        cantrips->insert(grant.id.substr(prefix.size()));
     d.armor_of_shadows = invoked("armor_of_shadows");
     d.devils_sight = invoked("devils_sight");
     d.eldritch_mind = invoked("eldritch_mind");
-    d.eldritch_spear = invoked("eldritch_spear");
     d.fiendish_vigor = invoked("fiendish_vigor");
     d.pact_of_the_blade = invoked("pact_of_the_blade");
-    d.repelling_blast = invoked("repelling_blast");
     // Lessons of the First Ones: an Origin feat.
     d.savage |= invoked("lessons_savage_attacker");
     if (invoked("lessons_alert"))
@@ -1956,6 +1976,9 @@ class Session final : public CombatSession
     std::optional<PendingCheck> check_choice_;
     std::optional<ChampionMove> champion_move_;
     std::optional<PendingGraze> graze_;
+    // The damage type a Pact of the Blade attack being resolved deals instead
+    // of its weapon's; set only during that attack.
+    std::optional<detail::DamageType> pact_damage_;
     std::optional<PendingMastery> mastery_;
     // Creatures chosen so far for a spell that affects several (CLASS-2).
     struct PendingSelection
@@ -4304,6 +4327,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     rolled.count += static_cast<int>(upcast ? spell.upcast.extra_dice : 0u);
     if (spell.add_casting_modifier)
         rolled.bonus = casting_bonus(d, spell.id) - 2;
+    // Agonizing Blast adds the Charisma modifier to its cantrip's damage.
+    if (d.agonizing.contains(spell.id))
+        rolled.bonus += d.casting - 2;
     const unsigned instances = spell.instances + (upcast ? spell.upcast.extra_instances : 0u);
     const int dc = spell_dc(a, spell.id);
     const auto name = std::string(spell.label);
@@ -4353,16 +4379,13 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                               .value_or(detail::burst_type(verb).value_or(spell.damage)));
         // Sorcerous Burst: each 8 adds a d8, at most the spellcasting modifier.
         const int bursts = spell.id == "sorcerous_burst" ? std::max(1, d.casting - 2) : 0;
-        const bool blast = spell.id == "eldritch_blast";
-        // Agonizing Blast adds the Charisma modifier to Eldritch Blast's damage.
-        if (blast && d.agonizing_blast)
-            rolled.bonus += d.casting - 2;
         const bool struck =
             attack(a, target, spell.melee ? AttackRange::melee : AttackRange::ranged,
                    SpellAttack{.dice = rolled, .type = type, .bursts = bursts,
                                .spell = spell.id});
         // Repelling Blast pushes a Large or smaller creature 10 feet away.
-        if (struck && blast && d.repelling_blast && !target.life.dead && def(target).size <= 3)
+        if (struck && d.repelling.contains(spell.id) && !target.life.dead &&
+                def(target).size <= 3)
             push_away(a, target, 2);
         if (struck)
             apply_rider(spell, verb, a, target, dc);
@@ -5373,6 +5396,15 @@ std::vector<Command> Session::legal_commands() const
                         a.source.definition.starts_with("slums-kobold") ? "Dagger attack"
                         : "Melee attack",
                         other.source.id);
+                // Pact of the Blade: the pact weapon may deal Necrotic, Psychic
+                // or Radiant damage instead of its own type.
+                if (feet <= d.reach && d.pact_of_the_blade && d.melee.count && !d.ranged_weapon &&
+                        !d.weapon_label.empty())
+                {
+                    add(id, "melee_necrotic", "Melee attack (Necrotic)", other.source.id);
+                    add(id, "melee_psychic", "Melee attack (Psychic)", other.source.id);
+                    add(id, "melee_radiant", "Melee attack (Radiant)", other.source.id);
+                }
                 // Flame Blade: a melee spell attack with the blade as an Action.
                 if (feet <= 5 && a.actions.available(true) &&
                         detail::has_effect(a.effects, detail::EffectKind::flame_blade))
@@ -5933,6 +5965,8 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         {"{name} is spared by Sculpt Spells.", {{"name", actor(id).source.name}}});
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(verb.ends_with("_2") ? spell.upcast.extra_dice : 0u);
+    if (def(caster).agonizing.contains(spell.id))
+        rolled.bonus += def(caster).casting - 2;
     const int total = spell_dice(caster, rolled);
     const auto damage_type = spell.id.starts_with("breath_weapon_")
                              ? *def(caster).breath
@@ -7816,8 +7850,8 @@ void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
 
 int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) const
 {
-    // Eldritch Spear: 30 feet more per Warlock level for Eldritch Blast.
-    const int range = spell.range + (spell.id == "eldritch_blast" && def(caster).eldritch_spear
+    // Eldritch Spear: 30 feet more per Warlock level for its cantrip.
+    const int range = spell.range + (def(caster).eldritch_spear.contains(spell.id)
                                      ? 30 * def(caster).level
                                      : 0);
     // Distant Spell: double the range, or 30 feet for Touch.
@@ -7990,6 +8024,8 @@ int Session::sacred_weapon_bonus(const Actor &a) const
 
 detail::DamageType Session::sacred_damage_type(const Actor &a) const
 {
+    if (pact_damage_)
+        return *pact_damage_;
     // The damage the Paladin chose when imbuing the weapon.
     for (const auto &effect : a.effects.active)
         if (effect.kind == detail::EffectKind::sacred_weapon && effect.dc == 1)
@@ -8985,6 +9021,16 @@ void Session::dispatch(const Command &command)
         auto melee = command;
         melee.verb = "melee";
         dispatch(melee);
+        return;
+    }
+    if (command.verb == "melee_necrotic" || command.verb == "melee_psychic" ||
+            command.verb == "melee_radiant")
+    {
+        pact_damage_ = detail::damage_type(std::string_view(command.verb).substr(6));
+        auto melee = command;
+        melee.verb = "melee";
+        dispatch(melee);
+        pact_damage_.reset();
         return;
     }
     auto &a = actor(command.actor);
@@ -11281,6 +11327,10 @@ class Module final : public RulesModule
         // so switching away from it drops the group and its unconfirmed picks.
         if (choice.feat == "skilled" && options.level == 4)
             options.training.push_back(detail::skilled_options(sheet.grants));
+        // Lessons of the First Ones' Skilled asks for its skills when it is
+        // taken, as a new invocation or a replacement.
+        if (options.level && takes_lessons_skilled(choice))
+            options.training.push_back(detail::lessons_skilled_options(sheet.grants, options.level));
         if (choice.fighting_style && detail::class_of(sheet) == CharacterClass::fighter)
         {
             const auto source = "class:fighter:fighting_style";
@@ -11410,11 +11460,14 @@ class Module final : public RulesModule
                 return g.id == id;
             });
         };
-        if (!held("spell:eldritch_blast") &&
-                (held("invocation:agonizing_blast") || held("invocation:eldritch_spear") ||
-                 held("invocation:repelling_blast")))
-            throw std::runtime_error(
-                "Agonizing Blast, Eldritch Spear and Repelling Blast need Eldritch Blast.");
+        // A blast invocation needs the cantrip it improves.
+        for (const auto &g : next.grants)
+            for (const std::string_view blast :
+                    {"invocation:agonizing_blast:", "invocation:eldritch_spear:",
+                     "invocation:repelling_blast:"
+                    })
+                if (g.id.starts_with(blast) && !held("spell:" + g.id.substr(blast.size())))
+                    throw std::runtime_error("A blast invocation needs the cantrip it improves.");
         // Magic Initiate's spells are chosen with the level's other spells,
         // whether the feat comes at level four or from Lessons of the First Ones.
         if (choice.feat.starts_with("magic_initiate_") && next.level == 4)
@@ -11490,6 +11543,8 @@ class Module final : public RulesModule
         }
         if (!options.spells.empty() && choice.spells.empty())
             throw std::runtime_error("Choose at least one supported spell");
+        if (takes_lessons_skilled(choice) && !choice.training.contains("invocation:lessons_skilled"))
+            throw std::runtime_error("Choose exactly three Skilled proficiencies");
         // A swapped-in invocation cannot also be one of the level's new picks.
         if (const auto picks = choice.training.find("class:warlock:invocations:2");
                 picks != choice.training.end() && !choice.option_swap.replacement.empty() &&
@@ -11530,6 +11585,7 @@ class Module final : public RulesModule
                     : id == "class:barbarian:primal_knowledge" ? "skill:" + value
                     : id == "class:sorcerer:metamagic" ? "metamagic:" + value
                     : id == "class:warlock:invocations:2" ? "invocation:" + value
+                    : id == "invocation:lessons_skilled" ? value
                     : id == "subclass:bard:lore" ? "skill:" + value
                     : id == "subclass:druid:land" ? "land:" + value
                     : "mastery:" + value,
@@ -13050,7 +13106,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.180", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.181", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

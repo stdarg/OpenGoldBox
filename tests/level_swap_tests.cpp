@@ -213,11 +213,12 @@ void warlock_checks()
                                        options.option_swap.replacements.end(),
                                        [](const auto & o)
     {
-        return o.id == "agonizing_blast";
+        return o.id == "agonizing_blast:eldritch_blast";
     });
     check(agonizing, "A level-two invocation is offered for the level-1 one");
-    p.advance(p.choice({}, {}, {old, "agonizing_blast"}));
-    check(has(p.sheet(), "invocation:agonizing_blast") && !has(p.sheet(), "invocation:" + old),
+    p.advance(p.choice({}, {}, {old, "agonizing_blast:eldritch_blast"}));
+    check(has(p.sheet(), "invocation:agonizing_blast:eldritch_blast") &&
+          !has(p.sheet(), "invocation:" + old),
           "The level-1 invocation becomes Agonizing Blast");
     p.roundtrip();
 

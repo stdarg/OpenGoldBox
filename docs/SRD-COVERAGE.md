@@ -101,6 +101,10 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.181 closes the Warlock's invocation gaps ([Warlock](WARLOCK.md)):
+Agonizing Blast, Eldritch Spear and Repelling Blast each name a damaging
+Warlock cantrip and may be taken again for another; Lessons of the First Ones
+offers Skilled; a pact weapon may deal Necrotic, Psychic or Radiant damage.
 Rules 0.6.180 adds [Hide](HIDE.md): the Hide action, the Rogue's Cunning
 Action Hide, the Search action and Halfling Naturally Stealthy, with enemies
 finding a hidden creature by Passive Perception

@@ -76,6 +76,9 @@ Character warlock(unsigned level = 1, std::vector<std::string> first = {},
         auto choice = party.default_advancement(id);
         if (n == 1 && !second.empty())
             choice.training["class:warlock:invocations:2"] = second;
+        if (n == 1 && std::find(second.begin(), second.end(), "lessons_skilled") != second.end())
+            choice.training["invocation:lessons_skilled"] = {"skill:athletics", "skill:perception",
+                                                             "skill:stealth"};
         if (n == 2 && !third.empty())
         {
             choice.spells = party.member(id).character.sheet().prepared_spells;
@@ -346,7 +349,7 @@ void invocation_checks()
               "Armor of Shadows casts Mage Armor without a slot");
     }
     {
-        const auto hero = warlock(2, {"eldritch_mind"}, {"agonizing_blast", "repelling_blast"});
+        const auto hero = warlock(2, {"eldritch_mind"}, {"agonizing_blast:eldritch_blast", "repelling_blast:eldritch_blast"});
         auto c = battle(*module, hero);
         check(submit(*c, "eldritch_blast", 98) && logged(*c, "Enemy is pushed 10 feet."),
               "Repelling Blast pushes the creature Eldritch Blast hits");
@@ -380,7 +383,7 @@ void invocation_checks()
         check(profile.melee_attack_bonus == 6, "Pact of the Blade uses Charisma and proficiency");
     }
     {
-        auto c = battle(*module, warlock(3, {"eldritch_mind"}, {"devils_sight", "agonizing_blast"},
+        auto c = battle(*module, warlock(3, {"eldritch_mind"}, {"devils_sight", "agonizing_blast:eldritch_blast"},
                                          {"darkness"}));
         check(submit(*c, "darkness") && submit(*c, "area_cast"), "Darkness over both creatures");
         reach_turn(*c);
@@ -396,6 +399,98 @@ bool has_grant(const Character &hero, std::string_view id)
     {
         return g.id == id;
     });
+}
+
+// The blast invocations name a damaging Warlock cantrip and repeat for
+// another; Lessons of the First Ones may teach Skilled; a pact weapon may
+// deal Necrotic, Psychic or Radiant damage (#161).
+void invocation_gap_checks()
+{
+    auto module = rules();
+    CampaignParty party(module_rules());
+    const auto id = party.add_pc(warlock(1, {"eldritch_mind"}));
+    party.award_experience(300, "gap-xp");
+    const auto offered_ids = [&]
+    {
+        std::vector<std::string> ids;
+        for (const auto &group : party.rule_module().advancement_options(
+                    party.member(id).character.sheet()).training)
+            for (const auto &option : group.options)
+                ids.push_back(option.id);
+        return ids;
+    }();
+    const auto listed = [&](std::string_view option)
+    {
+        return std::find(offered_ids.begin(), offered_ids.end(), option) != offered_ids.end();
+    };
+    check(listed("agonizing_blast:eldritch_blast") && listed("agonizing_blast:chill_touch") &&
+          listed("repelling_blast:chill_touch") && listed("eldritch_spear:eldritch_blast") &&
+          !listed("eldritch_spear:chill_touch") && listed("lessons_skilled"),
+          "Blast invocations for each damaging cantrip; Eldritch Spear needs range");
+
+    {
+        const auto hero = warlock(2, {"eldritch_mind"},
+        {"agonizing_blast:eldritch_blast", "agonizing_blast:chill_touch"});
+        auto c = battle(*module, hero);
+        check(submit(*c, "chill_touch", 98), "The Warlock casts Chill Touch");
+        for (const auto &line : c->snapshot().log())
+            if (line.starts_with("Warlock -> Enemy") && line.find(" hits for ") != std::string::npos)
+            {
+                const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));
+                check(damage >= 5 && damage <= 14, "Agonizing Blast adds +4 to Chill Touch's 1d10");
+            }
+    }
+    {
+        const auto hero = warlock(2, {"eldritch_mind"}, {"lessons_skilled", "fiendish_vigor"});
+        const auto &grants = hero.sheet().grants;
+        check(std::count_if(grants.begin(), grants.end(), [](const auto & g)
+        {
+            return g.source_id == "invocation:lessons_skilled" && g.id.starts_with("skill:");
+        }) == 3, "Lessons of the First Ones teaches Skilled's three skills");
+        CampaignParty missing(module_rules());
+        const auto member = missing.add_pc(warlock(1, {"eldritch_mind"}));
+        missing.award_experience(300, "gap-xp");
+        auto choice = missing.default_advancement(member);
+        choice.training["class:warlock:invocations:2"] = {"lessons_skilled", "fiendish_vigor"};
+        bool refused = false;
+        try
+        {
+            missing.advance(member, choice);
+        }
+        catch (const std::exception &)
+        {
+            refused = true;
+        }
+        check(refused, "Skilled from Lessons needs its three skills");
+    }
+    {
+        // A target immune to Radiant damage takes none from the Radiant blade
+        // and the longsword's Slashing from the ordinary attack.
+        const auto immune = srd5::parse_content(
+                                read(root / "data/rules/srd-5.2.1/combat.rules") +
+                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                                "affinity target test immunity radiant\n");
+        const auto hero = warlock(1, {"pact_of_the_blade"});
+        const auto profile =
+            immune->character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
+        const auto strike = [&](std::string_view verb)
+        {
+            auto c = immune->create({{12, 6, std::vector<Terrain>(72)},
+                {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                    {98, "target", "Enemy", Side::opposition, {2, 1}}
+                }},
+            5);
+            if (!c->snapshot().initiative_choices.empty())
+                check(submit(*c, "initiative_keep"), "Keep Initiative");
+            for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+                check(submit(*c, "end"), "Reach the Warlock's turn");
+            check(offered(*c, "melee_necrotic") && offered(*c, "melee_psychic") &&
+                  submit(*c, verb, 98), "The pact weapon strikes");
+            return unit(*c, 98).hit_points;
+        };
+        check(strike("melee_radiant") == 1000 && strike("melee") < 1000,
+              "The pact weapon deals Radiant damage when chosen, else its own type");
+    }
 }
 
 void fiend_checks()
@@ -503,6 +598,7 @@ int main()
         advancement_checks();
         magical_cunning_checks();
         invocation_checks();
+        invocation_gap_checks();
         fiend_checks();
         ally_blessing_checks();
         std::cout << "Warlock tests passed\n";

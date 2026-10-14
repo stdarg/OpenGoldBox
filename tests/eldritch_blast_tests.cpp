@@ -147,7 +147,7 @@ bool agonizing(const Character &h)
     const auto &grants = h.sheet().grants;
     return std::any_of(grants.begin(), grants.end(), [](const auto & g)
     {
-        return g.id == "invocation:agonizing_blast";
+        return g.id == "invocation:agonizing_blast:eldritch_blast";
     });
 }
 

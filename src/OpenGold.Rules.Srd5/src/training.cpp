@@ -2,6 +2,7 @@
 #include "weapon_mastery.h"
 #include "feature_grants.h"
 #include "spell_access.h"
+#include "spell_table.h"
 #include <algorithm>
 #include <cctype>
 #include <set>
@@ -118,6 +119,8 @@ const auto &class_skills()
 }
 
 constexpr std::string_view skilled = "feat:skilled";
+// Lessons of the First Ones' Skilled: its three skills' source.
+constexpr std::string_view lessons_skilled = "invocation:lessons_skilled";
 constexpr std::string_view divine_order = "class:cleric:divine_order";
 constexpr std::string_view rogue = "class:rogue", expertise = "class:rogue:expertise";
 
@@ -497,53 +500,104 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
 // Eldritch Spear and Repelling Blast improve Eldritch Blast, the Warlock
 // cantrip they suit. Invocations that only cast removed spells and Pact of the
 // Chain are not offered.
+namespace
+{
+// The Warlock cantrips that deal damage, from the class list or Pact of the
+// Tome: those a blast invocation can improve (SRD 5.2.1 p. 72).
+std::vector<const SpellDef *> damage_cantrips(std::span<const FeatureGrant> grants)
+{
+    std::vector<const SpellDef *> result;
+    for (const auto &g : grants)
+        if (g.id.starts_with("spell:") && (g.source_id == "class:warlock:pact_magic" ||
+                                           g.source_id == "invocation:pact_of_the_tome"))
+            if (const auto *spell = find_spell(g.id.substr(6)); spell && !spell->level &&
+                    spell->dice.count)
+                result.push_back(spell);
+    std::stable_partition(result.begin(), result.end(), [](const auto * spell)
+    {
+        return spell->id == "eldritch_blast";
+    });
+    return result;
+}
+} // namespace
+
 TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGrant> grants,
                                        std::string_view source)
 {
     TrainingChoiceGroup group{std::string(source), "Eldritch Invocations", level == 1 ? 1u : 2u,
                               {}, TrainingChoiceControl::checkboxes};
     group.acquired_level = level;
-    const bool blast = std::any_of(grants.begin(), grants.end(), [](const auto & g)
-    {
-        return g.id == "spell:eldritch_blast";
-    });
     struct Invocation
     {
         std::string_view id, label, description;
         unsigned level;
-        bool needs_blast;
     };
-    static constexpr std::array<Invocation, 14> all{{
-        {"agonizing_blast", "Agonizing Blast", "Add your Charisma modifier to Eldritch Blast's damage.", 2, true},
-        {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1, false},
-        {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2, false},
-        {"eldritch_mind", "Eldritch Mind", "Advantage on Constitution saves to keep Concentration.", 1, false},
-        {"eldritch_spear", "Eldritch Spear", "Eldritch Blast reaches 30 feet farther per Warlock level.", 2, true},
-        {"fiendish_vigor", "Fiendish Vigor", "Cast False Life on yourself without a slot, for its highest result.", 2, false},
-        {"lessons_alert", "Lessons of the First Ones: Alert", "Gain the Alert feat.", 2, false},
-        {"lessons_savage_attacker", "Lessons of the First Ones: Savage Attacker", "Gain the Savage Attacker feat.", 2, false},
-        {"lessons_magic_initiate_cleric", "Lessons of the First Ones: Magic Initiate (Cleric)", "Gain the Magic Initiate feat with the Cleric spell list.", 2, false},
-        {"lessons_magic_initiate_druid", "Lessons of the First Ones: Magic Initiate (Druid)", "Gain the Magic Initiate feat with the Druid spell list.", 2, false},
-        {"lessons_magic_initiate_wizard", "Lessons of the First Ones: Magic Initiate (Wizard)", "Gain the Magic Initiate feat with the Wizard spell list.", 2, false},
-        {"pact_of_the_blade", "Pact of the Blade", "Your melee weapon is your pact weapon: proficiency, and Charisma for its attack and damage rolls.", 1, false},
-        {"pact_of_the_tome", "Pact of the Tome", "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.", 1, false},
-        {"repelling_blast", "Repelling Blast", "An Eldritch Blast hit pushes a Large or smaller creature 10 feet away.", 2, true}}};
+    static constexpr std::array<Invocation, 12> all{{
+        {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1},
+        {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2},
+        {"eldritch_mind", "Eldritch Mind", "Advantage on Constitution saves to keep Concentration.", 1},
+        {"fiendish_vigor", "Fiendish Vigor", "Cast False Life on yourself without a slot, for its highest result.", 2},
+        {"lessons_alert", "Lessons of the First Ones: Alert", "Gain the Alert feat.", 2},
+        {"lessons_savage_attacker", "Lessons of the First Ones: Savage Attacker", "Gain the Savage Attacker feat.", 2},
+        {"lessons_skilled", "Lessons of the First Ones: Skilled", "Gain the Skilled feat: training in three skills.", 2},
+        {"lessons_magic_initiate_cleric", "Lessons of the First Ones: Magic Initiate (Cleric)", "Gain the Magic Initiate feat with the Cleric spell list.", 2},
+        {"lessons_magic_initiate_druid", "Lessons of the First Ones: Magic Initiate (Druid)", "Gain the Magic Initiate feat with the Druid spell list.", 2},
+        {"lessons_magic_initiate_wizard", "Lessons of the First Ones: Magic Initiate (Wizard)", "Gain the Magic Initiate feat with the Wizard spell list.", 2},
+        {"pact_of_the_blade", "Pact of the Blade", "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like.", 1},
+        {"pact_of_the_tome", "Pact of the Tome", "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.", 1}}};
+    const auto held = [&](const std::string & id, const std::string & feat)
+    {
+        return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return (g.id == id && g.source_id != source) || (!feat.empty() && g.id == feat);
+        });
+    };
     for (const auto &invocation : all)
     {
-        const auto id = "invocation:" + std::string(invocation.id);
-        // Magic Initiate repeats only with another list, so a list a feat
-        // already gave is not offered again.
-        const auto initiate = std::string_view(invocation.id).starts_with("lessons_magic_initiate_")
-                              ? "feat:" + std::string(invocation.id).substr(8)
-                              : std::string();
-        const bool held = std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-        {
-            return (g.id == id && g.source_id != source) || (!initiate.empty() && g.id == initiate);
-        });
-        if (invocation.level <= level && (!invocation.needs_blast || blast) && !held)
-            group.options.push_back({std::string(invocation.id), std::string(invocation.label),
+        // Magic Initiate and Skilled repeat only through another feat, so a
+        // list a feat already gave is not offered again.
+        const std::string id(invocation.id);
+        const auto feat = id.starts_with("lessons_magic_initiate_") || id == "lessons_skilled"
+                          ? "feat:" + id.substr(8)
+                          : std::string();
+        if (invocation.level <= level && !held("invocation:" + id, feat))
+            group.options.push_back({id, std::string(invocation.label),
                                      std::string(invocation.description)});
     }
+    // The blast invocations each improve one damaging Warlock cantrip, and may
+    // be taken again for another (SRD 5.2.1 pp. 71-73). Repelling Blast needs
+    // a cantrip that can hit; Eldritch Spear one with a range of 10 feet or more.
+    if (level >= 2)
+        for (const auto *cantrip : damage_cantrips(grants))
+        {
+            const std::string name(cantrip->label), key(cantrip->id);
+            struct Blast
+            {
+                std::string_view id, label, description;
+                bool open;
+            };
+            for (const auto &blast :
+                    {Blast{"agonizing_blast", "Agonizing Blast", "Add your Charisma modifier to the cantrip's damage.", true},
+                     Blast{"eldritch_spear", "Eldritch Spear", "The cantrip reaches 30 feet farther per Warlock level.", cantrip->range >= 10},
+                     Blast{"repelling_blast", "Repelling Blast", "A hit with the cantrip pushes a Large or smaller creature 10 feet away.", cantrip->pattern == SpellPattern::spell_attack}
+                    })
+            {
+                const auto id = std::string(blast.id) + ":" + key;
+                if (blast.open && !held("invocation:" + id, {}))
+                    group.options.push_back({id, std::string(blast.label) + " (" + name + ")",
+                                             std::string(blast.description)});
+            }
+        }
+    // Alphabetical by invocation, Eldritch Blast's first: the order the
+    // default level-up takes them in.
+    std::stable_sort(group.options.begin(), group.options.end(), [](const auto & a, const auto & b)
+    {
+        const auto name = [](std::string_view id)
+        {
+            return id.substr(0, id.find(':'));
+        };
+        return name(a.id) < name(b.id);
+    });
     return group;
 }
 
@@ -646,6 +700,14 @@ TrainingChoiceGroup skilled_options(std::span<const FeatureGrant> grants)
     for (const auto &s : skills)
         if (!source(grants, "skill:" + std::string(s.id)))
             group.options.push_back({"skill:" + std::string(s.id), std::string(s.label), {}});
+    return group;
+}
+
+TrainingChoiceGroup lessons_skilled_options(std::span<const FeatureGrant> grants, unsigned level)
+{
+    auto group = skilled_options(grants);
+    group.id = std::string(lessons_skilled);
+    group.acquired_level = level;
     return group;
 }
 
@@ -867,6 +929,22 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 selected.push_back(grant.id.substr(10));
                 continue;
             }
+            // Lessons of the First Ones' Skilled: three skills, taken with it.
+            if (grant.source_id == lessons_skilled)
+            {
+                require(klass == CharacterClass::warlock && grant.level >= 2 &&
+                        grant.choices.empty() && grant.id.starts_with("skill:") &&
+                        source(grants, std::string(lessons_skilled)));
+                auto &selected = choices[grant.source_id];
+                require(selected.size() < 3 &&
+                        std::find(selected.begin(), selected.end(), grant.id) == selected.end());
+                require(std::none_of(grants.begin(), grants.end(), [&](const auto & other)
+                {
+                    return other.id == grant.id && other.source_id != grant.source_id;
+                }));
+                selected.push_back(grant.id);
+                continue;
+            }
             // The level-1 invocation, swapped on gaining a later level for
             // any invocation open at that level.
             if (grant.source_id == "class:warlock:invocations" && grant.level > 1)
@@ -916,6 +994,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:warlock:invocations:2");
+    starting.erase(std::string(lessons_skilled));
     // A swapped level-1 invocation is checked above, not as a starting choice.
     if (swapped_first_invocation)
         starting.erase("class:warlock:invocations");
@@ -966,6 +1045,8 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;
+    if (source(grants, std::string(lessons_skilled)))
+        result.complete &= selected(choices, lessons_skilled).size() == 3;
     for (const auto &g : grants)
         require(g.source_id != hall_training || g.level <= level);
     const auto &lore = selected(choices, "subclass:bard:lore");
@@ -1023,9 +1104,13 @@ SwapOffer option_swap_offer(const CharacterSheet &sheet)
     if (klass == CharacterClass::warlock)
     {
         SwapOffer offer{"Eldritch Invocation", {}, {}};
-        // Every invocation's label, whatever its prerequisites.
-        const std::vector<FeatureGrant> blast{{"spell:eldritch_blast", "", 1, {}}};
-        const auto all = invocation_options(4, blast, "");
+        // Every invocation's label, whatever its prerequisites: the held
+        // cantrips name the blast invocations.
+        std::vector<FeatureGrant> cantrips;
+        for (const auto &g : sheet.grants)
+            if (g.id.starts_with("spell:"))
+                cantrips.push_back({g.id, "class:warlock:pact_magic", 1, {}});
+        const auto all = invocation_options(4, cantrips, "");
         for (const auto &id : held("invocation:", "class:warlock:invocations"))
             for (const auto &option : all.options)
                 if (option.id == id)
@@ -1082,6 +1167,7 @@ void apply_option_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapO
     // chosen now, and a replaced one's spells go with it.
     found->level = static_cast<unsigned>(sheet.level);
     const std::string picks = swap.replaced == "pact_of_the_tome" ? "invocation:pact_of_the_tome"
+                              : swap.replaced == "lessons_skilled" ? std::string(lessons_skilled)
                               : swap.replaced.starts_with("lessons_magic_initiate_")
                               ? "feat:" + swap.replaced.substr(8)
                               : std::string();
