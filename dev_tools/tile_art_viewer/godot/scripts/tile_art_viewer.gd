@@ -4,12 +4,13 @@ const VIEW_NAMES := [
     "Far front", "Far left", "Far right", "Middle front", "Middle left",
     "Middle right", "Near front", "Near left", "Near right", "Far extension"
 ]
-const PHLAN_NAMES := [
-    "", "Open gateway", "Gray wall", "Gray wall and door", "Ivy wall",
-    "Ivy wall and door", "Light masonry A", "Light masonry and door",
-    "Light masonry B", "Shopfront", "Stone facade", "City Hall",
-    "Training hall", "Temple entrance", "Waterfront posts and chains",
-    "Low waterfront wall and water"
+const METADATA_FILE := "../data/tile_art_catalog.csv"
+const CSV_COLUMNS := [
+    "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",
+    "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
+    "profile_label", "profile_source", "pose_x", "pose_y", "facing", "facing_name",
+    "click_x", "click_y", "cell_x", "cell_y", "face", "face_name", "wall_id",
+    "door_code", "event_raw"
 ]
 const DIRECTIONS := ["North", "East", "South", "West"]
 const DIRECTION_STEPS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
@@ -22,9 +23,13 @@ const DIRECTION_STEPS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.L
 @onready var identity: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Identity
 @onready var source: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Source
 @onready var preview: TextureRect = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/PreviewPanel/Preview
-@onready var previous: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Previous
-@onready var next: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Next
-@onready var export_button: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Export
+@onready var description_edit: TextEdit = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/DescriptionEdit
+@onready var save_description: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/SaveDescription
+@onready var usage: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Usage
+@onready var previous: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Navigate/Previous
+@onready var next: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Navigate/Next
+@onready var export_button: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/ExportRow/Export
+@onready var see_in_map: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/ExportRow/SeeInMap
 @onready var status: Label = $Margin/Tabs/ArtCatalog/Status
 @onready var map_picker: OptionButton = $Margin/Tabs/MapBrowser/MapToolbar/MapPicker
 @onready var profile_picker: OptionButton = $Margin/Tabs/MapBrowser/MapToolbar/ProfilePicker
@@ -47,6 +52,9 @@ const DIRECTION_STEPS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.L
 @onready var save_dialog: FileDialog = $SaveDialog
 
 var catalog_entries: Array = []
+var metadata_rows: Array = []
+var draft_descriptions: Dictionary = {}
+var updating_description := false
 var visible_indices: Array[int] = []
 var thumbnail_cache: Dictionary = {}
 var selected_entry := -1
@@ -71,6 +79,9 @@ func _ready() -> void:
     previous.pressed.connect(func(): _navigate(-1))
     next.pressed.connect(func(): _navigate(1))
     export_button.pressed.connect(_show_export_dialog)
+    description_edit.text_changed.connect(_on_description_changed)
+    save_description.pressed.connect(_save_descriptions)
+    see_in_map.pressed.connect(_see_in_map)
     map_export.pressed.connect(_show_map_export_dialog)
     save_dialog.file_selected.connect(_export_png)
     map_picker.item_selected.connect(_select_map)
@@ -96,6 +107,11 @@ func _ready() -> void:
         _load_failure(error_message)
         return
     catalog_entries = entries()
+    catalog_maps = maps()
+    error_message = _load_metadata()
+    if not error_message.is_empty():
+        _load_failure(error_message)
+        return
     archive_filter.add_item("All archives")
     var archives: Array[String] = []
     for entry in catalog_entries:
@@ -105,7 +121,6 @@ func _ready() -> void:
     for name in archives:
         archive_filter.add_item(name)
     _rebuild_grid()
-    catalog_maps = maps()
     for map in catalog_maps:
         map_picker.add_item("%s · %s:%d" % [map["name"], map["archive"], map["record"]])
     var phlan_index := 0
@@ -126,6 +141,8 @@ func _ready() -> void:
             call_deferred("_run_map_check", argument.trim_prefix("--map-check="))
         elif argument.begins_with("--map-capture="):
             call_deferred("_run_map_capture", argument.trim_prefix("--map-capture="))
+        elif argument.begins_with("--metadata-check="):
+            call_deferred("_run_metadata_check", argument.trim_prefix("--metadata-check="))
 
 func _load_failure(message: String) -> void:
     status.text = message
@@ -133,20 +150,194 @@ func _load_failure(message: String) -> void:
     previous.disabled = true
     next.disabled = true
     export_button.disabled = true
+    see_in_map.disabled = true
+    save_description.disabled = true
+    description_edit.editable = false
     map_export.disabled = true
     map_status.text = message
     for argument in OS.get_cmdline_user_args():
         if argument.begins_with("--viewer-check=") or argument.begins_with("--viewer-capture=") or \
                 argument.begins_with("--map-check=") or \
-                argument.begins_with("--map-capture="):
+                argument.begins_with("--map-capture=") or \
+                argument.begins_with("--metadata-check="):
             push_error(message)
             get_tree().quit(1)
             return
 
-func _description(entry: Dictionary) -> String:
-    if entry["archive"] == "WALLDEF3.DAX" and entry["record"] == 0:
-        return PHLAN_NAMES[int(entry["appearance"])]
+func _metadata_path() -> String:
+    return ProjectSettings.globalize_path("res://").path_join(METADATA_FILE).simplify_path()
+
+func _load_metadata() -> String:
+    var path := _metadata_path()
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        return "Cannot open tile metadata CSV: %s" % path
+    var header := file.get_csv_line()
+    if header.size() != CSV_COLUMNS.size():
+        return "Tile metadata CSV has the wrong columns."
+    for column in CSV_COLUMNS.size():
+        if header[column] != CSV_COLUMNS[column]:
+            return "Tile metadata CSV column %d should be %s." % [column, CSV_COLUMNS[column]]
+    metadata_rows.clear()
+    while file.get_position() < file.get_length():
+        var fields := file.get_csv_line()
+        if fields.size() != CSV_COLUMNS.size():
+            return "Tile metadata CSV row %d has %d fields; expected %d." % [
+                metadata_rows.size() + 2, fields.size(), CSV_COLUMNS.size()
+            ]
+        var row: Dictionary = {}
+        for column in CSV_COLUMNS.size():
+            row[CSV_COLUMNS[column]] = fields[column]
+        var index := metadata_rows.size()
+        if index >= catalog_entries.size():
+            return "Tile metadata CSV has more rows than decoded artwork."
+        var entry: Dictionary = catalog_entries[index]
+        if row["index"] != str(index):
+            return "Tile metadata CSV row %d has the wrong image index." % (index + 2)
+        for field in ["archive", "record", "appearance", "view", "width", "height"]:
+            if row[field] != str(entry[field]):
+                return "Tile metadata CSV row %d disagrees with decoded %s." % [index + 2, field]
+        if row["view_name"] != VIEW_NAMES[int(entry["view"])]:
+            return "Tile metadata CSV row %d has the wrong view name." % (index + 2)
+        if row["description"].strip_edges().is_empty():
+            return "Tile metadata CSV row %d has no description." % (index + 2)
+        if row["usage"] != "visible" and row["usage"] != "unused":
+            return "Tile metadata CSV row %d has invalid map usage." % (index + 2)
+        if row["usage"] == "visible":
+            if _location_map_index(row) < 0:
+                return "Tile metadata CSV row %d has no matching map/profile." % (index + 2)
+            for coordinate in ["pose_x", "pose_y", "click_x", "click_y", "facing"]:
+                if not str(row[coordinate]).is_valid_int():
+                    return "Tile metadata CSV row %d has invalid %s." % [index + 2, coordinate]
+            if int(row["pose_x"]) < 0 or int(row["pose_x"]) >= 16 or \
+                    int(row["pose_y"]) < 0 or int(row["pose_y"]) >= 16 or \
+                    int(row["click_x"]) < 0 or int(row["click_x"]) >= 88 or \
+                    int(row["click_y"]) < 0 or int(row["click_y"]) >= 88 or \
+                    int(row["facing"]) < 0 or int(row["facing"]) >= 4:
+                return "Tile metadata CSV row %d has an out-of-range map location." % (index + 2)
+        metadata_rows.append(row)
+        entry["description"] = row["description"]
+        entry["name"] = row["name"]
+    if metadata_rows.size() != catalog_entries.size():
+        return "Tile metadata CSV contains %d rows for %d images." % [
+            metadata_rows.size(), catalog_entries.size()
+        ]
     return ""
+
+func _location_map_index(row: Dictionary) -> int:
+    if not str(row["profile_index"]).is_valid_int():
+        return -1
+    var profile_index := int(row["profile_index"])
+    for index in catalog_maps.size():
+        var map: Dictionary = catalog_maps[index]
+        if map["archive"] != row["map_archive"] or str(map["record"]) != row["map_record"]:
+            continue
+        var profiles: Array = map["profiles"]
+        if profile_index < 0 or profile_index >= profiles.size():
+            return -1
+        if profiles[profile_index]["label"] != row["profile_label"] or \
+                profiles[profile_index]["source"] != row["profile_source"]:
+            return -1
+        return index
+    return -1
+
+func _csv_cell(value: String) -> String:
+    if value.contains(",") or value.contains("\"") or value.contains("\n"):
+        return "\"%s\"" % value.replace("\"", "\"\"")
+    return value
+
+func _write_metadata_csv(path: String) -> String:
+    var file := FileAccess.open(path, FileAccess.WRITE)
+    if file == null:
+        return "Cannot write tile metadata CSV: %s" % error_string(FileAccess.get_open_error())
+    file.store_line(",".join(CSV_COLUMNS))
+    for index in metadata_rows.size():
+        var row: Dictionary = metadata_rows[index]
+        var fields: PackedStringArray = []
+        for column in CSV_COLUMNS:
+            var value := str(draft_descriptions.get(index, row[column])) if column == "description" else str(row[column])
+            fields.append(_csv_cell(value))
+        file.store_line(",".join(fields))
+    file.flush()
+    var result := file.get_error()
+    file.close()
+    return "" if result == OK else "Tile metadata CSV write failed: %s" % error_string(result)
+
+func _on_description_changed() -> void:
+    if updating_description or selected_entry < 0 or metadata_rows.is_empty():
+        return
+    var new_text := description_edit.text
+    catalog_entries[selected_entry]["description"] = new_text
+    if new_text == metadata_rows[selected_entry]["description"]:
+        draft_descriptions.erase(selected_entry)
+    else:
+        draft_descriptions[selected_entry] = new_text
+    save_description.disabled = draft_descriptions.is_empty()
+    var entry: Dictionary = catalog_entries[selected_entry]
+    var position := visible_indices.find(selected_entry)
+    if position >= 0:
+        contact_grid.set_item_tooltip(position, "%s:%d · appearance %d · %s · %s" % [
+            entry["archive"], entry["record"], entry["appearance"],
+            VIEW_NAMES[int(entry["view"])], new_text
+        ])
+
+func _save_descriptions() -> void:
+    if draft_descriptions.is_empty():
+        return
+    for index in draft_descriptions:
+        if str(draft_descriptions[index]).strip_edges().is_empty():
+            status.text = "Description for image %d cannot be empty." % index
+            return
+    var destination := _metadata_path()
+    var temporary := destination + ".tmp"
+    var error_message := _write_metadata_csv(temporary)
+    if error_message.is_empty():
+        var result := DirAccess.rename_absolute(temporary, destination)
+        if result != OK:
+            error_message = "Cannot replace tile metadata CSV: %s" % error_string(result)
+    if not error_message.is_empty():
+        DirAccess.remove_absolute(temporary)
+        status.text = error_message
+        return
+    for index in draft_descriptions:
+        metadata_rows[index]["description"] = draft_descriptions[index]
+    draft_descriptions.clear()
+    save_description.disabled = true
+    status.text = "Descriptions saved to %s" % destination
+
+func _see_in_map() -> void:
+    if selected_entry < 0 or metadata_rows[selected_entry]["usage"] != "visible":
+        return
+    var row: Dictionary = metadata_rows[selected_entry]
+    var map_index := _location_map_index(row)
+    if map_index < 0:
+        status.text = "This artwork's saved map location is unavailable."
+        return
+    var profile_index := int(row["profile_index"])
+    var pose := Vector2i(int(row["pose_x"]), int(row["pose_y"]))
+    var facing := int(row["facing"])
+    var pixel := Vector2i(int(row["click_x"]), int(row["click_y"]))
+    var hit: Dictionary = map_pick(map_index, profile_index, pose.x, pose.y,
+                                    facing, pixel.x, pixel.y)
+    if hit.is_empty() or int(hit["entry_index"]) != selected_entry:
+        status.text = "Saved location no longer renders this exact artwork."
+        return
+    tabs.current_tab = 1
+    map_picker.select(map_index)
+    _select_map(map_index)
+    profile_picker.select(profile_index)
+    _select_profile(profile_index)
+    map_pose = pose
+    map_facing = facing
+    facing_picker.select(facing)
+    _refresh_map_view()
+    _pick_map_pixel(pixel)
+    map_status.text = "Jumped to %s · (%d, %d) facing %s · selected catalog image %d" % [
+        catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing], selected_entry
+    ]
+
+func _description(entry: Dictionary) -> String:
+    return str(entry.get("description", ""))
 
 func _label(entry: Dictionary) -> String:
     return "W%s:%d  #%d\n%s" % [
@@ -163,7 +354,8 @@ func _matches(index: int) -> bool:
     var query := search.text.strip_edges().to_lower()
     if query.is_empty():
         return true
-    return ("%s %s %s" % [entry["archive"], _label(entry), _description(entry)]).to_lower().contains(query)
+    return ("%s %s %s %s" % [entry["archive"], _label(entry), entry["name"],
+                               _description(entry)]).to_lower().contains(query)
 
 func _thumbnail(index: int) -> Texture2D:
     if thumbnail_cache.has(index):
@@ -203,9 +395,15 @@ func _rebuild_grid() -> void:
         preview.texture = null
         identity.text = "No matching artwork"
         source.text = ""
+        updating_description = true
+        description_edit.text = ""
+        updating_description = false
+        description_edit.editable = false
+        usage.text = "No image selected."
         previous.disabled = true
         next.disabled = true
         export_button.disabled = true
+        see_in_map.disabled = true
     else:
         var visible_position := visible_indices.find(selected_entry)
         _select_visible(maxi(0, visible_position))
@@ -220,15 +418,31 @@ func _select_visible(position: int) -> void:
     contact_grid.select(position)
     contact_grid.ensure_current_is_visible()
     var entry: Dictionary = catalog_entries[selected_entry]
-    var name := _description(entry)
-    identity.text = "%s%s" % [name + " · " if not name.is_empty() else "",
-                                VIEW_NAMES[int(entry["view"])]]
+    identity.text = "%s · %s" % [
+        str(entry["name"]) if not str(entry["name"]).is_empty() else "Appearance %d" % entry["appearance"],
+        VIEW_NAMES[int(entry["view"])]
+    ]
     source.text = "%s  record %d  ·  appearance %d  ·  %d × %d pixels" % [
         entry["archive"], entry["record"], entry["appearance"],
         entry["width"], entry["height"]
     ]
     var image: Image = image_at(selected_entry)
     preview.texture = ImageTexture.create_from_image(image) if image != null else null
+    updating_description = true
+    description_edit.text = _description(entry)
+    updating_description = false
+    description_edit.editable = true
+    var row: Dictionary = metadata_rows[selected_entry]
+    if row["usage"] == "visible":
+        usage.text = "Used in %s · (%s, %s) facing %s" % [
+            row["map_name"], row["pose_x"], row["pose_y"], row["facing_name"]
+        ]
+        see_in_map.disabled = false
+        see_in_map.tooltip_text = "Open this exact visible image in Map Browser"
+    else:
+        usage.text = "Unused in available maps/profiles; no visible map location."
+        see_in_map.disabled = true
+        see_in_map.tooltip_text = "This image has no visible map occurrence"
     previous.disabled = position == 0
     next.disabled = position == visible_indices.size() - 1
     export_button.disabled = image == null
@@ -258,7 +472,7 @@ func _catalog_key(event: InputEventKey) -> void:
     if save_dialog.visible or visible_indices.is_empty():
         return
     var focused := get_viewport().gui_get_focus_owner()
-    if focused is LineEdit or focused is OptionButton:
+    if focused is LineEdit or focused is TextEdit or focused is OptionButton:
         return
     if focused is TabBar and (event.keycode == KEY_LEFT or event.keycode == KEY_RIGHT):
         return
@@ -428,8 +642,10 @@ func _display_map_hit(hit: Dictionary) -> void:
         hit["wall_id"], hit["door_code"], hit["event_raw"]
     ]
     var name := _description(entry)
-    piece_name.text = "%s · %s" % [name if not name.is_empty() else "Appearance %d" % entry["appearance"],
-                                     VIEW_NAMES[int(entry["view"])]]
+    piece_name.text = "%s · %s" % [
+        entry["name"] if not str(entry["name"]).is_empty() else name,
+        VIEW_NAMES[int(entry["view"])]
+    ]
     piece_source.text = "%s  record %d  ·  appearance %d" % [
         entry["archive"], entry["record"], entry["appearance"]
     ]
@@ -442,7 +658,7 @@ func _map_key(event: InputEventKey) -> void:
     if selected_map < 0 or save_dialog.visible:
         return
     var focused := get_viewport().gui_get_focus_owner()
-    if focused is OptionButton or focused is LineEdit:
+    if focused is OptionButton or focused is LineEdit or focused is TextEdit:
         return
     match event.keycode:
         KEY_LEFT:
@@ -676,6 +892,72 @@ func _run_map_check(output_path: String) -> void:
         _map_check_fail("Right arrow did not turn the map view as it does in the game")
         return
     print("Map browser checks passed: 29 maps, wall traversal, alternate profile, keyboard turn, map jump, first-person picks and PNG export")
+    get_tree().quit()
+
+func _run_metadata_check(output_path: String) -> void:
+    if metadata_rows.size() != catalog_entries.size() or metadata_rows.size() != 2100:
+        _map_check_fail("Metadata CSV does not cover all 2,100 source images")
+        return
+    if catalog_entries[586]["name"] != "Waterfront posts and chains":
+        _map_check_fail("New Phlan's known appearance names were not retained in the CSV")
+        return
+    var visible_count := 0
+    var unused_count := 0
+    for index in metadata_rows.size():
+        var row: Dictionary = metadata_rows[index]
+        if row["usage"] == "unused":
+            unused_count += 1
+            if not str(row["map_archive"]).is_empty():
+                _map_check_fail("Unused image %d has a map destination" % index)
+                return
+            continue
+        visible_count += 1
+        var map_index := _location_map_index(row)
+        var hit: Dictionary = map_pick(map_index, int(row["profile_index"]),
+            int(row["pose_x"]), int(row["pose_y"]), int(row["facing"]),
+            int(row["click_x"]), int(row["click_y"]))
+        if hit.is_empty() or int(hit["entry_index"]) != index:
+            _map_check_fail("CSV location does not display exact image %d" % index)
+            return
+    if visible_count != 1552 or unused_count != 548:
+        _map_check_fail("Metadata usage counts differ: %d visible, %d unused" % [
+            visible_count, unused_count
+        ])
+        return
+    _select_visible(0)
+    _see_in_map()
+    if tabs.current_tab != 1 or selected_map_entry != 0:
+        _map_check_fail("See in Map did not select image 0 at its saved location")
+        return
+    tabs.current_tab = 0
+    _select_visible(1)
+    if not see_in_map.disabled or not usage.text.contains("Unused"):
+        _map_check_fail("Unused image does not explain its missing map destination")
+        return
+    var original: String = metadata_rows[1]["description"]
+    var edited := original + ", with a \"test\" note"
+    description_edit.text = edited
+    _on_description_changed()
+    if save_description.disabled:
+        _map_check_fail("Editing a description did not enable Save")
+        return
+    var write_error := _write_metadata_csv(output_path)
+    if not write_error.is_empty():
+        _map_check_fail(write_error)
+        return
+    var saved := FileAccess.open(output_path, FileAccess.READ)
+    var header := saved.get_csv_line()
+    var first := saved.get_csv_line()
+    var second := saved.get_csv_line()
+    saved.close()
+    if header.size() != CSV_COLUMNS.size() or first[9] != metadata_rows[0]["description"] or \
+            second[9] != edited:
+        _map_check_fail("Saved CSV did not retain metadata and escaped description text")
+        return
+    draft_descriptions.clear()
+    catalog_entries[1]["description"] = original
+    save_description.disabled = true
+    print("Tile metadata checks passed: 2,100 descriptions; 1,552 exact map jumps; 548 unused images; CSV edit/save")
     get_tree().quit()
 
 func _map_check_fail(message: String) -> void:
