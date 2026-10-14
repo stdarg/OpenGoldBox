@@ -108,6 +108,12 @@ In Art Catalog, use the archive and view filters or the Find field to narrow the
 Select a thumbnail to inspect it. Previous and Next move through the currently
 visible items; Left and Right move one piece, while Up and Down move one row
 in the same column when the Find field and filter controls are not focused.
+In Art Catalog, **Load replacement pack…** accepts the same pack as Map Browser.
+**Show new art** switches both tabs together: the contact grid and large preview
+show replacement pieces where present, and original pieces elsewhere. The source
+line identifies which one is displayed. Export PNG saves the displayed piece at
+its own resolution, with a `new-` filename prefix for replacement pieces. The
+description and map usage continue to refer to the cataloged source piece.
 Export PNG opens a save dialog with a filename that includes source, record,
 appearance and view.
 

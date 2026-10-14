@@ -83,6 +83,19 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Archive, record, appearance or view"
 
+[node name="ReplacementRow" type="HBoxContainer" parent="Margin/Tabs/ArtCatalog"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LoadReplacement" type="Button" parent="Margin/Tabs/ArtCatalog/ReplacementRow"]
+layout_mode = 2
+text = "Load replacement pack…"
+
+[node name="ShowReplacement" type="CheckButton" parent="Margin/Tabs/ArtCatalog/ReplacementRow"]
+layout_mode = 2
+disabled = true
+text = "Show new art"
+
 [node name="Split" type="HSplitContainer" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -119,6 +132,7 @@ autowrap_mode = 3
 [node name="Source" type="Label" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
 text = ""
+autowrap_mode = 3
 
 [node name="PreviewPanel" type="PanelContainer" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
@@ -380,7 +394,7 @@ text = "Choose a map to inspect."
 autowrap_mode = 3
 
 [node name="SaveDialog" type="FileDialog" parent="."]
-title = "Export original tile art as PNG"
+title = "Export tile art as PNG"
 size = Vector2i(800, 540)
 ok_button_text = "Export"
 file_mode = 4

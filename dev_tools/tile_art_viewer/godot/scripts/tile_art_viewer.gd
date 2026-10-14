@@ -24,6 +24,8 @@ const REPLACEMENT_SIZES := [
 @onready var archive_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ArchiveFilter
 @onready var view_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ViewFilter
 @onready var search: LineEdit = $Margin/Tabs/ArtCatalog/Filters/Search
+@onready var catalog_load_replacement: Button = $Margin/Tabs/ArtCatalog/ReplacementRow/LoadReplacement
+@onready var catalog_show_replacement: CheckButton = $Margin/Tabs/ArtCatalog/ReplacementRow/ShowReplacement
 @onready var contact_grid: ItemList = $Margin/Tabs/ArtCatalog/Split/ContactGrid
 @onready var identity: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Identity
 @onready var source: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Source
@@ -67,6 +69,7 @@ var visible_indices: Array[int] = []
 var thumbnail_cache: Dictionary = {}
 var selected_entry := -1
 var export_pending_index := -1
+var export_pending_replacement := false
 var catalog_maps: Array = []
 var selected_map := -1
 var selected_profile := 0
@@ -93,9 +96,11 @@ func _ready() -> void:
     see_in_map.pressed.connect(_see_in_map)
     map_export.pressed.connect(_show_map_export_dialog)
     save_dialog.file_selected.connect(_export_png)
+    catalog_load_replacement.pressed.connect(func(): replacement_dialog.popup_centered_ratio())
     load_replacement.pressed.connect(func(): replacement_dialog.popup_centered_ratio())
     replacement_dialog.dir_selected.connect(_load_replacement_pack)
-    show_replacement.toggled.connect(func(_enabled: bool): _refresh_map_view())
+    catalog_show_replacement.toggled.connect(_set_replacement_mode)
+    show_replacement.toggled.connect(_set_replacement_mode)
     map_picker.item_selected.connect(_select_map)
     profile_picker.item_selected.connect(_select_profile)
     facing_picker.item_selected.connect(_select_facing)
@@ -346,10 +351,15 @@ func _see_in_map() -> void:
     map_facing = facing
     facing_picker.select(facing)
     _refresh_map_view()
-    _pick_map_pixel(pixel)
-    map_status.text = "Jumped to %s · (%d, %d) facing %s · selected catalog image %d" % [
-        catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing], selected_entry
-    ]
+    if show_replacement.button_pressed:
+        map_status.text = "Jumped to %s · (%d, %d) facing %s · new art shown; switch off Show new art to inspect the source piece." % [
+            catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing]
+        ]
+    else:
+        _pick_map_pixel(pixel)
+        map_status.text = "Jumped to %s · (%d, %d) facing %s · selected catalog image %d" % [
+            catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing], selected_entry
+        ]
 
 func _description(entry: Dictionary) -> String:
     return str(entry.get("description", ""))
@@ -359,6 +369,18 @@ func _label(entry: Dictionary) -> String:
         str(entry["archive"]).trim_prefix("WALLDEF").trim_suffix(".DAX"),
         entry["record"], entry["appearance"], VIEW_NAMES[int(entry["view"])]
     ]
+
+func _replacement_key(index: int) -> String:
+    var entry: Dictionary = catalog_entries[index]
+    return "%s:%s:%s" % [entry["archive"], entry["record"], entry["appearance"]]
+
+func _catalog_has_replacement(index: int) -> bool:
+    return catalog_show_replacement.button_pressed and replacement_sets.has(_replacement_key(index))
+
+func _catalog_image(index: int) -> Image:
+    if _catalog_has_replacement(index):
+        return replacement_sets[_replacement_key(index)][int(catalog_entries[index]["view"])]
+    return image_at(index)
 
 func _matches(index: int) -> bool:
     var entry: Dictionary = catalog_entries[index]
@@ -375,7 +397,7 @@ func _matches(index: int) -> bool:
 func _thumbnail(index: int) -> Texture2D:
     if thumbnail_cache.has(index):
         return thumbnail_cache[index]
-    var image: Image = image_at(index)
+    var image: Image = _catalog_image(index)
     if image == null:
         return null
     var scaled := image.duplicate() as Image
@@ -422,8 +444,11 @@ func _rebuild_grid() -> void:
     else:
         var visible_position := visible_indices.find(selected_entry)
         _select_visible(maxi(0, visible_position))
-    status.text = "%d shown · %d pieces total · original PNG export preserves transparency" % [
-        visible_indices.size(), catalog_entries.size()
+    var mode := "original art"
+    if catalog_show_replacement.button_pressed:
+        mode = "%d new sets loaded; missing pieces show originals" % replacement_sets.size()
+    status.text = "%d shown · %d pieces total · %s · PNG export uses displayed art" % [
+        visible_indices.size(), catalog_entries.size(), mode
     ]
 
 func _select_visible(position: int) -> void:
@@ -437,11 +462,16 @@ func _select_visible(position: int) -> void:
         str(entry["name"]) if not str(entry["name"]).is_empty() else "Appearance %d" % entry["appearance"],
         VIEW_NAMES[int(entry["view"])]
     ]
-    source.text = "%s  record %d  ·  appearance %d  ·  %d × %d pixels" % [
-        entry["archive"], entry["record"], entry["appearance"],
-        entry["width"], entry["height"]
+    var image: Image = _catalog_image(selected_entry)
+    var art_kind := "Original art"
+    if _catalog_has_replacement(selected_entry):
+        art_kind = "New art"
+    elif catalog_show_replacement.button_pressed:
+        art_kind = "Original (no replacement)"
+    source.text = "%s:%d · #%d · %s · %d × %d px" % [
+        entry["archive"], entry["record"], entry["appearance"], art_kind,
+        image.get_width() if image != null else 0, image.get_height() if image != null else 0
     ]
-    var image: Image = image_at(selected_entry)
     preview.texture = ImageTexture.create_from_image(image) if image != null else null
     updating_description = true
     description_edit.text = _description(entry)
@@ -526,14 +556,19 @@ func _show_export_dialog() -> void:
     if selected_entry < 0:
         return
     export_pending_index = selected_entry
-    save_dialog.current_file = _export_name(catalog_entries[export_pending_index])
+    export_pending_replacement = _catalog_has_replacement(export_pending_index)
+    save_dialog.current_file = ("new-" if export_pending_replacement else "") + \
+        _export_name(catalog_entries[export_pending_index])
+    save_dialog.title = "Export displayed tile art as PNG"
     save_dialog.popup_centered_ratio(0.7)
 
 func _show_map_export_dialog() -> void:
     if selected_map_entry < 0:
         return
     export_pending_index = selected_map_entry
+    export_pending_replacement = false
     save_dialog.current_file = _export_name(catalog_entries[export_pending_index])
+    save_dialog.title = "Export original tile art as PNG"
     save_dialog.popup_centered_ratio(0.7)
 
 func _export_png(path: String) -> void:
@@ -541,6 +576,9 @@ func _export_png(path: String) -> void:
         return
     var output := path if path.get_extension().to_lower() == "png" else path + ".png"
     var image: Image = image_at(export_pending_index)
+    if export_pending_replacement and replacement_sets.has(_replacement_key(export_pending_index)):
+        image = replacement_sets[_replacement_key(export_pending_index)][
+            int(catalog_entries[export_pending_index]["view"])]
     if image == null:
         _export_status("Selected artwork could not be decoded.")
         return
@@ -665,13 +703,23 @@ func _load_replacement_pack(folder: String) -> void:
             continue
         loaded[key] = images
     if loaded.is_empty():
-        map_status.text = "No valid replacement sets found in %s (%d rejected)." % [folder, rejected]
+        var message := "No valid replacement sets found in %s (%d rejected)." % [folder, rejected]
+        map_status.text = message
+        status.text = message
         return
     replacement_sets = loaded
+    catalog_show_replacement.disabled = false
     show_replacement.disabled = false
-    show_replacement.set_pressed_no_signal(true)
-    _refresh_map_view()
+    _set_replacement_mode(true)
     map_status.text += " Pack loaded from %s (%d rejected)." % [folder, rejected]
+    status.text += " Pack loaded from %s (%d rejected)." % [folder, rejected]
+
+func _set_replacement_mode(enabled: bool) -> void:
+    catalog_show_replacement.set_pressed_no_signal(enabled)
+    show_replacement.set_pressed_no_signal(enabled)
+    thumbnail_cache.clear()
+    _rebuild_grid()
+    _refresh_map_view()
 
 func _replacement_cell(depth: int, lateral: int, view: int) -> Dictionary:
     var forward: Vector2i = DIRECTION_STEPS[map_facing]
@@ -693,8 +741,7 @@ func _replacement_piece(depth: int, lateral: int, face: int, view: int) -> Image
     var index := int(cell["faces"][face]["entry_index"])
     if index < 0 or index >= catalog_entries.size():
         return null
-    var entry: Dictionary = catalog_entries[index]
-    var key := "%s:%s:%s" % [entry["archive"], entry["record"], entry["appearance"]]
+    var key := _replacement_key(index)
     if replacement_sets.has(key):
         return replacement_sets[key][view]
     # The reviewer can inspect a partially completed pack; originals are read
@@ -1122,7 +1169,7 @@ func _run_metadata_check(output_path: String) -> void:
 func _run_replacement_check(folder: String) -> void:
     _load_replacement_pack(folder)
     if (replacement_sets.size() != 4 and replacement_sets.size() != 168) or \
-            not show_replacement.button_pressed:
+            not show_replacement.button_pressed or not catalog_show_replacement.button_pressed:
         _map_check_fail("Replacement pack did not load the expected appearances")
         return
     var row: Dictionary = {}
@@ -1134,14 +1181,54 @@ func _run_replacement_check(folder: String) -> void:
     if row.is_empty():
         _map_check_fail("No map location for the pilot masonry appearance")
         return
+    var catalog_index := int(row["index"])
+    _select_visible(catalog_index)
+    var new_image: Image = preview.texture.get_image() if preview.texture != null else null
+    var original_piece: Image = image_at(catalog_index)
+    if new_image == null or original_piece == null or \
+            new_image.get_size() != original_piece.get_size() * REPLACEMENT_SCALE or \
+            not source.text.contains("New art"):
+        _map_check_fail("Art Catalog did not show the replacement piece")
+        return
+    var new_icon: Image = contact_grid.get_item_icon(catalog_index).get_image()
+    export_pending_index = catalog_index
+    export_pending_replacement = true
+    var exported_path := folder.path_join("review-piece.png")
+    _export_png(exported_path)
+    var exported := Image.load_from_file(exported_path)
+    if exported == null or exported.get_size() != new_image.get_size() or \
+            exported.get_data() != new_image.get_data():
+        _map_check_fail("Art Catalog did not export the displayed replacement piece")
+        return
+    DirAccess.remove_absolute(exported_path)
+    var missing_index := -1
+    for index in catalog_entries.size():
+        if not replacement_sets.has(_replacement_key(index)):
+            missing_index = index
+            break
+    if missing_index < 0:
+        _map_check_fail("Replacement check requires a missing set for fallback")
+        return
+    _select_visible(missing_index)
+    var fallback: Image = preview.texture.get_image() if preview.texture != null else null
+    if fallback == null or fallback.get_data() != image_at(missing_index).get_data() or \
+            not source.text.contains("Original (no replacement)"):
+        _map_check_fail("Art Catalog did not show the original for a missing replacement")
+        return
+    catalog_show_replacement.button_pressed = false
+    _select_visible(catalog_index)
+    var source_icon: Image = contact_grid.get_item_icon(catalog_index).get_image()
+    if show_replacement.button_pressed or preview.texture.get_image().get_data() != original_piece.get_data() or \
+            source_icon.get_data() == new_icon.get_data():
+        _map_check_fail("Art Catalog toggle did not restore original art in both tabs")
+        return
+    catalog_show_replacement.button_pressed = true
+    _select_visible(catalog_index)
+    _see_in_map()
+    if tabs.current_tab != 1 or not map_status.text.contains("new art shown") or selected_map_entry >= 0:
+        _map_check_fail("See in Map did not keep replacement mode without selecting an original piece")
+        return
     var map_index := _location_map_index(row)
-    _select_map(map_index)
-    selected_profile = int(row["profile_index"])
-    profile_picker.select(selected_profile)
-    map_pose = Vector2i(int(row["pose_x"]), int(row["pose_y"]))
-    map_facing = int(row["facing"])
-    facing_picker.select(map_facing)
-    _refresh_map_view()
     var replacement: Image = first_person.source_image
     if replacement == null or replacement.get_size() != Vector2i(352, 352):
         _map_check_fail("Map Browser did not render a 352 x 352 replacement preview")
@@ -1152,14 +1239,16 @@ func _run_replacement_check(folder: String) -> void:
     if replacement.get_data() == original.get_data():
         _map_check_fail("Replacement preview is identical to the source view")
         return
-    if replacement.save_png(folder.path_join("review-map.png")) != OK:
+    var map_review_path := folder.path_join("review-map.png")
+    if replacement.save_png(map_review_path) != OK:
         _map_check_fail("Could not save replacement map preview")
         return
+    DirAccess.remove_absolute(map_review_path)
     show_replacement.button_pressed = false
-    if first_person.source_image.get_size() != Vector2i(88, 88):
+    if catalog_show_replacement.button_pressed or first_person.source_image.get_size() != Vector2i(88, 88):
         _map_check_fail("Switching back did not restore original inspection")
         return
-    print("Replacement review passed: %d sets loaded, high-resolution map preview, original inspection restored" % replacement_sets.size())
+    print("Replacement review passed: %d sets loaded, catalog grid/preview/export and map toggle, original fallback restored" % replacement_sets.size())
     get_tree().quit()
 
 func _map_check_fail(message: String) -> void:
