@@ -246,7 +246,7 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
         text =
             "Untrained armor: disadvantage on Strength/Dexterity attacks, checks (including initiative), and saves; cannot cast spells.";
     else
-        text = "Untrained weapon: no proficiency bonus on attack rolls (no +2 at level 1).";
+        text = "Untrained weapon: no proficiency bonus on attack rolls.";
     if (item == "chain_mail" && sheet.scores[Ability::strength] < 13)
         text += " Chain mail requires Strength 13: speed reduced by 10 feet.";
     if (item == "wand")
@@ -1260,6 +1260,8 @@ character_definition(std::string_view bytes,
     const int str = ability_modifier(scores[Ability::strength]),
               dex = ability_modifier(scores[Ability::dexterity]),
               con = ability_modifier(scores[Ability::constitution]);
+    // The Proficiency Bonus: +2 through level 4, +3 from 5, +4 from 9.
+    const int proficiency = 2 + (static_cast<int>(level) - 1) / 4;
     std::vector<int> hp_modifiers(level, con);
     for (auto &modifier : hp_modifiers)
         in >> modifier;
@@ -1311,23 +1313,23 @@ character_definition(std::string_view bytes,
         ? std::max(1, ability_modifier(scores[Ability::charisma]) + static_cast<int>(level))
         : 0;
     d.deflect = d.open_hand = klass == CharacterClass::monk && level >= 3;
-    d.focus_dc = 8 + 2 + ability_modifier(scores[Ability::wisdom]);
+    d.focus_dc = 8 + proficiency + ability_modifier(scores[Ability::wisdom]);
     d.dexterity = dex;
-    d.rushes = race == "Orc" ? 2 + (level - 1) / 4 : 0;
+    d.rushes = race == "Orc" ? proficiency : 0;
     const auto trained_saves = detail::class_save_proficiencies(klass);
     for (const auto ability : all_abilities)
         d.saves[ability_index(ability)] =
             ability_modifier(scores[ability]) +
-            ((ability == trained_saves[0] || ability == trained_saves[1]) ? 2 : 0);
+            ((ability == trained_saves[0] || ability == trained_saves[1]) ? proficiency : 0);
     d.alert = (features & 32) != 0;
     d.ac = 10 + dex;
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
     // SRD-DECISIONS keeps it, unless Alert already adds the whole bonus.
-    d.initiative = dex + (d.alert ? static_cast<int>(2 + (level - 1) / 4)
-                          : klass == CharacterClass::bard && level >= 2 ? 1 : 0);
+    d.initiative = dex + (d.alert ? proficiency
+                          : klass == CharacterClass::bard && level >= 2 ? proficiency / 2 : 0);
     d.speed = race == "Goliath" ? 35 : 30;
     d.level = level;
-    d.melee_bonus = 2 + str;
+    d.melee_bonus = proficiency + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
     d.champion = klass == CharacterClass::fighter && level >= 3;
     d.arcane = klass == CharacterClass::wizard ? 1 : 0;
@@ -1371,7 +1373,7 @@ character_definition(std::string_view bytes,
         : (klass == CharacterClass::warlock || klass == CharacterClass::sorcerer ||
            klass == CharacterClass::paladin || klass == CharacterClass::bard) ? Ability::charisma
         : Ability::intelligence;
-    d.casting = 2 + ability_modifier(scores[casting_ability]);
+    d.casting = proficiency + ability_modifier(scores[casting_ability]);
     if ((features & 1) && klass != CharacterClass::fighter &&
             klass != CharacterClass::paladin && klass != CharacterClass::ranger)
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
@@ -1426,7 +1428,7 @@ character_definition(std::string_view bytes,
         if (choice.starts_with("dragon:"))
         {
             d.breath = type;
-            d.trait_uses = 2 + (static_cast<int>(level) - 1) / 4;
+            d.trait_uses = proficiency;
         }
     }
     // Giant Ancestry: as many uses as the Proficiency Bonus.
@@ -1439,7 +1441,7 @@ character_definition(std::string_view bytes,
     if (chose(choice))
     {
         d.giant = boon;
-        d.trait_uses = 2 + (static_cast<int>(level) - 1) / 4;
+        d.trait_uses = proficiency;
     }
     // Magic Initiate's and a lineage's spells: their own ability, and a free
     // cast of the leveled one each Long Rest.
@@ -1449,7 +1451,7 @@ character_definition(std::string_view bytes,
     for (const auto &feat : gifts)
     {
         for (const auto &spell : feat.spells)
-            d.initiate_casting.emplace(spell, 2 + ability_modifier(scores[feat.ability]));
+            d.initiate_casting.emplace(spell, proficiency + ability_modifier(scores[feat.ability]));
         if (!feat.free_spell.empty())
             d.initiate_spells.push_back(feat.free_spell);
         if (feat.feat.starts_with("species:"))
@@ -1490,7 +1492,7 @@ character_definition(std::string_view bytes,
     if (invoked("lessons_alert"))
     {
         d.alert = true;
-        d.initiative = dex + static_cast<int>(2 + (level - 1) / 4);
+        d.initiative = dex + proficiency;
     }
     for (const auto &key : d.equipment_keys)
     {
@@ -1518,7 +1520,7 @@ character_definition(std::string_view bytes,
             const bool pact = d.pact_of_the_blade && !item->ranged;
             const int modifier = std::max(item->finesse ? std::max(str, dex) : item->ranged ? dex : str,
                                           pact ? ability_modifier(scores[Ability::charisma]) : -5);
-            const int bonus = (trained(klass, grants, key) || pact ? 2 : 0) + modifier;
+            const int bonus = (trained(klass, grants, key) || pact ? proficiency : 0) + modifier;
             if ((item->dice || item->fixed_damage) && !item->ranged)
             {
                 d.melee_ability = modifier;
@@ -1668,7 +1670,7 @@ character_definition(std::string_view bytes,
         if (!weapon)
         {
             d.melee = {1, 6, d.martial_modifier};
-            d.melee_bonus = 2 + d.martial_modifier;
+            d.melee_bonus = proficiency + d.martial_modifier;
         }
         else
         {
@@ -2916,7 +2918,7 @@ Actor Session::unarmed_actor(const Actor &a) const
     auto result = a;
     auto &d = result.definition;
     d.melee = {1, 6, d.martial_modifier};
-    d.melee_bonus = 2 + d.martial_modifier;
+    d.melee_bonus = 2 + (d.level - 1) / 4 + d.martial_modifier;
     d.melee_ability = d.martial_modifier;
     d.melee_type = detail::DamageType::bludgeoning;
     d.reach = 5;
@@ -13179,6 +13181,8 @@ class Module final : public RulesModule
         detail::write_grants(out, sheet.grants);
         const auto data = out.str();
         const auto d = character_definition(data);
+        const int proficiency = 2 + (static_cast<int>(sheet.level) - 1) / 4;
+        const auto bonus = std::to_string(proficiency);
         if (d.hp != sheet.hit_points)
             throw std::runtime_error("Character HP does not match rules profile");
         CharacterProfile result
@@ -13242,16 +13246,16 @@ class Module final : public RulesModule
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + ". Attack uses " +
                     attack_ability(key) + " modifier" +
-                    (trained(klass, sheet.grants, key) ? " +2 class proficiency"
-                     : " without proficiency") +
+                    (trained(klass, sheet.grants, key) ? " +" + bonus + " class proficiency"
+                     : std::string(" without proficiency")) +
                                                        "; damage is fixed at " + std::to_string(item->fixed_damage) +
                                                        " without an ability modifier.\n";
             else
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + " and " + sheet.character_class +
                     " weapon proficiency. Weapon attack uses " + attack_ability(key) + " modifier" +
-                    (trained(klass, sheet.grants, key) ? " +2 class proficiency"
-                     : " without proficiency") +
+                    (trained(klass, sheet.grants, key) ? " +" + bonus + " class proficiency"
+                     : std::string(" without proficiency")) +
                                                        "; damage adds that ability modifier.\n";
         }
         for (const auto &key : gear)
@@ -13272,13 +13276,14 @@ class Module final : public RulesModule
             result.item_modifiers =
                 "No equipment modifiers. Source: unarmed strike rules and Strength score " +
                 std::to_string(sheet.scores[Ability::strength]) +
-                ". Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).";
+                ". Attack uses Strength modifier +" + bonus +
+                " proficiency; damage is 1 + Strength modifier (minimum 0).";
         result.spell_modifiers = "Active conditions are shown in the character status.";
         if (klass == CharacterClass::wizard)
             result.spell_modifiers =
                 "Source: Fire Bolt and Wizard spellcasting, Intelligence score " +
                 std::to_string(sheet.scores[Ability::intelligence]) +
-                ". Attack: Intelligence modifier +2 level-one proficiency = " +
+                ". Attack: Intelligence modifier +" + bonus + " proficiency = " +
                 std::to_string(d.casting) + ". Magic Missile has no ability modifier to damage.\n" +
                 result.spell_modifiers;
         if (klass == CharacterClass::cleric)
@@ -13286,7 +13291,7 @@ class Module final : public RulesModule
                 "Source: Cure Wounds and Cleric spellcasting, Wisdom score " +
                 std::to_string(sheet.scores[Ability::wisdom]) +
                 ". Healing: 2d8 + Wisdom modifier (" +
-                std::to_string(d.casting - 2) + ").\n" + result.spell_modifiers;
+                std::to_string(d.casting - proficiency) + ").\n" + result.spell_modifiers;
         if (d.str_dex_disadvantage)
             result.spell_modifiers =
                 "Cannot cast spells while wearing untrained armor.\n" + result.spell_modifiers;
@@ -13333,30 +13338,24 @@ class Module final : public RulesModule
             else if (const auto *item = detail::weapon(key); item && item->fixed_damage)
                 result.item_messages.push_back(
             {
-                "Source: equipped {item}. Attack uses {ability} modifier {proficiency}; damage is fixed at {damage} without an ability modifier.",
+                trained(klass, sheet.grants, key)
+                ? "Source: equipped {item}. Attack uses {ability} modifier +{bonus} class proficiency; damage is fixed at {damage} without an ability modifier."
+                : "Source: equipped {item}. Attack uses {ability} modifier without proficiency; damage is fixed at {damage} without an ability modifier.",
                 {   {"item", weapon_label(key), true},
                     {"ability", attack_ability(key), true},
-                    {
-                        "proficiency",
-                        trained(klass, sheet.grants, key) ? "+2 class proficiency"
-                        : "without proficiency",
-                        true
-                    },
+                    {"bonus", bonus},
                     {"damage", std::to_string(item->fixed_damage)}
                 }});
             else
                 result.item_messages.push_back(
             {
-                "Source: equipped {item} and {class} weapon proficiency. Weapon attack uses {ability} modifier {proficiency}; damage adds that ability modifier.",
+                trained(klass, sheet.grants, key)
+                ? "Source: equipped {item} and {class} weapon proficiency. Weapon attack uses {ability} modifier +{bonus} class proficiency; damage adds that ability modifier."
+                : "Source: equipped {item} and {class} weapon proficiency. Weapon attack uses {ability} modifier without proficiency; damage adds that ability modifier.",
                 {   {"item", weapon_label(key), true},
                     {"class", sheet.character_class, true},
                     {"ability", attack_ability(key), true},
-                    {
-                        "proficiency",
-                        trained(klass, sheet.grants, key) ? "+2 class proficiency"
-                        : "without proficiency",
-                        true
-                    }
+                    {"bonus", bonus}
                 }});
             result.item_messages.push_back({equipment_note(sheet, key), {}});
             if (const auto *item = detail::armor(key))
@@ -13434,16 +13433,17 @@ class Module final : public RulesModule
         if (gear.empty())
             result.item_messages.push_back(
         {
-            "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +2 level-one proficiency; damage is 1 + Strength modifier (minimum 0).",
-            {{"score", std::to_string(sheet.scores[Ability::strength])}}});
+            "No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +{bonus} proficiency; damage is 1 + Strength modifier (minimum 0).",
+            {{"score", std::to_string(sheet.scores[Ability::strength])}, {"bonus", bonus}}});
         if (d.str_dex_disadvantage)
             result.spell_messages.push_back(
         {"Cannot cast spells while wearing untrained armor.", {}});
         if (klass == CharacterClass::wizard)
             result.spell_messages.push_back(
         {
-            "Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +2 level-one proficiency = {attack}. Magic Missile has no ability modifier to damage.",
+            "Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +{bonus} proficiency = {attack}. Magic Missile has no ability modifier to damage.",
             {   {"score", std::to_string(sheet.scores[Ability::intelligence])},
+                {"bonus", bonus},
                 {"attack", std::to_string(d.casting)}
             }});
         if (klass == CharacterClass::cleric)
@@ -13451,7 +13451,7 @@ class Module final : public RulesModule
         {
             "Source: Cure Wounds and Cleric spellcasting, Wisdom score {score}. Healing: 2d8 + Wisdom modifier ({modifier}).",
             {   {"score", std::to_string(sheet.scores[Ability::wisdom])},
-                {"modifier", std::to_string(d.casting - 2)}
+                {"modifier", std::to_string(d.casting - proficiency)}
             }});
         if (access.cantrip_choices)
         {
