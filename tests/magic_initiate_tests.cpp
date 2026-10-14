@@ -231,10 +231,27 @@ void creation_checks()
     // A Cleric Acolyte cannot learn one cantrip twice through class and feat.
     auto cleric = draft("cleric", "acolyte");
     cleric.cantrips = std::vector<std::string> {"sacred_flame", "spare_the_dying", "resistance"};
-    check(!offers(*group(creation->spell_choice_options(cleric),
-                         "feat:magic_initiate_cleric:cantrips"),
-                  "sacred_flame"),
+    const auto offered = creation->spell_choice_options(cleric);
+    const auto *left = group(offered, "feat:magic_initiate_cleric:cantrips");
+    check(left && !offers(*left, "sacred_flame"),
           "Magic Initiate does not offer a cantrip the class already teaches");
+    // The game has four Cleric cantrips, so the feat learns the one left (INITIATE-1).
+    check(left->count == 1 && left->options.size() == 1 && offers(*left, "guidance"),
+          "Magic Initiate learns as many cantrips as remain");
+    // A Thaumaturge owes four class cantrips: with all four, the feat asks
+    // for none; with Guidance taken by the feat first, the class learns the
+    // three left.
+    auto thaumaturge = cleric;
+    thaumaturge.training["class:cleric:divine_order"] = {"thaumaturge"};
+    thaumaturge.cantrips->push_back("guidance");
+    check(!group(creation->spell_choice_options(thaumaturge), "feat:magic_initiate_cleric:cantrips"),
+          "With every Cleric cantrip known, the feat asks for none");
+    thaumaturge.cantrips->pop_back();
+    thaumaturge.spells = SpellChoices{{{"feat:magic_initiate_cleric:cantrips", {"guidance"}}},
+        std::vector<std::string> {}, {}, {}};
+    const auto owed = creation->cantrip_options(thaumaturge);
+    check(owed.count == 3 && owed.options.size() == 3 && !offers(owed, "guidance"),
+          "The class learns the cantrips the feat leaves");
     cleric.spells = SpellChoices{{{"feat:magic_initiate_cleric:cantrips", {"sacred_flame"}}},
         std::vector<std::string> {}, {}, {}};
     rejects([&]

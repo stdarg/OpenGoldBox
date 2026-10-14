@@ -35,9 +35,18 @@ bool picked_elsewhere(const CharacterDraft &draft, std::string_view group, std::
 SpellChoiceOptions without_other_picks(SpellChoiceOptions options, const CharacterDraft &draft)
 {
     for (auto &group : options.learning)
-        std::erase_if(group.options, [&](const auto & option)
     {
-        return picked_elsewhere(draft, group.id, option.id);
+        std::erase_if(group.options, [&](const auto & option)
+        {
+            return picked_elsewhere(draft, group.id, option.id);
+        });
+        // Magic Initiate learns only the cantrips the class's picks leave (INITIATE-1).
+        if (group.id.starts_with("feat:magic_initiate_"))
+            group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
+    }
+    std::erase_if(options.learning, [](const auto & group)
+    {
+        return group.count == 0;
     });
     return options;
 }
@@ -219,11 +228,13 @@ class CreatorRules final : public CharacterRules
         if (klass == detail::CharacterClass::druid && primal != draft.training.end() &&
                 primal->second == std::vector<std::string> {"magician"})
             ++group.count;
-        // A cantrip Magic Initiate already teaches is not learned twice.
+        // A cantrip Magic Initiate already teaches is not learned twice, and
+        // the class learns only the cantrips left (INITIATE-1).
         std::erase_if(group.options, [&](const auto & option)
         {
             return picked_elsewhere(draft, {}, option.id);
         });
+        group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
         return group;
     }
 

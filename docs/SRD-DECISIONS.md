@@ -957,3 +957,14 @@ Skilled, then the class's list. Rogue Expertise may take any of them.
   Cleric whose Skillful and Skilled took History, Medicine and Persuasion),
   it offers every skill not held instead, so creation can always finish.
 - [Class skills](CLASS-SKILLS.md), [Species](SPECIES.md#choices-at-creation).
+
+## INITIATE-1 (2026-10-14): Magic Initiate learns the cantrips left
+
+The game has four Cleric cantrips (Guidance, Resistance, Sacred Flame and
+Spare the Dying; DM-1 and DM-3 removed Light, Mending and Thaumaturgy). A Cleric
+learns three at level 1, so an Acolyte Cleric's Magic Initiate (Cleric) has one
+left of the two it should learn. The user agreed that it learns as many as
+remain. Likewise, when the feat's picks are made first, a Thaumaturge's class
+cantrips are the ones left. Either way the character knows every Cleric cantrip
+in the game. The level-up lab, which filled every group to its full count,
+could not make an Acolyte Cleric before this.

@@ -1013,10 +1013,13 @@ using rules::CreationField;
 
 // A character made through the ordinary creator, page by page, as the creation
 // screen makes one: the best roll goes to the class's spellcasting ability.
+// `learned` picks the background's Magic Initiate spells.
 Character create_ordinarily(std::string_view klass, Ability best,
                             const std::vector<ChoiceToggle> &training,
                             const std::vector<std::string> &cantrips,
-                            const std::vector<std::string> &prepared)
+                            const std::vector<std::string> &prepared,
+                            std::string_view background = "soldier",
+                            const std::vector<ChoiceToggle> &learned = {})
 {
     CharacterCreator creator(srd5::character_rules(), 7);
     creator.select(CreationField::race, "human");
@@ -1040,7 +1043,7 @@ Character create_ordinarily(std::string_view klass, Ability best,
             ++ability;
         creator.assign_roll(n, static_cast<Ability>(ability++));
     }
-    creator.select(CreationField::background, "soldier");
+    creator.select(CreationField::background, background);
     creator.next();
     creator.select(CreationField::character_class, klass);
     creator.next();
@@ -1050,6 +1053,8 @@ Character create_ordinarily(std::string_view klass, Ability best,
     check(creator.step() == CreationStep::spell_choices, "Training advances to Spell Choices");
     for (const auto &cantrip : cantrips)
         creator.cantrip_choice(cantrip, true);
+    for (const auto &toggle : learned)
+        creator.spell_choice(toggle);
     for (const auto &spell : prepared)
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     check(creator.spell_choices_complete(), "Every owed spell is chosen");
@@ -1119,6 +1124,25 @@ void ordinary_creation_tests()
           holds(cleric, "spell:sacred_flame") && holds(cleric, "spell:resistance") &&
           cleric.sheet().prepared_spells.size() == 4 && cleric.sheet().training.complete,
           "An ordinary Cleric has its Divine Order, two skills, three cantrips and four spells");
+
+    // An Acolyte Cleric knows three of the game's four Cleric cantrips, so its
+    // Magic Initiate learns the one left (INITIATE-1).
+    const auto acolyte = create_ordinarily("cleric", Ability::wisdom,
+    {
+        {.group = "class:cleric", .option = "medicine", .selected = true},
+        {.group = "class:cleric", .option = "persuasion", .selected = true},
+        {.group = "class:cleric:divine_order", .option = "protector", .selected = true}
+    },
+    {"sacred_flame", "spare_the_dying", "resistance"},
+    {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"}, "acolyte",
+    {
+        {.group = "feat:magic_initiate_cleric:ability", .option = "wisdom", .selected = true},
+        {.group = "feat:magic_initiate_cleric:cantrips", .option = "guidance", .selected = true},
+        {.group = "feat:magic_initiate_cleric:spell", .option = "bless", .selected = true}
+    });
+    check(holds(acolyte, "spell:guidance") && holds(acolyte, "spell:bless") &&
+          acolyte.sheet().training.complete,
+          "An Acolyte Cleric finishes creation with one Magic Initiate cantrip");
 
     const auto warlock = create_ordinarily("warlock", Ability::charisma,
     {

@@ -521,7 +521,11 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
             for (const auto &spell : spells)
                 if ((spell.lists & list.list) && spell.level == spell_level && !known(spell.id))
                     group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
-            result.learning.push_back(std::move(group));
+            // A character who knows all but one of the list's cantrips in the
+            // game learns only that one (INITIATE-1).
+            group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
+            if (group.count)
+                result.learning.push_back(std::move(group));
         }
     }
 }

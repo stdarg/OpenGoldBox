@@ -9,7 +9,9 @@ feat, and with it the first source-specific free cast
 
 The character chooses the Cleric, Druid or Wizard spell list, then:
 
-- **Two cantrips** from that list.
+- **Two cantrips** from that list, or as many as are left when the character
+  already knows the rest of the list's cantrips in the game
+  ([INITIATE-1](SRD-DECISIONS.md#initiate-1-2026-10-14-magic-initiate-learns-the-cantrips-left)).
 - **One level-one spell** from that list. It is always prepared. It can be cast
   once per Long Rest without a spell slot, and also with any slot the character
   has.
