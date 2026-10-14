@@ -988,3 +988,49 @@ picks its five: the members with the lowest Hit Point maximum who are not
 already aided, the caster included. In a fight the player
 still clicks Aid's targets ([CLASS-2](#class-2-2026-10-04-choosing-several-targets)).
 See [Cleric](CLERIC.md#aid).
+
+## LEVELS-1 (2026-10-14): levels 5–10
+
+The user approved the [levels 5–10 plan](LEVELS-5-10.md): shared progression,
+then Extra Attack, then the classes one at a time (Fighter, Barbarian, Rogue,
+Monk, Paladin, Ranger, Cleric, Wizard, Sorcerer, Warlock, Bard, Druid). A
+class's cap rises to 10 only when its features work. Decisions on the
+[inventory](LEVELS-5-10-INVENTORY.md):
+
+- **Spell triage:** the proposed KEEP and CUT lists stand, and all nine
+  UNSURE spells are kept, working as below.
+- **Daylight** is cut, as Light was; Dispel Magic also ends Darkness.
+- **Revivify and Raise Dead** need an offering of 300 gp × the revived
+  character's level, paid from the party's money.
+- **Long buffs** without Concentration (Death Ward) last into later fights, as
+  Aid does; Concentration still ends with each fight.
+- **Summoned and controlled creatures** (Giant Insect, Summon Dragon, Dominate
+  Beast, Dominate Person, Animate Dead, Animate Objects) share one system: the
+  creature acts right after its caster, controlled by the player.
+- **Banishment:** an extraplanar creature banished for the full minute counts
+  as defeated, for XP and loot.
+- **Expertise:** the new picks at Rogue 6, Bard 9 and Ranger 9 are
+  implemented, replacing SCOPE-2's "no further Expertise work" for them.
+- **Adrenaline Rush** is also offered in the Camp dialog's Cast / Use list
+  (#34), besides the combat button.
+- **Magic Circle** works both ways: cast in a fight over 10 rounds of
+  Concentration, or in camp, where those creature types cannot interrupt the
+  rest.
+- **Tiny Hut:** a rest inside it cannot be interrupted.
+- **Animate Objects:** every battlefield has enough loose debris; the caster
+  animates as many objects as its spellcasting modifier.
+- **Mislead:** a monster that cannot see the caster attacks the double as if
+  it were the caster; the attack passes through, revealing it, and the monster
+  ignores it after.
+- **Reincarnate:** the species and its traits change, the player makes the new
+  species' choices and may change the portrait; class, level, ability scores,
+  other skills and items stay.
+- **Telekinesis:** moves a creature along the ground only; object uses are
+  left out. A creature driven into a wall takes damage (amount still open).
+- **Plant Growth's Overgrowth** affects only battle squares that come from map
+  squares open to the sky (the original's per-square interior flag; see
+  [outdoor areas](OUTDOOR-AREAS.md)). The Scoured Lands are barren, with no
+  Overgrowth, until Yarash is defeated.
+- **Corpses** of fallen creatures stay on the map square where they fell, with
+  their time of death (Animate Dead, Revivify, Raise Dead); how long they stay
+  is still open.
