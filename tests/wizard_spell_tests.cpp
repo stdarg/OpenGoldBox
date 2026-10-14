@@ -732,6 +732,31 @@ void ray_retarget_checks()
     check(count_logged(*c, "The ray turns to Far.") == 1 && count_logged(*c, "Wizard -> Far") == 2 &&
           count_logged(*c, "Wizard -> Near") == 0,
           "A ray turns to the next aimed foe before a nearer one");
+
+    // An enemy Wizard may aim its rays at a downed party member (SRD: still a
+    // creature; each hit is a failed death save).
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    auto downed = module->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Fallen", Side::party, {1, 1}, profile,
+                VitalState{0, false, {}, {}}},
+            {2, "campaign-character", "Standing", Side::party, {1, 4}, profile},
+            {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile}
+        }},
+    5);
+    reach(*downed, 98);
+    bool offered = false;
+    for (const auto &command : downed->legal_commands())
+        offered |= command.verb == "scorching_ray" && command.target == 1;
+    check(offered, "A downed party member can be aimed at");
+    for (int ray = 0; ray < 3; ++ray)
+        for (const auto &command : downed->legal_commands())
+            if (command.verb == "scorching_ray" && command.target == 1)
+            {
+                check(downed->submit(command), "A ray is aimed at the fallen");
+                break;
+            }
+    check(count_logged(*downed, "Foe -> Fallen") + count_logged(*downed, "Foe -> Standing") == 3,
+          "Every ray is an attack, on the fallen or, once it is dead, on another");
 }
 
 void shield_missile_checks()

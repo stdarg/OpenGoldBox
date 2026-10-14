@@ -4251,28 +4251,32 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     case detail::SpellPattern::repeat_attack:
     {
         // One ray per aimed target, in the order aimed; a single target takes
-        // them all. A ray whose target has dropped turns to the next aimed foe
-        // still standing, else to the nearest foe it could have been aimed at
-        // (SPLIT-1); with none left it is lost.
+        // them all. A ray whose target has died turns to the next aimed foe
+        // still alive, else to the nearest foe it could have been aimed at,
+        // standing ones first (SPLIT-1); with none left it is lost. A downed
+        // party member stays a target: each hit is a failed death save.
         std::vector<EntityId> rays(targets.begin(), targets.end());
         if (rays.size() == 1)
             rays.assign(instances, target_id);
-        const auto standing = [&](EntityId id)
+        const auto alive = [&](EntityId id)
         {
-            return actor(id).life.hp > 0;
+            return !actor(id).life.dead;
         };
         const auto nearest = [&]() -> EntityId
         {
             const Actor *best = nullptr;
+            const auto rank = [&](const Actor & who)
+            {
+                return std::pair{who.life.hp <= 0, distance(a.source.cell, who.source.cell)};
+            };
             for (const auto &other : actors_)
             {
-                if (other.life.dead || other.life.hp <= 0 || other.source.side == a.source.side ||
+                if (other.life.dead || other.source.side == a.source.side ||
                         distance(a.source.cell, other.source.cell) > spell.range ||
                         (spell.requires_sight ? !can_see(a, other)
                          : !line_of_sight(a.source.cell, other.source.cell)))
                     continue;
-                const int feet = distance(a.source.cell, other.source.cell);
-                if (!best || feet < distance(a.source.cell, best->source.cell))
+                if (!best || rank(other) < rank(*best))
                     best = &other;
             }
             return best ? best->source.id : 0;
@@ -4280,10 +4284,10 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         for (std::size_t n = 0; n < rays.size(); ++n)
         {
             auto ray = rays[n];
-            if (!standing(ray))
+            if (!alive(ray))
             {
                 const auto next = std::find_if(rays.begin() + static_cast<std::ptrdiff_t>(n) + 1,
-                                               rays.end(), standing);
+                                               rays.end(), alive);
                 ray = next != rays.end() ? *next : nearest();
                 if (!ray)
                     continue;
@@ -4414,7 +4418,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         switch (spell.target)
         {
         case detail::SpellTarget::enemy:
-            if (other.source.side == a.source.side || other.life.hp <= 0)
+            // Scorching Ray may strike a downed but living foe (the user's call).
+            if (other.source.side == a.source.side ||
+                    (other.life.hp <= 0 && spell.pattern != detail::SpellPattern::repeat_attack))
                 continue;
             break;
         case detail::SpellTarget::wounded_ally:
@@ -4645,8 +4651,11 @@ std::vector<Command> Session::legal_commands() const
             if (other.life.dead || distance(caster.source.cell, other.source.cell) > spell.range)
                 continue;
             // A dart or ray can only be aimed at a creature the spell could
-            // strike alone; another one may be aimed at it again.
-            if (split && (other.source.side == caster.source.side || other.life.hp <= 0 ||
+            // strike alone; another one may be aimed at it again. A ray, not a
+            // dart, may be aimed at a downed but living creature.
+            if (split && (other.source.side == caster.source.side ||
+                          (other.life.hp <= 0 &&
+                           spell.pattern != detail::SpellPattern::repeat_attack) ||
                           (spell.requires_sight ? !can_see(caster, other)
                            : !line_of_sight(caster.source.cell, other.source.cell))))
                 continue;
@@ -5233,6 +5242,10 @@ std::vector<Command> Session::legal_commands() const
                     add(id, "ranged", "Ranged attack", other.source.id);
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
             }
+            // A downed foe is struck only by Scorching Ray (the user's call);
+            // the spell offers filter out everything else.
+            else if (other.source.side != a.source.side)
+                offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
             else
                 for (const auto scope :
                         {
@@ -12602,7 +12615,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.173", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.174", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

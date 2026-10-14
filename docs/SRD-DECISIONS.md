@@ -825,7 +825,11 @@ darts as one simultaneous hit, with one Shield question; rays are separate
 attacks in the order aimed. A ray aimed at a foe already down turns to the
 next aimed foe still standing, else to the nearest foe it could have been aimed
 at, and is lost only when there is none (the user's choice on 2026-10-14; the
-SRD leaves it open; rules 0.6.173). The
+SRD leaves it open; rules 0.6.173). A ray may also be aimed at a downed but
+living creature, such as a party member at 0 Hit Points: each hit is a failed
+death save (the user's choice on 2026-10-14, as the SRD allows; rules 0.6.174).
+Darts and other attacks still pass over the downed, and the computer's casters
+aim at standing foes first. The
 battlefield does not mark aimed foes (the prompt lists them), and there is no
 shortcut that sends the remaining darts at one foe.
 
