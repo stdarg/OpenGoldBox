@@ -37,6 +37,16 @@ the Reference tab explains why original art is unavailable.
 
 ## Review and correct a description
 
+The appearance list puts **UNUSED** before an appearance when none of its ten
+pieces is visible in the Art Catalog's available maps and profiles. Partly used
+appearances show a count such as **3/10 used**. Use the menu above the list to
+show all, used, or unused appearances. The Create tab repeats the selected
+appearance's status, and the Reference tab marks each unused perspective piece.
+This can help prioritize new art: the current catalog has 42 wholly unused and
+37 partly used appearances. "Unused" describes the available map inspection
+profiles; it does not prove that no conditional or future game path can use the
+art. The creator still allows you to work on an unused appearance intentionally.
+
 1. Select an appearance on the left, then open **Reference**. Its ten thumbnails
    are the original perspective pieces from your local game files.
 2. Select a piece. The large preview, source size, map-use label, and existing
@@ -108,12 +118,15 @@ GDExtension registration; its existing README describes this behavior.
 ```bash
 /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --creator-check=/tmp/opengold-replacement-pilot
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --reference-check=/tmp/opengold-reference-check
+OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/replacement_art_creator/godot -- --usage-check
 OPENGOLD_GAME_DIR=/path/to/POOLRAD /Applications/Godot_mono.app/Contents/MacOS/Godot --headless --path dev_tools/tile_art_viewer/godot -- --replacement-check=/tmp/opengold-replacement-pilot
 ```
 
 The first check builds four complete pilot sets, validates their dimensions and
 the arch transparency, and writes previews to `/tmp`. The reference check
 loads all original pieces and saves a description into a temporary CSV copy.
+The usage check verifies the list filters, appearance status, and unused-piece
+labels against the catalog metadata.
 The viewer check loads the replacement pack, renders it at a mapped location,
 and checks that switching back restores the original inspector.
 

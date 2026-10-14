@@ -60,7 +60,11 @@ theme_override_constants/separation = 10
 
 [node name="ListLabel" type="Label" parent="Margin/Main/Split/ListColumn"]
 layout_mode = 2
-text = "Appearances (technical IDs only)"
+text = "Appearances by map usage"
+
+[node name="UsageFilter" type="OptionButton" parent="Margin/Main/Split/ListColumn"]
+layout_mode = 2
+tooltip_text = "Usage is based on the available maps and inspection profiles."
 
 [node name="Search" type="LineEdit" parent="Margin/Main/Split/ListColumn"]
 layout_mode = 2
@@ -75,6 +79,7 @@ allow_reselect = true
 [node name="Coverage" type="Label" parent="Margin/Main/Split/ListColumn"]
 layout_mode = 2
 text = "Loading appearances…"
+autowrap_mode = 3
 
 [node name="Tabs" type="TabContainer" parent="Margin/Main/Split"]
 custom_minimum_size = Vector2(870, 500)
@@ -92,6 +97,11 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_type_variation = &"ViewerIdentity"
 text = "Select an appearance"
+
+[node name="AppearanceUsage" type="Label" parent="Margin/Main/Split/Tabs/Create"]
+layout_mode = 2
+text = ""
+autowrap_mode = 3
 
 [node name="Fields" type="HBoxContainer" parent="Margin/Main/Split/Tabs/Create"]
 layout_mode = 2
@@ -119,7 +129,7 @@ layout_mode = 2
 text = "Independent creative brief"
 
 [node name="BriefEdit" type="TextEdit" parent="Margin/Main/Split/Tabs/Create"]
-custom_minimum_size = Vector2(0, 95)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 wrap_mode = 1
 placeholder_text = "Describe the new design without referring to original artwork."

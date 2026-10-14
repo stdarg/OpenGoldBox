@@ -15,10 +15,12 @@ const CSV_COLUMNS := [
 
 @onready var tabs: TabContainer = $Margin/Main/Split/Tabs
 @onready var help: Label = $Margin/Main/Help
+@onready var usage_filter: OptionButton = $Margin/Main/Split/ListColumn/UsageFilter
 @onready var search: LineEdit = $Margin/Main/Split/ListColumn/Search
 @onready var appearance_list: ItemList = $Margin/Main/Split/ListColumn/AppearanceList
 @onready var coverage: Label = $Margin/Main/Split/ListColumn/Coverage
 @onready var identity: Label = $Margin/Main/Split/Tabs/Create/Identity
+@onready var appearance_usage: Label = $Margin/Main/Split/Tabs/Create/AppearanceUsage
 @onready var title_edit: LineEdit = $Margin/Main/Split/Tabs/Create/Fields/TitleEdit
 @onready var kind_picker: OptionButton = $Margin/Main/Split/Tabs/Create/Fields/KindPicker
 @onready var brief_edit: TextEdit = $Margin/Main/Split/Tabs/Create/BriefEdit
@@ -55,6 +57,8 @@ var pieces: Array[Image] = []
 var dirty := false
 var source_entries: Array = []
 var metadata_rows: Array = []
+var used_views_by_key: Dictionary = {}
+var usage_ready := false
 var source_indices: Dictionary = {}
 var draft_descriptions: Dictionary = {}
 var metadata_digest := ""
@@ -65,6 +69,11 @@ var reference_selected_view := 6
 var updating_reference_description := false
 
 func _ready() -> void:
+    usage_filter.add_item("All appearances")
+    usage_filter.add_item("Used")
+    usage_filter.add_item("Unused")
+    usage_filter.disabled = true
+    usage_filter.item_selected.connect(_apply_usage_filter)
     for kind in KINDS:
         kind_picker.add_item(kind.capitalize())
     for depth in ["Far", "Middle", "Near"]:
@@ -108,6 +117,8 @@ func _ready() -> void:
             call_deferred("_capture", argument.trim_prefix("--creator-capture="))
         elif argument.begins_with("--reference-check="):
             call_deferred("_run_reference_check", argument.trim_prefix("--reference-check="))
+        elif argument == "--usage-check":
+            call_deferred("_run_usage_check")
         elif argument.begins_with("--reference-capture="):
             call_deferred("_capture_reference", argument.trim_prefix("--reference-capture="))
 
@@ -212,6 +223,7 @@ func _load_reference_catalog() -> void:
     reference_status.text = "Original art loaded from %s. Select a piece to review its description." % game_directory
 
 func _load_reference_metadata() -> String:
+    usage_ready = false
     var path := _metadata_path()
     var file := FileAccess.open(path, FileAccess.READ)
     if file == null:
@@ -219,6 +231,8 @@ func _load_reference_metadata() -> String:
     if file.get_csv_line() != PackedStringArray(CSV_COLUMNS):
         return "Art Catalog CSV has unexpected columns."
     metadata_rows.clear()
+    used_views_by_key.clear()
+    var piece_counts: Dictionary = {}
     while file.get_position() < file.get_length():
         var fields := file.get_csv_line()
         if fields.size() != CSV_COLUMNS.size():
@@ -228,9 +242,28 @@ func _load_reference_metadata() -> String:
             row[CSV_COLUMNS[column]] = fields[column]
         if row["index"] != str(metadata_rows.size()) or row["description"].strip_edges().is_empty():
             return "Art Catalog CSV row %d has an invalid index or empty description." % (metadata_rows.size() + 2)
+        var key := "%s:%s:%s" % [row["archive"], row["record"], row["appearance"]]
+        if not keys.has(key) or (row["usage"] != "visible" and row["usage"] != "unused"):
+            return "Art Catalog CSV row %d has an unknown appearance or usage." % (metadata_rows.size() + 2)
+        piece_counts[key] = int(piece_counts.get(key, 0)) + 1
+        if row["usage"] == "visible":
+            used_views_by_key[key] = int(used_views_by_key.get(key, 0)) + 1
         metadata_rows.append(row)
     if metadata_rows.size() != keys.size() * 10:
         return "Art Catalog CSV has %d pieces; expected %d." % [metadata_rows.size(), keys.size() * 10]
+    for key in keys:
+        if int(piece_counts.get(key, 0)) != 10:
+            return "Art Catalog CSV needs ten perspective pieces for %s." % key
+        if not used_views_by_key.has(key):
+            used_views_by_key[key] = 0
+    var unused := 0
+    for key in keys:
+        if int(used_views_by_key[key]) == 0:
+            unused += 1
+    usage_filter.set_item_text(1, "Used (%d)" % (keys.size() - unused))
+    usage_filter.set_item_text(2, "Unused (%d)" % unused)
+    usage_filter.disabled = false
+    usage_ready = true
     metadata_digest = FileAccess.get_sha256(path)
     return ""
 
@@ -252,7 +285,14 @@ func _show_reference_key(key: String) -> void:
         if image == null:
             reference_status.text = "Could not read original piece %d for %s." % [view, key]
             return
-        reference_grid.add_item(Builder.VIEW_NAMES[view], _reference_thumbnail(image))
+        var row: Dictionary = metadata_rows[group[view]]
+        var unused: bool = row["usage"] == "unused"
+        var label := "%s%s" % ["Unused · " if unused else "", Builder.VIEW_NAMES[view]]
+        reference_grid.add_item(label, _reference_thumbnail(image))
+        reference_grid.set_item_tooltip(view, "%s · %s" % [
+            Builder.VIEW_NAMES[view],
+            "Unused in available maps/profiles" if unused else "Visible in an available map/profile"
+        ])
     reference_grid.select(reference_selected_view)
     _show_reference_piece(reference_selected_view)
 
@@ -358,18 +398,51 @@ func _rebuild_list() -> void:
     for key in keys:
         var record: Dictionary = records.get(key, {})
         var title := str(record.get("title", ""))
+        var used := int(used_views_by_key.get(key, -1)) if usage_ready else -1
+        if usage_filter.selected == 1 and used <= 0:
+            continue
+        if usage_filter.selected == 2 and used != 0:
+            continue
         if not query.is_empty() and not (key + " " + title).to_lower().contains(query):
             continue
         visible_keys.append(key)
-        appearance_list.add_item("%s  %s" % [key, title])
+        var marker := "UNKNOWN" if used < 0 else "UNUSED" if used == 0 else "" if used == 10 else "%d/10 used" % used
+        var label := "%s  %s" % [key, title]
+        if not marker.is_empty():
+            label = "%s · %s" % [marker, label]
+        appearance_list.add_item(label)
+        appearance_list.set_item_tooltip(appearance_list.get_item_count() - 1,
+                "%s\n%s\n%s" % [key, title, _usage_summary(key)])
     if visible_keys.has(selected_key):
         appearance_list.select(visible_keys.find(selected_key))
     var complete := 0
+    var unused_count := 0
     for key in keys:
         var record: Dictionary = records.get(key, {})
         if not str(record.get("base", "")).is_empty():
             complete += 1
-    coverage.text = "%d / %d appearances have new art" % [complete, keys.size()]
+        if usage_ready and int(used_views_by_key.get(key, -1)) == 0:
+            unused_count += 1
+    coverage.text = "%d / %d have new art · %d unused in available maps/profiles" % [
+        complete, keys.size(), unused_count
+    ] if usage_ready else "%d / %d appearances have new art · usage unavailable" % [
+        complete, keys.size()
+    ]
+
+func _apply_usage_filter(_index: int) -> void:
+    _rebuild_list()
+    if not visible_keys.is_empty() and not visible_keys.has(selected_key):
+        _select_key(visible_keys[0])
+
+func _usage_summary(key: String) -> String:
+    var used := int(used_views_by_key.get(key, -1)) if usage_ready else -1
+    if used < 0:
+        return "Map usage unavailable; check the Art Catalog CSV."
+    if used == 0:
+        return "UNUSED in available maps/profiles: none of its ten pieces has a visible map location."
+    if used == 10:
+        return "USED in available maps/profiles: all ten perspective pieces have visible map locations."
+    return "PARTLY USED in available maps/profiles: %d of ten perspective pieces have visible map locations." % used
 
 func _select_visible(index: int) -> void:
     if index < 0 or index >= visible_keys.size():
@@ -382,6 +455,7 @@ func _select_key(key: String) -> void:
     selected_key = key
     var record: Dictionary = records.get(key, {})
     identity.text = key
+    appearance_usage.text = _usage_summary(key)
     title_edit.text = str(record.get("title", ""))
     brief_edit.text = str(record.get("brief", ""))
     kind_picker.select(maxi(0, KINDS.find(str(record.get("kind", "solid")))))
@@ -646,6 +720,66 @@ func _run_reference_check(output_folder: String) -> void:
         get_tree().quit(1)
         return
     print("Reference check passed: 210 original appearances, ten pieces each, CSV save and external-change protection.")
+    get_tree().quit()
+
+func _run_usage_check() -> void:
+    if not reference_ready or not usage_ready or used_views_by_key.size() != 210:
+        push_error("Map usage and original reference art did not load.")
+        get_tree().quit(1)
+        return
+    var unused := 0
+    var partial := 0
+    var full := 0
+    var partial_key := ""
+    for key in keys:
+        var count := int(used_views_by_key[key])
+        if count == 0:
+            unused += 1
+        elif count == 10:
+            full += 1
+        else:
+            partial += 1
+            partial_key = key
+    if unused != 42 or partial != 37 or full != 131:
+        push_error("Unexpected appearance usage distribution: %d unused, %d partial, %d full." % [
+            unused, partial, full
+        ])
+        get_tree().quit(1)
+        return
+    usage_filter.select(2)
+    _apply_usage_filter(2)
+    if visible_keys.size() != unused or selected_key != visible_keys[0] or \
+            not appearance_usage.text.begins_with("UNUSED"):
+        push_error("Unused appearance filter or selection label failed.")
+        get_tree().quit(1)
+        return
+    for view in 10:
+        if not reference_grid.get_item_text(view).begins_with("Unused"):
+            push_error("An unused appearance has an unmarked source piece.")
+            get_tree().quit(1)
+            return
+    usage_filter.select(1)
+    _apply_usage_filter(1)
+    _select_key(partial_key)
+    if visible_keys.size() != partial + full or not appearance_usage.text.begins_with("PARTLY USED"):
+        push_error("Used appearance filter or partial-use label failed.")
+        get_tree().quit(1)
+        return
+    var saw_unused_piece := false
+    for view in 10:
+        if reference_grid.get_item_text(view).begins_with("Unused"):
+            saw_unused_piece = true
+    if not saw_unused_piece:
+        push_error("An unused perspective piece was not marked in a partly used appearance.")
+        get_tree().quit(1)
+        return
+    usage_filter.select(0)
+    _apply_usage_filter(0)
+    if visible_keys.size() != keys.size():
+        push_error("All-appearances filter did not restore the catalog.")
+        get_tree().quit(1)
+        return
+    print("Usage check passed: 42 unused, 37 partly used, 131 fully used appearances; list filters and piece labels.")
     get_tree().quit()
 
 func _capture(path: String) -> void:
