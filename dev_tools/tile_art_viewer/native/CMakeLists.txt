@@ -1,5 +1,6 @@
-add_library(opengold_tile_art_viewer SHARED EXCLUDE_FROM_ALL wall_art_catalog.cpp register_types.cpp)
-target_link_libraries(opengold_tile_art_viewer PRIVATE opengold_formats godot-cpp)
+add_library(opengold_tile_art_viewer SHARED EXCLUDE_FROM_ALL
+    wall_art_catalog.cpp map_art_profiles.cpp register_types.cpp)
+target_link_libraries(opengold_tile_art_viewer PRIVATE opengold_core godot-cpp)
 target_compile_features(opengold_tile_art_viewer PRIVATE cxx_std_20)
 set_target_properties(opengold_tile_art_viewer PROPERTIES
     PREFIX ""

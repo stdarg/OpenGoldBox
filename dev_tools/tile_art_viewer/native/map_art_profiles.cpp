@@ -1,0 +1,42 @@
+#include "map_art_profiles.h"
+
+// Names follow the existing map inspector's reference-name table. Source PCs
+// are decoded immediate LOAD PIECES calls in the installed Pool of Radiance ECL
+// archives; inherited profiles are called out. They are inspection profiles,
+// not a claim that the original script follows that path in every game state.
+std::span<const MapArtProfileSpec> map_art_profiles() noexcept
+{
+    static constexpr MapArtProfileSpec profiles[] = {
+        {1, 18, "Podal Plaza", "Area artwork", "ECL1.DAX:18 @ 0x9978", {1, 3, 5}},
+        {1, 24, "Temple of Bane", "Area artwork", "ECL1.DAX:24 @ 0xB6B6", {1, 3, 5}},
+        {1, 31, "Wealthy Area", "Inherited artwork", "ECL1.DAX:24 loads GEO1.DAX:31", {1, 3, 5}},
+        {2, 9, "Stojanow Gate", "Area artwork", "ECL2.DAX:9 @ 0xA0C0", {1, 9, 23}},
+        {2, 15, "Mendor's Library", "Area artwork", "ECL2.DAX:15 @ 0x9BA7", {1, 19, 23}},
+        {2, 20, "Slums", "Area artwork", "ECL2.DAX:20 @ 0x9A92", {2, 4, 1}},
+        {3, 0, "New Phlan", "Verified Phlan artwork", "WALLDEF3.DAX:0; Rolf tour profile", {0, -1, -1}},
+        {3, 14, "Kovel Mansion", "Area artwork", "ECL3.DAX:14 @ 0xB592", {1, 3, 5}},
+        {4, 2, "Cadorna Textile House", "Area artwork", "ECL4.DAX:2 @ 0x9927", {1, 3, 20}},
+        {4, 10, "Valhingen Graveyard", "Ten + five appearances", "ECL4.DAX:10 @ 0x9A85; record 21 covers ten, 22 has no separate record", {21, 20, -1}},
+        {4, 21, "Sokal Keep", "Area artwork", "ECL4.DAX:21 @ 0x9A83", {1, 5, 9}},
+        {5, 3, "Valjevo Castle, North West", "Ten + five appearances", "ECL5.DAX:3 @ 0x9C1C; record 24 covers ten, 25 has no separate record", {24, 1, -1}},
+        {5, 4, "Valjevo Castle, North East", "Ten + five appearances", "ECL5.DAX:4 @ 0xA49F; record 24 covers ten", {24, 1, -1}},
+        {5, 5, "Valjevo Castle, South East", "Inherited artwork", "ECL5.DAX:5 loads GEO5.DAX:5 after the castle wall set", {24, 1, -1}},
+        {5, 6, "Valjevo Castle, South West", "Ten + five appearances", "ECL5.DAX:6 @ 0x9C6D; record 24 covers ten", {24, 1, -1}},
+        {5, 7, "Valjevo Castle, Inner Tower", "Inherited artwork", "ECL5.DAX:7 loads GEO5.DAX:7 after the castle wall set", {24, 1, -1}},
+        {6, 1, "Buccaneer Base", "Area artwork", "ECL6.DAX:1 @ 0xB6C7", {2, 6, 6}},
+        {6, 25, "Unknown Lair", "Repeated wall set", "ECL6.DAX:25 @ 0xAEFC", {17, 17, 17}},
+        {6, 28, "Outpost of Zhentil Keep", "Area artwork", "ECL6.DAX:28 @ 0xB699", {1, 2, 9}},
+        {7, 17, "Nomad Camp", "Area artwork", "ECL7.DAX:17 @ 0x9EF0", {7, 8, 23}},
+        {7, 22, "Sorcerer's Island, Level 1", "First two wall sets", "ECL7.DAX:22 @ 0x9C3C; 255 unresolved, map uses IDs 1-8", {1, 3, -1}},
+        {7, 23, "Sorcerer's Island, Levels 2 and 3", "First two wall sets", "ECL7.DAX:23 @ 0xA479; 255 unresolved, map uses IDs 1-6", {1, 3, -1}},
+        {7, 26, "Unknown Zone", "Area artwork", "ECL7.DAX:26 @ 0xB153", {7, 8, 23}},
+        {8, 13, "Kobold Caves", "First two wall sets", "ECL8.DAX:13 @ 0x9914; 255 unresolved, map uses IDs 1-10", {17, 18, -1}},
+        {8, 16, "Lizard Men Keep", "Keep artwork", "ECL8.DAX:16 @ 0x9C1B", {9, 20, 23}},
+        {8, 16, "Lizard Men Keep", "Alternate artwork", "ECL8.DAX:16 @ 0x9D6C", {9, 17, 23}},
+        {8, 27, "Unknown Lair", "Repeated wall set", "ECL8.DAX:27 @ 0xAC92", {17, 17, 17}},
+        {8, 29, "Kuto's Well", "Well artwork", "ECL8.DAX:29 @ 0x9C62", {3, 20, 1}},
+        {8, 30, "Lizard Men Catacombs", "Inherited artwork", "ECL8.DAX:16 loads GEO8.DAX:30 then sets 9,17,23 @ 0x9D6C", {9, 17, 23}},
+        {8, 32, "Kuto's Well Catacombs", "Catacomb artwork", "ECL8.DAX:29 @ 0x9C71", {18, 17, 1}},
+    };
+    return profiles;
+}

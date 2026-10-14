@@ -7,10 +7,20 @@
 
 namespace opengold::por
 {
+struct ExplorationWallHit
+{
+    int cell{-1}; // -1 means this pixel contains no wall artwork.
+    MapDirection face{MapDirection::north};
+    WallView perspective{WallView::far_front};
+};
+
 struct ExplorationView
 {
     Image image;
     std::bitset<GeoMap::width * GeoMap::height> visible;
+    // The last opaque source piece painted at each logical canvas pixel.
+    // Transparent cutouts and the background have no wall hit.
+    std::array<ExplorationWallHit, 88 * 88> wall_hits{};
 };
 
 // Visibility comes from the same clipped, occluded wall pixels and floor

@@ -206,6 +206,10 @@ void fog_visibility_tests()
     view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
     check(view.visible.count() == 1 && view.visible.test(8 * 16 + 8),
           "A closed room reveals only the occupied cell");
+    const auto closed_hit = view.wall_hits[44 * 88 + 44];
+    check(closed_hit.cell == 8 * 16 + 8 && closed_hit.face == MapDirection::north &&
+          closed_hit.perspective == WallView::near_front,
+          "Click metadata identifies the opaque source wall face and perspective");
     corridor.cells[8 * 16 + 8].doors[0] = 1;
     check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible == view.visible,
           "A traversable but opaque door does not reveal what is behind it");
@@ -219,10 +223,15 @@ void fog_visibility_tests()
             front.rgba[(y * front.width + x) * 4 + 3] = 0;
     corridor.cells[8 * 16 + 8].walls[0] = 2;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
-    check(render_exploration_view(corridor, art, 8, 8, MapDirection::north).visible.count() == 3,
+    view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
+    check(view.wall_hits[44 * 88 + 44].cell != 8 * 16 + 8,
+          "A transparent opening cannot be picked as the front wall");
+    check(view.visible.count() == 3,
           "A transparent opening reveals the cells actually drawn through it");
 
     const auto open = render_exploration_view({}, {}, 8, 8, MapDirection::north);
+    check(open.wall_hits[44 * 88 + 44].cell == -1,
+          "Sky and floor pixels do not pretend to be wall artwork");
     check(open.visible.test(7 * 16 + 8) && open.visible.test(6 * 16 + 8) &&
           !open.visible.test(5 * 16 + 8) && !open.visible.test(9 * 16 + 8),
           "Open floor reveals the forward view, not distant or rear cells");

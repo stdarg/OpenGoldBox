@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/tile_art_viewer.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/map_grid.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/map_view.gd" id="3"]
 
 [node name="TileArtViewer" type="WallArtCatalog"]
 layout_mode = 3
@@ -34,55 +36,60 @@ theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 18
 
-[node name="Column" type="VBoxContainer" parent="Margin"]
+[node name="Tabs" type="TabContainer" parent="Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ArtCatalog" type="VBoxContainer" parent="Margin/Tabs"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="Margin/Column"]
+[node name="Title" type="Label" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 theme_type_variation = &"ViewerTitle"
 text = "First Person Tile Art"
 
-[node name="Help" type="Label" parent="Margin/Column"]
+[node name="Help" type="Label" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 text = "Browse original wall, door, gateway, waterfront and other map artwork. Select a thumbnail or use Previous / Next."
 
-[node name="Filters" type="HBoxContainer" parent="Margin/Column"]
+[node name="Filters" type="HBoxContainer" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ArchiveLabel" type="Label" parent="Margin/Column/Filters"]
+[node name="ArchiveLabel" type="Label" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 text = "Archive"
 
-[node name="ArchiveFilter" type="OptionButton" parent="Margin/Column/Filters"]
+[node name="ArchiveFilter" type="OptionButton" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 custom_minimum_size = Vector2(190, 38)
 
-[node name="ViewLabel" type="Label" parent="Margin/Column/Filters"]
+[node name="ViewLabel" type="Label" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 text = "View"
 
-[node name="ViewFilter" type="OptionButton" parent="Margin/Column/Filters"]
+[node name="ViewFilter" type="OptionButton" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 custom_minimum_size = Vector2(165, 38)
 
-[node name="SearchLabel" type="Label" parent="Margin/Column/Filters"]
+[node name="SearchLabel" type="Label" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 text = "Find"
 
-[node name="Search" type="LineEdit" parent="Margin/Column/Filters"]
+[node name="Search" type="LineEdit" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Archive, record, appearance or view"
 
-[node name="Split" type="HSplitContainer" parent="Margin/Column"]
+[node name="Split" type="HSplitContainer" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 size_flags_vertical = 3
 split_offset = 690
 theme_override_constants/separation = 18
 
-[node name="ContactGrid" type="ItemList" parent="Margin/Column/Split"]
+[node name="ContactGrid" type="ItemList" parent="Margin/Tabs/ArtCatalog/Split"]
 custom_minimum_size = Vector2(520, 500)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -97,53 +104,204 @@ allow_reselect = true
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 14
 
-[node name="PreviewColumn" type="VBoxContainer" parent="Margin/Column/Split"]
+[node name="PreviewColumn" type="VBoxContainer" parent="Margin/Tabs/ArtCatalog/Split"]
 custom_minimum_size = Vector2(400, 500)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="Identity" type="Label" parent="Margin/Column/Split/PreviewColumn"]
+[node name="Identity" type="Label" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
 theme_type_variation = &"ViewerIdentity"
 text = "Select an image"
 autowrap_mode = 3
 
-[node name="Source" type="Label" parent="Margin/Column/Split/PreviewColumn"]
+[node name="Source" type="Label" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
 text = ""
 
-[node name="PreviewPanel" type="PanelContainer" parent="Margin/Column/Split/PreviewColumn"]
+[node name="PreviewPanel" type="PanelContainer" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Preview" type="TextureRect" parent="Margin/Column/Split/PreviewColumn/PreviewPanel"]
+[node name="Preview" type="TextureRect" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn/PreviewPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Actions" type="HBoxContainer" parent="Margin/Column/Split/PreviewColumn"]
+[node name="Actions" type="HBoxContainer" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Previous" type="Button" parent="Margin/Column/Split/PreviewColumn/Actions"]
+[node name="Previous" type="Button" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions"]
 layout_mode = 2
 text = "← Previous"
 
-[node name="Next" type="Button" parent="Margin/Column/Split/PreviewColumn/Actions"]
+[node name="Next" type="Button" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions"]
 layout_mode = 2
 text = "Next →"
 
-[node name="Export" type="Button" parent="Margin/Column/Split/PreviewColumn/Actions"]
+[node name="Export" type="Button" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Export PNG…"
 
-[node name="Status" type="Label" parent="Margin/Column"]
+[node name="Status" type="Label" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 text = "Loading original game artwork…"
+autowrap_mode = 3
+
+[node name="MapBrowser" type="VBoxContainer" parent="Margin/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MapToolbar" type="HBoxContainer" parent="Margin/Tabs/MapBrowser"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MapLabel" type="Label" parent="Margin/Tabs/MapBrowser/MapToolbar"]
+layout_mode = 2
+text = "Map"
+
+[node name="MapPicker" type="OptionButton" parent="Margin/Tabs/MapBrowser/MapToolbar"]
+custom_minimum_size = Vector2(480, 38)
+layout_mode = 2
+clip_text = true
+
+[node name="ProfileLabel" type="Label" parent="Margin/Tabs/MapBrowser/MapToolbar"]
+layout_mode = 2
+text = "Artwork"
+
+[node name="ProfilePicker" type="OptionButton" parent="Margin/Tabs/MapBrowser/MapToolbar"]
+custom_minimum_size = Vector2(290, 38)
+layout_mode = 2
+clip_text = true
+
+[node name="MapHelp" type="Label" parent="Margin/Tabs/MapBrowser"]
+layout_mode = 2
+text = "Arrow keys: Up moves forward, Left/Right turn, Down turns around. Click the map to jump; click a piece in the first-person view to inspect its art."
+autowrap_mode = 3
+
+[node name="MapSplit" type="HSplitContainer" parent="Margin/Tabs/MapBrowser"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 600
+theme_override_constants/separation = 16
+
+[node name="MapPanel" type="PanelContainer" parent="Margin/Tabs/MapBrowser/MapSplit"]
+custom_minimum_size = Vector2(570, 600)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MapCenter" type="CenterContainer" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel"]
+layout_mode = 2
+
+[node name="MapGrid" type="Control" parent="Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapCenter"]
+custom_minimum_size = Vector2(550, 550)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 2
+mouse_filter = 0
+mouse_default_cursor_shape = 2
+script = ExtResource("2")
+
+[node name="DetailColumn" type="VBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit"]
+custom_minimum_size = Vector2(540, 600)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="PoseSummary" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+theme_type_variation = &"ViewerIdentity"
+text = "Choose a map"
+autowrap_mode = 3
+
+[node name="FacingRow" type="HBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FacingLabel" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
+layout_mode = 2
+text = "Facing"
+
+[node name="FacingPicker" type="OptionButton" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
+custom_minimum_size = Vector2(145, 38)
+layout_mode = 2
+
+[node name="FirstPersonPanel" type="PanelContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+custom_minimum_size = Vector2(380, 380)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FirstPerson" type="Control" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FirstPersonPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 2
+mouse_filter = 0
+mouse_default_cursor_shape = 2
+script = ExtResource("3")
+
+[node name="VisibleLabel" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+text = "Visible pieces (keyboard selection)"
+
+[node name="VisiblePieces" type="OptionButton" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+clip_text = true
+
+[node name="PickedTile" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+text = "Click a piece in the first-person view."
+autowrap_mode = 3
+
+[node name="PieceRow" type="HBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PiecePanel" type="PanelContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow"]
+custom_minimum_size = Vector2(108, 108)
+layout_mode = 2
+
+[node name="PiecePreview" type="TextureRect" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PiecePanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PieceDetails" type="VBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="PieceName" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PieceDetails"]
+layout_mode = 2
+text = "No wall art"
+autowrap_mode = 3
+
+[node name="PieceSource" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PieceDetails"]
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="PieceSize" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PieceDetails"]
+layout_mode = 2
+text = ""
+
+[node name="MapExport" type="Button" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+layout_mode = 2
+text = "Export selected piece as PNG…"
+
+[node name="MapStatus" type="Label" parent="Margin/Tabs/MapBrowser"]
+layout_mode = 2
+text = "Choose a map to inspect."
 autowrap_mode = 3
 
 [node name="SaveDialog" type="FileDialog" parent="."]
