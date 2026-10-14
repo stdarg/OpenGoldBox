@@ -650,6 +650,184 @@ void heroic_inspiration_checks()
     check(inspired(after) == 0, "Heroic Inspiration is spent");
 }
 
+// A Goliath of the ancestry beside an AC 1 creature with 1000 Hit Points
+// that hits back with +20 ("Near"), and a Huge one ("Giant") on its other side.
+struct GoliathFight
+{
+    std::unique_ptr<RulesModule> rules = srd5::parse_content(
+            read_rules() +
+            "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+            "creature huge 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+            "size huge huge\n");
+    Character hero;
+    std::unique_ptr<CombatSession> c;
+
+    explicit GoliathFight(std::string boon, std::uint64_t seed = 3)
+        : hero(fighter("goliath", {{"species:goliath:ancestry", std::move(boon)}}))
+    {
+        c = rules->create({{12, 6, std::vector<Terrain>(72)},
+            {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                    rules->character_profile(hero.sheet(), std::vector<std::string> {}).data},
+                {98, "target", "Near", Side::opposition, {2, 1}},
+                {99, "huge", "Giant", Side::opposition, {0, 1}}
+            }},
+        seed);
+    }
+
+    bool offered(std::string_view verb) const
+    {
+        const auto commands = c->legal_commands();
+        return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+        {
+            return command.verb == verb;
+        });
+    }
+
+    // Ends turns, the enemies' without attacking, until the actor's turn.
+    void reach(EntityId actor)
+    {
+        for (unsigned turns = 0; c->snapshot().actor != actor && turns < 6; ++turns)
+            check(submit(*c, "end"), "Reach the next turn");
+        check(c->snapshot().actor == actor, "The actor's turn");
+    }
+
+    // The hero attacks the creature until a hit asks about the boon.
+    void hit(EntityId target)
+    {
+        for (unsigned attempt = 0; attempt < 8; ++attempt)
+        {
+            reach(1);
+            check(submit(*c, "melee", target), "The hero attacks");
+            if (c->snapshot().reaction_pending)
+                return;
+            check(submit(*c, "end"), "The hero missed; end the turn");
+        }
+        throw std::runtime_error("The hero never hits");
+    }
+
+    // Near attacks the hero until a hit asks about the Reaction.
+    void struck()
+    {
+        for (unsigned attempt = 0; attempt < 8; ++attempt)
+        {
+            reach(98);
+            check(submit(*c, "melee", 1), "Near attacks the hero");
+            if (c->snapshot().reaction_pending)
+                return;
+            check(submit(*c, "end"), "Near missed; end its turn");
+        }
+        throw std::runtime_error("Near never hits");
+    }
+
+    unsigned uses_left() const
+    {
+        for (const auto &unit : c->snapshot().combatants)
+            if (unit.id == 1)
+                for (const auto &pool : rules->recovery_info(hero.sheet(), unit.persistent).resources)
+                    if (pool.id == "giant_ancestry")
+                        return pool.remaining;
+        throw std::runtime_error("No Giant Ancestry pool");
+    }
+};
+
+// Giant Ancestry: Fire's Burn, Frost's Chill and Hill's Tumble are offered
+// after a damaging hit, Stone's Endurance and Storm's Thunder after an
+// enemy's, Cloud's Jaunt as a Bonus Action; two uses per Long Rest.
+void giant_ancestry_checks()
+{
+    GoliathFight fire("fire");
+    const auto pools = fire.rules->recovery_info(fire.hero.sheet(), {}).resources;
+    check(std::any_of(pools.begin(), pools.end(), [](const auto & pool)
+    {
+        return pool.id == "giant_ancestry" && pool.label.source == "Fire's Burn" &&
+               pool.remaining == 2 && pool.capacity == 2 && !pool.short_rest_recovery;
+    }), "Giant Ancestry has two uses, restored only by a Long Rest");
+    fire.hit(98);
+    check(fire.offered("giant_boon") && fire.offered("decline"), "The hit asks about Fire's Burn");
+    const auto saved = fire.c->save();
+    check(fire.rules->restore(saved)->save() == saved, "A checkpoint keeps the question");
+    check(submit(*fire.c, "giant_boon") && logged(*fire.c, "Hero uses Fire's Burn.") &&
+          logged(*fire.c, " Fire damage.") && fire.uses_left() == 1,
+          "Fire's Burn adds Fire damage and spends a use");
+    check(submit(*fire.c, "end"), "The hero ends the turn");
+    fire.hit(98);
+    check(submit(*fire.c, "decline") && fire.uses_left() == 1, "Declining spends nothing");
+    check(submit(*fire.c, "end"), "The hero ends the turn");
+    fire.hit(98);
+    check(submit(*fire.c, "giant_boon") && fire.uses_left() == 0, "The second use");
+    check(submit(*fire.c, "end"), "The hero ends the turn");
+    fire.reach(1);
+    check(submit(*fire.c, "melee", 98) && !fire.c->snapshot().reaction_pending,
+          "With no uses left a hit asks nothing");
+
+    GoliathFight frost("frost");
+    frost.hit(98);
+    check(submit(*frost.c, "giant_boon") && logged(*frost.c, " Cold damage.") &&
+          logged(*frost.c, "Near's Speed drops by 10 feet."),
+          "Frost's Chill adds Cold damage and slows");
+    const auto chilled = [&]
+    {
+        for (const auto &unit : frost.c->snapshot().combatants)
+            if (unit.id == 98)
+                return std::any_of(unit.conditions.begin(), unit.conditions.end(),
+                                   [](const auto & m)
+            {
+                return m.source == "Frost's Chill: Speed reduced by 10 feet.";
+            });
+        return false;
+    };
+    check(chilled(), "Near shows the chill");
+    check(submit(*frost.c, "end") && chilled(), "The chill lasts through Near's turn");
+    frost.reach(1);
+    check(!chilled(), "It ends when the hero's turn starts");
+
+    GoliathFight hill("hill");
+    hill.hit(98);
+    check(submit(*hill.c, "giant_boon") && logged(*hill.c, "Near is knocked Prone."),
+          "Hill's Tumble knocks Near Prone");
+    check(submit(*hill.c, "end"), "The hero ends the turn");
+    hill.reach(1);
+    check(submit(*hill.c, "melee", 99) && !logged(*hill.c, "Giant: d20 1 ") &&
+          !hill.c->snapshot().reaction_pending, "A Huge creature hit cannot be tumbled");
+
+    GoliathFight stone("stone");
+    stone.struck();
+    check(stone.offered("stones_endurance"), "Near's hit asks about Stone's Endurance");
+    const int before = [&]
+    {
+        for (const auto &unit : stone.c->snapshot().combatants)
+            if (unit.id == 1)
+                return unit.hit_points;
+        return 0;
+    }();
+    check(submit(*stone.c, "stones_endurance") && logged(*stone.c, "Hero uses Stone's Endurance: ") &&
+          stone.uses_left() == 1, "Stone's Endurance lessens the damage");
+    for (const auto &unit : stone.c->snapshot().combatants)
+        if (unit.id == 1)
+            check(unit.hit_points == before && !unit.reaction, "1d4 is fully absorbed; the Reaction is spent");
+
+    GoliathFight storm("storm");
+    storm.struck();
+    check(storm.offered("storms_thunder") &&
+          submit(*storm.c, "storms_thunder") &&
+          logged(*storm.c, "Hero uses Storm's Thunder: Near takes ") && storm.uses_left() == 1,
+          "Storm's Thunder strikes back at Near");
+
+    GoliathFight cloud("cloud");
+    cloud.reach(1);
+    check(submit(*cloud.c, "clouds_jaunt"), "Cloud's Jaunt is a Bonus Action");
+    bool aimed = false;
+    for (const auto &command : cloud.c->legal_commands())
+        if (command.verb == "area_move" && command.destination == Cell{7, 1})
+            aimed = cloud.c->submit(command);
+    check(aimed && submit(*cloud.c, "area_cast") && logged(*cloud.c, "Hero uses Cloud's Jaunt."),
+          "The Goliath teleports 30 feet");
+    for (const auto &unit : cloud.c->snapshot().combatants)
+        if (unit.id == 1)
+            check(unit.cell == Cell{7, 1} && !unit.bonus_action && unit.action,
+                  "It lands on the square, its Action left");
+    check(cloud.uses_left() == 1 && !cloud.offered("clouds_jaunt"), "A use and the Bonus Action are spent");
+}
 } // namespace
 
 int main()
@@ -665,6 +843,7 @@ int main()
         breath_weapon_checks();
         versatile_checks();
         heroic_inspiration_checks();
+        giant_ancestry_checks();
     }
     catch (const std::exception &error)
     {

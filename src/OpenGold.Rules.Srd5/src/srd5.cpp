@@ -520,6 +520,41 @@ std::vector<std::string> allowed_spells(CharacterClass klass, unsigned level)
 
 using Dice = detail::DamageDice;
 
+// A Goliath's Giant Ancestry boon (SRD 5.2.1 p. 85), in the order of the
+// creator's options.
+enum class GiantBoon : unsigned
+{
+    none,
+    cloud, // Cloud's Jaunt: a Bonus Action teleport of up to 30 feet
+    fire,  // Fire's Burn: 1d10 Fire damage with an attack roll's hit
+    frost, // Frost's Chill: 1d6 Cold damage and Speed 10 feet lower
+    hill,  // Hill's Tumble: a Large or smaller creature hit falls Prone
+    stone, // Stone's Endurance: a Reaction lessening damage
+    storm  // Storm's Thunder: a Reaction dealing 1d8 Thunder damage
+};
+
+std::string_view giant_boon_label(GiantBoon boon)
+{
+    switch (boon)
+    {
+    case GiantBoon::cloud:
+        return "Cloud's Jaunt";
+    case GiantBoon::fire:
+        return "Fire's Burn";
+    case GiantBoon::frost:
+        return "Frost's Chill";
+    case GiantBoon::hill:
+        return "Hill's Tumble";
+    case GiantBoon::stone:
+        return "Stone's Endurance";
+    case GiantBoon::storm:
+        return "Storm's Thunder";
+    case GiantBoon::none:
+        break;
+    }
+    return {};
+}
+
 struct Definition
 {
     int ac{}, hp{}, initiative{}, speed{}, melee_bonus{};
@@ -613,7 +648,8 @@ struct Definition
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
     // Dragonborn: the Breath Weapon's damage type, from the Draconic Ancestry.
     std::optional<detail::DamageType> breath;
-    int trait_uses{}; // uses of a species trait per Long Rest (Breath Weapon)
+    GiantBoon giant{GiantBoon::none}; // Goliath: the Giant Ancestry's boon
+    int trait_uses{}; // uses of a species trait per Long Rest (Breath Weapon, Giant Ancestry)
     bool resourceful{}; // Human: Heroic Inspiration, back after each Long Rest
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
@@ -1008,6 +1044,10 @@ void add_trait_pool(std::vector<rules::ResourcePool> &pools, const Actor &actor,
         pools.push_back({"breath_weapon", {"Breath Weapon", {}},
                          static_cast<unsigned>(std::max(0, trait_uses_left(actor))),
                          static_cast<unsigned>(d.trait_uses), 0u});
+    if (d.giant != GiantBoon::none)
+        pools.push_back({"giant_ancestry", {std::string(giant_boon_label(d.giant)), {}},
+                         static_cast<unsigned>(std::max(0, trait_uses_left(actor))),
+                         static_cast<unsigned>(d.trait_uses), 0u});
     if (d.resourceful)
         pools.push_back({"heroic_inspiration", {"Heroic Inspiration", {}},
                          detail::has_effect(actor.effects, detail::EffectKind::heroic_inspiration)
@@ -1389,6 +1429,18 @@ character_definition(std::string_view bytes,
             d.trait_uses = 2 + (static_cast<int>(level) - 1) / 4;
         }
     }
+    // Giant Ancestry: as many uses as the Proficiency Bonus.
+    for (const auto &[choice, boon] : std::initializer_list<std::pair<std::string_view, GiantBoon>>
+{
+    {"giant:cloud", GiantBoon::cloud}, {"giant:fire", GiantBoon::fire},
+        {"giant:frost", GiantBoon::frost}, {"giant:hill", GiantBoon::hill},
+        {"giant:stone", GiantBoon::stone}, {"giant:storm", GiantBoon::storm}
+    })
+    if (chose(choice))
+    {
+        d.giant = boon;
+        d.trait_uses = 2 + (static_cast<int>(level) - 1) / 4;
+    }
     // Magic Initiate's and a lineage's spells: their own ability, and a free
     // cast of the leveled one each Long Rest.
     auto gifts = detail::magic_initiate_spells(grants);
@@ -1753,6 +1805,8 @@ VitalState vitals(const Actor &a)
         description += "\nRay of Frost: Speed reduced by 10 feet.";
     if (detail::slowed(a.effects))
         description += "\nSlow: Speed reduced by 10 feet.";
+    if (detail::has_effect(a.effects, detail::EffectKind::frosts_chill))
+        description += "\nFrost's Chill: Speed reduced by 10 feet.";
     if (detail::blinded(a.effects))
         description += "\nBlinded";
     if (a.effects.prone)
@@ -2040,7 +2094,10 @@ class Session final : public CombatSession
         hit,      // an attack roll hit: Shield or Deflect Attacks
         missile,  // targeted by Magic Missile: Shield
         redirect, // Deflect Attacks stopped all the damage: redirect it for 1 Focus
-        rebuke    // an attack damaged a Warlock: Hellish Rebuke
+        rebuke,   // an attack damaged a Warlock: Hellish Rebuke
+        boon,     // a Goliath's attack roll hit and dealt damage: Fire's Burn and so on
+        endure,   // an attack is about to damage a Goliath: Stone's Endurance
+        thunder   // an attack damaged a Goliath: Storm's Thunder
     };
     struct ReactionQuestion
     {
@@ -2050,7 +2107,8 @@ class Session final : public CombatSession
         bool critical{};    // a hit Shield cannot turn aside
     };
     // A creature's answer during the command being replayed: "shield",
-    // "deflect", "redirect" or "decline".
+    // "deflect", "redirect", "rebuke", "giant_boon", "stones_endurance",
+    // "storms_thunder" or "decline".
     struct ReactionAnswer
     {
         EntityId target{};
@@ -2073,6 +2131,11 @@ class Session final : public CombatSession
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
     [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
+    // Giant Ancestry's Reactions and on-hit boons, each asked before use.
+    [[nodiscard]] bool can_use_giant_reaction(const Actor &goliath, GiantBoon boon) const;
+    void giant_boon(const Actor &attacker, Actor &target, bool critical);
+    [[nodiscard]] int endured(Actor &goliath, int amount);
+    void storms_thunder(const Actor &attacker, Actor &goliath);
     // Bardic Inspiration's die added to a roll that failed by `shortfall`.
     int inspiration_roll(const Actor &creature, int shortfall);
     void log_inspiration(const Actor &inspired, int die, bool success);
@@ -2080,6 +2143,7 @@ class Session final : public CombatSession
     int cutting_words(const Actor &attacker, int margin);
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
+    void clouds_jaunt(Actor &goliath, Cell destination);
     void perform(const Command &command);
     void dispatch(const Command &command);
     void answer_reaction(const Command &command);
@@ -3736,6 +3800,11 @@ Snapshot Session::snapshot() const
             messages.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
             view.conditions.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
         }
+        if (detail::has_effect(a.effects, detail::EffectKind::frosts_chill))
+        {
+            messages.push_back({"Frost's Chill: Speed reduced by 10 feet.", {}});
+            view.conditions.push_back({"Frost's Chill: Speed reduced by 10 feet.", {}});
+        }
         if (detail::has_effect(a.effects, detail::EffectKind::guiding_bolt))
         {
             messages.push_back({"Guiding Bolt: the next attack roll against it has Advantage.", {}});
@@ -4771,6 +4840,12 @@ std::vector<Command> Session::legal_commands() const
             add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
         else if (question.asked == Asked::rebuke)
             add(who.source.id, "rebuke", "Cast Hellish Rebuke");
+        else if (question.asked == Asked::boon)
+            add(who.source.id, "giant_boon", std::string(giant_boon_label(def(who).giant)));
+        else if (question.asked == Asked::endure)
+            add(who.source.id, "stones_endurance", "Stone's Endurance");
+        else if (question.asked == Asked::thunder)
+            add(who.source.id, "storms_thunder", "Storm's Thunder");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -5257,6 +5332,9 @@ std::vector<Command> Session::legal_commands() const
                     has_condition(other, "poisoned") &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands_cure", "Lay On Hands: cure Poisoned", other.source.id);
+    // Cloud's Jaunt: a Bonus Action teleport, aimed like Misty Step.
+    if (a.bonus && d.giant == GiantBoon::cloud && trait_uses_left(a) > 0)
+        commands.push_back({revision_, id, 0, "clouds_jaunt", "Cloud's Jaunt", Cell{}, 0, true});
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
@@ -6363,6 +6441,12 @@ void Session::cast_area()
     if (aimed.verb == "lands_aid")
     {
         lands_aid(a, aimed.center);
+        return;
+    }
+    // Not a spell: the teleport leaves Sanctuary, Invisibility and hiding be.
+    if (aimed.verb == "clouds_jaunt")
+    {
+        clouds_jaunt(a, aimed.center);
         return;
     }
     end_sanctuary(a);
@@ -7666,9 +7750,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
         {"Ray of Enfeeblement subtracts {damage} damage.", {{"damage", std::to_string(enfeebled)}}});
     const int amount =
-        hit ? deflected(a, target,
-                        std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
-                        damage_type, ranged)
+        hit ? endured(target,
+                      deflected(a, target,
+                                std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled),
+                                damage_type, ranged))
         : 0;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
@@ -7738,9 +7823,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         });
         damage(target, extra, false);
     }
-    // Hellish Rebuke answers the damage once the attack is done.
     if (hit && amount > 0 && target.life.hp > 0)
+        giant_boon(a, target, critical_hit(a, target, natural, spell));
+    // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
+    if (hit && amount > 0 && target.life.hp > 0)
+    {
         rebuke(a, target);
+        storms_thunder(a, target);
+    }
     return hit;
 }
 
@@ -8798,7 +8888,8 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
     if (answer_of(target.source.id, asked))
         return;
     const bool askable =
-        asked == Asked::redirect || asked == Asked::rebuke || (can_shield(target) && !critical) ||
+        asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::boon ||
+        asked == Asked::endure || asked == Asked::thunder || (can_shield(target) && !critical) ||
         (asked == Asked::hit && can_deflect(target, deflectable));
     if (askable)
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
@@ -8992,6 +9083,118 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
     damage(foe, amount);
 }
 
+bool Session::can_use_giant_reaction(const Actor &goliath, GiantBoon boon) const
+{
+    return def(goliath).giant == boon && conscious(goliath) && goliath.reaction &&
+           !detail::incapacitated(goliath.effects) && trait_uses_left(goliath) > 0;
+}
+
+void Session::giant_boon(const Actor &attacker, Actor &target, bool critical)
+{
+    // Fire's Burn, Frost's Chill and Hill's Tumble follow a damaging hit with
+    // an attack roll, at most once in a command (Scorching Ray's rays).
+    const auto boon = def(attacker).giant;
+    if ((boon != GiantBoon::fire && boon != GiantBoon::frost && boon != GiantBoon::hill) ||
+            trait_uses_left(attacker) <= 0 ||
+            (boon == GiantBoon::hill && (def(target).size > 3 || target.effects.prone)))
+        return;
+    ask_reaction(attacker, Asked::boon);
+    const auto used = std::find_if(reaction_answers_.begin(), reaction_answers_.end(),
+                                   [&](const auto & answer)
+    {
+        return answer.target == attacker.source.id && answer.asked == Asked::boon &&
+               answer.verb == "giant_boon";
+    });
+    if (used == reaction_answers_.end())
+        return;
+    used->verb = "spent";
+    auto &goliath = actor(attacker.source.id);
+    spend_trait_use(goliath);
+    const auto label = std::string(giant_boon_label(boon));
+    log(goliath.source.name + " uses " + label + ".",
+    {"{name} uses {boon}.", {{"name", goliath.source.name}, {"boon", label, true}}});
+    if (boon == GiantBoon::hill)
+    {
+        target.effects.prone = true;
+        log(target.source.name + " is knocked Prone.",
+        {"{name} is knocked Prone.", {{"name", target.source.name}}});
+        return;
+    }
+    // The boon's die is part of the hit's damage, so a Critical Hit doubles it.
+    const auto type = boon == GiantBoon::fire ? detail::DamageType::fire : detail::DamageType::cold;
+    const int amount = resolved_damage(target, type,
+                                       dice({1, boon == GiantBoon::fire ? 10 : 6, 0}, critical));
+    const auto name = std::string(detail::damage_name(type));
+    log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage.",
+    {
+        "{name} takes {damage} {type} damage.",
+        {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}
+    });
+    if (boon == GiantBoon::frost && detail::can_apply(target.effects))
+    {
+        detail::apply_frosts_chill(target.effects, effect_source(goliath), goliath.source.name,
+                                   next_turn_ms(goliath));
+        log(target.source.name + "'s Speed drops by 10 feet.",
+        {"{name}'s Speed drops by 10 feet.", {{"name", target.source.name}}});
+    }
+    damage(target, amount, false);
+}
+
+int Session::endured(Actor &goliath, int amount)
+{
+    // Stone's Endurance: 1d12 + Constitution modifier less damage.
+    if (amount <= 0 || !can_use_giant_reaction(goliath, GiantBoon::stone))
+        return amount;
+    ask_reaction(goliath, Asked::endure);
+    if (answer_of(goliath.source.id, Asked::endure)->verb != "stones_endurance")
+        return amount;
+    goliath.reaction = false;
+    spend_trait_use(goliath);
+    const int left = std::max(0, amount - roll(12) - def(goliath).constitution);
+    log(goliath.source.name + " uses Stone's Endurance: " + std::to_string(amount - left) +
+        " less damage.",
+    {
+        "{name} uses Stone's Endurance: {damage} less damage.",
+        {{"name", goliath.source.name}, {"damage", std::to_string(amount - left)}}
+    });
+    return left;
+}
+
+void Session::storms_thunder(const Actor &attacker, Actor &goliath)
+{
+    // Storm's Thunder: 1d8 Thunder damage to a creature within 60 feet that
+    // damaged the Goliath.
+    if (attacker.source.side == goliath.source.side || attacker.life.dead ||
+            attacker.life.hp <= 0 || distance(goliath.source.cell, attacker.source.cell) > 60 ||
+            !can_use_giant_reaction(goliath, GiantBoon::storm))
+        return;
+    ask_reaction(goliath, Asked::thunder);
+    if (answer_of(goliath.source.id, Asked::thunder)->verb != "storms_thunder")
+        return;
+    goliath.reaction = false;
+    spend_trait_use(goliath);
+    auto &foe = actor(attacker.source.id);
+    const int amount = resolved_damage(foe, detail::DamageType::thunder, roll(8));
+    log(goliath.source.name + " uses Storm's Thunder: " + foe.source.name + " takes " +
+        std::to_string(amount) + " Thunder damage.",
+    {
+        "{name} uses Storm's Thunder: {target} takes {damage} Thunder damage.",
+        {{"name", goliath.source.name}, {"target", foe.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(foe, amount);
+}
+
+void Session::clouds_jaunt(Actor &goliath, Cell destination)
+{
+    // Teleporting provokes no Opportunity Attacks.
+    goliath.bonus = false;
+    spend_trait_use(goliath);
+    goliath.source.cell = destination;
+    clear_departed_overlaps();
+    log(goliath.source.name + " uses Cloud's Jaunt.",
+    {"{name} uses Cloud's Jaunt.", {{"name", goliath.source.name}}});
+}
+
 void Session::perform(const Command &command)
 {
     casting_metamagic_.reset();
@@ -8999,7 +9202,8 @@ void Session::perform(const Command &command)
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
         return can_shield(other) || def(other).deflect ||
-               detail::knows_spell(def(other).spells, "hellish_rebuke");
+               detail::knows_spell(def(other).spells, "hellish_rebuke") ||
+               def(other).giant != GiantBoon::none;
     });
     if (!askable)
     {
@@ -10826,7 +11030,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
         if (!input || !known_actor(question.target) ||
-                asked > static_cast<unsigned>(Asked::rebuke) ||
+                asked > static_cast<unsigned>(Asked::thunder) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -10837,10 +11041,11 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
             if (!input || !known_actor(answer.target) ||
-                    kind > static_cast<unsigned>(Asked::rebuke) ||
+                    kind > static_cast<unsigned>(Asked::thunder) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
-                     answer.verb != "decline"))
+                     answer.verb != "giant_boon" && answer.verb != "stones_endurance" &&
+                     answer.verb != "storms_thunder" && answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = static_cast<Asked>(kind);
             prompt.answers.push_back(std::move(answer));
@@ -13154,7 +13359,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.183", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.184", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

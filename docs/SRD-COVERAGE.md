@@ -101,6 +101,7 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.184 gives the Goliath its Giant Ancestry boons ([Species](SPECIES.md#giant-ancestry)).
 Rules 0.6.183 makes Divine Spark always deal Radiant damage
 ([SPARK-1](SRD-DECISIONS.md#spark-1-2026-10-14-divine-spark-always-radiant)).
 Rules 0.6.182 completes the Human: Versatile's Origin feat and Resourceful's

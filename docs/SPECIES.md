@@ -59,6 +59,32 @@ resources show "Breath Weapon" with the uses left.
 In combat, A cycles to "Breath Weapon (cone)" or "Breath Weapon (line)";
 Space or a click starts aiming it, as for an area spell.
 
+## Giant Ancestry
+
+A Goliath's boon has as many uses as the Proficiency Bonus (2 through level
+4), back after a Long Rest; the rest window and combat resources show it under
+the boon's name. Each use is asked about with the React and Decline buttons,
+like Hellish Rebuke, except Cloud's Jaunt.
+
+- **Cloud's Jaunt:** a Bonus Action. A cycles to "Cloud's Jaunt"; it is aimed
+  like Misty Step, at an unoccupied square within 30 feet in sight. It is not a
+  spell, so it does not end hiding, Invisibility or Sanctuary.
+- **Fire's Burn, Frost's Chill, Hill's Tumble:** after the Goliath's attack
+  roll hits a creature and damages it without dropping it, React adds 1d10
+  Fire damage, or 1d6 Cold damage and Speed 10 feet lower until the start of
+  the Goliath's next turn, or knocks a Large or smaller creature Prone (not
+  asked when it already is). A Critical Hit doubles the boon's die. A spell
+  with several attack rolls, such as Scorching Ray, asks once.
+- **Stone's Endurance:** when an attack is about to damage the Goliath, React
+  lessens the damage by 1d12 + Constitution modifier.
+- **Storm's Thunder:** when an attack damages the Goliath and the attacker is
+  within 60 feet, React deals it 1d8 Thunder damage.
+
+Stone's Endurance and Storm's Thunder answer only an attack's damage so far,
+as Hellish Rebuke does; damage from a save or an area waits on
+[#164](https://github.com/stdarg/OpenGold/issues/164). The Quick-play AI uses
+each boon at its first chance.
+
 ## Saves against conditions
 
 Dwarven Resilience (Advantage against Poisoned), Fey Ancestry (against

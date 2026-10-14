@@ -169,6 +169,12 @@ func check_demo() -> void:
     for frame in range(500):
         if combat.get_node("LogStack/Log").text.contains("Kobold 7 -> Dorian Nightwind"):
             break
+        # Dorian's Stone's Endurance asks when a Kobold hits; it is declined.
+        var decline: Button = combat.get_node("Decline")
+        if decline.visible and not decline.disabled:
+            decline.pressed.emit()
+            await create_timer(0.02).timeout
+            continue
         var end_key := InputEventKey.new()
         end_key.keycode = KEY_ENTER
         end_key.pressed = true

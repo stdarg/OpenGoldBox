@@ -83,6 +83,17 @@ std::string spell_verb(std::string verb, unsigned slot)
     return verb;
 }
 
+// What the Goliath's boon would add to the hit, named by its React label.
+const char *giant_boon_prompt(const std::vector<Command> &offered)
+{
+    for (const auto &c : offered)
+        if (c.verb == "giant_boon" && c.label == "Frost's Chill")
+            return N_("Your attack hit. Add Frost's Chill (1d6 Cold damage, Speed 10 feet lower), or decline.");
+        else if (c.verb == "giant_boon" && c.label == "Hill's Tumble")
+            return N_("Your attack hit. Knock the target Prone with Hill's Tumble, or decline.");
+    return N_("Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline.");
+}
+
 std::optional<Cell> movement_direction(Key key, bool shift)
 {
     switch (key)
@@ -1251,9 +1262,11 @@ void CombatView::immediate(String verb)
     if (state.area_targeting && wanted == "end")
         wanted = "area_cast";
     // React answers whichever reaction is asked: an opportunity attack, Shield,
-    // Deflect Attacks or its redirect.
+    // Deflect Attacks or its redirect, Hellish Rebuke or a Giant Ancestry boon.
     const auto legal = demo_->combat().legal_commands();
-    for (const char *reaction : {"shield", "deflect", "redirect", "rebuke"})
+    for (const char *reaction : {"shield", "deflect", "redirect", "rebuke", "giant_boon",
+                                     "stones_endurance", "storms_thunder"
+                                    })
         if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [&](const auto & c)
     {
         return c.verb == reaction;
@@ -2283,7 +2296,8 @@ void CombatView::refresh()
     }
 })
     required_node<Button>(*this, node).set_disabled(!enabled(verb));
-    if (enabled("shield") || enabled("deflect") || enabled("redirect") || enabled("rebuke"))
+    if (enabled("shield") || enabled("deflect") || enabled("redirect") || enabled("rebuke") ||
+            enabled("giant_boon") || enabled("stones_endurance") || enabled("storms_thunder"))
         required_node<Button>(*this, "React").set_disabled(false);
     {
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
@@ -2318,7 +2332,8 @@ void CombatView::refresh()
         String react = i18n::text("Opportunity attack");
         for (const auto &c : offered)
             if (c.verb == "shield" || c.verb == "deflect" || c.verb == "redirect" ||
-                    c.verb == "rebuke")
+                    c.verb == "rebuke" || c.verb == "giant_boon" ||
+                    c.verb == "stones_endurance" || c.verb == "storms_thunder")
             {
                 react = i18n::text(c.label);
                 break;
@@ -2373,6 +2388,12 @@ void CombatView::refresh()
         ? i18n::text("The attack is fully deflected. Redirect it at the attacker for 1 Focus Point, or decline.")
         : s.reaction_pending && enabled("rebuke")
         ? i18n::text("You are hurt. Cast Hellish Rebuke at the attacker, or decline.")
+        : s.reaction_pending && enabled("giant_boon")
+        ? i18n::text(giant_boon_prompt(offered))
+        : s.reaction_pending && enabled("stones_endurance")
+        ? i18n::text("You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline.")
+        : s.reaction_pending && enabled("storms_thunder")
+        ? i18n::text("You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player && flee_mode_ ? i18n::text("Your party is fleeing.")
         : player ? selected_prompt(offered, action)

@@ -37,6 +37,12 @@ func check() -> void:
     for frame in range(2000):
         if combat.get_node("StatusStack/Turn").text.contains("Merric Mistvale turn"):
             break
+        # A Goliath's Reaction boon asks when a Kobold hits it; it is declined.
+        var decline: Button = combat.get_node("Decline")
+        if decline.visible and not decline.disabled:
+            decline.pressed.emit()
+            await process_frame
+            continue
         var end_key := InputEventKey.new()
         end_key.keycode = KEY_ENTER
         end_key.pressed = true

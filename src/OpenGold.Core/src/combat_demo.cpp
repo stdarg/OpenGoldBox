@@ -909,7 +909,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     for (const auto &command : offered)
         if (command.verb == "opportunity" || command.verb == "shield" ||
                 command.verb == "deflect" || command.verb == "redirect" ||
-                command.verb == "rebuke" ||
+                command.verb == "rebuke" || command.verb == "giant_boon" ||
+                command.verb == "stones_endurance" || command.verb == "storms_thunder" ||
                 (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))
             return command;
     // An ally below half Hit Points is healed, by Lay On Hands first because it

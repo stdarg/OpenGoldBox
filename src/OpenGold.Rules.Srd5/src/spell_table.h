@@ -919,6 +919,18 @@ inline constexpr std::array spell_table
         .dice = {1, 10, 0},
         .line = 30,
         .narrow_line = true},
+    // A Goliath's Cloud's Jaunt (SRD 5.2.1 p. 85), aimed as "clouds_jaunt"
+    // with a use of Giant Ancestry. No one learns it as a spell.
+    SpellDef{
+        .id = "clouds_jaunt",
+        .label = "Cloud's Jaunt",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 30,
+        .bonus_action = true,
+        .rider = Rider::misty_step,
+        .area = 5},
     // Land's Aid (SRD 5.2.1 p. 46), aimed by a Circle of the Land Druid as
     // "lands_aid" with a use of Wild Shape. No one learns it as a spell.
     SpellDef{

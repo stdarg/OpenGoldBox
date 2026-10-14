@@ -47,6 +47,11 @@ func check() -> void:
             print("Unconscious combatant captured: ", path)
             quit(0)
             return
+        # A Goliath's Reaction boon asks when an enemy hits it; it is declined.
+        var decline: Button = combat.get_node("Decline")
+        if decline.visible and not decline.disabled:
+            decline.pressed.emit()
+            continue
         var end_key := InputEventKey.new()
         end_key.keycode = KEY_ENTER
         end_key.pressed = true
