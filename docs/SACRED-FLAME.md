@@ -2,8 +2,8 @@
 
 Rules **0.6.23** adds a playable Cleric path for
 [#203](https://github.com/stdarg/OpenGold/issues/203), using the creation and
-combat controls approved in questions 15–16. The issue remains open for the
-partial-cover exception and remaining component/source integration.
+combat controls approved in questions 15–16. The issue remains open only for
+replacing a cantrip on gaining a level (see Remaining acceptance).
 
 ## Rules and controls
 
@@ -62,15 +62,15 @@ Localization validation covers 734 messages. No original game art is committed.
 
 ## Remaining acceptance
 
-The current battlefield represents open, opaque and difficult terrain, with no
-half- or three-quarters-cover data. Sacred Flame's exception to those save
-bonuses cannot yet be verified in a real covered encounter. **#203 stays open**;
-total-cover rejection alone does not complete cover conformance.
+The game has no half or three-quarters cover
+([COVER-1](SRD-DECISIONS.md#cover-1-2026-10-14-no-half-or-three-quarters-cover)),
+so Sacred Flame's exception to those save bonuses has nothing to act on; total
+cover (no line of sight) is rejected as before.
 
-Live speech blockers remain [#39](https://github.com/stdarg/OpenGold/issues/39).
-Other grant routes remain Magic Initiate #75/#200, Pact of the Tome #161,
-Thaumaturge and Blessed Warrior #140. Cleric preparation, Divine Order and the
-fourth selection are in [Cleric preparation](CLERIC-PREPARATION.md); level-up
-cantrip replacement waits for a second Cleric cantrip. Higher-level damage scaling
+Verbal blockers (#39), Magic Initiate (#75/#200), Pact of the Tome, the
+Thaumaturge and Blessed Warrior grant Sacred Flame through their own choices.
+Cleric preparation, Divine Order and the fourth selection are in
+[Cleric preparation](CLERIC-PREPARATION.md). Replacing a cantrip on gaining a
+level is still to come. Higher-level damage scaling
 remains #176–178. The zero-HP save rule does not complete all conditions in #35.
 The [spell inventory](SPELL-INVENTORY.md) therefore records this path as partial.

@@ -869,3 +869,12 @@ needing a Dungeon Master, so the two level-1 spells are any the game has, from
 any class's list, none of which needs one. They are cast as prepared Warlock
 spells with Pact Magic slots, as the cantrips are cast with Charisma; nothing
 is cast as a ritual. The Book of Shadows as an object is not modeled.
+
+## COVER-1 (2026-10-14): no half or three-quarters cover
+
+The user decided that the game has no partial cover, as Pool of Radiance had
+none. The battlefield knows open, difficult and blocking squares only: a wall
+or obstacle between two creatures is total cover (no line of sight, so no
+attack or targeted spell), and nothing grants half (+2) or three-quarters (+5)
+cover to AC or Dexterity saves. Rules that refer to partial cover, such as
+Sacred Flame ignoring it, have nothing to act on.
