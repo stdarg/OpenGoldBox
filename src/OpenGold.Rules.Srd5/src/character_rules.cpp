@@ -157,9 +157,18 @@ class CreatorRules final : public CharacterRules
         const auto klass = detail::draft_class(draft);
         if (!klass)
             return {};
-        // At creation only Acolyte and Sage bring spells to a class without its own.
-        if (!detail::prepares_spells(*klass) && draft.background != "acolyte" &&
-                draft.background != "sage")
+        // At creation only Magic Initiate, from an Acolyte's or a Sage's
+        // background or a Human's Versatile, brings spells to a class without
+        // its own.
+        const auto versatile = draft.training.find("species:human:versatile");
+        const bool initiate = draft.background == "acolyte" || draft.background == "sage" ||
+                              (versatile != draft.training.end() &&
+                               std::any_of(versatile->second.begin(), versatile->second.end(),
+                                           [](const auto & feat)
+        {
+            return feat.starts_with("magic_initiate_");
+        }));
+        if (!detail::prepares_spells(*klass) && !initiate)
             return {};
         // The options come from the evaluated sheet, which needs every score.
         if (!draft.rolled || std::any_of(draft.assignment.begin(), draft.assignment.end(),
@@ -248,7 +257,7 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
             {"halfling", "Halfling",
                 "Halflings are small, cheerful folk known for their courage and uncanny luck.\n\nRacial traits:\n- Luck: reroll a 1 on an attack roll, ability check or saving throw.\n- Brave: Advantage on saves against being Frightened.\n- Halfling Nimbleness: move through the space of larger creatures, without stopping there.\n- Naturally Stealthy: hide behind larger creatures."},
             {"human", "Human",
-                "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest. Not in the game yet.\n- Skillful: training in one skill of your choice.\n- Versatile: an Origin feat of your choice. Not in the game yet."},
+                "Humans are ambitious, adaptable folk found in every land.\n\nRacial traits:\n- Resourceful: Heroic Inspiration after every Long Rest, which rolls your first failed d20 again.\n- Skillful: training in one skill of your choice.\n- Versatile: an Origin feat of your choice."},
             {"orc", "Orc",
                 "Orcs are strong, tireless folk who press on where others falter.\n\nRacial traits:\n- Adrenaline Rush: Dash as a Bonus Action and gain Temporary Hit Points, a few times between rests.\n- Relentless Endurance: drop to 1 Hit Point instead of 0, once per Long Rest.\n- Darkvision, 120 feet. Not in the game yet."},
             {"tiefling", "Tiefling",

@@ -11,6 +11,8 @@ namespace opengold::srd5::detail
 // has, rather than deriving an ID from the label's spelling.
 std::string race_id(std::string_view label);
 std::string background_id(std::string_view label);
+// The Origin feat a background gives ("feat:alert"), or empty.
+std::string background_feat(std::string_view background);
 std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
         std::string_view background);
 rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,

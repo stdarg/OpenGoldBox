@@ -224,7 +224,7 @@ TrainingChoiceGroup one_of(std::string id, std::string label, std::vector<Creati
 // The choices a species makes at creation (SRD 5.2.1 pp. 84-86). Drow
 // (DROW-1), Darkvision and the spells DM-1 removed are not offered.
 std::vector<TrainingChoiceGroup> species_options(std::string_view race,
-        const TrainingChoices &choices)
+        std::string_view background, const TrainingChoices &choices)
 {
     const auto species = species_id(race);
     std::vector<TrainingChoiceGroup> result;
@@ -296,6 +296,35 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
         for (const auto &skill : skills)
             skillful.options.push_back({std::string(skill.id), std::string(skill.label), {}});
         result.push_back(std::move(skillful));
+        // Versatile: an Origin feat, other than the one the background gives.
+        // Skilled comes first, the creator's default: it changes no fight.
+        auto versatile = one_of("species:human:versatile", "Versatile",
+        {   {"skilled", "Skilled", "Training in three skills of your choice."},
+            {"alert", "Alert", "Add your Proficiency Bonus to Initiative, and swap Initiative with an ally."},
+            {"magic_initiate_cleric", "Magic Initiate (Cleric)", "Two Cleric cantrips and a level 1 Cleric spell, cast once per Long Rest without a slot."},
+            {"magic_initiate_druid", "Magic Initiate (Druid)", "Two Druid cantrips and a level 1 Druid spell, cast once per Long Rest without a slot."},
+            {"magic_initiate_wizard", "Magic Initiate (Wizard)", "Two Wizard cantrips and a level 1 Wizard spell, cast once per Long Rest without a slot."},
+            {"savage_attacker", "Savage Attacker", "Once per turn, roll a weapon's damage dice twice and use either roll."}
+        });
+        std::erase_if(versatile.options, [&](const auto & option)
+        {
+            return background_feat(background) == "feat:" + option.id;
+        });
+        result.push_back(std::move(versatile));
+        // Skilled's three skills, apart from the one Skillful took.
+        const auto &feat = selected(choices, "species:human:versatile");
+        if (std::find(feat.begin(), feat.end(), "skilled") != feat.end())
+        {
+            TrainingChoiceGroup skilled = one_of("species:human:skilled", "Skilled", {});
+            skilled.count = 3;
+            skilled.control = TrainingChoiceControl::checkboxes;
+            const auto &skillful_pick = selected(choices, "species:human:skillful");
+            for (const auto &skill : skills)
+                if (std::find(skillful_pick.begin(), skillful_pick.end(), skill.id) ==
+                        skillful_pick.end())
+                    skilled.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+            result.push_back(std::move(skilled));
+        }
     }
     return result;
 }
@@ -308,7 +337,9 @@ std::string_view species_prefix(std::string_view group)
            : group.ends_with(":cantrip")     ? "cantrip:"
            : group.ends_with(":legacy")      ? "legacy:"
            : group.ends_with(":size")        ? "size:"
-           : group.ends_with(":keen_senses") || group.ends_with(":skillful") ? "skill:"
+           : group.ends_with(":keen_senses") || group.ends_with(":skillful") ||
+             group.ends_with(":skilled") ? "skill:"
+           : group.ends_with(":versatile")   ? "feat:"
            : group == "species:dragonborn:ancestry" ? "dragon:"
            : "giant:";
 }
@@ -317,7 +348,7 @@ std::string_view species_prefix(std::string_view group)
 std::vector<TrainingChoiceGroup> options(std::optional<CharacterClass> klass,
         std::string_view race, std::string_view background, const TrainingChoices &choices)
 {
-    std::vector<TrainingChoiceGroup> result = species_options(race, choices);
+    std::vector<TrainingChoiceGroup> result = species_options(race, background, choices);
     if (klass == CharacterClass::fighter)
         result.push_back({"class:fighter:fighting_style",
                           "Fighting Style",
@@ -783,7 +814,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     bool swapped_first_invocation = false;
     // Style selections emit feats; keep them in feature validation as well.
     for (const auto &grant : grants)
-        if (is_training_grant(grant) || grant.source_id == "class:fighter:fighting_style")
+        if (is_training_grant(grant) || grant.source_id == "class:fighter:fighting_style" ||
+                grant.source_id == "species:human:versatile")
         {
             if (is_mastery_grant(grant) && grant.level == 4)
             {
@@ -1041,7 +1073,11 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
             result.masteries.push_back({std::string(item->key), std::string(item->label), {g}});
         }
     const auto &picked = selected(choices, skilled);
-    const bool has_skilled = static_cast<bool>(source(grants, std::string(skilled)));
+    // The level-four Skilled; a Human's Versatile Skilled has its own skills.
+    const bool has_skilled = std::any_of(grants.begin(), grants.end(), [](const auto & g)
+    {
+        return g.id == skilled && g.source_id.ends_with(":ability_score_improvement");
+    });
     require((picked.empty() && !has_skilled) || level >= 4);
     if (has_skilled)
         result.complete &= picked.size() == 3;

@@ -1,5 +1,6 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
+#include "opengold/character_creator.h"
 #include "opengold/dice.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
@@ -324,7 +325,8 @@ void species_choice_checks()
                                                           "species:tiefling:ability"} &&
           groups("dragonborn") == std::vector<std::string> {"species:dragonborn:ancestry"} &&
           groups("goliath") == std::vector<std::string> {"species:goliath:ancestry"} &&
-          groups("human") == std::vector<std::string> {"species:human:size", "species:human:skillful"} &&
+          groups("human") == std::vector<std::string> {"species:human:size", "species:human:skillful",
+                                                       "species:human:versatile"} &&
           groups("dwarf").empty(),
           "Each species offers its own choices");
     const auto speed = [&](const Character &hero)
@@ -516,6 +518,138 @@ void breath_weapon_checks()
     check(uses_left() == 2, "A Long Rest restores both uses");
 }
 
+// Versatile: a Human's Origin feat, not the background's, with Skilled's
+// skills and Magic Initiate's spells chosen like the background's (#71).
+void versatile_checks()
+{
+    const auto creation = srd5::character_rules();
+    const auto offered = [&](std::string background)
+    {
+        CharacterDraft d;
+        d.race = "human";
+        d.background = std::move(background);
+        std::vector<std::string> ids;
+        for (const auto &g : creation->training_options(d))
+            if (g.id == "species:human:versatile")
+                for (const auto &o : g.options)
+                    ids.push_back(o.id);
+        return ids;
+    };
+    const auto soldier = offered("soldier"), criminal = offered("criminal");
+    check(soldier.front() == "skilled" &&
+          std::find(soldier.begin(), soldier.end(), "savage_attacker") == soldier.end() &&
+          std::find(soldier.begin(), soldier.end(), "alert") != soldier.end() &&
+          std::find(criminal.begin(), criminal.end(), "alert") == criminal.end(),
+          "Versatile offers the Origin feats the background does not give");
+
+    const auto alert = fighter("human", {{"species:human:versatile", "alert"}});
+    const auto has = [](const Character & hero, const FeatureGrant & grant)
+    {
+        const auto &grants = hero.sheet().grants;
+        return std::find(grants.begin(), grants.end(), grant) != grants.end();
+    };
+    check(has(alert, {"feat:alert", "species:human:versatile", 1, {}}),
+          "Versatile Alert is a feat grant from the species");
+    const auto rules = module();
+    auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                rules->character_profile(alert.sheet(), std::vector<std::string> {}).data},
+            {2, "bandit", "Ally", Side::party, {1, 2}},
+            {98, "bandit", "Bandit", Side::opposition, {6, 1}}
+        }},
+    3);
+    check(c->snapshot().initiative_choices == std::vector<EntityId> {1},
+          "Versatile Alert offers the Initiative swap");
+
+    CharacterDraft skilled;
+    skilled.race = "human";
+    skilled.gender = "female";
+    skilled.character_class = "fighter";
+    skilled.background = "soldier";
+    skilled.alignment = "neutral_good";
+    skilled.name = "Skilled";
+    skilled.rolled = true;
+    for (auto &r : skilled.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    skilled.training = {{"class:fighter", {"acrobatics", "history"}},
+        {"class:fighter:fighting_style", {"defense"}},
+        {"species:human:versatile", {"skilled"}},
+        {"species:human:skilled", {"arcana", "nature", "stealth"}}
+    };
+    const Character trained(*creation, skilled, {});
+    check(has(trained, {"feat:skilled", "species:human:versatile", 1, {}}) &&
+          has(trained, {"skill:stealth", "species:human:skilled", 1, {}}),
+          "Versatile Skilled teaches its three skills");
+
+    auto initiate = skilled;
+    initiate.training.erase("species:human:skilled");
+    initiate.training["species:human:versatile"] = {"magic_initiate_wizard"};
+    const auto spells = creation->spell_choice_options(initiate);
+    check(std::any_of(spells.learning.begin(), spells.learning.end(), [](const auto & g)
+    {
+        return g.id == "feat:magic_initiate_wizard:spell";
+    }), "Versatile Magic Initiate asks for its spells");
+    initiate.spells = SpellChoices{{{"feat:magic_initiate_wizard:ability", {"intelligence"}},
+            {"feat:magic_initiate_wizard:cantrips", {"fire_bolt", "ray_of_frost"}},
+            {"feat:magic_initiate_wizard:spell", {"magic_missile"}}
+        }, {}, {}, {}};
+    const Character wizardly(*creation, initiate, {});
+    check(has(wizardly, {"feat:magic_initiate_wizard", "species:human:versatile", 1, {}}) &&
+          std::any_of(wizardly.sheet().grants.begin(), wizardly.sheet().grants.end(),
+                      [](const auto & g)
+    {
+        return g.id == "spell:magic_missile";
+    }), "Versatile Magic Initiate learns its spells");
+
+    // A background that gives the chosen feat takes it back; the first
+    // option it leaves fills the choice again.
+    CharacterCreator creator(srd5::character_rules(), 7);
+    creator.select(CreationField::race, "human");
+    creator.training_choice({"species:human:versatile", "skilled", false});
+    creator.training_choice({"species:human:versatile", "alert", true});
+    creator.select(CreationField::background, "criminal");
+    const auto &picks = creator.draft().training.at("species:human:versatile");
+    check(picks == std::vector<std::string> {"skilled"} && creator.species_complete(),
+          "The Criminal's Alert replaces Versatile's Alert with Skilled");
+}
+
+// Resourceful: a Human gains Heroic Inspiration on finishing a Long Rest (a
+// new character has none) and spends it rolling its first miss again.
+void heroic_inspiration_checks()
+{
+    const auto rules = srd5::parse_content(read_rules() +
+                                           "\ncreature wall 30 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+    const auto hero = fighter("human");
+    const auto inspired = [&](const VitalState & state)
+    {
+        for (const auto &pool : rules->recovery_info(hero.sheet(), state).resources)
+            if (pool.id == "heroic_inspiration")
+                return pool.remaining;
+        throw std::runtime_error("No Heroic Inspiration pool");
+    };
+    VitalState state;
+    state.hit_points = hero.sheet().hit_points;
+    check(inspired(state) == 0, "A new Human has no Heroic Inspiration yet");
+    rules->recover(state, hero.sheet());
+    check(inspired(state) == 1, "A Long Rest gives Heroic Inspiration");
+    const VitalState rested = state;
+    auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+        {   {1, "campaign-character", "Hero", Side::party, {1, 1},
+                rules->character_profile(hero.sheet(), std::vector<std::string> {}).data, rested},
+            {98, "wall", "Wall", Side::opposition, {2, 1}}
+        }},
+    3);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        check(submit(*c, "end"), "Reach the hero's turn");
+    check(submit(*c, "melee", 98) && logged(*c, "Hero uses Heroic Inspiration and rolls the d20 again: "),
+          "The first miss is rolled again");
+    VitalState after;
+    for (const auto &unit : c->snapshot().combatants)
+        if (unit.id == 1)
+            after = unit.persistent;
+    check(inspired(after) == 0, "Heroic Inspiration is spent");
+}
+
 } // namespace
 
 int main()
@@ -529,6 +663,8 @@ int main()
         species_choice_checks();
         lineage_spell_checks();
         breath_weapon_checks();
+        versatile_checks();
+        heroic_inspiration_checks();
     }
     catch (const std::exception &error)
     {

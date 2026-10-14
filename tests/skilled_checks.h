@@ -83,7 +83,12 @@ void options_and_grants()
     p.advance(1, pick(p, {"skill:arcana", "skill:nature", "skill:medicine"}));
     const auto next = p.member(1).character.sheet();
     check(next.level == 4, "Skilled advancement completes");
-    const auto *feat_grant = grant(next, "feat:skilled");
+    // The Human also has Versatile's Skilled, from its species.
+    const auto level_four = std::find_if(next.grants.begin(), next.grants.end(), [](const auto & g)
+    {
+        return g.id == "feat:skilled" && g.level == 4;
+    });
+    const auto *feat_grant = level_four == next.grants.end() ? nullptr : &*level_four;
     check(feat_grant && feat_grant->level == 4 &&
           feat_grant->source_id == "class:fighter:ability_score_improvement" &&
           feat_grant->choices.empty(),

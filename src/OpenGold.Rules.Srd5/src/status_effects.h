@@ -169,8 +169,10 @@ enum class EffectKind : unsigned
     trait_uses = 70,
     // Hidden by the Hide action: Invisible until found; `dc` is the Stealth
     // total an enemy's Perception must reach.
+    hidden = 71,
+    // Heroic Inspiration, which a Human gains on finishing a Long Rest.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    hidden = 71
+    heroic_inspiration = 72
 };
 
 // The longest a spell benefit lasts, in milliseconds.

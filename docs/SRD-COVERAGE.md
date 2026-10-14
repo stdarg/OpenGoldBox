@@ -101,6 +101,9 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.182 completes the Human: Versatile's Origin feat and Resourceful's
+Heroic Inspiration ([Species](SPECIES.md),
+[HEROIC-1](SRD-DECISIONS.md#heroic-1-2026-10-14-heroic-inspiration-without-asking)).
 Rules 0.6.181 closes the Warlock's invocation gaps ([Warlock](WARLOCK.md)):
 Agonizing Blast, Eldritch Spear and Repelling Blast each name a damaging
 Warlock cantrip and may be taken again for another; Lessons of the First Ones

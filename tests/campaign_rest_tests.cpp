@@ -521,8 +521,11 @@ void effects_once()
               party.state().random_state == elapsed.state().random_state &&
               party.state().random_state != state.random_state,
               "Rest performs exactly the same timed recovery rolls as one elapsed interval");
+        // A Long Rest leaves a Human only its Heroic Inspiration (kind 72).
         for (const auto &m : party.state().roster)
-            check(m.vitals.resources.ends_with("FX8 2 0 0"),
+            check(m.vitals.resources.ends_with("FX8 2 0 0") ||
+                  (kind == RestKind::long_rest &&
+                   m.vitals.resources.find("FX8 3 1 2 72 1 1 ") != std::string::npos),
                   "Timed effects expire during the rest");
         check(party.member(reserve).vitals == elapsed.member(reserve).vitals,
               "Reserve effects advance without receiving rest recharge");

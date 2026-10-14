@@ -7,6 +7,16 @@ namespace opengold
 {
 using namespace rules;
 
+namespace
+{
+// A species choice's picks; none when the draft has not made it.
+std::vector<std::string> selected_species(const CharacterDraft &draft, const std::string &group)
+{
+    const auto found = draft.training.find(group);
+    return found == draft.training.end() ? std::vector<std::string> {} : found->second;
+}
+} // namespace
+
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
     : rules_(std::move(rules)), random_{seed}, gold_random_{~seed}
 {
@@ -122,12 +132,25 @@ void CharacterCreator::select(CreationField field, std::string_view id)
         candidate.cantrips->resize(cantrips.count);
     prune_training(candidate);
     // A new species starts with the first option of each of its choices,
-    // shown on the race page for the player to change.
-    if (field == CreationField::race)
+    // shown on the race page for the player to change. A choice another field
+    // took away (Versatile's feat, when the background gives that feat) is
+    // refilled the same way.
+    // A filled choice can bring another (Versatile's Skilled, its skills).
+    for (bool filled = true; filled;)
+    {
+        filled = false;
         for (const auto &group : rules_->training_options(candidate))
-            if (group.id.starts_with("species:") && !candidate.training.contains(group.id))
-                for (unsigned n = 0; n < group.count && n < group.options.size(); ++n)
-                    candidate.training[group.id].push_back(group.options[n].id);
+        {
+            if (!group.id.starts_with("species:") || !selected_species(candidate, group.id).empty())
+                continue;
+            auto &picks = candidate.training[group.id];
+            for (unsigned n = 0; n < group.count && n < group.options.size(); ++n)
+                picks.push_back(group.options[n].id);
+            filled |= !picks.empty();
+            if (picks.empty())
+                candidate.training.erase(group.id);
+        }
+    }
     draft_ = std::move(candidate);
 }
 

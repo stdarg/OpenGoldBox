@@ -410,6 +410,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::prayer_of_healing:
     case EffectKind::relentless_used:
     case EffectKind::trait_uses:
+    case EffectKind::heroic_inspiration:
         return 86400000; // until a Long Rest, at most a day
     case EffectKind::heroism:
     case EffectKind::divine_favor:
@@ -655,10 +656,10 @@ namespace
 {
 // A saved effect kind, checked before it becomes an EffectKind so the reader
 // compares kinds rather than casting numbers (Effective C++ Item 27).
-// hidden is the last kind.
+// heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::hidden))
+    if (value > static_cast<unsigned>(EffectKind::heroic_inspiration))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

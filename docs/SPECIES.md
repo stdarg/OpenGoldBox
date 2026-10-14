@@ -22,6 +22,7 @@ on its first option, so a new character is always complete.
 | Dragonborn | Draconic Ancestry | the ten dragons |
 | Goliath | Giant Ancestry | Cloud, Fire, Frost, Hill, Stone, Storm |
 | Human | Skillful | any skill |
+| Human | Versatile | an Origin feat the background does not give: Skilled (its three skills checked below it), Alert, Magic Initiate (Cleric, Druid or Wizard; spells on the spell page) or Savage Attacker |
 
 A sheet stores each choice as a grant (`lineage:`, `legacy:`, `size:`,
 `skill:`, `dragon:`, `giant:`, `spellcasting_ability:`, `cantrip:`).
@@ -70,3 +71,11 @@ it. A new save against one of those conditions must check the trait.
 
 A Halfling may [Hide](HIDE.md) when the only thing between it and an enemy is
 a creature at least one size larger.
+
+## Resourceful
+
+A Human gains Heroic Inspiration on finishing a Long Rest (a new character has
+none yet). It is used without asking on the first failed attack roll, saving
+throw or ability check a reroll could save: the d20 is rolled again and the
+new roll stands ([HEROIC-1](SRD-DECISIONS.md#heroic-1-2026-10-14-heroic-inspiration-without-asking)).
+The rest window and combat resources show it.

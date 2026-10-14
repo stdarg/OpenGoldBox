@@ -921,3 +921,19 @@ The user decided not to offer the Drow elven lineage at this time. An Elf
 chooses High Elf or Wood Elf. (The Drow's Dancing Lights was removed by DM-3,
 its Darkvision matters only where the campaign marks dark areas, and only its
 level-3 Faerie Fire would have had an effect.)
+
+## HEROIC-1 (2026-10-14): Heroic Inspiration without asking
+
+The user approved that a Human's Heroic Inspiration (Resourceful) is used
+without asking, as Bardic Inspiration is (BARD-1): the first failed attack
+roll, saving throw or ability check (escaping Restraints, hiding) that a 20
+could turn into a success has its d20 rolled again, and the new roll stands;
+the log says so. A Human gains it on finishing a Long Rest, so a new character
+has none until its first. The new roll replaces the d20 that counted, also
+under Advantage or Disadvantage. Repeated saves at the end of a turn and death
+saves (made unconscious) do not use it.
+
+Versatile (the same day): a Human picks an Origin feat other than its
+background's on the race page; Skilled's three skills are checked there too,
+and Magic Initiate's spells are chosen on the spell page. Skilled is offered
+first, so it is the creator's suggestion.

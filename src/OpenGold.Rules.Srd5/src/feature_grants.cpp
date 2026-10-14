@@ -52,19 +52,22 @@ std::string background_id(std::string_view label)
     return choice_id(rules::CreationField::background, label, "Unknown background");
 }
 
+std::string background_feat(std::string_view background)
+{
+    // Each list of Magic Initiate is its own feat, so Acolyte and Sage name theirs.
+    return background == "criminal"  ? "feat:alert"
+           : background == "soldier" ? "feat:savage_attacker"
+           : background == "acolyte" ? "feat:magic_initiate_cleric"
+           : background == "sage"    ? "feat:magic_initiate_wizard"
+           : std::string();
+}
+
 std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
         std::string_view background)
 {
     std::vector<rules::FeatureGrant> result;
-    if (background == "criminal")
-        result.push_back({"feat:alert", "background:criminal", 1, {}});
-    if (background == "soldier")
-        result.push_back({"feat:savage_attacker", "background:soldier", 1, {}});
-    // Each list of Magic Initiate is its own feat, so Acolyte and Sage name theirs.
-    if (background == "acolyte")
-        result.push_back({"feat:magic_initiate_cleric", "background:acolyte", 1, {}});
-    if (background == "sage")
-        result.push_back({"feat:magic_initiate_wizard", "background:sage", 1, {}});
+    if (const auto feat = background_feat(background); !feat.empty())
+        result.push_back({feat, "background:" + std::string(background), 1, {}});
     if (klass == CharacterClass::fighter)
     {
         // Entitlement already used by the existing Defense selection. Completing
@@ -266,6 +269,16 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         const auto fixed = std::find(required.begin(), required.end(), grant);
         if (fixed != required.end())
             required.erase(fixed);
+        else if (grant.source_id == "species:human:versatile")
+        {
+            // Versatile: a Human's Origin feat (SRD 5.2.1 p. 85), chosen at creation.
+            require(race == "human" && grant.level == 1 && grant.choices.empty() &&
+                    (grant.id == "feat:alert" || grant.id == "feat:savage_attacker" ||
+                     grant.id == "feat:skilled" || grant.id == "feat:magic_initiate_cleric" ||
+                     grant.id == "feat:magic_initiate_druid" ||
+                     grant.id == "feat:magic_initiate_wizard"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == "subclass:ranger:hunter")
         {
             // Hunter's Prey: one of its two options, chosen at level three.

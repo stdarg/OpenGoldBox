@@ -614,6 +614,7 @@ struct Definition
     // Dragonborn: the Breath Weapon's damage type, from the Draconic Ancestry.
     std::optional<detail::DamageType> breath;
     int trait_uses{}; // uses of a species trait per Long Rest (Breath Weapon)
+    bool resourceful{}; // Human: Heroic Inspiration, back after each Long Rest
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool naturally_stealthy{}; // Halfling: a larger creature is enough to hide behind
@@ -1007,6 +1008,10 @@ void add_trait_pool(std::vector<rules::ResourcePool> &pools, const Actor &actor,
         pools.push_back({"breath_weapon", {"Breath Weapon", {}},
                          static_cast<unsigned>(std::max(0, trait_uses_left(actor))),
                          static_cast<unsigned>(d.trait_uses), 0u});
+    if (d.resourceful)
+        pools.push_back({"heroic_inspiration", {"Heroic Inspiration", {}},
+                         detail::has_effect(actor.effects, detail::EffectKind::heroic_inspiration)
+                         ? 1u : 0u, 1u, 0u});
 }
 
 // Pays for a leveled spell: with Magic Initiate's free cast, or from a slot
@@ -1234,6 +1239,7 @@ character_definition(std::string_view bytes,
     d.dwarf = race == "Dwarf";
     d.gnomish_cunning = race == "Gnome";
     d.relentless = race == "Orc";
+    d.resourceful = race == "Human";
     d.lucky = race == "Halfling";
     d.nimble = race == "Halfling";
     d.naturally_stealthy = race == "Halfling";
@@ -2399,6 +2405,10 @@ class Session final : public CombatSession
     void lands_aid(Actor &druid, Cell center);
     void breath_weapon(Actor &dragonborn, const PendingArea &aimed);
     void spend_trait_use(Actor &a);
+    // Heroic Inspiration (a Human's Resourceful, HEROIC-1): the d20 of the
+    // first failed test that a reroll could save is rolled again. A Long Rest
+    // gives it; a new character has none yet. The new roll, if it was used.
+    std::optional<int> heroic_reroll(Actor &a);
     // Heat Metal targets only metal armor a creature wears.
     [[nodiscard]] bool wears_metal(const Actor &creature) const;
     // Heat Metal's 2d8 Fire and Constitution save.
@@ -6382,6 +6392,23 @@ void Session::breath_weapon(Actor &dragonborn, const PendingArea &aimed)
                 area_dc(dragonborn, breath));
 }
 
+std::optional<int> Session::heroic_reroll(Actor &a)
+{
+    if (!conscious(a) || !std::erase_if(a.effects.active, [](const auto & e)
+{
+    return e.kind == detail::EffectKind::heroic_inspiration;
+}))
+    return std::nullopt;
+    const int natural = roll(20);
+    log(a.source.name + " uses Heroic Inspiration and rolls the d20 again: " +
+        std::to_string(natural) + ".",
+    {
+        "{name} uses Heroic Inspiration and rolls the d20 again: {roll}.",
+        {{"name", a.source.name}, {"roll", std::to_string(natural)}}
+    });
+    return natural;
+}
+
 void Session::spend_trait_use(Actor &a)
 {
     for (auto &effect : a.effects.active)
@@ -6713,6 +6740,9 @@ void Session::escape_ensnaring(Actor &a)
     const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                       guidance_bonus(a, "athletics");
     bool escaped = natural + bonus >= vines.dc;
+    if (!escaped && bonus + 20 >= vines.dc)
+        if (const auto again = heroic_reroll(a))
+            escaped = *again + bonus >= vines.dc;
     const std::string advantage_label = advantage ? " (advantage)" : "";
     log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + advantage_label +
         " + " + std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
@@ -6973,6 +7003,9 @@ void Session::hide(Actor &a)
             {"dc", std::to_string(dc)}
         }
     });
+    if (total < dc && d.stealth + 20 >= dc)
+        if (const auto again = heroic_reroll(a))
+            total = *again + d.stealth;
     if (total < dc)
         total += inspiration_roll(a, dc - total);
     if (total < dc)
@@ -7546,6 +7579,11 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         natural = detail::d20(modifiers, rng_);
         log("Seeking Spell rerolls the missed attack.", {"Seeking Spell rerolls the missed attack.", {}});
     }
+    // Heroic Inspiration rolls a missed attack again.
+    if (natural != 20 && !(!spell && d.champion && natural == 19) &&
+            !attack_hits(natural, bonus, armor_class(target)))
+        if (const auto again = heroic_reroll(actor(a.source.id)))
+            natural = *again;
     const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
     bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     // Bardic Inspiration may rescue a miss; Cutting Words may spoil a hit.
@@ -8464,6 +8502,14 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
                       modifiers, rng_, &lucky_reroll);
     log_luck(target, lucky_reroll);
     log_save(target, result);
+    // Heroic Inspiration rolls a failed save again, if a 20 could pass it.
+    if (!result.success && result.bonus + 20 >= dc)
+        if (const auto again = heroic_reroll(actor(target.source.id)))
+        {
+            result.natural = *again;
+            result.success = result.natural + result.bonus >= dc;
+            log_save(target, result);
+        }
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
         if (const int die = inspiration_roll(target, dc - result.natural - result.bonus))
@@ -11736,9 +11782,12 @@ class Module final : public RulesModule
             };
             next.ability_adjustments.push_back(std::move(adjustment));
         }
-        // spell_choice_sheet already granted Magic Initiate, whose spells it offers.
+        // spell_choice_sheet already granted Magic Initiate, whose spells it
+        // offers. The same feat from another source (a Human's Versatile
+        // Skilled) is a second grant.
         if (const auto feat = detail::advancement_grant(klass, next.level, choice);
-                !choice.feat.empty() && !detail::has_grant(next.grants, feat.id))
+                !choice.feat.empty() &&
+                std::find(next.grants.begin(), next.grants.end(), feat) == next.grants.end())
             next.grants.push_back(feat);
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
@@ -11964,8 +12013,14 @@ class Module final : public RulesModule
         {
             return e.kind == detail::EffectKind::prayer_of_healing ||
                    e.kind == detail::EffectKind::relentless_used ||
-                   e.kind == detail::EffectKind::trait_uses;
+                   e.kind == detail::EffectKind::trait_uses ||
+                   e.kind == detail::EffectKind::heroic_inspiration;
         });
+        // Resourceful: a Human finishes the Long Rest with Heroic Inspiration.
+        if (d.resourceful && detail::can_apply(actor.effects))
+            // Camp effects carry scope 1: there is no encounter to source them.
+            detail::apply_spell_benefit(actor.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        sheet.name, detail::EffectKind::heroic_inspiration, 0);
         actor.winds = d.winds;
         actor.slots = d.slots;
         actor.slots2 = d.slots2;
@@ -13106,7 +13161,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.181", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.182", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
