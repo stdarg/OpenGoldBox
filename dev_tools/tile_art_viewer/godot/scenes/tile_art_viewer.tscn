@@ -52,7 +52,7 @@ text = "First Person Tile Art"
 
 [node name="Help" type="Label" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
-text = "Browse original wall, door, gateway, waterfront and other map artwork. Select a thumbnail or use Previous / Next."
+text = "Browse wall, door, gateway, waterfront and other map artwork. Use Show new art to switch views."
 
 [node name="Filters" type="HBoxContainer" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
@@ -86,10 +86,6 @@ placeholder_text = "Archive, record, appearance or view"
 [node name="ReplacementRow" type="HBoxContainer" parent="Margin/Tabs/ArtCatalog"]
 layout_mode = 2
 theme_override_constants/separation = 10
-
-[node name="LoadReplacement" type="Button" parent="Margin/Tabs/ArtCatalog/ReplacementRow"]
-layout_mode = 2
-text = "Load replacement pack…"
 
 [node name="ShowReplacement" type="CheckButton" parent="Margin/Tabs/ArtCatalog/ReplacementRow"]
 layout_mode = 2
@@ -231,7 +227,7 @@ clip_text = true
 
 [node name="MapHelp" type="Label" parent="Margin/Tabs/MapBrowser"]
 layout_mode = 2
-text = "Arrow keys: Up moves forward through walls, Left/Right turn, Down turns around. Click the map to jump; click a first-person piece to inspect it."
+text = "Arrow keys: Up moves forward through walls, Left/Right turn, Down turns around. Click the map to jump. Turn off Show new art to inspect source pieces."
 autowrap_mode = 3
 
 [node name="MapSplit" type="HSplitContainer" parent="Margin/Tabs/MapBrowser"]
@@ -313,10 +309,6 @@ text = "Facing"
 [node name="FacingPicker" type="OptionButton" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
 custom_minimum_size = Vector2(145, 38)
 layout_mode = 2
-
-[node name="LoadReplacement" type="Button" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
-layout_mode = 2
-text = "Load replacement pack…"
 
 [node name="ShowReplacement" type="CheckButton" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow"]
 layout_mode = 2
@@ -400,8 +392,3 @@ ok_button_text = "Export"
 file_mode = 4
 access = 2
 filters = PackedStringArray("*.png ; PNG image")
-
-[node name="ReplacementDialog" type="FileDialog" parent="."]
-title = "Select folder containing exported replacement sets"
-file_mode = 2
-access = 2

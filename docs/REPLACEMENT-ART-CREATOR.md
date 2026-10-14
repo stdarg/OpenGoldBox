@@ -158,17 +158,18 @@ OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD \
   --path dev_tools/tile_art_viewer/godot
 ```
 
-1. Open **Map Browser** and choose a map.
-2. Click **Load replacement pack…** and select the **parent folder** that
-   contains the exported appearance folders, not an individual ten-PNG folder.
-3. Enable **Show new art**. The first-person view displays replacements where
+1. Open **Map Browser** and choose a map. The viewer automatically loads art
+   from `dev_tools/replacement_art_creator/replacement_pack` and starts with
+   **Show new art** enabled. To review another export, place its appearance
+   folder under `replacement_pack` and restart the viewer.
+2. The first-person view displays replacements where
    the pack has them and locally decoded originals for missing appearances.
    If you exported an appearance more than once, the latest numbered export
    wins.
-4. Navigate with the arrow keys: **Left** and **Right** turn, **Up** moves
+3. Navigate with the arrow keys: **Left** and **Right** turn, **Up** moves
    forward, and **Down** turns around. You can move through walls in this
    inspection tool. You can also click the top-down map to jump to a cell.
-5. Turn off **Show new art** to return to the original view. Click a visible
+4. Turn off **Show new art** to return to the original view. Click a visible
    source piece there if you need its exact original metadata. The replacement
    view is for visual review; source-piece picking works in the original view.
 

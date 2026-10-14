@@ -110,10 +110,11 @@ feature distortion, or unwanted repetition appear.
 
 ## Review in a real map
 
-The existing Tile Art Viewer can load a folder of exported sets. In its **Map
-Browser**, press **Load replacement pack…**, choose
-`dev_tools/replacement_art_creator/replacement_pack`,
-then toggle **Show new art**. The map preview uses the same draw order at 4×
+The Tile Art Viewer automatically loads sets from
+`dev_tools/replacement_art_creator/replacement_pack` at startup. Its **Show new
+art** toggle controls both Art Catalog and Map Browser; it starts on. To review
+another export, place its appearance folder under `replacement_pack` and restart
+the viewer. The map preview uses the same draw order at 4×
 resolution. Appearances without a new set display the user's locally decoded
 original art for context; the included pack has sets for every appearance
 marked used by the current catalog. It contains only new art. The latest

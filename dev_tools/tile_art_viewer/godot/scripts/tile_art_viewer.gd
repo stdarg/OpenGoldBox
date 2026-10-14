@@ -5,6 +5,7 @@ const VIEW_NAMES := [
     "Middle right", "Near front", "Near left", "Near right", "Far extension"
 ]
 const METADATA_FILE := "../data/tile_art_catalog.csv"
+const REPLACEMENT_PACK := "../../replacement_art_creator/replacement_pack"
 const CSV_COLUMNS := [
     "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",
     "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
@@ -24,7 +25,6 @@ const REPLACEMENT_SIZES := [
 @onready var archive_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ArchiveFilter
 @onready var view_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ViewFilter
 @onready var search: LineEdit = $Margin/Tabs/ArtCatalog/Filters/Search
-@onready var catalog_load_replacement: Button = $Margin/Tabs/ArtCatalog/ReplacementRow/LoadReplacement
 @onready var catalog_show_replacement: CheckButton = $Margin/Tabs/ArtCatalog/ReplacementRow/ShowReplacement
 @onready var contact_grid: ItemList = $Margin/Tabs/ArtCatalog/Split/ContactGrid
 @onready var identity: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Identity
@@ -47,7 +47,6 @@ const REPLACEMENT_SIZES := [
 @onready var legend_pose: Label = $Margin/Tabs/MapBrowser/MapSplit/MapPanel/MapColumn/MapLegend/LegendPose
 @onready var pose_summary: Label = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PoseSummary
 @onready var facing_picker: OptionButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow/FacingPicker
-@onready var load_replacement: Button = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow/LoadReplacement
 @onready var show_replacement: CheckButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow/ShowReplacement
 @onready var first_person: Control = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FirstPersonPanel/FirstPerson
 @onready var visible_pieces: OptionButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/VisiblePieces
@@ -59,7 +58,6 @@ const REPLACEMENT_SIZES := [
 @onready var map_export: Button = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/MapExport
 @onready var map_status: Label = $Margin/Tabs/MapBrowser/MapStatus
 @onready var save_dialog: FileDialog = $SaveDialog
-@onready var replacement_dialog: FileDialog = $ReplacementDialog
 
 var catalog_entries: Array = []
 var metadata_rows: Array = []
@@ -96,9 +94,6 @@ func _ready() -> void:
     see_in_map.pressed.connect(_see_in_map)
     map_export.pressed.connect(_show_map_export_dialog)
     save_dialog.file_selected.connect(_export_png)
-    catalog_load_replacement.pressed.connect(func(): replacement_dialog.popup_centered_ratio())
-    load_replacement.pressed.connect(func(): replacement_dialog.popup_centered_ratio())
-    replacement_dialog.dir_selected.connect(_load_replacement_pack)
     catalog_show_replacement.toggled.connect(_set_replacement_mode)
     show_replacement.toggled.connect(_set_replacement_mode)
     map_picker.item_selected.connect(_select_map)
@@ -148,6 +143,7 @@ func _ready() -> void:
     if not catalog_maps.is_empty():
         map_picker.select(phlan_index)
         _select_map(phlan_index)
+    _load_replacement_pack(_replacement_pack_path())
 
     for argument in OS.get_cmdline_user_args():
         if argument.begins_with("--viewer-check="):
@@ -186,6 +182,9 @@ func _load_failure(message: String) -> void:
 
 func _metadata_path() -> String:
     return ProjectSettings.globalize_path("res://").path_join(METADATA_FILE).simplify_path()
+
+func _replacement_pack_path() -> String:
+    return ProjectSettings.globalize_path("res://").path_join(REPLACEMENT_PACK).simplify_path()
 
 func _load_metadata() -> String:
     var path := _metadata_path()
@@ -710,9 +709,13 @@ func _load_replacement_pack(folder: String) -> void:
     replacement_sets = loaded
     catalog_show_replacement.disabled = false
     show_replacement.disabled = false
+    var location_hint := "New art: dev_tools/replacement_art_creator/replacement_pack (restart after changing the pack)"
+    catalog_show_replacement.tooltip_text = location_hint
+    show_replacement.tooltip_text = location_hint
     _set_replacement_mode(true)
-    map_status.text += " Pack loaded from %s (%d rejected)." % [folder, rejected]
-    status.text += " Pack loaded from %s (%d rejected)." % [folder, rejected]
+    if rejected > 0:
+        map_status.text += " · %d invalid sets skipped" % rejected
+        status.text += " · %d invalid sets skipped" % rejected
 
 func _set_replacement_mode(enabled: bool) -> void:
     catalog_show_replacement.set_pressed_no_signal(enabled)
@@ -893,6 +896,7 @@ func _advance_map_pose() -> bool:
     return true
 
 func _run_check(output_path: String) -> void:
+    _set_replacement_mode(false)
     if catalog_entries.size() != 2100 or visible_indices.size() != 2100:
         push_error("Expected 2,100 source perspective pieces; got %d" % catalog_entries.size())
         get_tree().quit(1)
@@ -975,6 +979,7 @@ func _run_check(output_path: String) -> void:
     get_tree().quit()
 
 func _run_map_check(output_path: String) -> void:
+    _set_replacement_mode(false)
     if catalog_maps.size() != 29:
         _map_check_fail("Expected 29 game maps, got %d" % catalog_maps.size())
         return
@@ -1101,6 +1106,7 @@ func _run_map_check(output_path: String) -> void:
     get_tree().quit()
 
 func _run_metadata_check(output_path: String) -> void:
+    _set_replacement_mode(false)
     if metadata_rows.size() != catalog_entries.size() or metadata_rows.size() != 2100:
         _map_check_fail("Metadata CSV does not cover all 2,100 source images")
         return
@@ -1167,10 +1173,9 @@ func _run_metadata_check(output_path: String) -> void:
     get_tree().quit()
 
 func _run_replacement_check(folder: String) -> void:
-    _load_replacement_pack(folder)
     if (replacement_sets.size() != 4 and replacement_sets.size() != 168) or \
             not show_replacement.button_pressed or not catalog_show_replacement.button_pressed:
-        _map_check_fail("Replacement pack did not load the expected appearances")
+        _map_check_fail("Bundled replacement pack did not load automatically")
         return
     var row: Dictionary = {}
     for candidate in metadata_rows:

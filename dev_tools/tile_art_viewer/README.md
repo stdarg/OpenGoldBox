@@ -46,10 +46,11 @@ control gives keyboard users another way to select one. Export PNG saves that
 piece at its source resolution with transparency. Only the clicked or selected
 piece appears in the details panel; changing position or facing clears it.
 
-For new art review, the Map Browser can load replacement sets exported by the
-separate [Replacement Art Creator](../replacement_art_creator/README.md). Press
-**Load replacement pack…** and select the parent folder of exported sets, then
-toggle **Show new art**. The 352 × 352 preview follows the game's draw order;
+For new art review, the viewer automatically loads replacement sets from
+[`dev_tools/replacement_art_creator/replacement_pack`](../replacement_art_creator/replacement_pack),
+produced by the separate [Replacement Art Creator](../replacement_art_creator/README.md).
+**Show new art** is on at startup in both tabs; turn it off to see original art.
+The 352 × 352 Map Browser preview follows the game's draw order;
 missing appearances still use artwork decoded locally from your installation.
 Switch back to the original view for exact source-piece picking and export.
 The replacement pack contains only the new PNGs and their manifests.
@@ -108,7 +109,6 @@ In Art Catalog, use the archive and view filters or the Find field to narrow the
 Select a thumbnail to inspect it. Previous and Next move through the currently
 visible items; Left and Right move one piece, while Up and Down move one row
 in the same column when the Find field and filter controls are not focused.
-In Art Catalog, **Load replacement pack…** accepts the same pack as Map Browser.
 **Show new art** switches both tabs together: the contact grid and large preview
 show replacement pieces where present, and original pieces elsewhere. The source
 line identifies which one is displayed. Export PNG saves the displayed piece at
