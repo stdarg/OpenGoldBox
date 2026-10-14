@@ -34,7 +34,8 @@ An enemy finds a hidden creature in its clear view when its Passive Perception
 (10 + Perception) reaches the Stealth total; this is checked after every
 command, so walking into view of a watchful enemy ends hiding at once. The
 Search action (an Action, offered while an enemy is hidden) rolls Wisdom
-(Perception) against each hidden enemy in clear view. A character's Perception
+(Perception) against each hidden enemy in clear view; a Lore Bard on the
+hidden side may lower it with Cutting Words ([Bard](BARD.md#bardic-inspiration-and-cutting-words)). A character's Perception
 and Stealth come from its skills; a monster's Perception is its stat block's
 skill (the `perception` rows in `combat.rules`) or else its Wisdom save.
 

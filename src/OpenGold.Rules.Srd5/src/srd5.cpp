@@ -2151,8 +2151,14 @@ class Session final : public CombatSession
     // Bardic Inspiration's die added to a roll that failed by `shortfall`.
     int inspiration_roll(const Actor &creature, int shortfall);
     void log_inspiration(const Actor &inspired, int die, bool success);
-    // Cutting Words' die taken from an attack roll that hit by `margin`.
-    int cutting_words(const Actor &attacker, int margin);
+    // Cutting Words' die taken from an attack roll that hit, or an ability
+    // check that succeeded, by `margin`.
+    enum class CutRoll : unsigned
+    {
+        attack,
+        check
+    };
+    int cutting_words(const Actor &roller, int margin, CutRoll roll = CutRoll::attack);
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void clouds_jaunt(Actor &goliath, Cell destination);
@@ -6854,9 +6860,16 @@ void Session::escape_ensnaring(Actor &a)
     const auto vines = *found;
     const bool advantage = rage_of(a) || def(a).champion;
     const int natural = detail::d20({advantage, false, def(a).lucky}, rng_);
-    const int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
-                      guidance_bonus(a, "athletics");
+    int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
+                guidance_bonus(a, "athletics");
     bool escaped = natural + bonus >= vines.dc;
+    // An enemy Lore Bard's Cutting Words may spoil the escape; the check's
+    // line shows the lowered bonus, as an attack's does.
+    if (escaped)
+    {
+        bonus -= cutting_words(a, natural + bonus - vines.dc, CutRoll::check);
+        escaped = natural + bonus >= vines.dc;
+    }
     if (!escaped && bonus + 20 >= vines.dc)
         if (const auto again = heroic_reroll(a))
             escaped = *again + bonus >= vines.dc;
@@ -7143,14 +7156,23 @@ void Session::search(Actor &searcher)
     bool lucky_reroll = false;
     const int natural = detail::d20({false, false, d.lucky}, rng_, &lucky_reroll);
     log_luck(searcher, lucky_reroll);
-    const int total = natural + d.perception;
+    int bonus = d.perception;
+    // An enemy Lore Bard's Cutting Words may keep the best-hidden creature the
+    // search would find hidden.
+    int margin = 6;
+    for (const auto &other : actors_)
+        if (other.source.side != searcher.source.side && hidden(other) &&
+                clear_view(searcher, other) && natural + bonus >= stealth_total(other))
+            margin = std::min(margin, natural + bonus - stealth_total(other));
+    bonus -= cutting_words(searcher, margin, CutRoll::check);
+    const int total = natural + bonus;
     log(searcher.source.name + " searches: Perception d20 " + std::to_string(natural) + " + " +
-        std::to_string(d.perception) + " = " + std::to_string(total) + ".",
+        std::to_string(bonus) + " = " + std::to_string(total) + ".",
     {
         "{name} searches: Perception d20 {roll} + {bonus} = {total}.",
         {   {"name", searcher.source.name},
             {"roll", std::to_string(natural)},
-            {"bonus", std::to_string(d.perception)},
+            {"bonus", std::to_string(bonus)},
             {"total", std::to_string(total)}
         }
     });
@@ -9054,30 +9076,35 @@ void Session::log_inspiration(const Actor &inspired, int die, bool success)
     });
 }
 
-int Session::cutting_words(const Actor &attacker, int margin)
+int Session::cutting_words(const Actor &roller, int margin, CutRoll cut)
 {
-    // A Lore Bard who sees the attacker within 60 feet spends a Reaction and a
-    // Bardic Inspiration use to subtract the die from the attack roll. It is
-    // used without asking, and only when the d6 could turn the hit into a miss.
+    // A Lore Bard who sees the roller within 60 feet spends a Reaction and a
+    // Bardic Inspiration use to subtract the die from the roll. It is used
+    // without asking, and only when the d6 could turn the success into a failure.
     if (margin >= 6)
         return 0;
     for (auto &bard : actors_)
     {
-        if (!def(bard).cutting_words || bard.source.side == attacker.source.side ||
+        if (!def(bard).cutting_words || bard.source.side == roller.source.side ||
                 !conscious(bard) || !bard.reaction || detail::incapacitated(bard.effects) ||
-                bard.arcane <= 0 || distance(bard.source.cell, attacker.source.cell) > 60 ||
-                !can_see(bard, attacker))
+                bard.arcane <= 0 || distance(bard.source.cell, roller.source.cell) > 60 ||
+                !can_see(bard, roller))
             continue;
         bard.reaction = false;
         --bard.arcane;
         const int die = roll(6);
-        const bool missed = die > margin;
+        const bool failed = die > margin;
         const auto amount = std::to_string(die);
-        log(bard.source.name + " uses Cutting Words: -" + amount +
-            (missed ? ", turning the hit into a miss." : "; the attack still hits."),
+        const bool attack = cut == CutRoll::attack;
+        const std::string outcome =
+            attack ? (failed ? ", turning the hit into a miss." : "; the attack still hits.")
+            : (failed ? ", turning the success into a failure." : "; the check still succeeds.");
+        log(bard.source.name + " uses Cutting Words: -" + amount + outcome,
         {
-            missed ? "{name} uses Cutting Words: -{amount}, turning the hit into a miss."
-            : "{name} uses Cutting Words: -{amount}; the attack still hits.",
+            attack ? (failed ? "{name} uses Cutting Words: -{amount}, turning the hit into a miss."
+                      : "{name} uses Cutting Words: -{amount}; the attack still hits.")
+            : (failed ? "{name} uses Cutting Words: -{amount}, turning the success into a failure."
+               : "{name} uses Cutting Words: -{amount}; the check still succeeds."),
             {{"name", bard.source.name}, {"amount", amount}}
         });
         return die;
@@ -13431,7 +13458,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.186", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.187", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

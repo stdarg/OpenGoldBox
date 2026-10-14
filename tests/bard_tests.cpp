@@ -1,6 +1,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
 #include <algorithm>
@@ -309,6 +310,55 @@ void inspiration_checks()
     check(cut, "Some seed hits the ally");
 }
 
+// A monster's search that would find the hidden Lore Bard by less than 6
+// draws Cutting Words, without asking (#130).
+void cutting_check_checks()
+{
+    const auto module = srd5::parse_content(
+                            read(root / "data/rules/srd-5.2.1/combat.rules") +
+                            "\ncreature dull 10 50 0 30 4 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nperception dull 4\n");
+    // A wall at x = 4 from y = 0 to 2 keeps the Bard at (3, 1) out of sight.
+    std::vector<Terrain> walled(72);
+    for (int y = 0; y <= 2; ++y)
+        walled[y * 12 + 4] = Terrain::obstacle;
+    const auto hero = bard(3);
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto step = [](CombatSession & c, Cell cell)
+    {
+        for (const auto &command : c.legal_commands())
+            if (command.verb == "move" && command.destination == cell)
+                return c.submit(command);
+        return false;
+    };
+    for (std::uint64_t seed = 1; seed < 200; ++seed)
+    {
+        auto c = module->create({{12, 6, walled},
+            {   {1, "campaign-character", "Bard", Side::party, {3, 1}, profile},
+                {98, "dull", "Foe", Side::opposition, {8, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Bard's turn");
+        if (!submit(*c, "hide") || !unit(*c, 1).hidden)
+            continue;
+        // Into the monster's view; its Passive Perception 14 misses the Bard.
+        check(step(*c, {3, 2}) && step(*c, {3, 3}) && step(*c, {3, 4}) && submit(*c, "end"),
+              "The Bard steps into view and ends its turn");
+        if (!unit(*c, 1).hidden || c->snapshot().actor != 98)
+            continue;
+        const auto choice = choose_demo_command(*c);
+        check(choice.verb == "search" && c->submit(choice), "The monster searches");
+        if (!logged(*c, "Bard uses Cutting Words: -"))
+            continue;
+        check(!unit(*c, 1).reaction && inspiration_left(*c) == 3,
+              "Cutting Words spends the Reaction and a use");
+        check(logged(*c, "turning the success into a failure.") == unit(*c, 1).hidden,
+              "The Bard stays hidden exactly when the cut turns the search into a failure");
+        return;
+    }
+    throw std::runtime_error("No seed's search nearly finds the Bard");
+}
+
 // Bardic Inspiration on the saves that are rolled outside a command: the
 // repeated save at the end of a turn and the Concentration save.
 void inspired_save_checks()
@@ -411,6 +461,7 @@ int main()
         advancement_checks();
         inspiration_checks();
         inspired_save_checks();
+        cutting_check_checks();
         jack_of_all_trades_checks();
         std::cout << "Bard tests passed\n";
     }

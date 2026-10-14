@@ -59,8 +59,11 @@ ability.
   60 feet that the Bard sees hits with an attack roll by less than 6 (a
   critical hit aside), the Bard subtracts its Bardic Inspiration die from the
   roll, spending its Reaction and a use. The log says whether the attack then
-  misses. Using it on a damage roll or an enemy's ability check is not
-  modeled.
+  misses. It also answers an enemy's ability check that succeeded by less
+  than 6: an Athletics check to break free of vines or webs, or a Search that
+  would find a hidden creature of the Bard's side (measured against the
+  best-hidden one it would find); the log says whether the check then fails.
+  Using it on a damage roll is not modeled.
 - Verification: `opengold_bard_tests` (four uses at Charisma 18, the Bonus
   Action, the die used only on a miss it could rescue, Cutting Words' Reaction
-  and use, the repeated-save and Concentration helpers).
+  and use, Cutting Words against a monster's Search, the repeated-save and Concentration helpers).

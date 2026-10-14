@@ -101,6 +101,8 @@ says when it rerolled an attack or save. The Halfling issue
 ([#70](https://github.com/stdarg/OpenGold/issues/70)) stays open for
 Naturally Stealthy (which waits on Hide, #219); Brave has nothing to act on,
 since nothing in the game frightens a character yet.
+Rules 0.6.187 lets Cutting Words spoil an enemy's ability check: breaking free
+or a Search ([Bard](BARD.md#bardic-inspiration-and-cutting-words)).
 Rules 0.6.186 gives Heightened Spell's target Disadvantage on every save
 against the spell, repeated saves included ([Sorcerer](SORCERER.md#metamagic-level-2)).
 Rules 0.6.185 lets Hellish Rebuke, Stone's Endurance and Storm's Thunder answer
