@@ -37,14 +37,15 @@ Click the top-down map to jump to any cell. The map shows walls in blue, doors
 in gold, cells with a nonzero event or indoor byte as purple dots, and the
 current pose in yellow. A legend below the map explains each marker.
 
-The first-person view uses the game's original 88 × 88 perspective compositor.
-Click a visible wall or door in that view. The panel below it shows the exact
-source piece that supplied that pixel: map cell, face, wall and door codes, event
-byte, source archive and record, appearance, perspective, dimensions, and a
-preview. Sky and floor pixels have no source wall piece. The **Visible pieces**
-control gives keyboard users another way to select one. Export PNG saves that
-piece at its source resolution with transparency. Only the clicked or selected
-piece appears in the details panel; changing position or facing clears it.
+Click a visible wall, door, or other tile in the 3D view, with either original
+or new art displayed. A gold ring marks the selected spot. The panel below the
+view shows the selected tile's map cell, face, wall and door codes, event byte,
+source archive and record, appearance, perspective, dimensions, and a preview
+of the displayed piece. **See in Art Catalog** opens that exact catalog entry.
+Sky and floor clear the selection. For keyboard selection, focus the 3D view
+with Tab and press Enter to cycle source pieces. Export PNG saves the displayed
+piece at its own resolution with transparency. Changing position or facing
+clears the selection.
 
 For new art review, the viewer automatically loads replacement sets from
 [`dev_tools/replacement_art_creator/replacement_pack`](../replacement_art_creator/replacement_pack),
@@ -52,7 +53,7 @@ produced by the separate [Replacement Art Creator](../replacement_art_creator/RE
 **Show new art** is on at startup in both tabs; turn it off to see original art.
 The 352 × 352 Map Browser preview follows the game's draw order;
 missing appearances still use artwork decoded locally from your installation.
-Switch back to the original view for exact source-piece picking and export.
+Click a piece in either view to inspect and export the displayed tile.
 The replacement pack contains only the new PNGs and their manifests.
 
 The map's artwork selector shows inspection profiles derived from decoded area

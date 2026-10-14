@@ -169,9 +169,9 @@ OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD \
 3. Navigate with the arrow keys: **Left** and **Right** turn, **Up** moves
    forward, and **Down** turns around. You can move through walls in this
    inspection tool. You can also click the top-down map to jump to a cell.
-4. Turn off **Show new art** to return to the original view. Click a visible
-   source piece there if you need its exact original metadata. The replacement
-   view is for visual review; source-piece picking works in the original view.
+4. Click a visible piece in either view to inspect its details. Press **See in
+   Art Catalog** to open the matching entry. Turn off **Show new art** to compare
+   the original piece at the same location.
 
 See the [Tile Art Viewer guide](../dev_tools/tile_art_viewer/README.md) for its
 Art Catalog, map controls, and source-piece export features.
@@ -203,8 +203,9 @@ exported pack contains only new art and its manifest.
   and saving again.
 - **Build reports an incomplete set:** Confirm the imported wall file is a
   readable PNG. Reimport any missing or damaged feature PNG, then build again.
-- **New art is absent in Map Browser:** Load the parent export folder, enable
-  **Show new art**, and visit a map location that actually uses that appearance.
+- **New art is absent in Map Browser:** Place the exported appearance folder
+  under `dev_tools/replacement_art_creator/replacement_pack`, restart the viewer,
+  enable **Show new art**, and visit a map location that uses that appearance.
   The **Unused** label can help explain why an appearance is hard to find.
 
 For developer details and optional headless checks, see the

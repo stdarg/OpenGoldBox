@@ -119,9 +119,9 @@ resolution. Appearances without a new set display the user's locally decoded
 original art for context; the included pack has sets for every appearance
 marked used by the current catalog. It contains only new art. The latest
 numbered export of each appearance wins when several versions are present.
-Turn off **Show new art** to restore the original clickable source-piece
-inspection. The replacement view is a visual preview; source-piece picking is
-available in the original view.
+Click a visible piece in either view to inspect it, then use **See in Art
+Catalog** to open its entry. Turn off **Show new art** to compare with the
+original artwork.
 
 To build and run the viewer on macOS:
 

@@ -227,7 +227,7 @@ clip_text = true
 
 [node name="MapHelp" type="Label" parent="Margin/Tabs/MapBrowser"]
 layout_mode = 2
-text = "Arrow keys: Up moves forward through walls, Left/Right turn, Down turns around. Click the map to jump. Turn off Show new art to inspect source pieces."
+text = "Arrow keys navigate; click the map to jump. Click art in the 3D view to select it. Tab to the 3D view and press Enter to cycle visible pieces."
 autowrap_mode = 3
 
 [node name="MapSplit" type="HSplitContainer" parent="Margin/Tabs/MapBrowser"]
@@ -329,17 +329,9 @@ mouse_filter = 0
 mouse_default_cursor_shape = 2
 script = ExtResource("3")
 
-[node name="VisibleLabel" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
-layout_mode = 2
-text = "Visible pieces (keyboard selection)"
-
-[node name="VisiblePieces" type="OptionButton" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
-layout_mode = 2
-clip_text = true
-
 [node name="PickedTile" type="Label" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
 layout_mode = 2
-text = "Click a piece in the first-person view."
+text = "Click a wall, door, or other visible tile in the 3D view."
 autowrap_mode = 3
 
 [node name="PieceRow" type="HBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
@@ -376,9 +368,20 @@ autowrap_mode = 3
 layout_mode = 2
 text = ""
 
-[node name="MapExport" type="Button" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
+[node name="SelectionActions" type="HBoxContainer" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn"]
 layout_mode = 2
-text = "Export selected piece as PNG…"
+theme_override_constants/separation = 10
+
+[node name="MapExport" type="Button" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/SelectionActions"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Export selected tile as PNG…"
+
+[node name="SeeInCatalog" type="Button" parent="Margin/Tabs/MapBrowser/MapSplit/DetailColumn/SelectionActions"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "See in Art Catalog"
 
 [node name="MapStatus" type="Label" parent="Margin/Tabs/MapBrowser"]
 layout_mode = 2

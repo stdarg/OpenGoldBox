@@ -49,13 +49,13 @@ const REPLACEMENT_SIZES := [
 @onready var facing_picker: OptionButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow/FacingPicker
 @onready var show_replacement: CheckButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FacingRow/ShowReplacement
 @onready var first_person: Control = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/FirstPersonPanel/FirstPerson
-@onready var visible_pieces: OptionButton = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/VisiblePieces
 @onready var picked_tile: Label = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PickedTile
 @onready var piece_preview: TextureRect = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PiecePanel/PiecePreview
 @onready var piece_name: Label = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PieceDetails/PieceName
 @onready var piece_source: Label = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PieceDetails/PieceSource
 @onready var piece_size: Label = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/PieceRow/PieceDetails/PieceSize
-@onready var map_export: Button = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/MapExport
+@onready var map_export: Button = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/SelectionActions/MapExport
+@onready var see_in_catalog: Button = $Margin/Tabs/MapBrowser/MapSplit/DetailColumn/SelectionActions/SeeInCatalog
 @onready var map_status: Label = $Margin/Tabs/MapBrowser/MapStatus
 @onready var save_dialog: FileDialog = $SaveDialog
 
@@ -75,7 +75,9 @@ var map_pose := Vector2i(8, 8)
 var map_facing := 0
 var selected_map_entry := -1
 var visible_samples: Array = []
+var selected_sample_index := -1
 var replacement_sets: Dictionary = {}
+var replacement_draws: Array[Dictionary] = []
 
 func _ready() -> void:
     legend_wall.add_theme_color_override("font_color", map_grid.get_theme_color("wall", "MapGrid"))
@@ -92,6 +94,7 @@ func _ready() -> void:
     description_edit.text_changed.connect(_on_description_changed)
     save_description.pressed.connect(_save_descriptions)
     see_in_map.pressed.connect(_see_in_map)
+    see_in_catalog.pressed.connect(_see_in_catalog)
     map_export.pressed.connect(_show_map_export_dialog)
     save_dialog.file_selected.connect(_export_png)
     catalog_show_replacement.toggled.connect(_set_replacement_mode)
@@ -101,7 +104,7 @@ func _ready() -> void:
     facing_picker.item_selected.connect(_select_facing)
     map_grid.cell_clicked.connect(_jump_to_cell)
     first_person.pixel_clicked.connect(_pick_map_pixel)
-    visible_pieces.item_selected.connect(_select_visible_piece)
+    first_person.next_piece_requested.connect(_select_next_visible_piece)
     for direction in DIRECTIONS:
         facing_picker.add_item(direction)
     view_filter.add_item("All views")
@@ -350,15 +353,35 @@ func _see_in_map() -> void:
     map_facing = facing
     facing_picker.select(facing)
     _refresh_map_view()
+    var display_pixel := pixel
     if show_replacement.button_pressed:
-        map_status.text = "Jumped to %s · (%d, %d) facing %s · new art shown; switch off Show new art to inspect the source piece." % [
-            catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing]
-        ]
+        display_pixel = pixel * REPLACEMENT_SCALE + Vector2i.ONE * (REPLACEMENT_SCALE >> 1)
+        var visible_hit := _replacement_pick(display_pixel)
+        if visible_hit.is_empty() or int(visible_hit["entry_index"]) != selected_entry:
+            _clear_map_pick("This source piece is not visible at its saved spot with new art. Click a visible tile or switch to original art.")
+        else:
+            _pick_map_pixel(display_pixel)
     else:
-        _pick_map_pixel(pixel)
-        map_status.text = "Jumped to %s · (%d, %d) facing %s · selected catalog image %d" % [
-            catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing], selected_entry
-        ]
+        _pick_map_pixel(display_pixel)
+    map_status.text = "Jumped to %s · (%d, %d) facing %s" % [
+        catalog_maps[map_index]["name"], pose.x, pose.y, DIRECTIONS[facing]
+    ]
+
+func _see_in_catalog() -> void:
+    if selected_map_entry < 0:
+        return
+    var target := selected_map_entry
+    tabs.current_tab = 0
+    var position := visible_indices.find(target)
+    if position < 0:
+        archive_filter.select(0)
+        view_filter.select(0)
+        search.text = ""
+        _rebuild_grid()
+        position = visible_indices.find(target)
+    if position >= 0:
+        _select_visible(position)
+        contact_grid.grab_focus()
 
 func _description(entry: Dictionary) -> String:
     return str(entry.get("description", ""))
@@ -565,9 +588,10 @@ func _show_map_export_dialog() -> void:
     if selected_map_entry < 0:
         return
     export_pending_index = selected_map_entry
-    export_pending_replacement = false
-    save_dialog.current_file = _export_name(catalog_entries[export_pending_index])
-    save_dialog.title = "Export original tile art as PNG"
+    export_pending_replacement = _catalog_has_replacement(export_pending_index)
+    save_dialog.current_file = ("new-" if export_pending_replacement else "") + \
+        _export_name(catalog_entries[export_pending_index])
+    save_dialog.title = "Export displayed tile art as PNG"
     save_dialog.popup_centered_ratio(0.7)
 
 func _export_png(path: String) -> void:
@@ -634,6 +658,7 @@ func _refresh_map_view() -> void:
         catalog_maps[selected_map]["name"], map_pose.x, map_pose.y,
         DIRECTIONS[map_facing]
     ]
+    replacement_draws.clear()
     if show_replacement.button_pressed and not replacement_sets.is_empty():
         first_person.set_image(_compose_replacement_view())
     else:
@@ -641,19 +666,11 @@ func _refresh_map_view() -> void:
                                         map_pose.x, map_pose.y, map_facing))
     visible_samples = map_visible_pieces(selected_map, selected_profile,
                                          map_pose.x, map_pose.y, map_facing)
-    visible_pieces.clear()
-    visible_pieces.add_item("Choose a visible piece…")
-    for sample in visible_samples:
-        visible_pieces.add_item("(%d, %d) %s · %s" % [
-            sample["x"], sample["y"], DIRECTIONS[int(sample["face"])],
-            VIEW_NAMES[int(sample["view"])]
-        ])
-    visible_pieces.select(0)
-    _clear_map_pick("Click a visible wall or door in the first-person view to inspect it.")
+    _clear_map_pick("Click a wall, door, or other visible tile in the 3D view.")
     var profile: Dictionary = catalog_maps[selected_map]["profiles"][selected_profile]
     map_status.text = "%s · %s" % [profile["label"], profile["source"]]
     if show_replacement.button_pressed:
-        map_status.text += " · %d new sets loaded; missing sets show local original art. Switch to original art to inspect a clicked source piece." % replacement_sets.size()
+        map_status.text += " · %d new sets loaded; missing sets show local original art." % replacement_sets.size()
 
 func _load_replacement_pack(folder: String) -> void:
     var loaded: Dictionary = {}
@@ -737,11 +754,7 @@ func _replacement_wall(depth: int, lateral: int, face: int) -> int:
         return 0
     return int(cell["faces"][face]["wall_id"])
 
-func _replacement_piece(depth: int, lateral: int, face: int, view: int) -> Image:
-    var cell := _replacement_cell(depth, lateral, view)
-    if cell.is_empty():
-        return null
-    var index := int(cell["faces"][face]["entry_index"])
+func _replacement_piece(index: int, view: int) -> Image:
     if index < 0 or index >= catalog_entries.size():
         return null
     var key := _replacement_key(index)
@@ -759,10 +772,35 @@ func _replacement_piece(depth: int, lateral: int, face: int, view: int) -> Image
 
 func _draw_replacement(canvas: Image, depth: int, lateral: int, face: int,
                        view: int, x: int, y: int) -> void:
-    var piece := _replacement_piece(depth, lateral, face, view)
-    if piece != null:
-        canvas.blend_rect(piece, Rect2i(Vector2i.ZERO, piece.get_size()),
-                          Vector2i(x, y) * REPLACEMENT_SCALE)
+    var cell := _replacement_cell(depth, lateral, view)
+    if cell.is_empty():
+        return
+    var face_data: Dictionary = cell["faces"][face]
+    var index := int(face_data["entry_index"])
+    var piece := _replacement_piece(index, view)
+    if piece == null:
+        return
+    var origin := Vector2i(x, y) * REPLACEMENT_SCALE
+    canvas.blend_rect(piece, Rect2i(Vector2i.ZERO, piece.get_size()), origin)
+    replacement_draws.append({
+        "image": piece,
+        "origin": origin,
+        "hit": {
+            "x": cell["x"], "y": cell["y"], "face": face,
+            "wall_id": face_data["wall_id"], "door_code": face_data["door_code"],
+            "view": view, "entry_index": index, "event_raw": cell["event_raw"]
+        }
+    })
+
+func _replacement_pick(pixel: Vector2i) -> Dictionary:
+    for draw_index in range(replacement_draws.size() - 1, -1, -1):
+        var draw: Dictionary = replacement_draws[draw_index]
+        var piece: Image = draw["image"]
+        var local: Vector2i = pixel - draw["origin"]
+        if local.x >= 0 and local.y >= 0 and local.x < piece.get_width() and \
+                local.y < piece.get_height() and piece.get_pixelv(local).a > 0.0:
+            return draw["hit"]
+    return {}
 
 func _compose_replacement_view() -> Image:
     var size := 88 * REPLACEMENT_SCALE
@@ -806,39 +844,53 @@ func _compose_replacement_view() -> Image:
 
 func _clear_map_pick(message: String) -> void:
     selected_map_entry = -1
+    selected_sample_index = -1
     picked_tile.text = message
     piece_name.text = "No piece selected"
     piece_source.text = ""
     piece_size.text = ""
     piece_preview.texture = null
     map_export.disabled = true
+    see_in_catalog.disabled = true
+    first_person.set_selection(Vector2i(-1, -1))
 
 func _pick_map_pixel(pixel: Vector2i) -> void:
     if selected_map < 0:
         return
-    if show_replacement.button_pressed:
-        picked_tile.text = "Replacement preview: switch off Show new art to inspect the source mapping."
-        return
-    var hit: Dictionary = map_pick(selected_map, selected_profile,
-                                   map_pose.x, map_pose.y, map_facing,
-                                   pixel.x, pixel.y)
+    var hit: Dictionary = _replacement_pick(pixel) if show_replacement.button_pressed else \
+        map_pick(selected_map, selected_profile, map_pose.x, map_pose.y,
+                 map_facing, pixel.x, pixel.y)
     if hit.is_empty():
-        visible_pieces.select(0)
-        _clear_map_pick("That pixel contains sky or floor, with no wall-art piece.")
+        _clear_map_pick("That spot contains sky or floor; click a visible tile.")
         return
     _display_map_hit(hit)
+    first_person.set_selection(pixel)
     for index in visible_samples.size():
         var sample: Dictionary = visible_samples[index]
         if sample["x"] == hit["x"] and sample["y"] == hit["y"] and \
                 sample["face"] == hit["face"] and sample["view"] == hit["view"]:
-            visible_pieces.select(index + 1)
+            selected_sample_index = index
             break
 
-func _select_visible_piece(index: int) -> void:
-    if index <= 0 or index > visible_samples.size():
+func _select_next_visible_piece() -> void:
+    if visible_samples.is_empty():
         return
-    var sample: Dictionary = visible_samples[index - 1]
-    _pick_map_pixel(Vector2i(sample["pixel_x"], sample["pixel_y"]))
+    for _attempt in visible_samples.size():
+        selected_sample_index = (selected_sample_index + 1) % visible_samples.size()
+        var sample: Dictionary = visible_samples[selected_sample_index]
+        var pixel := Vector2i(sample["pixel_x"], sample["pixel_y"])
+        var hit: Dictionary = {}
+        if show_replacement.button_pressed:
+            pixel = pixel * REPLACEMENT_SCALE + Vector2i.ONE * (REPLACEMENT_SCALE >> 1)
+            hit = _replacement_pick(pixel)
+        else:
+            hit = map_pick(selected_map, selected_profile, map_pose.x, map_pose.y,
+                           map_facing, pixel.x, pixel.y)
+        if hit.is_empty():
+            continue
+        _display_map_hit(hit)
+        first_person.set_selection(pixel)
+        return
 
 func _display_map_hit(hit: Dictionary) -> void:
     selected_map_entry = int(hit["entry_index"])
@@ -846,7 +898,7 @@ func _display_map_hit(hit: Dictionary) -> void:
         _clear_map_pick("The source artwork for this pixel is unavailable.")
         return
     var entry: Dictionary = catalog_entries[selected_map_entry]
-    picked_tile.text = "Map cell (%d, %d) · %s face · wall ID %d · door code %d · event 0x%02X" % [
+    picked_tile.text = "Selected tile · map cell (%d, %d) · %s face · wall ID %d · door code %d · event 0x%02X" % [
         hit["x"], hit["y"], DIRECTIONS[int(hit["face"])],
         hit["wall_id"], hit["door_code"], hit["event_raw"]
     ]
@@ -855,13 +907,17 @@ func _display_map_hit(hit: Dictionary) -> void:
         entry["name"] if not str(entry["name"]).is_empty() else name,
         VIEW_NAMES[int(entry["view"])]
     ]
-    piece_source.text = "%s  record %d  ·  appearance %d" % [
-        entry["archive"], entry["record"], entry["appearance"]
+    piece_source.text = "%s  record %d  ·  appearance %d  ·  %s" % [
+        entry["archive"], entry["record"], entry["appearance"],
+        "New art" if _catalog_has_replacement(selected_map_entry) else "Original art"
     ]
-    piece_size.text = "%d × %d pixels" % [entry["width"], entry["height"]]
-    var image: Image = image_at(selected_map_entry)
+    var image: Image = _catalog_image(selected_map_entry)
+    piece_size.text = "%d × %d pixels" % [
+        image.get_width() if image != null else 0, image.get_height() if image != null else 0
+    ]
     piece_preview.texture = ImageTexture.create_from_image(image) if image != null else null
     map_export.disabled = image == null
+    see_in_catalog.disabled = false
 
 func _map_key(event: InputEventKey) -> void:
     if selected_map < 0 or save_dialog.visible:
@@ -1076,6 +1132,24 @@ func _run_map_check(output_path: String) -> void:
             catalog_entries[selected_map_entry] if selected_map_entry >= 0 else {}
         ])
         return
+    if see_in_catalog.disabled or first_person.selected_pixel != pixel:
+        _map_check_fail("Clicked tile was not visibly selected")
+        return
+    var selected_from_map := selected_map_entry
+    search.text = "__no_matching_tile__"
+    _rebuild_grid()
+    _see_in_catalog()
+    if tabs.current_tab != 0 or selected_entry != selected_from_map or not search.text.is_empty():
+        _map_check_fail("See in Art Catalog did not open the selected tile")
+        return
+    tabs.current_tab = 1
+    var next_piece := InputEventKey.new()
+    next_piece.keycode = KEY_ENTER
+    next_piece.pressed = true
+    first_person._gui_input(next_piece)
+    if selected_map_entry < 0 or first_person.selected_pixel.x < 0:
+        _map_check_fail("Enter did not select a visible tile in the 3D view")
+        return
     if FileAccess.file_exists(output_path):
         DirAccess.remove_absolute(output_path)
     export_pending_index = selected_map_entry
@@ -1230,9 +1304,10 @@ func _run_replacement_check(folder: String) -> void:
     catalog_show_replacement.button_pressed = true
     _select_visible(catalog_index)
     _see_in_map()
-    if tabs.current_tab != 1 or not map_status.text.contains("new art shown") or selected_map_entry >= 0:
-        _map_check_fail("See in Map did not keep replacement mode without selecting an original piece")
+    if tabs.current_tab != 1 or selected_map_entry != catalog_index or see_in_catalog.disabled:
+        _map_check_fail("See in Map did not select a tile with new art displayed")
         return
+    await get_tree().process_frame
     var map_index := _location_map_index(row)
     var replacement: Image = first_person.source_image
     if replacement == null or replacement.get_size() != Vector2i(352, 352):
@@ -1243,6 +1318,45 @@ func _run_replacement_check(folder: String) -> void:
     original.resize(352, 352, Image.INTERPOLATE_NEAREST)
     if replacement.get_data() == original.get_data():
         _map_check_fail("Replacement preview is identical to the source view")
+        return
+    var click_pixel := Vector2i(-1, -1)
+    for py in replacement.get_height():
+        for px in replacement.get_width():
+            if not _replacement_pick(Vector2i(px, py)).is_empty():
+                click_pixel = Vector2i(px, py)
+                break
+        if click_pixel.x >= 0:
+            break
+    if click_pixel.x < 0:
+        _map_check_fail("Replacement view has no clickable tile")
+        return
+    var expected_hit := _replacement_pick(click_pixel)
+    var image_rect: Rect2 = first_person._image_rect()
+    var click := InputEventMouseButton.new()
+    click.button_index = MOUSE_BUTTON_LEFT
+    click.pressed = true
+    click.position = image_rect.position + (Vector2(click_pixel) + Vector2(0.5, 0.5)) / \
+        Vector2(replacement.get_size()) * image_rect.size
+    first_person._gui_input(click)
+    if selected_map_entry != expected_hit["entry_index"] or \
+            first_person.selected_pixel != click_pixel or see_in_catalog.disabled:
+        _map_check_fail("Clicking new art did not select the displayed tile: selected=%d expected=%s marker=%s click=%s rect=%s button_disabled=%s" % [
+            selected_map_entry, expected_hit, first_person.selected_pixel,
+            click_pixel, image_rect, see_in_catalog.disabled
+        ])
+        return
+    _see_in_catalog()
+    if tabs.current_tab != 0 or selected_entry != expected_hit["entry_index"]:
+        _map_check_fail("See in Art Catalog did not open the clicked new-art tile")
+        return
+    tabs.current_tab = 1
+    var next_piece := InputEventKey.new()
+    next_piece.keycode = KEY_ENTER
+    next_piece.pressed = true
+    first_person._gui_input(next_piece)
+    var keyboard_hit := _replacement_pick(first_person.selected_pixel)
+    if keyboard_hit.is_empty() or selected_map_entry != keyboard_hit["entry_index"]:
+        _map_check_fail("Enter selected a different piece than the visible new art")
         return
     var map_review_path := folder.path_join("review-map.png")
     if replacement.save_png(map_review_path) != OK:
@@ -1277,7 +1391,10 @@ func _run_map_capture(output_path: String) -> void:
     tabs.current_tab = 1
     if not visible_samples.is_empty():
         var sample: Dictionary = visible_samples[0]
-        _pick_map_pixel(Vector2i(sample["pixel_x"], sample["pixel_y"]))
+        var pixel := Vector2i(sample["pixel_x"], sample["pixel_y"])
+        if show_replacement.button_pressed:
+            pixel = pixel * REPLACEMENT_SCALE + Vector2i.ONE * (REPLACEMENT_SCALE >> 1)
+        _pick_map_pixel(pixel)
     await RenderingServer.frame_post_draw
     var result := get_viewport().get_texture().get_image().save_png(output_path)
     if result != OK:
