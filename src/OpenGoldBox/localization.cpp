@@ -128,11 +128,38 @@ String campaign(std::string_view resource, std::string_view original)
     return translated == gs(original) ? text(original) : translated;
 }
 
+namespace
+{
+// A number the rules wrote with English thousands commas ("1,000"), regrouped
+// with the language's separator ("1.000" in Spanish).
+String grouped_number(const std::string &value)
+{
+    const bool grouped = value.size() > 4 && value.size() % 4 != 0 &&
+                         std::all_of(value.begin(), value.end(), [&](char c)
+    {
+        return std::isdigit(static_cast<unsigned char>(c)) || c == ',';
+    }) && [&]
+    {
+        for (std::size_t at = value.size() - 4;; at -= 4)
+        {
+            if (value[at] != ',')
+                return false;
+            if (at < 4)
+                return value.find(',') == at;
+        }
+    }();
+    // The language's thousands separator, from how it writes a grouped number.
+    const auto separator = text(N_("{high},{low}")).replace("{high}", "").replace("{low}", "");
+    return grouped ? gs(value).replace(",", separator) : gs(value);
+}
+} // namespace
+
 String render(const opengold::rules::Message &message)
 {
     Dictionary values;
     for (const auto &argument : message.arguments)
-        values[gs(argument.name)] = argument.translate ? text(argument.value) : gs(argument.value);
+        values[gs(argument.name)] =
+            argument.translate ? text(argument.value) : grouped_number(argument.value);
     return interpolate(text(message.source), values);
 }
 

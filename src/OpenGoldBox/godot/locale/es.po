@@ -5898,6 +5898,11 @@ msgstr "{feat}: {spell}; bonificador de ataque de conjuro {attack}."
 msgid "{hand} — {weapon}"
 msgstr "{hand} — {weapon}"
 
+#: src/OpenGoldBox/localization.cpp:152
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{high},{low}"
+msgstr "{high}.{low}"
+
 #: src/OpenGoldBox/rolf_tour_view.cpp:922
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} / {price} gp"

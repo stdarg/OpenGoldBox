@@ -121,7 +121,8 @@ Members of another hall's classes are not listed. Choosing a service buys it at
 once from the party's gold and returns to the list with one line saying what
 happened ("Arden gains 150 experience.") or why it was refused ("The party's
 gold cannot pay 500 gp."). The party's gold shows beside the list. A party may
-buy any number of services before leaving.
+buy any number of services before leaving. Fees are grouped as each language
+writes numbers: "1,000 gp" in English, "1.000 po" in Spanish.
 
 ## What the original does
 

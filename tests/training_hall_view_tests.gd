@@ -114,7 +114,7 @@ func run_checks() -> void:
         await ask_to_train("YES")
         await capture("hall-%s-1-question" % locale)
         await choose("YES")
-        var session := "Arden: session of experience, 150 XP (1,000 gp)" if en else "Arden: sesión de experiencia, 150 PX (1,000 po)"
+        var session := "Arden: session of experience, 150 XP (1,000 gp)" if en else "Arden: sesión de experiencia, 150 PX (1.000 po)"
         require(choice_index(session) >= 0, "Arden's session is offered")
         require(choice_index("Bryn: session of experience (advance a level first)" if en else "Bryn: sesión de experiencia (primero sube de nivel)") >= 0,
                 "Bryn must advance first")
