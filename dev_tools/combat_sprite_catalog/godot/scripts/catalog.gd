@@ -85,12 +85,16 @@ func _build_ui() -> void:
     monster_title = Label.new()
     monster_title.add_theme_font_size_override("font_size", 24)
     detail.add_child(monster_title)
+    var image_frame := Control.new()
+    image_frame.custom_minimum_size = Vector2(360, 390)
+    image_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    detail.add_child(image_frame)
     monster_image = TextureRect.new()
+    monster_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     monster_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
     monster_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
     monster_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-    monster_image.custom_minimum_size = Vector2(360, 390)
-    detail.add_child(monster_image)
+    image_frame.add_child(monster_image)
     monster_source = Label.new()
     monster_source.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     detail.add_child(monster_source)
@@ -136,6 +140,9 @@ func _select_monster(list_index: int) -> void:
     elapsed = 0.0
     var row: Dictionary = rows[selected]
     monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
+    # The Medusa icon sits at the top edge of its source frame. Lower its
+    # presentation within the existing preview area so the head has breathing room.
+    monster_image.offset_top = 64.0 if str(row.name).to_upper() == "MEDUSA" else 0.0
     var lines: PackedStringArray = []
     for item in row.equipment:
         lines.append("• %s%s (type %d)" % [item.label, "  ·  readied" if item.readied else "", item.type])
@@ -163,6 +170,17 @@ func _catalog_check() -> void:
     assert(pictured >= 0)
     assert(catalog.monster_image(pictured, false) != null)
     assert(catalog.monster_image(pictured, true) != null)
+    for index in range(rows.size()):
+        if str(rows[index].name).to_upper() == "MEDUSA":
+            _select_monster(index)
+            assert(monster_image.offset_top == 64.0)
+            assert(monster_image.texture != null)
+            action = true
+            _show_monster_image()
+            assert(monster_image.texture != null)
+            break
+    _select_monster(pictured)
+    assert(monster_image.offset_top == 0.0)
     assert(not rows[pictured].equipment.is_empty() or rows.size() > 0)
     hide_unused.button_pressed = true
     assert(monster_list.item_count < rows.size())
