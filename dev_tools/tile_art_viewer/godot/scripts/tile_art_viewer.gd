@@ -11,7 +11,7 @@ const CSV_COLUMNS := [
     "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
     "profile_label", "profile_source", "pose_x", "pose_y", "facing", "facing_name",
     "click_x", "click_y", "cell_x", "cell_y", "face", "face_name", "wall_id",
-    "door_code", "event_raw"
+    "door_code", "event_raw", "flag_for_regen"
 ]
 const DIRECTIONS := ["North", "East", "South", "West"]
 const DIRECTION_STEPS := [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
@@ -32,6 +32,7 @@ const REPLACEMENT_SIZES := [
 @onready var preview: TextureRect = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/PreviewPanel/Preview
 @onready var description_edit: TextEdit = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/DescriptionEdit
 @onready var save_description: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/SaveDescription
+@onready var flag_for_regen: CheckButton = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/FlagForRegen
 @onready var usage: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Usage
 @onready var previous: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Navigate/Previous
 @onready var next: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Actions/Navigate/Next
@@ -62,6 +63,8 @@ const REPLACEMENT_SIZES := [
 var catalog_entries: Array = []
 var metadata_rows: Array = []
 var draft_descriptions: Dictionary = {}
+var metadata_digest := ""
+var metadata_path_override := ""
 var updating_description := false
 var visible_indices: Array[int] = []
 var thumbnail_cache: Dictionary = {}
@@ -93,6 +96,7 @@ func _ready() -> void:
     export_button.pressed.connect(_show_export_dialog)
     description_edit.text_changed.connect(_on_description_changed)
     save_description.pressed.connect(_save_descriptions)
+    flag_for_regen.toggled.connect(_on_flag_for_regen_toggled)
     see_in_map.pressed.connect(_see_in_map)
     see_in_catalog.pressed.connect(_see_in_catalog)
     map_export.pressed.connect(_show_map_export_dialog)
@@ -170,6 +174,7 @@ func _load_failure(message: String) -> void:
     export_button.disabled = true
     see_in_map.disabled = true
     save_description.disabled = true
+    flag_for_regen.disabled = true
     description_edit.editable = false
     map_export.disabled = true
     map_status.text = message
@@ -184,7 +189,8 @@ func _load_failure(message: String) -> void:
             return
 
 func _metadata_path() -> String:
-    return ProjectSettings.globalize_path("res://").path_join(METADATA_FILE).simplify_path()
+    return metadata_path_override if not metadata_path_override.is_empty() else \
+        ProjectSettings.globalize_path("res://").path_join(METADATA_FILE).simplify_path()
 
 func _replacement_pack_path() -> String:
     return ProjectSettings.globalize_path("res://").path_join(REPLACEMENT_PACK).simplify_path()
@@ -223,6 +229,8 @@ func _load_metadata() -> String:
             return "Tile metadata CSV row %d has the wrong view name." % (index + 2)
         if row["description"].strip_edges().is_empty():
             return "Tile metadata CSV row %d has no description." % (index + 2)
+        if row["flag_for_regen"] != "0" and row["flag_for_regen"] != "1":
+            return "Tile metadata CSV row %d has an invalid regeneration flag." % (index + 2)
         if row["usage"] != "visible" and row["usage"] != "unused":
             return "Tile metadata CSV row %d has invalid map usage." % (index + 2)
         if row["usage"] == "visible":
@@ -244,6 +252,7 @@ func _load_metadata() -> String:
         return "Tile metadata CSV contains %d rows for %d images." % [
             metadata_rows.size(), catalog_entries.size()
         ]
+    metadata_digest = FileAccess.get_sha256(path)
     return ""
 
 func _location_map_index(row: Dictionary) -> int:
@@ -268,7 +277,8 @@ func _csv_cell(value: String) -> String:
         return "\"%s\"" % value.replace("\"", "\"\"")
     return value
 
-func _write_metadata_csv(path: String) -> String:
+func _write_metadata_csv(path: String, description_overrides: Dictionary = {},
+        flag_overrides: Dictionary = {}) -> String:
     var file := FileAccess.open(path, FileAccess.WRITE)
     if file == null:
         return "Cannot write tile metadata CSV: %s" % error_string(FileAccess.get_open_error())
@@ -277,13 +287,34 @@ func _write_metadata_csv(path: String) -> String:
         var row: Dictionary = metadata_rows[index]
         var fields: PackedStringArray = []
         for column in CSV_COLUMNS:
-            var value := str(draft_descriptions.get(index, row[column])) if column == "description" else str(row[column])
+            var value := str(row[column])
+            if column == "description":
+                value = str(description_overrides.get(index, value))
+            elif column == "flag_for_regen":
+                value = str(flag_overrides.get(index, value))
             fields.append(_csv_cell(value))
         file.store_line(",".join(fields))
     file.flush()
     var result := file.get_error()
     file.close()
     return "" if result == OK else "Tile metadata CSV write failed: %s" % error_string(result)
+
+func _replace_metadata_csv(description_overrides: Dictionary = {},
+        flag_overrides: Dictionary = {}) -> String:
+    var destination := _metadata_path()
+    if FileAccess.get_sha256(destination) != metadata_digest:
+        return "Tile metadata CSV changed outside this window. Reopen the viewer before saving."
+    var temporary := destination + ".tmp"
+    var error_message := _write_metadata_csv(temporary, description_overrides, flag_overrides)
+    if error_message.is_empty():
+        var result := DirAccess.rename_absolute(temporary, destination)
+        if result != OK:
+            error_message = "Cannot replace tile metadata CSV: %s" % error_string(result)
+    if not error_message.is_empty():
+        DirAccess.remove_absolute(temporary)
+        return error_message
+    metadata_digest = FileAccess.get_sha256(destination)
+    return ""
 
 func _on_description_changed() -> void:
     if updating_description or selected_entry < 0 or metadata_rows.is_empty():
@@ -310,22 +341,32 @@ func _save_descriptions() -> void:
         if str(draft_descriptions[index]).strip_edges().is_empty():
             status.text = "Description for image %d cannot be empty." % index
             return
-    var destination := _metadata_path()
-    var temporary := destination + ".tmp"
-    var error_message := _write_metadata_csv(temporary)
-    if error_message.is_empty():
-        var result := DirAccess.rename_absolute(temporary, destination)
-        if result != OK:
-            error_message = "Cannot replace tile metadata CSV: %s" % error_string(result)
+    var error_message := _replace_metadata_csv(draft_descriptions)
     if not error_message.is_empty():
-        DirAccess.remove_absolute(temporary)
         status.text = error_message
         return
     for index in draft_descriptions:
         metadata_rows[index]["description"] = draft_descriptions[index]
     draft_descriptions.clear()
     save_description.disabled = true
-    status.text = "Descriptions saved to %s" % destination
+    status.text = "Descriptions saved to %s" % _metadata_path()
+
+func _on_flag_for_regen_toggled(enabled: bool) -> void:
+    if selected_entry < 0 or metadata_rows.is_empty():
+        return
+    var saved_value: String = metadata_rows[selected_entry]["flag_for_regen"]
+    var new_value := "1" if enabled else "0"
+    if new_value == saved_value:
+        return
+    var error_message := _replace_metadata_csv({}, {selected_entry: new_value})
+    if not error_message.is_empty():
+        flag_for_regen.set_pressed_no_signal(saved_value == "1")
+        status.text = error_message
+        return
+    metadata_rows[selected_entry]["flag_for_regen"] = new_value
+    status.text = "Image %d %s for regeneration in %s" % [
+        selected_entry, "flagged" if enabled else "unflagged", _metadata_path()
+    ]
 
 func _see_in_map() -> void:
     if selected_entry < 0 or metadata_rows[selected_entry]["usage"] != "visible":
@@ -458,6 +499,8 @@ func _rebuild_grid() -> void:
         description_edit.text = ""
         updating_description = false
         description_edit.editable = false
+        flag_for_regen.set_pressed_no_signal(false)
+        flag_for_regen.disabled = true
         usage.text = "No image selected."
         previous.disabled = true
         next.disabled = true
@@ -500,6 +543,8 @@ func _select_visible(position: int) -> void:
     updating_description = false
     description_edit.editable = true
     var row: Dictionary = metadata_rows[selected_entry]
+    flag_for_regen.set_pressed_no_signal(row["flag_for_regen"] == "1")
+    flag_for_regen.disabled = false
     if row["usage"] == "visible":
         usage.text = "Used in %s · (%s, %s) facing %s" % [
             row["map_name"], row["pose_x"], row["pose_y"], row["facing_name"]
@@ -1227,7 +1272,7 @@ func _run_metadata_check(output_path: String) -> void:
     if save_description.disabled:
         _map_check_fail("Editing a description did not enable Save")
         return
-    var write_error := _write_metadata_csv(output_path)
+    var write_error := _write_metadata_csv(output_path, draft_descriptions)
     if not write_error.is_empty():
         _map_check_fail(write_error)
         return
@@ -1240,10 +1285,48 @@ func _run_metadata_check(output_path: String) -> void:
             second[9] != edited:
         _map_check_fail("Saved CSV did not retain metadata and escaped description text")
         return
-    draft_descriptions.clear()
-    catalog_entries[1]["description"] = original
-    save_description.disabled = true
-    print("Tile metadata checks passed: 2,100 descriptions; 1,552 exact map jumps; 548 unused images; CSV edit/save")
+    write_error = _write_metadata_csv(output_path)
+    if not write_error.is_empty():
+        _map_check_fail(write_error)
+        return
+    metadata_path_override = output_path
+    metadata_digest = FileAccess.get_sha256(output_path)
+    flag_for_regen.set_pressed_no_signal(true)
+    _on_flag_for_regen_toggled(true)
+    saved = FileAccess.open(output_path, FileAccess.READ)
+    saved.get_csv_line()
+    saved.get_csv_line()
+    second = saved.get_csv_line()
+    saved.close()
+    if second[-1] != "1" or second[9] != original or \
+            draft_descriptions.get(1, "") != edited or save_description.disabled:
+        _map_check_fail("Regen toggle did not save its flag independently of an unsaved description")
+        return
+    _select_visible(2)
+    _select_visible(1)
+    if not flag_for_regen.button_pressed or description_edit.text != edited:
+        _map_check_fail("Regen flag or description draft did not survive selection changes")
+        return
+    _save_descriptions()
+    saved = FileAccess.open(output_path, FileAccess.READ)
+    saved.get_csv_line()
+    saved.get_csv_line()
+    second = saved.get_csv_line()
+    saved.close()
+    if second[-1] != "1" or second[9] != edited or not draft_descriptions.is_empty():
+        _map_check_fail("Saving a description did not preserve the regeneration flag")
+        return
+    flag_for_regen.set_pressed_no_signal(false)
+    _on_flag_for_regen_toggled(false)
+    saved = FileAccess.open(output_path, FileAccess.READ)
+    saved.get_csv_line()
+    saved.get_csv_line()
+    second = saved.get_csv_line()
+    saved.close()
+    if second[-1] != "0" or second[9] != edited:
+        _map_check_fail("Clearing a regeneration flag did not persist")
+        return
+    print("Tile metadata checks passed: 2,100 descriptions; 1,552 exact map jumps; 548 unused images; CSV edit/save and regen toggle persistence")
     get_tree().quit()
 
 func _run_replacement_check(folder: String) -> void:

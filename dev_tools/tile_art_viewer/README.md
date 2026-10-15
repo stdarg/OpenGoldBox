@@ -19,6 +19,11 @@ retained in a separate `name` column. Descriptions may repeat when source pixels
 identical across wall sets. Select an image, edit its **Description**, and press
 **Save descriptions to CSV**. Unsaved edits remain available while browsing;
 Save writes them together to the CSV in this source checkout.
+Use **Flag for Regen** on the selected perspective piece when its replacement
+art should be made again. The switch saves immediately to that row's
+`flag_for_regen` CSV column (`1` means flagged; `0` means clear). You can flag
+unused pieces too, but their **Unused** label remains visible. The flag is a
+review note; it does not generate art until you request regeneration.
 
 **See in Map** opens the Map Browser at the saved player position and facing,
 then selects the exact source piece visible at the saved pixel. The tool checks
@@ -70,6 +75,8 @@ facing; clicked 88 × 88 view pixel; source map cell and face; and wall, door an
 event values. The map-location fields are empty for unused images. The viewer
 validates the CSV against decoded artwork when it starts and reports mismatches
 instead of pairing descriptions with the wrong images.
+The `flag_for_regen` column is per perspective piece; other views of the same
+appearance have independent flags.
 
 ## Build and run on macOS or Linux
 
@@ -148,8 +155,8 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_vi
 ```
 
 The metadata check verifies all CSV rows and exact visible locations, exercises
-See in Map and the unused state, and writes an edited description to a temporary
-CSV to check quoting without changing the catalog:
+See in Map and the unused state, and writes an edited description and both regen
+flag states to a temporary CSV without changing the catalog:
 
 ```bash
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --metadata-check=/tmp/opengold-tile-metadata-check.csv

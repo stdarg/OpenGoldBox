@@ -10,7 +10,7 @@ const CSV_COLUMNS := [
     "description", "usage", "map_archive", "map_record", "map_name", "profile_index",
     "profile_label", "profile_source", "pose_x", "pose_y", "facing", "facing_name",
     "click_x", "click_y", "cell_x", "cell_y", "face", "face_name", "wall_id",
-    "door_code", "event_raw"
+    "door_code", "event_raw", "flag_for_regen"
 ]
 
 @onready var tabs: TabContainer = $Margin/Main/Split/Tabs
@@ -244,6 +244,8 @@ func _load_reference_metadata() -> String:
             row[CSV_COLUMNS[column]] = fields[column]
         if row["index"] != str(metadata_rows.size()) or row["description"].strip_edges().is_empty():
             return "Art Catalog CSV row %d has an invalid index or empty description." % (metadata_rows.size() + 2)
+        if row["flag_for_regen"] != "0" and row["flag_for_regen"] != "1":
+            return "Art Catalog CSV row %d has an invalid regeneration flag." % (metadata_rows.size() + 2)
         var key := "%s:%s:%s" % [row["archive"], row["record"], row["appearance"]]
         if not keys.has(key) or (row["usage"] != "visible" and row["usage"] != "unused"):
             return "Art Catalog CSV row %d has an unknown appearance or usage." % (metadata_rows.size() + 2)

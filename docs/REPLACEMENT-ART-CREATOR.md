@@ -96,6 +96,9 @@ Descriptions are stored per perspective piece in
 This action changes that CSV in your checkout; it does not change the original
 game files. The creator detects an external CSV change and asks you to reopen
 before saving, so another editor's changes are not overwritten.
+The Art Catalog's **Flag for Regen** switch records a per-piece review request
+in the same CSV. The creator preserves that flag when saving descriptions; it
+does not regenerate flagged art automatically.
 
 Use this tab to understand a piece's broad function, such as a wall, door, or
 passage. Write the replacement brief as a new design. Original pixels and
