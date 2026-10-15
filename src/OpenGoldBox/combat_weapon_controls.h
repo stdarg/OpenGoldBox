@@ -108,6 +108,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "patient_defense_focus" ? "Patient Defense: Disengage and Dodge (1 Focus)"
             : verb == "step_of_the_wind"  ? "Step of the Wind: Dash"
             : verb == "step_of_the_wind_focus" ? "Step of the Wind: Disengage and Dash (1 Focus)"
+            : verb == "step_of_the_wind_carry" ? "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)"
             : verb == "extend_rage"       ? "Extend Rage"
             : verb == "intimidating_presence" ? "Intimidating Presence"
             : verb == "intimidating_presence_rage" ? "Intimidating Presence (1 Rage)"

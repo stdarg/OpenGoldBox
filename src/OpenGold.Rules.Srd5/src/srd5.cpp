@@ -678,6 +678,7 @@ struct Definition
     // Monk levels 10-15: Heightened Focus, Self-Restoration, Fleet Step,
     // Deflect Energy and Perfect Focus.
     bool heightened_focus{}, self_restoration{}, fleet_step{}, deflect_energy{}, perfect_focus{};
+    bool disciplined_survivor{};
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -790,6 +791,8 @@ struct Actor
     // Fleet Step (Monk 11): after another Bonus Action, Step of the Wind may
     // still be used this turn.
     bool fleet_step{};
+    // Heightened Focus (Monk 10): the ally Step of the Wind carries this turn.
+    EntityId carried{};
     // The straight line just moved along this turn, for a Boar's charge: its
     // first and last cells, the step repeated and its length. Any command but
     // moving or a melee attack ends it.
@@ -1420,6 +1423,7 @@ character_definition(std::string_view bytes,
     d.heightened_focus = d.self_restoration = klass == CharacterClass::monk && level >= 10;
     d.fleet_step = klass == CharacterClass::monk && level >= 11;
     d.deflect_energy = klass == CharacterClass::monk && level >= 13;
+    d.disciplined_survivor = klass == CharacterClass::monk && level >= 14;
     d.perfect_focus = klass == CharacterClass::monk && level >= 15;
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
@@ -2437,7 +2441,7 @@ class Session final : public CombatSession
     void qualify_light(Actor &, unsigned item);
     Actor item_actor(const Actor &, unsigned item) const;
     Actor unarmed_actor(const Actor &a) const;
-    void use_focus_movement(Actor &a, std::string_view verb);
+    void use_focus_movement(Actor &a, std::string_view verb, EntityId carried = 0);
     void use_font_of_magic(Actor &a, std::string_view verb);
     void ready_metamagic(Actor &a, std::string_view choice);
     void open_hand(const Actor &monk, Actor &target, std::string_view verb);
@@ -3033,6 +3037,9 @@ class Session final : public CombatSession
     void end_turn();
     void restore_self(Actor &a);
     void dispatch_noting_fleet_step(const Command &command);
+    // Heightened Focus: the carried ally steps into the square the Monk left,
+    // provoking nothing.
+    void follow_carrier(const Actor &monk, Cell departed);
     void progress_movement();
     void restore_movement(std::istream &input);
     void validate_restored_state() const;
@@ -3154,11 +3161,11 @@ void Session::use_font_of_magic(Actor &a, std::string_view verb)
     });
 }
 
-void Session::use_focus_movement(Actor &a, std::string_view verb)
+void Session::use_focus_movement(Actor &a, std::string_view verb, EntityId carried)
 {
     // Disengage with Patient Defense, Dash with Step of the Wind; a Focus Point
     // adds Dodge or Disengage.
-    const bool focus = verb.ends_with("_focus");
+    const bool focus = verb.ends_with("_focus") || verb == "step_of_the_wind_carry";
     const bool patient = verb.starts_with("patient_defense");
     a.bonus = false;
     if (focus)
@@ -3184,6 +3191,16 @@ void Session::use_focus_movement(Actor &a, std::string_view verb)
     const std::string name = patient ? "Patient Defense" : "Step of the Wind";
     log(a.source.name + " uses " + name + ".",
     {"{name} uses {feature}.", {{"name", a.source.name}, {"feature", name, true}}});
+    // Heightened Focus: the ally moves with the Monk for the rest of the turn.
+    if (carried)
+    {
+        a.carried = carried;
+        log(a.source.name + " carries " + actor(carried).source.name + " (Step of the Wind).",
+        {
+            "{name} carries {target} (Step of the Wind).",
+            {{"name", a.source.name}, {"target", actor(carried).source.name}}
+        });
+    }
 }
 
 Actor Session::unarmed_actor(const Actor &a) const
@@ -4062,7 +4079,7 @@ Snapshot Session::snapshot() const
         {
             "flurry_of_blows", "flurry_addle", "flurry_push", "flurry_topple", "flurry_stun",
             "patient_defense", "patient_defense_focus", "step_of_the_wind",
-            "step_of_the_wind_focus"
+            "step_of_the_wind_focus", "step_of_the_wind_carry"
         });
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
@@ -5595,17 +5612,32 @@ std::vector<Command> Session::legal_commands() const
         add(id, "innate_sorcery", "Innate Sorcery");
     // Monk's Focus: Patient Defense and Step of the Wind, free or with a Focus
     // Point, and Flurry of Blows for a Focus Point.
+    // Heightened Focus: Step of the Wind with Focus may carry an ally beside
+    // the Monk, Large or smaller, standing or not.
+    const auto offer_carry = [&]
+    {
+        if (!d.heightened_focus || a.surges <= 0)
+            return;
+        for (const auto &ally : actors_)
+            if (ally.source.side == a.source.side && ally.source.id != id && !ally.life.dead &&
+                    def(ally).size <= 3 && distance(a.source.cell, ally.source.cell) <= 5)
+                add(id, "step_of_the_wind_carry",
+                    "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)",
+                    ally.source.id);
+    };
     // Fleet Step: Step of the Wind right after another Bonus Action.
     if (!a.bonus && a.fleet_step)
     {
         add(id, "step_of_the_wind", "Step of the Wind: Dash");
         if (a.surges > 0)
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
+        offer_carry();
     }
     if (a.bonus && d.focus)
     {
         add(id, "patient_defense", "Patient Defense: Disengage");
         add(id, "step_of_the_wind", "Step of the Wind: Dash");
+        offer_carry();
         if (a.surges > 0)
         {
             add(id, "patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)");
@@ -9344,6 +9376,7 @@ bool Session::begin_turn()
         actor.brutal_used = false;
         actor.stun_used = false;
         actor.fleet_step = false;
+        actor.carried = 0;
         actor.run_feet = 0;
         actor.light_origins.clear();
         actor.light_extra = 0;
@@ -9544,6 +9577,22 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         result.success = result.natural + result.bonus >= dc;
         log(fighter.source.name + " uses Indomitable and rolls the save again.",
         {"{name} uses Indomitable and rolls the save again.", {{"name", fighter.source.name}}});
+        log_save(target, result);
+    }
+    // Disciplined Survivor: the Monk spends a Focus Point to reroll a failed
+    // save a 20 could pass, without asking (LEVELS-2).
+    if (auto &monk = actor(target.source.id);
+            !result.success && def(monk).disciplined_survivor && monk.surges > 0 &&
+            conscious(monk) && result.bonus + 20 >= dc)
+    {
+        --monk.surges;
+        result.natural = roll(20);
+        result.success = result.natural + result.bonus >= dc;
+        log(monk.source.name + " spends 1 Focus Point and rolls the save again (Disciplined Survivor).",
+        {
+            "{name} spends 1 Focus Point and rolls the save again (Disciplined Survivor).",
+            {{"name", monk.source.name}}
+        });
         log_save(target, result);
     }
     // Bardic Inspiration may turn the failure into a success.
@@ -9748,6 +9797,7 @@ void Session::progress_movement()
             throw std::logic_error("Invalid accepted movement path");
         const auto departed = a.source.cell;
         a.source.cell = destination;
+        follow_carrier(a, departed);
         // A flight spends the Reaction, not the creature's own movement.
         if (flight_)
             flight_->remaining -= *cost;
@@ -10346,6 +10396,15 @@ void Session::answer_reaction(const Command &command)
     perform(prompt.command);
 }
 
+void Session::follow_carrier(const Actor &monk, Cell departed)
+{
+    if (!monk.carried || flight_)
+        return;
+    auto &ally = actor(monk.carried);
+    if (!ally.life.dead && distance(ally.source.cell, monk.source.cell) <= 10)
+        ally.source.cell = departed;
+}
+
 void Session::dispatch_noting_fleet_step(const Command &command)
 {
     const auto acting = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
@@ -10668,7 +10727,8 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb.starts_with("patient_defense") ||
              command.verb.starts_with("step_of_the_wind"))
-        use_focus_movement(a, command.verb);
+        use_focus_movement(a, command.verb,
+                           command.verb == "step_of_the_wind_carry" ? command.target : 0);
     else if (command.verb.starts_with("create_slot_") || command.verb.starts_with("convert_slot_"))
         use_font_of_magic(a, command.verb);
     else if (command.verb.starts_with("metamagic_"))
@@ -11234,7 +11294,7 @@ std::string Session::save() const
             << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
             << ' ' << a.moved << ' ' << a.attacked << ' ' << a.pounce << ' ' << a.brutal_used
-            << ' ' << a.stun_used << ' ' << a.fleet_step
+            << ' ' << a.stun_used << ' ' << a.fleet_step << ' ' << a.carried
             << ' ' << a.selected_weapon
             << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
@@ -11427,7 +11487,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.initiate_casts >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
           actor.attacked >> actor.pounce >> actor.brutal_used >> actor.stun_used >>
-          actor.fleet_step >> actor.selected_weapon >> light_count;
+          actor.fleet_step >> actor.carried >> actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
     // The checkpoint stores a side as its enumerator's value.
@@ -11487,9 +11547,10 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
             (actor.aim_ready && !actor.aim_used))
         throw std::runtime_error("Invalid Rogue attack expenditure");
-    // Cunning Action, Aggressive and Expeditious Retreat spend the bonus action
-    // on a Dash. Effects are read later, so knowing the spell is enough here.
-    const bool bonus_dash = (definition.cunning || definition.aggressive ||
+    // Cunning Action, Aggressive, Step of the Wind and Expeditious Retreat
+    // spend the bonus action on a Dash. Effects are read later, so knowing the
+    // spell is enough here.
+    const bool bonus_dash = (definition.cunning || definition.aggressive || definition.focus ||
                              detail::knows_spell(definition.spells, "expeditious_retreat")) &&
                             !actor.bonus;
     if (actor.dashes < 0 ||
@@ -11505,6 +11566,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         throw std::runtime_error("Invalid Extra Attack count");
     if (actor.fleet_step && (!definition.fleet_step || actor.bonus))
         throw std::runtime_error("Invalid Fleet Step");
+    if (actor.carried && (!definition.heightened_focus || actor.carried == actor.source.id))
+        throw std::runtime_error("Invalid carried ally");
     // The upper bound waits for the effects, read later: Aid raises it.
     if (actor.life.hp < 0 || (actor.life.dead && actor.life.hp > 0) ||
             // Dash spends the action before adding a second movement allowance.
@@ -14854,7 +14917,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.200", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.201", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

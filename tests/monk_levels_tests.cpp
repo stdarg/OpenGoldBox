@@ -4,6 +4,7 @@
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -318,6 +319,66 @@ void perfect_focus_checks()
           "Perfect Focus restores Focus to 4");
 }
 
+// Heightened Focus: Step of the Wind with Focus carries an adjacent ally,
+// which steps into each square the Monk leaves.
+void carry_checks()
+{
+    const auto rules = dummy_rules();
+    const auto start = [&](unsigned level)
+    {
+        const auto profile = rules->character_profile(monk(level).sheet(), {}).data;
+        const auto ally = rules->character_profile(monk(5).sheet(), {}).data;
+        auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
+            {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
+                {2, "campaign-character", "Ally", Side::party, {0, 1}, ally},
+                {98, "dummy", "Dummy", Side::opposition, {7, 2}}
+            }},
+        2);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+            check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Monk's turn");
+        return c;
+    };
+    check(!offered(*start(9), "step_of_the_wind_carry"), "Not before level 10");
+    auto c = start(10);
+    check(submit(*c, "step_of_the_wind_carry", 2) &&
+          logged(*c, "Monk carries Ally (Step of the Wind)."), "Step of the Wind carries the ally");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the carried ally");
+    bool moved = false;
+    for (const auto &command : c->legal_commands())
+        if (command.verb == "move" && command.destination == Cell{4, 1})
+            moved = c->submit(command);
+    const auto monk_cell = unit(*c, 1).cell, ally_cell = unit(*c, 2).cell;
+    check(moved && monk_cell == Cell{4, 1} && ally_cell.x == 3 &&
+          std::abs(ally_cell.y - monk_cell.y) <= 1,
+          "The ally follows into the square behind the Monk");
+}
+
+// Disciplined Survivor: a failed save a 20 could pass is rolled again for a
+// Focus Point, without asking.
+void disciplined_survivor_checks()
+{
+    const auto rules = module();
+    const auto profile = rules->character_profile(monk(14).sheet(), {}).data;
+    for (std::uint64_t seed = 1; seed < 400; ++seed)
+    {
+        auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
+            {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
+                {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; turns < 8 && !logged(*c, "Disciplined Survivor"); ++turns)
+            if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+                check(submit(*c, "initiative_keep") || submit(*c, "decline") || submit(*c, "end"),
+                      "The Monk waits");
+            else
+                check(c->submit(choose_demo_command(*c)), "The adept acts");
+        if (logged(*c, "Monk spends 1 Focus Point and rolls the save again (Disciplined Survivor)."))
+            return;
+    }
+    throw std::runtime_error("No seed's Blindness save calls for Disciplined Survivor");
+}
+
 // Wholeness of Body heals with a Bonus Action.
 void wholeness_checks()
 {
@@ -343,6 +404,8 @@ int main()
         fleet_step_checks();
         deflect_energy_checks();
         perfect_focus_checks();
+        carry_checks();
+        disciplined_survivor_checks();
     }
     catch (const std::exception &error)
     {

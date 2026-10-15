@@ -112,18 +112,25 @@ The Training Hall trains a Monk, like every class, to level 10
 - **Evasion:** as the [Rogue's](ROGUE.md).
 - **Heightened Focus:** Flurry of Blows makes three Unarmed Strikes, and
   Patient Defense with Focus also gives two Martial Arts dice of Temporary Hit
-  Points. Step of the Wind's carried creature is not built yet (asked).
+  Points. "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)"
+  is offered for each ally beside the Monk, Large or smaller, standing or not
+  (pulling a fallen friend out of melee is its use). The ally steps into each
+  square the Monk leaves for the rest of the turn, provoking nothing; zones it
+  passes through do not affect it.
 - **Self-Restoration:** at the end of each of its turns, one of Charmed,
   Frightened or Poisoned ends on the Monk, without asking.
 - **Fleet Step:** after any other Bonus Action, the A cycle still offers Step
   of the Wind that turn.
 - **Deflect Energy:** Deflect Attacks is asked about hits of any damage type.
-- **Disciplined Survivor:** proficiency in every saving throw. Its Focus Point
-  reroll of a failed save is not built yet (asked).
+- **Disciplined Survivor:** proficiency in every saving throw. A failed save a
+  20 could pass is rolled again for a Focus Point, without asking, after Heroic
+  Inspiration; the combat log shows it with the new roll
+  ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Like
+  Indomitable, it does not reroll the save repeated at the end of a turn.
 - **Perfect Focus:** a Monk with fewer than 4 Focus Points when a fight starts
   has 4 (Uncanny Metabolism, when used, restores them all anyway).
 - Verification: `opengold_monk_levels_tests` (the campaign's stop at 9, the
   rules to 15, grants, Unarmored Movement, save proficiencies, Extra Attack,
   Stunning Strike and on Flurry, Empowered Strikes, Wholeness of Body,
-  Heightened Focus, Fleet Step and its checkpoint, Deflect Energy, Perfect
-  Focus).
+  Heightened Focus and the carried ally, Fleet Step and its checkpoint,
+  Deflect Energy, Disciplined Survivor's reroll, Perfect Focus).
