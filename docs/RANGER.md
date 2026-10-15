@@ -13,12 +13,52 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 | 2 | Fighting Style | Delivered earlier ([Fighting Style routes](FIGHTING-STYLE-ROUTES.md)); Druidic Warrior delivered (rules 0.6.76) |
 | 3 | Ranger Subclass (Hunter) | Delivered (rules 0.6.77); Hunter's Prey changes after a rest (rules 0.6.175) |
 | 4 | Ability Score Improvement | Delivered earlier |
+| 5 | Extra Attack, level-2 spells | Delivered (rules 0.6.210) |
+| 6 | Roving | Speed delivered (rules 0.6.210); Climb and Swim Speeds cut (SCOPE-2) |
+| 7 | Defensive Tactics (Hunter) | Delivered (rules 0.6.210) |
+| 8 | Ability Score Improvement | Delivered (rules 0.6.210) |
+
+## Levels 5–15
+
+The Ranger advances to level 8 for now; level 9 waits for its level-3 spells
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Extra Attack** (5): two attacks with each Attack action.
+- **Spellcasting:** four level-1 slots from level 5; two level-2 slots at 5
+  and 6, three from 7. Prepared spells 6, 6, 7, 7 (SRD p. 58). The Ranger
+  list gains its level-2 spells: Aid, Barkskin, Gust of Wind, Lesser
+  Restoration, Magic Weapon, Protection from Poison, Silence and Spike Growth.
+  Animal Messenger, Darkvision, Enhance Ability, Find Traps, Locate Animals or
+  Plants, Locate Object and Pass without Trace are cut (DM-1, DM-3).
+- **Favored Enemy:** three free Hunter's Marks per Long Rest from level 5,
+  four from 9, five from 13.
+- **Ensnaring Strike** from a level-2 slot: "Ensnaring Strike (level 2 slot)"
+  in the Bonus Action list after a hit; its vines deal 2d6 at the start of
+  each of the target's turns.
+- **Roving** (6): Speed +10 feet without Heavy armor. Its Climb and Swim
+  Speeds are cut (SCOPE-2).
+- **Defensive Tactics** (Hunter 7): chosen in the level-up Training dropdown,
+  and changed after any rest in the rest window's own section, as the Hunter's
+  Prey is.
+  - **Escape the Horde:** Opportunity Attacks against the Ranger have
+    Disadvantage.
+  - **Multiattack Defense:** a creature that hits the Ranger with an attack
+    roll has Disadvantage on its other attack rolls against the Ranger until
+    that turn ends.
+- **Ability Score Improvement** (8): a feat or ability points.
+- Verification: `opengold_ranger_levels_tests` (the campaign's stop at 8,
+  features by level, prepared counts 5 at level 4 to 7 at 8, the level-2
+  spells preparable, slots, Favored Enemy's count, Roving, Extra Attack,
+  Escape the Horde on an Opportunity Attack, Multiattack Defense after a hit
+  and not after a miss, the rest swap, Ensnaring Strike from a level-2 slot
+  and its checkpoint, a campaign round trip).
 
 ## Spellcasting
 
 - Wisdom is the spellcasting ability. Level-one slots: 2, 2, 3, 3 at Ranger
   levels 1–4.
-- Prepared spells: 2, 3, 4, 4 at levels 1–4, chosen from the Ranger list at
+- Prepared spells: 2, 3, 4, 5 at levels 1–4, chosen from the Ranger list at
   creation (Spell Choices step), added at each level-up with earlier choices
   locked, and after a Long Rest one prepared spell may be replaced, as for a
   Paladin.
@@ -101,7 +141,7 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 - The smite window now opens on any weapon hit on the caster's own turn and
   records whether it was a Melee hit; Divine and Searing Smite still need one.
   Combat checkpoints became `OGCOMBAT 34`.
-- A level-two slot's extra die waits for Rangers of level five.
+- From a level-two slot its vines deal 2d6 (see [Levels 5–15](#levels-515)).
 - Verification: `opengold_ranger_spell_tests` (offered only after a hit, slot
   and Bonus Action, Restrained, checkpoint, turn damage and Speed 0,
   Disadvantage and Advantage, escaping, a longbow hit opening the window) and

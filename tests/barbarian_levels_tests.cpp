@@ -141,11 +141,11 @@ void progression_checks()
     {
         CampaignParty party(module());
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft("barbarian"), {}));
-        party.award_experience(85000, "levels-xp");
+        party.award_experience(165000, "levels-xp");
         while (party.can_advance(id))
             party.advance(id, party.default_advancement(id));
-        check(party.member(id).character.sheet().level == 10,
-              "In the campaign a Barbarian stops at the hall's level 10");
+        check(party.member(id).character.sheet().level == 15,
+              "In the campaign a Barbarian reaches the hall's level 15");
     }
     const auto rules = module();
     const auto rages = [&](unsigned level)

@@ -368,8 +368,8 @@ inline constexpr std::array spell_table
         .upcast = {.extra_dice = 1},
         .concentration = true},
     // SRD 5.2.1 p. 128: after a weapon hit, Melee or Ranged; a Strength save or
-    // Restrained, 1d6 Piercing at the start of each of its turns. A level-two
-    // slot's extra die waits for Rangers of level five.
+    // Restrained, 1d6 Piercing at the start of each of its turns, 1d6 more
+    // for each slot level above 1.
     SpellDef{
         .id = "ensnaring_strike",
         .label = "Ensnaring Strike",
@@ -381,7 +381,8 @@ inline constexpr std::array spell_table
         .save = Ability::strength,
         .damage = DamageType::piercing,
         .dice = {1, 6, 0},
-        .concentration = true},
+        .concentration = true,
+        .upcast = {.extra_dice = 1}},
     // SRD 5.2.1 p. 128: a 20-foot square of Difficult Terrain; each creature
     // in it when cast makes a Strength save or is Restrained.
     SpellDef{

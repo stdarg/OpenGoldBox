@@ -54,8 +54,8 @@ Unarmored Defense came earlier; see [Armor](ARMOR.md).
 
 ## Levels 5–15
 
-In the campaign a Barbarian stops at level 10, the Training Hall's limit for
-every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)); the rules go to 15. Reckless Attack is offered only with the turn's first
+A Barbarian reaches level 15, the game's cap and the Training Hall's limit for
+every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Reckless Attack is offered only with the turn's first
 attack roll, as the SRD has it, now that a turn can hold two.
 
 | Level | Gains |

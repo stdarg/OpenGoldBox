@@ -6,8 +6,8 @@ pp. 61–64. Levels 1–4 are in [Sneak Attack](SNEAK-ATTACK.md),
 [Hide](HIDE.md); the plan is [levels 5–10](LEVELS-5-10.md), and the facts for
 11–15 are in the [inventory](LEVELS-11-15-INVENTORY.md).
 
-In the campaign a Rogue stops at level 10, the Training Hall's limit for every
-class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules go to level 15.
+A Rogue reaches level 15, the game's cap and the Training Hall's limit for
+every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 | Level | Gains |
 | ---: | --- |
@@ -60,8 +60,8 @@ class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules
   turn.
 - **Slippery Mind:** proficiency in Wisdom and Charisma saves.
 
-Verification: `opengold_rogue_levels_tests` (the campaign's stop at 10, the
-rules to 15, grants, feats, Expertise, save proficiencies, save and reload,
+Verification: `opengold_rogue_levels_tests` (the campaign to 15, grants,
+feats, Expertise, save proficiencies, save and reload,
 Trip and Withdraw and their Sneak Attack die, no Cunning Strike without Sneak
 Attack, Uncanny Dodge, Evasion against a Dragonborn's breath, Reliable Talent
 while hiding, Stealth Attack from hiding, paired effects, Daze, Knock Out and

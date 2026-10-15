@@ -52,11 +52,11 @@ void ranger_choices_checks()
     creator.select(CreationField::character_class, "ranger");
     check(creator.has_spell_choices(), "The Spell Choices step appears for a Ranger");
 
-    // Slots 2/2/3/3 and prepared spells 2/3/4/4; Favored Enemy's two free casts.
+    // Slots 2/2/3/3 and prepared spells 2/3/4/5; Favored Enemy's two free casts.
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*creation_rules, ranger_draft({"cure_wounds"}), {}));
     party.award_experience(2700, "ranger-xp");
-    const std::array<unsigned, 4> slots{2, 2, 3, 3}, prepared{2, 3, 4, 4};
+    const std::array<unsigned, 4> slots{2, 2, 3, 3}, prepared{2, 3, 4, 5};
     for (unsigned level = 2; level <= 4; ++level)
     {
         party.advance(id, party.default_advancement(id));

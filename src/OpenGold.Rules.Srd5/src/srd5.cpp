@@ -194,7 +194,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated ||
            kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful ||
            kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished ||
-           kind == detail::EffectKind::circling;
+           kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -404,6 +404,15 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::ranger, "ensnaring_strike", 1},
     SpellAccessRow{CharacterClass::ranger, "entangle", 1},
     SpellAccessRow{CharacterClass::ranger, "fog_cloud", 1},
+    // Ranger level-2 spells, with the level-2 slots of Ranger level 5.
+    SpellAccessRow{CharacterClass::ranger, "aid", 5},
+    SpellAccessRow{CharacterClass::ranger, "barkskin", 5},
+    SpellAccessRow{CharacterClass::ranger, "gust_of_wind", 5},
+    SpellAccessRow{CharacterClass::ranger, "lesser_restoration", 5},
+    SpellAccessRow{CharacterClass::ranger, "magic_weapon", 5},
+    SpellAccessRow{CharacterClass::ranger, "protection_from_poison", 5},
+    SpellAccessRow{CharacterClass::ranger, "silence", 5},
+    SpellAccessRow{CharacterClass::ranger, "spike_growth", 5},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{CharacterClass::ranger, "poison_spray", 2},
     SpellAccessRow{CharacterClass::paladin, "sacred_flame", 2},
@@ -797,6 +806,8 @@ struct Definition
     bool heavy_armor{};   // wearing Heavy armor, which prevents Rage
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
+    // Hunter, Ranger level 7: one Defensive Tactics option.
+    bool escape_the_horde{}, multiattack_defense{};
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
     // Dragonborn: the Breath Weapon's damage type, from the Draconic Ancestry.
@@ -1701,7 +1712,8 @@ character_definition(std::string_view bytes,
     d.champion = klass == CharacterClass::fighter && level >= 3;
     d.critical_from = !d.champion ? 20 : level >= 15 ? 18 : 19;
     d.extra_attacks = (klass == CharacterClass::fighter || klass == CharacterClass::barbarian ||
-                       klass == CharacterClass::monk || klass == CharacterClass::paladin) &&
+                       klass == CharacterClass::monk || klass == CharacterClass::paladin ||
+                       klass == CharacterClass::ranger) &&
                       level >= 5 ? 1 : 0;
     // Two Extra Attacks (Fighter 11): three attacks with each Attack action.
     if (klass == CharacterClass::fighter && level >= 11)
@@ -1759,7 +1771,9 @@ character_definition(std::string_view bytes,
     d.life_domain = klass == CharacterClass::cleric && level >= 3;
     d.evoker = klass == CharacterClass::wizard && level >= 3;
     d.free_smite = klass == CharacterClass::paladin && level >= 2 ? 1 : 0;
-    d.favored_enemy = klass == CharacterClass::ranger ? 2 : 0;
+    // Favored Enemy: 2 free Hunter's Marks, 3 from level 5, 4 from 9, 5 from 13.
+    d.favored_enemy = klass != CharacterClass::ranger ? 0
+                      : level >= 13 ? 5 : level >= 9 ? 4 : level >= 5 ? 3 : 2;
     d.medicine = ability_modifier(scores[Ability::wisdom]);
     d.tactical_mind = klass == CharacterClass::fighter && level >= 2;
     d.cunning = klass == CharacterClass::rogue && level >= 2;
@@ -2022,6 +2036,8 @@ character_definition(std::string_view bytes,
         d.hunters_lore |= grant.id == "feature:hunters_lore";
         d.colossus_slayer |= grant.id == "prey:colossus_slayer";
         d.horde_breaker |= grant.id == "prey:horde_breaker";
+        d.escape_the_horde |= grant.id == "tactics:escape_the_horde";
+        d.multiattack_defense |= grant.id == "tactics:multiattack_defense";
     }
     std::vector<std::string> prepared;
     if (detail::prepares_spells(klass))
@@ -2079,8 +2095,9 @@ character_definition(std::string_view bytes,
     // 6, 20 from 10 and 25 from 14.
     if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
         d.speed += level >= 14 ? 25 : level >= 10 ? 20 : level >= 6 ? 15 : 10;
-    // Fast Movement: 10 feet more without Heavy armor.
-    if (klass == CharacterClass::barbarian && level >= 5 && !d.heavy_armor)
+    // Fast Movement and Roving: 10 feet more without Heavy armor.
+    if (((klass == CharacterClass::barbarian && level >= 5) ||
+            (klass == CharacterClass::ranger && level >= 6)) && !d.heavy_armor)
         d.speed += 10;
     if (d.martial_arts)
     {
@@ -2547,6 +2564,9 @@ class Session final : public CombatSession
     // The damage type a Pact of the Blade attack being resolved deals instead
     // of its weapon's; set only during that attack.
     std::optional<detail::DamageType> pact_damage_;
+    // Whether the attack being resolved is an Opportunity Attack; set only
+    // during it (Escape the Horde).
+    bool opportunity_{};
     // Tactical Master (Fighter 9): the mastery the attacker uses for one attack
     // instead of its weapon's own.
     struct TacticalMastery
@@ -3024,7 +3044,7 @@ class Session final : public CombatSession
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
-    void resolve_ensnaring_strike(Actor &a);
+    void resolve_ensnaring_strike(Actor &a, std::string_view verb);
     void divine_spark(Actor &cleric, Actor &target);
     [[nodiscard]] int disciple_of_life(const Actor &caster, unsigned slot_level) const;
     void preserve_life(Actor &cleric);
@@ -6363,8 +6383,17 @@ std::vector<Command> Session::offered_commands() const
         if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
             add(id, "searing_smite", "Searing Smite", a.smite_target);
         add_smite("shining_smite");
-        if (detail::knows_spell(d.spells, "ensnaring_strike") && slot)
-            add(id, "ensnaring_strike", "Ensnaring Strike", a.smite_target);
+        // Ensnaring Strike follows a Ranged hit too.
+        if (detail::knows_spell(d.spells, "ensnaring_strike") && !a.spent_slot)
+        {
+            const auto &spell = *detail::find_spell("ensnaring_strike");
+            for (const unsigned level : cast_levels(a, spell))
+            {
+                auto [verb, label] = cast_at(spell, level, std::string(spell.id),
+                                             std::string(spell.label));
+                add(id, std::move(verb), std::move(label), a.smite_target);
+            }
+        }
     }
     for (const auto &other : actors_)
     {
@@ -6956,12 +6985,12 @@ int Session::heal(Actor &target, int amount)
 
 void Session::resolve_smite(Actor &a, std::string_view verb)
 {
-    if (verb == "ensnaring_strike")
+    const auto smite = detail::without_cast_suffix(verb);
+    if (smite == "ensnaring_strike")
     {
-        resolve_ensnaring_strike(a);
+        resolve_ensnaring_strike(a, verb);
         return;
     }
-    const auto smite = detail::without_cast_suffix(verb);
     const bool searing = smite == "searing_smite", shining = smite == "shining_smite";
     if (sanctuary_stops(a, actor(a.smite_target)))
     {
@@ -8065,15 +8094,14 @@ void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
     commands = {std::move(kept)};
 }
 
-void Session::resolve_ensnaring_strike(Actor &a)
+void Session::resolve_ensnaring_strike(Actor &a, std::string_view verb)
 {
     // Vines grasp the creature just hit; a Large or larger one has Advantage.
     const auto &spell = *detail::find_spell("ensnaring_strike");
     auto &target = actor(a.smite_target);
     a.smite_target = 0;
     a.bonus = false;
-    --a.slots[1];
-    a.spent_slot = true;
+    pay_for_spell(a, verb, spell);
     log(a.source.name + " casts Ensnaring Strike on " + target.source.name + ".",
     {
         "{name} casts Ensnaring Strike on {target}.",
@@ -8085,16 +8113,32 @@ void Session::resolve_ensnaring_strike(Actor &a)
         return;
     begin_concentration(a, spell);
     detail::apply_ensnaring_strike(target.effects, effect_source(a), a.source.name, dc);
+    // The vines' dice live on the caster, ending with its Concentration.
+    detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                detail::EffectKind::ensnaring,
+                                static_cast<int>(1 + upcast_steps(verb, spell)));
     log(target.source.name + " is Restrained.",
     {"{name} is Restrained.", {{"name", target.source.name}}});
 }
 
 void Session::squeeze_ensnared(Actor &a)
 {
-    // Ensnaring Strike's vines deal 1d6 Piercing at the start of each turn.
-    if (!detail::has_effect(a.effects, detail::EffectKind::ensnaring_strike) || a.life.hp == 0)
+    // Ensnaring Strike's vines deal 1d6 Piercing at the start of each turn,
+    // more from a higher slot: the caster's ensnaring effect holds the dice.
+    const auto vines = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                    [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::ensnaring_strike;
+    });
+    if (vines == a.effects.active.end() || a.life.hp == 0)
         return;
-    const int amount = resolved_damage(a, detail::DamageType::piercing, roll(6));
+    int count = 1;
+    for (const auto &caster : actors_)
+        if (caster.source.id == vines->source_actor)
+            for (const auto &e : caster.effects.active)
+                if (e.kind == detail::EffectKind::ensnaring)
+                    count = e.dc;
+    const int amount = resolved_damage(a, detail::DamageType::piercing, dice({count, 6, 0}));
     log(a.source.name + " takes " + std::to_string(amount) + " Piercing damage from the vines.",
     {
         "{name} takes {damage} Piercing damage from the vines.",
@@ -9069,6 +9113,17 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
            in_zone(zone, target.source.cell);
     }))
     result.disadvantage = true;
+    // Escape the Horde: Opportunity Attacks against the Ranger have
+    // Disadvantage. Multiattack Defense: so do the other attacks this turn of
+    // a creature that hit it.
+    if ((opportunity_ && def(target).escape_the_horde) ||
+            std::any_of(target.effects.active.begin(), target.effects.active.end(),
+                        [&](const auto & e)
+{
+    return e.kind == detail::EffectKind::defended && e.source_actor == a.source.id &&
+           e.source_scope == scope_;
+    }))
+    result.disadvantage = true;
     // Faerie Fire: Advantage against an outlined creature the attacker sees.
     if (detail::has_effect(target.effects, detail::EffectKind::outlined) && can_see(a, target))
         result.advantage = true;
@@ -9223,6 +9278,16 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
         arguments
     });
 damage(target, amount, critical);
+    // Multiattack Defense: the attacker's other attacks against the Ranger
+    // this turn have Disadvantage.
+    if (def(target).multiattack_defense && detail::can_apply(target.effects) &&
+            std::none_of(target.effects.active.begin(), target.effects.active.end(),
+                         [&](const auto & e)
+{
+    return e.kind == detail::EffectKind::defended && e.source_actor == a.source.id;
+    }))
+    detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                detail::EffectKind::defended, 0);
     // A Wolf's bite knocks a Medium or smaller target Prone.
     if (!spell && !ranged && def(a).prone_bite && def(target).size <= 2 && target.life.hp > 0 &&
             !target.effects.prone)
@@ -10492,6 +10557,10 @@ bool Session::begin_turn()
         actor.spent_slot = false;
         actor.cleave_used = false;
         actor.colossus_used = actor.horde_used = actor.resistance_used = false;
+        std::erase_if(actor.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::defended;
+        });
         actor.horde_origin = 0;
         actor.savage_used = false;
         actor.sneak_used = false;
@@ -12263,7 +12332,9 @@ void Session::dispatch(const Command &command)
         if (command.verb == "opportunity")
         {
             a.reaction = false;
+            opportunity_ = true;
             attack(a, actor(command.target), AttackRange::melee);
+            opportunity_ = false;
         }
         if (!champion_move_ && !graze_ && !effect_waiting())
             finish_reaction();
@@ -13867,13 +13938,16 @@ class Module final : public RulesModule
     rest_training_options(const CharacterSheet &sheet, RestKind kind) const override
     {
         // Weapon Mastery and the Druid's land change after a Long Rest; the
-        // Hunter's Prey after any rest (SRD 5.2.1 pp. 46, 59).
+        // Hunter's Prey and Defensive Tactics after any rest (SRD 5.2.1 pp.
+        // 46, 61).
         std::vector<TrainingReplacementOptions> result;
         if (kind == RestKind::long_rest)
             if (auto mastery = mastery_rest_choice(sheet))
                 result.push_back(std::move(*mastery));
         if (auto prey = subclass_rest_choice(sheet, detail::hunters_prey_options()))
             result.push_back(std::move(*prey));
+        if (auto tactics = subclass_rest_choice(sheet, detail::defensive_tactics_options()))
+            result.push_back(std::move(*tactics));
         if (kind == RestKind::long_rest)
             if (auto land = subclass_rest_choice(sheet, detail::land_options()))
                 result.push_back(std::move(*land));
@@ -14040,6 +14114,8 @@ class Module final : public RulesModule
         if (klass == CharacterClass::barbarian && (result.level == 4 || result.level == 10))
             result.training = {
                 detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants)};
+        if (klass == CharacterClass::ranger && result.level == 7)
+            result.training = {detail::defensive_tactics_options()};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
         if (klass == CharacterClass::ranger && result.level == 3)
             result.training = {{
@@ -14169,6 +14245,16 @@ class Module final : public RulesModule
         if (klass == CharacterClass::paladin && result.level <= 4)
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (klass == CharacterClass::ranger && result.level == 5)
+            result.description =
+                "Extra Attack: two attacks with each Attack action.\nLevel 2 spell slots and Ranger spells; Ensnaring Strike from a level 2 slot deals 2d6 a turn.\nA third free Hunter's Mark (Favored Enemy); Proficiency Bonus +3.";
+        if (klass == CharacterClass::ranger && result.level == 6)
+            result.description = "Roving: Speed +10 feet without Heavy armor.";
+        if (klass == CharacterClass::ranger && result.level == 7)
+            result.description =
+                "Hunter: Defensive Tactics. Escape the Horde gives Opportunity Attacks against you Disadvantage; Multiattack Defense gives a creature that hits you Disadvantage on its other attacks against you this turn. You can switch after a rest.\nA third level 2 spell slot.";
+        if (klass == CharacterClass::ranger && result.level == 8)
+            result.description = "A feat or ability points.";
         if (klass == CharacterClass::paladin && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nLevel 2 spell slots and Paladin spells, among them Shining Smite; Divine Smite from a level 2 slot deals 3d8. Aid is always prepared.\nProficiency Bonus +3.";
@@ -14212,7 +14298,7 @@ class Module final : public RulesModule
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
         if (klass == CharacterClass::barbarian && result.level <= 4)
             result.description = "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
-        if (klass == CharacterClass::ranger)
+        if (klass == CharacterClass::ranger && result.level <= 4)
             result.description =
                 "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
         if (detail::gains_feat(klass, result.level))
@@ -14608,6 +14694,7 @@ class Module final : public RulesModule
                     : id == "subclass:bard:lore" ? "skill:" + value
                     : id == "subclass:druid:land" ? "land:" + value
                     : id == detail::champion_style ? "feat:" + value
+                    : id == detail::defensive_tactics ? "tactics:" + value
                     : id == detail::rogue_expertise_6 ? "expertise:" + value
                     : "mastery:" + value,
                     id,
@@ -16236,7 +16323,9 @@ class Module final : public RulesModule
     // ("prey:colossus_slayer" from "subclass:ranger:hunter"), once it is made.
     static std::string_view subclass_choice_prefix(std::string_view group)
     {
-        return group == "subclass:ranger:hunter" ? "prey:" : "land:";
+        return group == "subclass:ranger:hunter" ? "prey:"
+               : group == detail::defensive_tactics ? "tactics:"
+               : "land:";
     }
 
     static std::optional<TrainingReplacementOptions>
@@ -16304,7 +16393,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.209", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.210", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

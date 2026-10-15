@@ -144,6 +144,7 @@ Faithful Hound (level 4); Animate Objects, Mislead, Reincarnate, Telekinesis
 5. **More Expertise** at Rogue 6, Bard 9 and Ranger 9. SCOPE-2 says
    "Expertise … no further work; already implemented Expertise stays" and cuts
    Ranger Deft Explorer's Expertise. Does that cover the new picks?
+   Answered by LEVELS-1: the new picks are implemented.
 6. **Daylight.** It is cut with Light under DM-3, but it is the counter to
    Darkness (which the game keeps). Keep it for that?
 7. **Slow's 25% spell failure** applies to spells with a Somatic component,

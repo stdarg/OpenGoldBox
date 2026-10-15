@@ -26,10 +26,10 @@ enum class TrainingHall
 // The hall a script names in its "WE TRAIN ONLY ..." text ("FIGHTERS ").
 [[nodiscard]] std::optional<TrainingHall> training_hall_named(std::string_view script_name);
 
-// The highest level the Training Hall trains any class to in the campaign
+// The highest level the Training Hall trains any class to, the game's cap
 // (LEVELS-2), in place of the original's "8th level fighter, 9th level thief,
 // and 6th level cleric and magic-user" (CAP-1).
-inline constexpr unsigned hall_level_limit = 10;
+inline constexpr unsigned hall_level_limit = 15;
 
 // A session of experience costs 1,000 gp at level 1 and doubles at each level.
 [[nodiscard]] std::uint32_t experience_session_fee(unsigned level);

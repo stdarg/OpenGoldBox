@@ -80,8 +80,8 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
 
 ## Levels 5–15
 
-The Training Hall trains a Monk, like every class, to level 10
-([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)); the rules go to 15.
+The Training Hall trains a Monk, like every class, to level 15, the game's cap
+([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 | Level | Gains |
 | ---: | --- |
@@ -129,8 +129,8 @@ The Training Hall trains a Monk, like every class, to level 10
   Indomitable, it does not reroll the save repeated at the end of a turn.
 - **Perfect Focus:** a Monk with fewer than 4 Focus Points when a fight starts
   has 4 (Uncanny Metabolism, when used, restores them all anyway).
-- Verification: `opengold_monk_levels_tests` (the campaign's stop at 9, the
-  rules to 15, grants, Unarmored Movement, save proficiencies, Extra Attack,
+- Verification: `opengold_monk_levels_tests` (the campaign to 15, grants,
+  Unarmored Movement, save proficiencies, Extra Attack,
   Stunning Strike and on Flurry, Empowered Strikes, Wholeness of Body,
   Heightened Focus and the carried ally, Fleet Step and its checkpoint,
   Deflect Energy, Disciplined Survivor's reroll, Perfect Focus).

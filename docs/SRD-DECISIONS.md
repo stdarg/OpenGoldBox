@@ -1058,16 +1058,18 @@ Wizard, Sorcerer and Warlock at 6. The rules still carry each class to its own
 cap ([LEVELS-1](#levels-1-2026-10-14-levels-510)); this limits the campaign,
 in place of [SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)'s
 playable cap of 15. [LEVELS-2](#levels-2-2026-10-15-level-cap-15) replaces the
-three limits with level 10 for every class.
+three limits with level 15 for every class.
 
 ## LEVELS-2 (2026-10-15): level cap 15
 
 The user raised the level cap to 15 for every class: each class is built to
 15 (the facts are in the [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md)).
-The Training Hall still limits training, but to level 10 for every class, in
-place of [CAP-1](#cap-1-2026-10-14-the-original-training-halls-limits)'s three
-limits; levels 11–15 are built for the rules and stay out of the campaign's
-reach. Decisions taken with it:
+The Training Hall trains every class to 15, the game's maximum, in place of
+[CAP-1](#cap-1-2026-10-14-the-original-training-halls-limits)'s three limits.
+At first the hall stopped at 10; the user then set the game's maximum at 15.
+A class reaches only the levels whose features are built, so a class still
+being built stops at its own cap until its work is done. Decisions taken with
+it:
 
 - **Empowered Strikes** (Monk 6): Unarmed Strikes always deal Force damage.
 - **Stunning Strike** is also offered on Flurry of Blows.
@@ -1095,6 +1097,16 @@ reach. Decisions taken with it:
   in place of Half Cover the Paladin and its allies in the Aura of Protection
   gain what Half Cover gives: +2 AC and +2 to Dexterity saves, until the start
   of the Paladin's next turn.
+- **Controlled creatures** come with the Ranger: LEVELS-1's shared system for
+  summoned and controlled creatures arrives with Dominate Beast (Ranger 13),
+  and the Druid builds on it. The Ranger's Conjure Animals and Conjure
+  Woodland Beings conjure spirits that only deal damage around a point or the
+  caster, not creatures.
+- **Superior Hunter's Prey** (Ranger 11): the second creature is picked by
+  click, as Horde Breaker's is. **Superior Hunter's Defense** (Ranger 15) is a
+  React/Decline prompt when the Ranger takes damage, as Uncanny Dodge is.
+- **Ranger prepared spells** follow the SRD table (p. 58), 5 at level 4.
+- **Expertise** at Rogue 6, Bard 9 and Ranger 9 stands as LEVELS-1 decided.
 
 ## PUSH-1 (2026-10-14): pushed into a wall
 

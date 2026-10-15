@@ -15,6 +15,7 @@ rules::TrainingChoiceGroup metamagic_options();
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup land_options();
 rules::TrainingChoiceGroup hunters_prey_options();
+rules::TrainingChoiceGroup defensive_tactics_options();
 rules::TrainingChoiceGroup invocation_options(unsigned level,
         std::span<const rules::FeatureGrant> grants, std::string_view source);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);

@@ -140,10 +140,10 @@ void progression_checks()
 {
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft("monk"), {}));
-    party.award_experience(85000, "levels-xp");
+    party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 10, "In the campaign a Monk stops at the hall's level 10");
+    check(party.member(id).character.sheet().level == 15, "In the campaign a Monk reaches the hall's level 15");
     const auto rules = module();
     check(rules->character_profile(monk(5).sheet(), {}).movement_feet == 40 &&
           rules->character_profile(monk(6).sheet(), {}).movement_feet == 45 &&
@@ -178,7 +178,7 @@ void progression_checks()
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "monk-levels", nullptr).party);
-    check(encode_campaign(next, nullptr, "monk-levels") == bytes, "A level-9 Monk saves and reloads");
+    check(encode_campaign(next, nullptr, "monk-levels") == bytes, "A level-15 Monk saves and reloads");
 }
 
 // Extra Attack with the d8 Martial Arts die, and Stunning Strike.

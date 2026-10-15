@@ -29,6 +29,8 @@ Part of [#176](https://github.com/stdarg/OpenGold/issues/176) (levels 5–15).
 - The camp's Cast / Use list follows the same rule.
 - The smites follow it after a hit: "Divine Smite (level 3 slot)" deals 4d8.
   Searing Smite stays at level 1: its burn from a higher slot is not built.
+  Ensnaring Strike's vines deal 1d6 more a turn for each level above 1; the
+  caster carries the count (an `ensnaring` effect) while it concentrates.
 - Shield and Hellish Rebuke, cast as Reactions, take the lowest slot left;
   Hellish Rebuke deals 1d10 more for each level above 1.
 - Upcast rules added with the Paladin: Heroism takes one more creature per

@@ -239,9 +239,15 @@ enum class EffectKind : unsigned
     // A Magic Circle drawn in camp, on its caster: `dc` indexes ward_types; no
     // creature of that type interrupts the rest while it lasts.
     circle_ward = 94,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // A party member who died less than a minute ago, whom Revivify can raise.
-    fallen = 95
+    fallen = 95,
+    // Multiattack Defense (Hunter Ranger 7), on the Ranger: the creature that
+    // hit it this turn, its source, attacks it with Disadvantage until the
+    // turn ends.
+    defended = 96,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // Ensnaring Strike's vines, on its caster: `dc` is how many d6 they deal.
+    ensnaring = 97
 };
 
 // Magic Circle's creature types, by `dc`.

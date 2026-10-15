@@ -125,7 +125,7 @@ void halls_and_fees()
     check(training_hall_named("MAGIC USERS ") == TrainingHall::magic_users &&
           training_hall_named("THIEVES ") == TrainingHall::thieves && !training_hall_named("BARDS "),
           "The original script names its hall");
-    static_assert(hall_level_limit == 10, "The hall trains every class to level 10 (LEVELS-2)");
+    static_assert(hall_level_limit == 15, "The hall trains every class to level 15 (LEVELS-2)");
     check(experience_session_fee(1) == 1000 && experience_session_fee(3) == 4000 &&
           experience_session_fee(8) == 128000,
           "A session costs 1,000 gp at level 1 and doubles at each level");
@@ -176,7 +176,7 @@ void experience_sessions()
           "The level-2 session grants half of the 600 between levels 2 and 3");
 
     party.set_wealth({0, 0, 0, 99999, 0, 0, 0});
-    party.award_experience(64000, "test:veteran");
+    party.award_experience(165000, "test:veteran");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     check(party.experience_offer(id, TrainingHall::fighters).denial ==

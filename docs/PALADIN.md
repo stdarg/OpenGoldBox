@@ -31,7 +31,7 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 The Paladin advances to level 15
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)); in the
-campaign the Training Hall trains it to level 10.
+campaign the Training Hall trains it to level 15.
 
 - **Extra Attack** (5): two attacks with each Attack action.
 - **Spellcasting:** four level-1 slots from level 5; two level-2 slots at 5
@@ -158,7 +158,7 @@ campaign the Training Hall trains it to level 10.
   of Half Cover, until the start of the Paladin's next turn
   ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
-Verification: `opengold_paladin_levels_tests` (the cap at 10 in the campaign,
+Verification: `opengold_paladin_levels_tests` (64,000 XP training it to 10,
 features by level, prepared counts, Aid always prepared, the level-2 spells
 preparable, slots at 5 and 7, a campaign round trip, Extra Attack, both
 level-2 smites and their slots, Shining Smite's effect and checkpoint, the

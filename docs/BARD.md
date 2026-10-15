@@ -33,7 +33,8 @@ ability.
   [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal).
 - **Jack of All Trades** (level 2): + 1 (half the Proficiency Bonus) to
   Initiative, as SRD-DECISIONS keeps it, unless Alert already adds the whole
-  bonus. Bard Expertise is not pursued (SRD-DECISIONS).
+  bonus. The level-2 Expertise is not pursued (SCOPE-2); the level-9 pick
+  comes with levels 5–15 (LEVELS-1).
 - **College of Lore** (level 3): Bonus Proficiencies in three skills chosen at
   level-up, and Cutting Words (below).
 - Verification: `opengold_bard_tests` (each spell's save or attack and its

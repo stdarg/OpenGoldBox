@@ -717,6 +717,22 @@ TrainingChoiceGroup hunters_prey_options()
     return group;
 }
 
+// Defensive Tactics: the Hunter Ranger's choice at level seven (SRD 5.2.1 p. 61).
+TrainingChoiceGroup defensive_tactics_options()
+{
+    TrainingChoiceGroup group{std::string(defensive_tactics), "Defensive Tactics", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 7;
+    group.options = {
+        {   "escape_the_horde", "Escape the Horde",
+            "Opportunity Attacks against you have Disadvantage."
+        },
+        {   "multiattack_defense", "Multiattack Defense",
+            "A creature that hits you has Disadvantage on its other attacks against you this turn."
+        }};
+    return group;
+}
+
 // Circle of the Land: the land type that picks the Circle Spells (SRD 5.2.1 p. 46).
 TrainingChoiceGroup land_options()
 {

@@ -23,6 +23,8 @@ std::vector<rules::AdvancementOption> fighting_styles();
 std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, unsigned level);
 // The Champion's Additional Fighting Style (level 7): its feat's source.
 inline constexpr std::string_view champion_style = "subclass:fighter:champion:fighting_style";
+// The Hunter's Defensive Tactics (Ranger level 7): its option's source.
+inline constexpr std::string_view defensive_tactics = "subclass:ranger:hunter:defensive_tactics";
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id);
 
 struct GrantEffects

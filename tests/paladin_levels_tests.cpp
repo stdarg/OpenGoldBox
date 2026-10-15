@@ -187,11 +187,11 @@ void progression_checks()
     const auto rules = module();
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
-    party.award_experience(85000, "levels-xp");
+    party.award_experience(64000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     const auto &ten = party.member(id).character.sheet();
-    check(ten.level == 10, "In the campaign a Paladin stops at the hall's level 10");
+    check(ten.level == 10, "64,000 XP trains a Paladin to level 10");
     const auto fifteen = paladin(15);
     check(!rules->advancement_options(fifteen.sheet()).level, "Level 15 is the Paladin's cap");
     check(std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(), [](const auto & g)

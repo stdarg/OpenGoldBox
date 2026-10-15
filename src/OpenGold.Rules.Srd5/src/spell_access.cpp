@@ -67,11 +67,9 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"entangle", "Entangle", 1, 0, ranger_list | druid_list},
     // Also on the Sorcerer list; added with that class.
     Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list | wizard_list | sorcerer_list},
-    // Also on the Ranger list; added with that class.
     Spell{"lesser_restoration", "Lesser Restoration", 2, 0,
-        cleric_list | bard_list | druid_list | paladin_list},
-    // Also on the Ranger list; added with that class.
-    Spell{"aid", "Aid", 2, 0, cleric_list | bard_list | druid_list | paladin_list},
+        cleric_list | bard_list | druid_list | paladin_list | ranger_list},
+    Spell{"aid", "Aid", 2, 0, cleric_list | bard_list | druid_list | paladin_list | ranger_list},
     Spell{"guiding_bolt", "Guiding Bolt", 1, 0, cleric_list},
     // Also on the Bard and Warlock lists; added with those classes.
     Spell{"bane", "Bane", 1, 0, cleric_list | warlock_list | bard_list},
@@ -84,7 +82,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"resistance", "Resistance", 0, 0, cleric_list | druid_list},
     Spell{"guidance", "Guidance", 0, 0, cleric_list | druid_list},
     // Also on the Bard list; added with that class.
-    Spell{"silence", "Silence", 2, 0, cleric_list | bard_list},
+    Spell{"silence", "Silence", 2, 0, cleric_list | bard_list | ranger_list},
     Spell{"spiritual_weapon", "Spiritual Weapon", 2, 0, cleric_list},
     Spell{"prayer_of_healing", "Prayer of Healing", 2, 0, cleric_list | paladin_list},
     // Also on the Sorcerer list (and Thunderwave and Shatter on the Bard's and
@@ -118,7 +116,8 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     // lists, Magic Weapon on the Paladin, Ranger and Sorcerer lists.
     Spell{"blur", "Blur", 2, 0, wizard_list | sorcerer_list},
     Spell{"mirror_image", "Mirror Image", 2, 0, wizard_list | sorcerer_list | warlock_list | bard_list},
-    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list | sorcerer_list | paladin_list},
+    Spell{"magic_weapon", "Magic Weapon", 2, 0,
+        wizard_list | sorcerer_list | paladin_list | ranger_list},
     // Also on the Bard, Sorcerer and Warlock lists; added with those classes.
     Spell{"invisibility", "Invisibility", 2, 0, wizard_list | sorcerer_list | warlock_list | bard_list},
     Spell{"see_invisibility", "See Invisibility", 2, 0, wizard_list | sorcerer_list | bard_list},
@@ -136,7 +135,8 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     // Also on the Bard, Druid, Sorcerer and Warlock lists; added with those classes.
     Spell{"charm_person", "Charm Person", 1, 0, wizard_list | sorcerer_list | warlock_list | bard_list | druid_list},
     // Also on the Druid, Ranger and Sorcerer lists; added with those classes.
-    Spell{"gust_of_wind", "Gust of Wind", 2, 0, wizard_list | sorcerer_list | druid_list},
+    Spell{"gust_of_wind", "Gust of Wind", 2, 0,
+        wizard_list | sorcerer_list | druid_list | ranger_list},
     Spell{"sorcerous_burst", "Sorcerous Burst", 0, 0, sorcerer_list},
     Spell{"hex", "Hex", 1, 0, warlock_list},
     Spell{"hellish_rebuke", "Hellish Rebuke", 1, 0, warlock_list},
@@ -146,10 +146,10 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"faerie_fire", "Faerie Fire", 1, 0, bard_list | druid_list},
     Spell{"produce_flame", "Produce Flame", 0, 0, druid_list},
     Spell{"shillelagh", "Shillelagh", 0, 0, druid_list},
-    Spell{"barkskin", "Barkskin", 2, 0, druid_list},
+    Spell{"barkskin", "Barkskin", 2, 0, druid_list | ranger_list},
     Spell{"flame_blade", "Flame Blade", 2, 0, druid_list},
     Spell{"moonbeam", "Moonbeam", 2, 0, druid_list},
-    Spell{"spike_growth", "Spike Growth", 2, 0, druid_list},
+    Spell{"spike_growth", "Spike Growth", 2, 0, druid_list | ranger_list},
     Spell{"heat_metal", "Heat Metal", 2, 0, druid_list | bard_list},
     Spell{"beacon_of_hope", "Beacon of Hope", 3, 0, cleric_list},
     Spell{"revivify", "Revivify", 3, 0, cleric_list | druid_list | paladin_list | ranger_list},
@@ -206,7 +206,7 @@ constexpr std::array prepared_casters{
     PreparedCaster{
         CharacterClass::ranger, "class:ranger:spellcasting", "Druidic Warrior cantrips",
         "feature:spellcasting", ranger_list, druid_list, {},
-        {2, 3, 4, 4, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12},
+        {2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12},
         {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4}, PreparedCaster::RestChange::one},
     PreparedCaster{
         CharacterClass::sorcerer, "class:sorcerer:spellcasting", "Sorcerer cantrips",

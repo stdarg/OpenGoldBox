@@ -218,6 +218,14 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 15)
             add("feature:smite_of_protection", "subclass:paladin:devotion");
     }
+    // Roving's Climb and Swim Speeds are cut (SCOPE-2); its Speed stays.
+    if (klass == CharacterClass::ranger)
+    {
+        if (level == 5)
+            add("feature:extra_attack", "class:ranger");
+        if (level == 6)
+            add("feature:roving", "class:ranger");
+    }
     // Acrobatic Movement (Monk 9) is cut (SCOPE-2).
     if (klass == CharacterClass::monk)
     {
@@ -431,6 +439,14 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                     (grant.id == "prey:colossus_slayer" || grant.id == "prey:horde_breaker"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == defensive_tactics)
+        {
+            // Defensive Tactics: one of its two options, chosen at level seven.
+            require(klass == CharacterClass::ranger && grant.level == 7 && grant.choices.empty() &&
+                    (grant.id == "tactics:escape_the_horde" ||
+                     grant.id == "tactics:multiattack_defense"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == class_source(klass) + ":fighting_style")
         {
             require(
@@ -497,6 +513,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({class_source(klass) + ":fighting_style", 0}));
     if (klass == CharacterClass::ranger && level >= 3)
         require(entitlements.contains({"subclass:ranger:hunter", 0}));
+    if (klass == CharacterClass::ranger && level >= 7)
+        require(entitlements.contains({std::string(defensive_tactics), 0}));
     if (klass == CharacterClass::fighter && level >= 7)
         require(entitlements.contains({std::string(champion_style), 0}));
     require(required.empty() && advancement_count == feats_by(klass, level));

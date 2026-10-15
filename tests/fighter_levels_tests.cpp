@@ -103,14 +103,14 @@ Character fighter(unsigned level)
 void fighter_checks()
 {
     {
-        // The campaign: the Training Hall trains every class to level 10.
+        // The campaign: the Training Hall trains every class to level 15.
         CampaignParty party(module());
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft("fighter"), {}));
-        party.award_experience(85000, "levels-xp");
+        party.award_experience(165000, "levels-xp");
         while (party.can_advance(id))
             party.advance(id, party.default_advancement(id));
-        check(party.member(id).character.sheet().level == 10,
-              "In the campaign a Fighter stops at the hall's level 10");
+        check(party.member(id).character.sheet().level == 15,
+              "In the campaign a Fighter reaches the hall's level 15");
     }
     CampaignParty party(module());
     const auto id = party.add_pc(fighter(15));

@@ -589,6 +589,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::hopeful:
     case EffectKind::shillelagh:
     case EffectKind::heated:
+    case EffectKind::ensnaring:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
@@ -596,6 +597,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes
     case EffectKind::metamagic:
+    case EffectKind::defended:
         return 6000; // the rest of the turn, cleared when it ends
     case EffectKind::extended:
         return 1200000; // a doubled 10-minute Concentration
@@ -835,7 +837,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::fallen))
+    if (value > static_cast<unsigned>(EffectKind::ensnaring))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

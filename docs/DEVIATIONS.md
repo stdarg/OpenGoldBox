@@ -76,7 +76,7 @@ are implemented; their screen is not yet
 
 - **Levels anywhere.** The original raised levels only at a training hall, for
   1,000 gp. OpenGoldBox raises them from the roster's Advance button anywhere,
-  up to level 10 for every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)), in place of the hall's
+  up to level 15 for every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)), in place of the hall's
   original limits of 8th level fighter, 9th level thief and 6th level cleric
   and magic-user ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
 - **Halls sell experience.** One session per level grants half the experience

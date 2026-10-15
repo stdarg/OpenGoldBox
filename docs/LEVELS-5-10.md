@@ -9,8 +9,9 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 ## Progress
 
 - Proficiency Bonus by level everywhere: done.
-- Fighter to level 10 with Extra Attack: done ([Fighter](FIGHTER.md)). In the
-  campaign every class stops at 10 ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+- Fighter to level 10 with Extra Attack: done ([Fighter](FIGHTER.md)). The
+  game's cap is 15 for every class, and the Training Hall trains to it
+  ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 - Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-515)).
 - Rogue to level 10: done ([Rogue](ROGUE.md)).
 - Monk to level 9: done ([Monk](MONK.md#levels-515)).
@@ -19,11 +20,12 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
   ([Spell slots](SPELL-SLOTS.md)).
 - Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)), with every
   kept Paladin spell.
+- Ranger to level 8: done ([Ranger](RANGER.md#levels-515)).
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
   [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,
-  Rogue and Monk go to 15 next, then the remaining classes to 15 in the same
-  order.
+  Rogue, Monk and Paladin are at 15; the remaining classes follow in the same
+  order, starting with the Ranger.
 
 ## How the work runs
 
@@ -69,8 +71,6 @@ that does not fit is asked about with screenshots first.
   Dragonborn Draconic Flight, Monk Acrobatic Movement, Ranger climb and swim
   Speeds ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations),
   [SCOPE-2](SRD-DECISIONS.md#scope-2-2026-09-30-exploration-halves-and-marginal-features)).
-- New Expertise picks (Rogue 6, Bard 9, Ranger 9) under SCOPE-2's "no further
-  Expertise work", unless the user decides otherwise.
 
 ## Open decisions
 
