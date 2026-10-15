@@ -1273,6 +1273,12 @@ void CombatView::immediate(String verb)
         return c.verb == reaction;
     }))
         wanted = reaction;
+    // The Initiative dialog's feature button uses the feature its owner has.
+    if (wanted == "uncanny_metabolism" && std::any_of(legal.begin(), legal.end(), [&](const auto & c)
+{
+    return c.verb == "persistent_rage" && presentation::initiative_command(*this, c);
+}))
+    wanted = "persistent_rage";
     if (std::none_of(state.combatants.begin(), state.combatants.end(),
                      [&](const auto & a)
 {

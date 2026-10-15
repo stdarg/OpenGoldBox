@@ -662,6 +662,13 @@ struct Definition
     bool tactical_shift{}, tactical_master{}, heroic_warrior{}, studied_attacks{};
     // Barbarian levels 5-10.
     bool feral_instinct{}, mindless_rage{}, instinctive_pounce{}, brutal_strike{}, retaliation{};
+    // Barbarian levels 11-15: Relentless Rage's tries before a Short Rest (kept
+    // in Actor::lay_on_hands, which no Barbarian has), Intimidating Presence's
+    // use (in Actor::free_casts) and Persistent Rage's (in Actor::arcane), each
+    // once per Long Rest; Improved Brutal Strike's two more blows.
+    int relentless_rage{}, intimidating_presence{}, persistent_rage{};
+    bool improved_brutal{};
+    bool brave{}; // Halfling: Advantage on saves to avoid or end Frightened
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
     // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
@@ -888,7 +895,13 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"indomitable", "Indomitable", &Actor::arcane, &Definition::indomitable, 0,
         true},
     ResourceDescriptor{"wholeness_of_body", "Wholeness of Body", &Actor::free_casts,
-        &Definition::wholeness, 0, true}};
+        &Definition::wholeness, 0, true},
+    ResourceDescriptor{"relentless_rage", "Relentless Rage", &Actor::lay_on_hands,
+        &Definition::relentless_rage, -1, true},
+    ResourceDescriptor{"intimidating_presence", "Intimidating Presence", &Actor::free_casts,
+        &Definition::intimidating_presence, 0, true},
+    ResourceDescriptor{"persistent_rage", "Persistent Rage", &Actor::arcane,
+        &Definition::persistent_rage, 0, true}};
 
 // Whether a level-up takes Lessons of the First Ones' Skilled, as a new
 // invocation or one swapped in.
@@ -911,7 +924,7 @@ int max_hp(const Actor &a)
 // class has both.
 int lay_capacity(const Definition &d)
 {
-    return d.lay_on_hands + d.sorcery_points;
+    return d.lay_on_hands + d.sorcery_points + d.relentless_rage;
 }
 
 // Spell slots, with room for the ones Font of Magic creates from Sorcery
@@ -930,7 +943,8 @@ int slot2_room(const Definition &d)
 // by a Long Rest; no class has two of them.
 int free_cast_capacity(const Definition &d)
 {
-    return d.free_smite + d.favored_enemy + d.innate_sorcery + d.wholeness;
+    return d.free_smite + d.favored_enemy + d.innate_sorcery + d.wholeness +
+           d.intimidating_presence;
 }
 
 // One bit per Magic Initiate feat, each its spell's free cast.
@@ -966,7 +980,8 @@ int surge_capacity(const Definition &d)
 // once per Long Rest.
 int arcane_capacity(const Definition &d)
 {
-    return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable;
+    return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable +
+           d.persistent_rage;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -1322,7 +1337,7 @@ character_definition(std::string_view bytes,
     d.gnomish_cunning = race == "Gnome";
     d.relentless = race == "Orc";
     d.resourceful = race == "Human";
-    d.lucky = race == "Halfling";
+    d.lucky = d.brave = race == "Halfling";
     d.nimble = race == "Halfling";
     d.naturally_stealthy = race == "Halfling";
     // Gnomes and Halflings are Small.
@@ -1330,7 +1345,8 @@ character_definition(std::string_view bytes,
         d.size = 1;
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
-    d.rages = klass == CharacterClass::barbarian ? (level >= 6 ? 4 : level >= 3 ? 3 : 2) : 0;
+    d.rages = klass == CharacterClass::barbarian
+              ? (level >= 12 ? 5 : level >= 6 ? 4 : level >= 3 ? 3 : 2) : 0;
     d.wild_shapes = klass == CharacterClass::druid && level >= 2 ? 2 : 0;
     d.lands_aid = klass == CharacterClass::druid && level >= 3;
     d.rage_damage = klass == CharacterClass::barbarian ? (level >= 9 ? 3 : 2) : 0;
@@ -1383,6 +1399,11 @@ character_definition(std::string_view bytes,
     d.mindless_rage = barbarian && level >= 6;
     d.feral_instinct = d.instinctive_pounce = barbarian && level >= 7;
     d.brutal_strike = barbarian && level >= 9;
+    // Relentless Rage's DC climbs 10, 15, 20, 25, 30; past that no save passes.
+    d.relentless_rage = barbarian && level >= 11 ? 5 : 0;
+    d.improved_brutal = barbarian && level >= 13;
+    d.intimidating_presence = barbarian && level >= 14 ? 1 : 0;
+    d.persistent_rage = barbarian && level >= 15 ? 1 : 0;
     d.retaliation = barbarian && level >= 10;
     const bool rogue = klass == CharacterClass::rogue;
     d.cunning_strike = d.uncanny_dodge = rogue && level >= 5;
@@ -1886,7 +1907,7 @@ VitalState vitals(const Actor &a)
                         : "");
     if (detail::healing_blocked(a.effects))
         description += "\nChill Touch: cannot regain HP.";
-    if (detail::opportunity_blocked(a.effects))
+    if (detail::has_effect(a.effects, detail::EffectKind::shocking_grasp))
         description += "\nShocking Grasp: cannot make Opportunity Attacks.";
     if (detail::frosted(a.effects))
         description += "\nRay of Frost: Speed reduced by 10 feet.";
@@ -1943,6 +1964,24 @@ constexpr std::array<TacticalOption, 3> tactical_masteries{
     {   {"push", detail::Mastery::push, "Melee attack (Push)", "Ranged attack (Push)"},
         {"sap", detail::Mastery::sap, "Melee attack (Sap)", "Ranged attack (Sap)"},
         {"slow", detail::Mastery::slow, "Melee attack (Slow)", "Ranged attack (Slow)"}
+    }};
+
+// Brutal Strike's blows (Barbarian 9; Staggering and Sundering from 13).
+enum class BrutalBlow : unsigned
+{
+    forceful,
+    hamstring,
+    staggering,
+    sundering
+};
+
+// Brutal Strike's blows by verb, with their commands' labels.
+constexpr std::array<std::tuple<std::string_view, std::string_view, BrutalBlow>, 4>
+brutal_blows{{
+        {"brutal_forceful", "Brutal Strike (Forceful Blow)", BrutalBlow::forceful},
+        {"brutal_hamstring", "Brutal Strike (Hamstring Blow)", BrutalBlow::hamstring},
+        {"brutal_staggering", "Brutal Strike (Staggering Blow)", BrutalBlow::staggering},
+        {"brutal_sundering", "Brutal Strike (Sundering Blow)", BrutalBlow::sundering}
     }};
 
 // Cunning Strike's effects (Rogue 5).
@@ -2144,7 +2183,8 @@ class Session final : public CombatSession
         {
             if (outcome_ == Outcome::ongoing)
                 for (const auto &a : actors_)
-                    if (a.source.side == Side::party && (def(a).alert || metabolism_ready(a)) &&
+                    if (a.source.side == Side::party &&
+                            (def(a).alert || metabolism_ready(a) || persistent_ready(a)) &&
                             conscious(a))
                         initiative_choices_.push_back(a.source.id);
             if (initiative_choices_.empty())
@@ -2187,7 +2227,7 @@ class Session final : public CombatSession
     struct BrutalStrike
     {
         EntityId actor{};
-        bool forceful{}; // Forceful Blow; otherwise Hamstring Blow
+        BrutalBlow blow{};
     };
     std::optional<BrutalStrike> brutal_;
     // Cunning Strike (Rogue 5): the effect chosen for one attack, paid with a
@@ -2806,8 +2846,9 @@ class Session final : public CombatSession
     [[nodiscard]] bool strength_attack(const Actor &a, AttackRange range) const;
     void attack_recklessly(Actor &a);
     // Brutal Strike's blow after its hit: Forceful Blow pushes the target 15
-    // feet and lets the Barbarian follow; Hamstring Blow slows it.
-    void brutal_blow(Actor &barbarian, Actor &target, bool forceful);
+    // feet and lets the Barbarian follow; Hamstring Blow slows it; Staggering
+    // and Sundering Blows mark it until the Barbarian's next turn.
+    void brutal_blow(Actor &barbarian, Actor &target, BrutalBlow blow);
     // Reliable Talent (Rogue 7): a proficient skill check's d20 counts as at least 10.
     int reliable(const Actor &a, std::string_view skill, int natural);
     // Evasion (Rogue 7): the damage a creature takes from a save-for-half
@@ -2822,6 +2863,16 @@ class Session final : public CombatSession
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
+    // Frightened: a living creature that frightens `a` is in its line of sight.
+    [[nodiscard]] std::vector<const Actor *> fears_in_sight(const Actor &a) const;
+    // Intimidating Presence (Berserker 14): each enemy within 30 feet makes a
+    // Wisdom save or is Frightened for up to a minute.
+    void intimidate(const Actor &barbarian);
+    // Persistent Rage (Barbarian 15) is offered at Initiative while a Rage use is spent.
+    [[nodiscard]] bool persistent_ready(const Actor &a) const
+    {
+        return def(a).persistent_rage && a.arcane > 0 && a.channel_divinity < def(a).rages;
+    }
     // True Strike deals Radiant damage or the weapon's own type, as the caster chooses.
     enum class TrueStrikeDamage
     {
@@ -2939,6 +2990,14 @@ class Session final : public CombatSession
             log(monk.source.name + " uses Uncanny Metabolism.",
             {"{name} uses Uncanny Metabolism.", {{"name", monk.source.name}}});
             heal(monk, roll(6) + def(monk).level);
+        }
+        if (command.verb == "persistent_rage")
+        {
+            auto &barbarian = actor(command.actor);
+            --barbarian.arcane;
+            barbarian.channel_divinity = def(barbarian).rages;
+            log(barbarian.source.name + " regains every Rage use (Persistent Rage).",
+            {"{name} regains every Rage use (Persistent Rage).", {{"name", barbarian.source.name}}});
         }
         std::erase(initiative_choices_, command.actor);
         std::stable_sort(actors_.begin(), actors_.end(),
@@ -3663,7 +3722,16 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
                              other.source.side != mover.source.side && !nimble_pass,
                              unconscious(other), other.life.hp == 0});
     }
-    return {zoned_board(), mover.source.cell, occupants, mover.effects.prone};
+    // Frightened: no square closer to a creature it fears and can see.
+    auto board = zoned_board();
+    for (const auto *fear : fears_in_sight(mover))
+        for (int y = 0; y < board.height; ++y)
+            for (int x = 0; x < board.width; ++x)
+                if (distance({x, y}, fear->source.cell) <
+                        distance(mover.source.cell, fear->source.cell))
+                    board.terrain[static_cast<std::size_t>(y * board.width + x)] =
+                        Terrain::obstacle;
+    return {board, mover.source.cell, occupants, mover.effects.prone};
 }
 
 std::vector<Cell> Session::path_to(const Actor &actor, Cell destination) const
@@ -3934,6 +4002,9 @@ Snapshot Session::snapshot() const
         }
         if (def(a).rages)
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
+        if (def(a).intimidating_presence)
+            view.bonus_actions.insert(view.bonus_actions.end(),
+                                      {"intimidating_presence", "intimidating_presence_rage"});
         if (def(a).martial_arts)
             view.bonus_actions.push_back("martial_arts");
         if (def(a).innate_sorcery)
@@ -4043,7 +4114,7 @@ Snapshot Session::snapshot() const
                 messages.push_back(message);
                 view.conditions.push_back(std::move(message));
             }
-        if (detail::opportunity_blocked(a.effects))
+        if (detail::has_effect(a.effects, detail::EffectKind::shocking_grasp))
         {
             messages.push_back({"Shocking Grasp: cannot make Opportunity Attacks.", {}});
             view.conditions.push_back({"Shocking Grasp: cannot make Opportunity Attacks.", {}});
@@ -4098,6 +4169,9 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::raging, "Raging"},
                     std::pair{detail::EffectKind::reckless, "Reckless"},
                     std::pair{detail::EffectKind::addled, "Addled"},
+                    std::pair{detail::EffectKind::frightened, "Frightened"},
+                    std::pair{detail::EffectKind::staggering, "Staggered (Staggering Blow)"},
+                    std::pair{detail::EffectKind::sundered, "Sundered (Sundering Blow)"},
                     std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"},
                     std::pair{detail::EffectKind::metamagic, "Metamagic readied"},
                     std::pair{detail::EffectKind::hex, "Hexed"},
@@ -5223,6 +5297,8 @@ std::vector<Command> Session::legal_commands() const
                         add(id, "initiative_swap", "Swap initiative", ally.source.id);
             if (metabolism_ready(a))
                 add(id, "uncanny_metabolism", "Uncanny Metabolism");
+            if (persistent_ready(a))
+                add(id, "persistent_rage", "Persistent Rage: regain all Rage uses");
         }
         return commands;
     }
@@ -5533,8 +5609,15 @@ std::vector<Command> Session::legal_commands() const
         const auto *rage = rage_of(a);
         if (!rage && a.channel_divinity > 0 && !d.heavy_armor)
             add(id, "rage", "Rage");
-        else if (rage && rage->remaining_ms <= detail::round_ms)
+        else if (rage && !d.persistent_rage && rage->remaining_ms <= detail::round_ms)
             add(id, "extend_rage", "Extend Rage");
+    }
+    if (a.bonus && d.intimidating_presence)
+    {
+        if (a.free_casts > 0)
+            add(id, "intimidating_presence", "Intimidating Presence");
+        else if (a.channel_divinity > 0)
+            add(id, "intimidating_presence_rage", "Intimidating Presence (1 Rage)");
     }
     // Expeditious Retreat: Dash as a Bonus Action while it lasts.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
@@ -5801,8 +5884,10 @@ std::vector<Command> Session::legal_commands() const
                 detail::has_effect(a.effects, detail::EffectKind::reckless) &&
                 strength_attack(a, AttackRange::melee))
         {
-            add(id, "brutal_forceful", "Brutal Strike (Forceful Blow)", other.source.id);
-            add(id, "brutal_hamstring", "Brutal Strike (Hamstring Blow)", other.source.id);
+            for (const auto &[verb, label, blow] : brutal_blows)
+                if (d.improved_brutal || blow == BrutalBlow::forceful ||
+                        blow == BrutalBlow::hamstring)
+                    add(id, std::string(verb), std::string(label), other.source.id);
         }
         // True Strike: the cantrip's attack with the melee weapon in hand.
         if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
@@ -6054,6 +6139,28 @@ void Session::damage(Actor &target, int amount, bool critical)
         target.life.recovery = {detail::death_turn_ms, 0};
         if (standing)
             target.rises_on_round = static_cast<int>(round_) + dice({3, 6, 0});
+    }
+    // Relentless Rage: a raging Barbarian dropped to 0 Hit Points but not
+    // killed outright makes a Constitution save, DC 10 and 5 more for each
+    // earlier try since its last rest; success leaves twice its level in Hit
+    // Points. It is always tried, as Relentless Endurance is.
+    if (standing && target.life.hp == 0 && !target.life.dead && def(target).relentless_rage &&
+            target.lay_on_hands > 0 && rage_of(target))
+    {
+        const int dc = 10 + 5 * (def(target).relentless_rage - target.lay_on_hands);
+        --target.lay_on_hands;
+        log(target.source.name + " tries Relentless Rage.",
+        {"{name} tries Relentless Rage.", {{"name", target.source.name}}});
+        if (saving_throw_succeeds(target, detail::Ability::constitution, dc))
+        {
+            (void)detail::heal_life(target.life, 2 * def(target).level, max_hp(target), true);
+            log(target.source.name + " fights on with " + std::to_string(target.life.hp) +
+                " Hit Points (Relentless Rage).",
+            {
+                "{name} fights on with {hp} Hit Points (Relentless Rage).",
+                {{"name", target.source.name}, {"hp", std::to_string(target.life.hp)}}
+            });
+        }
     }
     // Relentless Endurance: an Orc dropped to 0 Hit Points but not killed
     // outright drops to 1 instead, once per Long Rest (always taken, AUTO-1).
@@ -7311,8 +7418,8 @@ void Session::escape_ensnaring(Actor &a)
     });
     const auto vines = *found;
     const bool advantage = rage_of(a) || def(a).champion;
-    const int natural =
-        reliable(a, "athletics", detail::d20({advantage, false, def(a).lucky}, rng_));
+    const int natural = reliable(
+        a, "athletics", detail::d20({advantage, !fears_in_sight(a).empty(), def(a).lucky}, rng_));
     int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                 guidance_bonus(a, "athletics");
     bool escaped = natural + bonus >= vines.dc;
@@ -7453,6 +7560,43 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
     }
 }
 
+std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
+{
+    std::vector<const Actor *> result;
+    for (const auto &e : a.effects.active)
+        if (e.kind == detail::EffectKind::frightened && e.source_scope == scope_)
+            for (const auto &other : actors_)
+                if (other.source.id == e.source_actor && !other.life.dead &&
+                        line_of_sight(a.source.cell, other.source.cell))
+                    result.push_back(&other);
+    return result;
+}
+
+void Session::intimidate(const Actor &barbarian)
+{
+    const auto &d = def(barbarian);
+    const int dc = 8 + d.strength + 2 + (d.level - 1) / 4;
+    log(barbarian.source.name + " uses Intimidating Presence.",
+    {"{name} uses Intimidating Presence.", {{"name", barbarian.source.name}}});
+    for (auto &other : actors_)
+    {
+        if (other.source.side == barbarian.source.side || !conscious(other) ||
+                distance(barbarian.source.cell, other.source.cell) > 30 ||
+                !line_of_sight(barbarian.source.cell, other.source.cell) || mindless(other) ||
+                detail::has_effect(other.effects, detail::EffectKind::frightened) ||
+                !detail::can_apply(other.effects))
+            continue;
+        if (saving_throw_succeeds(other, detail::Ability::wisdom, dc, def(other).brave))
+            continue;
+        detail::apply_repeating_condition(
+            other.effects, detail::EffectKind::frightened, effect_source(barbarian),
+            barbarian.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(other.source.id)});
+        log(other.source.name + " is Frightened.",
+        {"{name} is Frightened.", {{"name", other.source.name}}});
+    }
+}
+
 bool Session::charmed_by(const Actor &a, EntityId other) const
 {
     return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
@@ -7572,7 +7716,8 @@ void Session::hide(Actor &a)
     constexpr int dc = 15;
     const auto &d = def(a);
     bool lucky_reroll = false;
-    int natural = detail::d20({false, d.stealth_disadvantage, d.lucky}, rng_, &lucky_reroll);
+    int natural = detail::d20({false, d.stealth_disadvantage || !fears_in_sight(a).empty(), d.lucky},
+                              rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
     natural = reliable(a, "stealth", natural);
     int total = natural + d.stealth;
@@ -7608,7 +7753,8 @@ void Session::search(Actor &searcher)
 {
     const auto &d = def(searcher);
     bool lucky_reroll = false;
-    const int natural = detail::d20({false, false, d.lucky}, rng_, &lucky_reroll);
+    const int natural =
+        detail::d20({false, !fears_in_sight(searcher).empty(), d.lucky}, rng_, &lucky_reroll);
     log_luck(searcher, lucky_reroll);
     int bonus = d.perception;
     // An enemy Lore Bard's Cutting Words may keep the best-hidden creature the
@@ -7831,7 +7977,8 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.advantage = true;
     if (detail::sapped(a.effects) ||
             detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
-            detail::has_effect(a.effects, detail::EffectKind::scorched))
+            detail::has_effect(a.effects, detail::EffectKind::scorched) ||
+            !fears_in_sight(a).empty())
         result.disadvantage = true;
     // Ray of Enfeeblement: Disadvantage on Strength-based attack rolls, here
     // every melee weapon attack.
@@ -8203,6 +8350,13 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                  : ranged ? d.ranged_bonus
                  : d.melee_bonus) + blessing_die(a) +
                 (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
+    // Sundering Blow: +5 to the next attack roll another creature makes against it.
+    if (detail::spend_sundering(target.effects, effect_source(a)))
+    {
+        bonus += 5;
+        log("Sundering Blow adds 5 to the attack roll.",
+        {"Sundering Blow adds 5 to the attack roll.", {}});
+    }
     const auto damage_dice = spell ? spell_attack->dice : weapon_dice(a, range);
     // Seeking Spell: a missed spell attack rolls its d20 again, once.
     if (spell && casting_with(Metamagic::seeking) && natural != 20 &&
@@ -8389,7 +8543,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (hit && amount > 0 && target.life.hp > 0)
         giant_boon(a, target, critical_hit(a, target, natural, spell));
     if (hit && brutal && !target.life.dead)
-        brutal_blow(actor(a.source.id), target, brutal_->forceful);
+        brutal_blow(actor(a.source.id), target, brutal_->blow);
     if (cunning)
         cunning_effect(actor(a.source.id), target, cunning_->kind);
     else if (stealthy)
@@ -8738,9 +8892,25 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
     }
 }
 
-void Session::brutal_blow(Actor &barbarian, Actor &target, bool forceful)
+void Session::brutal_blow(Actor &barbarian, Actor &target, BrutalBlow blow)
 {
-    if (!forceful)
+    if (blow == BrutalBlow::staggering || blow == BrutalBlow::sundering)
+    {
+        const bool staggering = blow == BrutalBlow::staggering;
+        detail::apply_brutal_blow(target.effects,
+                                  staggering ? detail::EffectKind::staggering
+                                  : detail::EffectKind::sundered,
+                                  effect_source(barbarian), barbarian.source.name,
+                                  next_turn_ms(barbarian));
+        if (staggering)
+            log(target.source.name + " staggers (Staggering Blow).",
+            {"{name} staggers (Staggering Blow).", {{"name", target.source.name}}});
+        else
+            log(target.source.name + " is sundered (Sundering Blow).",
+            {"{name} is sundered (Sundering Blow).", {{"name", target.source.name}}});
+        return;
+    }
+    if (blow == BrutalBlow::hamstring)
     {
         detail::apply_hamstring(target.effects, effect_source(barbarian), barbarian.source.name,
                                 next_turn_ms(barbarian));
@@ -9068,6 +9238,9 @@ bool Session::begin_turn()
                 effect.dc > a.life.temporary_hp.amount)
             detail::grant_temporary_hp(a.life, {effect.dc, "spell:heroism"},
                                        TemporaryHpChoice::use_new);
+    // Persistent Rage (Barbarian 15): the Rage needs no extending.
+    if (def(a).persistent_rage && rage_of(a))
+        extend_rage(a);
     // Heroic Warrior (Champion 10): Heroic Inspiration at the start of each
     // turn in a fight, when the Fighter lacks it.
     if (def(a).heroic_warrior && conscious(a) &&
@@ -9289,6 +9462,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     modifiers.advantage |= advantage;
     // Heightened Spell: Disadvantage on the save against the spell.
     modifiers.disadvantage |= heightened_target_ == target.source.id || disadvantage;
+    // Staggering Blow: Disadvantage on the next saving throw.
+    modifiers.disadvantage |= detail::spend_staggering(actor(target.source.id).effects);
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
     // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
@@ -9358,7 +9533,7 @@ void Session::advance_turn_time()
         subjects.push_back(
         {
             {   a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
-                def(a).gnomish_cunning, def(a).lucky
+                def(a).gnomish_cunning, def(a).lucky, def(a).brave
             },
             a.life});
         if (a.life.hp == 0)
@@ -10136,10 +10311,15 @@ void Session::dispatch(const Command &command)
         stunning_ = 0;
         return;
     }
-    if (command.verb == "brutal_forceful" || command.verb == "brutal_hamstring")
+    if (const auto found = std::find_if(brutal_blows.begin(), brutal_blows.end(),
+                                        [&](const auto & option)
+{
+    return std::get<0>(option) == command.verb;
+});
+    found != brutal_blows.end())
     {
         actor(command.actor).brutal_used = true;
-        brutal_ = BrutalStrike{command.actor, command.verb == "brutal_forceful"};
+        brutal_ = BrutalStrike{command.actor, std::get<2>(*found)};
         auto melee = command;
         melee.verb = "melee";
         dispatch(melee);
@@ -10262,7 +10442,8 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "stabilize")
     {
         PendingCheck check{a.source.id, command.target,
-                           reliable(a, "medicine", detail::d20({false, false, d.lucky}, rng_)),
+                           reliable(a, "medicine",
+                                    detail::d20({false, !fears_in_sight(a).empty(), d.lucky}, rng_)),
                            a.actions.surge};
         check.guidance = guidance_bonus(a, "medicine");
         a.nick_origin = 0;
@@ -10552,8 +10733,20 @@ void Session::dispatch(const Command &command)
         if (d.mindless_rage)
             std::erase_if(a.effects.active, [](const auto & e)
         {
-            return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::turned;
+            return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::turned ||
+                   e.kind == detail::EffectKind::frightened;
         });
+    }
+    else if (command.verb == "intimidating_presence" ||
+             command.verb == "intimidating_presence_rage")
+    {
+        // A Rage use restores the once-per-Long-Rest use.
+        a.bonus = false;
+        if (command.verb == "intimidating_presence")
+            --a.free_casts;
+        else
+            --a.channel_divinity;
+        intimidate(a);
     }
     else if (command.verb == "extend_rage")
     {
@@ -11566,7 +11759,8 @@ void Session::validate_initiative() const
     {
         const auto &a = actor(id);
         if (!seen.insert(id).second || a.source.side != Side::party ||
-                (!def(a).alert && !metabolism_ready(a)) || !conscious(a))
+                (!def(a).alert && !metabolism_ready(a) && !persistent_ready(a)) ||
+                !conscious(a))
             throw std::runtime_error("Invalid Initiative holder");
     }
     for (std::size_t i = 0; i < actors_.size(); ++i)
@@ -12485,6 +12679,20 @@ class Module final : public RulesModule
         if (klass == CharacterClass::barbarian && result.level == 10)
             result.description =
                 "Berserker: Retaliation. When a creature within 5 feet damages you, your Reaction makes a melee attack against it.\nA fourth Weapon Mastery.";
+        if (klass == CharacterClass::barbarian && result.level == 11)
+            result.description =
+                "Relentless Rage: dropping to 0 Hit Points while raging without dying, a Constitution save (DC 10, 5 higher for each try since your last rest) leaves you twice your Barbarian level in Hit Points.";
+        if (klass == CharacterClass::barbarian && result.level == 12)
+            result.description = "A feat or ability points.\nA fifth Rage.";
+        if (klass == CharacterClass::barbarian && result.level == 13)
+            result.description =
+                "Improved Brutal Strike: two more blows. Staggering Blow: Disadvantage on the target's next saving throw, and no Opportunity Attacks. Sundering Blow: +5 to the next attack roll another creature makes against it.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::barbarian && result.level == 14)
+            result.description =
+                "Berserker: Intimidating Presence. A Bonus Action: each enemy within 30 feet makes a Wisdom save or is Frightened for up to a minute. Once per Long Rest, or for a Rage use.";
+        if (klass == CharacterClass::barbarian && result.level == 15)
+            result.description =
+                "Persistent Rage: when Initiative is rolled, regain every Rage use, once per Long Rest. Your Rage needs no extending.";
         if (klass == CharacterClass::rogue && result.level == 5)
             result.description =
                 "Cunning Strike: when an attack would deal Sneak Attack damage, give up a die to Trip the target (Dexterity save or Prone) or Withdraw (half your Speed without provoking).\nUncanny Dodge: your Reaction halves the damage of a hit.\nSneak Attack 3d6; Proficiency Bonus +3.";
@@ -13290,7 +13498,7 @@ class Module final : public RulesModule
             subjects.push_back({{
                 a.source.id, a.effects, a.definition.saves, a.life.dead,
                 a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning,
-                a.definition.lucky
+                a.definition.lucky, a.definition.brave
             },
             a.life});
         auto rng = random_state.value;
@@ -14542,7 +14750,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.198", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.199", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

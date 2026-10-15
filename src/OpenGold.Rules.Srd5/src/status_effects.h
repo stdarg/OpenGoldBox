@@ -187,8 +187,18 @@ enum class EffectKind : unsigned
     staggered = 77,
     // Studied Attacks (Fighter 13): after a miss, the Fighter's next attack
     // roll against the creature has Advantage, until the end of its next turn.
+    studied = 78,
+    // Frightened for up to a minute, with a Wisdom save at the end of each of
+    // the creature's turns (Intimidating Presence).
+    frightened = 79,
+    // Brutal Strike's Staggering Blow, until the start of the Barbarian's next
+    // turn: no Opportunity Attacks, and while `dc` is 1, Disadvantage on the
+    // next saving throw.
+    staggering = 80,
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    studied = 78
+    // Brutal Strike's Sundering Blow: the next attack roll another creature
+    // makes against it, before the start of the Barbarian's next turn, has +5.
+    sundered = 81
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -252,6 +262,7 @@ struct EffectSubject
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     bool mental_advantage{};
     bool lucky{}; // Halfling Luck, for repeated saves and death saves
+    bool brave{}; // Halfling Brave: Advantage on saves to end Frightened
 };
 
 struct EffectEvent
@@ -329,6 +340,14 @@ void apply_hamstring(EffectState &effects, EffectSource source, std::string name
 [[nodiscard]] bool sapped(const EffectState &effects);
 [[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source);
 [[nodiscard]] bool studied_by(const EffectState &effects, EffectSource source);
+// Brutal Strike's Staggering Blow or Sundering Blow, until the start of the
+// Barbarian's next turn, `duration_ms` from now.
+void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource source,
+                       std::string name, unsigned duration_ms);
+// Spends a Staggering Blow's Disadvantage on this saving throw, if one is left.
+[[nodiscard]] bool spend_staggering(EffectState &effects);
+// Spends a Sundering Blow's +5 on an attack roll by anyone but its Barbarian.
+[[nodiscard]] bool spend_sundering(EffectState &effects, EffectSource attacker);
 // Replaces the source's earlier Studied Attacks mark on the creature.
 void apply_studied(EffectState &effects, EffectSource source, std::string name,
                    unsigned duration_ms);
@@ -353,8 +372,8 @@ void apply_entangle(EffectState &, EffectSource source, std::string name,
 [[nodiscard]] bool paralyzed(const EffectState &effects);
 // Incapacitated by a spell: Paralyzed, Sleep or Hideous Laughter.
 [[nodiscard]] bool incapacitated(const EffectState &effects);
-// A spell's repeated save condition with its first save `first_save_ms` away:
-// Sleep's drowsiness or Hideous Laughter.
+// A repeated save condition with its first save `first_save_ms` away:
+// Sleep's drowsiness, Hideous Laughter, Ray of Enfeeblement or Frightened.
 void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
                                std::string name, RepeatingSave save);
 void apply_hold_person(EffectState &effects, EffectSource source,

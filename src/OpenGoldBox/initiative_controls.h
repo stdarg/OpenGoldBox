@@ -43,7 +43,8 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
     auto *yes = dialog_control<Button>(*w, "Swap");
     yes->set_text(text(N_("Swap initiative")));
     yes->connect("pressed", swap);
-    // A Monk's Uncanny Metabolism, used when Initiative is rolled.
+    // A Monk's Uncanny Metabolism or a Barbarian's Persistent Rage, used when
+    // Initiative is rolled.
     auto *restore = dialog_control<Button>(*w, "Metabolism");
     restore->set_text(text(N_("Uncanny Metabolism")));
     restore->connect("pressed", metabolism);
@@ -52,7 +53,7 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
 inline bool initiative_command(godot::Node &root, const opengold::rules::Command &command)
 {
     if (command.verb != "initiative_keep" && command.verb != "initiative_swap" &&
-            command.verb != "uncanny_metabolism")
+            command.verb != "uncanny_metabolism" && command.verb != "persistent_rage")
         return true;
     const auto owner =
         required_node<godot::OptionButton>(root, "InitiativeChoice/Resolve").get_selected_id();
@@ -122,18 +123,27 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
         }
     allies->select(selected);
     allies_quiet.unblock();
-    // Alert offers the swap; a Monk's Uncanny Metabolism its own button.
+    // Alert offers the swap; a Monk's Uncanny Metabolism or a Barbarian's
+    // Persistent Rage its own button.
     const bool swaps = allies->get_item_count() > 1;
-    const bool metabolism = std::any_of(commands.begin(), commands.end(), [&](const auto & c)
+    const auto offered = [&](std::string_view verb)
     {
-        return c.verb == "uncanny_metabolism" && c.actor == static_cast<unsigned>(owner);
-    });
+        return std::any_of(commands.begin(), commands.end(), [&](const auto & c)
+        {
+            return c.verb == verb && c.actor == static_cast<unsigned>(owner);
+        });
+    };
+    const bool persistent = offered("persistent_rage");
     for (const char *name : {"AllyLabel", "Ally", "Swap"})
         required_node<Control>(*w, name).set_visible(swaps);
-    required_node<Button>(*w, "Metabolism").set_visible(metabolism);
+    auto &feature = required_node<Button>(*w, "Metabolism");
+    feature.set_visible(persistent || offered("uncanny_metabolism"));
+    feature.set_text(persistent ? text(N_("Persistent Rage")) : text(N_("Uncanny Metabolism")));
     required_node<Label>(*w, "Text").set_text(
         label(owner) + "\n\n" +
         (swaps ? text(N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet."))
+         : persistent
+         ? text(N_("Use Persistent Rage to regain every Rage use (once per Long Rest), or keep going. No turn has started yet."))
          : text(N_("Use Uncanny Metabolism to regain all Focus Points and 1d6 + your Monk level Hit Points (once per Long Rest), or keep going. No turn has started yet."))));
     required_node<Button>(*w, "Swap").set_disabled(selected == 0);
     if (!w->is_visible())

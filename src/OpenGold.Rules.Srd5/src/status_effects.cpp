@@ -128,8 +128,44 @@ bool opportunity_blocked(const EffectState &effects)
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
     {
-        return e.kind == EffectKind::shocking_grasp || e.kind == EffectKind::addled;
+        return e.kind == EffectKind::shocking_grasp || e.kind == EffectKind::addled ||
+               e.kind == EffectKind::staggering;
     });
+}
+
+void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource source,
+                       std::string name, unsigned duration_ms)
+{
+    if ((kind != EffectKind::staggering && kind != EffectKind::sundered) || !can_apply(effects) ||
+            !recorded(source, name) || !duration_ms || duration_ms > round_ms)
+        throw std::runtime_error("Invalid Brutal Strike blow");
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
+                              kind == EffectKind::staggering ? 1 : 0, duration_ms, 0});
+}
+
+bool spend_staggering(EffectState &effects)
+{
+    for (auto &e : effects.active)
+        if (e.kind == EffectKind::staggering && e.dc == 1)
+        {
+            e.dc = 0;
+            return true;
+        }
+    return false;
+}
+
+bool spend_sundering(EffectState &effects, EffectSource attacker)
+{
+    const auto found = std::find_if(effects.active.begin(), effects.active.end(),
+                                    [&](const auto & e)
+    {
+        return e.kind == EffectKind::sundered &&
+               !(e.source_scope == attacker.scope && e.source_actor == attacker.actor);
+    });
+    if (found == effects.active.end())
+        return false;
+    effects.active.erase(found);
+    return true;
 }
 
 void apply_shocking_grasp(EffectState &effects, EffectSource source,
@@ -369,7 +405,8 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSour
                                std::string name, RepeatingSave save)
 {
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
-            kind != EffectKind::enfeebled) || !can_apply(effects) ||
+            kind != EffectKind::enfeebled && kind != EffectKind::frightened) ||
+            !can_apply(effects) ||
             !recorded(source, name) || save.dc < -2 || save.dc > 38 || !save.first_save_ms ||
             save.first_save_ms > round_ms)
         throw std::runtime_error("Invalid repeated condition");
@@ -673,7 +710,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     event.removed = true;
                 else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
                           e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
-                          e.kind == EffectKind::enfeebled) &&
+                          e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened) &&
                          !e.save_in_ms)
                 {
                     // Blindness and Ray of Enfeeblement repeat a Constitution save,
@@ -692,9 +729,13 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         if (has_effect(subject.effects.get(), EffectKind::bane))
                             bless -= roll_die(rng, 4);
                         auto modifiers = mental_save_modifiers(ability, subject);
-                        modifiers.disadvantage |=
-                            heightened_against(subject.effects.get(), e.source_scope,
-                                               e.source_actor, repeated_save_spell(e.kind));
+                        if (e.kind == EffectKind::frightened)
+                            modifiers.advantage |= subject.brave;
+                        else
+                            modifiers.disadvantage |=
+                                heightened_against(subject.effects.get(), e.source_scope,
+                                                   e.source_actor, repeated_save_spell(e.kind));
+                        modifiers.disadvantage |= spend_staggering(subject.effects.get());
                         event.save = saving_throw(ability,
                                                   subject.saves[static_cast<unsigned>(ability)] + bless,
                                                   e.dc, modifiers, rng);
@@ -753,7 +794,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::studied))
+    if (value > static_cast<unsigned>(EffectKind::sundered))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }
@@ -785,6 +826,7 @@ EffectState read_effects(std::istream &in)
         const bool timed = kind == EffectKind::ray_of_frost || kind == EffectKind::frosts_chill ||
                            kind == EffectKind::hamstrung || kind == EffectKind::stunned ||
                            kind == EffectKind::staggered || kind == EffectKind::studied ||
+                           kind == EffectKind::staggering || kind == EffectKind::sundered ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -838,13 +880,14 @@ EffectState read_effects(std::istream &in)
         if (!in || (!timed && !turn_save && kind != EffectKind::blindness &&
                     kind != EffectKind::hold_person &&
                     kind != EffectKind::drowsy && kind != EffectKind::laughing &&
-                    kind != EffectKind::enfeebled) ||
+                    kind != EffectKind::enfeebled && kind != EffectKind::frightened) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
                             (turn_save ? e.save_in_ms != 0
                              : (!e.save_in_ms || e.save_in_ms > round_ms)))) ||
-                (timed && ((e.dc != 0 && !(kind == EffectKind::reckless && e.dc == 1)) ||
+                (timed && ((e.dc != 0 && !((kind == EffectKind::reckless ||
+                                             kind == EffectKind::staggering) && e.dc == 1)) ||
                            e.save_in_ms != 0 || !e.remaining_ms ||
                            e.remaining_ms > ((kind == EffectKind::chill_touch ||
                                               kind == EffectKind::vex ||

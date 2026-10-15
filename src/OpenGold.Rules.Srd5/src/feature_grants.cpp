@@ -165,6 +165,14 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
             add("feature:brutal_strike", "class:barbarian");
         if (level == 10)
             add("feature:retaliation", "subclass:barbarian:berserker");
+        if (level == 11)
+            add("feature:relentless_rage", "class:barbarian");
+        if (level == 13)
+            add("feature:improved_brutal_strike", "class:barbarian");
+        if (level == 14)
+            add("feature:intimidating_presence", "subclass:barbarian:berserker");
+        if (level == 15)
+            add("feature:persistent_rage", "class:barbarian");
     }
     if (klass == CharacterClass::rogue)
     {
