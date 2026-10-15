@@ -659,6 +659,10 @@ struct Definition
     bool tactical_shift{}, tactical_master{}, heroic_warrior{};
     // Barbarian levels 5-10.
     bool feral_instinct{}, mindless_rage{}, instinctive_pounce{}, brutal_strike{}, retaliation{};
+    // Rogue levels 5-10.
+    bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
+    // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
+    std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -1167,6 +1171,8 @@ struct ChampionMove
     bool shift{};
     // Forceful Blow (Barbarian 9): the free move must close on this creature.
     EntityId toward{};
+    // Cunning Strike's Withdraw (Rogue 5): the same free move after the attack.
+    bool withdraw{};
 };
 
 struct PendingMastery
@@ -1359,6 +1365,10 @@ character_definition(std::string_view bytes,
     d.feral_instinct = d.instinctive_pounce = barbarian && level >= 7;
     d.brutal_strike = barbarian && level >= 9;
     d.retaliation = barbarian && level >= 10;
+    const bool rogue = klass == CharacterClass::rogue;
+    d.cunning_strike = d.uncanny_dodge = rogue && level >= 5;
+    d.evasion = rogue && level >= 7;
+    d.supreme_sneak = rogue && level >= 9;
     d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
     d.tactical_master = klass == CharacterClass::fighter && level >= 9;
     d.heroic_warrior = klass == CharacterClass::fighter && level >= 10;
@@ -1638,6 +1648,10 @@ character_definition(std::string_view bytes,
         return skill.id == "stealth";
     })
     ->bonus;
+    if (klass == CharacterClass::rogue && level >= 7)
+        for (const auto &skill : training.skills)
+            if (skill.proficient)
+                d.reliable.insert(skill.id);
     for (const auto &grant : grants)
     {
         if (detail::is_mastery_grant(grant))
@@ -1902,6 +1916,30 @@ constexpr std::array<TacticalOption, 3> tactical_masteries{
         {"slow", detail::Mastery::slow, "Melee attack (Slow)", "Ranged attack (Slow)"}
     }};
 
+// Cunning Strike's effects (Rogue 5).
+enum class CunningStrike : unsigned
+{
+    trip,
+    withdraw,
+    stealth // Supreme Sneak's Stealth Attack (Thief 9)
+};
+
+// Cunning Strike's options by verb suffix, with their commands' labels; the
+// Poison option waits for a Poisoner's Kit (#233).
+struct CunningOption
+{
+    std::string_view suffix;
+    CunningStrike kind;
+    std::string_view melee_label, ranged_label;
+};
+constexpr std::array<CunningOption, 3> cunning_strikes{
+    {   {"trip", CunningStrike::trip, "Melee attack (Trip)", "Ranged attack (Trip)"},
+        {"withdraw", CunningStrike::withdraw, "Melee attack (Withdraw)",
+         "Ranged attack (Withdraw)"},
+        {"stealth", CunningStrike::stealth, "Melee attack (Stealth Attack)",
+         "Ranged attack (Stealth Attack)"}
+    }};
+
 // An attack the Attack action makes, which Extra Attack repeats; Reckless
 // Attack and the pact weapon's damage types arrive here as "melee".
 bool attack_action(std::string_view verb)
@@ -2123,6 +2161,14 @@ class Session final : public CombatSession
         bool forceful{}; // Forceful Blow; otherwise Hamstring Blow
     };
     std::optional<BrutalStrike> brutal_;
+    // Cunning Strike (Rogue 5): the effect chosen for one attack, paid with a
+    // Sneak Attack die when the attack deals Sneak Attack damage.
+    struct PendingCunning
+    {
+        EntityId actor{};
+        CunningStrike kind{};
+    };
+    std::optional<PendingCunning> cunning_;
     std::optional<PendingMastery> mastery_;
     // Creatures chosen so far for a spell that affects several (CLASS-2).
     struct PendingSelection
@@ -2223,6 +2269,9 @@ class Session final : public CombatSession
     [[nodiscard]] const ReactionAnswer *answer_of(EntityId target, Asked asked) const;
     [[nodiscard]] bool can_shield(const Actor &target) const;
     [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
+    [[nodiscard]] bool can_dodge(const Actor &target) const;
+    // Uncanny Dodge (Rogue 5): the hit's damage halved, when the Rogue chose it.
+    int dodged(Actor &target, int amount);
     void ask_reaction(const Actor &target, Asked asked, bool deflectable = false,
                       bool critical = false) const;
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
@@ -2728,6 +2777,11 @@ class Session final : public CombatSession
     // Brutal Strike's blow after its hit: Forceful Blow pushes the target 15
     // feet and lets the Barbarian follow; Hamstring Blow slows it.
     void brutal_blow(Actor &barbarian, Actor &target, bool forceful);
+    // Reliable Talent (Rogue 7): a proficient skill check's d20 counts as at least 10.
+    int reliable(const Actor &a, std::string_view skill, int natural);
+    // Evasion (Rogue 7): the damage a creature takes from a save-for-half
+    // effect, given whether it saved.
+    int evaded(const Actor &target, detail::Ability save, bool halves, bool saved, int total) const;
     // Mindless Rage (Berserker 6): raging, immune to Charmed and Frightened.
     bool mindless(const Actor &a) const;
     int frenzy_damage(Actor &berserker, bool critical);
@@ -2761,7 +2815,10 @@ class Session final : public CombatSession
     bool sneak_eligible(const Actor &a, const Actor &target, AttackRange range, int mode) const;
     bool ally_beside(const Actor &a, const Actor &target) const;
     int roll_advantage_damage(const Actor &a, const Actor &target, int natural);
-    [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural);
+    // `forgo` dice are given up for a Cunning Strike.
+    [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural, int forgo = 0);
+    // Cunning Strike's effect after a hit that dealt Sneak Attack damage.
+    void cunning_effect(Actor &rogue, Actor &target, CunningStrike kind);
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
     int resolved_damage(Actor &target, detail::DamageType type, int amount);
@@ -4756,14 +4813,16 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         });
         const bool saved = saving_throw_succeeds(target, spell.save, dc);
         // Potent Cantrip: a saved-against cantrip still deals half damage.
-        if (saved && !spell.half_on_success && !(d.evoker && !spell.level))
+        const bool halves = spell.half_on_success || (d.evoker && !spell.level);
+        if (saved && !halves)
             return;
         // Halving comes before resistance, which resolved_damage applies.
         const int rolled_damage = spell_dice(a, rolled);
         const auto damage_type = cast_damage_type(spell.damage);
         const auto type = std::string(detail::damage_name(damage_type));
-        const int amount =
-            resolved_damage(target, damage_type, saved ? rolled_damage / 2 : rolled_damage);
+        const int amount = resolved_damage(
+                               target, damage_type,
+                               evaded(target, spell.save, halves, saved, rolled_damage));
         log(target.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
         {
             "{name} takes {damage} {type} damage.",
@@ -5038,6 +5097,8 @@ std::vector<Command> Session::legal_commands() const
                     : "Cast Shield against the hit");
             if (question.asked == Asked::hit && can_deflect(who, question.deflectable))
                 add(who.source.id, "deflect", "Deflect Attacks");
+            if (question.asked == Asked::hit && can_dodge(who))
+                add(who.source.id, "uncanny_dodge", "Uncanny Dodge");
         }
         add(who.source.id, "decline", "Decline reaction");
         return commands;
@@ -5587,6 +5648,19 @@ std::vector<Command> Session::legal_commands() const
                             offer("light_throw", "nick_throw");
                     }
             }
+    // Cunning Strike: offered when the attack would deal Sneak Attack damage.
+    const auto offer_cunning = [&](AttackRange range, bool in_reach, const Actor & other)
+    {
+        if (!d.cunning_strike || a.sneak_used || !in_reach ||
+                !sneak_eligible(a, other, range,
+                                attack_modifiers(a, other, range, AttackSource::weapon).mode()))
+            return;
+        const bool melee = range == AttackRange::melee;
+        for (const auto &option : cunning_strikes)
+            if (option.kind != CunningStrike::stealth || (d.supreme_sneak && hidden(a)))
+                add(id, std::string(melee ? "melee_" : "ranged_") + std::string(option.suffix),
+                    std::string(melee ? option.melee_label : option.ranged_label), other.source.id);
+    };
     // Tactical Master: the attack with Push, Sap or Slow, other than the
     // weapon's own mastery.
     const auto offer_tactical = [&](AttackRange range, bool in_reach, const Actor & other)
@@ -5645,6 +5719,7 @@ std::vector<Command> Session::legal_commands() const
             add(id, "melee_radiant", "Melee attack (Radiant)", other.source.id);
         }
         offer_tactical(AttackRange::melee, feet <= d.reach, other);
+        offer_cunning(AttackRange::melee, feet <= d.reach, other);
         // Flame Blade: a melee spell attack with the blade as an Action.
         if (feet <= 5 && a.actions.available(true) &&
                 detail::has_effect(a.effects, detail::EffectKind::flame_blade))
@@ -5677,6 +5752,7 @@ std::vector<Command> Session::legal_commands() const
         {
             add(id, "ranged", "Ranged attack", other.source.id);
             offer_tactical(AttackRange::ranged, true, other);
+            offer_cunning(AttackRange::ranged, true, other);
         }
     };
     // Extra Attack: the Attack action's later attacks, once its first is made.
@@ -6314,7 +6390,8 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         const bool halved = spell.half_on_success || (def(caster).evoker && !spell.level);
         if (saved && !halved)
             continue;
-        const int amount = resolved_damage(other, damage_type, saved ? total / 2 : total);
+        const int amount =
+            resolved_damage(other, damage_type, evaded(other, spell.save, halved, saved, total));
         log(other.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
         {
             "{name} takes {damage} {type} damage.",
@@ -7171,7 +7248,8 @@ void Session::escape_ensnaring(Actor &a)
     });
     const auto vines = *found;
     const bool advantage = rage_of(a) || def(a).champion;
-    const int natural = detail::d20({advantage, false, def(a).lucky}, rng_);
+    const int natural =
+        reliable(a, "athletics", detail::d20({advantage, false, def(a).lucky}, rng_));
     int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
                 guidance_bonus(a, "athletics");
     bool escaped = natural + bonus >= vines.dc;
@@ -7431,8 +7509,9 @@ void Session::hide(Actor &a)
     constexpr int dc = 15;
     const auto &d = def(a);
     bool lucky_reroll = false;
-    const int natural = detail::d20({false, d.stealth_disadvantage, d.lucky}, rng_, &lucky_reroll);
+    int natural = detail::d20({false, d.stealth_disadvantage, d.lucky}, rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
+    natural = reliable(a, "stealth", natural);
     int total = natural + d.stealth;
     const std::string disadvantage = d.stealth_disadvantage ? " (disadvantage)" : "";
     log(a.source.name + " Stealth check: d20 " + std::to_string(natural) + disadvantage + " + " +
@@ -7960,11 +8039,12 @@ int Session::roll_advantage_damage(const Actor &a, const Actor &target, int natu
     return extra;
 }
 
-int Session::roll_sneak_attack(Actor &a, const Actor &target, int natural)
+int Session::roll_sneak_attack(Actor &a, const Actor &target, int natural, int forgo)
 {
     a.sneak_used = actor(a.source.id).sneak_used = true;
     const bool critical = critical_hit(a, target, natural);
-    const auto sneak_dice = detail::sneak_attack_dice(def(a).sneak_level);
+    auto sneak_dice = detail::sneak_attack_dice(def(a).sneak_level);
+    sneak_dice.count = std::max(0, sneak_dice.count - forgo);
     const int extra = dice(sneak_dice, critical);
     const auto count = std::to_string(sneak_dice.count * (critical ? 2 : 1));
     log(a.source.name + " adds Sneak Attack: " + count + "d6 for " + std::to_string(extra) +
@@ -8026,7 +8106,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     int natural = detail::d20(modifiers, rng_, &lucky_reroll);
     log_luck(a, lucky_reroll);
     end_invisibility(a.source.id);
-    end_hiding(a.source.id);
+    // Supreme Sneak's Stealth Attack keeps a hidden Rogue hidden when it deals
+    // Sneak Attack damage; that is known after the roll.
+    const bool stealthy = cunning_ && cunning_->actor == a.source.id &&
+                          cunning_->kind == CunningStrike::stealth;
+    if (!stealthy)
+        end_hiding(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
         extend_rage(actor(a.source.id));
@@ -8093,7 +8178,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         : 0;
     // Sneak Attack and Savage Attacker have one right answer, so they apply
     // automatically and the log records what they added.
-    const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural) : 0;
+    const bool cunning = sneak && cunning_ && cunning_->actor == a.source.id;
+    const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural, cunning ? 1 : 0) : 0;
     const int advantage_damage = hit && !spell && d.advantage_damage.count &&
                                  modifiers.mode() > 0
                                  ? roll_advantage_damage(a, target, natural)
@@ -8147,7 +8233,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     int rolled = std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled);
     if (hit)
         rolled = std::max(0, rolled - cut_damage(a, target, rolled, damage_type));
-    const int amount = hit ? deflected(a, target, rolled, damage_type, ranged) : 0;
+    const int amount = hit ? dodged(target, deflected(a, target, rolled, damage_type, ranged)) : 0;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
                              .bonus = bonus,
@@ -8221,6 +8307,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         giant_boon(a, target, critical_hit(a, target, natural, spell));
     if (hit && brutal && !target.life.dead)
         brutal_blow(actor(a.source.id), target, brutal_->forceful);
+    if (cunning)
+        cunning_effect(actor(a.source.id), target, cunning_->kind);
+    else if (stealthy)
+        end_hiding(a.source.id);
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
     answer_damage();
     return hit;
@@ -8497,6 +8587,45 @@ void Session::attack_recklessly(Actor &a)
     {"{name} attacks recklessly.", {{"name", a.source.name}}});
 }
 
+void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
+{
+    const auto &d = def(rogue);
+    if (kind == CunningStrike::stealth)
+    {
+        log(rogue.source.name + " stays hidden (Stealth Attack).",
+        {"{name} stays hidden (Stealth Attack).", {{"name", rogue.source.name}}});
+        return;
+    }
+    if (kind == CunningStrike::trip)
+    {
+        // A Large or smaller creature saves against 8 + Dexterity + Proficiency
+        // Bonus or falls Prone.
+        if (target.life.dead || target.life.hp <= 0 || def(target).size > 3 || target.effects.prone)
+            return;
+        const int dc = 8 + d.dexterity + 2 + (d.level - 1) / 4;
+        if (saving_throw_succeeds(target, detail::Ability::dexterity, dc))
+            return;
+        target.effects.prone = true;
+        log(target.source.name + " is tripped and falls Prone.",
+        {"{name} is tripped and falls Prone.", {{"name", target.source.name}}});
+        return;
+    }
+    // Withdraw: up to half Speed without provoking Opportunity Attacks.
+    if (const int feet = std::max(0, d.speed - detail::speed_penalty(rogue.effects)) / 2;
+            feet > 0 && conscious(rogue) && !champion_move_)
+    {
+        champion_move_ = ChampionMove{.actor = rogue.source.id, .target = rogue.source.id,
+                                      .remaining = feet, .origin = rogue.source.cell,
+                                      .withdraw = true};
+        log(rogue.source.name + " may withdraw " + std::to_string(feet) +
+            " feet without provoking Opportunity Attacks.",
+        {
+            "{name} may withdraw {feet} feet without provoking Opportunity Attacks.",
+            {{"name", rogue.source.name}, {"feet", std::to_string(feet)}}
+        });
+    }
+}
+
 void Session::brutal_blow(Actor &barbarian, Actor &target, bool forceful)
 {
     if (!forceful)
@@ -8517,6 +8646,28 @@ void Session::brutal_blow(Actor &barbarian, Actor &target, bool forceful)
                                       .remaining = feet,
                                       .origin = barbarian.source.cell,
                                       .toward = target.source.id};
+}
+
+int Session::reliable(const Actor &a, std::string_view skill, int natural)
+{
+    if (natural >= 10 || !def(a).reliable.contains(skill))
+        return natural;
+    log("Reliable Talent: " + a.source.name + "'s d20 of " + std::to_string(natural) +
+        " counts as 10.",
+    {
+        "Reliable Talent: {name}'s d20 of {roll} counts as 10.",
+        {{"name", a.source.name}, {"roll", std::to_string(natural)}}
+    });
+    return 10;
+}
+
+int Session::evaded(const Actor &target, detail::Ability save, bool halves, bool saved,
+                    int total) const
+{
+    if (def(target).evasion && save == detail::Ability::dexterity && halves &&
+            !detail::incapacitated(target.effects))
+        return saved ? 0 : total / 2;
+    return saved ? total / 2 : total;
 }
 
 bool Session::mindless(const Actor &a) const
@@ -9343,6 +9494,13 @@ bool Session::can_shield(const Actor &target) const
            !detail::has_effect(target.effects, detail::EffectKind::shield);
 }
 
+bool Session::can_dodge(const Actor &target) const
+{
+    // Uncanny Dodge: the attacker must be seen; a Blinded Rogue sees no one.
+    return def(target).uncanny_dodge && conscious(target) && target.reaction &&
+           !detail::incapacitated(target.effects) && !detail::blinded(target.effects);
+}
+
 bool Session::can_deflect(const Actor &target, bool deflectable) const
 {
     return deflectable && def(target).deflect && conscious(target) && target.reaction &&
@@ -9360,9 +9518,26 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
         asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::boon ||
         asked == Asked::endure || asked == Asked::thunder || asked == Asked::retaliate ||
         (can_shield(target) && !critical) ||
-        (asked == Asked::hit && can_deflect(target, deflectable));
+        (asked == Asked::hit && (can_deflect(target, deflectable) || can_dodge(target)));
     if (askable)
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
+}
+
+int Session::dodged(Actor &target, int amount)
+{
+    const auto found = std::find_if(reaction_answers_.begin(), reaction_answers_.end(),
+                                    [&](const auto & answer)
+    {
+        return answer.target == target.source.id && answer.asked == Asked::hit &&
+               answer.verb == "uncanny_dodge";
+    });
+    if (found == reaction_answers_.end())
+        return amount;
+    // Spent once: a later hit in the same command is taken in full.
+    found->verb = "dodged";
+    log(target.source.name + " uses Uncanny Dodge and takes half the damage.",
+    {"{name} uses Uncanny Dodge and takes half the damage.", {{"name", target.source.name}}});
+    return amount / 2;
 }
 
 int Session::deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
@@ -9748,7 +9923,8 @@ void Session::perform(const Command &command)
     {
         return can_shield(other) || def(other).deflect ||
                detail::knows_spell(def(other).spells, "hellish_rebuke") ||
-               def(other).giant != GiantBoon::none || def(other).retaliation;
+               def(other).giant != GiantBoon::none || def(other).retaliation ||
+               def(other).uncanny_dodge;
     });
     damage_taken_.clear();
     if (!askable)
@@ -9801,7 +9977,7 @@ void Session::answer_reaction(const Command &command)
         log(defender.source.name + " casts Shield.",
         {"{name} casts {spell}.", {{"name", defender.source.name}, {"spell", "Shield", true}}});
     }
-    else if (command.verb == "deflect")
+    else if (command.verb == "deflect" || command.verb == "uncanny_dodge")
         defender.reaction = false;
     perform(prompt.command);
 }
@@ -9816,6 +9992,17 @@ void Session::dispatch(const Command &command)
         dispatch(melee);
         return;
     }
+    for (const auto &option : cunning_strikes)
+        for (const std::string_view base : {"melee", "ranged"})
+            if (command.verb == std::string(base) + "_" + std::string(option.suffix))
+            {
+                cunning_ = PendingCunning{command.actor, option.kind};
+                auto plain = command;
+                plain.verb = base;
+                dispatch(plain);
+                cunning_.reset();
+                return;
+            }
     if (command.verb == "brutal_forceful" || command.verb == "brutal_hamstring")
     {
         actor(command.actor).brutal_used = true;
@@ -9941,7 +10128,8 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "stabilize")
     {
-        PendingCheck check{a.source.id, command.target, detail::d20({false, false, d.lucky}, rng_),
+        PendingCheck check{a.source.id, command.target,
+                           reliable(a, "medicine", detail::d20({false, false, d.lucky}, rng_)),
                            a.actions.surge};
         check.guidance = guidance_bonus(a, "medicine");
         a.nick_origin = 0;
@@ -10685,7 +10873,7 @@ std::string Session::save() const
         const auto &c = *champion_move_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
             << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << ' ' << c.shift << ' ' << c.toward
-            << '\n';
+            << ' ' << c.withdraw << '\n';
     }
     out << static_cast<bool>(graze_) << '\n';
     if (graze_)
@@ -11097,6 +11285,19 @@ void Session::validate_champion_move() const
             return a.source.id == c.toward && !a.life.dead;
         }))
         throw std::runtime_error("Invalid Forceful Blow movement");
+        return;
+    }
+    if (c.withdraw)
+    {
+        // Withdraw: the turn's Rogue, after a Cunning Strike.
+        const int budget = who == actors_.end() ? 0
+                           : std::max(0, def(*who).speed - detail::speed_penalty(who->effects)) / 2;
+        if (who == actors_.end() || !def(*who).cunning_strike || !conscious(*who) ||
+                c.actor != actors_[turn_].source.id || c.target != c.actor || c.natural ||
+                c.spell || c.triggered || c.shift || c.toward || !who->sneak_used || pending() ||
+                c.remaining < 0 || c.remaining > budget || !board_.contains(c.origin) ||
+                distance(c.origin, who->source.cell) > budget - c.remaining)
+            throw std::runtime_error("Invalid Withdraw movement");
         return;
     }
     if (c.shift)
@@ -11549,7 +11750,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         ChampionMove c;
         input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
-              c.origin.y >> c.shift >> c.toward;
+              c.origin.y >> c.shift >> c.toward >> c.withdraw;
         if (!input)
             throw std::runtime_error("Invalid Champion movement checkpoint");
         session->champion_move_ = c;
@@ -11721,6 +11922,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
                      answer.verb != "giant_boon" && answer.verb != "stones_endurance" &&
                      answer.verb != "storms_thunder" && answer.verb != "retaliate" &&
+                     answer.verb != "uncanny_dodge" &&
                      answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = static_cast<Asked>(kind);
@@ -11906,6 +12108,8 @@ class Module final : public RulesModule
             return later_masteries(klass, sheet);
         if (klass == CharacterClass::sorcerer && sheet.level >= 2)
             return {detail::metamagic_options()};
+        if (klass == CharacterClass::rogue && sheet.level >= 6)
+            return {detail::rogue_expertise_options(sheet.grants)};
         if (klass == CharacterClass::bard && sheet.level >= 3)
             return {detail::lore_options(sheet.grants)};
         if (klass == CharacterClass::druid && sheet.level >= 3)
@@ -12070,6 +12274,8 @@ class Module final : public RulesModule
         if (klass == CharacterClass::fighter && (result.level == 4 || result.level == 10))
             result.training = {
                 detail::mastery_options(CharacterClass::fighter, result.level, sheet.grants)};
+        if (klass == CharacterClass::rogue && result.level == 6)
+            result.training = {detail::rogue_expertise_options(sheet.grants)};
         // The Champion's Additional Fighting Style: a Fighting Style feat it
         // does not have yet.
         if (klass == CharacterClass::fighter && result.level == 7)
@@ -12132,6 +12338,21 @@ class Module final : public RulesModule
         if (klass == CharacterClass::barbarian && result.level == 10)
             result.description =
                 "Berserker: Retaliation. When a creature within 5 feet damages you, your Reaction makes a melee attack against it.\nA fourth Weapon Mastery.";
+        if (klass == CharacterClass::rogue && result.level == 5)
+            result.description =
+                "Cunning Strike: when an attack would deal Sneak Attack damage, give up a die to Trip the target (Dexterity save or Prone) or Withdraw (half your Speed without provoking).\nUncanny Dodge: your Reaction halves the damage of a hit.\nSneak Attack 3d6; Proficiency Bonus +3.";
+        if (klass == CharacterClass::rogue && result.level == 6)
+            result.description =
+                "Expertise in two more skills.";
+        if (klass == CharacterClass::rogue && result.level == 7)
+            result.description =
+                "Evasion: a Dexterity save against half damage takes none on a success and half on a failure.\nReliable Talent: a d20 below 10 on a proficient skill check counts as 10.\nSneak Attack 4d6.";
+        if (klass == CharacterClass::rogue && result.level == 9)
+            result.description =
+                "Thief: Supreme Sneak. A hidden Rogue's Stealth Attack (a Cunning Strike) leaves it hidden.\nSneak Attack 5d6; Proficiency Bonus +4.";
+        if (klass == CharacterClass::rogue && result.level == 10)
+            result.description =
+                "A feat or ability points.";
         if (klass == CharacterClass::fighter && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nTactical Shift: after Second Wind, move up to half Speed without provoking Opportunity Attacks.\nProficiency Bonus +3.";
@@ -12143,7 +12364,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::fighter && result.level == 10)
             result.description =
                 "Champion: Heroic Inspiration at the start of each of your turns in a fight, when you lack it.\nA fifth Weapon Mastery, and a fourth Second Wind.";
-        if (klass == CharacterClass::rogue && result.level >= 3)
+        if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
         if (klass == CharacterClass::paladin)
@@ -12557,6 +12778,7 @@ class Module final : public RulesModule
                     : id == "subclass:bard:lore" ? "skill:" + value
                     : id == "subclass:druid:land" ? "land:" + value
                     : id == detail::champion_style ? "feat:" + value
+                    : id == detail::rogue_expertise_6 ? "expertise:" + value
                     : "mastery:" + value,
                     id,
                     static_cast<unsigned>(next.level),
@@ -13550,7 +13772,11 @@ class Module final : public RulesModule
         const bool lucky = character_definition(character_profile(sheet, gear).data).lucky;
         auto rng = random_state.value;
         // Advantage and Disadvantage cancel; either alone rolls a second d20.
-        const int die = detail::d20({modifier.advantage, modifier.disadvantage, lucky}, rng);
+        int die = detail::d20({modifier.advantage, modifier.disadvantage, lucky}, rng);
+        // Reliable Talent: a proficient check's d20 counts as at least 10.
+        if (detail::class_of(sheet) == CharacterClass::rogue && sheet.level >= 7 &&
+                modifier.proficiency > 0)
+            die = std::max(die, 10);
         random_state.value = rng;
         return {die, die + modifier.total};
     }
@@ -14150,7 +14376,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.194", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.195", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

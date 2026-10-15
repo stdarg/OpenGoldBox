@@ -559,6 +559,24 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
+TrainingChoiceGroup rogue_expertise_options(std::span<const FeatureGrant> grants)
+{
+    TrainingChoiceGroup group{std::string(rogue_expertise_6), "Rogue Expertise", 2, {}};
+    group.acquired_level = 6;
+    group.control = TrainingChoiceControl::checkboxes;
+    for (const auto &skill : skills)
+    {
+        const auto expertise = "expertise:" + std::string(skill.id);
+        const bool expert = std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+        {
+            return g.id == expertise && g.source_id != group.id;
+        });
+        if (source(grants, "skill:" + std::string(skill.id)) && !expert)
+            group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+    }
+    return group;
+}
+
 // Eldritch Invocations a Warlock of the given level qualifies for (SRD 5.2.1
 // pp. 72-74), less those it holds from another entitlement. Agonizing Blast,
 // Eldritch Spear and Repelling Blast improve Eldritch Blast, the Warlock
@@ -979,6 +997,20 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 selected.push_back(grant.id.substr(6));
                 continue;
             }
+            if (grant.source_id == rogue_expertise_6)
+            {
+                require(klass == CharacterClass::rogue && grant.level == 6 && grant.choices.empty());
+                const auto group = rogue_expertise_options(grants);
+                require(std::any_of(group.options.begin(), group.options.end(),
+                                    [&](const auto & option)
+                {
+                    return grant.id == "expertise:" + option.id;
+                }));
+                auto &selected = choices[grant.source_id];
+                require(selected.size() < 2);
+                selected.push_back(grant.id.substr(10));
+                continue;
+            }
             if (grant.source_id == "class:wizard:scholar")
             {
                 require(klass == CharacterClass::wizard &&
@@ -1056,6 +1088,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     require(required.empty());
     auto starting = choices;
     starting.erase("class:wizard:scholar");
+    starting.erase(std::string(rogue_expertise_6));
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:warlock:invocations:2");
@@ -1119,6 +1152,8 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
         result.complete &= picked.size() == 3;
     if (source(grants, std::string(lessons_skilled)))
         result.complete &= selected(choices, lessons_skilled).size() == 3;
+    if (klass == CharacterClass::rogue && level >= 6)
+        result.complete &= selected(choices, rogue_expertise_6).size() == 2;
     for (const auto &g : grants)
         require(g.source_id != hall_training || g.level <= level);
     const auto &lore = selected(choices, "subclass:bard:lore");

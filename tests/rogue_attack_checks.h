@@ -283,7 +283,8 @@ void run()
         }
         check(checked, "Actual aimed miss exercised");
     }
-    check(!rules->advancement_options(h.sheet()).level, "This batch does not enable level five");
+    check(rules->advancement_options(h.sheet()).level == 5,
+          "A level-4 Rogue may advance to level 5 (LEVELS-1)");
     for (const auto &weapon :
             {"dagger", "shortbow", "blowgun"
             })

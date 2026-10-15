@@ -160,6 +160,21 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 10)
             add("feature:retaliation", "subclass:barbarian:berserker");
     }
+    if (klass == CharacterClass::rogue)
+    {
+        if (level == 5)
+        {
+            add("feature:cunning_strike", "class:rogue");
+            add("feature:uncanny_dodge", "class:rogue");
+        }
+        if (level == 7)
+        {
+            add("feature:evasion", "class:rogue");
+            add("feature:reliable_talent", "class:rogue");
+        }
+        if (level == 9)
+            add("feature:supreme_sneak", "subclass:rogue:thief");
+    }
     return result;
 }
 

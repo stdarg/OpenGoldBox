@@ -13,6 +13,7 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
   campaign a Fighter stops at 8 ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
 - Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-510)); the
   campaign stops it at 8.
+- Rogue to level 10: done ([Rogue](ROGUE.md)); the campaign stops it at 9.
 
 ## How the work runs
 

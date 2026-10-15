@@ -6,6 +6,10 @@
 namespace opengold::srd5::detail
 {
 rules::TrainingChoiceGroup scholar_options(std::span<const rules::FeatureGrant> grants);
+// The Rogue's Expertise at level 6: two skills it is proficient in, without
+// Expertise from another source.
+inline constexpr std::string_view rogue_expertise_6 = "class:rogue:expertise:6";
+rules::TrainingChoiceGroup rogue_expertise_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup metamagic_options();
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
