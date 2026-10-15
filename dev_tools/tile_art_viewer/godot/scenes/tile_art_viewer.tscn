@@ -74,6 +74,12 @@ text = "View"
 layout_mode = 2
 custom_minimum_size = Vector2(165, 38)
 
+[node name="HideUnused" type="CheckButton" parent="Margin/Tabs/ArtCatalog/Filters"]
+layout_mode = 2
+tooltip_text = "Hide perspective pieces marked unused in the available maps and artwork profiles."
+button_pressed = true
+text = "Hide unused tiles"
+
 [node name="SearchLabel" type="Label" parent="Margin/Tabs/ArtCatalog/Filters"]
 layout_mode = 2
 text = "Find"

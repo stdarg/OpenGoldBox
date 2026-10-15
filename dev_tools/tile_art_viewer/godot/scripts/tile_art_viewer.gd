@@ -24,6 +24,7 @@ const REPLACEMENT_SIZES := [
 @onready var tabs: TabContainer = $Margin/Tabs
 @onready var archive_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ArchiveFilter
 @onready var view_filter: OptionButton = $Margin/Tabs/ArtCatalog/Filters/ViewFilter
+@onready var hide_unused: CheckButton = $Margin/Tabs/ArtCatalog/Filters/HideUnused
 @onready var search: LineEdit = $Margin/Tabs/ArtCatalog/Filters/Search
 @onready var catalog_show_replacement: CheckButton = $Margin/Tabs/ArtCatalog/ReplacementRow/ShowReplacement
 @onready var contact_grid: ItemList = $Margin/Tabs/ArtCatalog/Split/ContactGrid
@@ -92,6 +93,7 @@ func _ready() -> void:
     legend_pose.add_theme_color_override("font_color", map_grid.get_theme_color("selected", "MapGrid"))
     archive_filter.item_selected.connect(func(_index: int): _rebuild_grid())
     view_filter.item_selected.connect(func(_index: int): _rebuild_grid())
+    hide_unused.toggled.connect(func(_enabled: bool): _rebuild_grid())
     search.text_changed.connect(func(_text: String): _rebuild_grid())
     contact_grid.item_selected.connect(_select_visible)
     previous.pressed.connect(func(): _navigate(-1))
@@ -484,6 +486,8 @@ func _catalog_image(index: int) -> Image:
 
 func _matches(index: int) -> bool:
     var entry: Dictionary = catalog_entries[index]
+    if hide_unused.button_pressed and metadata_rows[index]["usage"] == "unused":
+        return false
     if archive_filter.selected > 0 and entry["archive"] != archive_filter.get_item_text(archive_filter.selected):
         return false
     if view_filter.selected > 0 and int(entry["view"]) != view_filter.selected - 1:
@@ -1039,10 +1043,23 @@ func _advance_map_pose() -> bool:
 
 func _run_check(output_path: String) -> void:
     _set_replacement_mode(false)
+    if not hide_unused.button_pressed or catalog_entries.size() != 2100 or \
+            visible_indices.size() != 1552 or visible_indices.has(1):
+        push_error("Hide unused tiles should start on with only 1,552 used pieces shown")
+        get_tree().quit(1)
+        return
+    hide_unused.button_pressed = false
     if catalog_entries.size() != 2100 or visible_indices.size() != 2100:
         push_error("Expected 2,100 source perspective pieces; got %d" % catalog_entries.size())
         get_tree().quit(1)
         return
+    _select_visible(1)
+    hide_unused.button_pressed = true
+    if visible_indices.size() != 1552 or selected_entry != 0 or visible_indices.has(1):
+        push_error("Hide unused tiles did not remove the selected unused piece")
+        get_tree().quit(1)
+        return
+    hide_unused.button_pressed = false
     await get_tree().process_frame
     var columns := _contact_columns()
     if columns != 5:
@@ -1267,6 +1284,7 @@ func _run_map_check(output_path: String) -> void:
 
 func _run_metadata_check(output_path: String) -> void:
     _set_replacement_mode(false)
+    hide_unused.button_pressed = false
     if metadata_rows.size() != catalog_entries.size() or metadata_rows.size() != 2100:
         _map_check_fail("Metadata CSV does not cover all 2,100 source images")
         return
@@ -1437,6 +1455,7 @@ func _run_metadata_check(output_path: String) -> void:
     get_tree().quit()
 
 func _run_replacement_check(folder: String) -> void:
+    hide_unused.button_pressed = false
     if (replacement_sets.size() != 4 and replacement_sets.size() != 168) or \
             not show_replacement.button_pressed or not catalog_show_replacement.button_pressed:
         _map_check_fail("Bundled replacement pack did not load automatically")

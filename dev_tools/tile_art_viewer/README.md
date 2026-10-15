@@ -8,8 +8,12 @@ original artwork is included in this repository.
 The **Art Catalog** tab's contact grid uses five columns at the default window
 size. It shows every stored perspective piece from `WALLDEF1` through
 `WALLDEF8`, including doors, gateways, waterfront/dock art, and other area
-variations. Each item identifies its source archive, record, appearance number,
-and view. The preview uses the source pixels with nearest neighbor scaling.
+variations when **Hide unused tiles** is off. This checkbox sits beside the
+Archive and View filters and starts on, so the contact sheet initially shows
+only pieces rendered in the available maps and artwork profiles. Turn it off to
+inspect all pieces, including those labeled **Unused**. Each item identifies
+its source archive, record, appearance number, and view. The preview uses the
+source pixels with nearest neighbor scaling.
 Export PNG writes the **original size** piece with its transparent pixels, not
 the scaled thumbnail or preview. Every piece has a concise description in
 [`data/tile_art_catalog.csv`](data/tile_art_catalog.csv), alongside
@@ -121,7 +125,8 @@ import may crash on exit after writing the list; that is harmless.)
 `OPENGOLD_GAME_DIR` must point to the folder containing the `WALLDEF*.DAX` and
 `8X8D*.DAX` files. Archive names are matched without case sensitivity.
 
-In Art Catalog, use the archive and view filters or the Find field to narrow the contact grid.
+In Art Catalog, use the Archive, View, and Hide unused tiles filters or the
+Find field to narrow the contact grid.
 Select a thumbnail to inspect it. Previous and Next move through the currently
 visible items; Left and Right move one piece, while Up and Down move one row
 in the same column when the Find field and filter controls are not focused.
@@ -143,9 +148,9 @@ neighboring walls, or encounter sprites.
 
 ## Check
 
-After building, this command loads all wall records, checks the five-column
-contact sheet and arrow navigation, finds the waterfront art, exports its
-near-front image, and checks the PNG pixel data:
+After building, this command loads all wall records, checks the default unused
+filter, five-column contact sheet and arrow navigation, finds the waterfront
+art, exports its near-front image, and checks the PNG pixel data:
 
 ```bash
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --viewer-check=/tmp/opengold-waterfront.png
