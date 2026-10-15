@@ -26,12 +26,14 @@ func check() -> void:
     await keep_initiative(current_scene)
     # Each enemy command waits 0.65 seconds; the first hero drops after about 2700
     # frames, later under load or when an Orc's Relentless Endurance holds it up.
+    # Which hero drops first changes with the rules' rolls; Kobolds die at 0 Hit
+    # Points, so only a hero falls unconscious.
     for frame in range(8000):
         await process_frame
         var combat := current_scene
         if combat == null:
             continue
-        if combat.get_node("LogStack/Log").text.contains("Oren Quickwater falls unconscious."):
+        if combat.get_node("LogStack/Log").text.contains(" falls unconscious."):
             # The combat view can stop requesting frames after this event; force
             # the capture instead of waiting forever for frame_post_draw.
             RenderingServer.force_draw(false)
