@@ -6,10 +6,8 @@ pp. 47–49. Levels 1–4 are in [Fighting Styles](FIGHTER-STYLES.md),
 [Champion](CHAMPION.md); the plan is [levels 5–10](LEVELS-5-10.md), and the
 facts for 11–15 are in the [inventory](LEVELS-11-15-INVENTORY.md).
 
-In the campaign a Fighter stops at level 8, the limit of Phlan's Training Hall
-([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)),
-until [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)'s one limit
-for every class is settled. The rules go to level 15, the cap.
+In the campaign a Fighter stops at level 10, the Training Hall's limit for every
+class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules go to level 15, the cap.
 
 | Level | Gains |
 | ---: | --- |

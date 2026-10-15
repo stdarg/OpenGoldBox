@@ -10,11 +10,11 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 
 - Proficiency Bonus by level everywhere: done.
 - Fighter to level 10 with Extra Attack: done ([Fighter](FIGHTER.md)). In the
-  campaign a Fighter stops at 8 ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
-- Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-510)); the
-  campaign stops it at 8.
-- Rogue to level 10: done ([Rogue](ROGUE.md)); the campaign stops it at 9.
-- Monk to level 9: done ([Monk](MONK.md#levels-59)), the Thieves' hall's limit.
+  campaign every class stops at 10 ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+- Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-515)).
+- Rogue to level 10: done ([Rogue](ROGUE.md)).
+- Monk to level 9: done ([Monk](MONK.md#levels-515)).
+- Fighter, Barbarian and Monk to level 15: done.
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
   [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,

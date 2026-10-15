@@ -728,7 +728,7 @@ unsigned CampaignParty::next_level(const PartyMember &m) const
 {
     const auto level = rules_->advancement_options(m.character.sheet()).level;
     const auto hall = training_hall_for_class(m.character.creation_data().character_class);
-    return hall && level > hall_level_limit(*hall) ? 0 : level;
+    return hall && level > hall_level_limit ? 0 : level;
 }
 
 rules::AdvancementOptions

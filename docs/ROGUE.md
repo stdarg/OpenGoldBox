@@ -5,9 +5,8 @@ pp. 61–64. Levels 1–4 are in [Sneak Attack](SNEAK-ATTACK.md),
 [Cunning Action](CUNNING-ACTION.md), [Rogue attacks](ROGUE-ATTACKS.md) and
 [Hide](HIDE.md); the plan is [levels 5–10](LEVELS-5-10.md).
 
-In the campaign a Rogue stops at level 9, the Thieves' hall's limit
-([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
-The rules go to level 10.
+In the campaign a Rogue stops at level 10, the Training Hall's limit for every
+class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules go to level 10.
 
 | Level | Gains |
 | ---: | --- |

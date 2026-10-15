@@ -292,8 +292,8 @@ class CampaignParty
     }
 
   private:
-    // The member's next level, or 0 at its rules cap or its class group's
-    // Training Hall limit (CAP-1).
+    // The member's next level, or 0 at its rules cap or the Training Hall's
+    // limit (LEVELS-2).
     [[nodiscard]] unsigned next_level(const PartyMember &m) const;
     [[nodiscard]] std::vector<DoorAttempt> cast_knock(int difficulty);
     void change_equipment(MemberId id, std::uint64_t item, rules::EquipmentOperation operation);

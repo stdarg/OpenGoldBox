@@ -139,10 +139,10 @@ void progression_checks()
 {
     CampaignParty party(module());
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft("monk"), {}));
-    party.award_experience(64000, "levels-xp");
+    party.award_experience(85000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 9, "In the campaign a Monk stops at 9");
+    check(party.member(id).character.sheet().level == 10, "In the campaign a Monk stops at the hall's level 10");
     const auto rules = module();
     check(rules->character_profile(monk(5).sheet(), {}).movement_feet == 40 &&
           rules->character_profile(monk(6).sheet(), {}).movement_feet == 45 &&

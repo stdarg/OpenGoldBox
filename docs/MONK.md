@@ -80,10 +80,8 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
 
 ## Levels 5–15
 
-The Thieves' hall trains a Monk to level 9
-([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)),
-until [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)'s one limit
-for every class is settled; the rules go to 15.
+The Training Hall trains a Monk, like every class, to level 10
+([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)); the rules go to 15.
 
 | Level | Gains |
 | ---: | --- |

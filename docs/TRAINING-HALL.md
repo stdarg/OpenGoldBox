@@ -142,7 +142,8 @@ writes numbers: "1,000 gp" in English, "1.000 po" in Spanish.
   experience reached the next threshold, and experience clamped to just below
   the following threshold afterwards.
 - **Level limits.** The manual gives Phlan's highest levels: fighter 8, thief
-  9, cleric and magic-user 6.
+  9, cleric and magic-user 6. OpenGoldBox trains every class to level 10
+  instead ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 ## Decisions (2026-10-13)
 

@@ -1058,18 +1058,29 @@ Wizard, Sorcerer and Warlock at 6. The rules still carry each class to its own
 cap ([LEVELS-1](#levels-1-2026-10-14-levels-510)); this limits the campaign,
 in place of [SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)'s
 playable cap of 15. [LEVELS-2](#levels-2-2026-10-15-level-cap-15) replaces the
-three limits with one for every class.
+three limits with level 10 for every class.
 
 ## LEVELS-2 (2026-10-15): level cap 15
 
 The user raised the level cap to 15 for every class: each class is built to
 15 (the facts are in the [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md)).
-The Training Hall still limits training, but with one limit for every class
-in place of [CAP-1](#cap-1-2026-10-14-the-original-training-halls-limits)'s
-three; the level is still to be settled. Monk decisions taken with it:
+The Training Hall still limits training, but to level 10 for every class, in
+place of [CAP-1](#cap-1-2026-10-14-the-original-training-halls-limits)'s three
+limits; levels 11–15 are built for the rules and stay out of the campaign's
+reach. Decisions taken with it:
 
 - **Empowered Strikes** (Monk 6): Unarmed Strikes always deal Force damage.
 - **Stunning Strike** is also offered on Flurry of Blows.
+- **Rolls:** a feature that changes a roll is used automatically when it can
+  change the result, and the combat log shows it with the roll (Disciplined
+  Survivor's Focus reroll, as Indomitable and Heroic Inspiration).
+- **Improved Cunning Strike** (Rogue 11): the A cycle offers each pair of
+  Cunning Strike effects the Sneak Attack dice can pay for, besides the single
+  effects.
+- **Heightened Focus** (Monk 10): Step of the Wind with Focus can carry an
+  adjacent ally, offered as more A-cycle entries.
+- **Use Magic Device** (Thief 13) is granted and waits for magic items
+  ([#234](https://github.com/stdarg/OpenGold/issues/234)), as Fast Hands does.
 
 ## PUSH-1 (2026-10-14): pushed into a wall
 

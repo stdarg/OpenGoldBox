@@ -125,11 +125,7 @@ void halls_and_fees()
     check(training_hall_named("MAGIC USERS ") == TrainingHall::magic_users &&
           training_hall_named("THIEVES ") == TrainingHall::thieves && !training_hall_named("BARDS "),
           "The original script names its hall");
-    check(hall_level_limit(TrainingHall::fighters) == 8 &&
-          hall_level_limit(TrainingHall::thieves) == 9 &&
-          hall_level_limit(TrainingHall::clerics) == 6 &&
-          hall_level_limit(TrainingHall::magic_users) == 6,
-          "The original hall's limits: 8th fighter, 9th thief, 6th cleric and magic-user");
+    static_assert(hall_level_limit == 10, "The hall trains every class to level 10 (LEVELS-2)");
     check(experience_session_fee(1) == 1000 && experience_session_fee(3) == 4000 &&
           experience_session_fee(8) == 128000,
           "A session costs 1,000 gp at level 1 and doubles at each level");
