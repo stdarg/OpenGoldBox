@@ -23,7 +23,7 @@ every field:
 
 - Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 29` (`campaign_format` in
   `campaign_save.cpp`).
-- The internal training-combat checkpoint: `OGCOMBAT 55` (`checkpoint_format`
+- The internal training-combat checkpoint: `OGCOMBAT 56` (`checkpoint_format`
   in `srd5.cpp`).
 - Records embedded by the SRD module: character profile recipe `PC42` (an
   explicit spell ID list), vital state `SRD13`, effect state `FX8` and

@@ -5,7 +5,7 @@ var saved_files := {}
 # Checkpoint bodies in the current combat format for content creatures, which
 # carry no character profile. The header, with the current rules identity, is
 # taken from a checkpoint the game itself writes.
-const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 10 0 0 0 0 0 0 0 CN1 0"
+const ACTOR_TAIL := " 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 10 0 0 0 0 0 0 0 CN1 0"
 # Each body adds one empty carried-inventory line per actor after it, then an
 # empty list of members who fled.
 const CONTINUATION_TAIL := "0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n0\n0\n0\n0\n"
@@ -13,7 +13,7 @@ const CONTINUATION_TAIL := "0\n0 0\n0\n0\n0\n0\n0 0\n0\n0\n0 \n0\n0\n0\n0\n0\n"
 # The mover left an attack and a Second Wind behind, then tried to step from
 # (2,2) to (1,2). The first guard declined; the second guard's reaction waits.
 const MOVEMENT_BODY := "8 6\n" \
-    + "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n" \
+    + "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n" \
     + "6018027440424182934 5 0 1 0 4\n" \
     + "1 \"vanguard\" \"Mover\" 0 2 2 20 15 30 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
     + "3 \"vanguard\" \"Guard\" 1 3 3 28 11 30 2 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
@@ -25,7 +25,7 @@ const MOVEMENT_BODY := "8 6\n" \
     + "1 0 100 0 0 4\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\nFX8 1 0 0\n" + CONTINUATION_TAIL + "0\n0\n0\n0\n0\n"
 
 # A mover in a walled corridor with a Stable, Unconscious enemy between it and a guard.
-const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 \n" \
+const TRANSIT_BODY := "6 3\n1 1 1 1 1 1 0 0 0 0 0 0 1 1 1 1 1 1 0 \n" \
     + "15755400384260043842 1 0 1 0 3\n" \
     + "1 \"vanguard\" \"Mover\" 0 0 1 28 15 30 2 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \
     + "3 \"bandit\" \"Guard\" 1 5 1 11 11 30 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 \"\"" + ACTOR_TAIL + "\n" \

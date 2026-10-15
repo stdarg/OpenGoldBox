@@ -255,7 +255,7 @@ struct Probe
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
     {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
-    {"ranger", 1}, {"ranger", 4}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
+    {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
 
 // The widest legitimate caster for a class and level: every cantrip its own
@@ -436,7 +436,7 @@ void behaviour()
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command, Resistance,
-        // Guidance and Chromatic Orb are offered once per option, camp spells only outside combat, area spells are aimed,
+        // Guidance, Chromatic Orb and Protection from Energy are offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
         // Revivify a dead one
         // Mage Armor an unarmored character, Shillelagh a Club or
@@ -456,6 +456,7 @@ void behaviour()
                 row.pattern == SpellPattern::exploration ||
                 row.pattern == SpellPattern::weapon_strike ||
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
+                row.rider == Rider::protection_from_energy ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
                 row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||

@@ -21,8 +21,8 @@ void validate_battlefield(const Battlefield &board)
             std::any_of(board.terrain.begin(), board.terrain.end(),
                         [](auto tile)
 {
-    return tile > Terrain::difficult;
-}))
+    return tile > Terrain::overgrown;
+}) || (!board.plants.empty() && board.plants.size() != board.terrain.size()))
     throw std::runtime_error("Invalid battlefield");
 }
 
@@ -78,7 +78,7 @@ std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
         return std::nullopt;
     const bool difficult =
         board_.at(to) == Terrain::difficult || occupant == Occupancy::incapacitated_enemy;
-    return (difficult ? 10 : 5) +
+    return (board_.at(to) == Terrain::overgrown ? 20 : difficult ? 10 : 5) +
            (crawling_ ? 5 : 0);
 }
 
@@ -97,7 +97,7 @@ ReachableCells MovementGrid::reachable(int budget) const
             result.destinations_.push_back(can_stop_at({x, y}));
 
     // Dijkstra: the cheapest queued cell is final when removed. Every edge
-    // costs 5 or 10, so a route through a more expensive cell cannot improve it.
+    // costs at least 5, so a route through a more expensive cell cannot improve it.
     // Equal costs use the row-major cell index, preserving deterministic paths
     // (and therefore which opportunity attacks occur along those paths).
     using QueueItem = std::pair<int, int>;

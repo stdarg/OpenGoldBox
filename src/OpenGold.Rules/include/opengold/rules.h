@@ -406,13 +406,18 @@ enum class Terrain : std::uint8_t
 {
     open = 0,
     obstacle = 1, // Opaque: blocks movement and sight.
-    difficult = 2
+    difficult = 2,
+    // Plant Growth's Overgrowth: 4 feet of movement for each foot moved.
+    overgrown = 3
 };
 
 struct Battlefield
 {
     int width{}, height{};
     std::vector<Terrain> terrain;
+    // Squares with ordinary plants, for Plant Growth: those open to the sky in
+    // the original's map. Empty means none.
+    std::vector<bool> plants;
     [[nodiscard]] bool contains(Cell p) const noexcept;
     // Outside the board, or past a short terrain list, is an obstacle.
     [[nodiscard]] Terrain at(Cell p) const noexcept;
@@ -674,6 +679,10 @@ struct Snapshot
     std::vector<Cell> guardians;
     // Squares inside a Magic Circle, being cast or standing.
     std::vector<Cell> circles;
+    // Squares a pack of spirits fills (Conjure Animals).
+    std::vector<Cell> spirits;
+    // Squares of a wall spell, such as Wind Wall.
+    std::vector<Cell> walls;
     // Gold the fight's offerings (Revivify) took from the party purse so far.
     unsigned offerings_gold{};
     // Pre-turn decisions; legal commands carry eligible actors and allies.

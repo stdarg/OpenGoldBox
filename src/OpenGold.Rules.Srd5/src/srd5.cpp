@@ -194,7 +194,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated ||
            kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful ||
            kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished ||
-           kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring;
+           kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring ||
+           kind == detail::EffectKind::energy_ward;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -260,6 +261,7 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::shining:
         return 2u;
     case Kind::hopeful:
+    case Kind::energy_ward:
         return 3u;
     case Kind::death_ward:
     case Kind::aura_of_life:
@@ -344,7 +346,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 55;
+constexpr unsigned checkpoint_format = 56;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -413,6 +415,13 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::ranger, "protection_from_poison", 5},
     SpellAccessRow{CharacterClass::ranger, "silence", 5},
     SpellAccessRow{CharacterClass::ranger, "spike_growth", 5},
+    // Ranger level-3 spells, with the level-3 slots of Ranger level 9.
+    SpellAccessRow{CharacterClass::ranger, "conjure_animals", 9},
+    SpellAccessRow{CharacterClass::ranger, "dispel_magic", 9},
+    SpellAccessRow{CharacterClass::ranger, "plant_growth", 9},
+    SpellAccessRow{CharacterClass::ranger, "protection_from_energy", 9},
+    SpellAccessRow{CharacterClass::ranger, "revivify", 9},
+    SpellAccessRow{CharacterClass::ranger, "wind_wall", 9},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{CharacterClass::ranger, "poison_spray", 2},
     SpellAccessRow{CharacterClass::paladin, "sacred_flame", 2},
@@ -808,6 +817,12 @@ struct Definition
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     // Hunter, Ranger level 7: one Defensive Tactics option.
     bool escape_the_horde{}, multiattack_defense{};
+    // Ranger levels 10-15: Tireless's uses per Long Rest (kept in
+    // Actor::arcane, which no Ranger has otherwise), Superior Hunter's Prey,
+    // Relentless Hunter, Nature's Veil's uses (in Actor::lay_on_hands) and
+    // Superior Hunter's Defense.
+    int tireless{}, natures_veil{};
+    bool superior_prey{}, relentless_hunter{}, superior_defense{};
     bool gnomish_cunning{}; // Gnome: Advantage on Intelligence, Wisdom and Charisma saves
     bool relentless{}; // Orc: Relentless Endurance, once per Long Rest
     // Dragonborn: the Breath Weapon's damage type, from the Draconic Ancestry.
@@ -978,6 +993,10 @@ struct Actor
     // Hunter's Prey, once per turn. horde_origin is the first creature this
     // actor attacked with a weapon this turn, which Horde Breaker attacks beside.
     bool colossus_used{}, horde_used{};
+    // Superior Hunter's Prey, once per turn: prey_origin is the marked creature
+    // just damaged, within 30 feet of which the mark's damage may strike another.
+    bool prey_used{};
+    EntityId prey_origin{};
     bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
     bool regeneration_blocked{}; // Took Acid or Fire damage since its last turn began
     // Downed with Regeneration: the round it may get back up, 3d6 rounds after it
@@ -1098,7 +1117,10 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"intimidating_presence", "Intimidating Presence", &Actor::free_casts,
         &Definition::intimidating_presence, 0, true},
     ResourceDescriptor{"persistent_rage", "Persistent Rage", &Actor::arcane,
-        &Definition::persistent_rage, 0, true}};
+        &Definition::persistent_rage, 0, true},
+    ResourceDescriptor{"tireless", "Tireless", &Actor::arcane, &Definition::tireless, 0, true},
+    ResourceDescriptor{"natures_veil", "Nature's Veil", &Actor::lay_on_hands,
+        &Definition::natures_veil, 0, true}};
 
 // Whether a level-up takes Lessons of the First Ones' Skilled, as a new
 // invocation or one swapped in.
@@ -1121,7 +1143,7 @@ int max_hp(const Actor &a)
 // class has both.
 int lay_capacity(const Definition &d)
 {
-    return d.lay_on_hands + d.sorcery_points + d.relentless_rage;
+    return d.lay_on_hands + d.sorcery_points + d.relentless_rage + d.natures_veil;
 }
 
 // Spell slots of a level, with room for the ones Font of Magic creates from
@@ -1200,7 +1222,7 @@ int surge_capacity(const Definition &d)
 int arcane_capacity(const Definition &d)
 {
     return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable +
-           d.persistent_rage;
+           d.persistent_rage + d.tireless;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -1467,6 +1489,14 @@ std::string ward_label(std::size_t type)
     constexpr std::array<std::string_view, 5> labels{"Celestials", "Elementals", "Fey", "Fiends",
                                                      "Undead"};
     return std::string(labels.at(type));
+}
+
+// A wall's direction as players read it, by its index in wall_directions.
+std::string wall_direction_label(std::size_t direction)
+{
+    constexpr std::array<std::string_view, 4> labels{"horizontal", "vertical", "rising diagonal",
+                                                     "falling diagonal"};
+    return std::string(labels.at(direction));
 }
 
 // The ward type a "magic_circle_fey" verb names.
@@ -1774,6 +1804,13 @@ character_definition(std::string_view bytes,
     // Favored Enemy: 2 free Hunter's Marks, 3 from level 5, 4 from 9, 5 from 13.
     d.favored_enemy = klass != CharacterClass::ranger ? 0
                       : level >= 13 ? 5 : level >= 9 ? 4 : level >= 5 ? 3 : 2;
+    const bool ranger = klass == CharacterClass::ranger;
+    const int wisdom_uses = std::max(1, ability_modifier(scores[Ability::wisdom]));
+    d.tireless = ranger && level >= 10 ? wisdom_uses : 0;
+    d.superior_prey = ranger && level >= 11;
+    d.relentless_hunter = ranger && level >= 13;
+    d.natures_veil = ranger && level >= 14 ? wisdom_uses : 0;
+    d.superior_defense = ranger && level >= 15;
     d.medicine = ability_modifier(scores[Ability::wisdom]);
     d.tactical_mind = klass == CharacterClass::fighter && level >= 2;
     d.cunning = klass == CharacterClass::rogue && level >= 2;
@@ -2637,7 +2674,10 @@ class Session final : public CombatSession
         moonbeam,       // Moonbeam's beam; cells.front() is its centre
         spikes,         // Spike Growth's Difficult Terrain
         guardian,       // one square: Guardian of Faith's guardian
-        circle          // Magic Circle, held by Concentration while it is cast
+        circle,         // Magic Circle, held by Concentration while it is cast
+        animals,        // Conjure Animals' Large pack of spirits, two squares by two
+        wind_wall,      // Wind Wall's squares
+        overgrowth      // Plant Growth's Overgrowth, lasting the fight
     };
     struct Zone
     {
@@ -2650,6 +2690,7 @@ class Session final : public CombatSession
         int save_dc{};
         int dealt{}; // Guardian of Faith's damage so far; it vanishes at 60
         unsigned warded{}; // Magic Circle's creature type, an index into ward_types
+        unsigned slot{};   // the slot level a zone whose damage grows with it was cast at
     };
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
@@ -3043,6 +3084,8 @@ class Session final : public CombatSession
     // away from the caster, then ends its turn.
     void obey_command(std::vector<Command> &commands, const Actor &a) const;
     [[nodiscard]] bool marked_by(const Actor &target, const Actor &caster) const;
+    // Whether the caster's Concentration holds a Hunter's Mark on a creature.
+    [[nodiscard]] bool holds_hunters_mark(const Actor &caster) const;
     void reveal_lore(const Actor &caster, const Actor &target);
     void resolve_ensnaring_strike(Actor &a, std::string_view verb);
     void divine_spark(Actor &cleric, Actor &target);
@@ -3099,6 +3142,17 @@ class Session final : public CombatSession
     void moonbeam_burns(const Zone &beam, Actor &creature);
     // Moonbeam's beam moves onto a creature, burning those it reaches.
     void move_moonbeam(Actor &caster, const Actor &onto);
+    // Conjure Animals: whether a square is within 10 feet of the pack, a
+    // Dexterity save of a creature that comes there (once a turn), the
+    // pack's squares beside a creature within 30 feet of where it is, and
+    // its move there, which strikes those it comes near.
+    [[nodiscard]] static bool near_pack(const Zone &pack, Cell cell);
+    void pack_strikes(const Zone &pack, Actor &creature);
+    [[nodiscard]] std::optional<std::vector<Cell>> pack_destination(const Zone &pack,
+            const Actor &onto) const;
+    void move_spirit_pack(Actor &caster, const Actor &onto);
+    // Wind Wall: whether a shot from one square to another crosses its wind.
+    [[nodiscard]] bool across_wind_wall(Cell from, Cell to) const;
     void spikes_pierce(Actor &creature);
     // Wild Shape's Beast form, kept in step with the wild_shape effect.
     static void refresh_form(Actor &a);
@@ -4078,6 +4132,13 @@ Battlefield Session::zoned_board() const
                 if (board.at(cell) == Terrain::open)
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                         Terrain::difficult;
+    // Plant Growth's Overgrowth: 4 feet of movement for each foot.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::overgrowth)
+            for (const auto cell : zone.cells)
+                if (board.at(cell) != Terrain::obstacle)
+                    board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
+                        Terrain::overgrown;
     return board;
 }
 
@@ -4230,6 +4291,10 @@ Snapshot Session::snapshot() const
             s.guardians.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::circle)
             s.circles.insert(s.circles.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::animals)
+            s.spirits.insert(s.spirits.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::wind_wall)
+            s.walls.insert(s.walls.end(), zone.cells.begin(), zone.cells.end());
     s.log_entries = log_;
     if (!initiative_choices_.empty())
         s.actor = initiative_choices_.front();
@@ -5011,6 +5076,19 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {{"name", target.source.name}, {"caster", a.source.name}}
         });
         return;
+    case detail::Rider::protection_from_energy:
+    {
+        const auto type = *detail::energy_type(verb);
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::energy_ward, static_cast<int>(type));
+        log(target.source.name + " gains Resistance to " + std::string(detail::damage_name(type)) +
+            " damage.",
+        {
+            "{name} gains Resistance to {type} damage.",
+            {{"name", target.source.name}, {"type", std::string(detail::damage_name(type)), true}}
+        });
+        return;
+    }
     case detail::Rider::dragons_breath:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::dragons_breath,
@@ -5708,6 +5786,23 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             }
             continue;
         }
+        if (spell.rider == detail::Rider::protection_from_energy)
+        {
+            if (!detail::has_effect(other.effects, detail::EffectKind::energy_ward))
+                for (const auto type : detail::energy_types)
+                    offer_leveled("protection_from_energy_" + std::string(type),
+                                  "Protection from Energy: " +
+                                  std::string(detail::damage_name(detail::damage_type(type))));
+            continue;
+        }
+        // A wall: one entry for each direction it may run (LEVELS-3).
+        if (spell.wall)
+        {
+            for (std::size_t n = 0; n < detail::wall_directions.size(); ++n)
+                offer_leveled(std::string(spell.id) + "_" + std::string(detail::wall_directions[n]),
+                              std::string(spell.label) + " (" + wall_direction_label(n) + ")");
+            continue;
+        }
         if (spell.rider == detail::Rider::dragons_breath)
         {
             if (!detail::has_effect(other.effects, detail::EffectKind::dragons_breath))
@@ -6270,6 +6365,16 @@ std::vector<Command> Session::offered_commands() const
                 if (other.life.hp > 0 && !other.life.dead && !in_zone(zone, other.source.cell) &&
                         distance(zone.cells.front(), other.source.cell) <= 60)
                     add(id, "move_moonbeam", "Move Moonbeam", other.source.id);
+    // Conjure Animals: once the caster has moved this turn, its pack may move
+    // too, here beside a creature it can see.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::animals && zone.caster == id && a.moved &&
+                !detail::has_effect(a.effects, detail::EffectKind::pack_moved) &&
+                detail::can_apply(a.effects))
+            for (const auto &other : actors_)
+                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                        can_see(a, other) && pack_destination(zone, other))
+                    add(id, "move_spirit_pack", "Move spirit pack", other.source.id);
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus)
@@ -6277,6 +6382,17 @@ std::vector<Command> Session::offered_commands() const
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     distance(force->cells.front(), other.source.cell) <= 25)
                 add(id, "spiritual_weapon_strike", "Spiritual Weapon attack", other.source.id);
+    // Superior Hunter's Prey (Ranger 11): once per turn, after damaging its
+    // quarry, the mark's damage strikes another creature within 30 feet of it.
+    if (d.superior_prey && a.prey_origin && !a.prey_used)
+    {
+        const auto &origin = actor(a.prey_origin);
+        for (const auto &other : actors_)
+            if (other.source.id != origin.source.id && other.source.side != a.source.side &&
+                    other.life.hp > 0 && !other.life.dead && can_see(a, other) &&
+                    distance(origin.source.cell, other.source.cell) <= 30)
+                add(id, "superior_hunters_prey", "Superior Hunter's Prey", other.source.id);
+    }
     // Horde Breaker: once per turn, after a weapon attack, another creature
     // within 5 feet of the first target and within the weapon's reach or range.
     if (d.horde_breaker && a.horde_origin && !a.horde_used)
@@ -6333,6 +6449,9 @@ std::vector<Command> Session::offered_commands() const
     // Wholeness of Body: a Bonus Action heals the Martial Arts die + Wisdom.
     if (a.bonus && d.wholeness && a.free_casts > 0 && a.life.hp < max_hp(a))
         add(id, "wholeness_of_body", "Wholeness of Body", id);
+    // Tireless (Ranger 10): a Magic action gives 1d8 + Wisdom Temporary Hit Points.
+    if (d.tireless && a.arcane > 0 && a.actions.available(true))
+        add(id, "tireless", "Tireless", id);
     // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
     // can take effect, including one at 0 Hit Points.
     if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
@@ -6798,6 +6917,10 @@ void Session::damage(Actor &target, int amount, bool critical)
     const auto source = pending() ? pending() : actors_[turn_].source.id;
     if (standing && source != target.source.id)
         damage_taken_.push_back({target.source.id, source});
+    // Superior Hunter's Prey: the Ranger's damage to its quarry on its own turn.
+    if (auto &ranger = actors_[turn_]; source == ranger.source.id && def(ranger).superior_prey &&
+            !ranger.prey_used && !ranger.prey_origin && marked_by(target, ranger))
+        ranger.prey_origin = target.source.id;
     const detail::DamageOptions options{
         .critical = critical,
         .dies_at_zero = target.source.side == Side::opposition && !def(target).regeneration};
@@ -6891,7 +7014,10 @@ void Session::damage(Actor &target, int amount, bool critical)
                    e.source_actor == target.source.id;
         });
     // Damage tests Concentration; dropping to 0 Hit Points ends it.
-    if (target.concentration.active())
+    // Relentless Hunter (Ranger 13): damage cannot break Hunter's Mark.
+    const bool relentless_mark = def(target).relentless_hunter && target.life.hp > 0 &&
+                                 !target.life.dead && holds_hunters_mark(target);
+    if (target.concentration.active() && !relentless_mark)
     {
         const bool rolls = target.life.hp > 0 && !target.life.dead;
         auto modifiers = detail::saving_modifiers(detail::Ability::constitution,
@@ -7071,6 +7197,18 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
                                      Cell origin, Cell center) const
 {
     std::vector<Cell> cells;
+    // A straight wall through the aimed square, along a row, a column or a
+    // diagonal (LEVELS-3).
+    if (spell.wall)
+    {
+        constexpr std::array<Cell, 4> steps{Cell{1, 0}, Cell{0, 1}, Cell{1, -1}, Cell{1, 1}};
+        const auto step = steps[detail::wall_direction(verb).value_or(0)];
+        const int length = spell.wall / 5;
+        for (int n = -length / 2; n < length - length / 2; ++n)
+            if (const Cell cell{center.x + n * step.x, center.y + n * step.y}; board_.contains(cell))
+                cells.push_back(cell);
+        return cells;
+    }
     // The aimed direction from the caster; aiming at the caster faces east.
     const int dx = center.x - origin.x, dy = center.y - origin.y;
     const double ax = dx || dy ? dx : 1, ay = dy;
@@ -7497,6 +7635,121 @@ void Session::move_moonbeam(Actor &caster, const Actor &onto)
             moonbeam_burns(after, other);
 }
 
+bool Session::near_pack(const Zone &pack, Cell cell)
+{
+    return std::any_of(pack.cells.begin(), pack.cells.end(), [&](Cell square)
+    {
+        return distance(square, cell) <= 10;
+    });
+}
+
+void Session::pack_strikes(const Zone &pack, Actor &creature)
+{
+    // The caster forces a save on each enemy it can see, once per turn; the
+    // pack may have ended with its caster's Concentration mid-turn.
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == pack.caster;
+    });
+    const bool standing = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::animals && zone.caster == pack.caster;
+    });
+    if (!standing || caster == actors_.end() || creature.source.side == caster->source.side ||
+            creature.life.dead || creature.life.hp == 0 || absent(creature) ||
+            detail::has_effect(creature.effects, detail::EffectKind::pack_tested) ||
+            !can_see(*caster, creature))
+        return;
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    if (detail::can_apply(creature.effects))
+        detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
+                               rest_of_turn, detail::EffectKind::pack_tested);
+    const auto &spell = *detail::find_spell("conjure_animals");
+    if (saving_throw_succeeds(creature, spell.save, pack.save_dc, false,
+                              heightened_against(creature, *caster, spell.id)))
+        return;
+    const int count = spell.dice.count + static_cast<int>(pack.slot - spell.level);
+    const int amount = resolved_damage(creature, spell.damage, dice({count, 10, 0}));
+    log(creature.source.name + " takes " + std::to_string(amount) +
+        " Slashing damage from the spirit pack.",
+    {
+        "{name} takes {damage} Slashing damage from the spirit pack.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+}
+
+std::optional<std::vector<Cell>> Session::pack_destination(const Zone &pack,
+        const Actor &onto) const
+{
+    // An unoccupied space two squares by two that the caster can see, up to 30
+    // feet from where the pack is, as near the creature as it can get.
+    const auto &caster = actor(pack.caster);
+    std::optional<std::vector<Cell>> best;
+    int best_feet = 0;
+    for (int y = 0; y + 1 < board_.height; ++y)
+        for (int x = 0; x + 1 < board_.width; ++x)
+        {
+            const std::vector<Cell> cells{{x, y}, {x + 1, y}, {x, y + 1}, {x + 1, y + 1}};
+            if (distance(cells.front(), pack.cells.front()) > 30 ||
+                    !line_of_sight(caster.source.cell, cells.front()) ||
+                    std::any_of(cells.begin(), cells.end(), [&](Cell cell)
+            {
+                return board_.at(cell) == Terrain::obstacle ||
+                       std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+                {
+                    return !other.life.dead && !absent(other) && other.source.cell == cell;
+                });
+            }))
+            continue;
+            int feet = std::numeric_limits<int>::max();
+            for (const auto cell : cells)
+                feet = std::min(feet, distance(cell, onto.source.cell));
+            if (feet <= 10 && (!best || feet < best_feet))
+            {
+                best = cells;
+                best_feet = feet;
+            }
+        }
+    return best;
+}
+
+void Session::move_spirit_pack(Actor &caster, const Actor &onto)
+{
+    auto &pack = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::animals && zone.caster == caster.source.id;
+    });
+    const auto before = pack;
+    pack.cells = *pack_destination(pack, onto);
+    const auto after = pack;
+    detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
+                                detail::EffectKind::pack_moved, 0);
+    log(caster.source.name + " moves the spirit pack.",
+    {"{name} moves the spirit pack.", {{"name", caster.source.name}}});
+    for (auto &other : actors_)
+        if (near_pack(after, other.source.cell) && !near_pack(before, other.source.cell))
+            pack_strikes(after, other);
+}
+
+bool Session::across_wind_wall(Cell from, Cell to) const
+{
+    // The squares a straight shot passes, sampled four times a square.
+    const int steps = 4 * std::max(std::abs(to.x - from.x), std::abs(to.y - from.y));
+    for (int n = 1; n <= steps; ++n)
+    {
+        const double along = static_cast<double>(n) / steps;
+        const Cell cell{static_cast<int>(std::lround(from.x + (to.x - from.x) * along)),
+                        static_cast<int>(std::lround(from.y + (to.y - from.y) * along))};
+        if (cell != from && std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::wind_wall && in_zone(zone, cell);
+        }))
+        return true;
+    }
+    return false;
+}
+
 std::vector<Cell> Session::beam_cells(Cell center) const
 {
     // Moonbeam's 5-foot radius, its centre first so a moved beam keeps it.
@@ -7907,6 +8160,44 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::guardian, {aimed.center},
                           elapsed_ms_ + 28800000, spell_dc(a, spell.id)});
         log("A Guardian of Faith appears.", {"A Guardian of Faith appears.", {}});
+        return;
+    }
+    if (spell.rider == detail::Rider::conjure_animals)
+    {
+        // The pack strikes only creatures that later come near it.
+        begin_concentration(a, spell);
+        Zone pack{a.source.id, ZoneKind::animals,
+                  area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+        pack.save_dc = spell_dc(a, spell.id);
+        pack.slot = slot_level_of(aimed.verb, spell);
+        zones_.push_back(std::move(pack));
+        log("A pack of spirit animals appears.", {"A pack of spirit animals appears.", {}});
+        return;
+    }
+    if (spell.rider == detail::Rider::wind_wall)
+    {
+        begin_concentration(a, spell);
+        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        zones_.push_back({a.source.id, ZoneKind::wind_wall, cells});
+        damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
+        return;
+    }
+    // Plant Growth's Overgrowth reaches only squares with plants, and lasts.
+    if (spell.rider == detail::Rider::plant_growth)
+    {
+        std::vector<Cell> grown;
+        for (const auto cell : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+            if (!board_.plants.empty() &&
+                    board_.plants[static_cast<std::size_t>(cell.y * board_.width + cell.x)])
+                grown.push_back(cell);
+        if (grown.empty())
+        {
+            log("No plants grow there.", {"No plants grow there.", {}});
+            return;
+        }
+        zones_.push_back({a.source.id, ZoneKind::overgrowth, std::move(grown),
+                          std::numeric_limits<std::uint64_t>::max()});
+        log("The plants grow thick and overgrown.", {"The plants grow thick and overgrown.", {}});
         return;
     }
     if (spell.rider == detail::Rider::misty_step)
@@ -8721,6 +9012,11 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_poison))
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                           "spell:protection_from_poison"});
+    for (const auto &e : target.effects.active)
+        if (e.kind == detail::EffectKind::energy_ward)
+            result.push_back({detail::AffinityKind::resistance,
+                              static_cast<detail::DamageType>(e.dc),
+                              "spell:protection_from_energy"});
     if (rage_of(target))
         for (const auto type : {detail::DamageType::bludgeoning, detail::DamageType::piercing,
                                 detail::DamageType::slashing})
@@ -9531,6 +9827,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         bonus -= cutting_words(a, natural + bonus - armor_class(target));
         hit = attack_hits(natural, bonus, armor_class(target));
     }
+    // Wind Wall: arrows, bolts and other ordinary projectiles shot across it miss.
+    if (hit && ranged && !spell && across_wind_wall(a.source.cell, target.source.cell))
+    {
+        hit = false;
+        log("The wind deflects the shot.", {"The wind deflects the shot.", {}});
+    }
     const auto damage_type = spell    ? spell_attack->type
                              : ranged ? d.ranged_type
                              : sacred_damage_type(a);
@@ -9757,6 +10059,14 @@ void Session::reveal_lore(const Actor &caster, const Actor &target)
             {{"name", target.source.name}, {"kind", kind, true}, {"type", type, true}}
         });
     }
+}
+
+bool Session::holds_hunters_mark(const Actor &caster) const
+{
+    return std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return marked_by(other, caster);
+    });
 }
 
 bool Session::marked_by(const Actor &target, const Actor &caster) const
@@ -10559,9 +10869,12 @@ bool Session::begin_turn()
         actor.colossus_used = actor.horde_used = actor.resistance_used = false;
         std::erase_if(actor.effects.active, [](const auto & e)
         {
-            return e.kind == detail::EffectKind::defended;
+            return e.kind == detail::EffectKind::defended ||
+                   e.kind == detail::EffectKind::pack_moved;
         });
         actor.horde_origin = 0;
+        actor.prey_used = false;
+        actor.prey_origin = 0;
         actor.savage_used = false;
         actor.sneak_used = false;
         actor.aim_used = actor.aim_ready = false;
@@ -10766,6 +11079,15 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     // Advantage.
     if (ability == detail::Ability::strength)
     {
+        // Conjure Animals: Advantage within 5 feet of the caster's own pack.
+        modifiers.advantage |= std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+        {
+            return zone.kind == ZoneKind::animals && zone.caster == target.source.id &&
+                   std::any_of(zone.cells.begin(), zone.cells.end(), [&](Cell cell)
+            {
+                return distance(cell, target.source.cell) <= 5;
+            });
+        });
         modifiers.disadvantage |= detail::has_effect(target.effects, detail::EffectKind::enfeebled) ||
                                   detail::has_effect(target.effects, detail::EffectKind::reduced);
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::enlarged) ||
@@ -11017,6 +11339,9 @@ void Session::end_turn()
     for (const auto &zone : std::vector<Zone>(zones_))
         if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
             blow(zone, actors_[turn_]);
+    for (const auto &zone : std::vector<Zone>(zones_))
+        if (zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell))
+            pack_strikes(zone, actors_[turn_]);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -11088,6 +11413,9 @@ void Session::progress_movement()
             if (zone.kind == ZoneKind::moonbeam && in_zone(zone, destination) &&
                     !in_zone(zone, departed))
                 moonbeam_burns(zone, a);
+            if (zone.kind == ZoneKind::animals && near_pack(zone, destination) &&
+                    !near_pack(zone, departed))
+                pack_strikes(zone, a);
         }
         guardian_tests(a);
         if (caught)
@@ -12241,6 +12569,32 @@ void Session::dispatch(const Command &command)
         attack(a, target, AttackRange::melee,
                SpellAttack{.dice = {1, 8, casting_modifier(d)}, .type = detail::DamageType::force});
     }
+    else if (command.verb == "move_spirit_pack")
+        move_spirit_pack(a, actor(command.target));
+    else if (command.verb == "superior_hunters_prey")
+    {
+        a.prey_used = true;
+        auto &target = actor(command.target);
+        const int extra = resolved_damage(target, detail::DamageType::force, dice({1, 6, 0}));
+        log(target.source.name + " takes " + std::to_string(extra) +
+            " Force damage from Superior Hunter's Prey.",
+        {
+            "{name} takes {damage} Force damage from Superior Hunter's Prey.",
+            {{"name", target.source.name}, {"damage", std::to_string(extra)}}
+        });
+        damage(target, extra, false);
+    }
+    else if (command.verb == "tireless")
+    {
+        a.actions.spend(true);
+        --a.arcane;
+        TemporaryHitPoints offered{std::max(1, roll(8) + d.wisdom), "feature:tireless"};
+        log(a.source.name + " uses Tireless.", {"{name} uses Tireless.", {{"name", a.source.name}}});
+        if (a.life.temporary_hp.amount)
+            temporary_offer_ = std::move(offered);
+        else
+            detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
+    }
     else if (command.verb == "horde_breaker")
     {
         a.horde_used = true;
@@ -12569,6 +12923,9 @@ std::string Session::save() const
     out << board_.width << ' ' << board_.height << '\n';
     for (auto cell : board_.terrain)
         out << static_cast<unsigned>(cell) << ' ';
+    out << board_.plants.size() << ' ';
+    for (const bool plant : board_.plants)
+        out << plant;
     out << '\n';
     out << rng_ << ' ' << revision_ << ' ' << turn_ << ' ' << round_ << ' '
         << static_cast<int>(outcome_) << ' ' << actors_.size() << '\n';
@@ -12604,6 +12961,7 @@ std::string Session::save() const
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
+            << a.prey_used << ' ' << a.prey_origin << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
             << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
@@ -12721,7 +13079,8 @@ std::string Session::save() const
     {
         out << ' ' << zone.caster << ' ' << static_cast<unsigned>(zone.kind) << ' '
             << zone.ends_ms << ' '
-            << zone.save_dc << ' ' << zone.dealt << ' ' << zone.warded << ' ' << zone.cells.size();
+            << zone.save_dc << ' ' << zone.dealt << ' ' << zone.warded << ' ' << zone.slot << ' '
+            << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
@@ -12808,7 +13167,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.light_origins.push_back(id);
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
-          actor.horde_used >> actor.horde_origin >> actor.smite_melee >> actor.resistance_used >>
+          actor.horde_used >> actor.horde_origin >> actor.prey_used >> actor.prey_origin >>
+          actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
           actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
           actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
@@ -12848,7 +13208,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     }))
     throw std::runtime_error("Invalid Cleave expenditure source");
     if ((actor.colossus_used && !definition.colossus_slayer) ||
-            ((actor.horde_used || actor.horde_origin) && !definition.horde_breaker))
+            ((actor.horde_used || actor.horde_origin) && !definition.horde_breaker) ||
+            ((actor.prey_used || actor.prey_origin) && !definition.superior_prey))
         throw std::runtime_error("Invalid Hunter's Prey state");
     if ((actor.sneak_used && !definition.sneak_level) ||
             (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
@@ -12918,6 +13279,17 @@ Battlefield read_checkpoint_board(std::istream &input)
             throw std::runtime_error("Invalid checkpoint terrain");
         board.terrain.push_back(static_cast<Terrain>(terrain));
     }
+    std::size_t plants{};
+    input >> plants;
+    if (!input || (plants && plants != board.terrain.size()))
+        throw std::runtime_error("Invalid checkpoint plants");
+    std::string bits;
+    if (plants)
+        input >> bits;
+    if (!input || bits.size() != plants || bits.find_first_not_of("01") != bits.npos)
+        throw std::runtime_error("Invalid checkpoint plants");
+    for (const char bit : bits)
+        board.plants.push_back(bit == '1');
     return board;
 }
 
@@ -13238,11 +13610,12 @@ void Session::validate_restored_state() const
         if (a.life.hp > max_hp(a))
             throw std::runtime_error("Invalid checkpoint Hit Points");
     for (const auto &a : actors_)
-        if (a.horde_origin && std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
+        for (const auto origin : {a.horde_origin, a.prey_origin})
+            if (origin && std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return other.source.id == a.horde_origin;
+        return other.source.id == origin;
     }))
-        throw std::runtime_error("Invalid Horde Breaker target");
+        throw std::runtime_error("Invalid Hunter's Prey target");
     validate_initiative();
     validate_check();
     validate_champion_move();
@@ -13666,7 +14039,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     }
     std::size_t zones{};
     input >> zones;
-    if (!input || zones > session->actors_.size())
+    if (!input || zones > 4 * session->actors_.size())
         throw std::runtime_error("Invalid spell zones");
     for (std::size_t n = 0; n < zones; ++n)
     {
@@ -13674,16 +14047,18 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         std::size_t cells{};
         unsigned kind{};
         input >> zone.caster >> kind >> zone.ends_ms >> zone.save_dc >> zone.dealt >> zone.warded >>
-              cells;
-        // Only Grease and Guardian of Faith keep time; every other zone ends
-        // with Concentration. Grease outlasts a caster who has since run off
-        // the field.
+              zone.slot >> cells;
+        // Only Grease, Guardian of Faith and Plant Growth keep time; every
+        // other zone ends with Concentration. Grease outlasts a caster who has
+        // since run off the field.
         const bool timed = kind == static_cast<unsigned>(ZoneKind::grease) ||
-                           kind == static_cast<unsigned>(ZoneKind::guardian);
+                           kind == static_cast<unsigned>(ZoneKind::guardian) ||
+                           kind == static_cast<unsigned>(ZoneKind::overgrowth);
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::circle) ||
+                kind > static_cast<unsigned>(ZoneKind::overgrowth) || zone.slot > 9 ||
+                (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
@@ -13919,7 +14294,9 @@ class Module final : public RulesModule
         if (klass == CharacterClass::sorcerer && sheet.level >= 2)
             return {detail::metamagic_options()};
         if (klass == CharacterClass::rogue && sheet.level >= 6)
-            return {detail::rogue_expertise_options(sheet.grants)};
+            return {detail::expertise_options(detail::expertise_picks[0], sheet.grants)};
+        if (klass == CharacterClass::ranger && sheet.level >= 9)
+            return {detail::expertise_options(detail::expertise_picks[1], sheet.grants)};
         if (klass == CharacterClass::bard && sheet.level >= 3)
             return {detail::lore_options(sheet.grants)};
         if (klass == CharacterClass::druid && sheet.level >= 3)
@@ -14087,8 +14464,9 @@ class Module final : public RulesModule
         if (klass == CharacterClass::fighter && (result.level == 4 || result.level == 10))
             result.training = {
                 detail::mastery_options(CharacterClass::fighter, result.level, sheet.grants)};
-        if (klass == CharacterClass::rogue && result.level == 6)
-            result.training = {detail::rogue_expertise_options(sheet.grants)};
+        for (const auto &pick : detail::expertise_picks)
+            if (klass == pick.klass && result.level == pick.level)
+                result.training = {detail::expertise_options(pick, sheet.grants)};
         // The Champion's Additional Fighting Style: a Fighting Style feat it
         // does not have yet.
         if (klass == CharacterClass::fighter && result.level == 7)
@@ -14254,6 +14632,17 @@ class Module final : public RulesModule
             result.description =
                 "Hunter: Defensive Tactics. Escape the Horde gives Opportunity Attacks against you Disadvantage; Multiattack Defense gives a creature that hits you Disadvantage on its other attacks against you this turn. You can switch after a rest.\nA third level 2 spell slot.";
         if (klass == CharacterClass::ranger && result.level == 8)
+            result.description = "A feat or ability points.";
+        if (klass == CharacterClass::ranger && result.level == 9)
+            result.description =
+                "Expertise in two more skills.\nLevel 3 spell slots and Ranger spells: Conjure Animals, Dispel Magic, Plant Growth, Protection from Energy, Revivify and Wind Wall.\nA fourth free Hunter's Mark (Favored Enemy); Proficiency Bonus +4.";
+        if (klass == CharacterClass::ranger && result.level == 10)
+            result.description =
+                "Tireless: a Magic action gives you 1d8 + your Wisdom modifier in Temporary Hit Points, as many times as your Wisdom modifier per Long Rest.";
+        if (klass == CharacterClass::ranger && result.level == 11)
+            result.description =
+                "Hunter: Superior Hunter's Prey. Once a turn, after you damage the creature your Hunter's Mark marks, the mark's damage can also strike another creature within 30 feet of it.\nA second level 3 spell slot.";
+        if (klass == CharacterClass::ranger && result.level == 12)
             result.description = "A feat or ability points.";
         if (klass == CharacterClass::paladin && result.level == 5)
             result.description =
@@ -14695,7 +15084,7 @@ class Module final : public RulesModule
                     : id == "subclass:druid:land" ? "land:" + value
                     : id == detail::champion_style ? "feat:" + value
                     : id == detail::defensive_tactics ? "tactics:" + value
-                    : id == detail::rogue_expertise_6 ? "expertise:" + value
+                    : detail::expertise_pick(id) ? "expertise:" + value
                     : "mastery:" + value,
                     id,
                     static_cast<unsigned>(next.level),
@@ -16393,7 +16782,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.210", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.211", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

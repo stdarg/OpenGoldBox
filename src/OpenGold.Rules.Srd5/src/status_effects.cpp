@@ -128,7 +128,7 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::moonlit && kind != EffectKind::scorched &&
             kind != EffectKind::stunned && kind != EffectKind::staggered &&
             kind != EffectKind::dazed && kind != EffectKind::smite_protected &&
-            kind != EffectKind::faith_tested) ||
+            kind != EffectKind::faith_tested && kind != EffectKind::pack_tested) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -524,7 +524,8 @@ void apply_searing_smite(EffectState &effects, EffectSource source,
 // bonus of at most 10.
 int benefit_value_limit(EffectKind kind)
 {
-    return kind == EffectKind::resistance || kind == EffectKind::dragons_breath
+    return kind == EffectKind::resistance || kind == EffectKind::dragons_breath ||
+           kind == EffectKind::energy_ward
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
@@ -557,6 +558,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::see_invisibility:
     case EffectKind::hidden:
     case EffectKind::free_moving:
+    case EffectKind::energy_ward:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -598,6 +600,7 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 600000; // 10 minutes
     case EffectKind::metamagic:
     case EffectKind::defended:
+    case EffectKind::pack_moved:
         return 6000; // the rest of the turn, cleared when it ends
     case EffectKind::extended:
         return 1200000; // a doubled 10-minute Concentration
@@ -834,10 +837,10 @@ namespace
 {
 // A saved effect kind, checked before it becomes an EffectKind so the reader
 // compares kinds rather than casting numbers (Effective C++ Item 27).
-// heroic_inspiration is the last kind.
+// EffectKind::last is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::ensnaring))
+    if (value > static_cast<unsigned>(EffectKind::last))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }
@@ -871,7 +874,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::staggered || kind == EffectKind::studied ||
                            kind == EffectKind::staggering || kind == EffectKind::sundered ||
                            kind == EffectKind::dazed || kind == EffectKind::smite_protected ||
-                           kind == EffectKind::faith_tested ||
+                           kind == EffectKind::faith_tested || kind == EffectKind::pack_tested ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||

@@ -17,11 +17,15 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 | 6 | Roving | Speed delivered (rules 0.6.210); Climb and Swim Speeds cut (SCOPE-2) |
 | 7 | Defensive Tactics (Hunter) | Delivered (rules 0.6.210) |
 | 8 | Ability Score Improvement | Delivered (rules 0.6.210) |
+| 9 | Expertise, level-3 spells | Delivered (rules 0.6.211) |
+| 10 | Tireless | Temporary Hit Points delivered (rules 0.6.211); the Exhaustion half has nothing to act on |
+| 11 | Superior Hunter's Prey (Hunter) | Delivered (rules 0.6.211) |
+| 12 | Ability Score Improvement | Delivered (rules 0.6.211) |
 
 ## Levels 5–15
 
-The Ranger advances to level 8 for now; level 9 waits for its level-3 spells
-([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+The Ranger advances to level 12 for now; level 13 waits for its level-4
+spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 - **Extra Attack** (5): two attacks with each Attack action.
@@ -46,13 +50,65 @@ The Ranger advances to level 8 for now; level 9 waits for its level-3 spells
   - **Multiattack Defense:** a creature that hits the Ranger with an attack
     roll has Disadvantage on its other attack rolls against the Ranger until
     that turn ends.
-- **Ability Score Improvement** (8): a feat or ability points.
-- Verification: `opengold_ranger_levels_tests` (the campaign's stop at 8,
+- **Ability Score Improvement** (8 and 12): a feat or ability points.
+- **Expertise** (9): two skills the Ranger is proficient in, chosen in the
+  level-up Training dropdown ("Ranger Expertise"), as the Rogue's at 6.
+- **Level-3 spells** (9): two level-3 slots at 9 and 10, three from 11;
+  prepared spells 9, 9, 10, 10 at levels 9–12. The list gains Conjure
+  Animals, Dispel Magic, Plant Growth, Protection from Energy, Revivify and
+  Wind Wall (below). Daylight, Meld into Stone, Nondetection, Speak with
+  Plants, Water Breathing and Water Walk are cut (LEVELS-1).
+- **Tireless** (10): a Magic action gives the Ranger 1d8 + its Wisdom
+  modifier (at least 1) Temporary Hit Points, as many times as its Wisdom
+  modifier (at least once) per Long Rest ("Tireless" in the resources). The
+  game has no Exhaustion, so the Short Rest's lowering of it does nothing.
+- **Superior Hunter's Prey** (Hunter 11): once a turn, after the Ranger
+  damages the creature its Hunter's Mark marks on its own turn, the A cycle
+  offers **Superior Hunter's Prey** against each other enemy it can see within
+  30 feet of that creature; the click deals the mark's 1d6 Force damage to it
+  (LEVELS-2). The party AI uses it whenever it is offered.
+- Verification: `opengold_ranger_levels_tests` (the campaign's stop at 12,
   features by level, prepared counts 5 at level 4 to 7 at 8, the level-2
   spells preparable, slots, Favored Enemy's count, Roving, Extra Attack,
   Escape the Horde on an Opportunity Attack, Multiattack Defense after a hit
   and not after a miss, the rest swap, Ensnaring Strike from a level-2 slot
-  and its checkpoint, a campaign round trip).
+  and its checkpoint, a campaign round trip; Expertise at 9, prepared counts
+  and slots to 12, the level-3 spells preparable, Tireless, Superior Hunter's
+  Prey's targets and checkpoint, and each level-3 spell below).
+
+### The level-3 spells
+
+- **Protection from Energy** (Action, touch, Concentration up to 1 hour): the
+  A cycle offers one entry per type, Acid, Cold, Fire, Lightning or Thunder;
+  the creature resists it.
+- **Conjure Animals** (Action, 60 feet, Concentration up to 10 minutes): aimed
+  like Entangle, a Large pack of spirits fills two squares by two. Each enemy
+  the Ranger can see makes a Dexterity save the first time in a turn it comes
+  within 10 feet of the pack (moving there, or the pack moving near it) or
+  ends its turn there, taking 3d10 Slashing damage on a failure (1d10 more for
+  each slot level above 3). The Ranger has Advantage on Strength saves within
+  5 feet of its pack. After the Ranger moves on its turn, **Move spirit pack**
+  in the A cycle moves the pack up to 30 feet; adaptation: as with Moonbeam,
+  the click picks a creature, and the pack goes to the free space it can
+  reach nearest that creature.
+- **Wind Wall** (Action, 120 feet, Concentration up to 1 minute): a straight
+  wall 50 feet long through the aimed square; the A cycle offers it
+  horizontal, vertical or along either diagonal (LEVELS-3). Each creature in
+  it makes a Strength save against 4d8 Bludgeoning damage, half on a success.
+  Ranged weapon attacks shot across the wall miss ("The wind deflects the
+  shot."). Its wall is drawn on the map. Small flying creatures and gases are
+  not modeled.
+- **Plant Growth** (Action, 150 feet, Overgrowth only): every square with
+  ordinary plants within 100 feet of the aimed square becomes overgrown for
+  the rest of the fight: moving into one costs 20 feet (4 feet for each foot).
+  A square has plants when the original's map square it comes from is open to
+  the sky ([outdoor areas](OUTDOOR-AREAS.md), LEVELS-1); indoors the spell
+  does nothing. The caster cannot exclude areas. The Scoured Lands' barren
+  ground, which grows plants only after Yarash is defeated, comes with the
+  Central Wilderness's fights, which the game does not have yet. Enrichment
+  has nothing to act on.
+- Combat checkpoints became `OGCOMBAT 56` (the battlefield's plants, each
+  zone's slot level, Superior Hunter's Prey's state).
 
 ## Spellcasting
 

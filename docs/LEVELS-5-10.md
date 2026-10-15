@@ -20,7 +20,8 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
   ([Spell slots](SPELL-SLOTS.md)).
 - Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)), with every
   kept Paladin spell.
-- Ranger to level 8: done ([Ranger](RANGER.md#levels-515)).
+- Ranger to level 12: done ([Ranger](RANGER.md#levels-515)), with the first
+  wall (Wind Wall) and Plant Growth's Overgrowth.
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
   [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,

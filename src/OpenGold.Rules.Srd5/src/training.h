@@ -2,14 +2,26 @@
 #define OPENGOLD_SRD5_TRAINING_H
 #include "character_class.h"
 #include "opengold/character_rules.h"
+#include <array>
 
 namespace opengold::srd5::detail
 {
 rules::TrainingChoiceGroup scholar_options(std::span<const rules::FeatureGrant> grants);
-// The Rogue's Expertise at level 6: two skills it is proficient in, without
-// Expertise from another source.
-inline constexpr std::string_view rogue_expertise_6 = "class:rogue:expertise:6";
-rules::TrainingChoiceGroup rogue_expertise_options(std::span<const rules::FeatureGrant> grants);
+// Expertise a class gains at a level (Rogue 6, Ranger 9): two skills it is
+// proficient in, without Expertise from another source.
+struct ExpertisePick
+{
+    CharacterClass klass;
+    unsigned level;
+    std::string_view source, label;
+};
+inline constexpr std::array expertise_picks{
+    ExpertisePick{CharacterClass::rogue, 6, "class:rogue:expertise:6", "Rogue Expertise"},
+    ExpertisePick{CharacterClass::ranger, 9, "class:ranger:expertise:9", "Ranger Expertise"}};
+// The pick whose grants come from `source`, or none.
+const ExpertisePick *expertise_pick(std::string_view source);
+rules::TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
+        std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup metamagic_options();
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);

@@ -559,10 +559,21 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
-TrainingChoiceGroup rogue_expertise_options(std::span<const FeatureGrant> grants)
+const ExpertisePick *expertise_pick(std::string_view source)
 {
-    TrainingChoiceGroup group{std::string(rogue_expertise_6), "Rogue Expertise", 2, {}};
-    group.acquired_level = 6;
+    const auto found = std::find_if(expertise_picks.begin(), expertise_picks.end(),
+                                    [&](const auto & pick)
+    {
+        return pick.source == source;
+    });
+    return found == expertise_picks.end() ? nullptr : &*found;
+}
+
+TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
+                                      std::span<const FeatureGrant> grants)
+{
+    TrainingChoiceGroup group{std::string(pick.source), std::string(pick.label), 2, {}};
+    group.acquired_level = pick.level;
     group.control = TrainingChoiceControl::checkboxes;
     for (const auto &skill : skills)
     {
@@ -1013,10 +1024,11 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 selected.push_back(grant.id.substr(6));
                 continue;
             }
-            if (grant.source_id == rogue_expertise_6)
+            if (const auto *pick = expertise_pick(grant.source_id))
             {
-                require(klass == CharacterClass::rogue && grant.level == 6 && grant.choices.empty());
-                const auto group = rogue_expertise_options(grants);
+                require(klass == pick->klass && grant.level == pick->level &&
+                        grant.choices.empty());
+                const auto group = expertise_options(*pick, grants);
                 require(std::any_of(group.options.begin(), group.options.end(),
                                     [&](const auto & option)
                 {
@@ -1104,7 +1116,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     require(required.empty());
     auto starting = choices;
     starting.erase("class:wizard:scholar");
-    starting.erase(std::string(rogue_expertise_6));
+    for (const auto &pick : expertise_picks)
+        starting.erase(std::string(pick.source));
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:warlock:invocations:2");
@@ -1168,8 +1181,9 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
         result.complete &= picked.size() == 3;
     if (source(grants, std::string(lessons_skilled)))
         result.complete &= selected(choices, lessons_skilled).size() == 3;
-    if (klass == CharacterClass::rogue && level >= 6)
-        result.complete &= selected(choices, rogue_expertise_6).size() == 2;
+    for (const auto &pick : expertise_picks)
+        if (klass == pick.klass && level >= pick.level)
+            result.complete &= selected(choices, pick.source).size() == 2;
     for (const auto &g : grants)
         require(g.source_id != hall_training || g.level <= level);
     const auto &lore = selected(choices, "subclass:bard:lore");

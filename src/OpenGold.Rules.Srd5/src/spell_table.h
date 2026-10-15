@@ -130,7 +130,11 @@ enum class Rider : unsigned
     banishment,
     remove_curse,
     revivify,
-    magic_circle
+    magic_circle,
+    protection_from_energy,
+    conjure_animals,
+    wind_wall,
+    plant_growth
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -170,6 +174,9 @@ struct SpellDef
     bool not_self{};      // offered only on another creature
     int line{};           // or the length of a 10-foot-wide line from the caster, feet
     bool narrow_line{};   // the line is 5 feet wide instead
+    // or the length of a straight wall through the aimed square, feet, in a
+    // direction the verb names (LEVELS-3)
+    int wall{};
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -1357,6 +1364,59 @@ inline constexpr std::array spell_table
         .rider = Rider::magic_circle,
         .concentration = true,
         .radius = 10},
+    // SRD 5.2.1 p. 157: Resistance to one of five types, chosen at the casting.
+    SpellDef{
+        .id = "protection_from_energy",
+        .label = "Protection from Energy",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::protection_from_energy,
+        .concentration = true},
+    // SRD 5.2.1 p. 117: a Large pack of spirits; creatures that come within 10
+    // feet of it make a Dexterity save, once a turn, or take the damage.
+    SpellDef{
+        .id = "conjure_animals",
+        .label = "Conjure Animals",
+        .level = 3,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .damage = DamageType::slashing,
+        .dice = {3, 10, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::conjure_animals,
+        .concentration = true,
+        .area = 10},
+    // SRD 5.2.1 p. 174: a wall 50 feet long; its wind turns ordinary
+    // projectiles shot across it.
+    SpellDef{
+        .id = "wind_wall",
+        .label = "Wind Wall",
+        .level = 3,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::strength,
+        .half_on_success = true,
+        .damage = DamageType::bludgeoning,
+        .dice = {4, 8, 0},
+        .rider = Rider::wind_wall,
+        .concentration = true,
+        .evocation = true,
+        .wall = 50},
+    // SRD 5.2.1 p. 153: Overgrowth only; Enrichment has nothing to act on.
+    SpellDef{
+        .id = "plant_growth",
+        .label = "Plant Growth",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 150,
+        .rider = Rider::plant_growth,
+        .radius = 100},
     // SRD 5.2.1 p. 159: a creature dead no more than a minute returns with 1
     // Hit Point. The offering is 300 gp times its level (LEVELS-1); the reach
     // is 10 feet, not touch (LEVELS-2).
@@ -1614,9 +1674,47 @@ inline std::optional<int> guidance_skill(std::string_view verb)
     return static_cast<int>(found - guidance_skills.begin());
 }
 
+// Protection from Energy's damage types, each offered as
+// "protection_from_energy_<type>".
+inline constexpr std::array<std::string_view, 5> energy_types{"acid", "cold", "fire",
+    "lightning", "thunder"};
+
+// The damage type a Protection from Energy verb names, if it is one.
+inline std::optional<DamageType> energy_type(std::string_view verb)
+{
+    verb = without_cast_suffix(verb);
+    if (!verb.starts_with("protection_from_energy_"))
+        return std::nullopt;
+    verb.remove_prefix(23);
+    if (std::find(energy_types.begin(), energy_types.end(), verb) == energy_types.end())
+        return std::nullopt;
+    return damage_type(verb);
+}
+
+// A wall's directions on the battle map (LEVELS-3), each offered as
+// "<spell>_<direction>": along a row, along a column, or along either diagonal.
+inline constexpr std::array<std::string_view, 4> wall_directions{"horizontal", "vertical",
+    "rising", "falling"};
+
+// The direction a wall verb names, as an index into wall_directions, if it
+// names one.
+inline std::optional<std::size_t> wall_direction(std::string_view verb)
+{
+    verb = without_cast_suffix(verb);
+    for (std::size_t n = 0; n < wall_directions.size(); ++n)
+        if (verb.ends_with(wall_directions[n]) && verb.size() > wall_directions[n].size() &&
+                verb[verb.size() - wall_directions[n].size() - 1] == '_')
+            return n;
+    return std::nullopt;
+}
+
 inline const SpellDef *find_spell(std::string_view id)
 {
     id = without_cast_suffix(id);
+    if (energy_type(id))
+        id = "protection_from_energy";
+    if (const auto direction = wall_direction(id))
+        id.remove_suffix(wall_directions[*direction].size() + 1);
     if (command_option(id))
         id = "command";
     if (resistance_type(id))

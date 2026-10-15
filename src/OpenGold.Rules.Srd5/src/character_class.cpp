@@ -101,8 +101,8 @@ unsigned level_cap(CharacterClass character_class)
            character_class == CharacterClass::monk ||
            character_class == CharacterClass::rogue ||
            character_class == CharacterClass::paladin ? 15
-           // A Ranger stops at 8 until its level-3 spells exist.
-           : character_class == CharacterClass::ranger ? 8 : 4;
+           // A Ranger stops at 12 until its level-4 spells exist.
+           : character_class == CharacterClass::ranger ? 12 : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)

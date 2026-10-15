@@ -50,12 +50,15 @@ func _draw() -> void:
         var kind: int = terrain[i]
         var color_name := "terrain_obstacle" if kind == 2 else \
             "terrain_difficult" if kind == 1 else \
+            "terrain_overgrown" if kind == 3 else \
             "terrain_odd" if (cell.x + cell.y) % 2 else "terrain_even"
         draw_rect(rect, _palette(color_name))
         if art[i] is Texture2D:
             draw_texture_rect(art[i], rect, false)
         else:
             draw_rect(rect, _palette("terrain_missing"), false)
+        if kind == 3:
+            draw_rect(rect, _palette("combat_overgrowth_overlay"))
     for overlay in data["overlays"]:
         var cell: Vector2i = overlay["cell"]
         var kind: String = overlay["kind"]
@@ -75,11 +78,14 @@ func _draw() -> void:
                 "silence": "combat_silence_overlay",
                 "moonbeam": "combat_moonbeam_overlay",
                 "circle": "combat_circle_overlay",
+                "spirits": "combat_spirits_overlay",
+                "wall": "combat_wall_overlay",
                 "obscured": "combat_obscured_overlay",
                 "area": "combat_area_overlay",
                 "effect_focus": "combat_effect_focus_overlay",
             }.get(kind, "combat_target_overlay")
-            draw_rect(rect if kind in ["silence", "moonbeam", "obscured", "circle"] \
+            draw_rect(rect if kind in ["silence", "moonbeam", "obscured", "circle", "spirits",
+                    "wall"] \
                 else _cell_rect(cell, tile, inset), _palette(color_name))
     var font := get_theme_default_font()
     var marker_size := int(_metric("combat_marker_font_size"))

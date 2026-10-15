@@ -1108,6 +1108,44 @@ it:
 - **Ranger prepared spells** follow the SRD table (p. 58), 5 at level 4.
 - **Expertise** at Rogue 6, Bard 9 and Ranger 9 stands as LEVELS-1 decided.
 
+## LEVELS-3 (2026-10-15): the open decisions of levels 11–15
+
+The user answered the [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md)'s
+open decisions, with two questions the work on every class to 15 raised:
+
+- **Walls** (Wind Wall; later Wall of Fire, Wall of Force, Wall of Stone, Wall
+  of Ice, Wall of Thorns and Blade Barrier) are straight lines of squares
+  centred on the aimed square. More A-cycle entries pick the direction:
+  horizontal, vertical or either diagonal. A spell that allows a ring also
+  gets a ring entry. The SRD lets the caster shape a wall freely.
+- **Bard Expertise at level 2** is built too, replacing SCOPE-2's skip for it.
+- **Costly components:** Resurrection takes the same offering as Raise Dead,
+  300 gp × the revived character's level. Heroes' Feast, Forcecage, True
+  Seeing and Simulacrum stay free, as CLASS-11 made components.
+- **Animal Shapes** and the undead of Create Undead and Finger of Death end
+  with the fight, as Wild Shape (WILD-1) and Animate Dead's corpses do.
+- **Disintegrate:** Resurrection can revive a creature turned to dust; Raise
+  Dead and Revivify cannot. The SRD needs level-9 magic, beyond the cap.
+- **Dragon Wings** (Draconic Sorcerer 14): flight is cut, so while the wings
+  are out the Sorcerer ignores Difficult Terrain and may move through
+  enemies' squares, for the hour the wings last (once per Long Rest, or for 3
+  Sorcery Points).
+- **The UNSURE spells:** kept, working as below; Clone is cut.
+  - **Contingency:** the stored spell fires on a trigger picked from a fixed
+    menu (dropping to half Hit Points, a fight starting, dropping to 0).
+  - **Magic Jar:** works as Dominate Person on a Humanoid while the caster's
+    body lies helpless on the battlefield.
+  - **Word of Recall:** the party returns from anywhere to a temple in New
+    Phlan prepared earlier with the spell.
+  - **Teleport:** fast travel, without mishaps, to towns and areas the party
+    has visited.
+  - **Reverse Gravity:** falling damage on the PUSH-1 scale; lifted creatures
+    are out of melee reach until it ends, then take falling damage again.
+  - **Simulacrum:** a lasting copy of a Beast or Humanoid with half its Hit
+    Points that joins the party as a controlled creature.
+  - **Tsunami:** a wall of water that moves across the battlefield, with
+    Strength saves, damage and a push each round.
+
 ## PUSH-1 (2026-10-14): pushed into a wall
 
 The SRD gives no damage for a push that a wall stops. The user approved one,

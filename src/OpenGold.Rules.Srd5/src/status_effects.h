@@ -245,9 +245,17 @@ enum class EffectKind : unsigned
     // hit it this turn, its source, attacks it with Disadvantage until the
     // turn ends.
     defended = 96,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // Ensnaring Strike's vines, on its caster: `dc` is how many d6 they deal.
-    ensnaring = 97
+    ensnaring = 97,
+    // Protection from Energy: Resistance to the DamageType in `dc`.
+    energy_ward = 98,
+    // Conjure Animals: the creature has saved against a spirit pack this turn.
+    pack_tested = 99,
+    // Conjure Animals, on its caster: the pack has moved this turn.
+    pack_moved = 100,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // Plant Growth's Overgrowth has no effect kind; it is a zone.
+    last = pack_moved
 };
 
 // Magic Circle's creature types, by `dc`.

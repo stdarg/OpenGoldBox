@@ -283,12 +283,25 @@ void boundaries_and_ties()
         (void)MovementGrid(invalid, {0, 0}, {});
     });
     invalid = board;
-    invalid.terrain[0] = static_cast<Terrain>(3);
+    invalid.terrain[0] = static_cast<Terrain>(4);
     rejects(
         [&]
     {
         (void)MovementGrid(invalid, {0, 0}, {});
     });
+    invalid = board;
+    invalid.plants.assign(2, true);
+    rejects(
+        [&]
+    {
+        (void)MovementGrid(invalid, {0, 0}, {});
+    });
+
+    // Plant Growth's Overgrowth: 4 feet of movement for each foot.
+    auto overgrown = board;
+    overgrown.terrain[4] = Terrain::overgrown;
+    check(MovementGrid(overgrown, {0, 1}, {}).step_cost({0, 1}, {1, 1}) == 20,
+          "An overgrown square costs 20 feet");
 
     board.terrain[4] = Terrain::difficult;
     const std::vector<Occupant> ally{{{1, 1}, false}};

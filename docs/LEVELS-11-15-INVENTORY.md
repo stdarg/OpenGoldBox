@@ -575,20 +575,24 @@ Every spell below was already triaged in the 5–10 inventory.
    class, and the Training Hall's limit is one level for every class.
 2. **The eight UNSURE spells** (questions in section 3): Contingency, Magic
    Jar, Word of Recall, Reverse Gravity, Simulacrum, Teleport, Clone, Tsunami.
+   Answered by [LEVELS-3](SRD-DECISIONS.md#levels-3-2026-10-15-the-open-decisions-of-levels-1115): all kept but Clone.
 3. **Costly consumed components.** CLASS-11 makes them free, and LEVELS-1
    priced only Revivify and Raise Dead. Should Resurrection (1,000 gp diamond)
    take the same 300 gp × level offering? And Heroes' Feast (1,000 gp),
    Forcecage (1,500 gp), Simulacrum (1,500 gp), Clone (1,000 gp) and True
-   Seeing (25 gp): free, or charged?
+   Seeing (25 gp): free, or charged? Answered by LEVELS-3: only Resurrection
+   pays the offering.
 4. **Disintegrate's dust.** Only True Resurrection or Wish (level 9, beyond
    the cap) revive a disintegrated creature, so a party member dusted by a
    monster caster is gone for good. Accept that, or let Resurrection work?
+   Answered by LEVELS-3: Resurrection works.
 5. **Smite of Protection** (Devotion 15) only grants Half Cover, which COVER-1
    removed, so the Devotion Paladin would get nothing at 15. Answered by
    LEVELS-2: it gives Half Cover's +2 AC and +2 to Dexterity saves instead.
    (Nature's Sanctuary keeps its Resistance half.)
 6. **Dragon Wings** (Draconic 14): cut with flight, as Fly was? Draconic
-   Sorcery then has no usable feature at 14.
+   Sorcery then has no usable feature at 14. Answered by LEVELS-3: the wings
+   let the Sorcerer ignore Difficult Terrain and move through enemies.
 7. **Timing and post-roll choices.** Proposed: Peerless Skill applies on its
    own (BARD-1); Disciplined Survivor's Focus reroll is used without asking,
    like Indomitable (LEVELS-1); Persistent Rage triggers at Initiative when a
@@ -602,9 +606,11 @@ Every spell below was already triaged in the 5–10 inventory.
 9. **Animal Shapes** lasts 24 hours without Concentration. Do its forms end
    with the fight, as Wild Shape does (WILD-1), or last into later fights like
    other long buffs (LEVELS-1)? It also needs CR 2–4 beast forms with art.
+   Answered by LEVELS-3: they end with the fight.
 10. **Raised undead.** Do Create Undead's Ghouls and Finger of Death's Zombie
     stay as companions between fights, or end with the fight in which their
     corpses were raised (as LEVELS-1 limits Animate Dead's corpses)?
+    Answered by LEVELS-3: they end with the fight.
 
 ## Attribution
 

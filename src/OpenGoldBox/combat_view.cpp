@@ -2637,7 +2637,9 @@ Dictionary CombatView::battlefield_visuals()
         for (int x = 0; x < s.battlefield.width; ++x)
         {
             const auto kind = s.battlefield.at({x, y});
-            terrain.push_back(kind == Terrain::obstacle ? 2 : kind == Terrain::difficult ? 1 : 0);
+            terrain.push_back(kind == Terrain::obstacle ? 2
+                              : kind == Terrain::difficult ? 1
+                              : kind == Terrain::overgrown ? 3 : 0);
             const auto index = y * s.battlefield.width + x;
             if (std::cmp_less(index, demo_->battlefield_tiles().size()) &&
                     demo_->battlefield_tiles()[index] < terrain_art_.size())
@@ -2692,6 +2694,10 @@ Dictionary CombatView::battlefield_visuals()
         add_overlay(cell, "guardian");
     for (const auto cell : s.circles)
         add_overlay(cell, "circle");
+    for (const auto cell : s.spirits)
+        add_overlay(cell, "spirits");
+    for (const auto cell : s.walls)
+        add_overlay(cell, "wall");
     for (const auto cell : s.moonbeams)
         add_overlay(cell, "moonbeam");
     for (const auto cell : s.obscured)

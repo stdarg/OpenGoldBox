@@ -225,6 +225,16 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
             add("feature:extra_attack", "class:ranger");
         if (level == 6)
             add("feature:roving", "class:ranger");
+        if (level == 10)
+            add("feature:tireless", "class:ranger");
+        if (level == 11)
+            add("feature:superior_hunters_prey", "subclass:ranger:hunter");
+        if (level == 13)
+            add("feature:relentless_hunter", "class:ranger");
+        if (level == 14)
+            add("feature:natures_veil", "class:ranger");
+        if (level == 15)
+            add("feature:superior_hunters_defense", "subclass:ranger:hunter");
     }
     // Acrobatic Movement (Monk 9) is cut (SCOPE-2).
     if (klass == CharacterClass::monk)
