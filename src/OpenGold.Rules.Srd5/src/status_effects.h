@@ -176,8 +176,11 @@ enum class EffectKind : unsigned
     frosts_chill = 73,
     // Heightened Spell: Disadvantage on every save against one spell of the
     // source's; `dc` is the spell's spell_index().
+    heightened = 74,
+    // Brutal Strike's Hamstring Blow: Speed 15 feet lower until the start of
+    // the Barbarian's next turn.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    heightened = 74
+    hamstrung = 75
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -309,6 +312,9 @@ void apply_ray_of_frost(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 void apply_frosts_chill(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
+// Hamstring Blow: a newer blow replaces an older one, whoever struck it.
+void apply_hamstring(EffectState &effects, EffectSource source, std::string name,
+                     unsigned duration_ms);
 // Whether Heightened Spell marked the creature for the source's spell.
 [[nodiscard]] bool heightened_against(const EffectState &effects, std::uint64_t source_scope,
                                       rules::EntityId source_actor, std::string_view spell);

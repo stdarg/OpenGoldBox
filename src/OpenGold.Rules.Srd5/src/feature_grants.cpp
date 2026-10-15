@@ -141,6 +141,25 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 10)
             add("feature:heroic_warrior", "subclass:fighter:champion");
     }
+    if (klass == CharacterClass::barbarian)
+    {
+        if (level == 5)
+        {
+            add("feature:extra_attack", "class:barbarian");
+            add("feature:fast_movement", "class:barbarian");
+        }
+        if (level == 6)
+            add("feature:mindless_rage", "subclass:barbarian:berserker");
+        if (level == 7)
+        {
+            add("feature:feral_instinct", "class:barbarian");
+            add("feature:instinctive_pounce", "class:barbarian");
+        }
+        if (level == 9)
+            add("feature:brutal_strike", "class:barbarian");
+        if (level == 10)
+            add("feature:retaliation", "subclass:barbarian:berserker");
+    }
     return result;
 }
 

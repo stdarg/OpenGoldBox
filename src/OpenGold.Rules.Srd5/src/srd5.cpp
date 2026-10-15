@@ -657,6 +657,8 @@ struct Definition
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool naturally_stealthy{}; // Halfling: a larger creature is enough to hide behind
     bool tactical_shift{}, tactical_master{}, heroic_warrior{};
+    // Barbarian levels 5-10.
+    bool feral_instinct{}, mindless_rage{}, instinctive_pounce{}, brutal_strike{}, retaliation{};
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
          two_weapon_fighting{};
     unsigned sneak_level{};
@@ -760,6 +762,9 @@ struct Actor
     bool bonus{true}, reaction{true}, dodge{}, disengaged{};
     bool spent_slot{}, savage_used{}, facing_left{};
     bool sneak_used{}, aim_used{}, aim_ready{}, moved{};
+    bool attacked{}; // made an attack roll on its own turn (Reckless Attack's first)
+    int pounce{};    // Instinctive Pounce's feet, usable only right after entering a Rage
+    bool brutal_used{}; // Brutal Strike, once on each of its turns
     // The straight line just moved along this turn, for a Boar's charge: its
     // first and last cells, the step repeated and its length. Any command but
     // moving or a melee attack ends it.
@@ -1160,6 +1165,8 @@ struct ChampionMove
     Cell trigger_origin{}, target_origin{};
     // Tactical Shift (Fighter 5): the same free move, after Second Wind.
     bool shift{};
+    // Forceful Blow (Barbarian 9): the free move must close on this creature.
+    EntityId toward{};
 };
 
 struct PendingMastery
@@ -1303,10 +1310,10 @@ character_definition(std::string_view bytes,
         d.size = 1;
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
-    d.rages = klass == CharacterClass::barbarian ? (level >= 3 ? 3 : 2) : 0;
+    d.rages = klass == CharacterClass::barbarian ? (level >= 6 ? 4 : level >= 3 ? 3 : 2) : 0;
     d.wild_shapes = klass == CharacterClass::druid && level >= 2 ? 2 : 0;
     d.lands_aid = klass == CharacterClass::druid && level >= 3;
-    d.rage_damage = klass == CharacterClass::barbarian ? 2 : 0;
+    d.rage_damage = klass == CharacterClass::barbarian ? (level >= 9 ? 3 : 2) : 0;
     d.strength = str;
     d.danger_sense = d.reckless = klass == CharacterClass::barbarian && level >= 2;
     d.frenzy = klass == CharacterClass::barbarian && level >= 3;
@@ -1345,7 +1352,13 @@ character_definition(std::string_view bytes,
     d.melee_bonus = proficiency + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
     d.champion = klass == CharacterClass::fighter && level >= 3;
-    d.extra_attacks = klass == CharacterClass::fighter && level >= 5 ? 1 : 0;
+    d.extra_attacks =
+        (klass == CharacterClass::fighter || klass == CharacterClass::barbarian) && level >= 5 ? 1 : 0;
+    const bool barbarian = klass == CharacterClass::barbarian;
+    d.mindless_rage = barbarian && level >= 6;
+    d.feral_instinct = d.instinctive_pounce = barbarian && level >= 7;
+    d.brutal_strike = barbarian && level >= 9;
+    d.retaliation = barbarian && level >= 10;
     d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
     d.tactical_master = klass == CharacterClass::fighter && level >= 9;
     d.heroic_warrior = klass == CharacterClass::fighter && level >= 10;
@@ -1690,6 +1703,9 @@ character_definition(std::string_view bytes,
     // Unarmored Movement: 10 feet more without armor or a Shield.
     if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
         d.speed += 10;
+    // Fast Movement: 10 feet more without Heavy armor.
+    if (klass == CharacterClass::barbarian && level >= 5 && !d.heavy_armor)
+        d.speed += 10;
     if (d.martial_arts)
     {
         d.martial_modifier = std::max(str, dex);
@@ -1835,6 +1851,8 @@ VitalState vitals(const Actor &a)
         description += "\nSlow: Speed reduced by 10 feet.";
     if (detail::has_effect(a.effects, detail::EffectKind::frosts_chill))
         description += "\nFrost's Chill: Speed reduced by 10 feet.";
+    if (detail::has_effect(a.effects, detail::EffectKind::hamstrung))
+        description += "\nHamstring Blow: Speed reduced by 15 feet.";
     if (detail::blinded(a.effects))
         description += "\nBlinded";
     if (a.effects.prone)
@@ -1998,7 +2016,8 @@ class Session final : public CombatSession
             // A Druid still in a Beast form from earlier fights in that form.
             refresh_form(a);
             a.initiative =
-                detail::d20({d.champion, d.str_dex_disadvantage || a.source.surprised, d.lucky},
+                detail::d20({d.champion || d.feral_instinct,
+                             d.str_dex_disadvantage || a.source.surprised, d.lucky},
                             rng_) +
                 d.initiative;
             a.movement = a.form ? a.form->speed : d.speed;
@@ -2097,6 +2116,13 @@ class Session final : public CombatSession
         detail::Mastery kind{};
     };
     std::optional<TacticalMastery> tactical_mastery_;
+    // Brutal Strike (Barbarian 9): the attack it is chosen for, and its effect.
+    struct BrutalStrike
+    {
+        EntityId actor{};
+        bool forceful{}; // Forceful Blow; otherwise Hamstring Blow
+    };
+    std::optional<BrutalStrike> brutal_;
     std::optional<PendingMastery> mastery_;
     // Creatures chosen so far for a spell that affects several (CLASS-2).
     struct PendingSelection
@@ -2155,7 +2181,8 @@ class Session final : public CombatSession
         rebuke,   // an attack damaged a Warlock: Hellish Rebuke
         boon,     // a Goliath's attack roll hit and dealt damage: Fire's Burn and so on
         endure,   // an attack is about to damage a Goliath: Stone's Endurance
-        thunder   // an attack damaged a Goliath: Storm's Thunder
+        thunder,  // an attack damaged a Goliath: Storm's Thunder
+        retaliate // a creature within 5 feet damaged a Berserker: Retaliation
     };
     struct ReactionQuestion
     {
@@ -2225,6 +2252,7 @@ class Session final : public CombatSession
     void bless_fiends(const Actor &fallen);
     void rebuke(const Actor &attacker, Actor &warlock);
     void clouds_jaunt(Actor &goliath, Cell destination);
+    void retaliate(const Actor &attacker, Actor &berserker);
     void perform(const Command &command);
     void dispatch(const Command &command);
     void answer_reaction(const Command &command);
@@ -2697,6 +2725,11 @@ class Session final : public CombatSession
 
     [[nodiscard]] bool strength_attack(const Actor &a, AttackRange range) const;
     void attack_recklessly(Actor &a);
+    // Brutal Strike's blow after its hit: Forceful Blow pushes the target 15
+    // feet and lets the Barbarian follow; Hamstring Blow slows it.
+    void brutal_blow(Actor &barbarian, Actor &target, bool forceful);
+    // Mindless Rage (Berserker 6): raging, immune to Charmed and Frightened.
+    bool mindless(const Actor &a) const;
     int frenzy_damage(Actor &berserker, bool critical);
     // Enlarge or Reduce changes a weapon hit's damage.
     int resized_damage(const Actor &a, int amount);
@@ -3926,6 +3959,11 @@ Snapshot Session::snapshot() const
             messages.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
             view.conditions.push_back({"Ray of Frost: Speed reduced by 10 feet.", {}});
         }
+        if (detail::has_effect(a.effects, detail::EffectKind::hamstrung))
+        {
+            messages.push_back({"Hamstring Blow: Speed reduced by 15 feet.", {}});
+            view.conditions.push_back({"Hamstring Blow: Speed reduced by 15 feet.", {}});
+        }
         if (detail::has_effect(a.effects, detail::EffectKind::frosts_chill))
         {
             messages.push_back({"Frost's Chill: Speed reduced by 10 feet.", {}});
@@ -4276,6 +4314,13 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         log(target.source.name + " is hexed.", {"{name} is hexed.", {{"name", target.source.name}}});
         return;
     case detail::Rider::charm_person:
+        // Mindless Rage: a raging Berserker cannot be Charmed.
+        if (mindless(target))
+        {
+            log(target.source.name + "'s Mindless Rage shrugs off the charm.",
+            {"{name}'s Mindless Rage shrugs off the charm.", {{"name", target.source.name}}});
+            return;
+        }
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::charmed, 0);
         log(target.source.name + " is Charmed by " + a.source.name + ".",
@@ -4983,6 +5028,8 @@ std::vector<Command> Session::legal_commands() const
             add(who.source.id, "stones_endurance", "Stone's Endurance");
         else if (question.asked == Asked::thunder)
             add(who.source.id, "storms_thunder", "Storm's Thunder");
+        else if (question.asked == Asked::retaliate)
+            add(who.source.id, "retaliate", "Retaliation attack");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -5163,8 +5210,14 @@ std::vector<Command> Session::legal_commands() const
     if (champion_move_)
     {
         add(champion_move_->actor, "end", "Finish free move");
+        const auto &mover_cell = actor(champion_move_->actor).source.cell;
         for (const auto cell : movement_reach(champion_move_->actor))
-            add(champion_move_->actor, "move", "Free move", 0, cell);
+            // Forceful Blow's move closes on its target the whole way.
+            if (!champion_move_->toward ||
+                    distance(cell, actor(champion_move_->toward).source.cell) ==
+                    distance(mover_cell, actor(champion_move_->toward).source.cell) -
+                    distance(mover_cell, cell))
+                add(champion_move_->actor, "move", "Free move", 0, cell);
         return filtered();
     }
     if (check_choice_)
@@ -5602,8 +5655,17 @@ std::vector<Command> Session::legal_commands() const
             add(id, "hurl_flame", "Hurl flame (Produce Flame)", other.source.id);
         // Reckless Attack: chosen with the turn's first attack roll, which
         // is the Attack action's first attack.
-        if (feet <= d.reach && d.reckless && strength_attack(a, AttackRange::melee))
+        if (feet <= d.reach && d.reckless && !a.attacked && strength_attack(a, AttackRange::melee))
             add(id, "reckless", "Reckless attack", other.source.id);
+        // Brutal Strike: after Reckless Attack, once a turn, one Strength attack
+        // gives up its Advantage for 1d10 more damage and a blow.
+        if (feet <= d.reach && d.brutal_strike && !a.brutal_used &&
+                detail::has_effect(a.effects, detail::EffectKind::reckless) &&
+                strength_attack(a, AttackRange::melee))
+        {
+            add(id, "brutal_forceful", "Brutal Strike (Forceful Blow)", other.source.id);
+            add(id, "brutal_hamstring", "Brutal Strike (Hamstring Blow)", other.source.id);
+        }
         // True Strike: the cantrip's attack with the melee weapon in hand.
         if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
                 detail::knows_spell(d.spells, "true_strike") && a.actions.available(true))
@@ -7941,9 +8003,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (sanctuary_stops(a, target))
         return false;
     const auto &d = def(a);
-    const auto modifiers =
+    auto modifiers =
         attack_modifiers(a, target, range, spell ? AttackSource::spell : AttackSource::weapon);
+    // Brutal Strike gives up the roll's Advantage; a roll with Disadvantage
+    // cannot be chosen, so it stays an ordinary attack.
+    const bool brutal = brutal_ && brutal_->actor == a.source.id && !spell &&
+                        range == AttackRange::melee && !modifiers.disadvantage;
+    if (brutal)
+        modifiers.advantage = false;
     a.aim_ready = false;
+    if (actors_[turn_].source.id == a.source.id)
+        actor(a.source.id).attacked = true;
     // Guiding Bolt's Advantage is spent on this attack roll.
     std::erase_if(target.effects.active, [](const auto & e)
     {
@@ -8044,6 +8114,13 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     }
     if (hit && !spell)
         weapon_damage = resized_damage(a, weapon_damage);
+    if (hit && brutal)
+    {
+        const int extra = dice({1, 10, 0}, critical_hit(a, target, natural));
+        weapon_damage += extra;
+        log("Brutal Strike adds " + std::to_string(extra) + " damage.",
+        {"Brutal Strike adds {damage} damage.", {{"damage", std::to_string(extra)}}});
+    }
     // Colossus Slayer: once per turn, 1d8 more on a creature already missing HP.
     if (hit && !spell && d.colossus_slayer && !a.colossus_used && target.life.hp < max_hp(target))
     {
@@ -8142,6 +8219,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     }
     if (hit && amount > 0 && target.life.hp > 0)
         giant_boon(a, target, critical_hit(a, target, natural, spell));
+    if (hit && brutal && !target.life.dead)
+        brutal_blow(actor(a.source.id), target, brutal_->forceful);
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
     answer_damage();
     return hit;
@@ -8416,6 +8495,33 @@ void Session::attack_recklessly(Actor &a)
                            detail::EffectKind::reckless);
     log(a.source.name + " attacks recklessly.",
     {"{name} attacks recklessly.", {{"name", a.source.name}}});
+}
+
+void Session::brutal_blow(Actor &barbarian, Actor &target, bool forceful)
+{
+    if (!forceful)
+    {
+        detail::apply_hamstring(target.effects, effect_source(barbarian), barbarian.source.name,
+                                next_turn_ms(barbarian));
+        log(target.source.name + "'s Speed drops by 15 feet (Hamstring Blow).",
+        {"{name}'s Speed drops by 15 feet (Hamstring Blow).", {{"name", target.source.name}}});
+        return;
+    }
+    push_away(barbarian, target, 3);
+    // Then up to half Speed straight toward the target, provoking nothing.
+    if (const int feet = std::max(0, def(barbarian).speed -
+                                  detail::speed_penalty(barbarian.effects)) / 2;
+            feet > 0 && conscious(barbarian) && !champion_move_ && !target.life.dead)
+        champion_move_ = ChampionMove{.actor = barbarian.source.id,
+                                      .target = target.source.id,
+                                      .remaining = feet,
+                                      .origin = barbarian.source.cell,
+                                      .toward = target.source.id};
+}
+
+bool Session::mindless(const Actor &a) const
+{
+    return def(a).mindless_rage && rage_of(a);
 }
 
 bool Session::strength_attack(const Actor &a, AttackRange range) const
@@ -8761,6 +8867,9 @@ bool Session::begin_turn()
         actor.sneak_used = false;
         actor.aim_used = actor.aim_ready = false;
         actor.moved = false;
+        actor.attacked = false;
+        actor.pounce = 0;
+        actor.brutal_used = false;
         actor.run_feet = 0;
         actor.light_origins.clear();
         actor.light_extra = 0;
@@ -9131,6 +9240,7 @@ void Session::progress_movement()
         else
         {
             a.movement -= *cost;
+            a.pounce = std::max(0, a.pounce - *cost);
             a.moved = true;
             extend_run(a, departed, destination);
         }
@@ -9248,7 +9358,8 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
         return;
     const bool askable =
         asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::boon ||
-        asked == Asked::endure || asked == Asked::thunder || (can_shield(target) && !critical) ||
+        asked == Asked::endure || asked == Asked::thunder || asked == Asked::retaliate ||
+        (can_shield(target) && !critical) ||
         (asked == Asked::hit && can_deflect(target, deflectable));
     if (askable)
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
@@ -9587,6 +9698,23 @@ void Session::storms_thunder(const Actor &attacker, Actor &goliath)
     damage(foe, amount);
 }
 
+void Session::retaliate(const Actor &attacker, Actor &berserker)
+{
+    // Retaliation: a melee attack, with the Reaction, against a creature
+    // within 5 feet that damaged the Berserker.
+    if (!def(berserker).retaliation || attacker.source.side == berserker.source.side ||
+            !conscious(berserker) || !berserker.reaction ||
+            detail::incapacitated(berserker.effects) || attacker.life.dead ||
+            attacker.life.hp <= 0 || distance(berserker.source.cell, attacker.source.cell) > 5)
+        return;
+    ask_reaction(berserker, Asked::retaliate);
+    if (answer_of(berserker.source.id, Asked::retaliate)->verb != "retaliate")
+        return;
+    berserker.reaction = false;
+    log(berserker.source.name + " retaliates.", {"{name} retaliates.", {{"name", berserker.source.name}}});
+    attack(berserker, actor(attacker.source.id), AttackRange::melee);
+}
+
 void Session::clouds_jaunt(Actor &goliath, Cell destination)
 {
     // Teleporting provokes no Opportunity Attacks.
@@ -9607,6 +9735,7 @@ void Session::answer_damage()
         const auto [target, source] = damage_taken_[n];
         rebuke(actor(source), actor(target));
         storms_thunder(actor(source), actor(target));
+        retaliate(actor(source), actor(target));
     }
     damage_taken_.clear();
 }
@@ -9619,7 +9748,7 @@ void Session::perform(const Command &command)
     {
         return can_shield(other) || def(other).deflect ||
                detail::knows_spell(def(other).spells, "hellish_rebuke") ||
-               def(other).giant != GiantBoon::none;
+               def(other).giant != GiantBoon::none || def(other).retaliation;
     });
     damage_taken_.clear();
     if (!askable)
@@ -9687,6 +9816,16 @@ void Session::dispatch(const Command &command)
         dispatch(melee);
         return;
     }
+    if (command.verb == "brutal_forceful" || command.verb == "brutal_hamstring")
+    {
+        actor(command.actor).brutal_used = true;
+        brutal_ = BrutalStrike{command.actor, command.verb == "brutal_forceful"};
+        auto melee = command;
+        melee.verb = "melee";
+        dispatch(melee);
+        brutal_.reset();
+        return;
+    }
     // Tactical Master: Push, Sap or Slow in place of the weapon's mastery.
     for (const auto &option : tactical_masteries)
         for (const std::string_view base : {"melee", "ranged"})
@@ -9713,6 +9852,13 @@ void Session::dispatch(const Command &command)
     const auto &d = def(a);
     if (command.verb != "move" && command.verb != "melee")
         a.run_feet = 0;
+    // Instinctive Pounce's movement belongs to entering the Rage; anything
+    // else first gives up what is left of it.
+    if (command.verb != "move" && a.pounce > 0)
+    {
+        a.movement = std::max(0, a.movement - a.pounce);
+        a.pounce = 0;
+    }
     // A smite must follow the hit at once. Resolving that hit's own weapon
     // mastery choice keeps the chance open; any other command ends it.
     if (!is_smite(command.verb) && !command.verb.starts_with("effect_"))
@@ -10065,6 +10211,25 @@ void Session::dispatch(const Command &command)
         detail::apply_poisoned(a.effects, effect_source(a), a.source.name, rage_duration(a),
                                detail::EffectKind::raging);
         log(a.source.name + " enters a Rage.", {"{name} enters a Rage.", {{"name", a.source.name}}});
+        // Instinctive Pounce: up to half Speed, as part of entering the Rage.
+        if (const int feet = std::max(0, d.speed - detail::speed_penalty(a.effects)) / 2;
+                d.instinctive_pounce && feet > 0)
+        {
+            a.movement += feet;
+            a.pounce = feet;
+            log(a.source.name + " may move " + std::to_string(feet) +
+                " feet as part of entering the Rage (Instinctive Pounce).",
+            {
+                "{name} may move {feet} feet as part of entering the Rage (Instinctive Pounce).",
+                {{"name", a.source.name}, {"feet", std::to_string(feet)}}
+            });
+        }
+        // Mindless Rage: entering the Rage ends Charmed and Frightened.
+        if (d.mindless_rage)
+            std::erase_if(a.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::turned;
+        });
     }
     else if (command.verb == "extend_rage")
     {
@@ -10459,7 +10624,9 @@ std::string Session::save() const
             << a.smite_critical << ' '
             << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
-            << ' ' << a.moved << ' ' << a.selected_weapon << ' ' << a.light_origins.size();
+            << ' ' << a.moved << ' ' << a.attacked << ' ' << a.pounce << ' ' << a.brutal_used
+            << ' ' << a.selected_weapon
+            << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
@@ -10517,7 +10684,8 @@ std::string Session::save() const
     {
         const auto &c = *champion_move_;
         out << c.actor << ' ' << c.target << ' ' << c.natural << ' ' << c.remaining << ' '
-            << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << ' ' << c.shift << '\n';
+            << c.spell << ' ' << c.origin.x << ' ' << c.origin.y << ' ' << c.shift << ' ' << c.toward
+            << '\n';
     }
     out << static_cast<bool>(graze_) << '\n';
     if (graze_)
@@ -10648,7 +10816,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >>
           actor.initiate_casts >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
-          actor.selected_weapon >> light_count;
+          actor.attacked >> actor.pounce >> actor.brutal_used >> actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
     // The checkpoint stores a side as its enumerator's value.
@@ -10718,6 +10886,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             static_cast<int>(actor.rush_used || bonus_dash) +
             static_cast<int>(actor.surge_used && !actor.actions.surge))
         throw std::runtime_error("Invalid Dash allowance count");
+    if (actor.pounce < 0 || actor.pounce > definition.speed || actor.pounce > actor.movement)
+        throw std::runtime_error("Invalid Instinctive Pounce movement");
     // Extra Attack's attacks follow an Attack action already taken.
     if (actor.actions.extra_attacks > static_cast<unsigned>(definition.extra_attacks) ||
             (actor.actions.extra_attacks && actor.actions.normal && !actor.surge_used))
@@ -10912,6 +11082,23 @@ void Session::validate_champion_move() const
     {
         return a.source.id == c.actor;
     });
+    if (c.toward)
+    {
+        // Forceful Blow: the turn's Barbarian follows the creature it struck.
+        const int budget = who == actors_.end() ? 0
+                           : std::max(0, def(*who).speed - detail::speed_penalty(who->effects)) / 2;
+        if (who == actors_.end() || !def(*who).brutal_strike || !conscious(*who) ||
+                c.actor != actors_[turn_].source.id || c.target != c.toward || c.natural ||
+                c.spell || c.triggered || c.shift || !who->brutal_used || pending() ||
+                c.remaining < 0 || c.remaining > budget || !board_.contains(c.origin) ||
+                distance(c.origin, who->source.cell) > budget - c.remaining ||
+                std::none_of(actors_.begin(), actors_.end(), [&](const auto & a)
+        {
+            return a.source.id == c.toward && !a.life.dead;
+        }))
+        throw std::runtime_error("Invalid Forceful Blow movement");
+        return;
+    }
     if (c.shift)
     {
         // Tactical Shift: the turn's Fighter, after its Second Wind.
@@ -11362,7 +11549,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         ChampionMove c;
         input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
-              c.origin.y >> c.shift;
+              c.origin.y >> c.shift >> c.toward;
         if (!input)
             throw std::runtime_error("Invalid Champion movement checkpoint");
         session->champion_move_ = c;
@@ -11518,7 +11705,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
         if (!input || !known_actor(question.target) ||
-                asked > static_cast<unsigned>(Asked::thunder) ||
+                asked > static_cast<unsigned>(Asked::retaliate) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -11529,11 +11716,12 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
             if (!input || !known_actor(answer.target) ||
-                    kind > static_cast<unsigned>(Asked::thunder) ||
+                    kind > static_cast<unsigned>(Asked::retaliate) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
                      answer.verb != "giant_boon" && answer.verb != "stones_endurance" &&
-                     answer.verb != "storms_thunder" && answer.verb != "decline"))
+                     answer.verb != "storms_thunder" && answer.verb != "retaliate" &&
+                     answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = static_cast<Asked>(kind);
             prompt.answers.push_back(std::move(answer));
@@ -11587,8 +11775,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         refresh_form(a);
         // Movement is bounded by the current Speed, a Wild Shape form's included,
-        // once for each movement allowance the turn has had.
-        if (a.movement > session->def(a).speed * (1 + a.dashes))
+        // once for each movement allowance the turn has had, and what is left of
+        // Instinctive Pounce.
+        if (a.movement > session->def(a).speed * (1 + a.dashes) + a.pounce)
             throw std::runtime_error("Invalid Dash allowance count");
     }
     session->light_active_ = saved_light;
@@ -11903,9 +12092,9 @@ class Module final : public RulesModule
         if (klass == CharacterClass::warlock && result.level == 2)
             result.training = {detail::invocation_options(2, sheet.grants,
                                                           "class:warlock:invocations:2")};
-        if (klass == CharacterClass::barbarian && result.level == 4)
+        if (klass == CharacterClass::barbarian && (result.level == 4 || result.level == 10))
             result.training = {
-                detail::mastery_options(CharacterClass::barbarian, 4, sheet.grants)};
+                detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants)};
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
         if (klass == CharacterClass::ranger && result.level == 3)
             result.training = {{
@@ -11928,6 +12117,21 @@ class Module final : public RulesModule
         if (klass == CharacterClass::fighter && result.level == 3)
             result.description =
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
+        if (klass == CharacterClass::barbarian && result.level == 5)
+            result.description =
+                "Extra Attack: two attacks with each Attack action.\nFast Movement: Speed +10 feet without Heavy armor.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::barbarian && result.level == 6)
+            result.description =
+                "Berserker: Mindless Rage. While raging you cannot be Charmed or Frightened, and entering a Rage ends both.\nA fourth Rage.";
+        if (klass == CharacterClass::barbarian && result.level == 7)
+            result.description =
+                "Feral Instinct: Advantage on Initiative.\nInstinctive Pounce: move up to half your Speed as part of entering a Rage.";
+        if (klass == CharacterClass::barbarian && result.level == 9)
+            result.description =
+                "Brutal Strike: after Reckless Attack, one Strength attack a turn may give up its Advantage; on a hit it deals 1d10 more damage and a Forceful Blow (a 15-foot push you may follow) or a Hamstring Blow (Speed 15 feet lower).\nRage Damage +3; Proficiency Bonus +4.";
+        if (klass == CharacterClass::barbarian && result.level == 10)
+            result.description =
+                "Berserker: Retaliation. When a creature within 5 feet damages you, your Reaction makes a melee attack against it.\nA fourth Weapon Mastery.";
         if (klass == CharacterClass::fighter && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nTactical Shift: after Second Wind, move up to half Speed without provoking Opportunity Attacks.\nProficiency Bonus +3.";
@@ -11955,7 +12159,7 @@ class Module final : public RulesModule
             result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
         if (klass == CharacterClass::monk)
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
-        if (klass == CharacterClass::barbarian)
+        if (klass == CharacterClass::barbarian && result.level <= 4)
             result.description = "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
         if (klass == CharacterClass::ranger)
             result.description =
@@ -13946,7 +14150,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.193", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.194", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

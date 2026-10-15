@@ -344,11 +344,11 @@ void indomitable_checks()
 void cap_checks()
 {
     CampaignParty party(module());
-    const auto id = party.add_pc(Character(*srd5::character_rules(), draft("barbarian"), {}));
+    const auto id = party.add_pc(Character(*srd5::character_rules(), draft("monk"), {}));
     party.award_experience(64000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 4, "A Barbarian stops at level 4 for now");
+    check(party.member(id).character.sheet().level == 4, "A Monk stops at level 4 for now");
 }
 } // namespace
 

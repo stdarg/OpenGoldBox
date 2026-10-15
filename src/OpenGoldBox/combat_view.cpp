@@ -1265,7 +1265,7 @@ void CombatView::immediate(String verb)
     // Deflect Attacks or its redirect, Hellish Rebuke or a Giant Ancestry boon.
     const auto legal = demo_->combat().legal_commands();
     for (const char *reaction : {"shield", "deflect", "redirect", "rebuke", "giant_boon",
-                                     "stones_endurance", "storms_thunder"
+                                     "stones_endurance", "storms_thunder", "retaliate"
                                     })
         if (wanted == "opportunity" && std::any_of(legal.begin(), legal.end(), [&](const auto & c)
     {
@@ -2297,7 +2297,8 @@ void CombatView::refresh()
 })
     required_node<Button>(*this, node).set_disabled(!enabled(verb));
     if (enabled("shield") || enabled("deflect") || enabled("redirect") || enabled("rebuke") ||
-            enabled("giant_boon") || enabled("stones_endurance") || enabled("storms_thunder"))
+            enabled("giant_boon") || enabled("stones_endurance") || enabled("storms_thunder") ||
+            enabled("retaliate"))
         required_node<Button>(*this, "React").set_disabled(false);
     {
         const bool party_turn = loaded && s.outcome == Outcome::ongoing && player;
@@ -2333,7 +2334,8 @@ void CombatView::refresh()
         for (const auto &c : offered)
             if (c.verb == "shield" || c.verb == "deflect" || c.verb == "redirect" ||
                     c.verb == "rebuke" || c.verb == "giant_boon" ||
-                    c.verb == "stones_endurance" || c.verb == "storms_thunder")
+                    c.verb == "stones_endurance" || c.verb == "storms_thunder" ||
+                    c.verb == "retaliate")
             {
                 react = i18n::text(c.label);
                 break;
@@ -2394,6 +2396,8 @@ void CombatView::refresh()
         ? i18n::text("You are hit. Use Stone's Endurance (1d12 + Constitution modifier less damage), or decline.")
         : s.reaction_pending && enabled("storms_thunder")
         ? i18n::text("You are hurt. Strike the attacker with Storm's Thunder (1d8 Thunder damage), or decline.")
+        : s.reaction_pending && enabled("retaliate")
+        ? i18n::text("You are hurt. Strike back at the attacker with a melee attack (Retaliation), or decline.")
         : s.reaction_pending ? i18n::text("Use or decline the opportunity attack.")
         : player && flee_mode_ ? i18n::text("Your party is fleeing.")
         : player ? selected_prompt(offered, action)

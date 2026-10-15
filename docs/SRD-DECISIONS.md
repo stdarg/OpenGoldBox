@@ -1036,6 +1036,8 @@ class's cap rises to 10 only when its features work. Decisions on the
   its time of death for Revivify and Raise Dead.
 - **Indomitable** (Fighter 9) is used without asking, like Heroic Inspiration
   ([HEROIC-1](#heroic-1-2026-10-14-heroic-inspiration-without-asking)).
+- **Faithful Hound** moves 50 feet, half again a human's 30 feet, rounded
+  up; how it is moved is settled when the Wizard is built.
 - **Slow's spell failure:** the user does not want a random 25% chance; a
   slowed caster's spells fail through a saving throw instead. How exactly is
   still to be settled when Slow is built.

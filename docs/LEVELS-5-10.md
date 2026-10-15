@@ -11,6 +11,8 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Proficiency Bonus by level everywhere: done.
 - Fighter to level 10 with Extra Attack: done ([Fighter](FIGHTER.md)). In the
   campaign a Fighter stops at 8 ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
+- Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-510)); the
+  campaign stops it at 8.
 
 ## How the work runs
 
