@@ -205,10 +205,16 @@ enum class EffectKind : unsigned
     // Cunning Strike's Daze (Rogue 14): on its next turn, only one of moving,
     // an action or a Bonus Action.
     dazed = 83,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // Shining Smite: attack rolls against the creature have Advantage, and it
     // cannot be Invisible.
-    shining = 84
+    shining = 84,
+    // Abjure Foes (Paladin 9): Frightened of the Paladin for 1 minute or until
+    // it takes damage; on its turns only one of moving, an action or a Bonus Action.
+    abjured = 85,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // Beacon of Hope: Advantage on Wisdom saves and death saves, and healing
+    // restores its maximum.
+    hopeful = 86
 };
 
 // The longest a spell benefit lasts, in milliseconds.

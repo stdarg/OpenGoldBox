@@ -254,7 +254,7 @@ struct Probe
 };
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
-    {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4},
+    {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10},
     {"ranger", 1}, {"ranger", 4}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
 
@@ -440,7 +440,7 @@ void behaviour()
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one
         // Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
-        // tests cover them.
+        // tests cover them, as the Paladin's cover Abjure Foes, a class feature.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
@@ -456,7 +456,7 @@ void behaviour()
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
-                row.rider == Rider::heat_metal)
+                row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

@@ -511,13 +511,14 @@ void apply_searing_smite(EffectState &effects, EffectSource source,
 }
 
 // The largest value a benefit carries: a damage type for Resistance, a
-// hidden creature's Stealth total, else a bonus of at most 10.
+// hidden creature's Stealth total, Aid's raise from a level-9 slot, else a
+// bonus of at most 10.
 int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::metamagic ? 15
-           : kind == EffectKind::hidden ? 40
+           : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::heightened ? static_cast<int>(spell_table.size()) - 1
            : 10;
 }
@@ -569,6 +570,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::innate_sorcery:
     case EffectKind::outlined:
     case EffectKind::shining:
+    case EffectKind::abjured:
+    case EffectKind::hopeful:
     case EffectKind::shillelagh:
     case EffectKind::heated:
         return 60000; // 1 minute
@@ -746,6 +749,9 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         if (has_effect(subject.effects.get(), EffectKind::bane))
                             bless -= roll_die(rng, 4);
                         auto modifiers = mental_save_modifiers(ability, subject);
+                        // Beacon of Hope: Advantage on Wisdom saves.
+                        modifiers.advantage |= ability == Ability::wisdom &&
+                                               has_effect(subject.effects.get(), EffectKind::hopeful);
                         if (e.kind == EffectKind::frightened)
                             modifiers.advantage |= subject.brave;
                         else if (e.kind != EffectKind::knocked_out)
@@ -811,7 +817,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::shining))
+    if (value > static_cast<unsigned>(EffectKind::hopeful))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

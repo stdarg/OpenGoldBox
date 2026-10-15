@@ -118,10 +118,13 @@ enum class Rider : unsigned
     moonbeam,
     spike_growth,
     heat_metal,
-    guidance
+    guidance,
+    abjure_foes,
+    beacon_of_hope,
+    dispel_magic
 };
 
-// Added when cast from a level-two slot. Zeroed means the spell does not upcast.
+// Added for each slot level above the spell's. Zeroed means the spell does not upcast.
 struct Upcast
 {
     unsigned extra_dice{}, extra_instances{};
@@ -522,7 +525,8 @@ inline constexpr std::array spell_table
         .rider = Rider::spiritual_weapon,
         .concentration = true},
     // SRD 5.2.1 p. 155: ten minutes of prayer; up to five creatures regain
-    // 2d8 + the spellcasting modifier, once each until a Long Rest. A camp spell.
+    // 2d8 + the spellcasting modifier, once each until a Long Rest, 1d8 more
+    // for each slot level above 2. A camp spell.
     SpellDef{
         .id = "prayer_of_healing",
         .label = "Prayer of Healing",
@@ -532,7 +536,8 @@ inline constexpr std::array spell_table
         .range = 30,
         .dice = {2, 8, 0},
         .add_casting_modifier = true,
-        .instances = 5},
+        .instances = 5,
+        .upcast = {.extra_dice = 1}},
     // SRD 5.2.1 p. 114: a 15-foot cone, Dexterity save for half.
     SpellDef{
         .id = "burning_hands",
@@ -1101,7 +1106,7 @@ inline constexpr std::array spell_table
         .target = SpellTarget::dying_ally,
         .range = 15},
     // SRD 5.2.1 p. 108: up to three creatures' Hit Point maximum and current
-    // Hit Points rise by 5 for 8 hours. Higher slots wait for level-three slots.
+    // Hit Points rise by 5 for 8 hours, 5 more for each slot level above 2.
     SpellDef{
         .id = "aid",
         .label = "Aid",
@@ -1133,6 +1138,7 @@ inline constexpr std::array spell_table
         .bonus_action = true,
         .rider = Rider::shield_of_faith,
         .concentration = true},
+    // SRD 5.2.1 p. 140: one more creature for each slot level above 1.
     SpellDef{
         .id = "heroism",
         .label = "Heroism",
@@ -1140,6 +1146,7 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::buff,
         .target = SpellTarget::ally,
         .range = 5,
+        .upcast = {.extra_instances = 1},
         .rider = Rider::heroism,
         .concentration = true},
     // SRD 5.2.1 p. 113: up to three creatures, one more per slot level above 1.
@@ -1325,23 +1332,69 @@ inline constexpr std::array spell_table
         .damage = DamageType::fire,
         .dice = {2, 8, 0},
         .rider = Rider::heat_metal,
-        .concentration = true}};
+        .concentration = true},
+    // SRD 5.2.1 p. 112: Advantage on Wisdom saves and Death Saving Throws, and
+    // healing restores its maximum, for creatures within 30 feet. The game
+    // takes every ally in range.
+    SpellDef{
+        .id = "beacon_of_hope",
+        .label = "Beacon of Hope",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 30,
+        .rider = Rider::beacon_of_hope,
+        .concentration = true},
+    // SRD 5.2.1 p. 124: spells of level 3 or lower on a creature or an area
+    // within 120 feet end; a higher spell needs a spellcasting check against
+    // 10 + its level, unless the slot is as high. Aimed at one square.
+    SpellDef{
+        .id = "dispel_magic",
+        .label = "Dispel Magic",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 120,
+        .rider = Rider::dispel_magic,
+        .area = 5},
+    // Not a spell: the Paladin's Abjure Foes (level 9), a Magic action for a
+    // Channel Divinity use. Its creatures are chosen like a spell's (CLASS-2).
+    SpellDef{
+        .id = "abjure_foes",
+        .label = "Abjure Foes",
+        .level = 0,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::wisdom,
+        .rider = Rider::abjure_foes}};
 
-// A verb casting a level-one spell from a level-two slot ends in "_2"; one
-// casting it with Magic Initiate's free use ends in "_initiate".
+// A verb casting a spell from a slot above its level ends in "_N", the slot's
+// level (2 to 9); one casting it with Magic Initiate's free use ends in
+// "_initiate".
 inline constexpr std::string_view initiate_suffix = "_initiate";
 
-// The verb without its "_2" or "_initiate" form, naming the spell or option cast.
+// The slot level a "_N" verb names, or 0.
+inline unsigned cast_slot_level(std::string_view verb)
+{
+    if (verb.size() < 3 || verb[verb.size() - 2] != '_')
+        return 0;
+    const char digit = verb.back();
+    return digit >= '2' && digit <= '9' ? static_cast<unsigned>(digit - '0') : 0;
+}
+
+// The verb without its "_N" or "_initiate" form, naming the spell or option cast.
 inline std::string_view without_cast_suffix(std::string_view verb)
 {
-    if (verb.ends_with("_2"))
+    if (cast_slot_level(verb))
         verb.remove_suffix(2);
     else if (verb.ends_with(initiate_suffix))
         verb.remove_suffix(initiate_suffix.size());
     return verb;
 }
 
-// Accepts the "_2" and "_initiate" verb forms, so callers can pass a command verb directly.
+// Accepts the "_N" and "_initiate" verb forms, so callers can pass a command verb directly.
 // Command's options, in CommandOption order.
 inline constexpr std::array<std::string_view, 4> command_options{"approach", "flee", "grovel",
     "halt"};

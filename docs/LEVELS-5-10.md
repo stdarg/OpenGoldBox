@@ -15,9 +15,9 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Rogue to level 10: done ([Rogue](ROGUE.md)).
 - Monk to level 9: done ([Monk](MONK.md#levels-515)).
 - Fighter, Barbarian, Monk and Rogue to level 15: done.
-- Paladin to level 8: done ([Paladin](PALADIN.md#levels-58)). Level 9 brings
-  level-3 spell slots, which wait for spell slots above level 2 for every
-  caster; until then the Paladin stops at 8.
+- Spell slots of levels 1–9 and casting from higher slots: done
+  ([Spell slots](SPELL-SLOTS.md)).
+- Paladin to level 10: done ([Paladin](PALADIN.md#levels-510)).
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
   [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,

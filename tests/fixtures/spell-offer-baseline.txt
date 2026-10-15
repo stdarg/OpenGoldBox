@@ -91,8 +91,6 @@ wizard-4 @ 5ft
     magic_missile_2|3
     magic_missile|3
     melee|3
-    protection_from_evil_and_good_2|1
-    protection_from_evil_and_good_2|2
     protection_from_evil_and_good|1
     protection_from_evil_and_good|2
     ray_of_frost|1
@@ -120,7 +118,6 @@ wizard-4 @ 30ft
     longstrider|1
     magic_missile_2|3
     magic_missile|3
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
@@ -145,7 +142,6 @@ wizard-4 @ 60ft
     longstrider|1
     magic_missile_2|3
     magic_missile|3
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
@@ -169,7 +165,6 @@ wizard-4 @ 120ft
     longstrider|1
     magic_missile_2|3
     magic_missile|3
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     scorching_ray|3
@@ -186,7 +181,6 @@ wizard-4 @ 125ft
     fog_cloud|0
     longstrider_2|1
     longstrider|1
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     shocking_grasp|1
@@ -472,8 +466,6 @@ wizard-4+shield @ 5ft
     magic_missile_2|3
     magic_missile|3
     melee|3
-    protection_from_evil_and_good_2|1
-    protection_from_evil_and_good_2|2
     protection_from_evil_and_good|1
     protection_from_evil_and_good|2
     ray_of_frost|1
@@ -501,7 +493,6 @@ wizard-4+shield @ 30ft
     longstrider|1
     magic_missile_2|3
     magic_missile|3
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
@@ -526,7 +517,6 @@ wizard-4+shield @ 60ft
     longstrider|1
     magic_missile_2|3
     magic_missile|3
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     ray_of_frost|2
@@ -550,7 +540,6 @@ wizard-4+shield @ 120ft
     longstrider|1
     magic_missile_2|3
     magic_missile|3
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     scorching_ray|3
@@ -567,7 +556,6 @@ wizard-4+shield @ 125ft
     fog_cloud|0
     longstrider_2|1
     longstrider|1
-    protection_from_evil_and_good_2|1
     protection_from_evil_and_good|1
     ray_of_frost|1
     shocking_grasp|1

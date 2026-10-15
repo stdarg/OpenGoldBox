@@ -18,12 +18,14 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 6 | Aura of Protection | Delivered (rules 0.6.203) |
 | 7 | Aura of Devotion | Delivered (rules 0.6.203) |
 | 8 | Ability Score Improvement | Delivered (rules 0.6.203) |
+| 9 | Abjure Foes, level-3 spells | Delivered (rules 0.6.205): Beacon of Hope and Dispel Magic |
+| 10 | Aura of Courage | Delivered (rules 0.6.205) |
 
-## Levels 5–8
+## Levels 5–10
 
-The Paladin advances to level 8 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)).
-Level 9 brings level-3 spell slots, which no caster has yet, so the Paladin
-stops at 8 until they exist.
+The Paladin advances to level 10
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)), the Training
+Hall's limit. Levels 11–15 follow.
 
 - **Extra Attack** (5): two attacks with each Attack action.
 - **Spellcasting:** four level-1 slots from level 5; two level-2 slots at 5
@@ -37,9 +39,9 @@ stops at 8 until they exist.
   offers "Divine Smite (level 2 slot)", 3d8 Radiant (4d8 against a Fiend or
   an Undead), and **Shining Smite**: 2d6 Radiant, and until the Paladin's
   Concentration ends (up to 1 minute) attack rolls against the target have
-  Advantage and it cannot be Invisible. Searing Smite still uses a level-1
-  slot: its burn from a higher slot waits for the slot rework that brings
-  level-3 slots.
+  Advantage and it cannot be Invisible. From level 9 both are offered from a
+  level-3 slot too, one die more ([Spell slots](SPELL-SLOTS.md)). Searing
+  Smite uses a level-1 slot only: its burn from a higher slot is not built.
 - **Aura of Protection** (6): the Paladin and its allies within 10 feet, in a
   clear line, add the Paladin's Charisma modifier (at least +1) to saving
   throws, including repeated saves, Concentration saves and death saves. A
@@ -50,12 +52,44 @@ stops at 8 until they exist.
 - **Aura of Devotion** (7): the Paladin and allies in its Aura of Protection
   cannot be Charmed, and a Charm on an ally has no effect while it is there.
 - **Ability Score Improvement** (8): a feat or ability points.
+- **Level-3 spells** (9): two level-3 slots and nine prepared spells. The
+  Oath of Devotion keeps Beacon of Hope and Dispel Magic prepared. Every
+  Paladin spell can be cast from a higher slot when that changes it
+  ([Spell slots](SPELL-SLOTS.md)); Aid then adds 5 more Hit Points a level,
+  Heroism takes one more creature, Prayer of Healing heals 1d8 more.
+- **Beacon of Hope** (Concentration, up to 1 minute): every ally within 30
+  feet, the Paladin included, has Advantage on Wisdom saves (repeated ones too)
+  and death saves, and healing restores its dice's maximum, logged as
+  "healing is maximized (Beacon of Hope)". The SRD lets the caster choose any
+  number of creatures in range; the game takes every ally, since leaving one
+  out gains nothing.
+- **Dispel Magic** (Action, 120 feet): aimed at one square, like an area
+  spell. Every spell of the slot's level or lower on the creature there ends,
+  and so does every spell area covering the square (Darkness, Web, Fog Cloud
+  and the others), as [LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)
+  asked. A Concentration spell ends whole, on every creature it touched. A
+  higher spell needs a check: d20 + the spellcasting modifier against 10 + its
+  level, shown in the combat log. Remove Curse, Revivify and Magic Circle,
+  the other level-3 Paladin spells, follow.
+- **Abjure Foes** (9): a Magic action and a Channel Divinity use. The A cycle
+  offers it on each enemy the Paladin sees within 60 feet; creatures are
+  chosen one click at a time, up to the Charisma modifier (at least 1), as for
+  Bless ([CLASS-2](SRD-DECISIONS.md#class-2-2026-10-04-choosing-several-targets)). Each makes a Wisdom save or is
+  Frightened of the Paladin for a minute or until it takes damage; on its
+  turns it does only one of moving, an action or a Bonus Action, as Daze
+  allows. No repeated save.
+- **Aura of Courage** (10): the Paladin and allies in its Aura of Protection
+  cannot be Frightened, and a Frightened ally's fear has no effect while it is
+  there. Nothing in the current content frightens the party, so it is not yet
+  exercised in a fight.
 
-Verification: `opengold_paladin_levels_tests` (the cap at 8 in the campaign,
+Verification: `opengold_paladin_levels_tests` (the cap at 10 in the campaign,
 features by level, prepared counts, Aid always prepared, the level-2 spells
 preparable, slots at 5 and 7, a campaign round trip, Extra Attack, both
 level-2 smites and their slots, Shining Smite's effect and checkpoint, the
-aura's save bonus at 5, 10 and 20 feet, and its death-save bonus).
+aura's save bonus at 5, 10 and 20 feet, its death-save bonus, casting from a
+level-3 slot, Abjure Foes' choice, save, checkpoint and end on damage, Beacon
+of Hope's maximized healing, and Dispel Magic ending Shining Smite).
 
 ## Channel Divinity and the Oath of Devotion
 

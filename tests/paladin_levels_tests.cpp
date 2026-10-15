@@ -18,9 +18,10 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Paladin (Oath of Devotion) from level 5 to 8 (LEVELS-1): Extra Attack,
-// level-2 slots and spells with Shining Smite, Aura of Protection and Aura of
-// Devotion.
+// A Paladin (Oath of Devotion) from level 5 to 10 (LEVELS-1): Extra Attack,
+// level-2 and level-3 slots and spells with Shining Smite, Beacon of Hope and
+// Dispel Magic, casting from higher slots, Aura of Protection, Aura of
+// Devotion and Abjure Foes.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -106,15 +107,17 @@ CombatantView unit(const CombatSession &c, EntityId id)
     throw std::runtime_error("Missing combatant");
 }
 
-// Spell slots of level 1 or 2 left: the third and fourth fields of the saved
-// vital state.
+// Spell slots of a level left: from the third field of the saved vital state,
+// one field per level.
 unsigned slots(const CombatSession &c, unsigned level)
 {
     std::istringstream in(unit(c, 1).persistent.resources);
     std::string magic;
-    unsigned winds{}, level_one{}, level_two{};
-    in >> magic >> winds >> level_one >> level_two;
-    return level == 1 ? level_one : level_two;
+    unsigned winds{}, count{};
+    in >> magic >> winds;
+    for (unsigned n = 1; n <= level; ++n)
+        in >> count;
+    return count;
 }
 
 bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
@@ -126,15 +129,17 @@ bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
     });
 }
 
-// The Paladin beside an AC 1 dummy, on the Paladin's turn.
+// The Paladin beside an AC 1 dummy, with a second dummy farther off, on the
+// Paladin's turn.
 std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &hero,
-                                    std::uint64_t seed)
+                                    std::uint64_t seed, std::optional<VitalState> state = {})
 {
     const std::vector<std::string> gear{"longsword"};
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
     auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
-            {98, "dummy", "Dummy", Side::opposition, {2, 1}}
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile, state},
+            {98, "dummy", "Dummy", Side::opposition, {2, 1}},
+            {97, "dummy", "Far Dummy", Side::opposition, {6, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -150,23 +155,31 @@ void progression_checks()
     party.award_experience(85000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    const auto &eight = party.member(id).character.sheet();
-    check(eight.level == 8 && !rules->advancement_options(eight).level,
-          "Level 8 is the Paladin's cap until level-3 slots exist");
+    const auto &ten = party.member(id).character.sheet();
+    check(ten.level == 10 && !rules->advancement_options(ten).level,
+          "Level 10 is the Paladin's cap until level-4 slots' spells exist");
     const auto holds = [&](std::string_view grant, unsigned level)
     {
-        return std::any_of(eight.grants.begin(), eight.grants.end(), [&](const auto & g)
+        return std::any_of(ten.grants.begin(), ten.grants.end(), [&](const auto & g)
         {
             return g.id == grant && g.level == level;
         });
     };
     check(holds("feature:extra_attack", 5) && holds("feature:aura_of_protection", 6) &&
-          holds("feature:aura_of_devotion", 7), "The level 5-7 features arrive at their levels");
-    const auto access = rules->spell_access(eight);
-    check(access.prepared_choices == 7 && access.prepared.size() == 7,
+          holds("feature:aura_of_devotion", 7) && holds("feature:abjure_foes", 9) &&
+          holds("feature:aura_of_courage", 10), "The level 5-10 features arrive at their levels");
+    const auto access = rules->spell_access(ten);
+    check(access.prepared_choices == 9 && access.prepared.size() == 9,
+          "Nine prepared spells at level 10");
+    const auto always = [&](std::string_view spell)
+    {
+        return std::find(access.always_prepared.begin(), access.always_prepared.end(), spell) !=
+               access.always_prepared.end();
+    };
+    check(always("aid") && always("beacon_of_hope") && always("dispel_magic"),
+          "Aid from level 5, Beacon of Hope and Dispel Magic from level 9 are always prepared");
+    check(rules->spell_access(paladin(8).sheet()).prepared_choices == 7,
           "Seven prepared spells at level 8");
-    check(std::find(access.always_prepared.begin(), access.always_prepared.end(), "aid") !=
-          access.always_prepared.end(), "Aid is always prepared from level 5");
     check(rules->spell_access(paladin(5).sheet()).prepared_choices == 6,
           "Six prepared spells at level 5");
     const auto options = rules->spell_choice_options(paladin(5).sheet(),
@@ -189,12 +202,14 @@ void progression_checks()
           "Four level-1 and two level-2 slots at level 5");
     check(slots(*duel(*dummies, paladin(7), 1), 2) == 3,
           "Three level-2 slots from level 7");
+    check(slots(*duel(*dummies, paladin(9), 1), 3) == 2 &&
+          slots(*duel(*dummies, paladin(8), 1), 3) == 0, "Two level-3 slots from level 9");
     const auto bytes = encode_campaign(party, nullptr, "paladin-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "paladin-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "paladin-levels") == bytes,
-          "A level-8 Paladin saves and reloads");
+          "A level-10 Paladin saves and reloads");
 }
 
 void extra_attack_checks()
@@ -306,6 +321,97 @@ void death_save_checks()
     check(aura_death_save(paladin(6)) && !aura_death_save(paladin(5)),
           "Aura of Protection adds to death saves, shown with the roll");
 }
+bool aim(CombatSession &c, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == "area_move" && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+// Each turn until the Paladin's next one.
+void next_turn(CombatSession &c)
+{
+    check(submit(c, "end"), "The Paladin ends its turn");
+    for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(c, "decline") || submit(c, "end") || c.submit(choose_demo_command(c)),
+              "Reach the Paladin's turn");
+}
+
+// Casting from higher slots: offered when it adds something, and paid from
+// that slot.
+void upcast_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = duel(*rules, paladin(9), 1, VitalState{10, false, {}, {}});
+    check(offered(*c, "cure_wounds") && offered(*c, "cure_wounds_2") &&
+          offered(*c, "cure_wounds_3"), "Cure Wounds is offered from each slot level");
+    check(offered(*c, "protection_from_evil_and_good") &&
+          !offered(*c, "protection_from_evil_and_good_2") &&
+          !offered(*c, "protection_from_evil_and_good_3"),
+          "A spell a higher slot does not change is offered at its own level");
+    check(submit(*c, "cure_wounds_3", 1) && logged(*c, "Paladin recovers") && slots(*c, 3) == 1 &&
+          slots(*c, 1) == 4, "Cure Wounds from a level-3 slot spends it");
+
+    auto smite = duel(*rules, paladin(9), 1);
+    check(submit(*smite, "melee", 98) && offered(*smite, "divine_smite_3") &&
+          offered(*smite, "shining_smite_3") && submit(*smite, "divine_smite_3", 98) &&
+          slots(*smite, 3) == 1, "Divine Smite from a level-3 slot");
+}
+
+// Abjure Foes: a Channel Divinity use against creatures chosen one at a time.
+void abjure_checks()
+{
+    const auto rules = dummy_rules();
+    check(!offered(*duel(*rules, paladin(8), 1), "abjure_foes"), "No Abjure Foes before level 9");
+    const auto hero = paladin(9);
+    std::unique_ptr<CombatSession> c;
+    for (std::uint64_t seed = 1;
+            seed < 40 && !(c && has_condition(*c, 98, "Frightened (Abjure Foes)")); ++seed)
+    {
+        c = duel(*rules, hero, seed);
+        check(submit(*c, "abjure_foes", 98), "Abjure Foes starts with the first creature");
+        if (c->snapshot().spell_targeting)
+            check(submit(*c, "abjure_foes", 97) &&
+                  (!c->snapshot().spell_targeting || submit(*c, "spell_cast")),
+                  "A second creature, then the use");
+        check(logged(*c, "Paladin uses Abjure Foes.") && !unit(*c, 1).action,
+              "Abjure Foes takes the Magic action");
+    }
+    check(has_condition(*c, 98, "Frightened (Abjure Foes)"), "A failed Wisdom save frightens");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the abjured dummy");
+    next_turn(*c);
+    check(submit(*c, "melee", 98) && !has_condition(*c, 98, "Frightened (Abjure Foes)"),
+          "Damage ends it");
+}
+
+// Beacon of Hope: allies within 30 feet; their healing is maximized.
+void beacon_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = duel(*rules, paladin(9), 1, VitalState{10, false, {}, {}});
+    check(submit(*c, "beacon_of_hope", 1) && logged(*c, "Paladin gains Beacon of Hope.") &&
+          has_condition(*c, 1, "Beacon of Hope"), "Beacon of Hope lights the Paladin");
+    next_turn(*c);
+    check(submit(*c, "cure_wounds", 1) &&
+          logged(*c, "Paladin's healing is maximized (Beacon of Hope)."),
+          "Healing is maximized under Beacon of Hope");
+}
+
+// Dispel Magic, aimed at a square, ends the spells on the creature there.
+void dispel_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = duel(*rules, paladin(9), 1);
+    check(submit(*c, "melee", 98) && submit(*c, "shining_smite", 98) &&
+          has_condition(*c, 98, "Shining (Shining Smite)"), "Shining Smite lights the dummy");
+    next_turn(*c);
+    check(submit(*c, "dispel_magic") && aim(*c, Cell{2, 1}) && submit(*c, "area_cast") &&
+          logged(*c, "Dispel Magic ends a spell on Dummy.") &&
+          !has_condition(*c, 98, "Shining (Shining Smite)") &&
+          logged(*c, "Paladin loses Concentration."), "Dispel Magic ends Shining Smite");
+}
 } // namespace
 
 int main()
@@ -317,6 +423,10 @@ int main()
         smite_checks();
         aura_checks();
         death_save_checks();
+        upcast_checks();
+        abjure_checks();
+        beacon_checks();
+        dispel_checks();
     }
     catch (const std::exception &e)
     {

@@ -91,7 +91,19 @@ String text(std::string_view source)
 {
     if (source.empty())
         return {};
-    return TranslationServer::get_singleton()->translate(gs(source));
+    const String translated = TranslationServer::get_singleton()->translate(gs(source));
+    // "Cure Wounds (level 3 slot)", a spell cast from a higher slot, is
+    // translated in two parts when the whole has no entry of its own.
+    constexpr std::string_view slot_prefix = " (level ", slot_suffix = " slot)";
+    const auto at = source.rfind(slot_prefix);
+    if (translated != gs(source) || at == std::string_view::npos || !source.ends_with(slot_suffix) ||
+            source.size() != at + slot_prefix.size() + 1 + slot_suffix.size())
+        return translated;
+    const char level = source[at + slot_prefix.size()];
+    if (level < '2' || level > '9')
+        return translated;
+    return format(N_("{spell} (level {level} slot)"),
+                  {{"spell", text(source.substr(0, at))}, {"level", String::chr(level)}});
 }
 
 std::string utf8(std::string_view source)

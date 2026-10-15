@@ -150,7 +150,11 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"flame_blade", "Flame Blade", 2, 0, druid_list},
     Spell{"moonbeam", "Moonbeam", 2, 0, druid_list},
     Spell{"spike_growth", "Spike Growth", 2, 0, druid_list},
-    Spell{"heat_metal", "Heat Metal", 2, 0, druid_list | bard_list}};
+    Spell{"heat_metal", "Heat Metal", 2, 0, druid_list | bard_list},
+    Spell{"beacon_of_hope", "Beacon of Hope", 3, 0, cleric_list},
+    Spell{"dispel_magic", "Dispel Magic", 3, 0,
+        bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
+        warlock_list | wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).
@@ -256,6 +260,8 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::paladin, "shield_of_faith", 3},
     // Zone of Truth, the other level-5 oath spell, is cut (DM-1).
     AlwaysPrepared{CharacterClass::paladin, "aid", 5},
+    AlwaysPrepared{CharacterClass::paladin, "beacon_of_hope", 9},
+    AlwaysPrepared{CharacterClass::paladin, "dispel_magic", 9},
     // Favored Enemy, SRD 5.2.1 p. 57.
     AlwaysPrepared{CharacterClass::ranger, "hunters_mark", 1},
     // Life Domain spells, p. 37.
