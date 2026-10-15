@@ -151,6 +151,12 @@ layout_mode = 2
 wrap_mode = 1
 placeholder_text = "Describe this perspective image"
 
+[node name="LinkedDescription" type="CheckButton" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
+layout_mode = 2
+disabled = true
+tooltip_text = "When enabled, editing one description changes all ten pieces in this appearance. The switch starts off each time the viewer opens."
+text = "Linked description"
+
 [node name="SaveDescription" type="Button" parent="Margin/Tabs/ArtCatalog/Split/PreviewColumn"]
 layout_mode = 2
 disabled = true

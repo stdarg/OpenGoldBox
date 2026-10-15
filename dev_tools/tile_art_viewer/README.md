@@ -19,6 +19,14 @@ retained in a separate `name` column. Descriptions may repeat when source pixels
 identical across wall sets. Select an image, edit its **Description**, and press
 **Save descriptions to CSV**. Unsaved edits remain available while browsing;
 Save writes them together to the CSV in this source checkout.
+**Linked description** starts off for every appearance, including when its ten
+pieces currently have identical descriptions. Turn it on to make subsequent
+edits to any one piece stage the same text for all ten perspectives of that
+appearance. Turning it on does not replace existing text until you edit.
+Turn it off to edit pieces independently again. The switch is session-only;
+**Save descriptions to CSV** writes each piece's current description using the
+existing CSV columns. Reopening the viewer starts with linking off.
+
 Use **Flag for Regen** on the selected perspective piece when its replacement
 art should be made again. The switch saves immediately to that row's
 `flag_for_regen` CSV column (`1` means flagged; `0` means clear). You can flag
@@ -155,8 +163,8 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_vi
 ```
 
 The metadata check verifies all CSV rows and exact visible locations, exercises
-See in Map and the unused state, and writes an edited description and both regen
-flag states to a temporary CSV without changing the catalog:
+See in Map and the unused state, and writes linked and independent descriptions
+plus both regen flag states to a temporary CSV without changing the catalog:
 
 ```bash
 OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless --path dev_tools/tile_art_viewer/godot -- --metadata-check=/tmp/opengold-tile-metadata-check.csv

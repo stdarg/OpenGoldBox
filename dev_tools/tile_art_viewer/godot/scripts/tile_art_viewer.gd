@@ -31,6 +31,7 @@ const REPLACEMENT_SIZES := [
 @onready var source: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Source
 @onready var preview: TextureRect = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/PreviewPanel/Preview
 @onready var description_edit: TextEdit = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/DescriptionEdit
+@onready var linked_description: CheckButton = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/LinkedDescription
 @onready var save_description: Button = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/SaveDescription
 @onready var flag_for_regen: CheckButton = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/FlagForRegen
 @onready var usage: Label = $Margin/Tabs/ArtCatalog/Split/PreviewColumn/Usage
@@ -63,6 +64,8 @@ const REPLACEMENT_SIZES := [
 var catalog_entries: Array = []
 var metadata_rows: Array = []
 var draft_descriptions: Dictionary = {}
+var appearance_groups: Dictionary = {}
+var linked_descriptions: Dictionary = {}
 var metadata_digest := ""
 var metadata_path_override := ""
 var updating_description := false
@@ -95,6 +98,7 @@ func _ready() -> void:
     next.pressed.connect(func(): _navigate(1))
     export_button.pressed.connect(_show_export_dialog)
     description_edit.text_changed.connect(_on_description_changed)
+    linked_description.toggled.connect(_on_linked_description_toggled)
     save_description.pressed.connect(_save_descriptions)
     flag_for_regen.toggled.connect(_on_flag_for_regen_toggled)
     see_in_map.pressed.connect(_see_in_map)
@@ -174,6 +178,7 @@ func _load_failure(message: String) -> void:
     export_button.disabled = true
     see_in_map.disabled = true
     save_description.disabled = true
+    linked_description.disabled = true
     flag_for_regen.disabled = true
     description_edit.editable = false
     map_export.disabled = true
@@ -207,6 +212,8 @@ func _load_metadata() -> String:
         if header[column] != CSV_COLUMNS[column]:
             return "Tile metadata CSV column %d should be %s." % [column, CSV_COLUMNS[column]]
     metadata_rows.clear()
+    appearance_groups.clear()
+    linked_descriptions.clear()
     while file.get_position() < file.get_length():
         var fields := file.get_csv_line()
         if fields.size() != CSV_COLUMNS.size():
@@ -246,14 +253,26 @@ func _load_metadata() -> String:
                     int(row["facing"]) < 0 or int(row["facing"]) >= 4:
                 return "Tile metadata CSV row %d has an out-of-range map location." % (index + 2)
         metadata_rows.append(row)
+        var key := _appearance_key(row)
+        if not appearance_groups.has(key):
+            appearance_groups[key] = []
+        (appearance_groups[key] as Array).append(index)
         entry["description"] = row["description"]
         entry["name"] = row["name"]
     if metadata_rows.size() != catalog_entries.size():
         return "Tile metadata CSV contains %d rows for %d images." % [
             metadata_rows.size(), catalog_entries.size()
         ]
+    for key in appearance_groups:
+        var indices: Array = appearance_groups[key]
+        if indices.size() != 10:
+            return "Tile metadata CSV needs ten perspective pieces for %s." % key
+        linked_descriptions[key] = false
     metadata_digest = FileAccess.get_sha256(path)
     return ""
+
+func _appearance_key(row: Dictionary) -> String:
+    return "%s:%s:%s" % [row["archive"], row["record"], row["appearance"]]
 
 func _location_map_index(row: Dictionary) -> int:
     if not str(row["profile_index"]).is_valid_int():
@@ -320,19 +339,37 @@ func _on_description_changed() -> void:
     if updating_description or selected_entry < 0 or metadata_rows.is_empty():
         return
     var new_text := description_edit.text
-    catalog_entries[selected_entry]["description"] = new_text
-    if new_text == metadata_rows[selected_entry]["description"]:
-        draft_descriptions.erase(selected_entry)
+    var key := _appearance_key(metadata_rows[selected_entry])
+    if linked_descriptions[key]:
+        for index in appearance_groups[key]:
+            _stage_description(index, new_text)
     else:
-        draft_descriptions[selected_entry] = new_text
+        _stage_description(selected_entry, new_text)
     save_description.disabled = draft_descriptions.is_empty()
-    var entry: Dictionary = catalog_entries[selected_entry]
-    var position := visible_indices.find(selected_entry)
+
+func _stage_description(index: int, new_text: String) -> void:
+    catalog_entries[index]["description"] = new_text
+    if new_text == metadata_rows[index]["description"]:
+        draft_descriptions.erase(index)
+    else:
+        draft_descriptions[index] = new_text
+    var position := visible_indices.find(index)
     if position >= 0:
+        var entry: Dictionary = catalog_entries[index]
         contact_grid.set_item_tooltip(position, "%s:%d · appearance %d · %s · %s" % [
             entry["archive"], entry["record"], entry["appearance"],
             VIEW_NAMES[int(entry["view"])], new_text
         ])
+
+func _on_linked_description_toggled(enabled: bool) -> void:
+    if selected_entry < 0 or metadata_rows.is_empty():
+        return
+    linked_descriptions[_appearance_key(metadata_rows[selected_entry])] = enabled
+    status.text = "Linked description %s for this appearance. %s" % [
+        "on" if enabled else "off",
+        "Editing any piece now changes all ten; Save writes the descriptions to CSV." if enabled else \
+        "Each piece can now have its own description."
+    ]
 
 func _save_descriptions() -> void:
     if draft_descriptions.is_empty():
@@ -499,6 +536,8 @@ func _rebuild_grid() -> void:
         description_edit.text = ""
         updating_description = false
         description_edit.editable = false
+        linked_description.set_pressed_no_signal(false)
+        linked_description.disabled = true
         flag_for_regen.set_pressed_no_signal(false)
         flag_for_regen.disabled = true
         usage.text = "No image selected."
@@ -543,6 +582,8 @@ func _select_visible(position: int) -> void:
     updating_description = false
     description_edit.editable = true
     var row: Dictionary = metadata_rows[selected_entry]
+    linked_description.set_pressed_no_signal(linked_descriptions[_appearance_key(row)])
+    linked_description.disabled = false
     flag_for_regen.set_pressed_no_signal(row["flag_for_regen"] == "1")
     flag_for_regen.disabled = false
     if row["usage"] == "visible":
@@ -1326,7 +1367,73 @@ func _run_metadata_check(output_path: String) -> void:
     if second[-1] != "0" or second[9] != edited:
         _map_check_fail("Clearing a regeneration flag did not persist")
         return
-    print("Tile metadata checks passed: 2,100 descriptions; 1,552 exact map jumps; 548 unused images; CSV edit/save and regen toggle persistence")
+    _select_visible(10)
+    if linked_description.button_pressed or appearance_groups[_appearance_key(metadata_rows[10])].size() != 10:
+        _map_check_fail("Descriptions should start unlinked in each ten-piece appearance")
+        return
+    var other_original: String = metadata_rows[11]["description"]
+    linked_description.set_pressed_no_signal(true)
+    _on_linked_description_toggled(true)
+    if not draft_descriptions.is_empty() or metadata_rows[11]["description"] != other_original:
+        _map_check_fail("Enabling linked descriptions changed text before an edit")
+        return
+    var shared := "A shared description for metadata-check"
+    description_edit.text = shared
+    _on_description_changed()
+    if draft_descriptions.size() != 10:
+        _map_check_fail("Editing a linked description did not stage all ten pieces")
+        return
+    for index in appearance_groups[_appearance_key(metadata_rows[10])]:
+        if catalog_entries[index]["description"] != shared:
+            _map_check_fail("Linked description did not update every piece in the appearance")
+            return
+    _select_visible(11)
+    if not linked_description.button_pressed or description_edit.text != shared:
+        _map_check_fail("Linked mode or staged text did not survive selecting another piece")
+        return
+    _select_visible(20)
+    if linked_description.button_pressed:
+        _map_check_fail("Linked mode leaked into another appearance")
+        return
+    _select_visible(11)
+    _save_descriptions()
+    saved = FileAccess.open(output_path, FileAccess.READ)
+    header = saved.get_csv_line()
+    for row_index in 20:
+        var fields := saved.get_csv_line()
+        if row_index >= 10 and fields[9] != shared:
+            _map_check_fail("Saving linked descriptions did not write all ten CSV rows")
+            return
+    saved.close()
+    if header != PackedStringArray(CSV_COLUMNS) or not _load_metadata().is_empty():
+        _map_check_fail("Linked description save changed the CSV schema or could not reload")
+        return
+    _select_visible(11)
+    if linked_description.button_pressed or description_edit.text != shared:
+        _map_check_fail("Descriptions should restart unlinked even when all ten match")
+        return
+    linked_description.set_pressed_no_signal(true)
+    _on_linked_description_toggled(true)
+    linked_description.set_pressed_no_signal(false)
+    _on_linked_description_toggled(false)
+    var independent := "An independent description for metadata-check"
+    description_edit.text = independent
+    _on_description_changed()
+    if draft_descriptions.size() != 1 or catalog_entries[10]["description"] != shared:
+        _map_check_fail("Unlinking did not restore independent piece editing")
+        return
+    _save_descriptions()
+    saved = FileAccess.open(output_path, FileAccess.READ)
+    saved.get_csv_line()
+    for row_index in 20:
+        var fields := saved.get_csv_line()
+        if row_index == 10 and fields[9] != shared or \
+                row_index == 11 and fields[9] != independent or \
+                row_index >= 12 and fields[9] != shared:
+            _map_check_fail("Independent description edit changed another CSV row")
+            return
+    saved.close()
+    print("Tile metadata checks passed: 2,100 descriptions; 1,552 exact map jumps; 548 unused images; CSV edit/save, regen toggle, linked and independent edits")
     get_tree().quit()
 
 func _run_replacement_check(folder: String) -> void:
