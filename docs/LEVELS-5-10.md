@@ -14,6 +14,7 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-510)); the
   campaign stops it at 8.
 - Rogue to level 10: done ([Rogue](ROGUE.md)); the campaign stops it at 9.
+- Monk to level 9: done ([Monk](MONK.md#levels-59)), the Thieves' hall's limit.
 
 ## How the work runs
 

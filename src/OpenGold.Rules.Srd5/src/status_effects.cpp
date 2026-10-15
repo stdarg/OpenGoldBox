@@ -114,7 +114,8 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::shield && kind != EffectKind::acid_arrow &&
             kind != EffectKind::raging && kind != EffectKind::reckless &&
             kind != EffectKind::addled && kind != EffectKind::lit &&
-            kind != EffectKind::moonlit && kind != EffectKind::scorched) || !can_apply(effects) ||
+            kind != EffectKind::moonlit && kind != EffectKind::scorched &&
+            kind != EffectKind::stunned && kind != EffectKind::staggered) || !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -334,7 +335,8 @@ bool paralyzed(const EffectState &effects)
 
 bool incapacitated(const EffectState &effects)
 {
-    return paralyzed(effects) || has_effect(effects, EffectKind::drowsy) ||
+    return paralyzed(effects) || has_effect(effects, EffectKind::stunned) ||
+           has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing);
 }
 
@@ -726,7 +728,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::hamstrung))
+    if (value > static_cast<unsigned>(EffectKind::staggered))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }
@@ -756,7 +758,8 @@ EffectState read_effects(std::istream &in)
         unsigned_field(in, e.save_in_ms);
         const auto kind = saved_effect_kind(saved_kind);
         const bool timed = kind == EffectKind::ray_of_frost || kind == EffectKind::frosts_chill ||
-                           kind == EffectKind::hamstrung ||
+                           kind == EffectKind::hamstrung || kind == EffectKind::stunned ||
+                           kind == EffectKind::staggered ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||

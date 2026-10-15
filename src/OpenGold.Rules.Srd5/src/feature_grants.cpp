@@ -175,6 +175,22 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 9)
             add("feature:supreme_sneak", "subclass:rogue:thief");
     }
+    // Acrobatic Movement (Monk 9) is cut (SCOPE-2).
+    if (klass == CharacterClass::monk)
+    {
+        if (level == 5)
+        {
+            add("feature:extra_attack", "class:monk");
+            add("feature:stunning_strike", "class:monk");
+        }
+        if (level == 6)
+        {
+            add("feature:empowered_strikes", "class:monk");
+            add("feature:wholeness_of_body", "subclass:monk:open_hand");
+        }
+        if (level == 7)
+            add("feature:evasion", "class:monk");
+    }
     return result;
 }
 

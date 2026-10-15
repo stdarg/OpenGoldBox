@@ -179,8 +179,13 @@ enum class EffectKind : unsigned
     heightened = 74,
     // Brutal Strike's Hamstring Blow: Speed 15 feet lower until the start of
     // the Barbarian's next turn.
+    hamstrung = 75,
+    // Stunning Strike (Monk 5): Stunned until the start of the Monk's next
+    // turn; or, on a successful save, Speed halved (staggered) while the next
+    // attack roll against it has Advantage (a Guiding Bolt effect).
+    stunned = 76,
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    hamstrung = 75
+    staggered = 77
 };
 
 // The longest a spell benefit lasts, in milliseconds.

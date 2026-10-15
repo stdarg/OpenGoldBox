@@ -340,16 +340,6 @@ void indomitable_checks()
     throw std::runtime_error("No seed's Blindness save calls for Indomitable");
 }
 
-// Other classes stay at level 4 until their features through 10 work.
-void cap_checks()
-{
-    CampaignParty party(module());
-    const auto id = party.add_pc(Character(*srd5::character_rules(), draft("monk"), {}));
-    party.award_experience(64000, "levels-xp");
-    while (party.can_advance(id))
-        party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 4, "A Monk stops at level 4 for now");
-}
 } // namespace
 
 int main()
@@ -362,7 +352,6 @@ int main()
         tactical_master_checks();
         heroic_warrior_checks();
         indomitable_checks();
-        cap_checks();
     }
     catch (const std::exception &error)
     {

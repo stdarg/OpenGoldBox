@@ -77,3 +77,29 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
   Focus Point and save, Decline; Topple, Addle stopping Opportunity Attacks and
   Push's 15 feet), `opengold_wizard_spell_tests` (Shield
   still asked).
+
+## Levels 5–9
+
+The Thieves' hall trains a Monk to level 9
+([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)),
+which is also its rules cap for now.
+
+| Level | Gains |
+| ---: | --- |
+| 5 | Extra Attack; Stunning Strike; Martial Arts d8; Proficiency Bonus +3 |
+| 6 | Empowered Strikes; Open Hand: Wholeness of Body; Unarmored Movement +15 feet |
+| 7 | Evasion |
+| 8 | A feat or ability points |
+| 9 | Proficiency Bonus +4 (Acrobatic Movement is cut, SCOPE-2) |
+
+- **Stunning Strike:** the A cycle offers "Melee attack (Stunning Strike)" once
+  a turn while the Monk has Focus. On a hit it spends 1 Focus: the target makes
+  a Constitution save against the Focus DC or is Stunned until the start of the
+  Monk's next turn (Incapacitated, failing Strength and Dexterity saves, attacked
+  with Advantage); on a success its Speed is halved and the next attack roll
+  against it has Advantage. Flurry of Blows' strikes do not offer it.
+- **Empowered Strikes:** recorded; its Force damage waits for a decision.
+- **Wholeness of Body:** a Bonus Action heals the Martial Arts die + Wisdom
+  modifier, a Wisdom modifier's worth of uses (at least 1) per Long Rest.
+- **Evasion:** as the [Rogue's](ROGUE.md).
+- Verification: `opengold_monk_levels_tests`.

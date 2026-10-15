@@ -661,6 +661,10 @@ struct Definition
     bool feral_instinct{}, mindless_rage{}, instinctive_pounce{}, brutal_strike{}, retaliation{};
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
+    // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
+    // Wholeness of Body's uses per Long Rest.
+    int martial_die{6}, wholeness{}, wisdom{};
+    bool stunning_strike{};
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -769,6 +773,7 @@ struct Actor
     bool attacked{}; // made an attack roll on its own turn (Reckless Attack's first)
     int pounce{};    // Instinctive Pounce's feet, usable only right after entering a Rage
     bool brutal_used{}; // Brutal Strike, once on each of its turns
+    bool stun_used{};   // Stunning Strike, once on each turn
     // The straight line just moved along this turn, for a Boar's charge: its
     // first and last cells, the step repeated and its length. Any command but
     // moving or a melee attack ends it.
@@ -878,7 +883,9 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"uncanny_metabolism", "Uncanny Metabolism", &Actor::arcane,
         &Definition::metabolism, 0, false},
     ResourceDescriptor{"indomitable", "Indomitable", &Actor::arcane, &Definition::indomitable, 0,
-        true}};
+        true},
+    ResourceDescriptor{"wholeness_of_body", "Wholeness of Body", &Actor::free_casts,
+        &Definition::wholeness, 0, true}};
 
 // Whether a level-up takes Lessons of the First Ones' Skilled, as a new
 // invocation or one swapped in.
@@ -920,7 +927,7 @@ int slot2_room(const Definition &d)
 // by a Long Rest; no class has two of them.
 int free_cast_capacity(const Definition &d)
 {
-    return d.free_smite + d.favored_enemy + d.innate_sorcery;
+    return d.free_smite + d.favored_enemy + d.innate_sorcery + d.wholeness;
 }
 
 // One bit per Magic Initiate feat, each its spell's free cast.
@@ -1155,7 +1162,11 @@ int movement_left(const Actor &a)
 {
     if (!conscious(a) || a.aim_used)
         return 0;
-    const int penalty = std::min(a.definition.speed, detail::speed_penalty(a.effects));
+    // A resisted Stunning Strike halves the Speed.
+    const int staggered = detail::has_effect(a.effects, detail::EffectKind::staggered)
+                          ? a.definition.speed / 2 : 0;
+    const int penalty =
+        std::min(a.definition.speed, detail::speed_penalty(a.effects) + staggered);
     return std::max(0, a.movement - penalty * (1 + a.dashes));
 }
 
@@ -1358,8 +1369,8 @@ character_definition(std::string_view bytes,
     d.melee_bonus = proficiency + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
     d.champion = klass == CharacterClass::fighter && level >= 3;
-    d.extra_attacks =
-        (klass == CharacterClass::fighter || klass == CharacterClass::barbarian) && level >= 5 ? 1 : 0;
+    d.extra_attacks = (klass == CharacterClass::fighter || klass == CharacterClass::barbarian ||
+                       klass == CharacterClass::monk) && level >= 5 ? 1 : 0;
     const bool barbarian = klass == CharacterClass::barbarian;
     d.mindless_rage = barbarian && level >= 6;
     d.feral_instinct = d.instinctive_pounce = barbarian && level >= 7;
@@ -1367,7 +1378,12 @@ character_definition(std::string_view bytes,
     d.retaliation = barbarian && level >= 10;
     const bool rogue = klass == CharacterClass::rogue;
     d.cunning_strike = d.uncanny_dodge = rogue && level >= 5;
-    d.evasion = rogue && level >= 7;
+    d.evasion = (rogue || klass == CharacterClass::monk) && level >= 7;
+    d.martial_die = klass == CharacterClass::monk && level >= 5 ? 8 : 6;
+    d.wisdom = ability_modifier(scores[Ability::wisdom]);
+    d.stunning_strike = klass == CharacterClass::monk && level >= 5;
+    d.wholeness = klass == CharacterClass::monk && level >= 6
+                  ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
     d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
     d.tactical_master = klass == CharacterClass::fighter && level >= 9;
@@ -1714,9 +1730,9 @@ character_definition(std::string_view bytes,
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
     d.martial_arts = klass == CharacterClass::monk && !armor && !shield && monk_weapons;
-    // Unarmored Movement: 10 feet more without armor or a Shield.
+    // Unarmored Movement: 10 feet more without armor or a Shield, 15 from level 6.
     if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
-        d.speed += 10;
+        d.speed += level >= 6 ? 15 : 10;
     // Fast Movement: 10 feet more without Heavy armor.
     if (klass == CharacterClass::barbarian && level >= 5 && !d.heavy_armor)
         d.speed += 10;
@@ -1725,14 +1741,14 @@ character_definition(std::string_view bytes,
         d.martial_modifier = std::max(str, dex);
         if (!weapon)
         {
-            d.melee = {1, 6, d.martial_modifier};
+            d.melee = {1, d.martial_die, d.martial_modifier};
             d.melee_bonus = proficiency + d.martial_modifier;
         }
         else
         {
             d.melee_bonus += d.martial_modifier - d.melee_ability;
             d.melee.bonus = d.martial_modifier;
-            d.melee.sides = std::max(d.melee.sides, 6);
+            d.melee.sides = std::max(d.melee.sides, d.martial_die);
         }
         d.melee_ability = d.martial_modifier;
     }
@@ -2169,6 +2185,8 @@ class Session final : public CombatSession
         CunningStrike kind{};
     };
     std::optional<PendingCunning> cunning_;
+    // Stunning Strike (Monk 5): the attack it is tried with, if it hits.
+    EntityId stunning_{};
     std::optional<PendingMastery> mastery_;
     // Creatures chosen so far for a spell that affects several (CLASS-2).
     struct PendingSelection
@@ -2819,6 +2837,8 @@ class Session final : public CombatSession
     [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural, int forgo = 0);
     // Cunning Strike's effect after a hit that dealt Sneak Attack damage.
     void cunning_effect(Actor &rogue, Actor &target, CunningStrike kind);
+    // Stunning Strike's Constitution save after a hit.
+    void stunning_strike(Actor &monk, Actor &target);
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
     int resolved_damage(Actor &target, detail::DamageType type, int amount);
@@ -3069,7 +3089,7 @@ Actor Session::unarmed_actor(const Actor &a) const
     // weapon's mastery, grip or feat riders.
     auto result = a;
     auto &d = result.definition;
-    d.melee = {1, 6, d.martial_modifier};
+    d.melee = {1, d.martial_die, d.martial_modifier};
     d.melee_bonus = 2 + (d.level - 1) / 4 + d.martial_modifier;
     d.melee_ability = d.martial_modifier;
     d.melee_type = detail::DamageType::bludgeoning;
@@ -4118,6 +4138,12 @@ Snapshot Session::snapshot() const
             messages.push_back({"Paralyzed", {}});
             s.combatants.back().status += " | Paralyzed";
             s.combatants.back().conditions.push_back({"Paralyzed", {}});
+        }
+        if (detail::has_effect(a.effects, detail::EffectKind::stunned))
+        {
+            messages.push_back({"Stunned", {}});
+            s.combatants.back().status += " | Stunned";
+            s.combatants.back().conditions.push_back({"Stunned", {}});
         }
         if (detail::restrained(a.effects))
         {
@@ -5568,6 +5594,9 @@ std::vector<Command> Session::legal_commands() const
         add(id, "aggressive", "Aggressive");
     if (a.bonus && a.winds > 0 && a.life.hp < max_hp(a))
         add(id, "second_wind", "Second Wind", id);
+    // Wholeness of Body: a Bonus Action heals the Martial Arts die + Wisdom.
+    if (a.bonus && d.wholeness && a.free_casts > 0 && a.life.hp < max_hp(a))
+        add(id, "wholeness_of_body", "Wholeness of Body", id);
     // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
     // can take effect, including one at 0 Hit Points.
     if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
@@ -5720,6 +5749,9 @@ std::vector<Command> Session::legal_commands() const
         }
         offer_tactical(AttackRange::melee, feet <= d.reach, other);
         offer_cunning(AttackRange::melee, feet <= d.reach, other);
+        // Stunning Strike: a Monk weapon or Unarmed Strike, once a turn, 1 Focus on a hit.
+        if (feet <= d.reach && d.stunning_strike && d.martial_arts && !a.stun_used && a.surges > 0)
+            add(id, "melee_stun", "Melee attack (Stunning Strike)", other.source.id);
         // Flame Blade: a melee spell attack with the blade as an Action.
         if (feet <= 5 && a.actions.available(true) &&
                 detail::has_effect(a.effects, detail::EffectKind::flame_blade))
@@ -7791,6 +7823,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // Guiding Bolt: the next attack roll against the target has Advantage.
     if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
         result.advantage = true;
+    // Stunned: attack rolls against it have Advantage.
+    if (detail::has_effect(target.effects, detail::EffectKind::stunned))
+        result.advantage = true;
     // Restrained: attacks against it have Advantage, its own have Disadvantage.
     if (detail::restrained(target.effects))
         result.advantage = true;
@@ -8311,6 +8346,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         cunning_effect(actor(a.source.id), target, cunning_->kind);
     else if (stealthy)
         end_hiding(a.source.id);
+    if (hit && stunning_ == a.source.id && !spell && !ranged && d.martial_arts &&
+            !actor(a.source.id).stun_used && actor(a.source.id).surges > 0 && !target.life.dead &&
+            target.life.hp > 0)
+        stunning_strike(actor(a.source.id), target);
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
     answer_damage();
     return hit;
@@ -8585,6 +8624,31 @@ void Session::attack_recklessly(Actor &a)
                            detail::EffectKind::reckless);
     log(a.source.name + " attacks recklessly.",
     {"{name} attacks recklessly.", {{"name", a.source.name}}});
+}
+
+void Session::stunning_strike(Actor &monk, Actor &target)
+{
+    monk.stun_used = true;
+    --monk.surges;
+    log(monk.source.name + " attempts a Stunning Strike.",
+    {"{name} attempts a Stunning Strike.", {{"name", monk.source.name}}});
+    if (!saving_throw_succeeds(target, detail::Ability::constitution, def(monk).focus_dc))
+    {
+        detail::apply_poisoned(target.effects, effect_source(monk), monk.source.name,
+                               next_turn_ms(monk), detail::EffectKind::stunned);
+        log(target.source.name + " is Stunned.", {"{name} is Stunned.", {{"name", target.source.name}}});
+        return;
+    }
+    // Resisted: Speed halved, and the next attack roll against it has Advantage.
+    detail::apply_poisoned(target.effects, effect_source(monk), monk.source.name,
+                           next_turn_ms(monk), detail::EffectKind::staggered);
+    detail::apply_guiding_bolt(target.effects, effect_source(monk), monk.source.name,
+                               next_turn_ms(monk));
+    log(target.source.name + " is staggered: Speed halved, and the next attack against it has Advantage.",
+    {
+        "{name} is staggered: Speed halved, and the next attack against it has Advantage.",
+        {{"name", target.source.name}}
+    });
 }
 
 void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
@@ -9021,6 +9085,7 @@ bool Session::begin_turn()
         actor.attacked = false;
         actor.pounce = 0;
         actor.brutal_used = false;
+        actor.stun_used = false;
         actor.run_feet = 0;
         actor.light_origins.clear();
         actor.light_extra = 0;
@@ -9131,6 +9196,17 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         log(target.source.name + " automatically fails the " + name + " save while Paralyzed.",
         {
             "{name} automatically fails the {ability} save while Paralyzed.",
+            {{"name", target.source.name}, {"ability", name, true}}
+        });
+        return false;
+    }
+    if (detail::has_effect(target.effects, detail::EffectKind::stunned) &&
+            (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
+    {
+        const std::string name = ability == detail::Ability::strength ? "Strength" : "Dexterity";
+        log(target.source.name + " automatically fails the " + name + " save while Stunned.",
+        {
+            "{name} automatically fails the {ability} save while Stunned.",
             {{"name", target.source.name}, {"ability", name, true}}
         });
         return false;
@@ -10003,6 +10079,15 @@ void Session::dispatch(const Command &command)
                 cunning_.reset();
                 return;
             }
+    if (command.verb == "melee_stun")
+    {
+        stunning_ = command.actor;
+        auto melee = command;
+        melee.verb = "melee";
+        dispatch(melee);
+        stunning_ = 0;
+        return;
+    }
     if (command.verb == "brutal_forceful" || command.verb == "brutal_hamstring")
     {
         actor(command.actor).brutal_used = true;
@@ -10588,6 +10673,14 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "end")
         end_turn();
+    else if (command.verb == "wholeness_of_body")
+    {
+        a.bonus = false;
+        --a.free_casts;
+        log(a.source.name + " uses Wholeness of Body.",
+        {"{name} uses Wholeness of Body.", {{"name", a.source.name}}});
+        heal(a, roll(d.martial_die) + std::max(1, d.wisdom));
+    }
     else if (command.verb == "second_wind")
     {
         a.bonus = false;
@@ -10813,6 +10906,7 @@ std::string Session::save() const
             << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
             << ' ' << a.moved << ' ' << a.attacked << ' ' << a.pounce << ' ' << a.brutal_used
+            << ' ' << a.stun_used
             << ' ' << a.selected_weapon
             << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
@@ -11004,7 +11098,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.lay_on_hands >> actor.free_casts >> actor.channel_divinity >>
           actor.initiate_casts >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
-          actor.attacked >> actor.pounce >> actor.brutal_used >> actor.selected_weapon >> light_count;
+          actor.attacked >> actor.pounce >> actor.brutal_used >> actor.stun_used >>
+          actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
     // The checkpoint stores a side as its enumerator's value.
@@ -12353,6 +12448,18 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && result.level == 10)
             result.description =
                 "A feat or ability points.";
+        if (klass == CharacterClass::monk && result.level == 5)
+            result.description =
+                "Extra Attack: two attacks with each Attack action.\nStunning Strike: once a turn, a hit with a Monk weapon or an Unarmed Strike may spend 1 Focus: Constitution save or Stunned until your next turn.\nMartial Arts d8; Proficiency Bonus +3.";
+        if (klass == CharacterClass::monk && result.level == 6)
+            result.description =
+                "Empowered Strikes.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet.";
+        if (klass == CharacterClass::monk && result.level == 7)
+            result.description =
+                "Evasion: a Dexterity save against half damage takes none on a success and half on a failure.";
+        if (klass == CharacterClass::monk && result.level == 9)
+            result.description =
+                "Proficiency Bonus +4.";
         if (klass == CharacterClass::fighter && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nTactical Shift: after Second Wind, move up to half Speed without provoking Opportunity Attacks.\nProficiency Bonus +3.";
@@ -12378,7 +12485,7 @@ class Module final : public RulesModule
             result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (klass == CharacterClass::sorcerer)
             result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
-        if (klass == CharacterClass::monk)
+        if (klass == CharacterClass::monk && result.level <= 4)
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
         if (klass == CharacterClass::barbarian && result.level <= 4)
             result.description = "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
@@ -14376,7 +14483,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.195", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.196", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
