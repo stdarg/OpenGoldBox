@@ -96,9 +96,9 @@ CharacterClass class_of(const rules::CharacterSheet &sheet)
 
 unsigned level_cap(CharacterClass character_class)
 {
-    return character_class == CharacterClass::fighter ||
-           character_class == CharacterClass::barbarian ||
-           character_class == CharacterClass::rogue ? 10
+    return character_class == CharacterClass::fighter ? 15
+           : character_class == CharacterClass::barbarian ||
+             character_class == CharacterClass::rogue ? 10
            : character_class == CharacterClass::monk ? 9 : 4;
 }
 

@@ -184,8 +184,11 @@ enum class EffectKind : unsigned
     // turn; or, on a successful save, Speed halved (staggered) while the next
     // attack roll against it has Advantage (a Guiding Bolt effect).
     stunned = 76,
+    staggered = 77,
+    // Studied Attacks (Fighter 13): after a miss, the Fighter's next attack
+    // roll against the creature has Advantage, until the end of its next turn.
     // The last kind: a new one goes after it and updates saved_effect_kind().
-    staggered = 77
+    studied = 78
 };
 
 // The longest a spell benefit lasts, in milliseconds.
@@ -325,6 +328,10 @@ void apply_hamstring(EffectState &effects, EffectSource source, std::string name
                                       rules::EntityId source_actor, std::string_view spell);
 [[nodiscard]] bool sapped(const EffectState &effects);
 [[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source);
+[[nodiscard]] bool studied_by(const EffectState &effects, EffectSource source);
+// Replaces the source's earlier Studied Attacks mark on the creature.
+void apply_studied(EffectState &effects, EffectSource source, std::string name,
+                   unsigned duration_ms);
 [[nodiscard]] bool has_attack_mastery(const EffectState &effects);
 [[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, EffectSource source);
 void apply_attack_mastery(EffectState &, EffectKind, EffectSource source,

@@ -1,13 +1,15 @@
 # Fighter
 
-The Fighter (Champion) as the game plays it from level 5 to 10, from SRD 5.2.1
+The Fighter (Champion) as the game plays it from level 5 to 15, from SRD 5.2.1
 pp. 47–49. Levels 1–4 are in [Fighting Styles](FIGHTER-STYLES.md),
 [Action Surge](ACTION-SURGE.md), [Weapon Mastery](WEAPON-MASTERY.md) and
-[Champion](CHAMPION.md); the plan is [levels 5–10](LEVELS-5-10.md).
+[Champion](CHAMPION.md); the plan is [levels 5–10](LEVELS-5-10.md), and the
+facts for 11–15 are in the [inventory](LEVELS-11-15-INVENTORY.md).
 
 In the campaign a Fighter stops at level 8, the limit of Phlan's Training Hall
-([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)).
-The rules go to level 10, the class's cap for now.
+([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)),
+until [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)'s one limit
+for every class is settled. The rules go to level 15, the cap.
 
 | Level | Gains |
 | ---: | --- |
@@ -17,6 +19,11 @@ The rules go to level 10, the class's cap for now.
 | 8 | A feat or ability points |
 | 9 | Indomitable, Tactical Master; Proficiency Bonus +4 |
 | 10 | Champion: Heroic Warrior; a fifth Weapon Mastery; a fourth Second Wind |
+| 11 | Two Extra Attacks |
+| 12 | A feat or ability points |
+| 13 | Indomitable's second use, Studied Attacks; Proficiency Bonus +5 |
+| 14 | A feat or ability points |
+| 15 | Champion: Superior Critical |
 
 - **Extra Attack:** each Attack action makes two attacks, Action Surge's too.
   The second may target another creature, and the Fighter may move between
@@ -38,8 +45,15 @@ The rules go to level 10, the class's cap for now.
   pact weapon's damage types are offered.
 - **Heroic Warrior:** at the start of each of its turns in a fight, a Champion
   without Heroic Inspiration gains it.
+- **Two Extra Attacks:** each Attack action makes three attacks.
+- **Studied Attacks:** when the Fighter misses a creature, its next attack
+  roll against that creature, until the end of its next turn, has Advantage.
+  The creature's conditions show the mark.
+- **Superior Critical:** weapon and Unarmed Strike attack rolls of 18–20 are
+  Critical Hits.
 
-Verification: `opengold_fighter_levels_tests` (ordinary level-ups to 10 and
-the campaign's stop at 8, grants, feats, Second Wind, masteries, the
-Proficiency Bonus, save and reload, Extra Attack with Action Surge and a
-checkpoint, Tactical Shift, Tactical Master, Heroic Warrior, Indomitable).
+Verification: `opengold_fighter_levels_tests` (ordinary level-ups to 15 and
+the campaign's stop at 8, grants, feats, Second Wind, Indomitable's uses,
+masteries, the Proficiency Bonus, save and reload, Extra Attack and Two Extra
+Attacks with Action Surge and a checkpoint, Tactical Shift, Tactical Master,
+Heroic Warrior, Indomitable, Studied Attacks, Superior Critical).

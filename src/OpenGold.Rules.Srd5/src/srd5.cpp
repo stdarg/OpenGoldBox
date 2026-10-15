@@ -567,6 +567,9 @@ struct Definition
     Dice ranged;
     int range{}, long_range{}, winds{}, slots{}, casting{}, level{}, slots2{};
     int extra_attacks{}; // Extra Attack: attacks after the Attack action's first
+    // The lowest d20 that is a Critical Hit with a weapon or Unarmed Strike:
+    // the Champion's Improved Critical (19) and Superior Critical (18).
+    int critical_from{20};
     int indomitable{};   // Indomitable's uses per Long Rest
     // Known and prepared spells, by id. Not a bitmask: an int caps the catalog
     // at 31 spells and the level-four milestone needs 139.
@@ -656,7 +659,7 @@ struct Definition
     bool lucky{}; // Halfling: a d20 test's 1 is rolled again
     bool nimble{}; // Halfling Nimbleness: moves through larger creatures' spaces
     bool naturally_stealthy{}; // Halfling: a larger creature is enough to hide behind
-    bool tactical_shift{}, tactical_master{}, heroic_warrior{};
+    bool tactical_shift{}, tactical_master{}, heroic_warrior{}, studied_attacks{};
     // Barbarian levels 5-10.
     bool feral_instinct{}, mindless_rage{}, instinctive_pounce{}, brutal_strike{}, retaliation{};
     // Rogue levels 5-10.
@@ -1369,8 +1372,13 @@ character_definition(std::string_view bytes,
     d.melee_bonus = proficiency + str;
     d.melee = {0, 0, std::max(0, 1 + str)};
     d.champion = klass == CharacterClass::fighter && level >= 3;
+    d.critical_from = !d.champion ? 20 : level >= 15 ? 18 : 19;
     d.extra_attacks = (klass == CharacterClass::fighter || klass == CharacterClass::barbarian ||
                        klass == CharacterClass::monk) && level >= 5 ? 1 : 0;
+    // Two Extra Attacks (Fighter 11): three attacks with each Attack action.
+    if (klass == CharacterClass::fighter && level >= 11)
+        d.extra_attacks = 2;
+    d.studied_attacks = klass == CharacterClass::fighter && level >= 13;
     const bool barbarian = klass == CharacterClass::barbarian;
     d.mindless_rage = barbarian && level >= 6;
     d.feral_instinct = d.instinctive_pounce = barbarian && level >= 7;
@@ -1389,7 +1397,7 @@ character_definition(std::string_view bytes,
     d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
     d.tactical_master = klass == CharacterClass::fighter && level >= 9;
     d.heroic_warrior = klass == CharacterClass::fighter && level >= 10;
-    d.indomitable = klass == CharacterClass::fighter && level >= 9 ? 1 : 0;
+    d.indomitable = klass != CharacterClass::fighter ? 0 : level >= 13 ? 2 : level >= 9 ? 1 : 0;
     d.arcane = klass == CharacterClass::wizard ? 1 : 0;
     d.lay_on_hands = klass == CharacterClass::paladin ? 5 * level : 0;
     d.channel_divinity = (klass == CharacterClass::paladin && level >= 3) ||
@@ -2740,7 +2748,7 @@ class Session final : public CombatSession
 
     bool critical_hit(const Actor &a, const Actor &target, int natural, bool spell = false) const
     {
-        return natural == 20 || (!spell && def(a).champion && natural == 19) ||
+        return natural == 20 || (!spell && natural >= def(a).critical_from) ||
                (helpless(target) && distance(a.source.cell, target.source.cell) <= 5);
     }
 
@@ -2844,6 +2852,8 @@ class Session final : public CombatSession
     void cunning_effect(Actor &rogue, Actor &target, CunningStrike kind);
     // Stunning Strike's Constitution save after a hit.
     void stunning_strike(Actor &monk, Actor &target);
+    // Studied Attacks: a miss gives the Fighter's next attack on the target Advantage.
+    void study(const Actor &fighter, Actor &target);
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
     int resolved_damage(Actor &target, detail::DamageType type, int amount);
@@ -4053,6 +4063,17 @@ Snapshot Session::snapshot() const
             messages.push_back({"Frost's Chill: Speed reduced by 10 feet.", {}});
             view.conditions.push_back({"Frost's Chill: Speed reduced by 10 feet.", {}});
         }
+        for (const auto &effect : a.effects.active)
+            if (effect.kind == detail::EffectKind::studied)
+            {
+                Message message
+                {
+                    "Studied Attacks ({source}): source's next attack against this creature has Advantage.",
+                    {{"source", effect.source_name}}
+                };
+                messages.push_back(message);
+                view.conditions.push_back(std::move(message));
+            }
         if (detail::has_effect(a.effects, detail::EffectKind::guiding_bolt))
         {
             messages.push_back({"Guiding Bolt: the next attack roll against it has Advantage.", {}});
@@ -7805,7 +7826,8 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     if (!spell && d.bloodied_fury && a.life.hp * 2 <= max_hp(a))
         result.advantage = true;
     if (helpless(target) || a.aim_ready || pack_tactics ||
-            detail::vexed_by(target.effects, effect_source(a)))
+            detail::vexed_by(target.effects, effect_source(a)) ||
+            detail::studied_by(target.effects, effect_source(a)))
         result.advantage = true;
     if (detail::sapped(a.effects) ||
             detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
@@ -7896,6 +7918,17 @@ void Session::extend_run(Actor &a, Cell from, Cell to)
     a.run_end = to;
 }
 
+void Session::study(const Actor &fighter, Actor &target)
+{
+    // Studied Attacks lasts until the end of the Fighter's next turn, as Vex does.
+    const auto index = index_of(fighter.source.id);
+    const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    detail::apply_studied(target.effects, effect_source(fighter), fighter.source.name,
+                          next_turn_ms(actor(fighter.source.id)) + slot);
+    log(fighter.source.name + " studies " + target.source.name + ".",
+    {"{name} studies {target}.", {{"name", fighter.source.name}, {"target", target.source.name}}});
+}
+
 bool Session::charges(const Actor &a, const Actor &target) const
 {
     // 20 feet or more in one straight line, each step 5 feet closer to the
@@ -7925,7 +7958,7 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
         {"bonus", std::to_string(bonus)},
         {"ac", std::to_string(armor_class(target))},
         {"disadvantage", modifier_label, true}};
-    if (!(!spell && def(a).champion && natural == 19) &&
+    if (!(!spell && natural >= def(a).critical_from) &&
             !attack_hits(natural, bonus, armor_class(target)))
     {
         log(message + " misses.",
@@ -7937,6 +7970,8 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
                 weapon_mastery(a, AttackRange::melee) == detail::Mastery::graze &&
                 graze_damage(a, target) > 0)
             graze_ = PendingGraze{a.source.id, target.source.id, natural};
+        if (def(a).studied_attacks)
+            study(a, target);
         return;
     }
     const bool critical = critical_hit(a, target, natural, spell);
@@ -8139,10 +8174,13 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     a.aim_ready = false;
     if (actors_[turn_].source.id == a.source.id)
         actor(a.source.id).attacked = true;
-    // Guiding Bolt's Advantage is spent on this attack roll.
-    std::erase_if(target.effects.active, [](const auto & e)
+    // Guiding Bolt's and Studied Attacks' Advantage is spent on this attack roll.
+    const auto attacker = effect_source(a);
+    std::erase_if(target.effects.active, [&](const auto & e)
     {
-        return e.kind == detail::EffectKind::guiding_bolt;
+        return e.kind == detail::EffectKind::guiding_bolt ||
+               (e.kind == detail::EffectKind::studied && e.source_scope == attacker.scope &&
+                e.source_actor == attacker.actor);
     });
     const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
     const bool charging = !spell && !ranged && charges(a, target);
@@ -8175,11 +8213,11 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log("Seeking Spell rerolls the missed attack.", {"Seeking Spell rerolls the missed attack.", {}});
     }
     // Heroic Inspiration rolls a missed attack again.
-    if (natural != 20 && !(!spell && d.champion && natural == 19) &&
+    if (natural != 20 && !(!spell && natural >= d.critical_from) &&
             !attack_hits(natural, bonus, armor_class(target)))
         if (const auto again = heroic_reroll(actor(a.source.id)))
             natural = *again;
-    const bool automatic = natural == 20 || (!spell && d.champion && natural == 19);
+    const bool automatic = natural == 20 || (!spell && natural >= d.critical_from);
     bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     // Bardic Inspiration may rescue a miss; Cutting Words may spoil a hit.
     if (!hit && natural != 1)
@@ -11450,7 +11488,7 @@ void Session::validate_champion_move() const
             (who->actions.surge || (who->actions.normal && !who->surge_used))) ||
             c.remaining < 0 || c.remaining > budget ||
             distance(c.origin, who->source.cell) > budget - c.remaining ||
-            !(c.natural == 20 || (!c.spell && c.natural == 19) ||
+            !(c.natural == 20 || (!c.spell && c.natural >= def(*who).critical_from) ||
               ((c.helpless || target->life.hp == 0) &&
                distance(c.triggered ? c.trigger_origin : c.origin,
                         c.triggered ? c.target_origin : target->source.cell) <= 5)) ||
@@ -11505,7 +11543,7 @@ void Session::validate_graze() const
             weapon_mastery(*a, AttackRange::melee) != detail::Mastery::graze ||
             g.natural < 1 || g.natural > 20 ||
             attack_hits(g.natural, def(*a).melee_bonus, armor_class(*t)) ||
-            (def(*a).champion && g.natural == 19) ||
+            g.natural >= def(*a).critical_from ||
             distance(a->source.cell, t->source.cell) > def(*a).reach ||
             !line_of_sight(a->source.cell, t->source.cell) || check_choice_ ||
             temporary_offer_ || champion_move_ || outcome_ != Outcome::ongoing ||
@@ -12199,10 +12237,11 @@ class Module final : public RulesModule
 
     unsigned experience_for_level(unsigned level) const override
     {
-        // SRD 5.2.1 p. 23, through level 10.
+        // SRD 5.2.1 p. 23, through level 15.
         static constexpr unsigned thresholds[] {0, 0, 300, 900, 2700, 6500, 14000, 23000, 34000,
-                                                48000, 64000};
-        if (level < 1 || level > 10)
+                                                48000, 64000, 85000, 100000, 120000, 140000,
+                                                165000};
+        if (level < 1 || level > 15)
             throw std::runtime_error("Unsupported character level");
         return thresholds[level];
     }
@@ -12484,6 +12523,13 @@ class Module final : public RulesModule
         if (klass == CharacterClass::fighter && result.level == 10)
             result.description =
                 "Champion: Heroic Inspiration at the start of each of your turns in a fight, when you lack it.\nA fifth Weapon Mastery, and a fourth Second Wind.";
+        if (klass == CharacterClass::fighter && result.level == 11)
+            result.description = "Two Extra Attacks: three attacks with each Attack action.";
+        if (klass == CharacterClass::fighter && result.level == 13)
+            result.description =
+                "Indomitable: two uses per Long Rest.\nStudied Attacks: after you miss a creature, your next attack roll against it before the end of your next turn has Advantage.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::fighter && result.level == 15)
+            result.description = "Champion: Superior Critical. Weapon and Unarmed Strike criticals on 18–20.";
         if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
@@ -14496,7 +14542,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.197", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.198", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

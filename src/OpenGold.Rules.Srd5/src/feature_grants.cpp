@@ -140,6 +140,12 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         }
         if (level == 10)
             add("feature:heroic_warrior", "subclass:fighter:champion");
+        if (level == 11)
+            add("feature:two_extra_attacks", "class:fighter");
+        if (level == 13)
+            add("feature:studied_attacks", "class:fighter");
+        if (level == 15)
+            add("feature:superior_critical", "subclass:fighter:champion");
     }
     if (klass == CharacterClass::barbarian)
     {

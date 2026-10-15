@@ -113,44 +113,48 @@ void fighter_checks()
               "In the campaign a Fighter stops at the hall's level 8");
     }
     CampaignParty party(module());
-    const auto id = party.add_pc(fighter(10));
+    const auto id = party.add_pc(fighter(15));
     const auto &sheet = [&]() -> const CharacterSheet &
     {
         return party.member(id).character.sheet();
     };
-    check(sheet().level == 10, "The rules advance a Fighter to level 10");
+    check(sheet().level == 15, "The rules advance a Fighter to level 15");
     check(!party.rule_module().advancement_options(sheet()).level,
-          "Level 10 is the Fighter's rules cap for now");
+          "Level 15 is the Fighter's rules cap");
     check(holds(sheet(), "feature:extra_attack", 5) && holds(sheet(), "feature:tactical_shift", 5) &&
           holds(sheet(), "feature:additional_fighting_style", 7) &&
           holds(sheet(), "feature:indomitable", 9) && holds(sheet(), "feature:tactical_master", 9) &&
-          holds(sheet(), "feature:heroic_warrior", 10),
+          holds(sheet(), "feature:heroic_warrior", 10) &&
+          holds(sheet(), "feature:two_extra_attacks", 11) &&
+          holds(sheet(), "feature:studied_attacks", 13) &&
+          holds(sheet(), "feature:superior_critical", 15),
           "The class and Champion features arrive at their levels");
     check(std::count_if(sheet().grants.begin(), sheet().grants.end(), [](const auto & g)
     {
         return g.source_id == "class:fighter:ability_score_improvement";
-    }) == 3, "Feats or ability points at levels 4, 6 and 8");
-    check(sheet().ability_adjustments.size() == 4,
+    }) == 5, "Feats or ability points at levels 4, 6, 8, 12 and 14");
+    check(sheet().ability_adjustments.size() == 6,
           "Each Ability Score Improvement records its own adjustment");
     check(std::count_if(sheet().grants.begin(), sheet().grants.end(), [](const auto & g)
     {
         return g.source_id == "subclass:fighter:champion:fighting_style" && g.level == 7;
     }) == 1, "The Champion's second Fighting Style feat");
-    check(count_of(sheet(), "mastery:") == 5, "Five Weapon Mastery kinds at level 10");
-    check(capacity(party, id, "second_wind") == 4, "Second Wind has four uses at level 10");
+    check(count_of(sheet(), "mastery:") == 5, "Five Weapon Mastery kinds at level 15");
+    check(capacity(party, id, "second_wind") == 4, "Second Wind has four uses at level 15");
+    check(capacity(party, id, "indomitable") == 2, "Indomitable has two uses from level 13");
     const auto profile = party.rule_module().character_profile(sheet(), {});
     const auto modifier = (sheet().scores[Ability::strength] - 10) / 2;
-    check(profile.melee_attack_bonus == modifier + 4,
-          "Unarmed attacks add the level-10 Proficiency Bonus of +4");
-    check(sheet().saving_throws[Ability::strength] == modifier + 4,
-          "A proficient save adds +4");
+    check(profile.melee_attack_bonus == modifier + 5,
+          "Unarmed attacks add the level-15 Proficiency Bonus of +5");
+    check(sheet().saving_throws[Ability::strength] == modifier + 5,
+          "A proficient save adds +5");
 
     const auto bytes = encode_campaign(party, nullptr, "fighter-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "fighter-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "fighter-levels") == bytes,
-          "A level-10 Fighter saves and reloads exactly");
+          "A level-15 Fighter saves and reloads exactly");
 }
 
 bool offered(const CombatSession &c, std::string_view verb)
@@ -196,11 +200,13 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
     return c;
 }
 
+// A dummy of AC 10, and a "wall" of AC 30 that only a Critical Hit hits.
 std::unique_ptr<RulesModule> dummy_rules()
 {
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
-                               "\ncreature dummy 10 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "\ncreature dummy 10 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature wall 30 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 bool logged(const CombatSession &c, std::string_view text)
@@ -217,7 +223,7 @@ bool logged(const CombatSession &c, std::string_view text)
 void extra_attack_checks()
 {
     const auto rules = dummy_rules();
-    for (const unsigned level : {4u, 5u})
+    for (const unsigned level : {4u, 5u, 11u})
     {
         const auto hero = fighter(level);
         const auto profile = rules->character_profile(hero.sheet(), {}).data;
@@ -240,11 +246,17 @@ void extra_attack_checks()
         auto restored = rules->restore(saved);
         check(restored->save() == saved && offered(*restored, "melee"),
               "A checkpoint keeps the attack left");
-        check(submit(*c, "melee", 98) && attack_lines(*c) == 2 && !offered(*c, "melee"),
-              "The second attack ends the Attack action");
-        check(submit(*c, "action_surge") && submit(*c, "melee", 98) &&
-              submit(*c, "melee", 98) && attack_lines(*c) == 4 && !offered(*c, "melee"),
-              "Action Surge's Attack action makes two attacks too");
+        const std::size_t attacks = level >= 11 ? 3 : 2;
+        check(submit(*c, "melee", 98) && attack_lines(*c) == 2, "The second attack");
+        if (level >= 11)
+            check(offered(*c, "melee") && submit(*c, "melee", 98) && attack_lines(*c) == 3,
+                  "Two Extra Attacks make a third");
+        check(!offered(*c, "melee"), "The last attack ends the Attack action");
+        check(submit(*c, "action_surge"), "Action Surge");
+        for (std::size_t n = 0; n < attacks; ++n)
+            check(submit(*c, "melee", 98), "Action Surge's attacks");
+        check(attack_lines(*c) == 2 * attacks && !offered(*c, "melee"),
+              "Action Surge's Attack action makes as many attacks");
     }
 }
 
@@ -307,6 +319,75 @@ void heroic_warrior_checks()
     check(!logged(*duel(*rules, fighter(9)), "Heroic Warrior"), "Not before level 10");
 }
 
+// Studied Attacks: after a level-13 Fighter misses, its next attack roll
+// against that creature has Advantage; a checkpoint keeps the mark.
+void studied_attacks_checks()
+{
+    const auto rules = dummy_rules();
+    const auto fight = [&](unsigned level, std::uint64_t seed)
+    {
+        const auto profile = rules->character_profile(fighter(level).sheet(), {}).data;
+        auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
+            {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
+                {98, "wall", "Dummy", Side::opposition, {2, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
+        check(submit(*c, "melee", 98), "The first attack");
+        return c;
+    };
+    check(!logged(*fight(12, 1), "studies"), "Not before level 13");
+    for (std::uint64_t seed = 1; seed < 20; ++seed)
+    {
+        auto c = fight(13, seed);
+        if (!logged(*c, "Veteran studies Dummy."))
+            continue;
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the mark");
+        check(submit(*c, "melee", 98), "The second attack");
+        const auto log = c->snapshot().log();
+        const auto last = std::find_if(log.rbegin(), log.rend(), [](const auto & line)
+        {
+            return line.starts_with("Veteran -> Dummy: d20");
+        });
+        check(last != log.rend() && last->find("(advantage)") != std::string::npos,
+              "The next attack roll has Advantage");
+        return;
+    }
+    throw std::runtime_error("No seed's first attack misses");
+}
+
+// Superior Critical: a level-15 Champion's 18 is a Critical Hit; a level-14's is not.
+void superior_critical_checks()
+{
+    const auto rules = dummy_rules();
+    for (const unsigned level : {14u, 15u})
+    {
+        const auto profile = rules->character_profile(fighter(level).sheet(), {}).data;
+        bool found = false;
+        for (std::uint64_t seed = 1; seed < 400 && !found; ++seed)
+        {
+            auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
+                {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
+                    {98, "dummy", "Dummy", Side::opposition, {2, 1}}
+                }},
+            seed);
+            for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+                check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
+            check(submit(*c, "melee", 98), "An attack");
+            for (const auto &line : c->snapshot().log())
+                if (line.starts_with("Veteran -> Dummy: d20 18 "))
+                {
+                    found = true;
+                    check((line.find("CRITICAL") != std::string::npos) == (level == 15),
+                          "An 18 is a Critical Hit only from level 15");
+                }
+        }
+        check(found, "Some seed rolls an 18");
+    }
+}
+
 // Indomitable: a level-9 Fighter rerolls a failed save it could still pass,
 // adding its level, once per Long Rest.
 void indomitable_checks()
@@ -352,6 +433,8 @@ int main()
         tactical_master_checks();
         heroic_warrior_checks();
         indomitable_checks();
+        studied_attacks_checks();
+        superior_critical_checks();
     }
     catch (const std::exception &error)
     {

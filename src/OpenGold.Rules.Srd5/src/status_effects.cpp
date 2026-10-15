@@ -261,6 +261,31 @@ bool vexed_by(const EffectState &effects, EffectSource source)
     });
 }
 
+bool studied_by(const EffectState &effects, EffectSource source)
+{
+    return std::any_of(effects.active.begin(), effects.active.end(),
+                       [&](const auto & e)
+    {
+        return e.kind == EffectKind::studied && e.source_scope == source.scope &&
+               e.source_actor == source.actor;
+    });
+}
+
+void apply_studied(EffectState &effects, EffectSource source, std::string name,
+                   unsigned duration_ms)
+{
+    std::erase_if(effects.active, [&](const auto & e)
+    {
+        return e.kind == EffectKind::studied && e.source_scope == source.scope &&
+               e.source_actor == source.actor;
+    });
+    if (!can_apply(effects) || !recorded(source, name) || !duration_ms ||
+            duration_ms > 2 * round_ms)
+        throw std::runtime_error("Invalid Studied Attacks application");
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
+                              EffectKind::studied, 0, duration_ms, 0});
+}
+
 bool has_attack_mastery(const EffectState &effects)
 {
     return sapped(effects) || slowed(effects) ||
@@ -728,7 +753,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::staggered))
+    if (value > static_cast<unsigned>(EffectKind::studied))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }
@@ -759,7 +784,7 @@ EffectState read_effects(std::istream &in)
         const auto kind = saved_effect_kind(saved_kind);
         const bool timed = kind == EffectKind::ray_of_frost || kind == EffectKind::frosts_chill ||
                            kind == EffectKind::hamstrung || kind == EffectKind::stunned ||
-                           kind == EffectKind::staggered ||
+                           kind == EffectKind::staggered || kind == EffectKind::studied ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -823,6 +848,7 @@ EffectState read_effects(std::istream &in)
                            e.save_in_ms != 0 || !e.remaining_ms ||
                            e.remaining_ms > ((kind == EffectKind::chill_touch ||
                                               kind == EffectKind::vex ||
+                                              kind == EffectKind::studied ||
                                               kind == EffectKind::guiding_bolt ||
                                               kind == EffectKind::poisoned ||
                                               kind == EffectKind::dazzled ||
