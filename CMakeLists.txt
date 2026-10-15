@@ -600,6 +600,7 @@ if(OPENGOLD_BUILD_GODOT)
     set_target_properties(opengold_core opengold_formats opengold_rules opengold_rules_srd5 PROPERTIES POSITION_INDEPENDENT_CODE ON)
     add_subdirectory(demos/src/OpenGold.Godot)
     add_subdirectory(dev_tools/tile_art_viewer/native)
+    add_subdirectory(dev_tools/combat_sprite_catalog/native)
 endif()
 
 if(OPENGOLD_BUILD_GAME)

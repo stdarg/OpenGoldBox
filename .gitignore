@@ -19,6 +19,8 @@ demos/godot/*.tmp
 demos/godot/bin/
 dev_tools/tile_art_viewer/godot/.godot/
 dev_tools/tile_art_viewer/godot/bin/
+dev_tools/combat_sprite_catalog/godot/.godot/
+dev_tools/combat_sprite_catalog/godot/bin/
 dev_tools/replacement_art_creator/godot/.godot/
 dev_tools/replacement_art_creator/godot/bin/
 dev_tools/replacement_art_creator/godot/art/*.png.import

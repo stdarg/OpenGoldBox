@@ -1,0 +1,10 @@
+[configuration]
+entry_symbol = "combat_sprite_catalog_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+windows.x86_64 = "res://bin/opengold_combat_sprite_catalog.dll"
+linux.x86_64 = "res://bin/opengold_combat_sprite_catalog.so"
+linux.arm64 = "res://bin/opengold_combat_sprite_catalog.so"
+macos = "res://bin/opengold_combat_sprite_catalog.dylib"
