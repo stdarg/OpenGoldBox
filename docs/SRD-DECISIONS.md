@@ -1057,7 +1057,19 @@ Barbarian, Paladin and Ranger at 8; Rogue, Bard and Monk at 9; Cleric, Druid,
 Wizard, Sorcerer and Warlock at 6. The rules still carry each class to its own
 cap ([LEVELS-1](#levels-1-2026-10-14-levels-510)); this limits the campaign,
 in place of [SCOPE-1](#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)'s
-playable cap of 15.
+playable cap of 15. [LEVELS-2](#levels-2-2026-10-15-level-cap-15) replaces the
+three limits with one for every class.
+
+## LEVELS-2 (2026-10-15): level cap 15
+
+The user raised the level cap to 15 for every class: each class is built to
+15 (the facts are in the [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md)).
+The Training Hall still limits training, but with one limit for every class
+in place of [CAP-1](#cap-1-2026-10-14-the-original-training-halls-limits)'s
+three; the level is still to be settled. Monk decisions taken with it:
+
+- **Empowered Strikes** (Monk 6): Unarmed Strikes always deal Force damage.
+- **Stunning Strike** is also offered on Flurry of Blows.
 
 ## PUSH-1 (2026-10-14): pushed into a wall
 

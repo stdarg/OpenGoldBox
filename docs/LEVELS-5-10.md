@@ -15,6 +15,11 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
   campaign stops it at 8.
 - Rogue to level 10: done ([Rogue](ROGUE.md)); the campaign stops it at 9.
 - Monk to level 9: done ([Monk](MONK.md#levels-59)), the Thieves' hall's limit.
+- [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
+  to 15 for every class; the facts for 11–15 are in the
+  [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,
+  Rogue and Monk go to 15 next, then the remaining classes to 15 in the same
+  order.
 
 ## How the work runs
 
