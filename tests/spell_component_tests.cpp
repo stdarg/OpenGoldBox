@@ -128,7 +128,7 @@ unsigned slots(const CombatantView &actor, unsigned level)
     std::string magic;
     unsigned winds{}, first{}, second{};
     in >> magic >> winds >> first >> second;
-    check(bool(in) && magic == "SRD12", "Level-three caster uses stored level-one/two slots");
+    check(bool(in) && magic == "SRD13", "Level-three caster uses stored level-one/two slots");
     return level == 1 ? first : second;
 }
 

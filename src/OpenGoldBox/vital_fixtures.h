@@ -42,7 +42,7 @@ inline std::string srd_vitals(const opengold::Character &character, const VitalF
         return grant.source_id.starts_with("feat:magic_initiate_") &&
                access != grant.choices.end() && access->second == "always_prepared";
     });
-    out << "SRD12 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << ' '
+    out << "SRD13 " << fixture.winds << ' ' << fixture.slots << ' ' << fixture.slots2 << " 0 0 0 0 0 0 0 "
         << fixture.successes << ' ' << fixture.failures << ' ' << fixture.stable << ' '
         << fixture.hit_dice << ' ' << fixture.death_save_ms << ' ' << fixture.stable_recovery_ms
         << " 0 \"\" " << rushes << ' ' << surges << ' ' << arcane << ' ' << lay_on_hands << ' '

@@ -193,7 +193,7 @@ void downed_keeps_gear()
 // A level-one Fighter at zero HP, dying, with its next death save due.
 VitalState dying()
 {
-    return {0, false, "SRD12 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"};
+    return {0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"};
 }
 
 void bandaged_at_victory()

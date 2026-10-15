@@ -794,7 +794,7 @@ void stable_timeline()
 VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
-            "SRD12 2 0 0 0 0 1 2 0 " + std::to_string(deadline) +
+            "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 1 2 0 " + std::to_string(deadline) +
             " 0 \"\" 2 1 0 0 0 0 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
 }
 
@@ -883,7 +883,7 @@ void stable_actual_cast()
                 Side::party,
                 {2, 1},
                 {},
-                VitalState{0, false, "SRD12 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}
+                VitalState{0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}
             },
             {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
         }},

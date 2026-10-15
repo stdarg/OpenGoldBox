@@ -174,7 +174,7 @@ std::unique_ptr<CombatSession> entangled(const RulesModule &module)
     Participant barbarian_entry{1, "campaign-character", "Barbarian", Side::party, {1, 1},
                                 module.character_profile(hero.sheet(), std::vector<std::string> {"greataxe"}).data,
                                 VitalState{hero.sheet().hit_points, false,
-                                           "SRD12 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 2 "
+                                           "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 2 "
                                            "0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}};
     barbarian_entry.inventory = {{0, "acid", 3, -1}};
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},

@@ -115,7 +115,7 @@ bool logged(const CombatSession &c, std::string_view text)
     });
 }
 
-// Level-one and level-two slots, read from "SRD12 winds slots slots2 ...".
+// Level-one and level-two slots, read from "SRD13 winds slots slots2 ...".
 std::pair<int, int> slots(const CombatSession &c)
 {
     std::istringstream in(unit(c, 1).persistent.resources);
@@ -1172,7 +1172,7 @@ void flaming_sphere_checks()
     check(module->restore(saved)->save() == saved, "The sphere survives a checkpoint");
 }
 
-// Level-two slots in "SRD12 winds slots slots2 ..." vitals.
+// Level-two slots in "SRD13 winds slots slots2 ..." vitals.
 int second_level_slots(const VitalState &vitals)
 {
     std::istringstream in(vitals.resources);

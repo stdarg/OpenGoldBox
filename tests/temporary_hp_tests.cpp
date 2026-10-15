@@ -143,11 +143,11 @@ void rule_operations()
 {
     auto rules = module();
     const auto c = hero();
-    VitalState state{4, false, "SRD12 1 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+    VitalState state{4, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
     rules->grant_temporary_hit_points(state, c.sheet(), {8, "spell:false_life"},
                                       TemporaryHpChoice::use_new);
     check(state.resources ==
-          "SRD12 1 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 0 FX8 1 0 0",
+          "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 0 FX8 1 0 0",
           "Vital state independently records dice, clocks and sourced buffer");
     RandomState rng{42};
     const auto die = rules->spend_hit_die(state, c.sheet(), rng);
@@ -178,7 +178,7 @@ void rule_operations()
     rules->recover(state, c.sheet());
     check(state.hit_points == c.sheet().hit_points && pool(c, state).amount == 0,
           "An eligible completed Long Rest clears the pool");
-    VitalState stable{0, false, "SRD12 1 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+    VitalState stable{0, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
     rules->grant_temporary_hit_points(stable, c.sheet(), {7, "feature:ward"},
                                       TemporaryHpChoice::use_new);
     participants[0].state = stable;
@@ -236,7 +236,7 @@ void rule_operations()
                                                     })
     {
         auto broken = state;
-        broken.resources = "SRD12 1 0 0 0 0 0 1 0 0 " + bad + " 0 1 0 0 0 0 0 FX8 1 0 0";
+        broken.resources = "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 " + bad + " 0 1 0 0 0 0 0 FX8 1 0 0";
         rejects(
             [&]
         {

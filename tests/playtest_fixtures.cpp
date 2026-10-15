@@ -230,7 +230,7 @@ int main()
             write(*module, directory, "bandage",
                   battle(*module, fighter(),
             {   {2, "campaign-character", "Ally", Side::party, {1, 3}, ally,
-                    VitalState{0, false, "SRD12 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"}},
+                    VitalState{0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 1"}},
                 {98, "slums-kobold", "Kobold", Side::opposition, {2, 1}, {}, VitalState{1}}
             }, sword_and_shield), "melee");
         }

@@ -122,7 +122,7 @@ unsigned pool(const CombatSession &c, std::string_view id)
     throw std::runtime_error("Missing resource pool");
 }
 
-// Level-one slots, read from "SRD12 winds slots slots2 ...".
+// Level-one slots, read from "SRD13 winds slots slots2 ...".
 int first_level_slots(const CombatSession &c)
 {
     std::istringstream in(unit(c, 1).persistent.resources);
@@ -228,7 +228,7 @@ void font_of_magic_checks()
     check(module->restore(saved)->save() == saved, "Sorcery Points survive a checkpoint");
 }
 
-// Level-one and level-two slots in a vital state, "SRD12 winds slots slots2 ...".
+// Level-one and level-two slots in a vital state, "SRD13 winds slots slots2 ...".
 std::pair<int, int> stored_slots(const VitalState &state)
 {
     std::istringstream in(state.resources);

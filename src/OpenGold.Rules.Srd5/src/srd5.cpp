@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -266,7 +267,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 51;
+constexpr unsigned checkpoint_format = 52;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -564,6 +565,54 @@ std::string_view giant_boon_label(GiantBoon boon)
     return {};
 }
 
+// Spell slots by spell level, 1 to 9; index 0 is unused.
+using SpellSlots = std::array<int, 10>;
+inline constexpr unsigned highest_slot_level = 9;
+
+// "Level-one spell slots" to "Level-nine spell slots", by slot level.
+constexpr std::array<std::string_view, 10> slot_labels{
+    "", "Level-one spell slots", "Level-two spell slots", "Level-three spell slots",
+    "Level-four spell slots", "Level-five spell slots", "Level-six spell slots",
+    "Level-seven spell slots", "Level-eight spell slots", "Level-nine spell slots"};
+
+int slot_total(const SpellSlots &slots)
+{
+    return std::accumulate(slots.begin(), slots.end(), 0);
+}
+
+// Spell slots by class level, SRD 5.2.1's class tables: the full casters, the
+// Paladin and Ranger, and the Warlock's Pact Magic, whose slots share one level.
+SpellSlots spell_slots(CharacterClass klass, unsigned level)
+{
+    using Row = std::array<int, 9>;
+    static constexpr std::array<Row, 15> full{{
+        {2}, {3}, {4, 2}, {4, 3}, {4, 3, 2}, {4, 3, 3}, {4, 3, 3, 1}, {4, 3, 3, 2},
+        {4, 3, 3, 3, 1}, {4, 3, 3, 3, 2}, {4, 3, 3, 3, 2, 1}, {4, 3, 3, 3, 2, 1},
+        {4, 3, 3, 3, 2, 1, 1}, {4, 3, 3, 3, 2, 1, 1}, {4, 3, 3, 3, 2, 1, 1, 1}}};
+    static constexpr std::array<Row, 15> half{{
+        {2}, {2}, {3}, {3}, {4, 2}, {4, 2}, {4, 3}, {4, 3}, {4, 3, 2}, {4, 3, 2},
+        {4, 3, 3}, {4, 3, 3}, {4, 3, 3, 1}, {4, 3, 3, 1}, {4, 3, 3, 2}}};
+    SpellSlots result{};
+    if (level < 1 || level > full.size())
+        return result;
+    if (klass == CharacterClass::warlock)
+    {
+        const unsigned pact_level = std::min(5u, (level + 1) / 2);
+        result[pact_level] = level == 1 ? 1 : level >= 11 ? 3 : 2;
+        return result;
+    }
+    const bool full_caster = klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
+                             klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
+                             klass == CharacterClass::druid;
+    const bool half_caster = klass == CharacterClass::paladin || klass == CharacterClass::ranger;
+    if (full_caster || half_caster)
+    {
+        const auto &row = (full_caster ? full : half)[level - 1];
+        std::copy(row.begin(), row.end(), result.begin() + 1);
+    }
+    return result;
+}
+
 struct Definition
 {
     int ac{}, hp{}, initiative{}, speed{}, melee_bonus{};
@@ -574,7 +623,8 @@ struct Definition
     int ranged_bonus{};
     int reach{5};
     Dice ranged;
-    int range{}, long_range{}, winds{}, slots{}, casting{}, level{}, slots2{};
+    int range{}, long_range{}, winds{}, casting{}, level{};
+    SpellSlots slots{};
     int extra_attacks{}; // Extra Attack: attacks after the Attack action's first
     // The lowest d20 that is a Critical Hit with a weapon or Unarmed Strike:
     // the Champion's Improved Critical (19) and Superior Critical (18).
@@ -780,7 +830,8 @@ struct Actor
     detail::LifeState life;
     Participant source;
     Definition definition;
-    int initiative{}, movement{}, winds{}, slots{}, slots2{};
+    int initiative{}, movement{}, winds{};
+    SpellSlots slots{};
     int hit_dice{}, rushes{}, surges{}, dashes{}, arcane{}, lay_on_hands{},
         // Remaining free casts of Paladin's Smite or Favored Enemy: a character has at
         // most one of them while multiclassing is deferred (SCOPE-1).
@@ -878,7 +929,18 @@ struct ResourceDescriptor
     int Definition::*capacity;
     int short_rest;   // uses restored by a Short Rest; -1 means the full capacity
     bool combat_view; // also listed during combat, not only on the rest screen
+    unsigned slot_level{}; // a spell slot row: its level, in place of the members
 };
+
+int remaining_of(const ResourceDescriptor &descriptor, const Actor &a)
+{
+    return descriptor.slot_level ? a.slots[descriptor.slot_level] : a.*descriptor.remaining;
+}
+
+int capacity_of(const ResourceDescriptor &descriptor, const Definition &d)
+{
+    return descriptor.slot_level ? d.slots[descriptor.slot_level] : d.*descriptor.capacity;
+}
 
 constexpr std::array resource_descriptors
 {
@@ -887,10 +949,15 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"adrenaline_rush", "Adrenaline Rush", &Actor::rushes, &Definition::rushes,
         -1, true},
     ResourceDescriptor{"second_wind", "Second Wind", &Actor::winds, &Definition::winds, 1, false},
-    ResourceDescriptor{"spell_slot:1", "Level-one spell slots", &Actor::slots, &Definition::slots,
-        0, false},
-    ResourceDescriptor{"spell_slot:2", "Level-two spell slots", &Actor::slots2, &Definition::slots2,
-        0, false},
+    ResourceDescriptor{"spell_slot:1", slot_labels[1], nullptr, nullptr, 0, false, 1},
+    ResourceDescriptor{"spell_slot:2", slot_labels[2], nullptr, nullptr, 0, false, 2},
+    ResourceDescriptor{"spell_slot:3", slot_labels[3], nullptr, nullptr, 0, false, 3},
+    ResourceDescriptor{"spell_slot:4", slot_labels[4], nullptr, nullptr, 0, false, 4},
+    ResourceDescriptor{"spell_slot:5", slot_labels[5], nullptr, nullptr, 0, false, 5},
+    ResourceDescriptor{"spell_slot:6", slot_labels[6], nullptr, nullptr, 0, false, 6},
+    ResourceDescriptor{"spell_slot:7", slot_labels[7], nullptr, nullptr, 0, false, 7},
+    ResourceDescriptor{"spell_slot:8", slot_labels[8], nullptr, nullptr, 0, false, 8},
+    ResourceDescriptor{"spell_slot:9", slot_labels[9], nullptr, nullptr, 0, false, 9},
     ResourceDescriptor{"arcane_recovery", "Arcane Recovery", &Actor::arcane, &Definition::arcane, 0,
         false},
     ResourceDescriptor{"lay_on_hands", "Lay On Hands", &Actor::lay_on_hands,
@@ -950,16 +1017,31 @@ int lay_capacity(const Definition &d)
     return d.lay_on_hands + d.sorcery_points + d.relentless_rage;
 }
 
-// Spell slots, with room for the ones Font of Magic creates from Sorcery
-// Points (2 for a level-1 slot, 3 for a level-2 one); they vanish on a Long Rest.
-int slot_room(const Definition &d)
+// Spell slots of a level, with room for the ones Font of Magic creates from
+// Sorcery Points (2, 3, 5, 6 and 7 points for levels 1 to 5); they vanish on a
+// Long Rest.
+int slot_room(const Definition &d, unsigned level)
 {
-    return d.slots + d.sorcery_points / 2;
+    constexpr std::array<int, 6> cost{0, 2, 3, 5, 6, 7};
+    return d.slots[level] + (level < cost.size() ? d.sorcery_points / cost[level] : 0);
 }
 
-int slot2_room(const Definition &d)
+// Every slot level holds between none and the room for it.
+bool slots_in_range(const SpellSlots &slots, const Definition &d)
 {
-    return d.slots2 + d.sorcery_points / 3;
+    for (unsigned level = 1; level <= highest_slot_level; ++level)
+        if (slots[level] < 0 || slots[level] > slot_room(d, level))
+            return false;
+    return slots[0] == 0;
+}
+
+// The lowest slot level, `from` or above, with a slot left; 0 if none.
+unsigned lowest_slot(const Actor &a, unsigned from)
+{
+    for (unsigned level = from; level <= highest_slot_level; ++level)
+        if (a.slots[level] > 0)
+            return level;
+    return 0;
 }
 
 // Paladin's Smite, Favored Enemy and Innate Sorcery share one store, restored
@@ -1054,10 +1136,10 @@ Definition shaped(Definition d, const detail::BeastForm &form)
 rules::ResourcePool resource_pool(const ResourceDescriptor &descriptor, const Actor &actor,
                                   const Definition &d)
 {
-    const auto capacity = static_cast<unsigned>(d.*descriptor.capacity);
+    const auto capacity = static_cast<unsigned>(capacity_of(descriptor, d));
     return {std::string(descriptor.id),
         {std::string(descriptor.label), {}},
-        static_cast<unsigned>(actor.*descriptor.remaining),
+        static_cast<unsigned>(remaining_of(descriptor, actor)),
         capacity,
         descriptor.short_rest < 0 ? capacity : static_cast<unsigned>(descriptor.short_rest)};
 }
@@ -1116,8 +1198,15 @@ void add_trait_pool(std::vector<rules::ResourcePool> &pools, const Actor &actor,
                          ? 1u : 0u, 1u, 0u});
 }
 
-// Pays for a leveled spell: with Magic Initiate's free cast, or from a slot
-// (a level-two one for a level-two spell or a "_2" verb), the turn's one slot.
+// The slot level a spell verb casts at: a "_2" verb casts a level-one spell
+// from a level-two slot; otherwise the spell's own level.
+unsigned slot_level_of(std::string_view verb, const detail::SpellDef &spell)
+{
+    return verb.ends_with("_2") ? 2u : spell.level;
+}
+
+// Pays for a leveled spell: with Magic Initiate's free cast, or from a slot of
+// the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
     if (verb.ends_with(detail::initiate_suffix))
@@ -1125,10 +1214,7 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
         a.initiate_casts &= ~initiate_bit(a.definition, spell.id);
         return;
     }
-    if (verb.ends_with("_2") || spell.level >= 2)
-        --a.slots2;
-    else
-        --a.slots;
+    --a.slots[slot_level_of(verb, spell)];
     a.spent_slot = true;
 }
 
@@ -1195,8 +1281,8 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
     // refuse the choice rather than wrap to a huge unsigned room.
     return conscious(actor) && d.arcane && actor.arcane > 0 &&
            std::cmp_less_equal(choice.first + 2 * choice.second, (d.level + 1) / 2) &&
-           std::cmp_less_equal(choice.first, d.slots - actor.slots) &&
-           std::cmp_less_equal(choice.second, d.slots2 - actor.slots2);
+           std::cmp_less_equal(choice.first, d.slots[1] - actor.slots[1]) &&
+           std::cmp_less_equal(choice.second, d.slots[2] - actor.slots[2]);
 }
 
 int movement_left(const Actor &a)
@@ -1472,25 +1558,7 @@ character_definition(std::string_view bytes,
     d.surges = klass == CharacterClass::fighter && level >= 2 ? 1 : 0;
     // Second Wind: 2 uses, 3 from level 4, 4 from level 10.
     d.winds = klass == CharacterClass::fighter ? (level >= 10 ? 4 : level >= 4 ? 3 : 2) : 0;
-    // Pact Magic: one level-1 slot, then two; level-2 slots from level 3.
-    d.slots = klass == CharacterClass::warlock ? (level <= 2 ? static_cast<int>(level) : 0)
-              : (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
-                 klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
-                 klass == CharacterClass::druid)
-              ? (level == 1 ? 2 : level == 2 ? 3 : 4)
-              : (klass == CharacterClass::paladin || klass == CharacterClass::ranger)
-              ? (level <= 2 ? 2 : level <= 4 ? 3 : 4)
-              : 0;
-    d.slots2 = klass == CharacterClass::warlock && level >= 3 ? 2
-               : (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
-                  klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
-                  klass == CharacterClass::druid) &&
-               level >= 3
-               ? (level == 3 ? 2 : 3)
-               : (klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
-               level >= 5
-               ? (level <= 6 ? 2 : 3)
-               : 0;
+    d.slots = spell_slots(klass, level);
     const Ability casting_ability =
         (klass == CharacterClass::cleric || klass == CharacterClass::ranger ||
          klass == CharacterClass::druid) ? Ability::wisdom
@@ -1837,7 +1905,7 @@ character_definition(std::string_view bytes,
 }
 
 // The only vital-state tag this module reads or writes; see profile_magic.
-constexpr std::string_view vitals_magic = "SRD12";
+constexpr std::string_view vitals_magic = "SRD13";
 
 void restore_vitals(Actor &a, const VitalState &state)
 {
@@ -1857,7 +1925,10 @@ void restore_vitals(Actor &a, const VitalState &state)
     {
         std::istringstream in(state.resources);
         std::string magic;
-        in >> magic >> a.winds >> a.slots >> a.slots2 >> a.life.successes >> a.life.failures >> a.life.stable >>
+        in >> magic >> a.winds;
+        for (unsigned level = 1; level <= highest_slot_level; ++level)
+            in >> a.slots[level];
+        in >> a.life.successes >> a.life.failures >> a.life.stable >>
            a.hit_dice >> a.life.recovery.death_save_in_ms >> a.life.recovery.stable_recovery_in_ms >>
            a.life.temporary_hp.amount >> std::quoted(a.life.temporary_hp.source_id) >> a.rushes >>
            a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity >>
@@ -1871,9 +1942,10 @@ void restore_vitals(Actor &a, const VitalState &state)
             throw std::runtime_error("Trailing character resource state");
     }
     const auto &d = a.definition;
+    if (!slots_in_range(a.slots, d))
+        throw std::runtime_error("Invalid character vitals");
     if (a.life.hp < 0 || a.life.hp > max_hp(a) || (a.life.dead && a.life.hp != 0) || a.winds < 0 || a.winds > d.winds ||
-            a.slots < 0 || a.slots > slot_room(d) || a.arcane < 0 || a.arcane > arcane_capacity(d) ||
-            a.slots2 < 0 || a.slots2 > slot2_room(d) || a.surges < 0 ||
+            a.arcane < 0 || a.arcane > arcane_capacity(d) || a.surges < 0 ||
             a.surges > surge_capacity(d) || a.rushes < 0 ||
             a.rushes > d.rushes || a.hit_dice < 0 || a.hit_dice > (d.hit_die ? d.level : 0) ||
             a.life.successes < 0 || a.life.successes > 3 || a.life.failures < 0 || a.life.failures > 4 ||
@@ -1897,7 +1969,6 @@ Actor actor_from(const Definition &definition, const VitalState &state)
     actor.definition = definition;
     actor.winds = definition.winds;
     actor.slots = definition.slots;
-    actor.slots2 = definition.slots2;
     restore_vitals(actor, state);
     return actor;
 }
@@ -1905,8 +1976,10 @@ Actor actor_from(const Definition &definition, const VitalState &state)
 VitalState vitals(const Actor &a)
 {
     std::ostringstream out;
-    out << vitals_magic << ' ' << a.winds << ' ' << a.slots << ' ' << a.slots2 << ' '
-        << a.life.successes << ' ' << a.life.failures << ' ' << a.life.stable << ' ' << a.hit_dice << ' '
+    out << vitals_magic << ' ' << a.winds << ' ';
+    for (unsigned level = 1; level <= highest_slot_level; ++level)
+        out << a.slots[level] << ' ';
+    out << a.life.successes << ' ' << a.life.failures << ' ' << a.life.stable << ' ' << a.hit_dice << ' '
         << a.life.recovery.death_save_in_ms << ' ' << detail::encode_stable_recovery(a.life.recovery) << ' '
         << a.life.temporary_hp.amount << ' ' << std::quoted(a.life.temporary_hp.source_id) << ' '
         << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
@@ -1919,12 +1992,11 @@ VitalState vitals(const Actor &a)
     });
     detail::write_effects(out, effects);
     std::string description;
-    if (a.definition.slots)
-        description = "Level-one spell slots: " + std::to_string(a.slots) + " / " +
-                      std::to_string(a.definition.slots);
-    if (a.definition.slots2)
-        description += "\nLevel-two spell slots: " + std::to_string(a.slots2) + " / " +
-                       std::to_string(a.definition.slots2);
+    for (unsigned level = 1; level <= highest_slot_level; ++level)
+        if (a.definition.slots[level])
+            description += (description.empty() ? "" : "\n") + std::string(slot_labels[level]) +
+                           ": " + std::to_string(a.slots[level]) + " / " +
+                           std::to_string(a.definition.slots[level]);
     if (a.definition.winds)
         description = "Second Wind uses: " + std::to_string(a.winds) + " / " +
                       std::to_string(a.definition.winds);
@@ -2156,7 +2228,6 @@ class Session final : public CombatSession
             a.life.hp = d.hp;
             a.winds = d.winds;
             a.slots = d.slots;
-            a.slots2 = d.slots2;
             a.hit_dice = d.hit_die ? d.level : 0;
             a.rushes = d.rushes;
             a.surges = surge_capacity(d);
@@ -3198,11 +3269,11 @@ void Session::use_font_of_magic(Actor &a, std::string_view verb)
     {
         a.bonus = false;
         a.lay_on_hands -= second ? 3 : 2;
-        ++(second ? a.slots2 : a.slots);
+        ++a.slots[second ? 2 : 1];
     }
     else
     {
-        --(second ? a.slots2 : a.slots);
+        --a.slots[second ? 2 : 1];
         a.lay_on_hands = std::min(def(a).sorcery_points, a.lay_on_hands + (second ? 2 : 1));
     }
     const std::string level = second ? "2" : "1";
@@ -3954,10 +4025,11 @@ Snapshot Session::snapshot() const
                              : a.effects.prone    ? "Prone"
                              : a.dodge            ? "Dodging"
                              : "Ready";
-        if (def(a).slots)
-            status += " | slots " + std::to_string(a.slots);
-        if (def(a).slots2)
-            status += " | L2 slots " + std::to_string(a.slots2);
+        if (def(a).slots[1])
+            status += " | slots " + std::to_string(a.slots[1]);
+        for (unsigned level = 2; level <= highest_slot_level; ++level)
+            if (def(a).slots[level])
+                status += " | L" + std::to_string(level) + " slots " + std::to_string(a.slots[level]);
         if (def(a).winds)
             status += " | Second Wind " + std::to_string(a.winds);
         s.combatants.push_back(
@@ -4143,12 +4215,12 @@ Snapshot Session::snapshot() const
                 })
             if (detail::knows_spell(def(a).spells, smite))
                 view.bonus_actions.push_back(smite);
-        if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).slots2)
+        if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).slots[2])
             view.bonus_actions.push_back("divine_smite_2");
         if (detail::knows_spell(def(a).spells, "shining_smite"))
             view.bonus_actions.push_back("shining_smite");
         for (const auto &descriptor : resource_descriptors)
-            if (descriptor.combat_view && def(a).*descriptor.capacity)
+            if (descriptor.combat_view && capacity_of(descriptor, def(a)))
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
         add_initiate_pools(view.resources, a, def(a));
         add_trait_pool(view.resources, a, a.definition);
@@ -4188,10 +4260,14 @@ Snapshot Session::snapshot() const
                             : a.dodge            ? "Dodging"
                             : "Ready",
                             {}});
-        if (def(a).slots)
-            messages.push_back({"Spell slots: {count}", {{"count", std::to_string(a.slots)}}});
-        if (def(a).slots2)
-            messages.push_back({"L2 slots: {count}", {{"count", std::to_string(a.slots2)}}});
+        if (def(a).slots[1])
+            messages.push_back({"Spell slots: {count}", {{"count", std::to_string(a.slots[1])}}});
+        if (def(a).slots[2])
+            messages.push_back({"L2 slots: {count}", {{"count", std::to_string(a.slots[2])}}});
+        for (unsigned level = 3; level <= highest_slot_level; ++level)
+            if (def(a).slots[level])
+                messages.push_back({"L{level} slots: {count}",
+                    {{"level", std::to_string(level)}, {"count", std::to_string(a.slots[level])}}});
         if (a.actions.surge)
             messages.push_back({"Action Surge action ready (no Magic).", {}});
         if (def(a).winds)
@@ -5214,9 +5290,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // turn, or with Magic Initiate's free cast, which spends no slot.
         const auto offer_level_one = [&](const std::string & verb, const std::string & label)
         {
-            if (!a.spent_slot && a.slots > 0)
+            if (!a.spent_slot && a.slots[1] > 0)
                 offer(verb, label);
-            if (!a.spent_slot && a.slots2 > 0)
+            if (!a.spent_slot && a.slots[2] > 0)
                 offer(verb + "_2", label + " (level 2 slot)");
             if (a.initiate_casts & initiate_bit(d, spell.id))
                 offer(verb + std::string(detail::initiate_suffix), label + " (Magic Initiate)");
@@ -5259,7 +5335,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // no separate upcast verb.
         if (spell.level >= 2)
         {
-            if (a.spent_slot || a.slots2 <= 0)
+            if (a.spent_slot || a.slots[2] <= 0)
                 continue;
             if (spell.rider == detail::Rider::dragons_breath)
             {
@@ -5630,13 +5706,13 @@ std::vector<Command> Session::legal_commands() const
     // becomes Sorcery Points without an action.
     if (d.sorcery_points)
     {
-        if (a.bonus && a.lay_on_hands >= 2 && a.slots < slot_room(d))
+        if (a.bonus && a.lay_on_hands >= 2 && a.slots[1] < slot_room(d, 1))
             add(id, "create_slot_1", "Font of Magic: create a level-1 slot (2 Sorcery Points)");
-        if (a.bonus && d.level >= 3 && a.lay_on_hands >= 3 && a.slots2 < slot2_room(d))
+        if (a.bonus && d.level >= 3 && a.lay_on_hands >= 3 && a.slots[2] < slot_room(d, 2))
             add(id, "create_slot_2", "Font of Magic: create a level-2 slot (3 Sorcery Points)");
-        if (a.slots > 0 && a.lay_on_hands < d.sorcery_points)
+        if (a.slots[1] > 0 && a.lay_on_hands < d.sorcery_points)
             add(id, "convert_slot_1", "Font of Magic: a level-1 slot into 1 Sorcery Point");
-        if (a.slots2 > 0 && a.lay_on_hands < d.sorcery_points)
+        if (a.slots[2] > 0 && a.lay_on_hands < d.sorcery_points)
             add(id, "convert_slot_2", "Font of Magic: a level-2 slot into 2 Sorcery Points");
     }
     // Metamagic: ready an affordable option for the next spell this turn, no
@@ -5869,8 +5945,8 @@ std::vector<Command> Session::legal_commands() const
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
-        const bool slot = a.slots > 0 && !a.spent_slot;
-        const bool slot2 = a.slots2 > 0 && !a.spent_slot;
+        const bool slot = a.slots[1] > 0 && !a.spent_slot;
+        const bool slot2 = a.slots[2] > 0 && !a.spent_slot;
         const bool melee = a.smite_melee;
         if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
@@ -6481,7 +6557,7 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
         --a.free_casts;
     else
     {
-        --(level_two ? a.slots2 : a.slots);
+        --a.slots[level_two ? 2 : 1];
         a.spent_slot = true;
     }
     auto rolled = spell.dice;
@@ -7534,7 +7610,7 @@ void Session::resolve_ensnaring_strike(Actor &a)
     auto &target = actor(a.smite_target);
     a.smite_target = 0;
     a.bonus = false;
-    --a.slots;
+    --a.slots[1];
     a.spent_slot = true;
     log(a.source.name + " casts Ensnaring Strike on " + target.source.name + ".",
     {
@@ -10135,7 +10211,7 @@ const Session::ReactionAnswer *Session::answer_of(EntityId target, Asked asked) 
 // Shield takes a slot, unless Magic Initiate's free cast pays for it.
 bool Session::can_shield(const Actor &target) const
 {
-    const bool slot = (target.slots > 0 || target.slots2 > 0) && !target.spent_slot;
+    const bool slot = lowest_slot(target, 1) && !target.spent_slot;
     const bool free = (target.initiate_casts & initiate_bit(def(target), "shield")) != 0;
     return conscious(target) && target.reaction && (slot || free) &&
            detail::knows_spell(def(target).spells, "shield") &&
@@ -10376,7 +10452,7 @@ bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
     const bool free = (warlock.initiate_casts & initiate_bit(def(warlock), "hellish_rebuke")) != 0;
     return warlock.source.side != attacker.source.side && conscious(warlock) &&
            warlock.reaction && !detail::incapacitated(warlock.effects) &&
-           (free || ((warlock.slots > 0 || warlock.slots2 > 0) && !warlock.spent_slot)) &&
+           (free || (lowest_slot(warlock, 1) && !warlock.spent_slot)) &&
            detail::knows_spell(def(warlock).spells, "hellish_rebuke") &&
            distance(warlock.source.cell, attacker.source.cell) <= 60 && can_see(warlock, attacker) &&
            !attacker.life.dead;
@@ -10384,8 +10460,8 @@ bool Session::can_rebuke(const Actor &warlock, const Actor &attacker) const
 
 void Session::rebuke(const Actor &attacker, Actor &warlock)
 {
-    // Hellish Rebuke: the attacker saves against 2d10 Fire, 3d10 from a
-    // level-2 slot, taking half on a success.
+    // Hellish Rebuke: the attacker saves against 2d10 Fire, 1d10 more for
+    // each slot level above 1, taking half on a success.
     if (!can_rebuke(warlock, attacker))
         return;
     ask_reaction(warlock, Asked::rebuke);
@@ -10395,13 +10471,13 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
     // The free cast first: it can pay for nothing else.
     const auto bit = initiate_bit(def(warlock), "hellish_rebuke");
     const bool free = (warlock.initiate_casts & bit) != 0;
-    const bool second = !free && warlock.slots <= 0;
+    const unsigned level = free ? 1 : lowest_slot(warlock, 1);
     if (free)
         warlock.initiate_casts &= ~bit;
     else
     {
         warlock.spent_slot = true;
-        --(second ? warlock.slots2 : warlock.slots);
+        --warlock.slots[level];
     }
     auto &foe = actor(attacker.source.id);
     end_hiding(warlock.source.id);
@@ -10412,7 +10488,7 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
     });
     const bool saved = saving_throw_succeeds(foe, detail::Ability::dexterity,
                                           spell_dc(warlock, "hellish_rebuke"));
-    const int rolled = dice({second ? 3 : 2, 10, 0});
+    const int rolled = dice({static_cast<int>(level) + 1, 10, 0});
     const int amount = resolved_damage(foe, detail::DamageType::fire, saved ? rolled / 2 : rolled);
     log(foe.source.name + " takes " + std::to_string(amount) + " Fire damage.",
     {
@@ -10619,7 +10695,7 @@ void Session::answer_reaction(const Command &command)
         const bool free = (defender.initiate_casts & initiate_bit(def(defender), "shield")) != 0;
         pay_for_spell(defender,
                       free ? "shield" + std::string(detail::initiate_suffix)
-                      : defender.slots > 0 ? "shield" : "shield_2",
+                      : defender.slots[1] > 0 ? "shield" : "shield_2",
                       shield);
         detail::apply_poisoned(defender.effects, effect_source(defender), defender.source.name,
                                next_turn_ms(defender), detail::EffectKind::shield);
@@ -11541,10 +11617,13 @@ std::string Session::save() const
             << std::quoted(a.source.name) << ' ' << static_cast<unsigned>(a.source.side) << ' '
             << a.source.cell.x << ' '
             << a.source.cell.y << ' ' << a.life.hp << ' ' << a.initiative << ' ' << a.movement << ' '
-            << a.winds << ' ' << a.slots << ' ' << a.life.successes << ' ' << a.life.failures << ' '
+            << a.winds << ' ';
+        for (unsigned level = 1; level <= highest_slot_level; ++level)
+            out << a.slots[level] << ' ';
+        out << a.life.successes << ' ' << a.life.failures << ' '
             << a.actions.normal << ' ' << a.bonus << ' ' << a.reaction << ' ' << a.dodge << ' '
             << a.disengaged << ' ' << a.life.stable << ' ' << a.life.dead << ' '
-            << std::quoted(a.source.character_profile) << ' ' << a.slots2 << ' ' << a.spent_slot
+            << std::quoted(a.source.character_profile) << ' ' << a.spent_slot
             << ' ' << a.savage_used << ' ' << a.facing_left << ' ' << a.involuntary_overlap << ' '
             << a.hit_dice << ' ' << a.life.recovery.death_save_in_ms << ' '
             << detail::encode_stable_recovery(a.life.recovery) << ' ' << a.life.temporary_hp.amount << ' '
@@ -11737,9 +11816,12 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     unsigned side{}, light_count{};
     input >> source.id >> std::quoted(source.definition) >> std::quoted(source.name) >>
           side >> source.cell.x >> source.cell.y >> actor.life.hp >> actor.initiative >>
-          actor.movement >> actor.winds >> actor.slots >> actor.life.successes >> actor.life.failures >>
+          actor.movement >> actor.winds;
+    for (unsigned level = 1; level <= highest_slot_level; ++level)
+        input >> actor.slots[level];
+    input >> actor.life.successes >> actor.life.failures >>
           actor.actions.normal >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
-          actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >> actor.slots2 >>
+          actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >>
           actor.spent_slot >> actor.savage_used >> actor.facing_left >> actor.involuntary_overlap >>
           actor.hit_dice >> actor.life.recovery.death_save_in_ms >>
           actor.life.recovery.stable_recovery_in_ms >> actor.life.temporary_hp.amount >>
@@ -11844,9 +11926,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
             actor.rushes > definition.rushes ||
             (actor.rush_used &&
              (actor.bonus || !definition.rushes || actor.rushes == definition.rushes)) ||
-            actor.winds < 0 || actor.winds > definition.winds || actor.slots < 0 ||
-            actor.slots > slot_room(definition) || actor.slots2 < 0 ||
-            actor.slots2 > slot2_room(definition) ||
+            actor.winds < 0 || actor.winds > definition.winds ||
+            !slots_in_range(actor.slots, definition) ||
             actor.hit_dice < 0 || actor.hit_dice > (definition.hit_die ? definition.level : 0) ||
             actor.life.successes < 0 || actor.life.successes > 3 || actor.life.failures < 0 || actor.life.failures > 4 ||
             actor.lay_on_hands < 0 || actor.lay_on_hands > lay_capacity(definition) ||
@@ -13875,19 +13956,25 @@ class Module final : public RulesModule
         actor.definition = character_definition(character_profile(next, {}).data);
         if (actor.life.hp > 0)
             actor.life.hp += growth;
-        // Pact Magic's slots become level-two slots at Warlock level 3; the
-        // slots already spent stay spent.
-        const int spent_slots = old.slots - actor.slots + old.slots2 - actor.slots2;
-        if (actor.definition.pact_magic && !actor.definition.slots && old.slots)
+        // Pact Magic's slots rise a level together (level 2 at Warlock level
+        // 3); the slots already spent stay spent.
+        const int spent_slots = slot_total(old.slots) - slot_total(actor.slots);
+        const auto pact_level = [](const SpellSlots &slots)
         {
-            actor.slots = 0;
-            actor.slots2 = std::max(0, actor.definition.slots2 - spent_slots);
+            return std::find_if(slots.begin() + 1, slots.end(), [](int count)
+            {
+                return count > 0;
+            }) - slots.begin();
+        };
+        if (actor.definition.pact_magic && pact_level(actor.definition.slots) != pact_level(old.slots))
+        {
+            const auto level = pact_level(actor.definition.slots);
+            actor.slots = {};
+            actor.slots[level] = std::max(0, actor.definition.slots[level] - spent_slots);
         }
         else
-        {
-            actor.slots += actor.definition.slots - old.slots;
-            actor.slots2 += actor.definition.slots2 - old.slots2;
-        }
+            for (unsigned level = 1; level <= highest_slot_level; ++level)
+                actor.slots[level] += actor.definition.slots[level] - old.slots[level];
         actor.winds += actor.definition.winds - old.winds;
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += surge_capacity(actor.definition) - surge_capacity(old);
@@ -13940,7 +14027,6 @@ class Module final : public RulesModule
             a.life.hp = a.definition.hp;
             a.winds = a.definition.winds;
             a.slots = a.definition.slots;
-            a.slots2 = a.definition.slots2;
             a.hit_dice = a.definition.hit_die ? a.definition.level : 0;
             if (p.state)
                 restore_vitals(a, *p.state);
@@ -13998,7 +14084,6 @@ class Module final : public RulesModule
                                         sheet.name, detail::EffectKind::heroic_inspiration, 0);
         actor.winds = d.winds;
         actor.slots = d.slots;
-        actor.slots2 = d.slots2;
         actor.hit_dice = d.hit_die ? d.level : 0;
         actor.life.successes = actor.life.failures = 0;
         actor.life.stable = false;
@@ -14025,7 +14110,7 @@ class Module final : public RulesModule
                             {},
                             actor.life.temporary_hp};
         for (const auto &descriptor : resource_descriptors)
-            if (d.*descriptor.capacity)
+            if (capacity_of(descriptor, d))
                 result.resources.push_back(resource_pool(descriptor, actor, d));
         add_initiate_pools(result.resources, actor, d);
         add_trait_pool(result.resources, actor, d);
@@ -14058,10 +14143,7 @@ class Module final : public RulesModule
         actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
         // Pact Magic slots all return on a Short Rest.
         if (d.pact_magic)
-        {
             actor.slots = d.slots;
-            actor.slots2 = d.slots2;
-        }
         state = vitals(actor);
     }
 
@@ -14077,8 +14159,8 @@ class Module final : public RulesModule
         });
         if (choice == arcane_allocations.end() || !can_recover(actor, *choice))
             throw std::runtime_error("This rest recovery choice is unavailable");
-        actor.slots += static_cast<int>(choice->first);
-        actor.slots2 += static_cast<int>(choice->second);
+        actor.slots[1] += static_cast<int>(choice->first);
+        actor.slots[2] += static_cast<int>(choice->second);
         --actor.arcane;
         auto next = vitals(actor);
         Message result
@@ -14212,7 +14294,7 @@ class Module final : public RulesModule
         // Magical Cunning: a one-minute rite, so a camp action; it needs no
         // target and so takes the whole-party path.
         if (d.magical_cunning && actor.arcane > 0 &&
-                actor.slots + actor.slots2 < d.slots + d.slots2)
+                slot_total(actor.slots) < slot_total(d.slots))
             actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
         if (d.str_dex_disadvantage)
             return actions;
@@ -14228,14 +14310,14 @@ class Module final : public RulesModule
             const bool party = spell.instances > 1;
             if (spell.level >= 2)
             {
-                if (actor.slots2 > 0)
+                if (actor.slots[2] > 0)
                     actions.push_back({std::string(spell.id), {label, {}}, party});
                 continue;
             }
-            if (actor.slots > 0)
+            if (actor.slots[1] > 0)
                 actions.push_back({std::string(spell.id), {label, {}}, party});
             // Goodberry gains nothing from a higher slot.
-            if (actor.slots2 > 0 && spell.pattern == detail::SpellPattern::heal)
+            if (actor.slots[2] > 0 && spell.pattern == detail::SpellPattern::heal)
                 actions.push_back({std::string(spell.id) + "_2", {label + " (level 2 slot)", {}}});
             if (actor.initiate_casts & initiate_bit(d, spell.id))
                 actions.push_back({std::string(spell.id) + std::string(detail::initiate_suffix),
@@ -14319,7 +14401,7 @@ class Module final : public RulesModule
         return spell && spell->pattern == detail::SpellPattern::exploration && !actor.life.dead &&
                actor.life.hp > 0 && !actor.definition.str_dex_disadvantage &&
                detail::knows_spell(actor.definition.spells, id) &&
-               (spell->level >= 2 ? actor.slots2 : actor.slots) > 0;
+               actor.slots[spell->level >= 2 ? 2 : 1] > 0;
     }
 
     void cast_exploration_spell(const CharacterSheet &sheet, VitalState &state,
@@ -14328,10 +14410,7 @@ class Module final : public RulesModule
         if (!can_cast_exploration_spell(sheet, state, id))
             throw std::runtime_error("That spell cannot be cast now");
         auto caster = camp_actor(sheet, state);
-        if (detail::find_spell(id)->level >= 2)
-            --caster.slots2;
-        else
-            --caster.slots;
+        --caster.slots[detail::find_spell(id)->level >= 2 ? 2 : 1];
         state = vitals(caster);
     }
 
@@ -14381,8 +14460,8 @@ class Module final : public RulesModule
             // Back come expended Pact Magic slots, up to half the maximum
             // (rounded up).
             const auto &d = caster.definition;
-            auto &slots = d.slots2 ? caster.slots2 : caster.slots;
-            const int maximum = d.slots2 ? d.slots2 : d.slots;
+            auto &slots = caster.slots[d.slots[2] ? 2 : 1];
+            const int maximum = d.slots[d.slots[2] ? 2 : 1];
             slots = std::min(maximum, slots + (maximum + 1) / 2);
             --caster.arcane;
             user_state = vitals(caster);
@@ -14403,7 +14482,7 @@ class Module final : public RulesModule
         if (action == "aid")
         {
             camp_aid(user.name, chosen);
-            --caster.slots2;
+            --caster.slots[2];
             user_state = vitals(caster);
             for (auto &[actor, state] : members)
                 *state = vitals(actor);
@@ -14423,7 +14502,7 @@ class Module final : public RulesModule
         if (chosen.size() > 5)
             chosen.resize(5);
         const auto &spell = *detail::find_spell(action);
-        --caster.slots2;
+        --caster.slots[2];
         auto rng = random_state.value;
         for (auto *patient : chosen)
         {
@@ -15203,7 +15282,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.203", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.204", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
@@ -15420,8 +15499,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 // It is translated to ids at the boundary; nothing downstream
                 // sees a mask.
                 int casting_spells{};
-                row >> definition.slots2 >> casting_spells;
-                if (definition.level < 3 || definition.slots2 < 0 || definition.slots2 > 20 ||
+                row >> definition.slots[2] >> casting_spells;
+                if (definition.level < 3 || definition.slots[2] < 0 || definition.slots[2] > 20 ||
                         casting_spells < 0 || casting_spells > 63)
                     throw std::runtime_error("Invalid supplemental spellcasting");
                 definition.spells = detail::spells_from_mask(static_cast<unsigned>(casting_spells));
@@ -15440,7 +15519,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         int creature_spells{};
         row >> d.ac >> d.hp >> d.initiative >> d.speed >> d.melee_bonus >> d.melee.count >>
             d.melee.sides >> d.melee.bonus >> d.ranged_bonus >> d.ranged.count >> d.ranged.sides >>
-            d.ranged.bonus >> d.range >> d.long_range >> d.winds >> d.slots >> d.casting >>
+            d.ranged.bonus >> d.range >> d.long_range >> d.winds >> d.slots[1] >> d.casting >>
             d.level >> creature_spells;
 
         const bool ranged_none = d.range == 0 && d.long_range == 0 && d.ranged_bonus == 0 &&
@@ -15454,8 +15533,8 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 d.ac < 1 || d.ac > 40 || d.hp < 1 || d.hp > 1000 || d.initiative < -10 ||
                 d.initiative > 20 || d.speed < 5 || d.speed > 120 || d.speed % 5 || d.melee.count < 1 ||
                 d.melee.count > 10 || d.melee.sides < 2 || d.melee.sides > 20 ||
-                (!ranged_none && !ranged_weapon) || d.winds < 0 || d.winds > 10 || d.slots < 0 ||
-                d.slots > 20 || d.level < 1 || d.level > 4 || creature_spells < 0 ||
+                (!ranged_none && !ranged_weapon) || d.winds < 0 || d.winds > 10 || d.slots[1] < 0 ||
+                d.slots[1] > 20 || d.level < 1 || d.level > 4 || creature_spells < 0 ||
                 creature_spells > 7 || d.melee_bonus < -10 || d.melee_bonus > 30 || d.casting < -10 ||
                 d.casting > 30 || d.melee.bonus < -10 || d.melee.bonus > 30)
             throw std::runtime_error("Invalid or unsupported creature definition: " + key);
