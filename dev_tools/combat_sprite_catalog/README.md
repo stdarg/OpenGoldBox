@@ -19,6 +19,9 @@ gear come from the corresponding `MONnITM.DAX` record through the game's native
 `CreatureCatalog`; readied items are marked. The **Hide unused monsters / NPCs**
 filter hides records with no reference in decoded ECL evidence. Dynamic script
 paths may be unresolved, so “unused” means no reference found by that analysis.
+Type any part of a monster or NPC name into **Filter by name** above the list
+to narrow it as you type. Matching ignores letter case and works together with
+**Hide unused monsters / NPCs**. Clear the field to show all names again.
 
 The **Character sprites** tab uses the game's `CharacterArt` compositor and
 combat-body assignment catalog. Its controls fill the pane, following the
@@ -38,7 +41,7 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless \
   --path dev_tools/combat_sprite_catalog/godot -- --catalog-check
 ```
 
-It checks the complete displayed catalog, both monster poses, the unused
-filter, and character ready/action previews across every weapon with shield.
+It checks the complete displayed catalog, both monster poses, the unused and
+name filters, and character ready/action previews across every weapon with shield.
 It also checks the in-pane Head and Body buttons, color swatches, Large size,
 and that the character pane has no scrolling selection panel.

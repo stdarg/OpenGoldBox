@@ -11,6 +11,7 @@ var action := false
 var elapsed := 0.0
 var monster_list: ItemList
 var hide_unused: CheckButton
+var name_filter: LineEdit
 var monster_title: Label
 var monster_image: TextureRect
 var monster_source: Label
@@ -74,6 +75,14 @@ func _build_ui() -> void:
     hide_unused.text = "Hide unused monsters / NPCs"
     hide_unused.toggled.connect(func(_value: bool): _rebuild_list())
     sidebar.add_child(hide_unused)
+    var name_label := Label.new()
+    name_label.text = "Monster / NPC name contains"
+    sidebar.add_child(name_label)
+    name_filter = LineEdit.new()
+    name_filter.placeholder_text = "Filter by name"
+    name_filter.clear_button_enabled = true
+    name_filter.text_changed.connect(func(_text: String): _rebuild_list())
+    sidebar.add_child(name_filter)
     monster_list = ItemList.new()
     monster_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
     monster_list.item_selected.connect(_select_monster)
@@ -115,10 +124,12 @@ func _build_ui() -> void:
 func _rebuild_list() -> void:
     monster_list.clear()
     visible_rows.clear()
+    var query := name_filter.text.strip_edges()
     for index in range(rows.size()):
         var row: Dictionary = rows[index]
         var unused := not used.has(row.key)
         if hide_unused.button_pressed and unused: continue
+        if not query.is_empty() and str(row.name).findn(query) < 0: continue
         var label := "%s%s  ·  %s" % ["[Unused] " if unused else "", row.name, row.key]
         monster_list.add_item(label)
         visible_rows.append(index)
@@ -126,6 +137,8 @@ func _rebuild_list() -> void:
         selected = -1
         monster_title.text = "No matching records"
         monster_image.texture = null
+        monster_image.offset_top = 0.0
+        monster_source.text = ""
         gear_text.text = ""
         return
     var next := visible_rows.find(selected)
@@ -187,6 +200,11 @@ func _catalog_check() -> void:
     assert(monster_list.item_count > 0)
     hide_unused.button_pressed = false
     assert(monster_list.item_count == rows.size())
+    var name_error := _check_name_filter()
+    if not name_error.is_empty():
+        push_error(name_error)
+        get_tree().quit(1)
+        return
     var colors: Array = character_panel.colors.duplicate()
     for option in catalog.weapons():
         var both: Dictionary = catalog.character_art(0, 4, 1, option.type, true, colors)
@@ -204,5 +222,28 @@ func _catalog_check() -> void:
         if catalog.monster_art(index).is_empty(): unresolved += 1
         assert(catalog.monster_image(index, false) != null)
         assert(catalog.monster_image(index, true) != null)
-    print("Combat sprite catalog checks passed: %d rows, %d referenced, %d unresolved art bindings, all weapon and shield previews" % [rows.size(), referenced, unresolved])
+    print("Combat sprite catalog checks passed: %d rows, %d referenced, %d unresolved art bindings, name filter, all weapon and shield previews" % [rows.size(), referenced, unresolved])
     get_tree().quit()
+
+func _check_name_filter() -> String:
+    name_filter.text = "gObLiN"
+    name_filter.text_changed.emit(name_filter.text)
+    if visible_rows.is_empty() or visible_rows.size() >= rows.size():
+        return "Name substring filter did not narrow the monster list"
+    for index in visible_rows:
+        if str(rows[index].name).findn("gObLiN") < 0:
+            return "Name filter included a nonmatching monster"
+    hide_unused.button_pressed = true
+    for index in visible_rows:
+        if not used.has(rows[index].key):
+            return "Name and unused filters did not combine"
+    hide_unused.button_pressed = false
+    name_filter.text = "no-monster-has-this-name"
+    name_filter.text_changed.emit(name_filter.text)
+    if not visible_rows.is_empty() or monster_image.texture != null or not monster_source.text.is_empty():
+        return "No-match search left a monster preview visible"
+    name_filter.text = ""
+    name_filter.text_changed.emit(name_filter.text)
+    if monster_list.item_count != rows.size() or selected < 0:
+        return "Clearing the name filter did not restore the monster list"
+    return ""
