@@ -721,7 +721,8 @@ void revivify_checks()
         auto participants = party.participants();
         for (auto &p : participants)
         {
-            p.cell = p.id == paladin_id ? Cell{1, 1} : Cell{2, 1};
+            // Two squares apart: Revivify reaches 10 feet.
+            p.cell = p.id == paladin_id ? Cell{1, 1} : Cell{3, 1};
             if (p.id == paladin_id)
                 p.character_profile = prepared;
             if (p.id == ally_id)
@@ -742,7 +743,22 @@ void revivify_checks()
             party.end_combat();
             continue;
         }
-        check(offered(*c, "revivify"), "Revivify is offered on the ally who just died");
+        check(offered(*c, "revivify") && has_condition(*c, ally_id, "Fallen"),
+              "Revivify is offered on the ally who just died, 10 feet away");
+        // In camp right after the fight, the same fallen ally may be raised.
+        const auto camp_sheet = preparing(hero, {"revivify"});
+        auto caster_state = unit(*c, paladin_id).persistent;
+        auto fallen_state = unit(*c, ally_id).persistent;
+        const auto camp = rules->camp_actions(camp_sheet, caster_state);
+        RandomState random{1};
+        check(std::any_of(camp.begin(), camp.end(), [](const auto & action)
+        {
+            return action.id == "revivify" && !action.whole_party;
+        }) && rules->camp_action_gold(paladin(4).sheet(), "revivify") == 1200,
+        "The camp's Cast / Use list offers Revivify for 1200 gp");
+        rules->use_camp_action(camp_sheet, caster_state, paladin(4).sheet(), fallen_state,
+                               "revivify", random);
+        check(!fallen_state.dead && fallen_state.hit_points == 1, "Revivify in camp raises the ally");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the time of death");
         check(submit(*c, "revivify", ally_id) &&

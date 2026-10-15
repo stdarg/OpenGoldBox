@@ -1074,8 +1074,13 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     else
     {
         auto &patient = find(target);
+        // An offering, such as Revivify's, is paid from the party purse's gold.
+        const auto gold = rules_->camp_action_gold(patient.character.sheet(), action);
+        if (gold > coins(next.wealth, Coin::gold))
+            throw std::runtime_error("The party purse cannot pay the offering");
         rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
                                 patient.vitals, action, next.random_state);
+        coins(next.wealth, Coin::gold) -= gold;
     }
     state_ = std::move(next);
 }

@@ -837,8 +837,15 @@ void death_save_turn_entry_tests()
             else if (roll == 1)
             {
                 natural_one = true;
-                check(hero.dead && hero.persistent.resources == creature_resources(1, 2, 3),
-                      "Natural 1 adds two failures and reaches death at three");
+                // The record matches up to its effects, which now hold Fallen:
+                // a minute in which Revivify may raise the dead member.
+                const auto record = creature_resources(1, 2, 3);
+                check(hero.dead &&
+                      hero.persistent.resources.starts_with(record.substr(0, record.find(" FX8 "))) &&
+                      std::any_of(hero.conditions.begin(), hero.conditions.end(), [](const auto & c)
+                {
+                    return c.source == "Fallen";
+                }), "Natural 1 adds two failures and reaches death at three");
             }
             else
             {
@@ -1239,7 +1246,7 @@ void checkpoint_cutoff_tests()
         }
         return false;
     };
-    check(checkpoint.starts_with("OGCOMBAT 54 "), "Checkpoints use the current format");
+    check(checkpoint.starts_with("OGCOMBAT 55 "), "Checkpoints use the current format");
     auto older_format = checkpoint;
     older_format.replace(9, 2, "26");
     check(refused_as_older(older_format), "Format 26 checkpoint is refused as older");

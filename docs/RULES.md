@@ -47,7 +47,8 @@ destination or target for the selected action. Gray cells block movement and
 sight; brown cells cost extra movement. Allied squares can be crossed at the
 normal terrain cost, but cannot be selected as stopping points. Hostile squares
 still block movement in this increment.
-Each square is 5 feet, including diagonals.
+Each square is 5 feet, including diagonals (the original's were 10 feet; see
+[Deviations](DEVIATIONS.md#rules-and-combat)).
 An arrow or Move-mode click aimed at an adjacent enemy makes a melee attack when the selected
 character has an action available. The combat log follows new text until you
 scroll up to read earlier entries.

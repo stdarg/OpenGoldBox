@@ -1356,15 +1356,16 @@ inline constexpr std::array spell_table
         .rider = Rider::magic_circle,
         .concentration = true,
         .radius = 10},
-    // SRD 5.2.1 p. 159: touch, a creature dead no more than a minute returns
-    // with 1 Hit Point. The offering is 300 gp times its level (LEVELS-1).
+    // SRD 5.2.1 p. 159: a creature dead no more than a minute returns with 1
+    // Hit Point. The offering is 300 gp times its level (LEVELS-1); the reach
+    // is 10 feet, not touch (LEVELS-2).
     SpellDef{
         .id = "revivify",
         .label = "Revivify",
         .level = 3,
         .pattern = SpellPattern::buff,
         .target = SpellTarget::dead_ally,
-        .range = 5,
+        .range = 10,
         .rider = Rider::revivify},
     // SRD 5.2.1 p. 158: touch; every curse on the creature ends. Hex is the
     // game's one curse so far (SRD 5.2.1 p. 141: "You place a curse").

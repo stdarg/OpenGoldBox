@@ -852,6 +852,15 @@ class RulesModule
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                        std::span<CampTarget> party, std::string_view action,
                                        RandomState &random_state) const = 0;
+    // Gold coins a camp action on `target` takes from the party purse, such as
+    // Revivify's offering.
+    [[nodiscard]] virtual unsigned camp_action_gold(const CharacterSheet &target,
+            std::string_view action) const
+    {
+        (void)target;
+        (void)action;
+        return 0;
+    }
     // Whether the party's camp wards (Magic Circle) keep away every creature of
     // these definitions, so they cannot interrupt the rest.
     [[nodiscard]] virtual bool keeps_away(std::span<const CampTarget> party,

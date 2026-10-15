@@ -584,6 +584,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::shining:
     case EffectKind::banished:
     case EffectKind::circling:
+    case EffectKind::fallen:
     case EffectKind::abjured:
     case EffectKind::hopeful:
     case EffectKind::shillelagh:
@@ -834,7 +835,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::circle_ward))
+    if (value > static_cast<unsigned>(EffectKind::fallen))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

@@ -344,7 +344,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 54;
+constexpr unsigned checkpoint_format = 55;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -2470,10 +2470,6 @@ class Session final : public CombatSession
                    : a.source.id < b.source.id;
         });
         log("Combat begins. Each square is 5 feet.");
-        // Who died before the fight died too long ago for Revivify.
-        for (const auto &a : actors_)
-            if (a.life.dead)
-                deaths_[a.source.id] = long_dead;
         if (!restoring)
             wake_resting_participants();
         update_outcome();
@@ -2819,10 +2815,8 @@ class Session final : public CombatSession
     unsigned morale_{100};
     // Gold coins in the party purse, and what offerings have taken of them.
     unsigned gold_{}, offerings_gold_{};
-    // When each dead creature died, in combat milliseconds, for Revivify.
-    static constexpr std::uint64_t long_dead = std::numeric_limits<std::uint64_t>::max();
-    std::map<EntityId, std::uint64_t> deaths_;
-    void note_deaths();
+    // A party member who has just died: Revivify may bring it back for a minute.
+    void fall(Actor &a);
     void revivify(Actor &cleric, const Command &command);
     void check_morale(Actor &);
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
@@ -4644,6 +4638,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::aura_of_life, "Aura of Life"},
                     std::pair{detail::EffectKind::free_moving, "Freedom of Movement"},
                     std::pair{detail::EffectKind::banished, "Banished"},
+                    std::pair{detail::EffectKind::fallen, "Fallen"},
                     std::pair{detail::EffectKind::staggering, "Staggered (Staggering Blow)"},
                     std::pair{detail::EffectKind::sundered, "Sundered (Sundering Blow)"},
                     std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"},
@@ -6032,8 +6027,7 @@ std::vector<Command> Session::offered_commands() const
         for (const auto &other : actors_)
             if (other.source.side == a.source.side && other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= raise.range &&
-                    deaths_.contains(other.source.id) && deaths_.at(other.source.id) != long_dead &&
-                    elapsed_ms_ - deaths_.at(other.source.id) <= 60000 &&
+                    detail::has_effect(other.effects, detail::EffectKind::fallen) &&
                     std::cmp_less_equal(300 * def(other).level, gold_ - offerings_gold_))
                 for (const unsigned level : cast_levels(a, raise))
                 {
@@ -6790,6 +6784,8 @@ void Session::damage(Actor &target, int amount, bool critical)
         if (standing)
             target.rises_on_round = static_cast<int>(round_) + dice({3, 6, 0});
     }
+    // Damage is never dealt to the dead, so a dead target died of this blow.
+    const bool killed = target.life.dead;
     // Death Ward: the first drop to 0 Hit Points, even a deadly one, leaves 1.
     if (standing && target.life.hp == 0 && target.source.side == Side::party &&
             std::erase_if(target.effects.active, [](const auto & e)
@@ -6803,6 +6799,8 @@ void Session::damage(Actor &target, int amount, bool critical)
         log(target.source.name + " drops to 1 Hit Point instead (Death Ward).",
         {"{name} drops to 1 Hit Point instead (Death Ward).", {{"name", target.source.name}}});
     }
+    if (killed && target.life.dead)
+        fall(target);
     // Relentless Rage: a raging Barbarian dropped to 0 Hit Points but not
     // killed outright makes a Constitution save, DC 10 and 5 more for each
     // earlier try since its last rest; success leaves twice its level in Hit
@@ -8375,11 +8373,11 @@ bool Session::aura_of_courage(const Actor &a) const
     });
 }
 
-void Session::note_deaths()
+void Session::fall(Actor &a)
 {
-    for (const auto &a : actors_)
-        if (a.life.dead && a.source.side == Side::party && !deaths_.contains(a.source.id))
-            deaths_[a.source.id] = elapsed_ms_;
+    if (a.source.side == Side::party && a.life.dead && detail::can_apply(a.effects))
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::fallen, 0);
 }
 
 void Session::revivify(Actor &cleric, const Command &command)
@@ -8393,7 +8391,10 @@ void Session::revivify(Actor &cleric, const Command &command)
     pay_for_spell(cleric, command.verb, spell);
     const auto offering = static_cast<unsigned>(300 * def(target).level);
     offerings_gold_ += offering;
-    deaths_.erase(target.source.id);
+    std::erase_if(target.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::fallen;
+    });
     target.life.dead = false;
     target.life.successes = target.life.failures = 0;
     target.life.stable = false;
@@ -10455,6 +10456,7 @@ bool Session::begin_turn()
             const int result = detail::death_save(
                 a.life, rng_, !detail::healing_blocked(a.effects), def(a).lucky, aura,
                 detail::has_effect(a.effects, detail::EffectKind::hopeful));
+            fall(a);
             if (aura)
                 log(a.source.name + " death save: " + std::to_string(result) + " + " +
                     std::to_string(aura) + " (Aura of Protection)",
@@ -11049,7 +11051,6 @@ bool Session::submit(const Command &command)
             answer_reaction(command);
         else
             perform(command);
-        note_deaths();
         notice_hidden();
         // Revisions are command tickets; zero is reserved for invalid commands.
         // Unsigned wrap is defined, but must skip that reserved value.
@@ -11065,7 +11066,6 @@ bool Session::submit(const Command &command)
                 !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].life.hp == 0)
         {
             end_turn();
-            note_deaths();
             // A creature whose morale broke as its turn began leaves now too.
             remove_fled();
             update_outcome();
@@ -12556,10 +12556,7 @@ std::string Session::save() const
     for (const auto &entry : log_)
         out << std::quoted(entry.english) << '\n';
     out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << gold_ << ' '
-        << offerings_gold_ << ' ' << deaths_.size();
-    for (const auto &[id, when] : deaths_)
-        out << ' ' << id << ' ' << when;
-    out << ' ' << actors_.size() << '\n';
+        << offerings_gold_ << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
         detail::write_effects(out, a.effects);
@@ -13389,27 +13386,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->restore_movement(input);
     session->restore_log(input);
     unsigned effects_count{};
-    std::size_t deaths{};
     input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> session->gold_ >>
-          session->offerings_gold_ >> deaths;
-    if (session->morale_ > 100 || session->offerings_gold_ > session->gold_ ||
-            deaths > session->actors_.size())
+          session->offerings_gold_ >> effects_count;
+    if (session->morale_ > 100 || session->offerings_gold_ > session->gold_)
         throw std::runtime_error("Invalid checkpoint morale");
-    session->deaths_.clear();
-    for (std::size_t n = 0; n < deaths; ++n)
-    {
-        EntityId id{};
-        std::uint64_t when{};
-        input >> id >> when;
-        if (!input || (when != long_dead && when > session->elapsed_ms_) ||
-                std::none_of(session->actors_.begin(), session->actors_.end(), [&](const auto & a)
-        {
-            return a.source.id == id && a.life.dead;
-        }))
-        throw std::runtime_error("Invalid checkpoint deaths");
-        session->deaths_[id] = when;
-    }
-    input >> effects_count;
     if (!input || !session->scope_ || effects_count != session->actors_.size())
         throw std::runtime_error("Invalid checkpoint effect header");
     for (auto &a : session->actors_)
@@ -15190,6 +15170,14 @@ class Module final : public RulesModule
         return actor_from(character_definition(character_profile(sheet, {}).data), state);
     }
 
+    unsigned camp_action_gold(const CharacterSheet &target, std::string_view action) const override
+    {
+        // Revivify's offering: 300 gp times the revived member's level (LEVELS-1).
+        const auto *spell = detail::find_spell(action);
+        return spell && spell->rider == detail::Rider::revivify
+               ? static_cast<unsigned>(300 * target.level) : 0;
+    }
+
     bool keeps_away(std::span<const CampTarget> party,
                     std::span<const std::string> definitions) const override
     {
@@ -15260,6 +15248,15 @@ class Module final : public RulesModule
             actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
         if (d.str_dex_disadvantage)
             return actions;
+        // Revivify in camp, right after a fight, on a member dead less than a
+        // minute; the target list holds the dead.
+        if (const auto &raise = *detail::find_spell("revivify");
+                detail::knows_spell(d.spells, raise.id))
+            for (const unsigned level : cast_levels(actor, raise))
+            {
+                auto [verb, label] = cast_at(raise, level, "revivify", "Revivify");
+                actions.push_back({std::move(verb), {std::move(label), {}}});
+            }
         // Magic Circle in camp: a ward against one creature type, an hour and
         // one more for each slot level above 3, for the whole party's rest.
         if (const auto &circle = *detail::find_spell("magic_circle");
@@ -15323,6 +15320,26 @@ class Module final : public RulesModule
             user_state = vitals(caster);
             if (!self)
                 target_state = vitals(healed);
+            return;
+        }
+        if (const auto *raise = detail::find_spell(action);
+                raise && raise->rider == detail::Rider::revivify)
+        {
+            if (self || !patient.life.dead ||
+                    !detail::has_effect(patient.effects, detail::EffectKind::fallen))
+                throw std::runtime_error("Revivify needs a member dead less than a minute");
+            pay_for_spell(caster, action, *raise);
+            std::erase_if(patient.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::fallen;
+            });
+            patient.life.dead = false;
+            patient.life.successes = patient.life.failures = 0;
+            patient.life.stable = false;
+            patient.life.recovery = {};
+            patient.life.hp = 1;
+            user_state = vitals(caster);
+            target_state = vitals(healed);
             return;
         }
         if (const auto *ward = detail::find_spell(action);
@@ -16287,7 +16304,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.208", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.209", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

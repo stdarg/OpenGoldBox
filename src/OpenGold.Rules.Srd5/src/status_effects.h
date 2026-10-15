@@ -236,10 +236,12 @@ enum class EffectKind : unsigned
     // Magic Circle's minute of casting, on its caster: `dc` is the slot level,
     // spent only once the circle stands.
     circling = 93,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // A Magic Circle drawn in camp, on its caster: `dc` indexes ward_types; no
     // creature of that type interrupts the rest while it lasts.
-    circle_ward = 94
+    circle_ward = 94,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // A party member who died less than a minute ago, whom Revivify can raise.
+    fallen = 95
 };
 
 // Magic Circle's creature types, by `dc`.

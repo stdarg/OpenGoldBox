@@ -1083,7 +1083,10 @@ reach. Decisions taken with it:
   ([#234](https://github.com/stdarg/OpenGold/issues/234)), as Fast Hands does.
 - **Aura of Protection** in the combat log: each save line names the aura's
   share of the bonus ("+ 5 (Aura of Protection +3)").
-- **Revivify** is cast in a fight on a fallen ally in an adjacent square.
+- **Revivify** reaches 10 feet, the adjacent square and one more (the
+  original's squares are 10 feet, see [DEVIATIONS](DEVIATIONS.md#rules-and-combat)),
+  in place of the SRD's touch. It is cast in a fight, or in camp right after
+  one while the death is less than a minute old.
 - **Magic Circle**: one A-cycle entry per creature type, aimed at a square,
   standing after 10 rounds of Concentration; in camp, the same choice from
   the Cast / Use list wards the rest.

@@ -15,6 +15,15 @@ Add an entry whenever a new departure is decided.
   a replaceable rules library. Campaign scripts and encounter identities and
   counts are kept through conversion adapters.
   [PRD §1](PRD.md#1-product-summary), [RULES.md](RULES.md).
+- **Battle squares** (2026-10-15). In the original a combat square is 10
+  feet: the manual's "Protection From Evil, 10' Radius" reaches "everyone
+  within 1 square", and a Lightning Bolt (40 or 80 feet in AD&D) is "4 or 8
+  squares long" (Manual pp. 26–27). OpenGoldBox keeps the original's
+  battlefields square for square but counts each square as 5 feet, the SRD's
+  grid, so every Speed, range and area is measured in 5-foot squares. One
+  exception: Revivify reaches 10 feet, two squares
+  ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+  [RULES.md](RULES.md).
 - **Monsters** (2026-10-02). The original's AD&D monster records become SRD
   stat blocks, unchanged.
   [MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks).
