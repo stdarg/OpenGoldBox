@@ -1,0 +1,368 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/character_sprite_panel.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/creation_swatch.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/character_pose_preview.gd" id="3"]
+
+[node name="Character sprites" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="Top" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Head" type="HBoxContainer" parent="Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Previous" type="Button" parent="Top/Head"]
+layout_mode = 2
+text = "< Head"
+
+[node name="Value" type="Label" parent="Top/Head"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "1 / 14"
+
+[node name="Next" type="Button" parent="Top/Head"]
+layout_mode = 2
+text = "Head >"
+
+[node name="Body" type="HBoxContainer" parent="Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Previous" type="Button" parent="Top/Body"]
+layout_mode = 2
+text = "< Body"
+
+[node name="Value" type="Label" parent="Top/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "1 / 1"
+
+[node name="Next" type="Button" parent="Top/Body"]
+layout_mode = 2
+text = "Body >"
+
+[node name="Size" type="OptionButton" parent="Top"]
+layout_mode = 2
+custom_minimum_size = Vector2(150, 0)
+
+[node name="Weapon" type="OptionButton" parent="Top"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+fit_to_longest_item = false
+clip_text = true
+
+[node name="Shield" type="CheckButton" parent="Top"]
+layout_mode = 2
+text = "Shield equipped"
+
+[node name="Colors" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 4
+
+[node name="PartTitle" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Part"
+
+[node name="Color1Title" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Color 1"
+
+[node name="Color2Title" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Color 2"
+
+[node name="Part0" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Weapon"
+vertical_alignment = 1
+
+[node name="Color0_0" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Color1_0" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Part1" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Body"
+vertical_alignment = 1
+
+[node name="Color0_1" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Color1_1" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Part2" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Hair / Face"
+vertical_alignment = 1
+
+[node name="Color0_2" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Color1_2" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Part3" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Shield"
+vertical_alignment = 1
+
+[node name="Color0_3" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Color1_3" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Part4" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Arms"
+vertical_alignment = 1
+
+[node name="Color0_4" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Color1_4" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Part5" type="Label" parent="Colors"]
+layout_mode = 2
+text = "Legs"
+vertical_alignment = 1
+
+[node name="Color0_5" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="Color1_5" type="Button" parent="Colors"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 32)
+size_flags_horizontal = 3
+
+[node name="PaletteHint" type="Label" parent="."]
+layout_mode = 2
+text = "Weapon / Color-1: choose a swatch"
+
+[node name="Palette" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 8
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+
+[node name="Swatch0" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch1" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch2" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch3" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch4" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch5" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch6" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch7" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch8" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch9" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch10" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch11" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch12" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch13" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch14" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Swatch15" type="Button" parent="Palette"]
+layout_mode = 2
+script = ExtResource("2")
+custom_minimum_size = Vector2(0, 30)
+size_flags_horizontal = 3
+text = " "
+
+[node name="Previews" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Ready" type="VBoxContainer" parent="Previews"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="Previews/Ready"]
+layout_mode = 2
+text = "Ready"
+horizontal_alignment = 1
+
+[node name="Panel" type="PanelContainer" parent="Previews/Ready"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Pose" type="Control" parent="Previews/Ready/Panel"]
+layout_mode = 2
+script = ExtResource("3")
+custom_minimum_size = Vector2(200, 170)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture_filter = 1
+
+[node name="Action" type="VBoxContainer" parent="Previews"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="Previews/Action"]
+layout_mode = 2
+text = "Action"
+horizontal_alignment = 1
+
+[node name="Panel" type="PanelContainer" parent="Previews/Action"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Pose" type="Control" parent="Previews/Action/Panel"]
+layout_mode = 2
+script = ExtResource("3")
+custom_minimum_size = Vector2(200, 170)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture_filter = 1
+
+[node name="CharacterStatus" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+text = "Choose a combat appearance."

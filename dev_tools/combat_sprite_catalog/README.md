@@ -21,12 +21,15 @@ filter hides records with no reference in decoded ECL evidence. Dynamic script
 paths may be unresolved, so “unused” means no reference found by that analysis.
 
 The **Character sprites** tab uses the game's `CharacterArt` compositor and
-combat-body assignment catalog. Choose one of 14 heads, 35 bodies, short or
-regular art, any catalog weapon, shield, and both colors for six regions. Ready
-and action poses stay visible together. Weapon and shield combinations are
-available even when game rules would forbid equipping them; missing or deleted
-art mappings display the existing unarmed fallback and a status label. The
-tab container leaves room for future tabs.
+combat-body assignment catalog. Its controls fill the pane, following the
+game's Combat appearance screen: step through 14 heads and the distinct body
+looks with the arrow buttons, choose Short, Regular, or Large, then select a
+Color 1 or Color 2 part and click a palette swatch. Weapon and shield choices
+sit beside Head, Body, and Size. Ready and Action poses stay visible together.
+The swatch control and palette values match character creation. Weapon and
+shield combinations are available even when game rules would forbid equipping
+them; missing art mappings display the existing unarmed fallback and a status
+label. The tab container leaves room for future tabs.
 
 After building, run the focused check with:
 
@@ -37,3 +40,5 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless \
 
 It checks the complete displayed catalog, both monster poses, the unused
 filter, and character ready/action previews across every weapon with shield.
+It also checks the in-pane Head and Body buttons, color swatches, Large size,
+and that the character pane has no scrolling selection panel.

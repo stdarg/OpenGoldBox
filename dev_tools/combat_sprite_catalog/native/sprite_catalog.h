@@ -22,7 +22,8 @@ public:
     godot::Dictionary monster_art(int index) const;
     godot::Ref<godot::Texture2D> monster_image(int index, bool action) const;
     godot::Array weapons() const;
-    godot::Dictionary character_art(int head, int body, bool small, int weapon_type,
+    godot::Array combat_body_groups() const;
+    godot::Dictionary character_art(int head, int body, int size, int weapon_type,
                                     bool shield, const godot::Array &colors) const;
 protected:
     static void _bind_methods();

@@ -39,7 +39,8 @@ void SpriteCatalog::_bind_methods()
     ClassDB::bind_method(D_METHOD("monster_art", "index"), &SpriteCatalog::monster_art);
     ClassDB::bind_method(D_METHOD("monster_image", "index", "action"), &SpriteCatalog::monster_image);
     ClassDB::bind_method(D_METHOD("weapons"), &SpriteCatalog::weapons);
-    ClassDB::bind_method(D_METHOD("character_art", "head", "body", "small", "weapon_type", "shield", "colors"), &SpriteCatalog::character_art);
+    ClassDB::bind_method(D_METHOD("combat_body_groups"), &SpriteCatalog::combat_body_groups);
+    ClassDB::bind_method(D_METHOD("character_art", "head", "body", "size", "weapon_type", "shield", "colors"), &SpriteCatalog::character_art);
 }
 
 String SpriteCatalog::load_data(const String &game_directory, const String &art_directory)
@@ -221,17 +222,27 @@ Array SpriteCatalog::weapons() const
     return result;
 }
 
-Dictionary SpriteCatalog::character_art(int head, int body, bool small, int weapon_type,
+Array SpriteCatalog::combat_body_groups() const
+{
+    Array result;
+    if (!characters_) return result;
+    for (const auto &group : characters_->combat_body_groups())
+        result.append(static_cast<int>(group.front()));
+    return result;
+}
+
+Dictionary SpriteCatalog::character_art(int head, int body, int size, int weapon_type,
                                         bool shield, const Array &colors) const
 {
     Dictionary result;
     if (!characters_ || !bodies_) return result;
     try {
-        if (head < 0 || head >= 14 || body < 0 || body >= 35 || colors.size() != 12)
+        if (head < 0 || head >= 14 || body < 0 || body >= 35 ||
+            size < 0 || size > static_cast<int>(IconSize::large) || colors.size() != 12)
             throw std::runtime_error("Invalid character picker selection");
         CharacterAppearance appearance;
         appearance.combat_head = head; appearance.combat_body = body;
-        appearance.icon_size = small ? IconSize::small : IconSize::regular;
+        appearance.icon_size = static_cast<IconSize>(size);
         for (int i = 0; i < 12; ++i) {
             const int color = colors[i];
             if (color < 0 || color >= 16) throw std::runtime_error("Color out of range");
@@ -247,6 +258,12 @@ Dictionary SpriteCatalog::character_art(int head, int body, bool small, int weap
         result["selection"] = gs(selected.label);
         result["matched"] = selected.matched;
         result["body"] = equipment_body;
+        Array usage;
+        const auto color_usage = characters_->color_usage(appearance);
+        for (unsigned bank = 0; bank < 2; ++bank)
+            for (unsigned part = 0; part < 6; ++part)
+                usage.append(color_usage.contains(bank, part));
+        result["color_usage"] = usage;
         return result;
     } catch (const std::exception &e) {
         result["error"] = gs(e.what());
