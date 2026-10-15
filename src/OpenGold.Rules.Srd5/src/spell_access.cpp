@@ -51,6 +51,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"healing_word", "Healing Word", 1, 0, cleric_list | bard_list | druid_list},
     Spell{"divine_smite", "Divine Smite", 1, 0, paladin_list},
     Spell{"searing_smite", "Searing Smite", 1, 0, paladin_list},
+    Spell{"shining_smite", "Shining Smite", 2, 0, paladin_list},
     Spell{"shield_of_faith", "Shield of Faith", 1, 0, cleric_list | paladin_list},
     Spell{"heroism", "Heroism", 1, 0, paladin_list | bard_list},
     Spell{"divine_favor", "Divine Favor", 1, 0, paladin_list},
@@ -66,17 +67,18 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"entangle", "Entangle", 1, 0, ranger_list | druid_list},
     // Also on the Sorcerer list; added with that class.
     Spell{"fog_cloud", "Fog Cloud", 1, 0, ranger_list | druid_list | wizard_list | sorcerer_list},
-    // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
-    Spell{"lesser_restoration", "Lesser Restoration", 2, 0, cleric_list | bard_list | druid_list},
-    // Also on the Bard, Druid, Paladin and Ranger lists; added with those classes.
-    Spell{"aid", "Aid", 2, 0, cleric_list | bard_list | druid_list},
+    // Also on the Ranger list; added with that class.
+    Spell{"lesser_restoration", "Lesser Restoration", 2, 0,
+        cleric_list | bard_list | druid_list | paladin_list},
+    // Also on the Ranger list; added with that class.
+    Spell{"aid", "Aid", 2, 0, cleric_list | bard_list | druid_list | paladin_list},
     Spell{"guiding_bolt", "Guiding Bolt", 1, 0, cleric_list},
     // Also on the Bard and Warlock lists; added with those classes.
     Spell{"bane", "Bane", 1, 0, cleric_list | warlock_list | bard_list},
     // Also on the Bard, Druid, Sorcerer and Warlock lists.
     Spell{"hold_person", "Hold Person", 2, 0, cleric_list | druid_list | wizard_list | sorcerer_list | warlock_list | bard_list},
     Spell{"sanctuary", "Sanctuary", 1, 0, cleric_list},
-    Spell{"warding_bond", "Warding Bond", 2, 0, cleric_list},
+    Spell{"warding_bond", "Warding Bond", 2, 0, cleric_list | paladin_list},
     Spell{"protection_from_poison", "Protection from Poison", 2, 0,
         cleric_list | druid_list | paladin_list | ranger_list},
     Spell{"resistance", "Resistance", 0, 0, cleric_list | druid_list},
@@ -84,7 +86,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     // Also on the Bard list; added with that class.
     Spell{"silence", "Silence", 2, 0, cleric_list | bard_list},
     Spell{"spiritual_weapon", "Spiritual Weapon", 2, 0, cleric_list},
-    Spell{"prayer_of_healing", "Prayer of Healing", 2, 0, cleric_list},
+    Spell{"prayer_of_healing", "Prayer of Healing", 2, 0, cleric_list | paladin_list},
     // Also on the Sorcerer list (and Thunderwave and Shatter on the Bard's and
     // Druid's); added with those classes.
     Spell{"burning_hands", "Burning Hands", 1, 0, wizard_list | sorcerer_list},
@@ -116,7 +118,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     // lists, Magic Weapon on the Paladin, Ranger and Sorcerer lists.
     Spell{"blur", "Blur", 2, 0, wizard_list | sorcerer_list},
     Spell{"mirror_image", "Mirror Image", 2, 0, wizard_list | sorcerer_list | warlock_list | bard_list},
-    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list | sorcerer_list},
+    Spell{"magic_weapon", "Magic Weapon", 2, 0, wizard_list | sorcerer_list | paladin_list},
     // Also on the Bard, Sorcerer and Warlock lists; added with those classes.
     Spell{"invisibility", "Invisibility", 2, 0, wizard_list | sorcerer_list | warlock_list | bard_list},
     Spell{"see_invisibility", "See Invisibility", 2, 0, wizard_list | sorcerer_list | bard_list},
@@ -159,7 +161,8 @@ struct PreparedCaster
     // The feature that grants the spells: Spellcasting, or a Warlock's Pact Magic.
     std::string_view feature;
     unsigned list, cantrip_list;
-    std::array<unsigned, 4> cantrips, prepared, highest_slot;
+    // By class level, 1 to 15 (SRD 5.2.1 class tables).
+    std::array<unsigned, 15> cantrips, prepared, highest_slot;
     // What a Long Rest may change: a Cleric any prepared spell, a Paladin or
     // Ranger one, a Sorcerer none (it changes spells only on gaining a level).
     enum class RestChange
@@ -174,34 +177,45 @@ constexpr std::array prepared_casters{
     PreparedCaster{
         CharacterClass::cleric, "class:cleric:spellcasting", "Cleric cantrips",
         "feature:spellcasting", cleric_list, cleric_list,
-        {3, 3, 3, 4}, {4, 5, 6, 7}, {1, 1, 2, 2}, PreparedCaster::RestChange::any},
+        {3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5},
+        {4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18},
+        {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8}, PreparedCaster::RestChange::any},
     PreparedCaster{
         // Paladin cantrips come only from Blessed Warrior, from the Cleric list.
         CharacterClass::paladin, "class:paladin:spellcasting", "Blessed Warrior cantrips",
-        "feature:spellcasting", paladin_list, cleric_list, {0, 0, 0, 0},
-        {2, 3, 4, 5}, {1, 1, 1, 1}, PreparedCaster::RestChange::one},
+        "feature:spellcasting", paladin_list, cleric_list, {},
+        {2, 3, 4, 5, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12},
+        {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4}, PreparedCaster::RestChange::one},
     // Ranger cantrips come only from Druidic Warrior, from the Druid list.
     PreparedCaster{
         CharacterClass::ranger, "class:ranger:spellcasting", "Druidic Warrior cantrips",
-        "feature:spellcasting", ranger_list, druid_list,
-        {0, 0, 0, 0}, {2, 3, 4, 4}, {1, 1, 1, 1}, PreparedCaster::RestChange::one},
+        "feature:spellcasting", ranger_list, druid_list, {},
+        {2, 3, 4, 4, 6, 6, 7, 7, 9, 9, 10, 10, 11, 11, 12},
+        {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4}, PreparedCaster::RestChange::one},
     PreparedCaster{
         CharacterClass::sorcerer, "class:sorcerer:spellcasting", "Sorcerer cantrips",
-        "feature:spellcasting", sorcerer_list, sorcerer_list, {4, 4, 4, 5}, {2, 4, 6, 7},
-        {1, 1, 2, 2}, PreparedCaster::RestChange::none},
+        "feature:spellcasting", sorcerer_list, sorcerer_list,
+        {4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6},
+        {2, 4, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18},
+        {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8}, PreparedCaster::RestChange::none},
     // Pact Magic: a Warlock prepares from its list; its slots are all one level.
     PreparedCaster{
         CharacterClass::warlock, "class:warlock:pact_magic", "Warlock cantrips",
-        "feature:pact_magic", warlock_list, warlock_list, {2, 2, 2, 3}, {2, 3, 4, 5},
-        {1, 1, 2, 2}, PreparedCaster::RestChange::none},
+        "feature:pact_magic", warlock_list, warlock_list,
+        {2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4},
+        {2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 11, 12, 12, 13},
+        {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5}, PreparedCaster::RestChange::none},
     PreparedCaster{
         CharacterClass::bard, "class:bard:spellcasting", "Bard cantrips", "feature:spellcasting",
-        bard_list, bard_list, {2, 2, 2, 3}, {4, 5, 6, 7}, {1, 1, 2, 2},
-        PreparedCaster::RestChange::none},
+        bard_list, bard_list, {2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4},
+        {4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18},
+        {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8}, PreparedCaster::RestChange::none},
     PreparedCaster{
         CharacterClass::druid, "class:druid:spellcasting", "Druid cantrips",
-        "feature:spellcasting", druid_list, druid_list, {2, 2, 2, 3}, {4, 5, 6, 7},
-        {1, 1, 2, 2}, PreparedCaster::RestChange::any}};
+        "feature:spellcasting", druid_list, druid_list,
+        {2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4},
+        {4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18},
+        {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8}, PreparedCaster::RestChange::any}};
 
 // Spells a class always has prepared from a class level on. `land` names the
 // Circle of the Land type whose Circle Spells these are.
@@ -240,6 +254,8 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::sorcerer, "dragons_breath", 3},
     AlwaysPrepared{CharacterClass::paladin, "protection_from_evil_and_good", 3},
     AlwaysPrepared{CharacterClass::paladin, "shield_of_faith", 3},
+    // Zone of Truth, the other level-5 oath spell, is cut (DM-1).
+    AlwaysPrepared{CharacterClass::paladin, "aid", 5},
     // Favored Enemy, SRD 5.2.1 p. 57.
     AlwaysPrepared{CharacterClass::ranger, "hunters_mark", 1},
     // Life Domain spells, p. 37.
@@ -571,14 +587,14 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
     result.prepared_choices = caster.prepared[level - 1];
     result.always_prepared = always_prepared_spells(caster.klass, level, grants);
     std::set<std::string> known;
-    std::array<unsigned, 5> learned{};
+    std::array<unsigned, 16> learned{};
     for (const auto &g : grants)
         if (class_spell_grant(g))
         {
             const auto &spell = find(std::string_view(g.id).substr(6));
             // Cantrips are learned at level one or at a level whose count grows.
             const bool learning_level =
-                g.level == 1 || (g.level >= 2 && g.level <= 4 &&
+                g.level == 1 || (g.level >= 2 && g.level <= level &&
                                  cantrips_at(caster, grants, g.level) >
                                  cantrips_at(caster, grants, g.level - 1));
             require((spell.lists & caster.cantrip_list) && spell.level == 0 && learning_level &&
@@ -589,7 +605,7 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
             ++learned[g.level];
         }
     require(learned[1] <= cantrips_at(caster, grants, 1));
-    for (unsigned n = 2; n <= 4; ++n)
+    for (unsigned n = 2; n <= level; ++n)
         require(learned[n] <= cantrips_at(caster, grants, n) - cantrips_at(caster, grants, n - 1));
     std::set<std::string> selected;
     for (const auto &id : prepared)

@@ -340,6 +340,21 @@ inline constexpr std::array spell_table
         .damage = DamageType::fire,
         .dice = {1, 6, 0},
         .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 164: after a Melee weapon or Unarmed Strike hit, 2d6
+    // Radiant; until Concentration ends, attack rolls against the target have
+    // Advantage and it cannot be Invisible.
+    SpellDef{
+        .id = "shining_smite",
+        .label = "Shining Smite",
+        .level = 2,
+        .pattern = SpellPattern::smite,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .bonus_action = true,
+        .damage = DamageType::radiant,
+        .dice = {2, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .concentration = true},
     // SRD 5.2.1 p. 128: after a weapon hit, Melee or Ranged; a Strength save or
     // Restrained, 1d6 Piercing at the start of each of its turns. A level-two
     // slot's extra die waits for Rangers of level five.

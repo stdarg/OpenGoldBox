@@ -114,7 +114,9 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "intimidating_presence_rage" ? "Intimidating Presence (1 Rage)"
             : verb == "divine_smite_free" ? "Divine Smite (Paladin's Smite)"
             : verb == "divine_smite"      ? "Divine Smite"
+            : verb == "divine_smite_2"    ? "Divine Smite (level 2 slot)"
             : verb == "searing_smite"     ? "Searing Smite"
+            : verb == "shining_smite"     ? "Shining Smite"
             : verb == "ensnaring_strike"  ? "Ensnaring Strike"
             : verb == "steady_aim"        ? "Steady Aim"
             : offered_label(verb, verb),

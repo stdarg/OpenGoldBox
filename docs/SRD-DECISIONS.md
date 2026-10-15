@@ -1081,6 +1081,10 @@ reach. Decisions taken with it:
   adjacent ally, offered as more A-cycle entries.
 - **Use Magic Device** (Thief 13) is granted and waits for magic items
   ([#234](https://github.com/stdarg/OpenGold/issues/234)), as Fast Hands does.
+- **Smite of Protection** (Devotion 15): the game has no cover (COVER-1), so
+  in place of Half Cover the Paladin and its allies in the Aura of Protection
+  gain what Half Cover gives: +2 AC and +2 to Dexterity saves, until the start
+  of the Paladin's next turn.
 
 ## PUSH-1 (2026-10-14): pushed into a wall
 

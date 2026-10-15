@@ -202,10 +202,13 @@ enum class EffectKind : unsigned
     // until damaged or shaken awake, with a Constitution save at the end of
     // each of its turns.
     knocked_out = 82,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // Cunning Strike's Daze (Rogue 14): on its next turn, only one of moving,
     // an action or a Bonus Action.
-    dazed = 83
+    dazed = 83,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // Shining Smite: attack rolls against the creature have Advantage, and it
+    // cannot be Invisible.
+    shining = 84
 };
 
 // The longest a spell benefit lasts, in milliseconds.

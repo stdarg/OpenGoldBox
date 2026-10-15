@@ -13,6 +13,49 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 2 | Paladin's Smite | Delivered with Divine Smite and Searing Smite (rules 0.6.69) |
 | 3 | Channel Divinity, Oath of Devotion | Delivered (rules 0.6.73): Sacred Weapon and the oath spells; Divine Sense left out (CLASS-4) |
 | 4 | Ability Score Improvement | Delivered earlier |
+| 5 | Extra Attack, level-2 spells | Delivered (rules 0.6.203) |
+| 5 | Faithful Steed | Cut with Find Steed: no mounts (SCOPE-1) |
+| 6 | Aura of Protection | Delivered (rules 0.6.203) |
+| 7 | Aura of Devotion | Delivered (rules 0.6.203) |
+| 8 | Ability Score Improvement | Delivered (rules 0.6.203) |
+
+## Levels 5–8
+
+The Paladin advances to level 8 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)).
+Level 9 brings level-3 spell slots, which no caster has yet, so the Paladin
+stops at 8 until they exist.
+
+- **Extra Attack** (5): two attacks with each Attack action.
+- **Spellcasting:** four level-1 slots from level 5; two level-2 slots at 5
+  and 6, three from 7. Prepared spells 6, 6, 7, 7. The Paladin list gains its
+  level-2 spells: Aid, Lesser Restoration, Magic Weapon, Prayer of Healing,
+  Protection from Poison, Shining Smite and Warding Bond. Find Steed, Gentle
+  Repose, Locate Object and Zone of Truth are cut (SCOPE-1, DM-1, DM-3).
+- **Oath of Devotion spells** (5): Aid is always prepared (Zone of Truth is
+  cut).
+- **Smites from a level-2 slot:** after a melee hit the Bonus Action list also
+  offers "Divine Smite (level 2 slot)", 3d8 Radiant (4d8 against a Fiend or
+  an Undead), and **Shining Smite**: 2d6 Radiant, and until the Paladin's
+  Concentration ends (up to 1 minute) attack rolls against the target have
+  Advantage and it cannot be Invisible. Searing Smite still uses a level-1
+  slot: its burn from a higher slot waits for the slot rework that brings
+  level-3 slots.
+- **Aura of Protection** (6): the Paladin and its allies within 10 feet, in a
+  clear line, add the Paladin's Charisma modifier (at least +1) to saving
+  throws, including repeated saves, Concentration saves and death saves. A
+  death save shows it with the roll ("death save: 7 + 3 (Aura of
+  Protection)"). The aura is off while the Paladin is unconscious or
+  Incapacitated. A creature in two Paladins' auras gets the larger bonus (the
+  SRD lets it choose one).
+- **Aura of Devotion** (7): the Paladin and allies in its Aura of Protection
+  cannot be Charmed, and a Charm on an ally has no effect while it is there.
+- **Ability Score Improvement** (8): a feat or ability points.
+
+Verification: `opengold_paladin_levels_tests` (the cap at 8 in the campaign,
+features by level, prepared counts, Aid always prepared, the level-2 spells
+preparable, slots at 5 and 7, a campaign round trip, Extra Attack, both
+level-2 smites and their slots, Shining Smite's effect and checkpoint, the
+aura's save bonus at 5, 10 and 20 feet, and its death-save bonus).
 
 ## Channel Divinity and the Oath of Devotion
 

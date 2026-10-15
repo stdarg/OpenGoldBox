@@ -568,6 +568,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::dragons_breath:
     case EffectKind::innate_sorcery:
     case EffectKind::outlined:
+    case EffectKind::shining:
     case EffectKind::shillelagh:
     case EffectKind::heated:
         return 60000; // 1 minute
@@ -810,7 +811,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::dazed))
+    if (value > static_cast<unsigned>(EffectKind::shining))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

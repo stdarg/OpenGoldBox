@@ -198,6 +198,16 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 15)
             add("feature:slippery_mind", "class:rogue");
     }
+    // Faithful Steed (Paladin 5) is cut with Find Steed (SCOPE-1: no mounts).
+    if (klass == CharacterClass::paladin)
+    {
+        if (level == 5)
+            add("feature:extra_attack", "class:paladin");
+        if (level == 6)
+            add("feature:aura_of_protection", "class:paladin");
+        if (level == 7)
+            add("feature:aura_of_devotion", "subclass:paladin:devotion");
+    }
     // Acrobatic Movement (Monk 9) is cut (SCOPE-2).
     if (klass == CharacterClass::monk)
     {

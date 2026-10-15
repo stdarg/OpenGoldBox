@@ -584,8 +584,9 @@ Every spell below was already triaged in the 5–10 inventory.
    the cap) revive a disintegrated creature, so a party member dusted by a
    monster caster is gone for good. Accept that, or let Resurrection work?
 5. **Smite of Protection** (Devotion 15) only grants Half Cover, which COVER-1
-   removed, so the Devotion Paladin would get nothing at 15. Accept the cut,
-   or substitute something? (Nature's Sanctuary keeps its Resistance half.)
+   removed, so the Devotion Paladin would get nothing at 15. Answered by
+   LEVELS-2: it gives Half Cover's +2 AC and +2 to Dexterity saves instead.
+   (Nature's Sanctuary keeps its Resistance half.)
 6. **Dragon Wings** (Draconic 14): cut with flight, as Fly was? Draconic
    Sorcery then has no usable feature at 14.
 7. **Timing and post-roll choices.** Proposed: Peerless Skill applies on its

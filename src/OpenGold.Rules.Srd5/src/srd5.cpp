@@ -190,7 +190,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::enlarged || kind == detail::EffectKind::reduced ||
            kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended ||
            kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined ||
-           kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated;
+           kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated ||
+           kind == detail::EffectKind::shining;
 }
 
 // Command's option as players read it, such as "Approach".
@@ -228,11 +229,11 @@ bool selects_creatures(const detail::SpellDef &spell)
 }
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
-// Smite's slotless cast.
+// Smite's slotless cast and divine_smite_2 a cast from a level-2 slot.
 bool is_smite(std::string_view verb)
 {
-    return verb == "divine_smite" || verb == "divine_smite_free" || verb == "searing_smite" ||
-           verb == "ensnaring_strike";
+    return verb == "divine_smite" || verb == "divine_smite_free" || verb == "divine_smite_2" ||
+           verb == "searing_smite" || verb == "shining_smite" || verb == "ensnaring_strike";
 }
 
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
@@ -298,6 +299,14 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::paladin, "protection_from_evil_and_good", 1},
     SpellAccessRow{CharacterClass::cleric, "protection_from_evil_and_good", 1},
     SpellAccessRow{CharacterClass::paladin, "command", 1},
+    // Paladin level-2 spells, with the level-2 slots of Paladin level 5.
+    SpellAccessRow{CharacterClass::paladin, "aid", 5},
+    SpellAccessRow{CharacterClass::paladin, "lesser_restoration", 5},
+    SpellAccessRow{CharacterClass::paladin, "magic_weapon", 5},
+    SpellAccessRow{CharacterClass::paladin, "prayer_of_healing", 5},
+    SpellAccessRow{CharacterClass::paladin, "protection_from_poison", 5},
+    SpellAccessRow{CharacterClass::paladin, "warding_bond", 5},
+    SpellAccessRow{CharacterClass::paladin, "shining_smite", 5},
     SpellAccessRow{CharacterClass::ranger, "cure_wounds", 1},
     SpellAccessRow{CharacterClass::ranger, "hunters_mark", 1},
     SpellAccessRow{CharacterClass::ranger, "longstrider", 1},
@@ -680,6 +689,10 @@ struct Definition
     // Deflect Energy and Perfect Focus.
     bool heightened_focus{}, self_restoration{}, fleet_step{}, deflect_energy{}, perfect_focus{};
     bool disciplined_survivor{};
+    // Paladin: Aura of Protection's bonus to saves (Charisma modifier, at
+    // least +1; 0 below level 6) and Aura of Devotion (level 7).
+    int aura_of_protection{};
+    bool aura_of_devotion{};
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -1399,7 +1412,8 @@ character_definition(std::string_view bytes,
     d.champion = klass == CharacterClass::fighter && level >= 3;
     d.critical_from = !d.champion ? 20 : level >= 15 ? 18 : 19;
     d.extra_attacks = (klass == CharacterClass::fighter || klass == CharacterClass::barbarian ||
-                       klass == CharacterClass::monk) && level >= 5 ? 1 : 0;
+                       klass == CharacterClass::monk || klass == CharacterClass::paladin) &&
+                      level >= 5 ? 1 : 0;
     // Two Extra Attacks (Fighter 11): three attacks with each Attack action.
     if (klass == CharacterClass::fighter && level >= 11)
         d.extra_attacks = 2;
@@ -1426,6 +1440,9 @@ character_definition(std::string_view bytes,
     d.deflect_energy = klass == CharacterClass::monk && level >= 13;
     d.disciplined_survivor = klass == CharacterClass::monk && level >= 14;
     d.perfect_focus = klass == CharacterClass::monk && level >= 15;
+    d.aura_of_protection = klass == CharacterClass::paladin && level >= 6
+                           ? std::max(1, ability_modifier(scores[Ability::charisma])) : 0;
+    d.aura_of_devotion = klass == CharacterClass::paladin && level >= 7;
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
@@ -1462,7 +1479,7 @@ character_definition(std::string_view bytes,
                  klass == CharacterClass::druid)
               ? (level == 1 ? 2 : level == 2 ? 3 : 4)
               : (klass == CharacterClass::paladin || klass == CharacterClass::ranger)
-              ? (level <= 2 ? 2 : 3)
+              ? (level <= 2 ? 2 : level <= 4 ? 3 : 4)
               : 0;
     d.slots2 = klass == CharacterClass::warlock && level >= 3 ? 2
                : (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
@@ -1470,6 +1487,9 @@ character_definition(std::string_view bytes,
                   klass == CharacterClass::druid) &&
                level >= 3
                ? (level == 3 ? 2 : 3)
+               : (klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
+               level >= 5
+               ? (level <= 6 ? 2 : 3)
                : 0;
     const Ability casting_ability =
         (klass == CharacterClass::cleric || klass == CharacterClass::ranger ||
@@ -2602,12 +2622,14 @@ class Session final : public CombatSession
     // hidden one has the Invisible condition until it is found.
     static bool unseen(const Actor &viewer, const Actor &target)
     {
-        // Faerie Fire and Starry Wisp keep a creature from being Invisible.
+        // Faerie Fire, Starry Wisp and Shining Smite keep a creature from
+        // being Invisible.
         return (detail::has_effect(target.effects, detail::EffectKind::invisible) ||
                 hidden(target)) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility) &&
                !detail::has_effect(target.effects, detail::EffectKind::outlined) &&
-               !detail::has_effect(target.effects, detail::EffectKind::lit);
+               !detail::has_effect(target.effects, detail::EffectKind::lit) &&
+               !detail::has_effect(target.effects, detail::EffectKind::shining);
     }
 
     [[nodiscard]] static bool hidden(const Actor &a)
@@ -2904,6 +2926,9 @@ class Session final : public CombatSession
     [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
+    [[nodiscard]] bool aura_covers(const Actor &paladin, const Actor &a) const;
+    [[nodiscard]] int aura_of_protection(const Actor &a) const;
+    [[nodiscard]] bool aura_of_devotion(const Actor &a) const;
     // Frightened: a living creature that frightens `a` is in its line of sight.
     [[nodiscard]] std::vector<const Actor *> fears_in_sight(const Actor &a) const;
     // Intimidating Presence (Berserker 14): each enemy within 30 feet makes a
@@ -4118,6 +4143,10 @@ Snapshot Session::snapshot() const
                 })
             if (detail::knows_spell(def(a).spells, smite))
                 view.bonus_actions.push_back(smite);
+        if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).slots2)
+            view.bonus_actions.push_back("divine_smite_2");
+        if (detail::knows_spell(def(a).spells, "shining_smite"))
+            view.bonus_actions.push_back("shining_smite");
         for (const auto &descriptor : resource_descriptors)
             if (descriptor.combat_view && def(a).*descriptor.capacity)
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
@@ -4254,6 +4283,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::metamagic, "Metamagic readied"},
                     std::pair{detail::EffectKind::hex, "Hexed"},
                     std::pair{detail::EffectKind::outlined, "Outlined (Faerie Fire)"},
+                    std::pair{detail::EffectKind::shining, "Shining (Shining Smite)"},
                     std::pair{detail::EffectKind::lit, "Lit (Starry Wisp)"},
                     std::pair{detail::EffectKind::inspired, "Inspired"},
                     std::pair{detail::EffectKind::shillelagh, "Shillelagh"},
@@ -4582,6 +4612,12 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {
             log(target.source.name + "'s Mindless Rage shrugs off the charm.",
             {"{name}'s Mindless Rage shrugs off the charm.", {{"name", target.source.name}}});
+            return;
+        }
+        if (aura_of_devotion(target))
+        {
+            log(target.source.name + " is immune to the charm (Aura of Devotion).",
+            {"{name} is immune to the charm (Aura of Devotion).", {{"name", target.source.name}}});
             return;
         }
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
@@ -5834,13 +5870,18 @@ std::vector<Command> Session::legal_commands() const
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
         const bool slot = a.slots > 0 && !a.spent_slot;
+        const bool slot2 = a.slots2 > 0 && !a.spent_slot;
         const bool melee = a.smite_melee;
         if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
         if (melee && detail::knows_spell(d.spells, "divine_smite") && slot)
             add(id, "divine_smite", "Divine Smite", a.smite_target);
+        if (melee && detail::knows_spell(d.spells, "divine_smite") && slot2)
+            add(id, "divine_smite_2", "Divine Smite (level 2 slot)", a.smite_target);
         if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
             add(id, "searing_smite", "Searing Smite", a.smite_target);
+        if (melee && detail::knows_spell(d.spells, "shining_smite") && slot2)
+            add(id, "shining_smite", "Shining Smite", a.smite_target);
         if (detail::knows_spell(d.spells, "ensnaring_strike") && slot)
             add(id, "ensnaring_strike", "Ensnaring Strike", a.smite_target);
     }
@@ -6331,7 +6372,9 @@ void Session::damage(Actor &target, int amount, bool critical)
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::extended) ||
                                def(target).eldritch_mind;
         const auto result = target.concentration.damage(
-                                amount, def(target).saves[2] + (rolls ? blessing_die(target) : 0),
+                                amount,
+                                def(target).saves[2] + aura_of_protection(target) +
+                                (rolls ? blessing_die(target) : 0),
                                 modifiers, target.life.hp == 0 || target.life.dead, rng_,
                                 target.effects.active);
         if (result.save)
@@ -6420,28 +6463,34 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
         resolve_ensnaring_strike(a);
         return;
     }
-    const bool searing = verb == "searing_smite";
+    const bool searing = verb == "searing_smite", shining = verb == "shining_smite";
     if (sanctuary_stops(a, actor(a.smite_target)))
     {
         a.smite_target = 0;
         a.bonus = false;
         return;
     }
-    const auto &spell = *detail::find_spell(searing ? "searing_smite" : "divine_smite");
+    const auto &spell = *detail::find_spell(searing ? "searing_smite"
+                                            : shining ? "shining_smite"
+                                            : "divine_smite");
     auto &target = actor(a.smite_target);
     a.smite_target = 0;
     a.bonus = false;
+    const bool level_two = shining || verb == "divine_smite_2";
     if (verb == "divine_smite_free")
         --a.free_casts;
     else
     {
-        --a.slots;
+        --(level_two ? a.slots2 : a.slots);
         a.spent_slot = true;
     }
     auto rolled = spell.dice;
+    // A level-2 slot adds a die to Divine Smite.
+    if (verb == "divine_smite_2")
+        rolled.count += spell.upcast.extra_dice;
     // Divine Smite deals 1d8 more to a Fiend or an Undead.
     const auto &type = def(target).creature_type;
-    if (!searing && (type == "fiend" || type == "undead"))
+    if (!searing && !shining && (type == "fiend" || type == "undead"))
         ++rolled.count;
     // The damage is part of the attack, so a critical hit doubles its dice.
     if (a.smite_critical)
@@ -6463,6 +6512,13 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     if (searing && target.life.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, effect_source(a), a.source.name,
                                     spell_dc(a));
+    if (shining && target.life.hp > 0 && detail::can_apply(target.effects))
+    {
+        begin_concentration(a, spell);
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::shining, 0);
+        log(target.source.name + " shines.", {"{name} shines.", {{"name", target.source.name}}});
+    }
 }
 
 std::vector<Cell> Session::area_cells(const detail::SpellDef &spell, std::string_view verb,
@@ -7722,10 +7778,41 @@ void Session::intimidate(const Actor &barbarian)
 
 bool Session::charmed_by(const Actor &a, EntityId other) const
 {
+    // Aura of Devotion: a Charm has no effect while its target is in the aura.
+    if (aura_of_devotion(a))
+        return false;
     return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
     {
         return e.kind == detail::EffectKind::charmed && e.source_actor == other &&
                e.source_scope == scope_;
+    });
+}
+
+// A Paladin's 10-foot Emanation reaches itself and its allies in a clear line,
+// while it is conscious and not Incapacitated.
+bool Session::aura_covers(const Actor &paladin, const Actor &a) const
+{
+    return def(paladin).aura_of_protection && paladin.source.side == a.source.side &&
+           conscious(paladin) && !detail::incapacitated(paladin.effects) &&
+           distance(paladin.source.cell, a.source.cell) <= 10 &&
+           line_of_sight(paladin.source.cell, a.source.cell);
+}
+
+int Session::aura_of_protection(const Actor &a) const
+{
+    // A creature in two auras benefits from one; the game takes the larger.
+    int bonus = 0;
+    for (const auto &paladin : actors_)
+        if (aura_covers(paladin, a))
+            bonus = std::max(bonus, def(paladin).aura_of_protection);
+    return bonus;
+}
+
+bool Session::aura_of_devotion(const Actor &a) const
+{
+    return std::any_of(actors_.begin(), actors_.end(), [&](const auto & paladin)
+    {
+        return def(paladin).aura_of_devotion && aura_covers(paladin, a);
     });
 }
 
@@ -8115,6 +8202,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.advantage = true;
     // Faerie Fire: Advantage against an outlined creature the attacker sees.
     if (detail::has_effect(target.effects, detail::EffectKind::outlined) && can_see(a, target))
+        result.advantage = true;
+    // Shining Smite: Advantage against the shining creature.
+    if (detail::has_effect(target.effects, detail::EffectKind::shining))
         result.advantage = true;
     // Innate Sorcery: Advantage on spell attack rolls.
     if (spell && detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
@@ -9469,9 +9559,21 @@ bool Session::begin_turn()
     {
         if (!a.life.stable)
         {
-            const int result =
-                detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects), def(a).lucky);
-            log(a.source.name + " death save: " + std::to_string(result),
+            const int aura = aura_of_protection(a);
+            const int result = detail::death_save(a.life, rng_, !detail::healing_blocked(a.effects),
+                                                  def(a).lucky, aura);
+            if (aura)
+                log(a.source.name + " death save: " + std::to_string(result) + " + " +
+                    std::to_string(aura) + " (Aura of Protection)",
+            {
+                "{name} death save: {roll} + {bonus} (Aura of Protection)",
+                {   {"name", a.source.name},
+                    {"roll", std::to_string(result)},
+                    {"bonus", std::to_string(aura)}
+                }
+            });
+            else
+                log(a.source.name + " death save: " + std::to_string(result),
             {
                 "{name} death save: {roll}",
                 {{"name", a.source.name}, {"roll", std::to_string(result)}}
@@ -9656,7 +9758,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     }
     // Warding Bond: +1 to saving throws.
     const int bless = blessing_die(target) +
-                      (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0);
+                      (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
+                      aura_of_protection(target);
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
@@ -9746,9 +9849,12 @@ void Session::advance_turn_time()
     std::vector<EntityId> burned;
     for (auto &a : actors_)
     {
+        auto saves = def(a).saves;
+        for (auto &save : saves)
+            save += aura_of_protection(a);
         subjects.push_back(
         {
-            {   a.source.id, a.effects, def(a).saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
+            {   a.source.id, a.effects, saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
                 def(a).gnomish_cunning, def(a).lucky, def(a).brave
             },
             a.life});
@@ -13074,9 +13180,20 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
-        if (klass == CharacterClass::paladin)
+        if (klass == CharacterClass::paladin && result.level <= 4)
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        if (klass == CharacterClass::paladin && result.level == 5)
+            result.description =
+                "Extra Attack: two attacks with each Attack action.\nLevel 2 spell slots and Paladin spells, among them Shining Smite; Divine Smite from a level 2 slot deals 3d8. Aid is always prepared.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::paladin && result.level == 6)
+            result.description =
+                "Aura of Protection: you and allies within 10 feet add your Charisma modifier (at least +1) to saving throws, unless you are Incapacitated.";
+        if (klass == CharacterClass::paladin && result.level == 7)
+            result.description =
+                "Oath of Devotion: Aura of Devotion. You and allies in your Aura of Protection cannot be Charmed.\nA third level 2 spell slot.";
+        if (klass == CharacterClass::paladin && result.level == 8)
+            result.description = "A feat or ability points.";
         if (klass == CharacterClass::druid)
             result.description = "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (klass == CharacterClass::bard)
@@ -15086,7 +15203,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.202", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.203", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
