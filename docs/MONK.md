@@ -97,8 +97,11 @@ which is also its rules cap for now.
   a Constitution save against the Focus DC or is Stunned until the start of the
   Monk's next turn (Incapacitated, failing Strength and Dexterity saves, attacked
   with Advantage); on a success its Speed is halved and the next attack roll
-  against it has Advantage. Flurry of Blows' strikes do not offer it.
-- **Empowered Strikes:** recorded; its Force damage waits for a decision.
+  against it has Advantage. "Flurry of Blows: Stunning Strike" (2 Focus in
+  all) tries it on the Flurry's first hit.
+- **Empowered Strikes:** Unarmed Strikes deal Force damage instead of
+  Bludgeoning, always: almost nothing resists Force, so the choice is never
+  worth asking.
 - **Wholeness of Body:** a Bonus Action heals the Martial Arts die + Wisdom
   modifier, a Wisdom modifier's worth of uses (at least 1) per Long Rest.
 - **Evasion:** as the [Rogue's](ROGUE.md).

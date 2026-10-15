@@ -664,7 +664,7 @@ struct Definition
     // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
     // Wholeness of Body's uses per Long Rest.
     int martial_die{6}, wholeness{}, wisdom{};
-    bool stunning_strike{};
+    bool stunning_strike{}, empowered_strikes{};
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -1382,6 +1382,7 @@ character_definition(std::string_view bytes,
     d.martial_die = klass == CharacterClass::monk && level >= 5 ? 8 : 6;
     d.wisdom = ability_modifier(scores[Ability::wisdom]);
     d.stunning_strike = klass == CharacterClass::monk && level >= 5;
+    d.empowered_strikes = klass == CharacterClass::monk && level >= 6;
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
@@ -1752,6 +1753,10 @@ character_definition(std::string_view bytes,
         }
         d.melee_ability = d.martial_modifier;
     }
+    // Empowered Strikes: Unarmed Strikes deal Force damage, which almost
+    // nothing resists, so it is always chosen.
+    if (d.empowered_strikes && !weapon)
+        d.melee_type = detail::DamageType::force;
     if (shield && trained(klass, grants, "shield"))
         d.ac += 2;
     // Mage Armor's AC for a creature wearing no armor.
@@ -3092,7 +3097,8 @@ Actor Session::unarmed_actor(const Actor &a) const
     d.melee = {1, d.martial_die, d.martial_modifier};
     d.melee_bonus = 2 + (d.level - 1) / 4 + d.martial_modifier;
     d.melee_ability = d.martial_modifier;
-    d.melee_type = detail::DamageType::bludgeoning;
+    d.melee_type = d.empowered_strikes ? detail::DamageType::force
+                                       : detail::DamageType::bludgeoning;
     d.reach = 5;
     d.versatile_sides = 0;
     d.masteries.clear();
@@ -3944,8 +3950,9 @@ Snapshot Session::snapshot() const
         if (def(a).focus)
             view.bonus_actions.insert(view.bonus_actions.end(),
         {
-            "flurry_of_blows", "flurry_addle", "flurry_push", "flurry_topple", "patient_defense",
-            "patient_defense_focus", "step_of_the_wind", "step_of_the_wind_focus"
+            "flurry_of_blows", "flurry_addle", "flurry_push", "flurry_topple", "flurry_stun",
+            "patient_defense", "patient_defense_focus", "step_of_the_wind",
+            "step_of_the_wind_focus"
         });
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
             view.bonus_actions.push_back("divine_smite_free");
@@ -5482,6 +5489,9 @@ std::vector<Command> Session::legal_commands() const
                         add(id, "flurry_push", "Flurry of Blows: Push", other.source.id);
                         add(id, "flurry_topple", "Flurry of Blows: Topple", other.source.id);
                     }
+                    // Stunning Strike on a Flurry hit costs one more Focus Point.
+                    if (d.stunning_strike && d.martial_arts && !a.stun_used && a.surges > 1)
+                        add(id, "flurry_stun", "Flurry of Blows: Stunning Strike", other.source.id);
                 }
         }
     }
@@ -10341,6 +10351,8 @@ void Session::dispatch(const Command &command)
         --a.surges;
         log(a.source.name + " uses Flurry of Blows.",
         {"{name} uses Flurry of Blows.", {{"name", a.source.name}}});
+        if (command.verb == "flurry_stun")
+            stunning_ = a.source.id;
         for (int strike = 0; strike < 2 && actor(command.target).life.hp > 0; ++strike)
         {
             auto striker = unarmed_actor(a);
@@ -10349,6 +10361,7 @@ void Session::dispatch(const Command &command)
             if (hit && actor(command.target).life.hp > 0)
                 open_hand(a, actor(command.target), command.verb);
         }
+        stunning_ = 0;
     }
     else if (command.verb.starts_with("patient_defense") ||
              command.verb.starts_with("step_of_the_wind"))
@@ -12453,7 +12466,7 @@ class Module final : public RulesModule
                 "Extra Attack: two attacks with each Attack action.\nStunning Strike: once a turn, a hit with a Monk weapon or an Unarmed Strike may spend 1 Focus: Constitution save or Stunned until your next turn.\nMartial Arts d8; Proficiency Bonus +3.";
         if (klass == CharacterClass::monk && result.level == 6)
             result.description =
-                "Empowered Strikes.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet.";
+                "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet.";
         if (klass == CharacterClass::monk && result.level == 7)
             result.description =
                 "Evasion: a Dexterity save against half damage takes none on a success and half on a failure.";
@@ -14483,7 +14496,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.196", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.197", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

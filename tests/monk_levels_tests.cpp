@@ -93,11 +93,12 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
     return false;
 }
 
-std::unique_ptr<RulesModule> dummy_rules()
+std::unique_ptr<RulesModule> dummy_rules(std::string extra = {})
 {
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
-                               "\ncreature dummy 10 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "\ncreature dummy 10 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               extra);
 }
 
 bool logged(const CombatSession &c, std::string_view text)
@@ -174,6 +175,43 @@ void stunning_checks()
     check(stunned && staggered, "Both outcomes of the Constitution save");
 }
 
+// Flurry of Blows may try a Stunning Strike for one more Focus Point.
+void flurry_stun_checks()
+{
+    const auto rules = dummy_rules();
+    bool tried = false;
+    for (std::uint64_t seed = 1; seed < 40 && !tried; ++seed)
+    {
+        auto c = duel(*rules, monk(5), seed);
+        check(offered(*c, "flurry_stun"), "Flurry of Blows offers Stunning Strike");
+        check(submit(*c, "flurry_stun", 98), "A Flurry with Stunning Strike");
+        tried = logged(*c, "Monk attempts a Stunning Strike.");
+        if (tried)
+            check(!offered(*c, "melee_stun"), "Still once a turn");
+    }
+    check(tried, "A Flurry hit tries the Stunning Strike");
+}
+
+// Empowered Strikes: from level 6 Unarmed Strikes deal Force damage.
+void empowered_checks()
+{
+    const auto rules = dummy_rules("affinity dummy hide resistance bludgeoning\n"
+                                   "affinity dummy ward resistance force\n");
+    const auto type_logged = [&](unsigned level, std::string_view text)
+    {
+        for (std::uint64_t seed = 1; seed < 40; ++seed)
+        {
+            auto c = duel(*rules, monk(level), seed);
+            check(submit(*c, "flurry_of_blows", 98), "A Flurry of Blows");
+            if (logged(*c, text))
+                return true;
+        }
+        return false;
+    };
+    check(type_logged(5, "Dummy: Bludgeoning damage"), "A level-5 Unarmed Strike is Bludgeoning");
+    check(type_logged(6, "Dummy: Force damage"), "A level-6 Unarmed Strike is Force");
+}
+
 // Wholeness of Body heals with a Bonus Action.
 void wholeness_checks()
 {
@@ -192,6 +230,8 @@ int main()
     {
         progression_checks();
         stunning_checks();
+        flurry_stun_checks();
+        empowered_checks();
         wholeness_checks();
     }
     catch (const std::exception &error)
