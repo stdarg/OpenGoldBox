@@ -98,8 +98,8 @@ unsigned level_cap(CharacterClass character_class)
 {
     return character_class == CharacterClass::fighter ||
            character_class == CharacterClass::barbarian ? 15
-           : character_class == CharacterClass::rogue ? 10
-           : character_class == CharacterClass::monk ? 9 : 4;
+           : character_class == CharacterClass::monk ? 15
+           : character_class == CharacterClass::rogue ? 10 : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)

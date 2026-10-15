@@ -204,6 +204,19 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         }
         if (level == 7)
             add("feature:evasion", "class:monk");
+        if (level == 10)
+        {
+            add("feature:heightened_focus", "class:monk");
+            add("feature:self_restoration", "class:monk");
+        }
+        if (level == 11)
+            add("feature:fleet_step", "subclass:monk:open_hand");
+        if (level == 13)
+            add("feature:deflect_energy", "class:monk");
+        if (level == 14)
+            add("feature:disciplined_survivor", "class:monk");
+        if (level == 15)
+            add("feature:perfect_focus", "class:monk");
     }
     return result;
 }

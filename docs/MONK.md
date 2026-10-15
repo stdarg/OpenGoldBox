@@ -78,11 +78,12 @@ see [Armor](ARMOR.md). Slow Fall is dropped (SRD-DECISIONS).
   Push's 15 feet), `opengold_wizard_spell_tests` (Shield
   still asked).
 
-## Levels 5–9
+## Levels 5–15
 
 The Thieves' hall trains a Monk to level 9
 ([CAP-1](SRD-DECISIONS.md#cap-1-2026-10-14-the-original-training-halls-limits)),
-which is also its rules cap for now.
+until [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)'s one limit
+for every class is settled; the rules go to 15.
 
 | Level | Gains |
 | ---: | --- |
@@ -91,6 +92,12 @@ which is also its rules cap for now.
 | 7 | Evasion |
 | 8 | A feat or ability points |
 | 9 | Proficiency Bonus +4 (Acrobatic Movement is cut, SCOPE-2) |
+| 10 | Heightened Focus; Self-Restoration; Unarmored Movement +20 feet |
+| 11 | Open Hand: Fleet Step; Martial Arts d10 |
+| 12 | A feat or ability points |
+| 13 | Deflect Energy; Proficiency Bonus +5 |
+| 14 | Disciplined Survivor; Unarmored Movement +25 feet |
+| 15 | Perfect Focus |
 
 - **Stunning Strike:** the A cycle offers "Melee attack (Stunning Strike)" once
   a turn while the Monk has Focus. On a hit it spends 1 Focus: the target makes
@@ -105,4 +112,20 @@ which is also its rules cap for now.
 - **Wholeness of Body:** a Bonus Action heals the Martial Arts die + Wisdom
   modifier, a Wisdom modifier's worth of uses (at least 1) per Long Rest.
 - **Evasion:** as the [Rogue's](ROGUE.md).
-- Verification: `opengold_monk_levels_tests`.
+- **Heightened Focus:** Flurry of Blows makes three Unarmed Strikes, and
+  Patient Defense with Focus also gives two Martial Arts dice of Temporary Hit
+  Points. Step of the Wind's carried creature is not built yet (asked).
+- **Self-Restoration:** at the end of each of its turns, one of Charmed,
+  Frightened or Poisoned ends on the Monk, without asking.
+- **Fleet Step:** after any other Bonus Action, the A cycle still offers Step
+  of the Wind that turn.
+- **Deflect Energy:** Deflect Attacks is asked about hits of any damage type.
+- **Disciplined Survivor:** proficiency in every saving throw. Its Focus Point
+  reroll of a failed save is not built yet (asked).
+- **Perfect Focus:** a Monk with fewer than 4 Focus Points when a fight starts
+  has 4 (Uncanny Metabolism, when used, restores them all anyway).
+- Verification: `opengold_monk_levels_tests` (the campaign's stop at 9, the
+  rules to 15, grants, Unarmored Movement, save proficiencies, Extra Attack,
+  Stunning Strike and on Flurry, Empowered Strikes, Wholeness of Body,
+  Heightened Focus, Fleet Step and its checkpoint, Deflect Energy, Perfect
+  Focus).

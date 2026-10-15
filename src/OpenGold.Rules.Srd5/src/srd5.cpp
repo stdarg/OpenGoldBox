@@ -675,6 +675,9 @@ struct Definition
     // Wholeness of Body's uses per Long Rest.
     int martial_die{6}, wholeness{}, wisdom{};
     bool stunning_strike{}, empowered_strikes{};
+    // Monk levels 10-15: Heightened Focus, Self-Restoration, Fleet Step,
+    // Deflect Energy and Perfect Focus.
+    bool heightened_focus{}, self_restoration{}, fleet_step{}, deflect_energy{}, perfect_focus{};
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -784,6 +787,9 @@ struct Actor
     int pounce{};    // Instinctive Pounce's feet, usable only right after entering a Rage
     bool brutal_used{}; // Brutal Strike, once on each of its turns
     bool stun_used{};   // Stunning Strike, once on each turn
+    // Fleet Step (Monk 11): after another Bonus Action, Step of the Wind may
+    // still be used this turn.
+    bool fleet_step{};
     // The straight line just moved along this turn, for a Boar's charge: its
     // first and last cells, the step repeated and its length. Any command but
     // moving or a melee attack ends it.
@@ -1372,11 +1378,10 @@ character_definition(std::string_view bytes,
     d.focus_dc = 8 + proficiency + ability_modifier(scores[Ability::wisdom]);
     d.dexterity = dex;
     d.rushes = race == "Orc" ? proficiency : 0;
-    const auto trained_saves = detail::class_save_proficiencies(klass);
     for (const auto ability : all_abilities)
         d.saves[ability_index(ability)] =
             ability_modifier(scores[ability]) +
-            ((ability == trained_saves[0] || ability == trained_saves[1]) ? proficiency : 0);
+            (detail::save_proficient(klass, level, ability) ? proficiency : 0);
     d.alert = (features & 32) != 0;
     d.ac = 10 + dex;
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
@@ -1408,10 +1413,14 @@ character_definition(std::string_view bytes,
     const bool rogue = klass == CharacterClass::rogue;
     d.cunning_strike = d.uncanny_dodge = rogue && level >= 5;
     d.evasion = (rogue || klass == CharacterClass::monk) && level >= 7;
-    d.martial_die = klass == CharacterClass::monk && level >= 5 ? 8 : 6;
+    d.martial_die = klass != CharacterClass::monk ? 6 : level >= 11 ? 10 : level >= 5 ? 8 : 6;
     d.wisdom = ability_modifier(scores[Ability::wisdom]);
     d.stunning_strike = klass == CharacterClass::monk && level >= 5;
     d.empowered_strikes = klass == CharacterClass::monk && level >= 6;
+    d.heightened_focus = d.self_restoration = klass == CharacterClass::monk && level >= 10;
+    d.fleet_step = klass == CharacterClass::monk && level >= 11;
+    d.deflect_energy = klass == CharacterClass::monk && level >= 13;
+    d.perfect_focus = klass == CharacterClass::monk && level >= 15;
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
@@ -1760,9 +1769,10 @@ character_definition(std::string_view bytes,
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
     d.martial_arts = klass == CharacterClass::monk && !armor && !shield && monk_weapons;
-    // Unarmored Movement: 10 feet more without armor or a Shield, 15 from level 6.
+    // Unarmored Movement: 10 feet more without armor or a Shield, 15 from level
+    // 6, 20 from 10 and 25 from 14.
     if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
-        d.speed += level >= 6 ? 15 : 10;
+        d.speed += level >= 14 ? 25 : level >= 10 ? 20 : level >= 6 ? 15 : 10;
     // Fast Movement: 10 feet more without Heavy armor.
     if (klass == CharacterClass::barbarian && level >= 5 && !d.heavy_armor)
         d.speed += 10;
@@ -2964,6 +2974,14 @@ class Session final : public CombatSession
             if (actors_[i].life.hp == 0 && !actors_[i].life.dead && !actors_[i].life.stable)
                 actors_[i].life.recovery.death_save_in_ms = i ? turn_end_ms(i - 1) : 0;
         }
+        // Perfect Focus (Monk 15): at least 4 Focus Points when the fight starts.
+        for (auto &a : actors_)
+            if (def(a).perfect_focus && a.surges < 4 && conscious(a))
+            {
+                a.surges = 4;
+                log(a.source.name + " has 4 Focus Points (Perfect Focus).",
+                {"{name} has 4 Focus Points (Perfect Focus).", {{"name", a.source.name}}});
+            }
         if (outcome_ == Outcome::ongoing && !begin_turn())
             end_turn();
     }
@@ -3013,6 +3031,8 @@ class Session final : public CombatSession
     void validate_initiative() const;
     bool begin_turn();
     void end_turn();
+    void restore_self(Actor &a);
+    void dispatch_noting_fleet_step(const Command &command);
     void progress_movement();
     void restore_movement(std::istream &input);
     void validate_restored_state() const;
@@ -3147,6 +3167,15 @@ void Session::use_focus_movement(Actor &a, std::string_view verb)
         a.disengaged = true;
     if (patient && focus)
         a.dodge = true;
+    // Heightened Focus: Patient Defense with Focus gives two Martial Arts dice
+    // of Temporary Hit Points.
+    if (patient && focus && def(a).heightened_focus)
+        if (const int amount = roll(def(a).martial_die) + roll(def(a).martial_die);
+                amount > a.life.temporary_hp.amount)
+            detail::grant_temporary_hp(a.life, {amount, "feature:heightened_focus"},
+                                       TemporaryHpChoice::use_new);
+    if (!patient)
+        a.fleet_step = false;
     if (!patient)
     {
         a.movement += def(a).speed;
@@ -5566,6 +5595,13 @@ std::vector<Command> Session::legal_commands() const
         add(id, "innate_sorcery", "Innate Sorcery");
     // Monk's Focus: Patient Defense and Step of the Wind, free or with a Focus
     // Point, and Flurry of Blows for a Focus Point.
+    // Fleet Step: Step of the Wind right after another Bonus Action.
+    if (!a.bonus && a.fleet_step)
+    {
+        add(id, "step_of_the_wind", "Step of the Wind: Dash");
+        if (a.surges > 0)
+            add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
+    }
     if (a.bonus && d.focus)
     {
         add(id, "patient_defense", "Patient Defense: Disengage");
@@ -9307,6 +9343,7 @@ bool Session::begin_turn()
         actor.pounce = 0;
         actor.brutal_used = false;
         actor.stun_used = false;
+        actor.fleet_step = false;
         actor.run_feet = 0;
         actor.light_origins.clear();
         actor.light_extra = 0;
@@ -9627,6 +9664,32 @@ void Session::advance_turn_time()
     });
 }
 
+void Session::restore_self(Actor &a)
+{
+    // Self-Restoration (Monk 10): one of Charmed, Frightened or Poisoned ends.
+    if (!def(a).self_restoration || !conscious(a))
+        return;
+    for (const auto &[kind, name] : {std::pair{detail::EffectKind::charmed, "Charmed"},
+                                     std::pair{detail::EffectKind::frightened, "Frightened"},
+                                     std::pair{detail::EffectKind::poisoned, "Poisoned"}})
+    {
+        const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                        [&](const auto & e)
+        {
+            return e.kind == kind;
+        });
+        if (found == a.effects.active.end())
+            continue;
+        a.effects.active.erase(found);
+        log(a.source.name + " is no longer " + name + " (Self-Restoration).",
+        {
+            "{name} is no longer {condition} (Self-Restoration).",
+            {{"name", a.source.name}, {"condition", name, true}}
+        });
+        return;
+    }
+}
+
 void Session::end_turn()
 {
     actors_[turn_].actions.surge = false;
@@ -9635,6 +9698,7 @@ void Session::end_turn()
     {
         return e.kind == detail::EffectKind::metamagic;
     });
+    restore_self(actors_[turn_]);
     spring_zones(actors_[turn_], ZoneKind::grease);
     burn_beside_spheres(actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
@@ -9802,7 +9866,8 @@ bool Session::can_dodge(const Actor &target) const
 
 bool Session::can_deflect(const Actor &target, bool deflectable) const
 {
-    return deflectable && def(target).deflect && conscious(target) && target.reaction &&
+    return (deflectable || def(target).deflect_energy) && def(target).deflect &&
+           conscious(target) && target.reaction &&
            !detail::incapacitated(target.effects);
 }
 
@@ -10228,7 +10293,7 @@ void Session::perform(const Command &command)
     damage_taken_.clear();
     if (!askable)
     {
-        dispatch(command);
+        dispatch_noting_fleet_step(command);
         damage_taken_.clear();
         reaction_answers_.clear();
         return;
@@ -10239,7 +10304,7 @@ void Session::perform(const Command &command)
     try
     {
         askable_ = true;
-        dispatch(command);
+        dispatch_noting_fleet_step(command);
         answer_damage();
         askable_ = false;
         reaction_answers_.clear();
@@ -10279,6 +10344,23 @@ void Session::answer_reaction(const Command &command)
     else if (command.verb == "deflect" || command.verb == "uncanny_dodge")
         defender.reaction = false;
     perform(prompt.command);
+}
+
+void Session::dispatch_noting_fleet_step(const Command &command)
+{
+    const auto acting = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == command.actor;
+    });
+    const bool had_bonus = acting != actors_.end() && acting->bonus;
+    dispatch(command);
+    if (!had_bonus)
+        return;
+    // Fleet Step (Monk 11): a Bonus Action other than Step of the Wind leaves
+    // Step of the Wind for right after it.
+    auto &monk = actor(command.actor);
+    if (!monk.bonus && def(monk).fleet_step && !command.verb.starts_with("step_of_the_wind"))
+        monk.fleet_step = true;
 }
 
 void Session::dispatch(const Command &command)
@@ -10572,7 +10654,9 @@ void Session::dispatch(const Command &command)
         {"{name} uses Flurry of Blows.", {{"name", a.source.name}}});
         if (command.verb == "flurry_stun")
             stunning_ = a.source.id;
-        for (int strike = 0; strike < 2 && actor(command.target).life.hp > 0; ++strike)
+        // Heightened Focus (Monk 10): three strikes.
+        const int strikes = d.heightened_focus ? 3 : 2;
+        for (int strike = 0; strike < strikes && actor(command.target).life.hp > 0; ++strike)
         {
             auto striker = unarmed_actor(a);
             const bool hit = attack(striker, actor(command.target), AttackRange::melee);
@@ -11150,7 +11234,7 @@ std::string Session::save() const
             << a.sneak_used << ' ' << a.aim_used
             << ' ' << a.aim_ready
             << ' ' << a.moved << ' ' << a.attacked << ' ' << a.pounce << ' ' << a.brutal_used
-            << ' ' << a.stun_used
+            << ' ' << a.stun_used << ' ' << a.fleet_step
             << ' ' << a.selected_weapon
             << ' ' << a.light_origins.size();
         for (auto id : a.light_origins)
@@ -11343,7 +11427,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
           actor.initiate_casts >> actor.smite_target >>
           actor.smite_critical >> actor.sneak_used >> actor.aim_used >> actor.aim_ready >> actor.moved >>
           actor.attacked >> actor.pounce >> actor.brutal_used >> actor.stun_used >>
-          actor.selected_weapon >> light_count;
+          actor.fleet_step >> actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
         throw std::runtime_error("Invalid Light attack count");
     // The checkpoint stores a side as its enumerator's value.
@@ -11419,6 +11503,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     if (actor.actions.extra_attacks > static_cast<unsigned>(definition.extra_attacks) ||
             (actor.actions.extra_attacks && actor.actions.normal && !actor.surge_used))
         throw std::runtime_error("Invalid Extra Attack count");
+    if (actor.fleet_step && (!definition.fleet_step || actor.bonus))
+        throw std::runtime_error("Invalid Fleet Step");
     // The upper bound waits for the effects, read later: Aid raises it.
     if (actor.life.hp < 0 || (actor.life.dead && actor.life.hp > 0) ||
             // Dash spends the action before adding a second movement allowance.
@@ -12720,6 +12806,21 @@ class Module final : public RulesModule
         if (klass == CharacterClass::monk && result.level == 9)
             result.description =
                 "Proficiency Bonus +4.";
+        if (klass == CharacterClass::monk && result.level == 10)
+            result.description =
+                "Heightened Focus: Flurry of Blows makes three strikes, and Patient Defense with Focus gives two Martial Arts dice of Temporary Hit Points.\nSelf-Restoration: at the end of each of your turns, Charmed, Frightened or Poisoned ends.\nUnarmored Movement +20 feet.";
+        if (klass == CharacterClass::monk && result.level == 11)
+            result.description =
+                "Open Hand: Fleet Step. After another Bonus Action, you may also use Step of the Wind.\nMartial Arts d10.";
+        if (klass == CharacterClass::monk && result.level == 13)
+            result.description =
+                "Deflect Energy: Deflect Attacks works against any damage type.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::monk && result.level == 14)
+            result.description =
+                "Disciplined Survivor: proficiency in every saving throw.\nUnarmored Movement +25 feet.";
+        if (klass == CharacterClass::monk && result.level == 15)
+            result.description =
+                "Perfect Focus: you start each fight with at least 4 Focus Points.";
         if (klass == CharacterClass::fighter && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nTactical Shift: after Second Wind, move up to half Speed without provoking Opportunity Attacks.\nProficiency Bonus +3.";
@@ -13280,6 +13381,9 @@ class Module final : public RulesModule
             next.grants.push_back(
             {"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}});
         }
+        for (const auto ability : all_abilities)
+            next.save_proficiencies[ability] =
+                detail::save_proficient(klass, static_cast<unsigned>(next.level), ability);
         for (const auto ability : all_abilities)
         {
             next.scores[ability] += choice.abilities[ability];
@@ -14750,7 +14854,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.199", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.200", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

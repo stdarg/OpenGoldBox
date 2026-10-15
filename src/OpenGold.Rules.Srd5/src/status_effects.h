@@ -231,6 +231,8 @@ struct SaveResult
                                       std::uint64_t &rng, bool *lucky_reroll = nullptr);
 [[nodiscard]] int d20(RollModifiers modifiers, std::uint64_t &rng, bool *lucky_reroll = nullptr);
 [[nodiscard]] std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class);
+// Whether a character of the class and level adds its Proficiency Bonus to the save.
+[[nodiscard]] bool save_proficient(CharacterClass character_class, unsigned level, Ability ability);
 
 // A source is provenance, never a borrowed Actor pointer. Scope distinguishes
 // encounter-local monster IDs when a lasting effect reaches another encounter.

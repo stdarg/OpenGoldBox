@@ -78,6 +78,17 @@ std::array<Ability, 2> class_save_proficiencies(CharacterClass character_class)
     return saves.at(static_cast<std::size_t>(character_class));
 }
 
+bool save_proficient(CharacterClass character_class, unsigned level, Ability ability)
+{
+    const auto trained = class_save_proficiencies(character_class);
+    // Disciplined Survivor (Monk 14): every save. Slippery Mind (Rogue 15):
+    // Wisdom and Charisma too.
+    return ability == trained[0] || ability == trained[1] ||
+           (character_class == CharacterClass::monk && level >= 14) ||
+           (character_class == CharacterClass::rogue && level >= 15 &&
+            (ability == Ability::wisdom || ability == Ability::charisma));
+}
+
 bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
