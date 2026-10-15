@@ -820,6 +820,7 @@ struct Definition
     // level 10: Aura of Courage.
     int abjure_foes{};
     bool aura_of_courage{};
+    bool radiant_strikes{}; // Paladin level 11
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -1656,6 +1657,7 @@ character_definition(std::string_view bytes,
     d.abjure_foes = klass == CharacterClass::paladin && level >= 9
                     ? std::max(1, ability_modifier(scores[Ability::charisma])) : 0;
     d.aura_of_courage = klass == CharacterClass::paladin && level >= 10;
+    d.radiant_strikes = klass == CharacterClass::paladin && level >= 11;
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
@@ -1667,7 +1669,9 @@ character_definition(std::string_view bytes,
     d.indomitable = klass != CharacterClass::fighter ? 0 : level >= 13 ? 2 : level >= 9 ? 1 : 0;
     d.arcane = klass == CharacterClass::wizard ? 1 : 0;
     d.lay_on_hands = klass == CharacterClass::paladin ? 5 * level : 0;
-    d.channel_divinity = (klass == CharacterClass::paladin && level >= 3) ||
+    // Channel Divinity: two uses, three from Paladin level 11.
+    d.channel_divinity = klass == CharacterClass::paladin && level >= 11 ? 3
+                         : (klass == CharacterClass::paladin && level >= 3) ||
                          (klass == CharacterClass::cleric && level >= 2) ? 2
                          : 0;
     d.sacred_weapon = klass == CharacterClass::paladin && level >= 3;
@@ -9141,6 +9145,20 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         });
         damage(target, extra, false);
     }
+    // Radiant Strikes (Paladin 11): a Melee weapon or Unarmed Strike hit deals
+    // an extra 1d8 Radiant damage.
+    if (hit && !spell && !ranged && def(a).radiant_strikes && !target.life.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::radiant,
+                                          dice({1, 8, 0}, critical_hit(a, target, natural)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+            " Radiant damage from Radiant Strikes.",
+        {
+            "{name} takes {damage} Radiant damage from Radiant Strikes.",
+            {{"name", target.source.name}, {"damage", std::to_string(extra)}}
+        });
+        damage(target, extra, false);
+    }
     if (hit && amount > 0 && target.life.hp > 0)
         giant_boon(a, target, critical_hit(a, target, natural, spell));
     if (hit && brutal && !target.life.dead)
@@ -13603,6 +13621,11 @@ class Module final : public RulesModule
         if (klass == CharacterClass::paladin && result.level == 10)
             result.description =
                 "Aura of Courage: you and allies in your Aura of Protection cannot be Frightened.";
+        if (klass == CharacterClass::paladin && result.level == 11)
+            result.description =
+                "Radiant Strikes: your hits with a Melee weapon or an Unarmed Strike deal an extra 1d8 Radiant damage.\nA third Channel Divinity use and a third level 3 spell slot.";
+        if (klass == CharacterClass::paladin && result.level == 12)
+            result.description = "A feat or ability points.";
         if (klass == CharacterClass::druid)
             result.description = "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (klass == CharacterClass::bard)
@@ -15608,7 +15631,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.205", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.206", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -20,12 +20,16 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 8 | Ability Score Improvement | Delivered (rules 0.6.203) |
 | 9 | Abjure Foes, level-3 spells | Delivered (rules 0.6.205): Beacon of Hope and Dispel Magic |
 | 10 | Aura of Courage | Delivered (rules 0.6.205) |
+| 11 | Radiant Strikes, a third Channel Divinity | Delivered (rules 0.6.206) |
+| 12 | Ability Score Improvement | Delivered (rules 0.6.206) |
 
-## Levels 5–10
+## Levels 5–12
 
-The Paladin advances to level 10
-([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)), the Training
-Hall's limit. Levels 11–15 follow.
+The Paladin advances to level 12
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)); in the
+campaign the Training Hall trains it to level 10. Levels 13–15 follow with
+the level-4 spells.
 
 - **Extra Attack** (5): two attacks with each Attack action.
 - **Spellcasting:** four level-1 slots from level 5; two level-2 slots at 5
@@ -82,6 +86,10 @@ Hall's limit. Levels 11–15 follow.
   cannot be Frightened, and a Frightened ally's fear has no effect while it is
   there. Nothing in the current content frightens the party, so it is not yet
   exercised in a fight.
+- **Radiant Strikes** (11): a hit with a Melee weapon or an Unarmed Strike
+  deals an extra 1d8 Radiant damage, doubled on a critical hit. Channel
+  Divinity has three uses, and the Paladin a third level-3 slot.
+- **Ability Score Improvement** (12): a feat or ability points.
 
 Verification: `opengold_paladin_levels_tests` (the cap at 10 in the campaign,
 features by level, prepared counts, Aid always prepared, the level-2 spells

@@ -156,8 +156,9 @@ void progression_checks()
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     const auto &ten = party.member(id).character.sheet();
-    check(ten.level == 10 && !rules->advancement_options(ten).level,
-          "Level 10 is the Paladin's cap until level-4 slots' spells exist");
+    check(ten.level == 10, "In the campaign a Paladin stops at the hall's level 10");
+    check(!rules->advancement_options(paladin(12).sheet()).level,
+          "Level 12 is the Paladin's cap until its level-4 spells exist");
     const auto holds = [&](std::string_view grant, unsigned level)
     {
         return std::any_of(ten.grants.begin(), ten.grants.end(), [&](const auto & g)
@@ -203,7 +204,13 @@ void progression_checks()
     check(slots(*duel(*dummies, paladin(7), 1), 2) == 3,
           "Three level-2 slots from level 7");
     check(slots(*duel(*dummies, paladin(9), 1), 3) == 2 &&
-          slots(*duel(*dummies, paladin(8), 1), 3) == 0, "Two level-3 slots from level 9");
+          slots(*duel(*dummies, paladin(8), 1), 3) == 0 &&
+          slots(*duel(*dummies, paladin(11), 1), 3) == 3, "Two level-3 slots from level 9, three from 11");
+    const auto twelve = paladin(12);
+    check(std::any_of(twelve.sheet().grants.begin(), twelve.sheet().grants.end(), [](const auto & g)
+    {
+        return g.id == "feature:radiant_strikes" && g.level == 11;
+    }), "Radiant Strikes at level 11");
     const auto bytes = encode_campaign(party, nullptr, "paladin-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
@@ -412,6 +419,22 @@ void dispel_checks()
           !has_condition(*c, 98, "Shining (Shining Smite)") &&
           logged(*c, "Paladin loses Concentration."), "Dispel Magic ends Shining Smite");
 }
+// Radiant Strikes: melee hits deal 1d8 Radiant more; Channel Divinity has three uses.
+void radiant_checks()
+{
+    const auto rules = dummy_rules();
+    auto ten = duel(*rules, paladin(10), 1);
+    check(submit(*ten, "melee", 98) && !logged(*ten, "Radiant Strikes"), "None at level 10");
+    auto c = duel(*rules, paladin(11), 1);
+    check(submit(*c, "melee", 98) &&
+          logged(*c, "Dummy takes ") && logged(*c, " Radiant damage from Radiant Strikes."),
+          "A melee hit adds Radiant Strikes");
+    const auto pools = unit(*c, 1).resources;
+    check(std::any_of(pools.begin(), pools.end(), [](const auto & pool)
+    {
+        return pool.id == "channel_divinity" && pool.capacity == 3;
+    }), "Three Channel Divinity uses from level 11");
+}
 } // namespace
 
 int main()
@@ -427,6 +450,7 @@ int main()
         abjure_checks();
         beacon_checks();
         dispel_checks();
+        radiant_checks();
     }
     catch (const std::exception &e)
     {
