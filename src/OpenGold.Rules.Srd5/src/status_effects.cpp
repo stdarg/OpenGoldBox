@@ -528,6 +528,7 @@ int benefit_value_limit(EffectKind kind)
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
+           : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
            : kind == EffectKind::heightened ? static_cast<int>(spell_table.size()) - 1
            : 10;
 }
@@ -582,6 +583,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::outlined:
     case EffectKind::shining:
     case EffectKind::banished:
+    case EffectKind::circling:
     case EffectKind::abjured:
     case EffectKind::hopeful:
     case EffectKind::shillelagh:
@@ -596,6 +598,8 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 6000; // the rest of the turn, cleared when it ends
     case EffectKind::extended:
         return 1200000; // a doubled 10-minute Concentration
+    case EffectKind::circle_ward:
+        return 25200000; // 7 hours: 1, and 1 more for each slot level above 3
     default:
         return 0;
     }
@@ -830,7 +834,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::faith_tested))
+    if (value > static_cast<unsigned>(EffectKind::circle_ward))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }

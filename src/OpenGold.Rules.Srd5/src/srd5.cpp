@@ -193,7 +193,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined ||
            kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated ||
            kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful ||
-           kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished;
+           kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished ||
+           kind == detail::EffectKind::circling;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -343,7 +344,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 53;
+constexpr unsigned checkpoint_format = 54;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -387,6 +388,9 @@ constexpr std::array class_spell_access
     // Paladin level-3 spells, and the Oath of Devotion's Beacon of Hope.
     SpellAccessRow{CharacterClass::paladin, "dispel_magic", 9},
     SpellAccessRow{CharacterClass::paladin, "beacon_of_hope", 9},
+    SpellAccessRow{CharacterClass::paladin, "remove_curse", 9},
+    SpellAccessRow{CharacterClass::paladin, "revivify", 9},
+    SpellAccessRow{CharacterClass::paladin, "magic_circle", 9},
     // Paladin level-4 spells, and the Oath of Devotion's Freedom of Movement.
     SpellAccessRow{CharacterClass::paladin, "death_ward", 13},
     SpellAccessRow{CharacterClass::paladin, "aura_of_life", 13},
@@ -1317,6 +1321,7 @@ bool upcast_matters(const detail::SpellDef &spell, unsigned level)
     return spell.upcast.extra_dice || spell.upcast.extra_instances || spell.upcast.extra_radius ||
            spell.rider == detail::Rider::aid || spell.rider == detail::Rider::false_life ||
            spell.rider == detail::Rider::ice_knife || spell.rider == detail::Rider::dispel_magic ||
+           spell.rider == detail::Rider::magic_circle ||
            (spell.rider == detail::Rider::magic_weapon && level >= 4);
 }
 
@@ -1429,6 +1434,36 @@ bool touch_restorable(const Actor &a)
                    condition.second.end();
         });
     });
+}
+
+// A curse on the creature, which Remove Curse ends: Hex so far.
+bool curse(detail::EffectKind kind)
+{
+    return kind == detail::EffectKind::hex;
+}
+
+bool cursed(const Actor &a)
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+    {
+        return curse(e.kind);
+    });
+}
+
+// "Celestials", "Elementals", "Fey", "Fiends" or "Undead".
+std::string ward_label(std::size_t type)
+{
+    constexpr std::array<std::string_view, 5> labels{"Celestials", "Elementals", "Fey", "Fiends",
+                                                     "Undead"};
+    return std::string(labels.at(type));
+}
+
+// The ward type a "magic_circle_fey" verb names.
+std::size_t ward_of(std::string_view verb)
+{
+    const auto type = detail::without_cast_suffix(verb).substr(std::string_view("magic_circle_").size());
+    return static_cast<std::size_t>(std::find(detail::ward_types.begin(), detail::ward_types.end(),
+                                              type) - detail::ward_types.begin());
 }
 
 // Whether Lesser Restoration has a condition to end on the creature.
@@ -2368,7 +2403,7 @@ class Session final : public CombatSession
     Session(std::shared_ptr<const Content> content, Encounter encounter, std::uint64_t seed,
             bool restoring = false)
         : content_(std::move(content)), board_(std::move(encounter.battlefield)), rng_(seed),
-          scope_(encounter.scope), morale_(encounter.morale)
+          scope_(encounter.scope), morale_(encounter.morale), gold_(encounter.party_gold)
     {
         if (!scope_)
             throw std::runtime_error("Invalid encounter scope");
@@ -2435,6 +2470,10 @@ class Session final : public CombatSession
                    : a.source.id < b.source.id;
         });
         log("Combat begins. Each square is 5 feet.");
+        // Who died before the fight died too long ago for Revivify.
+        for (const auto &a : actors_)
+            if (a.life.dead)
+                deaths_[a.source.id] = long_dead;
         if (!restoring)
             wake_resting_participants();
         update_outcome();
@@ -2581,7 +2620,8 @@ class Session final : public CombatSession
         darkness,       // magical Darkness, Heavily Obscured except to Devil's Sight
         moonbeam,       // Moonbeam's beam; cells.front() is its centre
         spikes,         // Spike Growth's Difficult Terrain
-        guardian        // one square: Guardian of Faith's guardian
+        guardian,       // one square: Guardian of Faith's guardian
+        circle          // Magic Circle, held by Concentration while it is cast
     };
     struct Zone
     {
@@ -2593,6 +2633,7 @@ class Session final : public CombatSession
         // DC its creatures save against rather than looking the caster up.
         int save_dc{};
         int dealt{}; // Guardian of Faith's damage so far; it vanishes at 60
+        unsigned warded{}; // Magic Circle's creature type, an index into ward_types
     };
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
@@ -2776,6 +2817,13 @@ class Session final : public CombatSession
     // Morale (the original's rule): checked at the start of each turn of a
     // creature the rules control. The encounter's morale is set by its script.
     unsigned morale_{100};
+    // Gold coins in the party purse, and what offerings have taken of them.
+    unsigned gold_{}, offerings_gold_{};
+    // When each dead creature died, in combat milliseconds, for Revivify.
+    static constexpr std::uint64_t long_dead = std::numeric_limits<std::uint64_t>::max();
+    std::map<EntityId, std::uint64_t> deaths_;
+    void note_deaths();
+    void revivify(Actor &cleric, const Command &command);
     void check_morale(Actor &);
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
@@ -4091,17 +4139,31 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
                              other.source.side != mover.source.side && !nimble_pass && !free_pass,
                              unconscious(other), other.life.hp == 0});
     }
-    // A Guardian of Faith holds its square: enemies cannot pass it.
+    // A finished Magic Circle: a creature of its type cannot enter it.
+    std::vector<Cell> warded_cells;
     for (const auto &zone : zones_)
-        if (zone.kind == ZoneKind::guardian)
-            occupants.push_back({zone.cells.front(),
-                                 actor(zone.caster).source.side != mover.source.side, false, false});
+        if (zone.kind == ZoneKind::circle && zone.ends_ms &&
+                def(mover).creature_type == detail::ward_types[zone.warded] &&
+                !in_zone(zone, mover.source.cell))
+            warded_cells.insert(warded_cells.end(), zone.cells.begin(), zone.cells.end());
+    // A Guardian of Faith holds its square: enemies cannot pass it.
+    // A guardian whose caster has left the fight serves no one.
+    for (const auto &zone : zones_)
+        if (const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == zone.caster;
+    }); zone.kind == ZoneKind::guardian && caster != actors_.end())
+        occupants.push_back({zone.cells.front(), caster->source.side != mover.source.side,
+                             false, false});
     // Frightened: no square closer to a creature it fears and can see.
     auto board = zoned_board();
     if (free)
         for (auto &tile : board.terrain)
             if (tile == Terrain::difficult)
                 tile = Terrain::open;
+    for (const auto cell : warded_cells)
+        if (cell != mover.source.cell)
+            board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] = Terrain::obstacle;
     for (const auto *fear : fears_in_sight(mover))
         for (int y = 0; y < board.height; ++y)
             for (int x = 0; x < board.width; ++x)
@@ -4126,6 +4188,7 @@ Snapshot Session::snapshot() const
     s.outcome = outcome_;
     s.initiative_choices = initiative_choices_;
     s.elapsed_milliseconds = elapsed_ms_;
+    s.offerings_gold = offerings_gold_;
     s.held_items = items_;
     s.physical_inventory = physical_inventory_;
     s.actor = champion_move_ ? champion_move_->actor
@@ -4151,6 +4214,8 @@ Snapshot Session::snapshot() const
             s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::guardian)
             s.guardians.push_back(zone.cells.front());
+        else if (zone.kind == ZoneKind::circle)
+            s.circles.insert(s.circles.end(), zone.cells.begin(), zone.cells.end());
     s.log_entries = log_;
     if (!initiative_choices_.empty())
         s.actor = initiative_choices_.front();
@@ -5011,6 +5076,13 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         log(target.source.name + " is weakened by Bane.",
         {"{name} is weakened by Bane.", {{"name", target.source.name}}});
         return;
+    case detail::Rider::remove_curse:
+        std::erase_if(target.effects.active, [](const auto & e)
+        {
+            return curse(e.kind);
+        });
+        log(target.source.name + "'s curses end.", {"{name}'s curses end.", {{"name", target.source.name}}});
+        return;
     case detail::Rider::banishment:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::banished, 0);
@@ -5520,6 +5592,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         if (spell.rider == detail::Rider::lesser_restoration && !restorable(other))
             continue;
+        if (spell.rider == detail::Rider::remove_curse && !cursed(other))
+            continue;
         if (spell.rider == detail::Rider::heat_metal && !wears_metal(other))
             continue;
         if (spell.humanoid_only && def(other).creature_type != "humanoid")
@@ -5603,6 +5677,22 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             offer(std::string(spell.id), std::string(spell.label));
             continue;
         }
+        // Magic Circle: one entry per creature type, from its lowest slot only:
+        // a fight never lasts long enough for a higher slot's extra hours.
+        if (spell.rider == detail::Rider::magic_circle)
+        {
+            const auto levels = cast_levels(a, spell);
+            if (a.spent_slot || levels.empty() || other.source.id != a.source.id)
+                continue;
+            for (std::size_t type = 0; type < detail::ward_types.size(); ++type)
+            {
+                auto [verb, label] = cast_at(spell, levels.front(),
+                                             "magic_circle_" + std::string(detail::ward_types[type]),
+                                             "Magic Circle: " + ward_label(type));
+                offer(std::move(verb), std::move(label));
+            }
+            continue;
+        }
         if (spell.rider == detail::Rider::dragons_breath)
         {
             if (!detail::has_effect(other.effects, detail::EffectKind::dragons_breath))
@@ -5649,7 +5739,11 @@ std::vector<Command> Session::legal_commands() const
     auto commands = offered_commands();
     std::erase_if(commands, [&](const auto & command)
     {
-        return command.target && command.target != command.actor && absent(actor(command.target));
+        return command.target != command.actor &&
+               std::any_of(actors_.begin(), actors_.end(), [&](const auto & a)
+        {
+            return a.source.id == command.target && absent(a);
+        });
     });
     return commands;
 }
@@ -5931,6 +6025,21 @@ std::vector<Command> Session::offered_commands() const
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
     // The Cleric's Channel Divinity: Divine Spark heals or harms another creature
     // within 30 feet; Turn Undead needs an Undead enemy within 30 feet.
+    // Revivify: an adjacent ally dead no more than a minute, while the purse
+    // holds its offering.
+    if (const auto &raise = *detail::find_spell("revivify");
+            a.actions.available(true) && !a.spent_slot && detail::knows_spell(d.spells, raise.id))
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && other.life.dead &&
+                    distance(a.source.cell, other.source.cell) <= raise.range &&
+                    deaths_.contains(other.source.id) && deaths_.at(other.source.id) != long_dead &&
+                    elapsed_ms_ - deaths_.at(other.source.id) <= 60000 &&
+                    std::cmp_less_equal(300 * def(other).level, gold_ - offerings_gold_))
+                for (const unsigned level : cast_levels(a, raise))
+                {
+                    auto [verb, label] = cast_at(raise, level, "revivify", "Revivify");
+                    add(id, std::move(verb), std::move(label), other.source.id);
+                }
     // Abjure Foes: enemies the Paladin sees within 60 feet.
     if (a.channel_divinity > 0 && a.actions.available() && d.abjure_foes)
         for (const auto &other : actors_)
@@ -7747,6 +7856,24 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         dispel(a, aimed.center, slot_level_of(aimed.verb, spell));
         return;
     }
+    if (spell.rider == detail::Rider::magic_circle)
+    {
+        // A minute of casting: Concentration, and the caster's Action each turn.
+        begin_concentration(a, spell);
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::circling,
+                                    static_cast<int>(slot_level_of(aimed.verb, spell)));
+        Zone circle{a.source.id, ZoneKind::circle,
+                    area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+        circle.warded = static_cast<unsigned>(ward_of(aimed.verb));
+        zones_.push_back(std::move(circle));
+        log(a.source.name + " begins a Magic Circle against " + ward_label(ward_of(aimed.verb)) + ".",
+        {
+            "{name} begins a Magic Circle against {types}.",
+            {{"name", a.source.name}, {"types", ward_label(ward_of(aimed.verb)), true}}
+        });
+        return;
+    }
     if (spell.rider == detail::Rider::guardian_of_faith)
     {
         // Eight hours: it lasts the fight, until it has dealt 60 damage.
@@ -8248,6 +8375,43 @@ bool Session::aura_of_courage(const Actor &a) const
     });
 }
 
+void Session::note_deaths()
+{
+    for (const auto &a : actors_)
+        if (a.life.dead && a.source.side == Side::party && !deaths_.contains(a.source.id))
+            deaths_[a.source.id] = elapsed_ms_;
+}
+
+void Session::revivify(Actor &cleric, const Command &command)
+{
+    // An Action and the offering: 300 gp times the creature's level, from the
+    // party purse (LEVELS-1). It returns with 1 Hit Point, Prone.
+    const auto &spell = *detail::find_spell("revivify");
+    auto &target = actor(command.target);
+    cleric.nick_origin = 0;
+    (void)cleric.actions.spend(true);
+    pay_for_spell(cleric, command.verb, spell);
+    const auto offering = static_cast<unsigned>(300 * def(target).level);
+    offerings_gold_ += offering;
+    deaths_.erase(target.source.id);
+    target.life.dead = false;
+    target.life.successes = target.life.failures = 0;
+    target.life.stable = false;
+    target.life.recovery = {};
+    target.life.hp = 1;
+    target.effects.prone = true;
+    if (shares_occupied_space(target))
+        target.involuntary_overlap = true;
+    log(cleric.source.name + " casts Revivify: " + target.source.name +
+        " returns to life (an offering of " + std::to_string(offering) + " gp).",
+    {
+        "{name} casts Revivify: {target} returns to life (an offering of {gold} gp).",
+        {   {"name", cleric.source.name}, {"target", target.source.name},
+            {"gold", std::to_string(offering)}
+        }
+    });
+}
+
 bool Session::guarded_square(Cell cell) const
 {
     return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
@@ -8471,7 +8635,8 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
         const auto zone = zones_[n];
         const unsigned level = zone.kind == ZoneKind::plants || zone.kind == ZoneKind::fog ||
                                zone.kind == ZoneKind::grease ? 1
-                               : zone.kind == ZoneKind::guardian ? 4 : 2;
+                               : zone.kind == ZoneKind::guardian ? 4
+                               : zone.kind == ZoneKind::circle ? 3 : 2;
         if (!ends(level))
             continue;
         log("Dispel Magic ends a spell's area.", {"Dispel Magic ends a spell's area.", {}});
@@ -8765,6 +8930,14 @@ void Session::drop_concentration_effects(const Actor &caster)
     {
         return zone.caster == caster.source.id && !zone.ends_ms;
     });
+    // A Magic Circle whose casting is broken fails, but keeps its slot.
+    for (auto &e : actor(caster.source.id).effects.active)
+        if (e.kind == detail::EffectKind::circling)
+        {
+            ++actor(caster.source.id).slots[static_cast<unsigned>(e.dc)];
+            log("The Magic Circle fails; the spell slot is kept.",
+            {"The Magic Circle fails; the spell slot is kept.", {}});
+        }
     // Banishment ends early: its creatures come back.
     std::vector<EntityId> banished;
     for (const auto &other : actors_)
@@ -8887,6 +9060,14 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
             strength_attack(a, range)) ||
             detail::has_effect(target.effects, detail::EffectKind::reckless))
         result.advantage = true;
+    // Magic Circle: its creature type attacks those within it with Disadvantage.
+    if (std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+{
+    return zone.kind == ZoneKind::circle && zone.ends_ms &&
+           def(a).creature_type == detail::ward_types[zone.warded] &&
+           in_zone(zone, target.source.cell);
+    }))
+    result.disadvantage = true;
     // Faerie Fire: Advantage against an outlined creature the attacker sees.
     if (detail::has_effect(target.effects, detail::EffectKind::outlined) && can_see(a, target))
         result.advantage = true;
@@ -10346,6 +10527,13 @@ bool Session::begin_turn()
     a.movement = def(a).speed;
     a.dashes = 0;
     a.rush_used = false;
+    // Magic Circle's casting takes the Action each turn of its minute.
+    if (detail::has_effect(a.effects, detail::EffectKind::circling))
+    {
+        (void)a.actions.spend(true);
+        log(a.source.name + " keeps casting Magic Circle.",
+        {"{name} keeps casting Magic Circle.", {{"name", a.source.name}}});
+    }
     // Command's Grovel and Halt take the whole turn; Approach and Flee limit
     // the turn's commands instead (obey_command).
     if (const auto *command = detail::command_effect(a.effects))
@@ -10404,16 +10592,29 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
         "{name} Intelligence save: d20 {roll} + {bonus} vs DC {dc} ({result}).",
         "{name} Wisdom save: d20 {roll} + {bonus} vs DC {dc} ({result}).",
         "{name} Charisma save: d20 {roll} + {bonus} vs DC {dc} ({result})."};
+    // The Aura of Protection's share of the bonus is named with the roll.
+    constexpr std::array aura_messages
+    {
+        "{name} Strength save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
+        "{name} Dexterity save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
+        "{name} Constitution save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
+        "{name} Intelligence save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
+        "{name} Wisdom save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result}).",
+        "{name} Charisma save: d20 {roll} + {bonus} (Aura of Protection +{aura}) vs DC {dc} ({result})."};
     const auto ability = static_cast<unsigned>(result.ability);
     const std::string outcome = result.success ? "success" : "failure";
+    const int aura = aura_of_protection(target);
+    const std::string aura_note =
+        aura ? " (Aura of Protection +" + std::to_string(aura) + ")" : std::string();
     log(target.source.name + " " + names[ability] + " save: d20 " + std::to_string(result.natural) +
-        " + " + std::to_string(result.bonus) + " vs DC " + std::to_string(result.dc) + " (" +
-        outcome + ").",
+        " + " + std::to_string(result.bonus) + aura_note + " vs DC " + std::to_string(result.dc) +
+        " (" + outcome + ").",
     {
-        messages[ability],
+        aura ? aura_messages[ability] : messages[ability],
         {   {"name", target.source.name},
             {"roll", std::to_string(result.natural)},
             {"bonus", std::to_string(result.bonus)},
+            {"aura", std::to_string(aura)},
             {"dc", std::to_string(result.dc)},
             {"result", outcome, true}
         }
@@ -10565,6 +10766,8 @@ void Session::advance_turn_time()
     std::vector<EntityId> burned;
     // Banishment that has lasted its full minute.
     std::vector<EntityId> unbanished;
+    // Magic Circles whose minute of casting is over, with their slot levels.
+    std::vector<std::pair<EntityId, unsigned>> circled;
     for (auto &a : actors_)
     {
         auto saves = def(a).saves;
@@ -10590,6 +10793,8 @@ void Session::advance_turn_time()
             log_inspiration(target, event.inspiration, event.save->success);
         if (event.removed && event.effect.kind == detail::EffectKind::banished)
             unbanished.push_back(event.target);
+        if (event.removed && event.effect.kind == detail::EffectKind::circling)
+            circled.push_back({event.target, static_cast<unsigned>(event.effect.dc)});
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -10625,6 +10830,15 @@ void Session::advance_turn_time()
         if (event.removed && event.effect.kind == detail::EffectKind::acid_arrow)
             burned.push_back(event.target);
     });
+    // A Magic Circle cast for its full minute stands for an hour, and an hour
+    // more for each slot level above 3.
+    for (const auto &[id, level] : circled)
+        for (auto &zone : zones_)
+            if (zone.kind == ZoneKind::circle && zone.caster == id && !zone.ends_ms)
+            {
+                zone.ends_ms = elapsed_ms_ + 3600000ull * (level - 2);
+                log("The Magic Circle is complete.", {"The Magic Circle is complete.", {}});
+            }
     // After a full minute an Aberration, a Celestial, an Elemental, a Fey or a
     // Fiend never comes back: it counts as defeated (LEVELS-1); any other
     // creature returns.
@@ -10835,6 +11049,7 @@ bool Session::submit(const Command &command)
             answer_reaction(command);
         else
             perform(command);
+        note_deaths();
         notice_hidden();
         // Revisions are command tickets; zero is reserved for invalid commands.
         // Unsigned wrap is defined, but must skip that reserved value.
@@ -10850,6 +11065,7 @@ bool Session::submit(const Command &command)
                 !reaction_prompt_ && !champion_move_ && !effect_waiting() && actors_[turn_].life.hp == 0)
         {
             end_turn();
+            note_deaths();
             // A creature whose morale broke as its turn began leaves now too.
             remove_fled();
             update_outcome();
@@ -12130,6 +12346,8 @@ void Session::dispatch(const Command &command)
     else if (const auto *aimed = detail::find_spell(command.verb);
              aimed && aimed->target == detail::SpellTarget::area)
         area_ = PendingArea{a.source.id, command.verb, default_area_center(a, *aimed)};
+    else if (detail::without_cast_suffix(command.verb) == "revivify")
+        revivify(a, command);
     else if (command.verb == "abjure_foes" &&
              selection_maximum({a.source.id, command.verb, {}}) == 1)
         abjure(a, std::array{command.target});
@@ -12337,7 +12555,11 @@ std::string Session::save() const
     out << log_.size() << '\n';
     for (const auto &entry : log_)
         out << std::quoted(entry.english) << '\n';
-    out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << actors_.size() << '\n';
+    out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << gold_ << ' '
+        << offerings_gold_ << ' ' << deaths_.size();
+    for (const auto &[id, when] : deaths_)
+        out << ' ' << id << ' ' << when;
+    out << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
         detail::write_effects(out, a.effects);
@@ -12431,7 +12653,7 @@ std::string Session::save() const
     {
         out << ' ' << zone.caster << ' ' << static_cast<unsigned>(zone.kind) << ' '
             << zone.ends_ms << ' '
-            << zone.save_dc << ' ' << zone.dealt << ' ' << zone.cells.size();
+            << zone.save_dc << ' ' << zone.dealt << ' ' << zone.warded << ' ' << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
@@ -13167,9 +13389,27 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->restore_movement(input);
     session->restore_log(input);
     unsigned effects_count{};
-    input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> effects_count;
-    if (session->morale_ > 100)
+    std::size_t deaths{};
+    input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> session->gold_ >>
+          session->offerings_gold_ >> deaths;
+    if (session->morale_ > 100 || session->offerings_gold_ > session->gold_ ||
+            deaths > session->actors_.size())
         throw std::runtime_error("Invalid checkpoint morale");
+    session->deaths_.clear();
+    for (std::size_t n = 0; n < deaths; ++n)
+    {
+        EntityId id{};
+        std::uint64_t when{};
+        input >> id >> when;
+        if (!input || (when != long_dead && when > session->elapsed_ms_) ||
+                std::none_of(session->actors_.begin(), session->actors_.end(), [&](const auto & a)
+        {
+            return a.source.id == id && a.life.dead;
+        }))
+        throw std::runtime_error("Invalid checkpoint deaths");
+        session->deaths_[id] = when;
+    }
+    input >> effects_count;
     if (!input || !session->scope_ || effects_count != session->actors_.size())
         throw std::runtime_error("Invalid checkpoint effect header");
     for (auto &a : session->actors_)
@@ -13356,6 +13596,10 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             return a.source.id == id;
         });
     };
+    // A smite chance names a creature in the fight.
+    for (const auto &a : session->actors_)
+        if (a.smite_target && !known_actor(a.smite_target))
+            throw std::runtime_error("Invalid smite target");
     bool aiming{};
     input >> aiming;
     if (aiming)
@@ -13378,14 +13622,19 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         Zone zone;
         std::size_t cells{};
         unsigned kind{};
-        input >> zone.caster >> kind >> zone.ends_ms >> zone.save_dc >> zone.dealt >> cells;
+        input >> zone.caster >> kind >> zone.ends_ms >> zone.save_dc >> zone.dealt >> zone.warded >>
+              cells;
         // Only Grease and Guardian of Faith keep time; every other zone ends
         // with Concentration. Grease outlasts a caster who has since run off
         // the field.
         const bool timed = kind == static_cast<unsigned>(ZoneKind::grease) ||
                            kind == static_cast<unsigned>(ZoneKind::guardian);
+        // A Magic Circle is held by Concentration while it is cast, then keeps time.
+        const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::guardian) || timed != (zone.ends_ms != 0) ||
+                kind > static_cast<unsigned>(ZoneKind::circle) ||
+                (!circle && timed != (zone.ends_ms != 0)) ||
+                zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
                 (zone.dealt && kind != static_cast<unsigned>(ZoneKind::guardian)) ||
                 !cells ||
@@ -14941,6 +15190,23 @@ class Module final : public RulesModule
         return actor_from(character_definition(character_profile(sheet, {}).data), state);
     }
 
+    bool keeps_away(std::span<const CampTarget> party,
+                    std::span<const std::string> definitions) const override
+    {
+        std::set<std::string_view> warded;
+        for (const auto &member : party)
+            for (const auto &e : camp_actor(member.sheet, member.state).effects.active)
+                if (e.kind == detail::EffectKind::circle_ward)
+                    warded.insert(detail::ward_types.at(static_cast<std::size_t>(e.dc)));
+        return !definitions.empty() &&
+               std::all_of(definitions.begin(), definitions.end(), [&](const auto & key)
+        {
+            const auto found = content_->definitions.find(key);
+            return found != content_->definitions.end() &&
+                   warded.contains(found->second.creature_type);
+        });
+    }
+
     void temple_heal(VitalState &state, const CharacterSheet &sheet,
                      RandomState &random_state) const override
     {
@@ -14994,6 +15260,18 @@ class Module final : public RulesModule
             actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
         if (d.str_dex_disadvantage)
             return actions;
+        // Magic Circle in camp: a ward against one creature type, an hour and
+        // one more for each slot level above 3, for the whole party's rest.
+        if (const auto &circle = *detail::find_spell("magic_circle");
+                detail::knows_spell(d.spells, circle.id))
+            for (const unsigned level : cast_levels(actor, circle))
+                for (std::size_t type = 0; type < detail::ward_types.size(); ++type)
+                {
+                    auto [verb, label] = cast_at(circle, level,
+                                                 "magic_circle_" + std::string(detail::ward_types[type]),
+                                                 "Magic Circle: " + ward_label(type));
+                    actions.push_back({std::move(verb), {std::move(label), {}}, true});
+                }
         for (const auto &spell : detail::spell_table)
         {
             // Aid's and Death Ward's eight hours outlast a fight, so they are
@@ -15161,6 +15439,23 @@ class Module final : public RulesModule
     }))
         throw std::runtime_error("That spell or feature cannot be used now");
         auto caster = camp_actor(user, user_state);
+        if (action.starts_with("magic_circle_"))
+        {
+            const auto &circle = *detail::find_spell(action);
+            pay_for_spell(caster, action, circle);
+            const auto type = static_cast<int>(ward_of(action));
+            std::erase_if(caster.effects.active, [&](const auto & e)
+            {
+                return e.kind == detail::EffectKind::circle_ward && e.dc == type;
+            });
+            // Camp effects carry scope 1: there is no encounter to source them.
+            detail::apply_spell_benefit(caster.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        user.name, detail::EffectKind::circle_ward, type);
+            caster.effects.active.back().remaining_ms =
+                static_cast<unsigned>(3600000 * (slot_level_of(action, circle) - 2));
+            user_state = vitals(caster);
+            return;
+        }
         if (action == "magical_cunning")
         {
             // Back come expended Pact Magic slots, up to half the maximum
@@ -15992,7 +16287,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.207", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.208", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

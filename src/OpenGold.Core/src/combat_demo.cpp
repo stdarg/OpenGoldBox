@@ -202,7 +202,9 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
     auto participants = campaign_ ? campaign_->participants() : party();
     participants.insert(participants.end(), enemies.begin(), enemies.end());
     auto next = module_->create(
-    {arena(), std::move(participants), campaign_ ? campaign_->state().next_combat_scope : 1},
+    {   arena(), std::move(participants), campaign_ ? campaign_->state().next_combat_scope : 1, 100,
+        campaign_ ? coins(campaign_->state().wealth, Coin::gold) : 0
+    },
     seed_);
     install_combat(std::move(next), std::move(reward_id));
 }
@@ -297,7 +299,7 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
     }
     auto next = module_->create(
     {encounter.field.geometry, std::move(participants), campaign_->state().next_combat_scope,
-     encounter.morale},
+     encounter.morale, coins(campaign_->state().wealth, Coin::gold)},
     seed);
     install_combat(std::move(next), {});
     seed_ = seed;

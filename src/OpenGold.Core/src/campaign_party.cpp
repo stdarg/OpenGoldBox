@@ -1328,6 +1328,7 @@ void CampaignParty::begin_combat()
     combat_ = true;
     combat_registered_ = false;
     combat_elapsed_ = 0;
+    combat_offerings_ = 0;
 }
 
 void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
@@ -1336,7 +1337,12 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
         throw std::runtime_error("Combat rules identity mismatch");
     if (snapshot.elapsed_milliseconds < combat_elapsed_)
         throw std::runtime_error("Combat clock moved backward");
+    if (snapshot.offerings_gold < combat_offerings_ ||
+            snapshot.offerings_gold - combat_offerings_ > coins(state_.wealth, Coin::gold))
+        throw std::runtime_error("Combat offerings exceed the party purse");
     auto next = state_;
+    // Revivify's offering is paid from the party purse as it is made.
+    coins(next.wealth, Coin::gold) -= snapshot.offerings_gold - combat_offerings_;
     std::vector<MemberId> active;
     for (const auto &actor : snapshot.combatants)
         if (actor.side == rules::Side::party)
@@ -1370,6 +1376,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
         ++next.next_combat_scope;
     state_ = std::move(next);
     combat_elapsed_ = snapshot.elapsed_milliseconds;
+    combat_offerings_ = snapshot.offerings_gold;
     combat_registered_ = true;
 }
 } // namespace opengold

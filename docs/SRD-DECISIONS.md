@@ -1081,6 +1081,13 @@ reach. Decisions taken with it:
   adjacent ally, offered as more A-cycle entries.
 - **Use Magic Device** (Thief 13) is granted and waits for magic items
   ([#234](https://github.com/stdarg/OpenGold/issues/234)), as Fast Hands does.
+- **Aura of Protection** in the combat log: each save line names the aura's
+  share of the bonus ("+ 5 (Aura of Protection +3)").
+- **Revivify** is cast in a fight on a fallen ally in an adjacent square.
+- **Magic Circle**: one A-cycle entry per creature type, aimed at a square,
+  standing after 10 rounds of Concentration; in camp, the same choice from
+  the Cast / Use list wards the rest.
+- **Remove Curse** is built now; Hex is its curse until others come.
 - **Smite of Protection** (Devotion 15): the game has no cover (COVER-1), so
   in place of Half Cover the Paladin and its allies in the Aura of Protection
   gain what Half Cover gives: +2 AC and +2 to Dexterity saves, until the start

@@ -74,11 +74,12 @@ func _draw() -> void:
                 "target_focus": "combat_target_focus_overlay",
                 "silence": "combat_silence_overlay",
                 "moonbeam": "combat_moonbeam_overlay",
+                "circle": "combat_circle_overlay",
                 "obscured": "combat_obscured_overlay",
                 "area": "combat_area_overlay",
                 "effect_focus": "combat_effect_focus_overlay",
             }.get(kind, "combat_target_overlay")
-            draw_rect(rect if kind in ["silence", "moonbeam", "obscured"] \
+            draw_rect(rect if kind in ["silence", "moonbeam", "obscured", "circle"] \
                 else _cell_rect(cell, tile, inset), _palette(color_name))
     var font := get_theme_default_font()
     var marker_size := int(_metric("combat_marker_font_size"))

@@ -3,8 +3,10 @@
 
 #include "character_class.h"
 #include "opengold/rules.h"
+#include <array>
 #include <functional>
 #include <iosfwd>
+#include <string_view>
 
 namespace opengold::srd5::detail
 {
@@ -229,10 +231,20 @@ enum class EffectKind : unsigned
     // Banishment: gone to a demiplane, Incapacitated, while its caster
     // concentrates; after a full minute an extraplanar creature never returns.
     banished = 91,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // Guardian of Faith: the creature has saved against a guardian this turn.
-    faith_tested = 92
+    faith_tested = 92,
+    // Magic Circle's minute of casting, on its caster: `dc` is the slot level,
+    // spent only once the circle stands.
+    circling = 93,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // A Magic Circle drawn in camp, on its caster: `dc` indexes ward_types; no
+    // creature of that type interrupts the rest while it lasts.
+    circle_ward = 94
 };
+
+// Magic Circle's creature types, by `dc`.
+inline constexpr std::array<std::string_view, 5> ward_types{"celestial", "elemental", "fey",
+                                                            "fiend", "undead"};
 
 // The longest a spell benefit lasts, in milliseconds.
 unsigned benefit_duration_ms(EffectKind kind);

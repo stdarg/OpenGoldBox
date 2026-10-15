@@ -691,7 +691,19 @@ void RolfTourSession::finish_event()
     encounter_outcome_.clear();
     meeting_pose_.reset();
     robbed_ = false;
-    if (event_stage_ == EventStage::camp_interrupted)
+    if (event_stage_ == EventStage::camp_interrupted && rest_warded_)
+    {
+        rest_warded_ = false;
+        snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
+                              std::string("The Magic Circle keeps the creatures away.");
+        if (campaign_->rest(camp_kind_))
+            snapshot_.dialogue +=
+                camp_kind_ == RestKind::short_rest
+                ? "\nShort rest complete: one hour passed; eligible members can spend Hit Dice."
+                : "\nLong rest complete: eight hours passed; eligible members recovered HP and supported resources.";
+        synchronize_clock();
+    }
+    else if (event_stage_ == EventStage::camp_interrupted)
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
                               std::string("The rest was interrupted. Rest again to recover.");
     event_checkpoint_.reset();
@@ -955,6 +967,29 @@ void RolfTourSession::fit_staged_encounter()
     staged_enemies_ = std::move(enemies);
     staged_art_ = std::move(art);
     staged_records_ = std::move(records);
+}
+
+bool RolfTourSession::camp_warded() const
+{
+    if (!campaign_)
+        return false;
+    const auto &state = campaign_->state();
+    std::vector<rules::CharacterSheet> sheets;
+    std::vector<rules::VitalState> vitals;
+    for (const auto id : state.slots)
+        if (id)
+        {
+            const auto &member = campaign_->member(id);
+            sheets.push_back(member.character.sheet());
+            vitals.push_back(member.vitals);
+        }
+    std::vector<rules::CampTarget> party;
+    for (std::size_t n = 0; n < sheets.size(); ++n)
+        party.push_back({sheets[n], vitals[n]});
+    std::vector<std::string> definitions;
+    for (const auto &enemy : staged_enemies_)
+        definitions.push_back(enemy.definition);
+    return campaign_->rule_module().keeps_away(party, definitions);
 }
 
 // Monsters that interrupt a camp are announced ahead of the script's own text.
@@ -1477,6 +1512,20 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 36:
+        // A Magic Circle drawn in camp keeps its creature type away: no fight,
+        // and the rest goes on.
+        if (current_area_ && !staged_enemies_.empty() &&
+                event_stage_ == EventStage::camp_interrupted && camp_warded())
+        {
+            rest_warded_ = true;
+            staged_enemies_.clear();
+            staged_art_.clear();
+            staged_records_.clear();
+            reply = character_reply(selected_character_);
+            reply.writes.push_back({ecl_combat_result, 0});
+            reply.writes.push_back({ecl_monsters_defeated, 0});
+            break;
+        }
         if (current_area_ && !staged_enemies_.empty())
         {
             read_character();

@@ -302,6 +302,7 @@ class CampaignParty
     bool combat_{};
     bool combat_registered_{};
     std::uint64_t combat_elapsed_{};
+    unsigned combat_offerings_{}; // gold the current fight's offerings already took
     void elapse(PartyState &state, std::chrono::milliseconds elapsed,
                 std::span<const MemberId> in_combat = {}) const;
     // A member of `state`, which may be a working copy of state_. Throws for a

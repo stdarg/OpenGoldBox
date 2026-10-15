@@ -48,6 +48,7 @@ enum class SpellTarget : unsigned
     wounded_ally, // same side, below maximum hit points
     ally,         // same side, including the caster
     dying_ally,   // same side, at 0 Hit Points and neither Stable nor dead
+    dead_ally,    // same side and dead; offered on its own (Revivify)
     self,         // the caster only
     area          // an area aimed at a point within range (CLASS-5)
 };
@@ -126,7 +127,10 @@ enum class Rider : unsigned
     aura_of_life,
     freedom_of_movement,
     guardian_of_faith,
-    banishment
+    banishment,
+    remove_curse,
+    revivify,
+    magic_circle
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -1338,6 +1342,40 @@ inline constexpr std::array spell_table
         .dice = {2, 8, 0},
         .rider = Rider::heat_metal,
         .concentration = true},
+    // SRD 5.2.1 p. 146: a minute's casting, then for an hour a 10-foot-radius
+    // circle within 10 feet that one creature type (Celestials, Elementals,
+    // Fey, Fiends or Undead) cannot enter, and whose occupants it attacks with
+    // Disadvantage. Offered once per type, "magic_circle_fey" and so on.
+    SpellDef{
+        .id = "magic_circle",
+        .label = "Magic Circle",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 10,
+        .rider = Rider::magic_circle,
+        .concentration = true,
+        .radius = 10},
+    // SRD 5.2.1 p. 159: touch, a creature dead no more than a minute returns
+    // with 1 Hit Point. The offering is 300 gp times its level (LEVELS-1).
+    SpellDef{
+        .id = "revivify",
+        .label = "Revivify",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::dead_ally,
+        .range = 5,
+        .rider = Rider::revivify},
+    // SRD 5.2.1 p. 158: touch; every curse on the creature ends. Hex is the
+    // game's one curse so far (SRD 5.2.1 p. 141: "You place a curse").
+    SpellDef{
+        .id = "remove_curse",
+        .label = "Remove Curse",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::any_creature,
+        .range = 5,
+        .rider = Rider::remove_curse},
     // SRD 5.2.1 p. 112: Advantage on Wisdom saves and Death Saving Throws, and
     // healing restores its maximum, for creatures within 30 feet. The game
     // takes every ally in range.
@@ -1583,6 +1621,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "resistance";
     if (guidance_skill(id))
         id = "guidance";
+    if (id.starts_with("magic_circle_"))
+        id = "magic_circle";
     if (chromatic_type(id))
         id = "chromatic_orb";
     if (restoration_condition(id))

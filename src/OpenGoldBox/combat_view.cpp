@@ -2690,6 +2690,8 @@ Dictionary CombatView::battlefield_visuals()
         add_overlay(cell, "flame");
     for (const auto cell : s.guardians)
         add_overlay(cell, "guardian");
+    for (const auto cell : s.circles)
+        add_overlay(cell, "circle");
     for (const auto cell : s.moonbeams)
         add_overlay(cell, "moonbeam");
     for (const auto cell : s.obscured)

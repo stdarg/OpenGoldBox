@@ -339,6 +339,8 @@ class RolfTourSession
     std::vector<rules::Participant> staged_enemies_;
     std::vector<opengold::CombatArt> staged_art_;
     std::vector<unsigned> staged_records_;
+    // A Magic Circle kept the camp's attackers away: the rest completes.
+    bool rest_warded_{};
     std::optional<EclRequest> encounter_menu_;
     unsigned encounter_distance_{};
     std::optional<opengold::CampaignEncounter> encounter_;
@@ -395,6 +397,7 @@ class RolfTourSession
     unsigned rest_checks_{};
     [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
     void announce_camp_attack();
+    [[nodiscard]] bool camp_warded() const;
     bool transition_{}, message_only_{};
     std::uint64_t shop_request_{};
     void configure_town();

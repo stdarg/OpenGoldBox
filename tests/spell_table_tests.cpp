@@ -437,14 +437,16 @@ void behaviour()
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command, Resistance,
         // Guidance and Chromatic Orb are offered once per option, camp spells only outside combat, area spells are aimed,
-        // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one
+        // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
+        // Revivify a dead one
         // Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
-        // tests cover them, as the Paladin's cover Abjure Foes, a class feature.
+        // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
+        // and Remove Curse, which needs a cursed creature.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
-                row.target == SpellTarget::dying_ally ||
+                row.target == SpellTarget::dying_ally || row.target == SpellTarget::dead_ally ||
                 row.rider == Rider::command || row.rider == Rider::resistance ||
                 row.rider == Rider::guidance ||
                 row.rider == Rider::enlarge_reduce ||
@@ -456,7 +458,8 @@ void behaviour()
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
-                row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes)
+                row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
+                row.rider == Rider::remove_curse)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

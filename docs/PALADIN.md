@@ -50,9 +50,9 @@ campaign the Training Hall trains it to level 10.
   Smite uses a level-1 slot only: its burn from a higher slot is not built.
 - **Aura of Protection** (6): the Paladin and its allies within 10 feet, in a
   clear line, add the Paladin's Charisma modifier (at least +1) to saving
-  throws, including repeated saves, Concentration saves and death saves. A
-  death save shows it with the roll ("death save: 7 + 3 (Aura of
-  Protection)"). The aura is off while the Paladin is unconscious or
+  throws, including repeated saves, Concentration saves and death saves. The
+  combat log names its share with the roll: "Wisdom save: d20 12 + 5 (Aura of
+  Protection +3) vs DC 14", "death save: 7 + 3 (Aura of Protection)". The aura is off while the Paladin is unconscious or
   Incapacitated. A creature in two Paladins' auras gets the larger bonus (the
   SRD lets it choose one).
 - **Aura of Devotion** (7): the Paladin and allies in its Aura of Protection
@@ -75,10 +75,30 @@ campaign the Training Hall trains it to level 10.
   and the others), as [LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)
   asked. A Concentration spell ends whole, on every creature it touched. A
   higher spell needs a check: d20 + the spellcasting modifier against 10 + its
-  level, shown in the combat log. Remove Curse, Revivify and Magic Circle,
-  the other level-3 Paladin spells, are not built yet: each needs a decision
-  (curses to remove, paying Revivify's offering during a fight, Magic Circle's
-  creature types).
+  level, shown in the combat log.
+- **Remove Curse** (Action, touch): every curse on the creature ends. Hex is
+  the one curse in the game so far ("You place a curse", SRD p. 141), so the
+  spell is offered only on a hexed creature; curses to come join the list.
+- **Revivify** (Action, touch): on an ally in an adjacent square who died no
+  more than a minute (10 rounds) ago in this fight, while the party purse
+  holds the offering of 300 gp times the ally's level
+  ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)). The ally
+  returns with 1 Hit Point, Prone; the combat log names the offering, and the
+  campaign takes it from the purse's gold. Click the fallen ally on the
+  battlefield. A member dead before the fight began died too long ago.
+- **Magic Circle** (a minute's casting): the A cycle offers one entry per
+  creature type ("Magic Circle: Fey"; Celestials, Elementals, Fey, Fiends,
+  Undead), aimed at a square within 10 feet; the circle's 10-foot radius
+  shows pale blue. Casting takes the Paladin's Action on each of its next ten
+  turns, under Concentration; broken early, the spell fails and the slot is
+  kept. Once it stands (for an hour, the fight's length) a creature of that
+  type cannot enter it, and attacks those inside with Disadvantage. A fight
+  offers it only from the lowest slot left. In camp the Cast / Use list
+  offers the same entries, from each slot level: the ward lasts an hour, an
+  hour more for each level above 3, and a rest interruption made up only of
+  that type is kept away ("The Magic Circle keeps the creatures away") and the
+  rest completes. The reversed circle that traps a creature inside, and
+  choosing several types at once, are left out.
 - **Abjure Foes** (9): a Magic action and a Channel Divinity use. The A cycle
   offers it on each enemy the Paladin sees within 60 feet; creatures are
   chosen one click at a time, up to the Charisma modifier (at least 1), as for
@@ -144,7 +164,11 @@ of Hope's maximized healing, Dispel Magic ending Shining Smite, Radiant
 Strikes, Death Ward against a brute's hit, Aura of Life raising a fallen ally,
 Freedom of Movement on Difficult Terrain, the guardian's save and checkpoint,
 Banishment's absence, return and a Fey's defeat after a minute, Restoring
-Touch ending Blinded, and Smite of Protection's AC until the next turn).
+Touch ending Blinded, Smite of Protection's AC until the next turn, Remove
+Curse ending Hex, Revivify's offering and the campaign's payment, and Magic
+Circle's casting, completion, warded square, broken casting and camp ward).
+The camp ward's path through the original's rest-interruption script is not
+covered by a test.
 
 ## Channel Divinity and the Oath of Devotion
 

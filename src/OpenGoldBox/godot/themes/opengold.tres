@@ -598,6 +598,7 @@ OpenGoldPalette/colors/combat_target_overlay = Color(0.4, 0.8, 0.749019607843137
 OpenGoldPalette/colors/combat_target_focus_overlay = Color(0.4, 0.8, 0.7490196078431373, 0.6)
 OpenGoldPalette/colors/combat_effect_focus_overlay = Color(0.4, 0.8, 0.7490196078431373, 0.65)
 OpenGoldPalette/colors/combat_silence_overlay = Color(0.45098039215686275, 0.5019607843137255, 0.8509803921568627, 0.25)
+OpenGoldPalette/colors/combat_circle_overlay = Color(0.6, 0.75, 1.0, 0.25)
 OpenGoldPalette/colors/combat_spiritual_overlay = Color(0.9490196078431372, 0.8509803921568627, 0.4, 0.7)
 OpenGoldPalette/colors/combat_flame_overlay = Color(1.0, 0.45098039215686275, 0.10196078431372549, 0.8)
 OpenGoldPalette/colors/combat_guardian_overlay = Color(1.0, 0.9803921568627451, 0.8509803921568627, 0.75)

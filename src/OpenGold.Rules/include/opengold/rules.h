@@ -482,6 +482,8 @@ struct Encounter
     std::uint64_t scope{1};
     // The encounter's morale, 0-100, set by the original script; 100 never breaks.
     unsigned morale{100};
+    // Gold coins in the party purse, for offerings such as Revivify's.
+    unsigned party_gold{};
 };
 
 struct Identity
@@ -670,6 +672,10 @@ struct Snapshot
     std::vector<Cell> moonbeams;
     // Squares a Guardian of Faith holds.
     std::vector<Cell> guardians;
+    // Squares inside a Magic Circle, being cast or standing.
+    std::vector<Cell> circles;
+    // Gold the fight's offerings (Revivify) took from the party purse so far.
+    unsigned offerings_gold{};
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;
@@ -846,6 +852,15 @@ class RulesModule
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                        std::span<CampTarget> party, std::string_view action,
                                        RandomState &random_state) const = 0;
+    // Whether the party's camp wards (Magic Circle) keep away every creature of
+    // these definitions, so they cannot interrupt the rest.
+    [[nodiscard]] virtual bool keeps_away(std::span<const CampTarget> party,
+                                          std::span<const std::string> definitions) const
+    {
+        (void)party;
+        (void)definitions;
+        return false;
+    }
     // A spell cast while exploring, such as Knock on a locked door.
     [[nodiscard]] virtual bool can_cast_exploration_spell(const CharacterSheet &,
             const VitalState &, std::string_view) const = 0;
