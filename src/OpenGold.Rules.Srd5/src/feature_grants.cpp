@@ -188,6 +188,15 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         }
         if (level == 9)
             add("feature:supreme_sneak", "subclass:rogue:thief");
+        if (level == 11)
+            add("feature:improved_cunning_strike", "class:rogue");
+        // Use Magic Device waits for magic items (#234), as Fast Hands does.
+        if (level == 13)
+            add("feature:use_magic_device", "subclass:rogue:thief");
+        if (level == 14)
+            add("feature:devious_strikes", "class:rogue");
+        if (level == 15)
+            add("feature:slippery_mind", "class:rogue");
     }
     // Acrobatic Movement (Monk 9) is cut (SCOPE-2).
     if (klass == CharacterClass::monk)

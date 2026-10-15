@@ -126,7 +126,8 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::raging && kind != EffectKind::reckless &&
             kind != EffectKind::addled && kind != EffectKind::lit &&
             kind != EffectKind::moonlit && kind != EffectKind::scorched &&
-            kind != EffectKind::stunned && kind != EffectKind::staggered) || !can_apply(effects) ||
+            kind != EffectKind::stunned && kind != EffectKind::staggered &&
+            kind != EffectKind::dazed) || !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -409,14 +410,16 @@ bool incapacitated(const EffectState &effects)
 {
     return paralyzed(effects) || has_effect(effects, EffectKind::stunned) ||
            has_effect(effects, EffectKind::drowsy) ||
-           has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing);
+           has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
+           has_effect(effects, EffectKind::knocked_out);
 }
 
 void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
                                std::string name, RepeatingSave save)
 {
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
-            kind != EffectKind::enfeebled && kind != EffectKind::frightened) ||
+            kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
+            kind != EffectKind::knocked_out) ||
             !can_apply(effects) ||
             !recorded(source, name) || save.dc < -2 || save.dc > 38 || !save.first_save_ms ||
             save.first_save_ms > round_ms)
@@ -721,13 +724,15 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     event.removed = true;
                 else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
                           e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
-                          e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened) &&
+                          e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
+                          e.kind == EffectKind::knocked_out) &&
                          !e.save_in_ms)
                 {
-                    // Blindness and Ray of Enfeeblement repeat a Constitution save,
+                    // Blindness, Ray of Enfeeblement and Knock Out repeat a Constitution save,
                     // the others a Wisdom one, at the end of each of the target's turns.
                     const auto ability =
-                        e.kind == EffectKind::blindness || e.kind == EffectKind::enfeebled
+                        e.kind == EffectKind::blindness || e.kind == EffectKind::enfeebled ||
+                        e.kind == EffectKind::knocked_out
                         ? Ability::constitution
                         : Ability::wisdom;
                     e.save_in_ms = round_ms;
@@ -742,7 +747,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         auto modifiers = mental_save_modifiers(ability, subject);
                         if (e.kind == EffectKind::frightened)
                             modifiers.advantage |= subject.brave;
-                        else
+                        else if (e.kind != EffectKind::knocked_out)
                             modifiers.disadvantage |=
                                 heightened_against(subject.effects.get(), e.source_scope,
                                                    e.source_actor, repeated_save_spell(e.kind));
@@ -805,7 +810,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::sundered))
+    if (value > static_cast<unsigned>(EffectKind::dazed))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }
@@ -838,6 +843,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::hamstrung || kind == EffectKind::stunned ||
                            kind == EffectKind::staggered || kind == EffectKind::studied ||
                            kind == EffectKind::staggering || kind == EffectKind::sundered ||
+                           kind == EffectKind::dazed ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -891,7 +897,8 @@ EffectState read_effects(std::istream &in)
         if (!in || (!timed && !turn_save && kind != EffectKind::blindness &&
                     kind != EffectKind::hold_person &&
                     kind != EffectKind::drowsy && kind != EffectKind::laughing &&
-                    kind != EffectKind::enfeebled && kind != EffectKind::frightened) ||
+                    kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
+                    kind != EffectKind::knocked_out) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
@@ -903,6 +910,7 @@ EffectState read_effects(std::istream &in)
                            e.remaining_ms > ((kind == EffectKind::chill_touch ||
                                               kind == EffectKind::vex ||
                                               kind == EffectKind::studied ||
+                                              kind == EffectKind::dazed ||
                                               kind == EffectKind::guiding_bolt ||
                                               kind == EffectKind::poisoned ||
                                               kind == EffectKind::dazzled ||

@@ -1,12 +1,13 @@
 # Rogue
 
-The Rogue (Thief) as the game plays it from level 5 to 10, from SRD 5.2.1
+The Rogue (Thief) as the game plays it from level 5 to 15, from SRD 5.2.1
 pp. 61–64. Levels 1–4 are in [Sneak Attack](SNEAK-ATTACK.md),
 [Cunning Action](CUNNING-ACTION.md), [Rogue attacks](ROGUE-ATTACKS.md) and
-[Hide](HIDE.md); the plan is [levels 5–10](LEVELS-5-10.md).
+[Hide](HIDE.md); the plan is [levels 5–10](LEVELS-5-10.md), and the facts for
+11–15 are in the [inventory](LEVELS-11-15-INVENTORY.md).
 
 In the campaign a Rogue stops at level 10, the Training Hall's limit for every
-class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules go to level 10.
+class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules go to level 15.
 
 | Level | Gains |
 | ---: | --- |
@@ -16,6 +17,11 @@ class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules
 | 8 | A feat or ability points |
 | 9 | Thief: Supreme Sneak; Sneak Attack 5d6; Proficiency Bonus +4 |
 | 10 | A feat or ability points |
+| 11 | Improved Cunning Strike; Sneak Attack 6d6 |
+| 12 | A feat or ability points |
+| 13 | Thief: Use Magic Device (waits for magic items); Sneak Attack 7d6; Proficiency Bonus +5 |
+| 14 | Devious Strikes |
+| 15 | Slippery Mind; Sneak Attack 8d6 |
 
 - **Cunning Strike:** when an attack would deal Sneak Attack damage, the A
   cycle offers it with **Trip** (a Large or smaller target makes a Dexterity
@@ -36,8 +42,27 @@ class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). The rules
   Strike: if it deals Sneak Attack damage, the attack does not end hiding. The
   game has no cover, so it works whenever the Rogue is hidden
   ([HIDE-1](SRD-DECISIONS.md#hide-1-2026-10-14-finding-hidden-creatures)).
+- **Cunning Strike costs:** Trip, Withdraw and Stealth Attack cost one Sneak
+  Attack die, Daze two, Obscure three and Knock Out six. An effect is offered
+  only when the dice can pay for it.
+- **Improved Cunning Strike:** the A cycle also offers each pair of effects
+  the dice can pay for, such as "Melee attack (Trip, Withdraw)"
+  ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Withdraw's
+  move comes after the other effect.
+- **Use Magic Device:** granted, with nothing to act on until magic items
+  arrive ([#234](https://github.com/stdarg/OpenGold/issues/234)).
+- **Devious Strikes:** **Daze**: a Constitution save, or on its next turn the
+  creature does only one of moving, an action or a Bonus Action; the first it
+  does takes away the others. **Knock Out**: a Constitution save, or
+  Unconscious and Prone for up to a minute, ended by damage, by an ally's
+  Action to shake it awake, or by a Constitution save at the end of each of its
+  turns. **Obscure**: a Dexterity save, or Blinded until the end of its next
+  turn.
+- **Slippery Mind:** proficiency in Wisdom and Charisma saves.
 
-Verification: `opengold_rogue_levels_tests` (the campaign's stop at 9, feats,
-Expertise, save and reload, Trip and Withdraw and their Sneak Attack die, no
-Cunning Strike without Sneak Attack, Uncanny Dodge, Evasion against a Dragonborn's
-breath, Reliable Talent while hiding, Stealth Attack from hiding).
+Verification: `opengold_rogue_levels_tests` (the campaign's stop at 10, the
+rules to 15, grants, feats, Expertise, save proficiencies, save and reload,
+Trip and Withdraw and their Sneak Attack die, no Cunning Strike without Sneak
+Attack, Uncanny Dodge, Evasion against a Dragonborn's breath, Reliable Talent
+while hiding, Stealth Attack from hiding, paired effects, Daze, Knock Out and
+Obscure with checkpoints).

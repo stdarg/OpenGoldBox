@@ -667,6 +667,7 @@ struct Definition
     // use (in Actor::free_casts) and Persistent Rage's (in Actor::arcane), each
     // once per Long Rest; Improved Brutal Strike's two more blows.
     int relentless_rage{}, intimidating_presence{}, persistent_rage{};
+    bool improved_cunning{}, devious_strikes{}; // Rogue 11 and 14
     bool improved_brutal{};
     bool brave{}; // Halfling: Advantage on saves to avoid or end Frightened
     // Rogue levels 5-10.
@@ -1428,6 +1429,8 @@ character_definition(std::string_view bytes,
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
+    d.improved_cunning = rogue && level >= 11;
+    d.devious_strikes = rogue && level >= 14;
     d.tactical_shift = klass == CharacterClass::fighter && level >= 5;
     d.tactical_master = klass == CharacterClass::fighter && level >= 9;
     d.heroic_warrior = klass == CharacterClass::fighter && level >= 10;
@@ -2003,24 +2006,36 @@ enum class CunningStrike : unsigned
 {
     trip,
     withdraw,
-    stealth // Supreme Sneak's Stealth Attack (Thief 9)
+    stealth,   // Supreme Sneak's Stealth Attack (Thief 9)
+    daze,      // Devious Strikes (Rogue 14)
+    knock_out,
+    obscure
 };
 
-// Cunning Strike's options by verb suffix, with their commands' labels; the
-// Poison option waits for a Poisoner's Kit (#233).
+// Cunning Strike's options by verb suffix, with their names and the Sneak
+// Attack dice they cost; the Poison option waits for a Poisoner's Kit (#233).
+// A command's verb is "melee_" or "ranged_" and one suffix, or two joined by
+// "+" with Improved Cunning Strike (Rogue 11).
 struct CunningOption
 {
     std::string_view suffix;
     CunningStrike kind;
-    std::string_view melee_label, ranged_label;
+    std::string_view name;
+    int cost;
 };
-constexpr std::array<CunningOption, 3> cunning_strikes{
-    {   {"trip", CunningStrike::trip, "Melee attack (Trip)", "Ranged attack (Trip)"},
-        {"withdraw", CunningStrike::withdraw, "Melee attack (Withdraw)",
-         "Ranged attack (Withdraw)"},
-        {"stealth", CunningStrike::stealth, "Melee attack (Stealth Attack)",
-         "Ranged attack (Stealth Attack)"}
+constexpr std::array<CunningOption, 6> cunning_strikes{
+    {   {"trip", CunningStrike::trip, "Trip", 1},
+        {"withdraw", CunningStrike::withdraw, "Withdraw", 1},
+        {"stealth", CunningStrike::stealth, "Stealth Attack", 1},
+        {"daze", CunningStrike::daze, "Daze", 2},
+        {"knock_out", CunningStrike::knock_out, "Knock Out", 6},
+        {"obscure", CunningStrike::obscure, "Obscure", 3}
     }};
+
+const CunningOption &cunning_option(CunningStrike kind)
+{
+    return cunning_strikes.at(static_cast<std::size_t>(kind));
+}
 
 // An attack the Attack action makes, which Extra Attack repeats; Reckless
 // Attack and the pact weapon's damage types arrive here as "melee".
@@ -2250,6 +2265,17 @@ class Session final : public CombatSession
     {
         EntityId actor{};
         CunningStrike kind{};
+        std::optional<CunningStrike> second; // Improved Cunning Strike
+
+        [[nodiscard]] bool has(CunningStrike wanted) const
+        {
+            return kind == wanted || second == wanted;
+        }
+
+        [[nodiscard]] int cost() const
+        {
+            return cunning_option(kind).cost + (second ? cunning_option(*second).cost : 0);
+        }
     };
     std::optional<PendingCunning> cunning_;
     // Stunning Strike (Monk 5): the attack it is tried with, if it hits.
@@ -2811,7 +2837,8 @@ class Session final : public CombatSession
     static bool helpless(const Actor &target)
     {
         return unconscious(target) || detail::paralyzed(target.effects) ||
-               detail::has_effect(target.effects, detail::EffectKind::asleep);
+               detail::has_effect(target.effects, detail::EffectKind::asleep) ||
+               detail::has_effect(target.effects, detail::EffectKind::knocked_out);
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
@@ -2915,6 +2942,9 @@ class Session final : public CombatSession
     [[nodiscard]] int roll_sneak_attack(Actor &a, const Actor &target, int natural, int forgo = 0);
     // Cunning Strike's effect after a hit that dealt Sneak Attack damage.
     void cunning_effect(Actor &rogue, Actor &target, CunningStrike kind);
+    // The Cunning Strike effects a command's verb names, if it names any.
+    [[nodiscard]] static std::optional<std::pair<CunningStrike, std::optional<CunningStrike>>>
+            cunning_choice(std::string_view verb);
     // Stunning Strike's Constitution save after a hit.
     void stunning_strike(Actor &monk, Actor &target);
     // Studied Attacks: a miss gives the Fighter's next attack on the target Advantage.
@@ -3036,7 +3066,7 @@ class Session final : public CombatSession
     bool begin_turn();
     void end_turn();
     void restore_self(Actor &a);
-    void dispatch_noting_fleet_step(const Command &command);
+    void dispatch_tracking_turn(const Command &command);
     // Heightened Focus: the carried ally steps into the square the Monk left,
     // provoking nothing.
     void follow_carrier(const Actor &monk, Cell departed);
@@ -4205,6 +4235,8 @@ Snapshot Session::snapshot() const
                 {
                     std::pair{detail::EffectKind::drowsy, "Incapacitated (Sleep)"},
                     std::pair{detail::EffectKind::asleep, "Unconscious (Sleep)"},
+                    std::pair{detail::EffectKind::knocked_out, "Unconscious (Knock Out)"},
+                    std::pair{detail::EffectKind::dazed, "Dazed"},
                     std::pair{detail::EffectKind::laughing, "Prone and Incapacitated (laughing)"},
                     std::pair{detail::EffectKind::enfeebled, "Enfeebled (Ray of Enfeeblement)"},
                     std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"},
@@ -5549,7 +5581,8 @@ std::vector<Command> Session::legal_commands() const
             if (other.source.side == a.source.side && other.source.id != a.source.id &&
                     distance(a.source.cell, other.source.cell) <= 5 &&
                     (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
-                     detail::has_effect(other.effects, detail::EffectKind::asleep)))
+                     detail::has_effect(other.effects, detail::EffectKind::asleep) ||
+                     detail::has_effect(other.effects, detail::EffectKind::knocked_out)))
                 add(id, "shake_awake", "Shake awake", other.source.id);
     // Martial Arts: an Unarmed Strike as a Bonus Action.
     if (a.bonus && d.martial_arts)
@@ -5866,11 +5899,32 @@ std::vector<Command> Session::legal_commands() const
                 !sneak_eligible(a, other, range,
                                 attack_modifiers(a, other, range, AttackSource::weapon).mode()))
             return;
-        const bool melee = range == AttackRange::melee;
-        for (const auto &option : cunning_strikes)
-            if (option.kind != CunningStrike::stealth || (d.supreme_sneak && hidden(a)))
-                add(id, std::string(melee ? "melee_" : "ranged_") + std::string(option.suffix),
-                    std::string(melee ? option.melee_label : option.ranged_label), other.source.id);
+        const std::string base = range == AttackRange::melee ? "melee" : "ranged";
+        const std::string label = range == AttackRange::melee ? "Melee attack (" : "Ranged attack (";
+        const int dice = detail::sneak_attack_dice(d.sneak_level).count;
+        const auto usable = [&](const CunningOption & option)
+        {
+            const bool devious = option.kind == CunningStrike::daze ||
+                                 option.kind == CunningStrike::knock_out ||
+                                 option.kind == CunningStrike::obscure;
+            return option.cost <= dice && (!devious || d.devious_strikes) &&
+                   (option.kind != CunningStrike::stealth || (d.supreme_sneak && hidden(a)));
+        };
+        for (std::size_t i = 0; i < cunning_strikes.size(); ++i)
+        {
+            const auto &first = cunning_strikes[i];
+            if (!usable(first))
+                continue;
+            add(id, base + "_" + std::string(first.suffix),
+                label + std::string(first.name) + ")", other.source.id);
+            // Improved Cunning Strike: a second effect the dice can also pay for.
+            for (std::size_t j = i + 1; d.improved_cunning && j < cunning_strikes.size(); ++j)
+                if (const auto &second = cunning_strikes[j];
+                        usable(second) && first.cost + second.cost <= dice)
+                    add(id, base + "_" + std::string(first.suffix) + "+" + std::string(second.suffix),
+                        label + std::string(first.name) + ", " + std::string(second.name) + ")",
+                        other.source.id);
+        }
     };
     // Tactical Master: the attack with Push, Sap or Slow, other than the
     // weapon's own mastery.
@@ -6301,7 +6355,8 @@ void Session::damage(Actor &target, int amount, bool critical)
     std::erase_if(target.effects.active, [](const auto & e)
     {
         return e.kind == detail::EffectKind::turned || e.kind == detail::EffectKind::drowsy ||
-               e.kind == detail::EffectKind::asleep || e.kind == detail::EffectKind::charmed;
+               e.kind == detail::EffectKind::asleep || e.kind == detail::EffectKind::charmed ||
+               e.kind == detail::EffectKind::knocked_out;
     });
     // Hideous Laughter: damage calls for a new Wisdom save, with Advantage.
     for (std::size_t n = 0; n < target.effects.active.size() && target.life.hp > 0; ++n)
@@ -8407,7 +8462,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // Supreme Sneak's Stealth Attack keeps a hidden Rogue hidden when it deals
     // Sneak Attack damage; that is known after the roll.
     const bool stealthy = cunning_ && cunning_->actor == a.source.id &&
-                          cunning_->kind == CunningStrike::stealth;
+                          cunning_->has(CunningStrike::stealth);
     if (!stealthy)
         end_hiding(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
@@ -8484,7 +8539,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // Sneak Attack and Savage Attacker have one right answer, so they apply
     // automatically and the log records what they added.
     const bool cunning = sneak && cunning_ && cunning_->actor == a.source.id;
-    const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural, cunning ? 1 : 0) : 0;
+    const int sneak_damage = sneak ? roll_sneak_attack(a, target, natural,
+                                 cunning ? cunning_->cost() : 0) : 0;
     const int advantage_damage = hit && !spell && d.advantage_damage.count &&
                                  modifiers.mode() > 0
                                  ? roll_advantage_damage(a, target, natural)
@@ -8613,7 +8669,18 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (hit && brutal && !target.life.dead)
         brutal_blow(actor(a.source.id), target, brutal_->blow);
     if (cunning)
-        cunning_effect(actor(a.source.id), target, cunning_->kind);
+    {
+        // Withdraw's move comes after the other effect.
+        auto kinds = std::vector{cunning_->kind};
+        if (cunning_->second)
+            kinds.push_back(*cunning_->second);
+        std::stable_partition(kinds.begin(), kinds.end(), [](auto kind)
+        {
+            return kind != CunningStrike::withdraw;
+        });
+        for (const auto kind : kinds)
+            cunning_effect(actor(a.source.id), target, kind);
+    }
     else if (stealthy)
         end_hiding(a.source.id);
     if (hit && stunning_ == a.source.id && !spell && !ranged && d.martial_arts &&
@@ -8921,6 +8988,35 @@ void Session::stunning_strike(Actor &monk, Actor &target)
     });
 }
 
+std::optional<std::pair<CunningStrike, std::optional<CunningStrike>>>
+Session::cunning_choice(std::string_view verb)
+{
+    for (const std::string_view base : {"melee_", "ranged_"})
+    {
+        if (!verb.starts_with(base))
+            continue;
+        const auto rest = verb.substr(base.size());
+        const auto plus = rest.find('+');
+        const auto named = [](std::string_view suffix) -> std::optional<CunningStrike>
+        {
+            for (const auto &option : cunning_strikes)
+                if (option.suffix == suffix)
+                    return option.kind;
+            return std::nullopt;
+        };
+        const auto first = named(rest.substr(0, plus));
+        if (!first)
+            return std::nullopt;
+        if (plus == std::string_view::npos)
+            return std::pair{*first, std::optional<CunningStrike>{}};
+        const auto second = named(rest.substr(plus + 1));
+        if (!second)
+            return std::nullopt;
+        return std::pair{*first, second};
+    }
+    return std::nullopt;
+}
+
 void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
 {
     const auto &d = def(rogue);
@@ -8930,13 +9026,46 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
         {"{name} stays hidden (Stealth Attack).", {{"name", rogue.source.name}}});
         return;
     }
+    // The saves are against 8 + Dexterity + Proficiency Bonus.
+    const int dc = 8 + d.dexterity + 2 + (d.level - 1) / 4;
+    const bool standing = !target.life.dead && target.life.hp > 0;
+    if (kind == CunningStrike::daze)
+    {
+        if (!standing || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+            return;
+        detail::apply_poisoned(target.effects, effect_source(rogue), rogue.source.name,
+                               next_save_ms(target.source.id), detail::EffectKind::dazed);
+        log(target.source.name + " is dazed.", {"{name} is dazed.", {{"name", target.source.name}}});
+        return;
+    }
+    if (kind == CunningStrike::knock_out)
+    {
+        if (!standing || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+            return;
+        detail::apply_repeating_condition(
+            target.effects, detail::EffectKind::knocked_out, effect_source(rogue),
+            rogue.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
+        target.effects.prone = true;
+        log(target.source.name + " is knocked out.",
+        {"{name} is knocked out.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
+        return;
+    }
+    if (kind == CunningStrike::obscure)
+    {
+        if (!standing || saving_throw_succeeds(target, detail::Ability::dexterity, dc))
+            return;
+        detail::apply_poisoned(target.effects, effect_source(rogue), rogue.source.name,
+                               next_save_ms(target.source.id), detail::EffectKind::dazzled);
+        log(target.source.name + " is Blinded.", {"{name} is Blinded.", {{"name", target.source.name}}});
+        return;
+    }
     if (kind == CunningStrike::trip)
     {
-        // A Large or smaller creature saves against 8 + Dexterity + Proficiency
-        // Bonus or falls Prone.
-        if (target.life.dead || target.life.hp <= 0 || def(target).size > 3 || target.effects.prone)
+        // A Large or smaller creature saves or falls Prone.
+        if (!standing || def(target).size > 3 || target.effects.prone)
             return;
-        const int dc = 8 + d.dexterity + 2 + (d.level - 1) / 4;
         if (saving_throw_succeeds(target, detail::Ability::dexterity, dc))
             return;
         target.effects.prone = true;
@@ -9502,7 +9631,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
-    if (detail::has_effect(target.effects, detail::EffectKind::asleep) &&
+    if ((detail::has_effect(target.effects, detail::EffectKind::asleep) ||
+            detail::has_effect(target.effects, detail::EffectKind::knocked_out)) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
     {
         const std::string name = ability == detail::Ability::strength ? "Strength" : "Dexterity";
@@ -10343,7 +10473,7 @@ void Session::perform(const Command &command)
     damage_taken_.clear();
     if (!askable)
     {
-        dispatch_noting_fleet_step(command);
+        dispatch_tracking_turn(command);
         damage_taken_.clear();
         reaction_answers_.clear();
         return;
@@ -10354,7 +10484,7 @@ void Session::perform(const Command &command)
     try
     {
         askable_ = true;
-        dispatch_noting_fleet_step(command);
+        dispatch_tracking_turn(command);
         answer_damage();
         askable_ = false;
         reaction_answers_.clear();
@@ -10405,14 +10535,42 @@ void Session::follow_carrier(const Actor &monk, Cell departed)
         ally.source.cell = departed;
 }
 
-void Session::dispatch_noting_fleet_step(const Command &command)
+void Session::dispatch_tracking_turn(const Command &command)
 {
     const auto acting = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
     {
         return a.source.id == command.actor;
     });
-    const bool had_bonus = acting != actors_.end() && acting->bonus;
+    if (acting == actors_.end())
+    {
+        dispatch(command);
+        return;
+    }
+    const bool had_bonus = acting->bonus, had_action = acting->actions.normal,
+               had_moved = acting->moved;
     dispatch(command);
+    // Daze (Rogue 14): on its turn the creature does only one of moving, an
+    // action or a Bonus Action; the first it does takes away the others.
+    if (auto &dazed = actor(command.actor);
+            detail::has_effect(dazed.effects, detail::EffectKind::dazed) &&
+            actors_[turn_].source.id == dazed.source.id)
+    {
+        if (!had_moved && dazed.moved)
+        {
+            dazed.actions = {.normal = false};
+            dazed.bonus = false;
+        }
+        else if (had_action && !dazed.actions.normal)
+        {
+            dazed.movement = 0;
+            dazed.bonus = false;
+        }
+        else if (had_bonus && !dazed.bonus)
+        {
+            dazed.movement = 0;
+            dazed.actions = {.normal = false};
+        }
+    }
     if (!had_bonus)
         return;
     // Fleet Step (Monk 11): a Bonus Action other than Step of the Wind leaves
@@ -10432,17 +10590,15 @@ void Session::dispatch(const Command &command)
         dispatch(melee);
         return;
     }
-    for (const auto &option : cunning_strikes)
-        for (const std::string_view base : {"melee", "ranged"})
-            if (command.verb == std::string(base) + "_" + std::string(option.suffix))
-            {
-                cunning_ = PendingCunning{command.actor, option.kind};
-                auto plain = command;
-                plain.verb = base;
-                dispatch(plain);
-                cunning_.reset();
-                return;
-            }
+    if (const auto chosen = cunning_choice(command.verb))
+    {
+        cunning_ = PendingCunning{command.actor, chosen->first, chosen->second};
+        auto plain = command;
+        plain.verb = command.verb.starts_with("melee_") ? "melee" : "ranged";
+        dispatch(plain);
+        cunning_.reset();
+        return;
+    }
     if (command.verb == "melee_stun")
     {
         stunning_ = command.actor;
@@ -10904,7 +11060,8 @@ void Session::dispatch(const Command &command)
         auto &sleeper = actor(command.target);
         std::erase_if(sleeper.effects.active, [](const auto & e)
         {
-            return e.kind == detail::EffectKind::drowsy || e.kind == detail::EffectKind::asleep;
+            return e.kind == detail::EffectKind::drowsy || e.kind == detail::EffectKind::asleep ||
+                   e.kind == detail::EffectKind::knocked_out;
         });
         log(a.source.name + " shakes " + sleeper.source.name + " awake.",
         {
@@ -12854,9 +13011,21 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && result.level == 9)
             result.description =
                 "Thief: Supreme Sneak. A hidden Rogue's Stealth Attack (a Cunning Strike) leaves it hidden.\nSneak Attack 5d6; Proficiency Bonus +4.";
-        if (klass == CharacterClass::rogue && result.level == 10)
+        if (klass == CharacterClass::rogue && (result.level == 10 || result.level == 12))
             result.description =
                 "A feat or ability points.";
+        if (klass == CharacterClass::rogue && result.level == 11)
+            result.description =
+                "Improved Cunning Strike: one Sneak Attack may carry two Cunning Strike effects, paying for both.\nSneak Attack 6d6.";
+        if (klass == CharacterClass::rogue && result.level == 13)
+            result.description =
+                "Thief: Use Magic Device, which waits for magic items.\nSneak Attack 7d6; Proficiency Bonus +5.";
+        if (klass == CharacterClass::rogue && result.level == 14)
+            result.description =
+                "Devious Strikes: three more Cunning Strike effects. Daze (2 dice): a Constitution save or only one of moving, an action or a Bonus Action on its next turn. Knock Out (6 dice): a Constitution save or Unconscious for up to a minute, until damaged or shaken awake. Obscure (3 dice): a Dexterity save or Blinded until the end of its next turn.";
+        if (klass == CharacterClass::rogue && result.level == 15)
+            result.description =
+                "Slippery Mind: proficiency in Wisdom and Charisma saving throws.\nSneak Attack 8d6.";
         if (klass == CharacterClass::monk && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nStunning Strike: once a turn, a hit with a Monk weapon or an Unarmed Strike may spend 1 Focus: Constitution save or Stunned until your next turn.\nMartial Arts d8; Proficiency Bonus +3.";
@@ -14917,7 +15086,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.201", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.202", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

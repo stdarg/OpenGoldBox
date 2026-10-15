@@ -170,6 +170,91 @@ void progression_checks()
                                  "rogue-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "rogue-levels") == bytes,
           "A level-10 Rogue saves and reloads exactly");
+
+    const auto fifteen = rogue(15);
+    const auto rules = module();
+    check(fifteen.sheet().level == 15 && !rules->advancement_options(fifteen.sheet()).level,
+          "Level 15 is the Rogue's cap");
+    const auto holds = [&](std::string_view id, int level)
+    {
+        return std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(),
+                           [&](const auto & g)
+        {
+            return g.id == id && g.level == level;
+        });
+    };
+    check(holds("feature:improved_cunning_strike", 11) && holds("feature:use_magic_device", 13) &&
+          holds("feature:devious_strikes", 14) && holds("feature:slippery_mind", 15),
+          "The level 11-15 features arrive at their levels");
+    unsigned proficient = 0;
+    for (const auto ability : all_abilities)
+        proficient += fifteen.sheet().save_proficiencies[ability] ? 1 : 0;
+    check(proficient == 4 && fifteen.sheet().save_proficiencies[Ability::wisdom] &&
+          fifteen.sheet().save_proficiencies[Ability::charisma],
+          "Slippery Mind: Wisdom and Charisma saves at level 15");
+}
+
+// Improved Cunning Strike: two effects on one Sneak Attack from level 11.
+void improved_cunning_checks()
+{
+    const auto rules = dummy_rules();
+    check(!offered(*fight(*rules, rogue(10), 1), "melee_trip+withdraw"), "Not before level 11");
+    for (std::uint64_t seed = 1; seed < 60; ++seed)
+    {
+        auto c = fight(*rules, rogue(11), seed);
+        check(offered(*c, "melee_trip+withdraw") && !offered(*c, "melee_daze"),
+              "Pairs of effects; no Devious Strikes before level 14");
+        check(submit(*c, "melee_trip+withdraw", 98), "A Trip and Withdraw attack");
+        if (!logged(*c, "adds Sneak Attack: 4d6"))
+            continue;
+        check(logged(*c, "Rogue may withdraw"), "Both effects: the withdrawal follows");
+        return;
+    }
+    throw std::runtime_error("No seed's paired Cunning Strike hits");
+}
+
+// Devious Strikes: Daze, Knock Out and Obscure at level 14.
+void devious_checks()
+{
+    const auto rules = dummy_rules();
+    bool knocked = false, blinded = false, dazed = false;
+    for (std::uint64_t seed = 1; seed < 80 && !(knocked && blinded && dazed); ++seed)
+        for (const auto *verb : {"melee_knock_out", "melee_obscure", "melee_daze"})
+        {
+            auto c = fight(*rules, rogue(14), seed);
+            check(offered(*c, verb) && offered(*c, "melee_trip+knock_out") &&
+                  !offered(*c, "melee_withdraw+knock_out+trip"), "Devious Strikes are offered");
+            check(submit(*c, verb, 98), "A Devious Strike");
+            const auto conditions = unit(*c, 98).conditions;
+            const auto shows = [&](std::string_view text)
+            {
+                return std::any_of(conditions.begin(), conditions.end(), [&](const auto & m)
+                {
+                    return m.source == text;
+                });
+            };
+            const auto saved = c->save();
+            check(rules->restore(saved)->save() == saved, "A checkpoint keeps the effect");
+            if (std::string_view(verb) == "melee_knock_out" && logged(*c, "Dummy is knocked out."))
+                knocked = shows("Unconscious (Knock Out)");
+            if (std::string_view(verb) == "melee_obscure" && logged(*c, "Dummy is Blinded."))
+                blinded = shows("Blinded");
+            if (std::string_view(verb) != "melee_daze" || !logged(*c, "Dummy is dazed."))
+                continue;
+            // On its turn the dazed dummy moves, and then may not attack.
+            check(submit(*c, "end"), "The Rogue ends its turn");
+            for (unsigned steps = 0; steps < 6 && c->snapshot().actor != 98; ++steps)
+                check(submit(*c, "end") || c->submit(choose_demo_command(*c)), "Reach the dummy");
+            if (c->snapshot().actor != 98)
+                continue;
+            bool moved = false;
+            for (const auto &command : c->legal_commands())
+                if (!moved && command.verb == "move" && command.actor == 98)
+                    moved = c->submit(command);
+            check(moved && !offered(*c, "melee"), "Having moved, the dazed dummy cannot attack");
+            dazed = true;
+        }
+    check(knocked && blinded && dazed, "Each Devious Strike lands on some seed");
 }
 
 // Cunning Strike: Trip and Withdraw give up a Sneak Attack die.
@@ -328,6 +413,8 @@ int main()
     try
     {
         progression_checks();
+        improved_cunning_checks();
+        devious_checks();
         cunning_checks();
         uncanny_dodge_checks();
         evasion_checks();

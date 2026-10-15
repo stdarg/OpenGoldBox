@@ -14,7 +14,7 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Barbarian to level 10: done ([Barbarian](BARBARIAN.md#levels-515)).
 - Rogue to level 10: done ([Rogue](ROGUE.md)).
 - Monk to level 9: done ([Monk](MONK.md#levels-515)).
-- Fighter, Barbarian and Monk to level 15: done.
+- Fighter, Barbarian, Monk and Rogue to level 15: done.
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
   [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,

@@ -195,10 +195,17 @@ enum class EffectKind : unsigned
     // turn: no Opportunity Attacks, and while `dc` is 1, Disadvantage on the
     // next saving throw.
     staggering = 80,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // Brutal Strike's Sundering Blow: the next attack roll another creature
     // makes against it, before the start of the Barbarian's next turn, has +5.
-    sundered = 81
+    sundered = 81,
+    // Cunning Strike's Knock Out (Rogue 14): Unconscious for up to a minute,
+    // until damaged or shaken awake, with a Constitution save at the end of
+    // each of its turns.
+    knocked_out = 82,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // Cunning Strike's Daze (Rogue 14): on its next turn, only one of moving,
+    // an action or a Bonus Action.
+    dazed = 83
 };
 
 // The longest a spell benefit lasts, in milliseconds.
