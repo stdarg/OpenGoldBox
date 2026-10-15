@@ -121,7 +121,12 @@ enum class Rider : unsigned
     guidance,
     abjure_foes,
     beacon_of_hope,
-    dispel_magic
+    dispel_magic,
+    death_ward,
+    aura_of_life,
+    freedom_of_movement,
+    guardian_of_faith,
+    banishment
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -1357,6 +1362,64 @@ inline constexpr std::array spell_table
         .range = 120,
         .rider = Rider::dispel_magic,
         .area = 5},
+    // SRD 5.2.1 p. 122: 8 hours; the first drop to 0 Hit Points leaves 1.
+    SpellDef{
+        .id = "death_ward",
+        .label = "Death Ward",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::death_ward},
+    // SRD 5.2.1 p. 111: a 30-foot Emanation; allies in it resist Necrotic
+    // damage, and one at 0 Hit Points regains 1 as its turn starts.
+    SpellDef{
+        .id = "aura_of_life",
+        .label = "Aura of Life",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 30,
+        .rider = Rider::aura_of_life,
+        .concentration = true},
+    // SRD 5.2.1 p. 134: 1 hour, touch; Difficult Terrain costs nothing extra,
+    // and magic cannot slow, Paralyze or Restrain the creature.
+    SpellDef{
+        .id = "freedom_of_movement",
+        .label = "Freedom of Movement",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::freedom_of_movement},
+    // SRD 5.2.1 p. 137: a spectral guardian in an unoccupied square within 30
+    // feet; an enemy that comes within 10 feet of it, or starts its turn there,
+    // makes a Dexterity save against 20 Radiant damage, half on a success,
+    // once a turn. It vanishes once it has dealt 60.
+    SpellDef{
+        .id = "guardian_of_faith",
+        .label = "Guardian of Faith",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 30,
+        .rider = Rider::guardian_of_faith,
+        .area = 5},
+    // SRD 5.2.1 p. 112: a Charisma save or banished, Incapacitated and off the
+    // field, until Concentration ends; one more creature per slot level above 4.
+    SpellDef{
+        .id = "banishment",
+        .label = "Banishment",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::charisma,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::banishment,
+        .concentration = true},
     // Not a spell: the Paladin's Abjure Foes (level 9), a Magic action for a
     // Channel Divinity use. Its creatures are chosen like a spell's (CLASS-2).
     SpellDef{

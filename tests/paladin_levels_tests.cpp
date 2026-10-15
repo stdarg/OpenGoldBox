@@ -18,10 +18,9 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Paladin (Oath of Devotion) from level 5 to 10 (LEVELS-1): Extra Attack,
-// level-2 and level-3 slots and spells with Shining Smite, Beacon of Hope and
-// Dispel Magic, casting from higher slots, Aura of Protection, Aura of
-// Devotion and Abjure Foes.
+// A Paladin (Oath of Devotion) from level 5 to 15 (LEVELS-1, LEVELS-2): Extra
+// Attack, slots of levels 2-4 and their spells, casting from higher slots, the
+// auras, Abjure Foes, Radiant Strikes, Restoring Touch and Smite of Protection.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -83,11 +82,15 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
     return false;
 }
 
+// An AC 1 dummy, a Fey one and a brute that always hits for 1d4.
 std::unique_ptr<RulesModule> dummy_rules()
 {
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
-                               "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature fey-dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "type fey-dummy fey\n"
+                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 bool logged(const CombatSession &c, std::string_view text)
@@ -129,17 +132,49 @@ bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
     });
 }
 
+// The Paladin's sheet with `spells` prepared in place of its last ones.
+CharacterSheet preparing(const Character &hero, std::vector<std::string> spells)
+{
+    auto sheet = hero.sheet();
+    auto &prepared = sheet.prepared_spells;
+    std::copy(spells.begin(), spells.end(), prepared.end() - static_cast<std::ptrdiff_t>(spells.size()));
+    return sheet;
+}
+
 // The Paladin beside an AC 1 dummy, with a second dummy farther off, on the
 // Paladin's turn.
-std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &hero,
+std::unique_ptr<CombatSession> duel(const RulesModule &rules, const CharacterSheet &sheet,
                                     std::uint64_t seed, std::optional<VitalState> state = {})
 {
     const std::vector<std::string> gear{"longsword"};
-    const auto profile = rules.character_profile(hero.sheet(), gear).data;
+    const auto profile = rules.character_profile(sheet, gear).data;
     auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
         {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile, state},
             {98, "dummy", "Dummy", Side::opposition, {2, 1}},
             {97, "dummy", "Far Dummy", Side::opposition, {6, 1}}
+        }},
+    seed);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Paladin's turn");
+    return c;
+}
+
+std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &hero,
+                                    std::uint64_t seed, std::optional<VitalState> state = {})
+{
+    return duel(rules, hero.sheet(), seed, std::move(state));
+}
+
+// The Paladin and one creature of `kind`, beside it, on the Paladin's turn.
+std::unique_ptr<CombatSession> alone_with(const RulesModule &rules, const CharacterSheet &sheet,
+                                          std::string kind, std::uint64_t seed,
+                                          std::optional<VitalState> state = {})
+{
+    const std::vector<std::string> gear{"longsword"};
+    auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1},
+                rules.character_profile(sheet, gear).data, state},
+            {98, std::move(kind), "Foe", Side::opposition, {2, 1}}
         }},
     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -157,8 +192,24 @@ void progression_checks()
         party.advance(id, party.default_advancement(id));
     const auto &ten = party.member(id).character.sheet();
     check(ten.level == 10, "In the campaign a Paladin stops at the hall's level 10");
-    check(!rules->advancement_options(paladin(12).sheet()).level,
-          "Level 12 is the Paladin's cap until its level-4 spells exist");
+    const auto fifteen = paladin(15);
+    check(!rules->advancement_options(fifteen.sheet()).level, "Level 15 is the Paladin's cap");
+    check(std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(), [](const auto & g)
+    {
+        return g.id == "feature:restoring_touch" && g.level == 14;
+    }) && std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(), [](const auto & g)
+    {
+        return g.id == "feature:smite_of_protection" && g.level == 15;
+    }), "Restoring Touch at 14, Smite of Protection at 15");
+    const auto top = rules->spell_access(fifteen.sheet());
+    const auto always_top = [&](std::string_view spell)
+    {
+        return std::find(top.always_prepared.begin(), top.always_prepared.end(), spell) !=
+               top.always_prepared.end();
+    };
+    check(top.prepared_choices == 12 && always_top("freedom_of_movement") &&
+          always_top("guardian_of_faith"),
+          "Twelve prepared spells at 15; Freedom of Movement and Guardian of Faith always prepared");
     const auto holds = [&](std::string_view grant, unsigned level)
     {
         return std::any_of(ten.grants.begin(), ten.grants.end(), [&](const auto & g)
@@ -206,6 +257,8 @@ void progression_checks()
     check(slots(*duel(*dummies, paladin(9), 1), 3) == 2 &&
           slots(*duel(*dummies, paladin(8), 1), 3) == 0 &&
           slots(*duel(*dummies, paladin(11), 1), 3) == 3, "Two level-3 slots from level 9, three from 11");
+    check(slots(*duel(*dummies, paladin(13), 1), 4) == 1 &&
+          slots(*duel(*dummies, fifteen, 1), 4) == 2, "A level-4 slot at 13, two at 15");
     const auto twelve = paladin(12);
     check(std::any_of(twelve.sheet().grants.begin(), twelve.sheet().grants.end(), [](const auto & g)
     {
@@ -435,6 +488,165 @@ void radiant_checks()
         return pool.id == "channel_divinity" && pool.capacity == 3;
     }), "Three Channel Divinity uses from level 11");
 }
+// Death Ward: the first drop to 0 Hit Points leaves 1.
+void death_ward_checks()
+{
+    const auto rules = dummy_rules();
+    const auto sheet = preparing(paladin(13), {"death_ward"});
+    auto c = alone_with(*rules, sheet, "brute", 1, VitalState{1, false, {}, {}});
+    check(submit(*c, "death_ward", 1) && has_condition(*c, 1, "Death Ward"), "Death Ward on the Paladin");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps Death Ward");
+    for (unsigned turns = 0; turns < 6 && !logged(*c, "(Death Ward)"); ++turns)
+        if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+            check(submit(*c, "decline") || submit(*c, "end"), "The Paladin waits");
+        else
+            check(c->submit(choose_demo_command(*c)), "The brute attacks");
+    check(logged(*c, "Paladin drops to 1 Hit Point instead (Death Ward).") &&
+          unit(*c, 1).hit_points == 1 && !has_condition(*c, 1, "Death Ward"),
+          "The brute's hit leaves 1 Hit Point and ends the ward");
+}
+
+// Aura of Life: an ally at 0 Hit Points in it regains 1 as its turn starts.
+void aura_of_life_checks()
+{
+    const auto rules = dummy_rules();
+    const auto sheet = preparing(paladin(13), {"aura_of_life"});
+    auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
+        {   {1, "campaign-character", "Paladin", Side::party, {1, 1},
+                rules->character_profile(sheet, {}).data},
+            {2, "campaign-character", "Ally", Side::party, {2, 1},
+                rules->character_profile(paladin(4).sheet(), {}).data, VitalState{0, false, {}, {}}},
+            {98, "dummy", "Dummy", Side::opposition, {7, 1}}
+        }},
+    1);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Paladin's turn");
+    check(submit(*c, "aura_of_life", 1) && logged(*c, "Paladin radiates an Aura of Life."),
+          "The Paladin casts Aura of Life");
+    for (unsigned turns = 0; turns < 6 && !logged(*c, "Ally stirs in the Aura of Life."); ++turns)
+        check(submit(*c, "end"), "Turns pass");
+    check(logged(*c, "Ally stirs in the Aura of Life.") && unit(*c, 2).hit_points >= 1,
+          "The fallen ally regains 1 Hit Point");
+}
+
+// Freedom of Movement: Difficult Terrain costs nothing extra.
+void freedom_checks()
+{
+    const auto rules = dummy_rules();
+    const auto sheet = paladin(13).sheet();
+    auto c = rules->create({{10, 3, std::vector<Terrain>(30, Terrain::difficult)},
+        {   {1, "campaign-character", "Paladin", Side::party, {0, 1},
+                rules->character_profile(sheet, {}).data},
+            {98, "dummy", "Dummy", Side::opposition, {9, 0}}
+        }},
+    1);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Paladin's turn");
+    const auto farthest = [&]
+    {
+        int best = 0;
+        for (const auto cell : c->movement_reach(1))
+            best = std::max(best, cell.x);
+        return best;
+    };
+    check(farthest() == 3, "Difficult Terrain halves the Paladin's 30 feet");
+    check(submit(*c, "freedom_of_movement", 1) && has_condition(*c, 1, "Freedom of Movement"),
+          "Freedom of Movement on the Paladin");
+    check(farthest() == 6, "Difficult Terrain costs nothing extra");
+}
+
+// Guardian of Faith: an enemy that starts its turn within 10 feet saves.
+void guardian_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = alone_with(*rules, paladin(13).sheet(), "dummy", 1);
+    check(submit(*c, "guardian_of_faith") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast") &&
+          logged(*c, "A Guardian of Faith appears."), "The guardian appears beside the foe");
+    check(c->snapshot().guardians == std::vector<Cell>{Cell{3, 1}}, "The snapshot shows it");
+    check(submit(*c, "end") && logged(*c, "Foe Dexterity save") &&
+          logged(*c, "Radiant damage from the Guardian of Faith."),
+          "The foe's turn starts within 10 feet: a Dexterity save and Radiant damage");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the guardian");
+}
+
+// Banishment: off the field while the Paladin concentrates; a Fey never comes
+// back after a full minute.
+void banishment_checks()
+{
+    const auto rules = dummy_rules();
+    const auto sheet = preparing(paladin(13), {"banishment"});
+    std::unique_ptr<CombatSession> c;
+    for (std::uint64_t seed = 1; seed < 40 && !(c && unit(*c, 98).banished); ++seed)
+    {
+        c = alone_with(*rules, sheet, "dummy", seed);
+        check(submit(*c, "banishment", 98), "The Paladin casts Banishment");
+    }
+    check(unit(*c, 98).banished && has_condition(*c, 98, "Banished") &&
+          logged(*c, "Foe is banished."), "A failed Charisma save banishes the foe");
+    const auto commands = c->legal_commands();
+    check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
+    {
+        return command.target == 98;
+    }), "Nothing can be aimed at the banished foe");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the banished foe");
+    check(submit(*c, "end") && c->snapshot().actor == 1, "The banished foe's turn passes");
+    check(submit(*c, "shield_of_faith", 1) && logged(*c, "Foe returns from its banishment.") &&
+          !unit(*c, 98).banished, "A new Concentration spell ends Banishment: the foe returns");
+
+    std::unique_ptr<CombatSession> fey;
+    for (std::uint64_t seed = 1; seed < 40 && !(fey && unit(*fey, 98).banished); ++seed)
+    {
+        fey = alone_with(*rules, sheet, "fey-dummy", seed);
+        check(submit(*fey, "banishment", 98), "The Paladin banishes the Fey");
+    }
+    for (unsigned rounds = 0; rounds < 12 && !unit(*fey, 98).dead; ++rounds)
+        check(submit(*fey, "end"), "A round passes");
+    check(logged(*fey, "Foe does not return from its banishment.") && unit(*fey, 98).dead,
+          "After a full minute the Fey is defeated");
+}
+
+// Restoring Touch: Lay On Hands ends Blinded for 5 points.
+void restoring_touch_checks()
+{
+    const auto rules = module();
+    const auto profile = rules->character_profile(paladin(14).sheet(), {}).data;
+    for (std::uint64_t seed = 1; seed < 300; ++seed)
+    {
+        auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
+            {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}
+            }},
+        seed);
+        for (unsigned turns = 0; turns < 8 && !(c->snapshot().actor == 1 &&
+                has_condition(*c, 1, "Blinded")); ++turns)
+            if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+                check(submit(*c, "decline") || submit(*c, "end"), "The Paladin waits");
+            else
+                check(c->submit(choose_demo_command(*c)), "The adept acts");
+        if (c->snapshot().actor != 1 || !has_condition(*c, 1, "Blinded"))
+            continue;
+        check(submit(*c, "lay_on_hands_restore", 1) && logged(*c, "Paladin is no longer Blinded.") &&
+              !has_condition(*c, 1, "Blinded"), "Restoring Touch ends Blinded");
+        return;
+    }
+    throw std::runtime_error("No seed's Blindness lands on the Paladin");
+}
+
+// Smite of Protection: Divine Smite gives the aura +2 AC until the next turn.
+void smite_of_protection_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = duel(*rules, paladin(15), 1);
+    const int before = unit(*c, 1).armor_class;
+    check(submit(*c, "melee", 98) && submit(*c, "divine_smite", 98) &&
+          logged(*c, "Paladin's aura shields its allies (Smite of Protection).") &&
+          unit(*c, 1).armor_class == before + 2, "Divine Smite raises the aura's AC by 2");
+    next_turn(*c);
+    check(unit(*c, 1).armor_class == before, "It lasts until the Paladin's next turn");
+}
 } // namespace
 
 int main()
@@ -451,6 +663,13 @@ int main()
         beacon_checks();
         dispel_checks();
         radiant_checks();
+        death_ward_checks();
+        aura_of_life_checks();
+        freedom_checks();
+        guardian_checks();
+        banishment_checks();
+        restoring_touch_checks();
+        smite_of_protection_checks();
     }
     catch (const std::exception &e)
     {

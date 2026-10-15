@@ -554,6 +554,7 @@ struct CombatantView
     bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
     bool fled{}; // Ran off the field; it rejoins the party when the fight ends.
     bool hidden{}; // Hidden by the Hide action until an enemy finds it.
+    bool banished{}; // Banishment: off the field until the spell ends.
     // A party member fast enough to run off the field (no conscious enemy is
     // faster) that has not failed a flight this fight.
     bool can_flee{};
@@ -667,6 +668,8 @@ struct Snapshot
     std::vector<Cell> flaming_spheres;
     // Squares inside a Moonbeam.
     std::vector<Cell> moonbeams;
+    // Squares a Guardian of Faith holds.
+    std::vector<Cell> guardians;
     // Pre-turn decisions; legal commands carry eligible actors and allies.
     std::vector<EntityId> initiative_choices;
     std::vector<HeldItemView> held_items;

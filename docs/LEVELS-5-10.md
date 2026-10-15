@@ -17,7 +17,8 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Fighter, Barbarian, Monk and Rogue to level 15: done.
 - Spell slots of levels 1–9 and casting from higher slots: done
   ([Spell slots](SPELL-SLOTS.md)).
-- Paladin to level 12: done ([Paladin](PALADIN.md#levels-512)).
+- Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)). Remove Curse,
+  Revivify and Magic Circle, its other level-3 spells, wait on questions.
 - [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15) raises the cap
   to 15 for every class; the facts for 11–15 are in the
   [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md). Fighter, Barbarian,

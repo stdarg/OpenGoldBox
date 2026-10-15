@@ -10,7 +10,7 @@ Part of [#176](https://github.com/stdarg/OpenGold/issues/176) (levels 5–15).
   whose slots are all of one level (level 2 from Warlock 3, 3 from 5, 4 from 7,
   5 from 9; three slots from 11). Only the classes whose cap allows it reach
   the higher rows.
-- The vital state (`SRD13`) and the combat checkpoint (`OGCOMBAT 52`) store
+- The vital state (`SRD13`) and the combat checkpoint (`OGCOMBAT 53`) store
   all nine counts. The rest screen lists a pool for each level the character
   has ("Level-three spell slots").
 - One slot a turn, as before, whatever its level.

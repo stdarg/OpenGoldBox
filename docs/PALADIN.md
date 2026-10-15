@@ -22,14 +22,16 @@ SRD 5.2.1 pp. 52–56. This page grows with each Paladin increment.
 | 10 | Aura of Courage | Delivered (rules 0.6.205) |
 | 11 | Radiant Strikes, a third Channel Divinity | Delivered (rules 0.6.206) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.206) |
+| 13 | Level-4 spells | Delivered (rules 0.6.207): Aura of Life, Banishment, Death Ward; Freedom of Movement and Guardian of Faith from the oath |
+| 14 | Restoring Touch | Delivered (rules 0.6.207) |
+| 15 | Smite of Protection | Delivered (rules 0.6.207), as +2 AC and +2 to Dexterity saves ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)) |
 
-## Levels 5–12
+## Levels 5–15
 
-The Paladin advances to level 12
+The Paladin advances to level 15
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)); in the
-campaign the Training Hall trains it to level 10. Levels 13–15 follow with
-the level-4 spells.
+campaign the Training Hall trains it to level 10.
 
 - **Extra Attack** (5): two attacks with each Attack action.
 - **Spellcasting:** four level-1 slots from level 5; two level-2 slots at 5
@@ -74,7 +76,9 @@ the level-4 spells.
   asked. A Concentration spell ends whole, on every creature it touched. A
   higher spell needs a check: d20 + the spellcasting modifier against 10 + its
   level, shown in the combat log. Remove Curse, Revivify and Magic Circle,
-  the other level-3 Paladin spells, follow.
+  the other level-3 Paladin spells, are not built yet: each needs a decision
+  (curses to remove, paying Revivify's offering during a fight, Magic Circle's
+  creature types).
 - **Abjure Foes** (9): a Magic action and a Channel Divinity use. The A cycle
   offers it on each enemy the Paladin sees within 60 feet; creatures are
   chosen one click at a time, up to the Charisma modifier (at least 1), as for
@@ -90,6 +94,45 @@ the level-4 spells.
   deals an extra 1d8 Radiant damage, doubled on a critical hit. Channel
   Divinity has three uses, and the Paladin a third level-3 slot.
 - **Ability Score Improvement** (12): a feat or ability points.
+- **Level-4 spells** (13): one level-4 slot, two from 15; eleven prepared
+  spells, twelve at 15. The Oath of Devotion keeps Freedom of Movement and
+  Guardian of Faith prepared. Locate Creature is cut (DM-3).
+- **Death Ward** (8 hours, touch): the first drop to 0 Hit Points, even one
+  that would kill outright, leaves 1 Hit Point and ends the spell. It lasts
+  into later fights, as Aid does
+  ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)), and can be
+  cast in camp from the Cast / Use list.
+- **Aura of Life** (Concentration, up to 10 minutes): allies within 30 feet of
+  the Paladin, in a clear line, resist Necrotic damage, and one at 0 Hit Points
+  regains 1 as its turn starts ("stirs in the Aura of Life"). Nothing in the
+  game lowers a Hit Point maximum, so that part has nothing to stop yet.
+- **Freedom of Movement** (1 hour, touch): Difficult Terrain, an unconscious
+  enemy's square included, costs nothing extra; Ray of Frost cannot slow the
+  creature; and Hold Person, Web, Entangle and Ensnaring Strike, every
+  Paralyzed or Restrained effect in the game, have no hold on it.
+- **Guardian of Faith** (8 hours, 30 feet): aimed at an unoccupied square like
+  Misty Step. The guardian holds that one square, as every creature in the
+  game does whatever its size, and enemies cannot pass it. An enemy that comes
+  within 10 feet of it, or starts its turn there, makes a Dexterity save: 20
+  Radiant damage, 10 on a success, once a turn. It vanishes once it has dealt
+  60, and with the fight. The battlefield shows it as a pale gold circle.
+- **Banishment** (Concentration, up to 1 minute, 30 feet): a Charisma save or
+  the creature leaves the field. It disappears from the battlefield, its turns
+  pass, and nothing can target it or catch it in an area. When the
+  Concentration ends early it returns to its square, or the nearest open one.
+  After a full minute an Aberration, a Celestial, an Elemental, a Fey or a
+  Fiend never returns and counts as defeated
+  ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)); any other
+  creature returns. A level-5 slot (Paladin 17) would add a creature.
+- **Restoring Touch** (14): the Bonus Action list's "Lay On Hands: Restoring
+  Touch (5 per condition)" ends every listed condition on an adjacent ally,
+  or the Paladin, for 5 points each, most disabling first (Paralyzed, Stunned,
+  Blinded, Frightened, Charmed) while the pool lasts. Deafened is not modeled
+  (DEAF-1).
+- **Smite of Protection** (15): casting Divine Smite gives the Paladin and its
+  allies in the Aura of Protection +2 AC and +2 to Dexterity saves, in place
+  of Half Cover, until the start of the Paladin's next turn
+  ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 Verification: `opengold_paladin_levels_tests` (the cap at 10 in the campaign,
 features by level, prepared counts, Aid always prepared, the level-2 spells
@@ -97,7 +140,11 @@ preparable, slots at 5 and 7, a campaign round trip, Extra Attack, both
 level-2 smites and their slots, Shining Smite's effect and checkpoint, the
 aura's save bonus at 5, 10 and 20 feet, its death-save bonus, casting from a
 level-3 slot, Abjure Foes' choice, save, checkpoint and end on damage, Beacon
-of Hope's maximized healing, and Dispel Magic ending Shining Smite).
+of Hope's maximized healing, Dispel Magic ending Shining Smite, Radiant
+Strikes, Death Ward against a brute's hit, Aura of Life raising a fallen ally,
+Freedom of Movement on Difficult Terrain, the guardian's save and checkpoint,
+Banishment's absence, return and a Fey's defeat after a minute, Restoring
+Touch ending Blinded, and Smite of Protection's AC until the next turn).
 
 ## Channel Divinity and the Oath of Devotion
 

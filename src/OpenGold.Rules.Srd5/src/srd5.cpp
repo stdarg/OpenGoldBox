@@ -192,7 +192,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::dragons_breath || kind == detail::EffectKind::extended ||
            kind == detail::EffectKind::hex || kind == detail::EffectKind::outlined ||
            kind == detail::EffectKind::flame_blade || kind == detail::EffectKind::heated ||
-           kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful;
+           kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful ||
+           kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -259,6 +260,11 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
         return 2u;
     case Kind::hopeful:
         return 3u;
+    case Kind::death_ward:
+    case Kind::aura_of_life:
+    case Kind::free_moving:
+    case Kind::banished:
+        return 4u;
     default:
         return std::nullopt;
     }
@@ -337,7 +343,7 @@ constexpr std::string_view profile_magic = "PC42";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 52;
+constexpr unsigned checkpoint_format = 53;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -381,6 +387,12 @@ constexpr std::array class_spell_access
     // Paladin level-3 spells, and the Oath of Devotion's Beacon of Hope.
     SpellAccessRow{CharacterClass::paladin, "dispel_magic", 9},
     SpellAccessRow{CharacterClass::paladin, "beacon_of_hope", 9},
+    // Paladin level-4 spells, and the Oath of Devotion's Freedom of Movement.
+    SpellAccessRow{CharacterClass::paladin, "death_ward", 13},
+    SpellAccessRow{CharacterClass::paladin, "aura_of_life", 13},
+    SpellAccessRow{CharacterClass::paladin, "freedom_of_movement", 13},
+    SpellAccessRow{CharacterClass::paladin, "banishment", 13},
+    SpellAccessRow{CharacterClass::paladin, "guardian_of_faith", 13},
     SpellAccessRow{CharacterClass::ranger, "cure_wounds", 1},
     SpellAccessRow{CharacterClass::ranger, "hunters_mark", 1},
     SpellAccessRow{CharacterClass::ranger, "longstrider", 1},
@@ -821,6 +833,8 @@ struct Definition
     int abjure_foes{};
     bool aura_of_courage{};
     bool radiant_strikes{}; // Paladin level 11
+    // Paladin level 14: Restoring Touch; level 15: Smite of Protection.
+    bool restoring_touch{}, smite_of_protection{};
     // Reliable Talent (Rogue 7): the proficient skills whose d20 counts as at least 10.
     std::set<std::string, std::less<>> reliable;
     bool dwarf{}, cunning{}, tactical_mind{}, champion{}, great_weapon_fighting{},
@@ -1353,6 +1367,12 @@ bool conscious(const Actor &a)
     return !a.life.dead && !unconscious(a);
 }
 
+// Banished to a demiplane: off the field until the spell ends.
+bool absent(const Actor &a)
+{
+    return detail::has_effect(a.effects, detail::EffectKind::banished);
+}
+
 struct ArcaneAllocation
 {
     std::string_view id, label;
@@ -1385,6 +1405,29 @@ bool has_condition(const Actor &a, std::string_view condition)
     return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
     {
         return gives_condition(e.kind, condition);
+    });
+}
+
+// The conditions Restoring Touch ends, most disabling first, and the effects
+// that give each. Deafened is not modeled (DEAF-1).
+constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 2>>, 5>
+restorable_conditions{{
+    {"Paralyzed", {detail::EffectKind::hold_person, detail::EffectKind::hold_person}},
+    {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned}},
+    {"Blinded", {detail::EffectKind::blindness, detail::EffectKind::dazzled}},
+    {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured}},
+    {"Charmed", {detail::EffectKind::charmed, detail::EffectKind::charmed}}}};
+
+bool touch_restorable(const Actor &a)
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+    {
+        return std::any_of(restorable_conditions.begin(), restorable_conditions.end(),
+                           [&](const auto & condition)
+        {
+            return std::find(condition.second.begin(), condition.second.end(), e.kind) !=
+                   condition.second.end();
+        });
     });
 }
 
@@ -1658,6 +1701,8 @@ character_definition(std::string_view bytes,
                     ? std::max(1, ability_modifier(scores[Ability::charisma])) : 0;
     d.aura_of_courage = klass == CharacterClass::paladin && level >= 10;
     d.radiant_strikes = klass == CharacterClass::paladin && level >= 11;
+    d.restoring_touch = klass == CharacterClass::paladin && level >= 14;
+    d.smite_of_protection = klass == CharacterClass::paladin && level >= 15;
     d.wholeness = klass == CharacterClass::monk && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::wisdom])) : 0;
     d.supreme_sneak = rogue && level >= 9;
@@ -2445,6 +2490,7 @@ class Session final : public CombatSession
 
     Snapshot snapshot() const override;
     std::vector<Command> legal_commands() const override;
+    [[nodiscard]] std::vector<Command> offered_commands() const;
     std::vector<Cell> movement_reach(EntityId actor) const override;
     bool submit(const Command &command) override;
     std::string save() const override;
@@ -2534,7 +2580,8 @@ class Session final : public CombatSession
         gust,           // Gust of Wind's line
         darkness,       // magical Darkness, Heavily Obscured except to Devil's Sight
         moonbeam,       // Moonbeam's beam; cells.front() is its centre
-        spikes          // Spike Growth's Difficult Terrain
+        spikes,         // Spike Growth's Difficult Terrain
+        guardian        // one square: Guardian of Faith's guardian
     };
     struct Zone
     {
@@ -2545,6 +2592,7 @@ class Session final : public CombatSession
         // Grease outlasts a caster who runs off the field, so a zone keeps the
         // DC its creatures save against rather than looking the caster up.
         int save_dc{};
+        int dealt{}; // Guardian of Faith's damage so far; it vanishes at 60
     };
     std::vector<Zone> zones_;
     std::vector<ChampionMove> champion_offers_;
@@ -3137,6 +3185,13 @@ class Session final : public CombatSession
     void abjure(Actor &paladin, std::span<const EntityId> targets);
     void dispel(Actor &caster, Cell cell, unsigned slot_level);
     [[nodiscard]] int healing_roll(const Actor &target, detail::DamageDice rolled);
+    [[nodiscard]] bool smite_protected(const Actor &a) const;
+    [[nodiscard]] bool in_aura_of_life(const Actor &a) const;
+    void restore_touch(Actor &paladin, Actor &target);
+    [[nodiscard]] bool guarded_square(Cell cell) const;
+    void guardian_tests(Actor &creature);
+    [[nodiscard]] Cell nearest_open(const Actor &a) const;
+    void return_from_banishment(Actor &a);
     // Frightened: a living creature that frightens `a` is in its line of sight.
     [[nodiscard]] std::vector<const Actor *> fears_in_sight(const Actor &a) const;
     // Intimidating Presence (Berserker 14): each enemy within 30 feet makes a
@@ -4015,6 +4070,7 @@ bool Session::obscured(const Actor &viewer, Cell cell) const
 
 detail::MovementGrid Session::movement_grid(const Actor &mover) const
 {
+    const bool free = detail::has_effect(mover.effects, detail::EffectKind::free_moving);
     std::vector<detail::Occupant> occupants;
     for (const auto &other : actors_)
     {
@@ -4024,15 +4080,28 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         // last one could otherwise leave a fight no one can end). Halfling
         // Nimbleness passes through a larger enemy as through an ally: never
         // stopping there.
-        if (other.life.dead || downed_riser(other) || other.source.id == mover.source.id)
+        if (other.life.dead || downed_riser(other) || other.source.id == mover.source.id ||
+                absent(other))
             continue;
         const bool nimble_pass = def(mover).nimble && def(other).size > def(mover).size;
+        // Freedom of Movement: an unconscious enemy's square, Difficult
+        // Terrain, costs nothing extra.
+        const bool free_pass = free && unconscious(other);
         occupants.push_back({other.source.cell,
-                             other.source.side != mover.source.side && !nimble_pass,
+                             other.source.side != mover.source.side && !nimble_pass && !free_pass,
                              unconscious(other), other.life.hp == 0});
     }
+    // A Guardian of Faith holds its square: enemies cannot pass it.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::guardian)
+            occupants.push_back({zone.cells.front(),
+                                 actor(zone.caster).source.side != mover.source.side, false, false});
     // Frightened: no square closer to a creature it fears and can see.
     auto board = zoned_board();
+    if (free)
+        for (auto &tile : board.terrain)
+            if (tile == Terrain::difficult)
+                tile = Terrain::open;
     for (const auto *fear : fears_in_sight(mover))
         for (int y = 0; y < board.height; ++y)
             for (int x = 0; x < board.width; ++x)
@@ -4080,6 +4149,8 @@ Snapshot Session::snapshot() const
             s.flaming_spheres.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::moonbeam)
             s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::guardian)
+            s.guardians.push_back(zone.cells.front());
     s.log_entries = log_;
     if (!initiative_choices_.empty())
         s.actor = initiative_choices_.front();
@@ -4187,6 +4258,7 @@ Snapshot Session::snapshot() const
         view.burning = a.burning;
         view.oiled = a.oiled_until_round >= static_cast<int>(round_);
         view.hidden = hidden(a);
+        view.banished = absent(a);
         view.panicked = a.panicked;
         view.spells = def(a).spells;
         view.can_flee = a.source.side == Side::party && conscious(a) && !a.must_stay &&
@@ -4309,6 +4381,8 @@ Snapshot Session::snapshot() const
         {
             view.bonus_actions.push_back("lay_on_hands");
             view.bonus_actions.push_back("lay_on_hands_cure");
+            if (def(a).restoring_touch)
+                view.bonus_actions.push_back("lay_on_hands_restore");
         }
         if (def(a).rages)
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
@@ -4500,6 +4574,11 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::frightened, "Frightened"},
                     std::pair{detail::EffectKind::abjured, "Frightened (Abjure Foes)"},
                     std::pair{detail::EffectKind::hopeful, "Beacon of Hope"},
+                    std::pair{detail::EffectKind::smite_protected, "Smite of Protection"},
+                    std::pair{detail::EffectKind::death_ward, "Death Ward"},
+                    std::pair{detail::EffectKind::aura_of_life, "Aura of Life"},
+                    std::pair{detail::EffectKind::free_moving, "Freedom of Movement"},
+                    std::pair{detail::EffectKind::banished, "Banished"},
                     std::pair{detail::EffectKind::staggering, "Staggered (Staggering Blow)"},
                     std::pair{detail::EffectKind::sundered, "Sundered (Sundering Blow)"},
                     std::pair{detail::EffectKind::innate_sorcery, "Innate Sorcery"},
@@ -4931,6 +5010,32 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                     detail::EffectKind::bane, 0);
         log(target.source.name + " is weakened by Bane.",
         {"{name} is weakened by Bane.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::banishment:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::banished, 0);
+        log(target.source.name + " is banished.", {"{name} is banished.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
+        return;
+    case detail::Rider::death_ward:
+    case detail::Rider::freedom_of_movement:
+    {
+        const auto kind = spell.rider == detail::Rider::death_ward ? detail::EffectKind::death_ward
+                          : detail::EffectKind::free_moving;
+        std::erase_if(target.effects.active, [&](const auto & e)
+        {
+            return e.kind == kind;
+        });
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name, kind, 0);
+        log(target.source.name + " gains " + std::string(spell.label) + ".",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
+        return;
+    }
+    case detail::Rider::aura_of_life:
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::aura_of_life, 0);
+        log(a.source.name + " radiates an Aura of Life.",
+        {"{name} radiates an Aura of Life.", {{"name", a.source.name}}});
         return;
     case detail::Rider::beacon_of_hope:
         // The game takes every ally within 30 feet, the caster included.
@@ -5540,6 +5645,17 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
 
 std::vector<Command> Session::legal_commands() const
 {
+    // A banished creature is off the field: nothing can be aimed at it.
+    auto commands = offered_commands();
+    std::erase_if(commands, [&](const auto & command)
+    {
+        return command.target && command.target != command.actor && absent(actor(command.target));
+    });
+    return commands;
+}
+
+std::vector<Command> Session::offered_commands() const
+{
     std::vector<Command> commands;
     if (outcome_ != Outcome::ongoing)
         return commands;
@@ -5586,7 +5702,8 @@ std::vector<Command> Session::legal_commands() const
         const auto &spell = *detail::find_spell(area_->verb);
         // Misty Step and Flaming Sphere need an unoccupied square.
         const bool open_square = spell.rider == detail::Rider::misty_step ||
-                                 spell.rider == detail::Rider::flaming_sphere;
+                                 spell.rider == detail::Rider::flaming_sphere ||
+                                 spell.rider == detail::Rider::guardian_of_faith;
         // An area centered on a square needs a clear line to that square; a
         // cone, line or cube spreads from the caster and is only pointed.
         const bool centered = !spell.cone && !spell.line && !spell.cube;
@@ -6108,6 +6225,13 @@ std::vector<Command> Session::legal_commands() const
                     has_condition(other, "poisoned") &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 add(id, "lay_on_hands_cure", "Lay On Hands: cure Poisoned", other.source.id);
+    // Restoring Touch (Paladin 14): 5 points end each of several conditions.
+    if (a.bonus && d.restoring_touch && a.lay_on_hands >= 5)
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && !other.life.dead && touch_restorable(other) &&
+                    distance(a.source.cell, other.source.cell) <= 5)
+                add(id, "lay_on_hands_restore", "Lay On Hands: Restoring Touch (5 per condition)",
+                    other.source.id);
     // Cloud's Jaunt: a Bonus Action teleport, aimed like Misty Step.
     if (a.bonus && d.giant == GiantBoon::cloud && trait_uses_left(a) > 0)
         commands.push_back({revision_, id, 0, "clouds_jaunt", "Cloud's Jaunt", Cell{}, 0, true});
@@ -6533,7 +6657,7 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
 
 void Session::damage(Actor &target, int amount, bool critical)
 {
-    if (!amount || target.life.dead)
+    if (!amount || target.life.dead || absent(target))
         return;
     amount = endured(target, amount);
     if (!amount)
@@ -6556,6 +6680,19 @@ void Session::damage(Actor &target, int amount, bool critical)
         target.life.recovery = {detail::death_turn_ms, 0};
         if (standing)
             target.rises_on_round = static_cast<int>(round_) + dice({3, 6, 0});
+    }
+    // Death Ward: the first drop to 0 Hit Points, even a deadly one, leaves 1.
+    if (standing && target.life.hp == 0 && target.source.side == Side::party &&
+            std::erase_if(target.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::death_ward;
+        }))
+    {
+        target.life.dead = false;
+        target.life.successes = target.life.failures = 0;
+        (void)detail::heal_life(target.life, 1, max_hp(target), true);
+        log(target.source.name + " drops to 1 Hit Point instead (Death Ward).",
+        {"{name} drops to 1 Hit Point instead (Death Ward).", {{"name", target.source.name}}});
     }
     // Relentless Rage: a raging Barbarian dropped to 0 Hit Points but not
     // killed outright makes a Constitution save, DC 10 and 5 more for each
@@ -6762,6 +6899,15 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     if (searing && target.life.hp > 0 && detail::can_apply(target.effects))
         detail::apply_searing_smite(target.effects, effect_source(a), a.source.name,
                                     spell_dc(a));
+    // Smite of Protection (Devotion 15): the aura shields until the
+    // Paladin's next turn.
+    if (!searing && !shining && def(a).smite_of_protection && detail::can_apply(a.effects))
+    {
+        detail::apply_poisoned(a.effects, effect_source(a), a.source.name, next_turn_ms(a),
+                               detail::EffectKind::smite_protected);
+        log(a.source.name + "'s aura shields its allies (Smite of Protection).",
+        {"{name}'s aura shields its allies (Smite of Protection).", {{"name", a.source.name}}});
+    }
     if (shining && target.life.hp > 0 && detail::can_apply(target.effects))
     {
         begin_concentration(a, spell);
@@ -6870,8 +7016,8 @@ bool Session::teleport_open(const Actor &caster, Cell cell) const
            line_of_sight(caster.source.cell, cell) && !obscured(caster, cell) &&
            std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
     {
-        return !other.life.dead && other.source.cell == cell;
-    });
+        return !other.life.dead && !absent(other) && other.source.cell == cell;
+    }) && !guarded_square(cell);
 }
 
 Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &spell) const
@@ -6980,7 +7126,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
     {
-        if (other.life.dead || other.source.id == caster.source.id ||
+        if (other.life.dead || other.source.id == caster.source.id || absent(other) ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(spared.begin(), spared.end(), other.source.id) != spared.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end())
@@ -7016,6 +7162,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
     for (auto &other : actors_)
     {
         if (other.life.dead || other.life.hp == 0 || other.source.id == caster.source.id ||
+                absent(other) ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
                 (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects))
@@ -7600,6 +7747,14 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         dispel(a, aimed.center, slot_level_of(aimed.verb, spell));
         return;
     }
+    if (spell.rider == detail::Rider::guardian_of_faith)
+    {
+        // Eight hours: it lasts the fight, until it has dealt 60 damage.
+        zones_.push_back({a.source.id, ZoneKind::guardian, {aimed.center},
+                          elapsed_ms_ + 28800000, spell_dc(a, spell.id)});
+        log("A Guardian of Faith appears.", {"A Guardian of Faith appears.", {}});
+        return;
+    }
     if (spell.rider == detail::Rider::misty_step)
     {
         // Teleporting provokes no Opportunity Attacks.
@@ -8062,7 +8217,7 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
 bool Session::aura_covers(const Actor &paladin, const Actor &a) const
 {
     return def(paladin).aura_of_protection && paladin.source.side == a.source.side &&
-           conscious(paladin) && !detail::incapacitated(paladin.effects) &&
+           conscious(paladin) && !detail::incapacitated(paladin.effects) && !absent(a) &&
            distance(paladin.source.cell, a.source.cell) <= 10 &&
            line_of_sight(paladin.source.cell, a.source.cell);
 }
@@ -8091,6 +8246,133 @@ bool Session::aura_of_courage(const Actor &a) const
     {
         return def(paladin).aura_of_courage && aura_covers(paladin, a);
     });
+}
+
+bool Session::guarded_square(Cell cell) const
+{
+    return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::guardian && zone.cells.front() == cell;
+    });
+}
+
+void Session::guardian_tests(Actor &creature)
+{
+    // Guardian of Faith: an enemy within 10 feet saves once a turn against 20
+    // Radiant damage, half on a success; the guardian vanishes at 60 dealt.
+    for (std::size_t n = 0; n < zones_.size(); ++n)
+    {
+        auto &guardian = zones_[n];
+        if (guardian.kind != ZoneKind::guardian || creature.life.hp == 0 || creature.life.dead ||
+                absent(creature) ||
+                detail::has_effect(creature.effects, detail::EffectKind::faith_tested) ||
+                distance(guardian.cells.front(), creature.source.cell) > 10)
+            continue;
+        const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+        {
+            return a.source.id == guardian.caster;
+        });
+        if (caster == actors_.end() || caster->source.side == creature.source.side)
+            continue;
+        const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+        if (detail::can_apply(creature.effects))
+            detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
+                                   rest_of_turn, detail::EffectKind::faith_tested);
+        const bool saved = saving_throw_succeeds(creature, detail::Ability::dexterity,
+                                                 guardian.save_dc);
+        const int amount = resolved_damage(creature, detail::DamageType::radiant, saved ? 10 : 20);
+        log(creature.source.name + " takes " + std::to_string(amount) +
+            " Radiant damage from the Guardian of Faith.",
+        {
+            "{name} takes {damage} Radiant damage from the Guardian of Faith.",
+            {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+        });
+        guardian.dealt += amount;
+        const bool spent = guardian.dealt >= 60;
+        if (spent)
+        {
+            zones_.erase(zones_.begin() + static_cast<std::ptrdiff_t>(n));
+            log("The Guardian of Faith vanishes.", {"The Guardian of Faith vanishes.", {}});
+        }
+        damage(creature, amount);
+        return;
+    }
+}
+
+Cell Session::nearest_open(const Actor &a) const
+{
+    // Its own square, or the nearest one no creature or guardian holds.
+    const auto open = [&](Cell cell)
+    {
+        return board_.at(cell) != Terrain::obstacle && !guarded_square(cell) &&
+               std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
+        {
+            return other.source.id != a.source.id && !other.life.dead && !absent(other) &&
+                   other.source.cell == cell;
+        });
+    };
+    std::optional<Cell> best;
+    for (int y = 0; y < board_.height; ++y)
+        for (int x = 0; x < board_.width; ++x)
+            if (const Cell cell{x, y}; open(cell) &&
+                    (!best || distance(a.source.cell, cell) < distance(a.source.cell, *best)))
+                best = cell;
+    return best.value_or(a.source.cell);
+}
+
+void Session::return_from_banishment(Actor &a)
+{
+    a.source.cell = nearest_open(a);
+    log(a.source.name + " returns from its banishment.",
+    {"{name} returns from its banishment.", {{"name", a.source.name}}});
+}
+
+bool Session::smite_protected(const Actor &a) const
+{
+    return std::any_of(actors_.begin(), actors_.end(), [&](const auto & paladin)
+    {
+        return detail::has_effect(paladin.effects, detail::EffectKind::smite_protected) &&
+               aura_covers(paladin, a);
+    });
+}
+
+bool Session::in_aura_of_life(const Actor &a) const
+{
+    // The caster's 30-foot Emanation, which reaches allies in a clear line.
+    return std::any_of(actors_.begin(), actors_.end(), [&](const auto & caster)
+    {
+        return detail::has_effect(caster.effects, detail::EffectKind::aura_of_life) &&
+               caster.source.side == a.source.side &&
+               distance(caster.source.cell, a.source.cell) <= 30 &&
+               line_of_sight(caster.source.cell, a.source.cell);
+    });
+}
+
+void Session::restore_touch(Actor &paladin, Actor &target)
+{
+    // Restoring Touch (Paladin 14): 5 points from the pool end each condition,
+    // as many as the pool pays for.
+    paladin.bonus = false;
+    log(paladin.source.name + " uses Lay On Hands on " + target.source.name + ".",
+    {
+        "{name} uses Lay On Hands on {target}.",
+        {{"name", paladin.source.name}, {"target", target.source.name}}
+    });
+    for (const auto &[condition, kinds] : restorable_conditions)
+    {
+        if (paladin.lay_on_hands < 5 ||
+                !std::erase_if(target.effects.active, [&](const auto & e)
+    {
+        return std::find(kinds.begin(), kinds.end(), e.kind) != kinds.end();
+        }))
+        continue;
+        paladin.lay_on_hands -= 5;
+        log(target.source.name + " is no longer " + std::string(condition) + ".",
+        {
+            "{name} is no longer {condition}.",
+            {{"name", target.source.name}, {"condition", std::string(condition), true}}
+        });
+    }
 }
 
 bool Session::fearless(const Actor &a) const
@@ -8181,14 +8463,15 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
         }
     }
     // The spells whose areas cover the square: Entangle, Fog Cloud and Grease
-    // are level 1, the others level 2.
+    // are level 1, Guardian of Faith level 4, the others level 2.
     for (std::size_t n = zones_.size(); n-- > 0;)
     {
         if (n >= zones_.size() || !in_zone(zones_[n], cell))
             continue;
         const auto zone = zones_[n];
         const unsigned level = zone.kind == ZoneKind::plants || zone.kind == ZoneKind::fog ||
-                               zone.kind == ZoneKind::grease ? 1 : 2;
+                               zone.kind == ZoneKind::grease ? 1
+                               : zone.kind == ZoneKind::guardian ? 4 : 2;
         if (!ends(level))
             continue;
         log("Dispel Magic ends a spell's area.", {"Dispel Magic ends a spell's area.", {}});
@@ -8216,7 +8499,8 @@ bool Session::fought_advantage(const detail::SpellDef &spell)
 
 int Session::armor_class(const Actor &target) const
 {
-    return armor_class_of(target);
+    // Smite of Protection: +2, as Half Cover gives (LEVELS-2).
+    return armor_class_of(target) + (smite_protected(target) ? 2 : 0);
 }
 
 std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) const
@@ -8234,6 +8518,9 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (silenced(target.source.cell))
         result.push_back({detail::AffinityKind::immunity, detail::DamageType::thunder,
                           "spell:silence"});
+    if (in_aura_of_life(target))
+        result.push_back({detail::AffinityKind::resistance, detail::DamageType::necrotic,
+                          "spell:aura_of_life"});
     return result;
 }
 
@@ -8478,6 +8765,13 @@ void Session::drop_concentration_effects(const Actor &caster)
     {
         return zone.caster == caster.source.id && !zone.ends_ms;
     });
+    // Banishment ends early: its creatures come back.
+    std::vector<EntityId> banished;
+    for (const auto &other : actors_)
+        for (const auto &e : other.effects.active)
+            if (e.kind == detail::EffectKind::banished && e.source_actor == caster.source.id &&
+                    e.source_scope == scope_)
+                banished.push_back(other.source.id);
     for (auto &other : actors_)
         std::erase_if(other.effects.active, [&](const auto & e)
     {
@@ -8486,6 +8780,8 @@ void Session::drop_concentration_effects(const Actor &caster)
     });
     log(caster.source.name + " loses Concentration.",
     {"{name} loses Concentration.", {{"name", caster.source.name}}});
+    for (const auto id : banished)
+        return_from_banishment(actor(id));
 }
 
 void Session::burn_searing_smites(Actor &a)
@@ -9897,7 +10193,7 @@ bool Session::begin_turn()
     {
         return effect.kind == detail::EffectKind::shocking_grasp;
     });
-    if (a.life.dead)
+    if (a.life.dead || absent(a))
         return false;
     // Warding Bond ends once its caster is down or more than 60 feet away.
     for (auto &other : actors_)
@@ -9911,6 +10207,7 @@ bool Session::begin_turn()
     }
     burn_searing_smites(a);
     squeeze_ensnared(a);
+    guardian_tests(a);
     // Wild Shape ends when it lapses or its Druid is Incapacitated.
     if (a.form && detail::incapacitated(a.effects))
         end_wild_shape(a);
@@ -9959,6 +10256,14 @@ bool Session::begin_turn()
         regenerate(a);
         if (a.life.hp == 0)
             return false;
+    }
+    // Aura of Life: an ally at 0 Hit Points regains 1 as its turn starts.
+    if (a.life.hp == 0 && !a.life.dead && in_aura_of_life(a) &&
+            !detail::healing_blocked(a.effects))
+    {
+        log(a.source.name + " stirs in the Aura of Life.",
+        {"{name} stirs in the Aura of Life.", {{"name", a.source.name}}});
+        heal(a, 1);
     }
     if (a.life.hp == 0)
     {
@@ -10163,10 +10468,11 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
-    // Warding Bond: +1 to saving throws.
+    // Warding Bond: +1 to saving throws; Smite of Protection +2 to Dexterity saves.
     const int bless = blessing_die(target) +
                       (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
-                      aura_of_protection(target);
+                      aura_of_protection(target) +
+                      (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0);
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
@@ -10257,6 +10563,8 @@ void Session::advance_turn_time()
     std::vector<EntityId> unconscious;
     // Acid Arrow burns once its effect runs out, after the effects are walked.
     std::vector<EntityId> burned;
+    // Banishment that has lasted its full minute.
+    std::vector<EntityId> unbanished;
     for (auto &a : actors_)
     {
         auto saves = def(a).saves;
@@ -10280,6 +10588,8 @@ void Session::advance_turn_time()
             log_save(target, *event.save);
         if (event.inspiration)
             log_inspiration(target, event.inspiration, event.save->success);
+        if (event.removed && event.effect.kind == detail::EffectKind::banished)
+            unbanished.push_back(event.target);
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -10315,6 +10625,25 @@ void Session::advance_turn_time()
         if (event.removed && event.effect.kind == detail::EffectKind::acid_arrow)
             burned.push_back(event.target);
     });
+    // After a full minute an Aberration, a Celestial, an Elemental, a Fey or a
+    // Fiend never comes back: it counts as defeated (LEVELS-1); any other
+    // creature returns.
+    for (const auto id : unbanished)
+    {
+        auto &target = actor(id);
+        const auto &type = def(target).creature_type;
+        if (type == "aberration" || type == "celestial" || type == "elemental" || type == "fey" ||
+                type == "fiend")
+        {
+            target.life.hp = 0;
+            target.life.dead = true;
+            target.life.recovery = {};
+            log(target.source.name + " does not return from its banishment.",
+            {"{name} does not return from its banishment.", {{"name", target.source.name}}});
+        }
+        else
+            return_from_banishment(target);
+    }
     for (const auto id : burned)
     {
         auto &target = actor(id);
@@ -10475,6 +10804,7 @@ void Session::progress_movement()
                     !in_zone(zone, departed))
                 moonbeam_burns(zone, a);
         }
+        guardian_tests(a);
         if (caught)
             break;
     }
@@ -11765,6 +12095,8 @@ void Session::dispatch(const Command &command)
             });
         }
     }
+    else if (command.verb == "lay_on_hands_restore")
+        restore_touch(a, actor(command.target));
     else if (command.verb == "lay_on_hands_cure")
     {
         auto &target = actor(command.target);
@@ -12099,7 +12431,7 @@ std::string Session::save() const
     {
         out << ' ' << zone.caster << ' ' << static_cast<unsigned>(zone.kind) << ' '
             << zone.ends_ms << ' '
-            << zone.save_dc << ' ' << zone.cells.size();
+            << zone.save_dc << ' ' << zone.dealt << ' ' << zone.cells.size();
         for (const auto cell : zone.cells)
             out << ' ' << cell.x << ' ' << cell.y;
     }
@@ -13046,12 +13378,16 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         Zone zone;
         std::size_t cells{};
         unsigned kind{};
-        input >> zone.caster >> kind >> zone.ends_ms >> zone.save_dc >> cells;
-        // Only Grease keeps time; every other zone ends with Concentration.
-        // Grease outlasts a caster who has since run off the field.
+        input >> zone.caster >> kind >> zone.ends_ms >> zone.save_dc >> zone.dealt >> cells;
+        // Only Grease and Guardian of Faith keep time; every other zone ends
+        // with Concentration. Grease outlasts a caster who has since run off
+        // the field.
+        const bool timed = kind == static_cast<unsigned>(ZoneKind::grease) ||
+                           kind == static_cast<unsigned>(ZoneKind::guardian);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::spikes) ||
-                (kind == static_cast<unsigned>(ZoneKind::grease)) != (zone.ends_ms != 0) ||
+                kind > static_cast<unsigned>(ZoneKind::guardian) || timed != (zone.ends_ms != 0) ||
+                zone.dealt < 0 || zone.dealt >= 60 ||
+                (zone.dealt && kind != static_cast<unsigned>(ZoneKind::guardian)) ||
                 !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -13626,6 +13962,15 @@ class Module final : public RulesModule
                 "Radiant Strikes: your hits with a Melee weapon or an Unarmed Strike deal an extra 1d8 Radiant damage.\nA third Channel Divinity use and a third level 3 spell slot.";
         if (klass == CharacterClass::paladin && result.level == 12)
             result.description = "A feat or ability points.";
+        if (klass == CharacterClass::paladin && result.level == 13)
+            result.description =
+                "A level 4 spell slot and Paladin spells: Aura of Life, Banishment and Death Ward. Oath of Devotion: Freedom of Movement and Guardian of Faith are always prepared.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::paladin && result.level == 14)
+            result.description =
+                "Restoring Touch: Lay On Hands can also end Blinded, Charmed, Frightened, Paralyzed or Stunned, 5 points from the pool each.";
+        if (klass == CharacterClass::paladin && result.level == 15)
+            result.description =
+                "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot.";
         if (klass == CharacterClass::druid)
             result.description = "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
         if (klass == CharacterClass::bard)
@@ -14651,10 +14996,11 @@ class Module final : public RulesModule
             return actions;
         for (const auto &spell : detail::spell_table)
         {
-            // Aid's eight hours outlast a fight, so it is cast in camp too.
+            // Aid's and Death Ward's eight hours outlast a fight, so they are
+            // cast in camp too.
             if ((spell.pattern != detail::SpellPattern::heal &&
                     spell.pattern != detail::SpellPattern::camp &&
-                    spell.rider != detail::Rider::aid) ||
+                    spell.rider != detail::Rider::aid && spell.rider != detail::Rider::death_ward) ||
                     !detail::knows_spell(d.spells, spell.id))
                 continue;
             const bool party = spell.instances > 1;
@@ -14696,6 +15042,21 @@ class Module final : public RulesModule
             {
                 return gives_condition(e.kind, "poisoned");
             });
+            user_state = vitals(caster);
+            if (!self)
+                target_state = vitals(healed);
+            return;
+        }
+        if (const auto *ward = detail::find_spell(action);
+                ward && ward->rider == detail::Rider::death_ward)
+        {
+            if (patient.life.dead || detail::has_effect(patient.effects, detail::EffectKind::death_ward) ||
+                    !detail::can_apply(patient.effects))
+                throw std::runtime_error("Death Ward needs a living member without it");
+            pay_for_spell(caster, action, *ward);
+            // Camp effects carry scope 1: there is no encounter to source them.
+            detail::apply_spell_benefit(patient.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        user.name, detail::EffectKind::death_ward, 0);
             user_state = vitals(caster);
             if (!self)
                 target_state = vitals(healed);
@@ -15631,7 +15992,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.206", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.207", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

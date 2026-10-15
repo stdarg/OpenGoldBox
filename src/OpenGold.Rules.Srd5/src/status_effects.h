@@ -211,10 +211,27 @@ enum class EffectKind : unsigned
     // Abjure Foes (Paladin 9): Frightened of the Paladin for 1 minute or until
     // it takes damage; on its turns only one of moving, an action or a Bonus Action.
     abjured = 85,
-    // The last kind: a new one goes after it and updates saved_effect_kind().
     // Beacon of Hope: Advantage on Wisdom saves and death saves, and healing
     // restores its maximum.
-    hopeful = 86
+    hopeful = 86,
+    // Smite of Protection (Devotion 15), on the Paladin until the start of its
+    // next turn: creatures in its Aura of Protection have +2 AC and +2 to
+    // Dexterity saves.
+    smite_protected = 87,
+    // Death Ward: the first drop to 0 Hit Points leaves 1 instead.
+    death_ward = 88,
+    // Aura of Life, on its caster: allies within 30 feet resist Necrotic damage
+    // and one at 0 Hit Points regains 1 as its turn starts.
+    aura_of_life = 89,
+    // Freedom of Movement: Difficult Terrain costs nothing extra, and magic
+    // neither slows the creature nor leaves it Paralyzed or Restrained.
+    free_moving = 90,
+    // Banishment: gone to a demiplane, Incapacitated, while its caster
+    // concentrates; after a full minute an extraplanar creature never returns.
+    banished = 91,
+    // The last kind: a new one goes after it and updates saved_effect_kind().
+    // Guardian of Faith: the creature has saved against a guardian this turn.
+    faith_tested = 92
 };
 
 // The longest a spell benefit lasts, in milliseconds.

@@ -1034,7 +1034,8 @@ void CombatView::use_cunning_action()
         required_node<Button>(*this, "UseCunningAction").release_focus();
         select_mode(verb);
     }
-    else if (verb == "lay_on_hands" || verb == "lay_on_hands_cure" || verb == "martial_arts" ||
+    else if (verb == "lay_on_hands" || verb == "lay_on_hands_cure" ||
+             verb == "lay_on_hands_restore" || verb == "martial_arts" ||
              verb.begins_with("flurry_") || verb == "bardic_inspiration")
     {
         // A touched ally is chosen on the battlefield, like a spell target.
@@ -1754,7 +1755,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         return target != s.combatants.end() && target->cell == cell;
     });
     if (!s.free_movement && !s.effect_targeting && !targets_clicked && mode_ != "stabilize" &&
-            mode_ != "lay_on_hands" && mode_ != "lay_on_hands_cure" && mode_ != "chill_touch" &&
+            mode_ != "lay_on_hands" && mode_ != "lay_on_hands_cure" &&
+            mode_ != "lay_on_hands_restore" && mode_ != "chill_touch" &&
             mode_ != "poison_spray" && mode_ != "sacred_flame" &&
             mode_ != "shocking_grasp" && mode_ != "eldritch_blast" && mode_ != "ray_of_frost")
         for (const auto &a : s.combatants)
@@ -2686,6 +2688,8 @@ Dictionary CombatView::battlefield_visuals()
         add_overlay(cell, "spiritual");
     for (const auto cell : s.flaming_spheres)
         add_overlay(cell, "flame");
+    for (const auto cell : s.guardians)
+        add_overlay(cell, "guardian");
     for (const auto cell : s.moonbeams)
         add_overlay(cell, "moonbeam");
     for (const auto cell : s.obscured)
@@ -2717,7 +2721,7 @@ Dictionary CombatView::battlefield_visuals()
     for (const auto index : presentation::combat_sprite_draw_order(s.combatants))
     {
         const auto &actor = s.combatants[index];
-        if (actor.fled || actor.surrendered)
+        if (actor.fled || actor.surrendered || actor.banished)
             continue;
         Dictionary entry;
         entry["cell"] = Vector2i(actor.cell.x, actor.cell.y);

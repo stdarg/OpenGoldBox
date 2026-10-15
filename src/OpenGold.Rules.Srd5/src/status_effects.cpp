@@ -127,7 +127,9 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::addled && kind != EffectKind::lit &&
             kind != EffectKind::moonlit && kind != EffectKind::scorched &&
             kind != EffectKind::stunned && kind != EffectKind::staggered &&
-            kind != EffectKind::dazed) || !can_apply(effects) ||
+            kind != EffectKind::dazed && kind != EffectKind::smite_protected &&
+            kind != EffectKind::faith_tested) ||
+            !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
         throw std::runtime_error("Invalid timed condition");
@@ -196,7 +198,9 @@ int speed_penalty(const EffectState &effects)
     // features each reduce Speed by 10 feet.
     if (restrained(effects) || paralyzed(effects))
         return 1000;
-    return (frosted(effects) ? 10 : 0) + (slowed(effects) ? 10 : 0) +
+    // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
+    const bool free = has_effect(effects, EffectKind::free_moving);
+    return (frosted(effects) && !free ? 10 : 0) + (slowed(effects) ? 10 : 0) +
            (has_effect(effects, EffectKind::frosts_chill) ? 10 : 0) +
            (has_effect(effects, EffectKind::hamstrung) ? 15 : 0) -
            (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
@@ -401,14 +405,18 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, Effect
     });
 }
 
+// Every Paralyzed and Restrained effect in the game is magic, which Freedom of
+// Movement keeps off.
 bool paralyzed(const EffectState &effects)
 {
-    return has_effect(effects, EffectKind::hold_person);
+    return has_effect(effects, EffectKind::hold_person) &&
+           !has_effect(effects, EffectKind::free_moving);
 }
 
 bool incapacitated(const EffectState &effects)
 {
     return paralyzed(effects) || has_effect(effects, EffectKind::stunned) ||
+           has_effect(effects, EffectKind::banished) ||
            has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
            has_effect(effects, EffectKind::knocked_out);
@@ -453,8 +461,9 @@ void apply_sanctuary(EffectState &effects, EffectSource source,
 
 bool restrained(const EffectState &effects)
 {
-    return has_effect(effects, EffectKind::ensnaring_strike) ||
-           has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed);
+    return (has_effect(effects, EffectKind::ensnaring_strike) ||
+            has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed)) &&
+           !has_effect(effects, EffectKind::free_moving);
 }
 
 void apply_entangle(EffectState &effects, EffectSource source,
@@ -546,9 +555,11 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::invisible:
     case EffectKind::see_invisibility:
     case EffectKind::hidden:
+    case EffectKind::free_moving:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
+    case EffectKind::death_ward:
         return 28800000; // 8 hours
     case EffectKind::prayer_of_healing:
     case EffectKind::relentless_used:
@@ -570,6 +581,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::innate_sorcery:
     case EffectKind::outlined:
     case EffectKind::shining:
+    case EffectKind::banished:
     case EffectKind::abjured:
     case EffectKind::hopeful:
     case EffectKind::shillelagh:
@@ -577,6 +589,7 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
+    case EffectKind::aura_of_life:
     case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes
     case EffectKind::metamagic:
@@ -817,7 +830,7 @@ namespace
 // heroic_inspiration is the last kind.
 EffectKind saved_effect_kind(unsigned value)
 {
-    if (value > static_cast<unsigned>(EffectKind::hopeful))
+    if (value > static_cast<unsigned>(EffectKind::faith_tested))
         throw std::runtime_error("Invalid active effect");
     return static_cast<EffectKind>(value);
 }
@@ -850,7 +863,8 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::hamstrung || kind == EffectKind::stunned ||
                            kind == EffectKind::staggered || kind == EffectKind::studied ||
                            kind == EffectKind::staggering || kind == EffectKind::sundered ||
-                           kind == EffectKind::dazed ||
+                           kind == EffectKind::dazed || kind == EffectKind::smite_protected ||
+                           kind == EffectKind::faith_tested ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||

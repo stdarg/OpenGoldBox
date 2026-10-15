@@ -213,6 +213,10 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
             add("feature:aura_of_courage", "class:paladin");
         if (level == 11)
             add("feature:radiant_strikes", "class:paladin");
+        if (level == 14)
+            add("feature:restoring_touch", "class:paladin");
+        if (level == 15)
+            add("feature:smite_of_protection", "subclass:paladin:devotion");
     }
     // Acrobatic Movement (Monk 9) is cut (SCOPE-2).
     if (klass == CharacterClass::monk)

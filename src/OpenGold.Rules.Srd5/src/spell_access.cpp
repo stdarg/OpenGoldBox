@@ -152,6 +152,13 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"spike_growth", "Spike Growth", 2, 0, druid_list},
     Spell{"heat_metal", "Heat Metal", 2, 0, druid_list | bard_list},
     Spell{"beacon_of_hope", "Beacon of Hope", 3, 0, cleric_list},
+    Spell{"death_ward", "Death Ward", 4, 0, cleric_list | paladin_list},
+    Spell{"aura_of_life", "Aura of Life", 4, 0, cleric_list | paladin_list},
+    Spell{"freedom_of_movement", "Freedom of Movement", 4, 0,
+        bard_list | cleric_list | druid_list | ranger_list},
+    Spell{"guardian_of_faith", "Guardian of Faith", 4, 0, cleric_list},
+    Spell{"banishment", "Banishment", 4, 0,
+        cleric_list | paladin_list | sorcerer_list | warlock_list | wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};
@@ -262,6 +269,8 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::paladin, "aid", 5},
     AlwaysPrepared{CharacterClass::paladin, "beacon_of_hope", 9},
     AlwaysPrepared{CharacterClass::paladin, "dispel_magic", 9},
+    AlwaysPrepared{CharacterClass::paladin, "freedom_of_movement", 13},
+    AlwaysPrepared{CharacterClass::paladin, "guardian_of_faith", 13},
     // Favored Enemy, SRD 5.2.1 p. 57.
     AlwaysPrepared{CharacterClass::ranger, "hunters_mark", 1},
     // Life Domain spells, p. 37.

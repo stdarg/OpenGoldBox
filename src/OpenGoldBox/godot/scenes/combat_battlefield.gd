@@ -60,12 +60,10 @@ func _draw() -> void:
         var cell: Vector2i = overlay["cell"]
         var kind: String = overlay["kind"]
         var rect := _cell_rect(cell, tile)
-        if kind == "spiritual" or kind == "flame":
-            var radius := _metric("combat_spiritual_radius_percent") if kind == "spiritual" \
-                else _metric("combat_flame_radius_percent")
-            draw_circle(rect.get_center(), tile * radius / 100.0,
-                _palette("combat_spiritual_overlay" if kind == "spiritual" \
-                    else "combat_flame_overlay"))
+        if kind in ["spiritual", "flame", "guardian"]:
+            draw_circle(rect.get_center(),
+                tile * _metric("combat_%s_radius_percent" % kind) / 100.0,
+                _palette("combat_%s_overlay" % kind))
         elif kind == "selected":
             draw_rect(_cell_rect(cell, tile, inset), _palette("combat_selected"), false,
                 _metric("combat_selected_border_width"))
