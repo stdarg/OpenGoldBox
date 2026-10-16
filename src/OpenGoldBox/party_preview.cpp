@@ -134,7 +134,7 @@ void CharacterCreationView::setup_party()
     required_node<Button>(*this, "PartyPanel/Pool")
     .connect("pressed", presentation::guarded(this, &CharacterCreationView::show_pool));
     required_node<CharacterPoolDialog>(*this, "PoolModal")
-    .connect_host(creator_->rules(), *art_, *portraits_, [this]() -> CampaignParty &
+    .connect_host(srd5::character_rules(), *art_, *portraits_, [this]() -> CampaignParty &
     {
         return *campaign_;
     },
@@ -285,11 +285,22 @@ void CharacterCreationView::reincarnate_check()
         capture("reincarnate-human-spells.png");
         break;
     default:
+    {
         press("Restart");
         check(!reincarnation_ && !creator_->reincarnating(), "Cancel leaves the pages");
+        // The pool, first opened after both, is built from rules of its own (#236).
+        auto *pool = &required_node<CharacterPoolDialog>(*this, "PoolModal");
+        show_pool();
+        check(pool->characters().size() == 48, "The pool opens after a reincarnation");
+        const auto members = campaign_->state().roster.size();
+        pool->select(0);
+        pool->add();
+        check(campaign_->state().roster.size() == members + 1, "A pool character joins");
+        pool->close();
         UtilityFunctions::print("Godot reincarnation passed: race page, spells, combat icon, portrait, sheet, new body.");
         reincarnate_check_ = false;
         get_tree()->quit(0);
+    }
     }
 }
 

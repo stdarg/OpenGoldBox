@@ -44,14 +44,15 @@ void CharacterPoolDialog::connect_controls()
     connect("close_requested", presentation::guarded(this, &CharacterPoolDialog::close));
 }
 
-void CharacterPoolDialog::connect_host(const rules::CharacterRules &rules,
+void CharacterPoolDialog::connect_host(std::unique_ptr<const rules::CharacterRules> rules,
                                        const por::CharacterArt &art, PortraitCatalog &portraits,
                                        CampaignAccess campaign, std::function<void()> member_added,
                                        FailureReport report)
 {
-    if (!campaign || !member_added || !report)
-        throw std::logic_error("The character pool needs its campaign, a follow-up and a report");
-    rules_ = &rules;
+    if (!rules || !campaign || !member_added || !report)
+        throw std::logic_error(
+            "The character pool needs its rules, campaign, a follow-up and a report");
+    rules_ = std::move(rules);
     art_ = &art;
     portraits_ = &portraits;
     campaign_ = std::move(campaign);

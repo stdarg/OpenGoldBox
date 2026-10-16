@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <memory>
 #include <vector>
 
 // The character pool: 48 ready-made level-one characters to preview and add
@@ -20,10 +21,11 @@ class CharacterPoolDialog : public godot::Window
     using FailureReport = std::function<void(const std::exception &)>;
 
     void _ready() override;
-    // What the pool is made from and shown with, which outlive this window;
-    // the host's campaign, read at each use because loading a save replaces
-    // it; what follows an added member; and where a failed handler is shown.
-    void connect_host(const opengold::rules::CharacterRules &rules,
+    // The rules the pool is made from, which the window keeps; the art and
+    // portraits it is shown with, which outlive this window; the host's
+    // campaign, read at each use because loading a save replaces it; what
+    // follows an added member; and where a failed handler is shown.
+    void connect_host(std::unique_ptr<const opengold::rules::CharacterRules> rules,
                       const opengold::por::CharacterArt &art, PortraitCatalog &portraits,
                       CampaignAccess campaign, std::function<void()> member_added,
                       FailureReport report);
@@ -53,9 +55,11 @@ class CharacterPoolDialog : public godot::Window
 
   private:
     void connect_controls();
+    // Its own: the creation rules the view holds are replaced while a
+    // Reincarnate's pages are open.
+    std::unique_ptr<const opengold::rules::CharacterRules> rules_;
     // Borrowed from the campaign view, which owns them for longer than this
     // window exists.
-    const opengold::rules::CharacterRules *rules_{};
     const opengold::por::CharacterArt *art_{};
     PortraitCatalog *portraits_{};
     CampaignAccess campaign_;
