@@ -37,10 +37,9 @@ The Wizard advances to level 15, the cap
   cantrip at 10.
 - **Level-3 spells** (5): Animate Dead, Bestow Curse, Blink, Counterspell,
   Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Magic
-  Circle, Protection from Energy, Remove Curse, Sleet Storm, Stinking Cloud,
-  Tiny Hut and Vampiric Touch (below; the shared ones work as for the
-  [Cleric](CLERIC.md#the-new-level-3-spells)). Slow waits for the decision on
-  how its spell failure becomes a save (LEVELS-1). Clairvoyance, Fly, Gaseous
+  Circle, Protection from Energy, Remove Curse, Sleet Storm, Slow, Stinking
+  Cloud, Tiny Hut and Vampiric Touch (below; the shared ones work as for the
+  [Cleric](CLERIC.md#the-new-level-3-spells)). Clairvoyance, Fly, Gaseous
   Form, Glyph of Warding, Major Image, Nondetection, Phantom Steed, Sending,
   Speak with Dead, Tongues and Water Breathing are cut.
 - **Memorize Spell** (5): when a Short Rest ends (after its Hit Dice), the
@@ -143,6 +142,14 @@ The Wizard advances to level 15, the cap
   20-foot-radius area, Heavily Obscured and Difficult Terrain. A creature
   that enters it or starts its turn there makes a Dexterity save, once a
   turn, or falls Prone and loses Concentration.
+- **Slow** (Action, 120 feet, Concentration up to 1 minute): a 40-foot Cube.
+  Up to six of the Wizard's enemies in it, the nearest to its centre first,
+  make a Wisdom save or are slowed ("Slow"): half Speed, -2 to AC and
+  Dexterity saves, no Reactions, and on each turn an action or a Bonus
+  Action, not both, with one attack if it takes the Attack action. To cast a
+  spell, a slowed creature makes a Wisdom save against Slow's DC or the
+  spell fails, its slot spent; this replaces the SRD's 25 percent chance
+  (LEVELS-1, LEVELS-5). It saves again at the end of each of its turns.
 - **Stinking Cloud** (Action, 90 feet, Concentration up to 1 minute): a
   20-foot-radius Sphere, Heavily Obscured. A creature that starts its turn
   in it makes a Constitution save or is Poisoned and takes no action or
@@ -162,9 +169,9 @@ The Wizard advances to level 15, the cap
 
 - **Befuddlement** (Action, 150 feet): an Intelligence save against 10d12
   Psychic, half on a success. A failure also leaves the creature
-  **Befuddled**: it can cast no spells and take no Magic actions. It lasts 30
-  days, or until Heal or **Greater Restoration: Befuddlement** ends it; the
-  SRD's save every 30 days is not rolled, so it simply ends then.
+  **Befuddled**: it can cast no spells and take no Magic actions. It lasts
+  until the fight ends (LEVELS-5), or until Heal or **Greater Restoration:
+  Befuddlement** ends it.
 - **Dominate Monster** (Action, 60 feet, Concentration up to 1 hour): Dominate
   Person for any creature. The creature has Advantage on the save, as it does
   against Dominate Beast and Dominate Person, since it is always being fought.

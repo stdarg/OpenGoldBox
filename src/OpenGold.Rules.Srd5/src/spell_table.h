@@ -216,7 +216,8 @@ enum class Rider : unsigned
     conjure_fey,
     wall_of_thorns,
     natures_sanctuary,
-    animal_shapes
+    animal_shapes,
+    slow
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -3072,7 +3073,21 @@ inline constexpr std::array spell_table
         .range = 60,
         .requires_sight = true,
         .save = Ability::wisdom,
-        .rider = Rider::abjure_foes}};
+        .rider = Rider::abjure_foes},
+    // SRD 5.2.1 p. 163: up to six creatures of the caster's choice in a
+    // 40-foot Cube within 120 feet; a Wisdom save or slowed, saving again at
+    // the end of each of their turns.
+    SpellDef{
+        .id = "slow",
+        .label = "Slow",
+        .level = 3,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::wisdom,
+        .rider = Rider::slow,
+        .concentration = true,
+        .area = 40}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in

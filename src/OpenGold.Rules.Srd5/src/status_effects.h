@@ -465,9 +465,13 @@ enum class EffectKind : unsigned
     // Animal Shapes: a Beast form, `dc` its index in beast_forms plus one,
     // until the fight ends or the creature leaves it.
     animal_shaped = 189,
+    // Slow: half Speed, -2 to AC and Dexterity saves, no Reactions, an action
+    // or a Bonus Action and one attack each turn, and a Wisdom save, `dc`,
+    // to cast a spell; a Wisdom save at the end of each of its turns.
+    time_slowed = 190,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = animal_shaped
+    last = time_slowed
 };
 
 // Magic Circle's creature types, by `dc`.

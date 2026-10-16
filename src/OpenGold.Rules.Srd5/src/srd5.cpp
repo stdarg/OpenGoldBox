@@ -209,6 +209,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::entranced || kind == detail::EffectKind::terrified ||
            kind == detail::EffectKind::vampiric || kind == detail::EffectKind::tentacled ||
            kind == detail::EffectKind::confused || kind == detail::EffectKind::greater_invisible ||
+           kind == detail::EffectKind::time_slowed ||
            kind == detail::EffectKind::haunted || kind == detail::EffectKind::polymorphed ||
            kind == detail::EffectKind::sphered || kind == detail::EffectKind::minor_elementals ||
            kind == detail::EffectKind::summoned || kind == detail::EffectKind::spirit_breath ||
@@ -287,6 +288,7 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::energy_ward:
     case Kind::cursed:
     case Kind::hasted:
+    case Kind::time_slowed:
     case Kind::entranced:
     case Kind::terrified:
     case Kind::retching:
@@ -672,6 +674,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::wizard, "protection_from_energy", 5},
     SpellAccessRow{CharacterClass::wizard, "remove_curse", 5},
     SpellAccessRow{CharacterClass::wizard, "sleet_storm", 5},
+    SpellAccessRow{CharacterClass::wizard, "slow", 5},
     SpellAccessRow{CharacterClass::wizard, "stinking_cloud", 5},
     SpellAccessRow{CharacterClass::wizard, "tiny_hut", 5},
     SpellAccessRow{CharacterClass::wizard, "vampiric_touch", 5},
@@ -792,6 +795,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::sorcerer, "lightning_bolt", 5},
     SpellAccessRow{CharacterClass::sorcerer, "protection_from_energy", 5},
     SpellAccessRow{CharacterClass::sorcerer, "sleet_storm", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "slow", 5},
     SpellAccessRow{CharacterClass::sorcerer, "stinking_cloud", 5},
     SpellAccessRow{CharacterClass::sorcerer, "vampiric_touch", 5},
     // Sorcerer level-4 spells, with the level-4 slot of Sorcerer level 7.
@@ -901,6 +905,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::bard, "hypnotic_pattern", 5},
     SpellAccessRow{CharacterClass::bard, "mass_healing_word", 5},
     SpellAccessRow{CharacterClass::bard, "plant_growth", 5},
+    SpellAccessRow{CharacterClass::bard, "slow", 5},
     SpellAccessRow{CharacterClass::bard, "stinking_cloud", 5},
     SpellAccessRow{CharacterClass::bard, "tiny_hut", 5},
     // Bard level-4 spells, with the level-4 slot of Bard level 7.
@@ -1548,7 +1553,8 @@ int armor_class_of(const Actor &target)
             : base) +
            (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
-           (detail::has_effect(target.effects, detail::EffectKind::hasted) ? 2 : 0) +
+           (detail::has_effect(target.effects, detail::EffectKind::hasted) ? 2 : 0) -
+           (detail::has_effect(target.effects, detail::EffectKind::time_slowed) ? 2 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::shield) ? 5 : 0);
 }
 
@@ -2212,9 +2218,11 @@ int movement_left(const Actor &a)
 {
     if (!conscious(a) || a.aim_used)
         return 0;
-    // A resisted Stunning Strike halves the Speed.
-    const int staggered = detail::has_effect(a.effects, detail::EffectKind::staggered)
-                          ? a.definition.speed / 2 : 0;
+    // A resisted Stunning Strike halves the Speed, and so does Slow.
+    const int staggered = (detail::has_effect(a.effects, detail::EffectKind::staggered)
+                           ? a.definition.speed / 2 : 0) +
+                          (detail::has_effect(a.effects, detail::EffectKind::time_slowed)
+                           ? a.definition.speed / 2 : 0);
     // Haste doubles the Speed: each Dash's share as well. A Resilient Sphere
     // rolls at half.
     const int hasted = detail::has_effect(a.effects, detail::EffectKind::hasted) ? a.definition.speed : 0;
@@ -3003,6 +3011,15 @@ Actor actor_from(const Definition &definition, const VitalState &state)
     actor.slots = definition.slots;
     restore_vitals(actor, state);
     return actor;
+}
+
+// Befuddlement lasts the fight (LEVELS-5).
+void end_befuddlement(Actor &a)
+{
+    std::erase_if(a.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::befuddled;
+    });
 }
 
 VitalState vitals(const Actor &a)
@@ -4142,6 +4159,8 @@ class Session final : public CombatSession
     void fey_frighten(Actor &caster, Actor &target);
     // Hypnotic Pattern and Fear: each creature in the area that fails its
     // Wisdom save is entranced or terrified while the caster concentrates.
+    void slow_area(Actor &caster, const detail::SpellDef &spell, const std::vector<Cell> &cells,
+                   Cell center);
     void enchant_area(Actor &caster, const detail::SpellDef &spell, const std::vector<Cell> &cells);
     // Sleet Storm: a creature entering the sleet or starting its turn there
     // saves, once a turn, or falls Prone and loses Concentration.
@@ -4153,6 +4172,9 @@ class Session final : public CombatSession
     // one stops it.
     [[nodiscard]] bool can_counter(const Actor &wizard, const Actor &caster) const;
     [[nodiscard]] bool countered(Actor &caster);
+    [[nodiscard]] bool slowed_spell_fails(Actor &caster, std::string_view verb,
+                                          const detail::SpellDef &spell);
+    void limit_slowed_turn();
     // Vampiric Touch: the touch, at the casting and with each later Magic
     // action, for 3d6 Necrotic and 1d6 more for each slot level above 3.
     void vampiric_touch(Actor &caster, Actor &target, unsigned slot);
@@ -5062,9 +5084,10 @@ void Session::run_off_field(Actor &a)
     }
     end_concentration(a);
     // Wild Shape lasts until the fight ends (WILD-1); for the one who flees, it
-    // has, as Animal Shapes has (LEVELS-3).
+    // has, as Animal Shapes (LEVELS-3) and Befuddlement have (LEVELS-5).
     end_wild_shape(a);
     end_animal_shape(a);
+    end_befuddlement(a);
     a.fled = true;
     log(a.source.name + " flees the battle.",
     {"{name} flees the battle.", {{"name", a.source.name}}});
@@ -5871,6 +5894,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::ethereal, "Ethereal"},
                     std::pair{detail::EffectKind::tentacled, "Restrained (Black Tentacles)"},
                     std::pair{detail::EffectKind::confused, "Confused"},
+                    std::pair{detail::EffectKind::time_slowed, "Slow"},
                     std::pair{detail::EffectKind::fire_shield, "Fire Shield"},
                     std::pair{detail::EffectKind::greater_invisible, "Invisible"},
                     std::pair{detail::EffectKind::haunted, "Phantasmal Killer"},
@@ -6569,6 +6593,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::faithful_hound:
     case detail::Rider::black_tentacles:
     case detail::Rider::confusion:
+    case detail::Rider::slow:
     case detail::Rider::dimension_door:
     case detail::Rider::ice_storm:
     case detail::Rider::vitriolic_sphere:
@@ -7115,7 +7140,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const auto &d = def(a);
     const unsigned steps = upcast_steps(verb, spell);
     // Counterspell: a stopped spell keeps its slot.
-    if (countered(a))
+    if (countered(a) || slowed_spell_fails(a, verb, spell))
         return;
     take_metamagic(a, spell);
     take_overchannel(a, spell, verb);
@@ -11668,6 +11693,43 @@ void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
     }
 }
 
+void Session::slow_area(Actor &caster, const detail::SpellDef &spell,
+                        const std::vector<Cell> &cells, Cell center)
+{
+    // Up to six creatures of the caster's choice: its enemies in the Cube, the
+    // nearest to its centre first.
+    begin_concentration(caster, spell);
+    const int dc = area_dc(caster, spell);
+    std::vector<EntityId> chosen;
+    for (const auto &other : actors_)
+        if (other.source.side != caster.source.side && !other.life.dead && other.life.hp > 0 &&
+                !absent(other) && !sealed_off(other) &&
+                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end() &&
+                !globe_wards(caster, other.source.cell, spell.level) &&
+                !caged_apart(caster.source.cell, other.source.cell, false))
+            chosen.push_back(other.source.id);
+    std::stable_sort(chosen.begin(), chosen.end(), [&](EntityId left, EntityId right)
+    {
+        return distance(center, actor(left).source.cell) < distance(center, actor(right).source.cell);
+    });
+    if (chosen.size() > 6)
+        chosen.resize(6);
+    for (const auto id : chosen)
+    {
+        auto &other = actor(id);
+        if (!detail::can_apply(other.effects) ||
+                saving_throw_succeeds(other, spell.save, dc, false,
+                                      heightened_against(other, caster, spell.id)))
+            continue;
+        detail::apply_repeating_condition(other.effects, detail::EffectKind::time_slowed,
+                                          effect_source(caster), caster.source.name,
+                                          detail::RepeatingSave{.dc = dc,
+                                                                .first_save_ms = next_save_ms(id)});
+        other.reaction = false;
+        log(other.source.name + " is slowed.", {"{name} is slowed.", {{"name", other.source.name}}});
+    }
+}
+
 void Session::sleet_falls(const Zone &sleet, Actor &creature)
 {
     const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
@@ -11754,6 +11816,45 @@ bool Session::countered(Actor &caster)
         return true;
     }
     return false;
+}
+
+// Slow: a Wisdom save against the spell's DC, in place of the SRD's 25
+// percent chance (LEVELS-1), or the slowed caster's spell fails, spent.
+bool Session::slowed_spell_fails(Actor &caster, std::string_view verb,
+                                 const detail::SpellDef &spell)
+{
+    const auto slow = std::find_if(caster.effects.active.begin(), caster.effects.active.end(),
+                                   [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::time_slowed;
+    });
+    if (slow == caster.effects.active.end())
+        return false;
+    const int dc = slow->dc;
+    if (saving_throw_succeeds(caster, detail::Ability::wisdom, dc))
+        return false;
+    if (spell.level)
+        pay_for_spell(caster, verb, spell);
+    log(caster.source.name + "'s spell fails under Slow.",
+    {"{name}'s spell fails under Slow.", {{"name", caster.source.name}}});
+    return true;
+}
+
+// Slow: an action or a Bonus Action each turn, not both, and one attack with
+// the Attack action.
+void Session::limit_slowed_turn()
+{
+    if (outcome_ != Outcome::ongoing || turn_ >= actors_.size())
+        return;
+    auto &a = actors_[turn_];
+    if (!detail::has_effect(a.effects, detail::EffectKind::time_slowed))
+        return;
+    a.actions.extra_attacks = 0;
+    a.actions.haste = a.actions.surge = false;
+    if (!a.actions.normal)
+        a.bonus = false;
+    else if (!a.bonus)
+        a.actions.normal = false;
 }
 
 void Session::vampiric_touch(Actor &caster, Actor &target, unsigned slot)
@@ -12307,7 +12408,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     // Dragon's Breath are not castings.
     const bool again = aimed.verb == "sunbeam_line" || aimed.verb == "telekinesis_again" ||
                        aimed.verb == "call_lightning_again";
-    if (!again && spell.id != "dragons_breath_exhale" && countered(a))
+    if (!again && spell.id != "dragons_breath_exhale" &&
+            (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
         return;
     if (spell.level && !again)
         pay_for_spell(a, aimed.verb, spell);
@@ -12718,6 +12820,11 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
             other.reaction = false;
             log(other.source.name + " is Confused.", {"{name} is Confused.", {{"name", other.source.name}}});
         }
+        return;
+    }
+    if (spell.rider == detail::Rider::slow)
+    {
+        slow_area(a, spell, area_cells(spell, aimed.verb, a.source.cell, aimed.center), aimed.center);
         return;
     }
     // Forcecage: teleporting out takes a Charisma save, or the spell is wasted.
@@ -15636,12 +15743,13 @@ void Session::update_outcome()
         });
         outcome_ = party ? Outcome::victory : party_fled ? Outcome::fled : Outcome::defeat;
         // Concentration is tracked in combat only; it ends with the combat, and
-        // so does Wild Shape (WILD-1).
+        // so do Wild Shape (WILD-1) and Befuddlement (LEVELS-5).
         for (auto &a : actors_)
         {
             end_concentration(a);
             end_wild_shape(a);
             end_animal_shape(a);
+            end_befuddlement(a);
         }
         for (auto &a : actors_)
             release(a);
@@ -16074,7 +16182,9 @@ bool Session::begin_turn()
     }
     a.actions = {};
     a.surge_used = false;
-    a.bonus = a.reaction = true;
+    a.bonus = true;
+    // Slow: no Reactions.
+    a.reaction = !detail::has_effect(a.effects, detail::EffectKind::time_slowed);
     a.dodge = a.disengaged = false;
     a.movement = def(a).speed;
     a.dashes = 0;
@@ -16297,11 +16407,14 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
-    // Warding Bond: +1 to saving throws; Smite of Protection +2 to Dexterity saves.
+    // Warding Bond: +1 to saving throws; Smite of Protection +2 to Dexterity
+    // saves, Slow -2.
     const int bless = blessing_die(target) - return_penalty(target) +
                       (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
                       aura_of_protection(target) +
-                      (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0);
+                      (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0) -
+                      (ability == detail::Ability::dexterity &&
+                       detail::has_effect(target.effects, detail::EffectKind::time_slowed) ? 2 : 0);
     auto modifiers =
         detail::saving_modifiers(ability, def(target).str_dex_disadvantage, target.dodge);
     modifiers.advantage |= advantage;
@@ -16594,6 +16707,9 @@ void Session::advance_turn_time()
         if (event.removed && event.effect.kind == detail::EffectKind::hold_person)
             log(target.source.name + " is no longer Paralyzed.",
         {"{name} is no longer Paralyzed.", {{"name", target.source.name}}});
+        if (event.removed && event.effect.kind == detail::EffectKind::time_slowed)
+            log(target.source.name + " is no longer slowed.",
+        {"{name} is no longer slowed.", {{"name", target.source.name}}});
         if (event.removed && event.effect.kind == detail::EffectKind::acid_arrow)
             burned.push_back(event.target);
     });
@@ -17109,6 +17225,7 @@ bool Session::submit(const Command &command)
             answer_reaction(command);
         else
             perform(command);
+        limit_slowed_turn();
         if (!reaction_prompt_)
             settle_dominated();
         notice_hidden();
@@ -23413,7 +23530,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.230", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.231", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

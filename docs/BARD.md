@@ -95,8 +95,8 @@ The Bard advances to level 15, the cap
   Hold Monster, Mass Cure Wounds, Mislead and Raise Dead; at 11 Eyebite,
   Heroes' Feast, Irresistible Dance and True Seeing; at 13 Arcane Sword,
   Forcecage, Prismatic Spray, Regenerate and Resurrection; at 15
-  Befuddlement, Dominate Monster, Mind Blank and Power Word Stun. Slow waits
-  for its decision; Teleport for travel beyond New Phlan.
+  Befuddlement, Dominate Monster, Mind Blank and Power Word Stun; Slow at 5,
+  as for the Wizard. Teleport waits for travel beyond New Phlan.
 - **Bardic Inspiration's die:** d8 from 5, d10 from 10, d12 from 15, for
   Bardic Inspiration and Cutting Words alike.
 - **Font of Inspiration** (5): Bardic Inspiration's uses come back on a Short

@@ -40,7 +40,8 @@ std::unique_ptr<RulesModule> dummy_rules()
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
                                "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
-                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature slayer 1 1000 0 30 30 10 20 30 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 CharacterDraft draft(std::string name = "Wizard")
@@ -608,6 +609,59 @@ void confusion_checks()
               "A d10 decides the confused creature's turn");
     }
     check(confused, "A seed where the foe fails its save");
+}
+
+// Slow: only the caster's enemies in the Cube, -2 AC and half Speed; a slowed
+// caster saves to cast and takes an action or a Bonus Action, not both.
+void slow_checks()
+{
+    const auto rules = dummy_rules();
+    bool slowed = false;
+    for (std::uint64_t seed = 1; seed < 40 && !slowed; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"slow"}),
+        {   {2, "dummy", "Ally", Side::party, {7, 1}},
+            {98, "dummy", "Foe", Side::opposition, {8, 2}}
+        }, seed);
+        const auto ac = unit(*c, 98).armor_class;
+        check(submit(*c, "slow") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+              submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:") &&
+              !logged(*c, "Ally Wisdom save:"), "Slow takes only enemies");
+        if (!logged(*c, "Foe is slowed."))
+            continue;
+        slowed = true;
+        check(unit(*c, 98).armor_class == ac - 2 &&
+              unit(*c, 98).status.find("Slow") != std::string::npos, "Slow: -2 AC");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps Slow");
+        to_turn(*c, 98);
+        check(unit(*c, 98).movement_feet == 15, "Slow halves the Speed");
+    }
+    check(slowed, "A seed where the foe fails its save");
+    const std::vector<std::string> gear{"quarterstaff"};
+    bool failed = false, cast = false;
+    for (std::uint64_t seed = 1; seed < 120 && !(failed && cast); ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"misty_step"}),
+        {   {3, "campaign-character", "Rival", Side::opposition, {9, 2},
+                rules->character_profile(with_spells(wizard(5, "Rival"), {"slow"}), gear).data
+            }
+        }, seed);
+        to_turn(*c, 3);
+        check(submit(*c, "slow") && submit_cell(*c, "area_move", Cell{2, 2}) &&
+              submit(*c, "area_cast"), "The rival casts Slow");
+        if (!logged(*c, "Wizard is slowed."))
+            continue;
+        to_turn(*c, 1);
+        check(submit(*c, "misty_step") && submit_cell(*c, "area_move", Cell{1, 5}) &&
+              submit(*c, "area_cast") && !unit(*c, 1).action && !unit(*c, 1).bonus_action,
+              "A slowed creature's Bonus Action spends its action too");
+        if (logged(*c, "Wizard's spell fails under Slow."))
+            failed = unit(*c, 1).cell == (Cell{1, 2});
+        else
+            cast = unit(*c, 1).cell == (Cell{1, 5});
+    }
+    check(failed && cast, "A slowed caster's spell fails on a failed Wisdom save");
 }
 
 void dimension_door_checks()
@@ -1276,6 +1330,30 @@ void level_eight_checks()
         dominated |= logged(*d, "Brute is dominated by Wizard.");
     }
     check(befuddled && dominated, "Befuddlement and Dominate Monster land");
+    // Befuddlement lasts the fight (LEVELS-5).
+    const std::vector<std::string> gear{"quarterstaff"};
+    bool lifted = false;
+    for (std::uint64_t seed = 1; seed < 40 && !lifted; ++seed)
+    {
+        auto c = field(*rules, wizard(15).sheet(),
+        {   {2, "slayer", "Slayer", Side::party, {8, 2}},
+            {3, "campaign-character", "Rival", Side::opposition, {9, 2},
+                rules->character_profile(with_spells(wizard(15, "Rival"), {"befuddlement"}), gear).data
+            }
+        }, seed);
+        to_turn(*c, 3);
+        check(submit(*c, "befuddlement", 1), "The rival casts Befuddlement");
+        if (unit(*c, 1).status.find("Befuddled") == std::string::npos)
+            continue;
+        for (unsigned turns = 0; turns < 40 && c->snapshot().outcome == Outcome::ongoing; ++turns)
+            check(submit(*c, "melee", 3) || submit(*c, "end") || submit(*c, "decline"),
+                  "The slayer strikes the rival down");
+        check(c->snapshot().outcome == Outcome::victory, "The slayer ends the fight");
+        lifted = unit(*c, 1).status.find("Befuddled") == std::string::npos &&
+                 unit(*c, 1).persistent.resources.find(" 172 ") == std::string::npos;
+        check(lifted, "Befuddlement ends with the fight");
+    }
+    check(lifted, "A seed where the Wizard is befuddled");
     // Incendiary Cloud burns as it appears.
     auto cloud = field(*rules, with_spells(wizard(15), {"incendiary_cloud"}),
     {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
@@ -1455,6 +1533,7 @@ int main()
         tentacles_checks();
         blight_and_charm_checks();
         confusion_checks();
+        slow_checks();
         dimension_door_checks();
         fire_shield_checks();
         invisibility_checks();

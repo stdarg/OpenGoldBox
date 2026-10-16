@@ -109,8 +109,8 @@ The Sorcerer advances to level 15, the cap
   Blast Fireball, Finger of Death, Fire Storm, Prismatic Spray and Reverse
   Gravity; at 15 Dominate Monster, Earthquake, Incendiary Cloud, Power Word
   Stun and Sunburst. They work as for the [Wizard](WIZARD.md#levels-515) and
-  the [Cleric](CLERIC.md#levels-515). Slow waits for its decision (LEVELS-1);
-  Teleport waits for travel beyond New Phlan; the cut spells stay cut.
+  the [Cleric](CLERIC.md#levels-515). Slow (level 5) works as for the
+  Wizard; Teleport waits for travel beyond New Phlan; the cut spells stay cut.
 - **Replacing choices:** on gaining any level up to 15, a cantrip, a spell
   and a Metamagic option may each be replaced
   ([Replacing choices](LEVEL-SWAPS.md)); the offers used to stop at level 4.

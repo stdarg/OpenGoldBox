@@ -280,6 +280,8 @@ std::string_view repeated_save_spell(EffectKind kind)
         return "hideous_laughter";
     case EffectKind::confused:
         return "confusion";
+    case EffectKind::time_slowed:
+        return "slow";
     default:
         return "ray_of_enfeeblement";
     }
@@ -469,7 +471,8 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSour
 {
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
             kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
-            kind != EffectKind::knocked_out && kind != EffectKind::confused) ||
+            kind != EffectKind::knocked_out && kind != EffectKind::confused &&
+            kind != EffectKind::time_slowed) ||
             !can_apply(effects) ||
             !recorded(source, name) || save.dc < -2 || save.dc > 38 || !save.first_save_ms ||
             save.first_save_ms > round_ms)
@@ -907,7 +910,8 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                 else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
                           e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
                           e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
-                          e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused) &&
+                          e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused ||
+                          e.kind == EffectKind::time_slowed) &&
                          !e.save_in_ms)
                 {
                     // Blindness, Ray of Enfeeblement and Knock Out repeat a Constitution save,
@@ -1096,7 +1100,8 @@ EffectState read_effects(std::istream &in)
                     kind != EffectKind::hold_person &&
                     kind != EffectKind::drowsy && kind != EffectKind::laughing &&
                     kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
-                    kind != EffectKind::knocked_out && kind != EffectKind::confused) ||
+                    kind != EffectKind::knocked_out && kind != EffectKind::confused &&
+                    kind != EffectKind::time_slowed) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||

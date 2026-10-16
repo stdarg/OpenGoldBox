@@ -1044,8 +1044,8 @@ class's cap rises to 10 only when its features work. Decisions on the
 - **Faithful Hound** moves 50 feet, half again a human's 30 feet, rounded
   up; how it is moved is settled when the Wizard is built.
 - **Slow's spell failure:** the user does not want a random 25% chance; a
-  slowed caster's spells fail through a saving throw instead. How exactly is
-  still to be settled when Slow is built.
+  slowed caster's spells fail through a saving throw instead, settled by
+  [LEVELS-5](#levels-5-2026-10-16-the-last-open-spells).
 
 ## CAP-1 (2026-10-14): the original Training Hall's limits
 
@@ -1130,6 +1130,32 @@ The user answered the questions the Wizard's levels 5–8 raised:
   Fire hides creatures in it as fog does without blocking sight beyond it;
   Divine Word, Holy Aura and Conjure Celestial choose foes or allies
   automatically; Fire Storm's cubes lie on a 10-foot grid.
+
+## LEVELS-5 (2026-10-16): the last open spells
+
+The user answered the questions left after every class reached level 15:
+
+- **Slow:** the SRD gives no save for its spell failure, only a 25 percent
+  chance for spells with a Somatic component. A slowed caster instead makes
+  a Wisdom save, Slow's own save, against Slow's DC; on a failure the spell
+  fails and its slot is spent. Slow's "creatures of your choice" are the
+  caster's enemies in the Cube, up to six, the nearest to its centre first.
+- **Summon Dragon:** one damage type chosen at the casting sets both the
+  spirit's breath and the Resistance it shares; the SRD chooses them
+  separately. The spirit wears Tyranthraxus's combat icon.
+- **Wall of Force and Wall of Ice:** a creature in the wall's line is pushed
+  to the nearest free square; the SRD lets the caster pick its side.
+- **Befuddlement** lasts until the fight ends, with no 30-day saves.
+- **Simulacrum:** the copy carries none of the original's gear, and it is
+  repaired from the Camp dialog at any time, not only during a Long Rest.
+- **Gift of the Protectors:** every party member counts as written in the
+  Book of Shadows, which is not modeled (TOME-1).
+- **One with Shadows** is cut: battle maps have no light levels.
+- **Tsunami** is cast with an Action instead of in a minute, and its wall is
+  10 feet thick instead of 50.
+- **Reincarnate** reuses the character-creation species page for the new
+  body, and takes the same offering as Raise Dead, 300 gp × the character's
+  level.
 
 ## LEVELS-3 (2026-10-15): the open decisions of levels 11–15
 
