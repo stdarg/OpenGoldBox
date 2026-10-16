@@ -227,7 +227,7 @@ void CharacterCreationView::reincarnate_check()
                 m.vitals = {0, true, presentation::srd_vitals(m.character,
                 {.failures = 3, .hit_dice = 1, .effects = "FX8 2 1 1 113 1 1 \"Fallen companion\" 0 864000000 0 0"}),
                 "Dead"};
-        campaign_->restore(state);
+        campaign_->restore(std::move(state));
         party_action(PartyAction::explore);
         break;
     }

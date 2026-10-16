@@ -214,7 +214,7 @@ void run()
         recruited.add_pc(hero(d));
         auto state = recruited.checkpoint();
         state.roster.front().vitals.hit_points -= 2;
-        recruited.restore(state);
+        recruited.restore(std::move(state));
         auto actors = recruited.participants();
         actors.front().cell = {1, 1};
         actors[1].cell = {2, 2};

@@ -72,7 +72,7 @@ void Character::replay(const rules::RulesModule &rules,
 void Character::appearance(por::CharacterAppearance value)
 {
     por::validate_character_appearance(value);
-    appearance_ = value;
+    appearance_ = std::move(value);
 }
 
 bool Character::advance(const rules::RulesModule &rules, rules::VitalState &state)

@@ -503,7 +503,7 @@ void RolfTourView::check_rest_controls()
                                 presentation::srd_vitals(m.character,
                     {.failures = 3, .hit_dice = 1}),
                     "Dead"};
-            campaign_->restore(state);
+            campaign_->restore(std::move(state));
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
                 bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
@@ -621,7 +621,7 @@ void RolfTourView::check_rest_controls()
                     member.vitals.resources = presentation::srd_vitals(
                                                   member.character,
                     {.slots = 2, .slots2 = 1, .hit_dice = 3});
-            campaign_->restore(state);
+            campaign_->restore(std::move(state));
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
                 bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
@@ -895,7 +895,7 @@ void RolfTourView::check_rest_controls()
             for (auto &m : state.roster)
                 if (m.id == patient)
                     m.vitals.hit_points = 1;
-            campaign_->restore(state);
+            campaign_->restore(std::move(state));
             rest_member_ = id;
             camp();
             auto *action = &presentation::required_node<OptionButton>(*w, "UseAction");

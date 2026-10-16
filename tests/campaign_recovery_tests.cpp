@@ -215,13 +215,13 @@ void campaign_continuation()
     check(party.member(reserve).vitals.hit_points != 0 || party.member(reserve).vitals.dead,
           "Reserve mortality continues outside the active party");
     // Waking during another member's rest never grants eligibility retroactively.
-    party.restore(state);
+    party.restore(std::move(state));
     state = party.checkpoint();
     state.roster[0].vitals.hit_points = 1;
     state.roster[0].vitals.resources = "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0";
     state.roster[1].vitals = stable(1000);
     state.roster[2].vitals = stable(1000);
-    party.restore(state);
+    party.restore(std::move(state));
     const auto rest = party.rest(RestKind::long_rest);
     check(rest && rest->members == std::vector<MemberId> {pc} &&
           party.member(npc).vitals.hit_points == 1 &&
@@ -238,7 +238,7 @@ void campaign_continuation()
     state = party.checkpoint();
     state.time_minutes = std::numeric_limits<std::uint64_t>::max();
     state.roster[1].vitals = unstable();
-    party.restore(state);
+    party.restore(std::move(state));
     const auto overflow = saved(party);
     rejects(
         [&]
@@ -267,7 +267,7 @@ void combat_handoff()
     state.random_state.value = 17;
     state.roster[1].vitals = stable(10000);
     state.roster[2].vitals = unstable();
-    party.restore(state);
+    party.restore(std::move(state));
     auto actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", Side::opposition, {7, 7}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
@@ -324,7 +324,7 @@ void combat_handoff()
     // A fresh encounter rebases unstable saves onto initiative, including slot zero.
     state = party.checkpoint();
     state.roster[1].vitals = unstable(123);
-    party.restore(state);
+    party.restore(std::move(state));
     actors = party.participants();
     actors.push_back({999, "bandit", "Enemy", Side::opposition, {7, 7}});
     combat = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 42);
@@ -367,7 +367,7 @@ void event_rollback()
     auto state = party->checkpoint();
     state.random_state.value = 17;
     state.roster[1].vitals = unstable();
-    party->restore(state);
+    party->restore(std::move(state));
     auto resources = std::make_shared<por::PhlanResources>();
     resources->programs[0] = program({0});
     // PROGRAM 9 completes a rest; the following unsupported PROGRAM 0 fails.

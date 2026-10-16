@@ -440,7 +440,7 @@ void roundtrip(const std::filesystem::path &directory)
     auto wounded = replacement->checkpoint();
     wounded.roster[0].vitals.hit_points = 1;
     replacement->restore(wounded);
-    party->restore(wounded);
+    party->restore(std::move(wounded));
     replacement->temple_heal(fighter);
     party->temple_heal(fighter);
     check(replacement->member(fighter).vitals == party->member(fighter).vitals &&
@@ -511,7 +511,7 @@ void roundtrip(const std::filesystem::path &directory)
     });
     auto invalid = party->checkpoint();
     invalid.roster[0].vitals.resources = "SRD13 999 0 0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0";
-    party->restore(invalid);
+    party->restore(std::move(invalid));
     auto malformed = encode_campaign(*party, nullptr, "fixture-v1");
     rejects(
         [&]
@@ -589,7 +589,7 @@ void level_four_roundtrip(const std::filesystem::path &directory)
     RandomState random{3};
     rules->use_camp_action(fighter.character.sheet(), fighter.vitals, fighter.character.sheet(),
                            fighter.vitals, "cure_wounds_initiate", random);
-    party->restore(state);
+    party->restore(std::move(state));
     const auto path = directory / "level four.ogs";
     const auto saved = encode_campaign(*party, nullptr, "fixture-v1");
     write_campaign_file(path, saved);

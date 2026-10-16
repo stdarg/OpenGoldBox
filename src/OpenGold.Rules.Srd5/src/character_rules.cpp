@@ -349,14 +349,14 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
                 a.label = ability_names[first] + " +2, " + ability_names[second] + " +1";
                 a.bonuses[first] = 2;
                 a.bonuses[second] = 1;
-                result.push_back(a);
+                result.push_back(std::move(a));
             }
     ScoreAdjustment a;
     a.label = "+1 to " + ability_names[allowed[0]] + ", " + ability_names[allowed[1]] + ", " +
               ability_names[allowed[2]];
     for (auto ability : allowed)
         a.bonuses[ability] = 1;
-    result.push_back(a);
+    result.push_back(std::move(a));
     return result;
 }
 

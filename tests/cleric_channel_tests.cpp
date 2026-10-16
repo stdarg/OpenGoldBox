@@ -372,7 +372,7 @@ void aid_expiry_checks()
     state.roster.front().vitals = {sheet_maximum + 5, false,
         "SRD13 0 2 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 1 21 77 99 \"Caster\" 5 28800000 0 0"
     };
-    party.restore(state);
+    party.restore(std::move(state));
     check(party.hit_point_maximum(id) == sheet_maximum + 5, "Aid raises the campaign maximum");
     party.advance_time(std::chrono::minutes(481));
     check(party.hit_point_maximum(id) == sheet_maximum &&

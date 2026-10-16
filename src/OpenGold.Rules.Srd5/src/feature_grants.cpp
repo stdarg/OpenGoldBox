@@ -697,7 +697,7 @@ std::vector<rules::FeatureGrant> read_grants(std::istream &in)
             std::string key, value;
             in >> std::quoted(key) >> std::quoted(value);
             require(static_cast<bool>(in) && key.size() <= 128 && value.size() <= 128 &&
-                    grant.choices.emplace(key, value).second);
+                    grant.choices.emplace(std::move(key), std::move(value)).second);
         }
         result.push_back(std::move(grant));
     }

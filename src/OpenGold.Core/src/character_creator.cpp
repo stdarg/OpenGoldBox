@@ -637,7 +637,7 @@ void CharacterCreator::name(std::string text)
 void CharacterCreator::appearance(por::CharacterAppearance value)
 {
     por::validate_character_appearance(value);
-    appearance_ = value;
+    appearance_ = std::move(value);
 }
 
 CharacterSheet CharacterCreator::sheet() const

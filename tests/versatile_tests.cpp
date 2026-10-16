@@ -207,7 +207,7 @@ void campaign()
     party.equip(id, staff);
     auto wounded = party.checkpoint();
     wounded.roster[0].vitals = {5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
-    party.restore(wounded);
+    party.restore(std::move(wounded));
     const auto vitals = party.member(id).vitals;
     check(party.profile(id).weapon_hands == 2, "An empty other hand wields the staff two-handed");
     party.equip(id, shield);

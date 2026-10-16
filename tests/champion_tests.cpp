@@ -427,7 +427,7 @@ void campaign_and_cancellation()
                 party.advance(id, party.default_advancement(id));
             auto state = party.checkpoint();
             state.roster[0].vitals.hit_points = 1;
-            party.restore(state);
+            party.restore(std::move(state));
             auto actors = party.participants();
             actors[0].cell = {2, 2};
             actors.push_back({2, "vanguard", "Enemy", Side::opposition, {3, 2}});

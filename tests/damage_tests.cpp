@@ -449,7 +449,7 @@ void advancement_keeps_mortality()
     const auto id = party.add_pc(hero());
     auto state = party.checkpoint();
     state.roster[0].vitals = {0, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 4321000 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
-    party.restore(state);
+    party.restore(std::move(state));
     party.award_experience(900, "damage-test");
     party.advance(id, party.default_advancement(id));
     check(party.member(id).vitals.hit_points == 0 &&

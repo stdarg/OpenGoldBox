@@ -152,7 +152,7 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
     return result;
 }
 
-EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string source)
+EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_view source)
 {
     try
     {
@@ -178,7 +178,7 @@ EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string s
     }
     catch (const EclError &e)
     {
-        throw EclError(source + ": " + e.what());
+        throw EclError(std::string(source) + ": " + e.what());
     }
 }
 } // namespace opengold::por

@@ -86,7 +86,7 @@ void wound(CampaignParty &party, MemberId id, int hit_points)
     for (auto &m : state.roster)
         if (m.id == id)
             m.vitals = {hit_points, false, ""};
-    party.restore(state);
+    party.restore(std::move(state));
 }
 
 // Sets a member's Hit Points, keeping its resources and effects.
@@ -96,7 +96,7 @@ void hurt(CampaignParty &party, MemberId id, int hit_points)
     for (auto &m : state.roster)
         if (m.id == id)
             m.vitals.hit_points = hit_points;
-    party.restore(state);
+    party.restore(std::move(state));
 }
 
 int hp(const CampaignParty &party, MemberId id)
@@ -169,7 +169,7 @@ void spell_checks()
     for (auto &m : state.roster)
         if (m.id == cleric)
             m.vitals = {m.vitals.hit_points, false, ""};
-    refreshed.restore(state);
+    refreshed.restore(std::move(state));
     refreshed.use_camp_action(cleric, fighter, "healing_word");
     check(hp(refreshed, fighter) > 0, "Healing raises an unconscious member");
 

@@ -49,7 +49,7 @@ class EclProgram
     // Validates record size and five entry jumps. Reachable bodies decode on demand:
     // embedded data is not interpreted as instructions. Prefix is retained, not guessed.
     [[nodiscard]] static EclProgram decode(std::span<const std::uint8_t> record,
-                                           std::string source);
+                                           std::string_view source);
     [[nodiscard]] EclInstruction instruction(std::uint32_t address) const;
     // Decode a machine's private, potentially modified copy of this record.
     [[nodiscard]] EclInstruction instruction(std::uint32_t address,

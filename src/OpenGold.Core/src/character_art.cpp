@@ -328,7 +328,7 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
         auto decoded = decode_dax_archive(bytes);
         if (!decoded)
             throw std::runtime_error("Invalid character art archive: " + name);
-        return decoded.records;
+        return std::move(decoded.records);
     };
     CharacterArt art;
     for (unsigned disk = 1; disk <= 8; ++disk)

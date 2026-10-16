@@ -579,7 +579,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                 for (auto record : paying)
                     experience += area_resources().conversions.at(record).award_xp;
                 campaign_->award_experience(experience, reward);
-                pending_loot_.push_back(encounter_loot(current_area_, paying, reward + ":loot",
+                pending_loot_.push_back(encounter_loot(current_area_, std::move(paying), reward + ":loot",
                                                        machine_.variable(EclAddress{0x6DE3}) != 1));
                 claim_loot();
             }
@@ -997,10 +997,10 @@ void RolfTourSession::fit_staged_encounter()
             continue;
         const auto id = static_cast<rules::EntityId>(1000 + enemies.size());
         const auto &creature = area_resources().encounter_creatures.at(staged_records_[n]);
-        enemies.push_back(staged_enemies_[n]);
+        enemies.push_back(std::move(staged_enemies_[n]));
         enemies.back().id = id;
         enemies.back().name = creature.stored.name + " " + std::to_string(enemies.size());
-        art.push_back(staged_art_[n]);
+        art.push_back(std::move(staged_art_[n]));
         art.back().entity = id;
         records.push_back(staged_records_[n]);
     }
@@ -1574,7 +1574,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             const auto p = snapshot_.pose;
             encounter_ = opengold::CampaignEncounter
             {
-                dungeon_battlefield(map_, p.x, p.y), staged_enemies_, staged_art_,
+                dungeon_battlefield(map_, p.x, p.y), std::move(staged_enemies_), std::move(staged_art_),
                 area_resources().terrain_art,        p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;

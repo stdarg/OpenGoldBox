@@ -236,7 +236,7 @@ void spending_and_continuation()
     state.subminute_milliseconds = 1234;
     for (auto &m : state.roster)
         m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
-    party.restore(state);
+    party.restore(std::move(state));
     rejects(
         [&]
     {
@@ -372,7 +372,7 @@ void expiry_and_atomicity()
     check(saved(one_die) == full, "A character at full HP spends no Hit Die, HP or RNG");
     auto wounded = one_die.checkpoint();
     wounded.roster.front().vitals.hit_points = 1;
-    one_die.restore(wounded);
+    one_die.restore(std::move(wounded));
     const auto last = one_die.heal_with_hit_dice(one_die.state().short_rest->ticket, one);
     check(last.size() == 1 && last.back().remaining == 0,
           "Healing stops when the only Hit Die is spent");
@@ -442,7 +442,7 @@ void expiry_and_atomicity()
         auto state = party.checkpoint();
         state.time_minutes = std::numeric_limits<std::uint64_t>::max();
         state.roster[0].last_rest_minutes.reset();
-        party.restore(state);
+        party.restore(std::move(state));
         const auto overflow = saved(party);
         rejects(
             [&]
@@ -465,7 +465,7 @@ void expiry_and_atomicity()
     check(saved(party) == exhausted, "Session counter exhaustion is atomic");
     state.next_rest_session = 1;
     state.roster[0].vitals = {0, false, dying_resources(1, 2)};
-    party.restore(state);
+    party.restore(std::move(state));
     const auto unconscious = saved(party);
     check(!party.rest(RestKind::short_rest) && !party.rest() && saved(party) == unconscious,
           "No eligible member denies both kinds without time or RNG");
@@ -620,7 +620,7 @@ void campaign_services()
         }
     // Inn completion is still an event transaction. An unsupported instruction
     // after recovery restores the pre-event clock, resources, cooldowns and RNG.
-    party->restore(state);
+    party->restore(std::move(state));
     auto failed = program({56, 0, 9, 56, 0, 0, 0});
     por::RolfTourSession inn({}, failed, {}, 0x9914, {}, resources);
     inn.campaign_party(party);
@@ -649,7 +649,7 @@ void watch_interruption_and_rollback()
         party->equip(owner, sword);
         auto initial = party->checkpoint();
         initial.roster[0].vitals = {1, false, spent_resources("Fighter")};
-        party->restore(initial);
+        party->restore(std::move(initial));
         Bytes bytes{0, 0};
         for (unsigned n = 0; n < 5; ++n)
             bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
@@ -903,7 +903,7 @@ void malformed_continuation()
           "Correct-checksum malformed continuations cannot replace the live campaign");
     auto state = party.checkpoint();
     state.short_rest->ticket.revision = std::numeric_limits<std::uint64_t>::max();
-    party.restore(state);
+    party.restore(std::move(state));
     const auto exhausted = saved(party);
     rejects(
         [&]

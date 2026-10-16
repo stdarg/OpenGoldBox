@@ -162,7 +162,7 @@ void campaign()
         auto state = party.checkpoint();
         state.roster[0].vitals.hit_points -= 2;
         state.wealth[3] = 37;
-        party.restore(state);
+        party.restore(std::move(state));
         auto actors = party.participants();
         actors[0].cell = {1, 1};
         actors.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});

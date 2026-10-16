@@ -408,7 +408,7 @@ template <bool Reading> struct SaveCodec
                 }
                 // Built once the history is known to be sound: evaluating the
                 // character is the expensive part (Effective C++ Item 26).
-                Character character(*creation, std::move(draft), appearance);
+                Character character(*creation, std::move(draft), std::move(appearance));
                 character.replay(*module, history, edits, training, hall);
                 Inventory inventory;
                 field(inventory);

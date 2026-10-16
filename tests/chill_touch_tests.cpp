@@ -636,7 +636,7 @@ void death_saves_outside_combat()
     state.next_combat_scope = 6;
     whole.restore(state);
     CampaignParty pieces(module());
-    pieces.restore(state);
+    pieces.restore(std::move(state));
     whole.advance_time(std::chrono::milliseconds(6000));
     pieces.advance_time(std::chrono::milliseconds(1));
     const auto settled = encode_campaign(pieces, nullptr, "chill-death-saves");
@@ -671,7 +671,7 @@ void persistence()
         const auto id = party.add_pc(h);
         auto stage = party.checkpoint();
         stage.roster[0].vitals = blocked_state(*rules, h, 1);
-        party.restore(stage);
+        party.restore(std::move(stage));
         auto bytes = encode_campaign(party, nullptr, "chill");
         CampaignParty copy(module());
         copy.restore(
@@ -792,7 +792,7 @@ void stable_continuation()
     stage.roster[0].vitals = stable_blocked();
     stage.random_state.value = 17;
     stage.next_combat_scope = 6;
-    party.restore(stage);
+    party.restore(std::move(stage));
     party.advance_time(std::chrono::milliseconds(1000));
     const auto pending = party.member(id).vitals;
     check(pending.hit_points == 0 && pending.resources.find("14400001") != pending.resources.npos &&

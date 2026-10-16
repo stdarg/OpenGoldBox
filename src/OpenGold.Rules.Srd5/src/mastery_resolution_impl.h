@@ -209,7 +209,7 @@ bool Session::use_effect(const Command &command)
 {
     if (command.verb == "effect_attack")
     {
-        const auto m = *mastery_;
+        const auto m = std::move(*mastery_);
         mastery_.reset();
         auto &source = actor(m.actor);
         source.cleave_used = true;
@@ -220,7 +220,7 @@ bool Session::use_effect(const Command &command)
     }
     else if (command.verb == "effect_push")
     {
-        const auto m = *mastery_;
+        const auto m = std::move(*mastery_);
         mastery_.reset();
         auto &target = actor(m.target);
         const auto start = target.source.cell;
@@ -246,12 +246,12 @@ bool Session::use_effect(const Command &command)
     else if (command.item >= 2)
     {
         const auto index = command.item - 2;
-        auto move = champion_offers_.at(index);
+        auto move = std::move(champion_offers_.at(index));
         champion_offers_.erase(champion_offers_.begin() + index);
         if (command.verb == "effect_use")
         {
             move.origin = actor(move.actor).source.cell;
-            champion_move_ = move;
+            champion_move_ = std::move(move);
         }
     }
     else

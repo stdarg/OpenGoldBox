@@ -1157,7 +1157,7 @@ void combat_handoff()
     party->equip(pc, 1);
     auto start = party->checkpoint();
     start.roster[0].vitals.hit_points -= 2;
-    party->restore(start);
+    party->restore(std::move(start));
     const auto hp = party->member(pc).vitals.hit_points;
     CombatDemo fight(module());
     fight.campaign_party(party);
@@ -1270,7 +1270,7 @@ void campaign_encounters()
     auto checkpoint = party->checkpoint();
     checkpoint.roster[0].vitals = {
         1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 1 0 0 0 0 FX8 1 0 0"};
-    party->restore(checkpoint);
+    party->restore(std::move(checkpoint));
     const auto wounded = party->member(pc).vitals;
     const auto still_wounded = [&](const VitalState & state)
     {
@@ -1623,7 +1623,7 @@ void progression_and_services()
     const auto pc = party.add_pc(character("fighter", "Progress"));
     auto damaged = party.checkpoint();
     damaged.roster[0].vitals.hit_points -= 2;
-    party.restore(damaged);
+    party.restore(std::move(damaged));
     const auto starting_hp = party.member(pc).character.sheet().hit_points;
     party.award_experience(300, "quest:slums");
     check(party.member(pc).experience == 300 && party.member(pc).character.sheet().level == 1 &&
@@ -1654,7 +1654,7 @@ void progression_and_services()
     auto wounded = party.checkpoint();
     wounded.roster[0].vitals = {
         0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0", "Unconscious"};
-    party.restore(wounded);
+    party.restore(std::move(wounded));
     check(!party.rest() && party.time_hours() == 32,
           "Unconscious members cannot start a long rest");
     party.set_wealth({0, 0, 0, 50, 0, 0, 0});
@@ -2187,7 +2187,7 @@ void victory_beside_dead_member()
     auto state = party->checkpoint();
     state.roster[1].vitals.hit_points = 0;
     state.roster[1].vitals.dead = true;
-    party->restore(state);
+    party->restore(std::move(state));
     por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
     auto result = start_orc_encounter(town, party);
     check(std::none_of(result.combatants.begin(), result.combatants.end(),

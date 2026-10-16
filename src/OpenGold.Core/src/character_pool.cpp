@@ -205,7 +205,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                 {{7, cloth, skin, trim, cloth, trim}, {15, trim, skin, cloth, trim, cloth}}
             };
             art.validate(appearance);
-            result.emplace_back(rules, std::move(d), appearance);
+            result.emplace_back(rules, std::move(d), std::move(appearance));
         }
     return result;
 }

@@ -1932,7 +1932,7 @@ std::pair<std::string, std::string> cast_at(const detail::SpellDef &spell, unsig
     if (level == spell.level)
         return {std::move(verb), std::move(label)};
     const auto slot = std::to_string(level);
-    return {verb + "_" + slot, label + " (level " + slot + " slot)"};
+    return {std::move(verb) + "_" + slot, std::move(label) + " (level " + slot + " slot)"};
 }
 
 // Whether a Mystic Arcanum spell of this level was cast since the last Long Rest.
@@ -5226,13 +5226,15 @@ void Session::remove_fled()
                 turn_ = 0;
             continue;
         }
-        Departed gone{a.source, a.surrendered ? 0 : a.life.hp, max_hp(a), armor_class(a), vitals(a)};
+        Departed gone{{}, a.surrendered ? 0 : a.life.hp, max_hp(a), armor_class(a), vitals(a)};
         gone.surrendered = a.surrendered;
         if (!a.source.character_profile.empty())
             for (const auto &gear : detail::thrown_gear_items)
                 gone.thrown_gear_left.emplace_back(
                     std::string(gear.key),
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
+        // `a` is erased next, so its participant moves rather than copies.
+        gone.source = std::move(a.source);
         fled_.push_back(std::move(gone));
         actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
         if (i < turn_)
@@ -12569,7 +12571,7 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
 
 void Session::cast_area()
 {
-    const auto aimed = *area_;
+    const auto aimed = std::move(*area_);
     area_.reset();
     auto &a = actor(aimed.caster);
     if (aimed.verb == "lands_aid")
@@ -13731,7 +13733,7 @@ void Session::choose_target(const Command &command)
 
 void Session::cast_on_selection()
 {
-    const auto selection = *selection_;
+    const auto selection = std::move(*selection_);
     selection_.reset();
     auto &a = actor(selection.caster);
     // Not a spell: Sanctuary, Invisibility and hiding stay.
@@ -17089,7 +17091,7 @@ void Session::advance_turn_time()
         statue.dc = 1;
         statue.remaining_ms = 4000000000u;
         statue.id = target.effects.next_id++;
-        target.effects.active.push_back(statue);
+        target.effects.active.push_back(std::move(statue));
         log(target.source.name + " stays stone.", {"{name} stays stone.", {{"name", target.source.name}}});
     }
     for (const auto id : corroded)
@@ -18113,9 +18115,9 @@ void Session::perform(const Command &command)
 
 void Session::answer_reaction(const Command &command)
 {
-    const auto prompt = std::move(*reaction_prompt_);
+    auto prompt = std::move(*reaction_prompt_);
     reaction_prompt_.reset();
-    reaction_answers_ = prompt.answers;
+    reaction_answers_ = std::move(prompt.answers);
     reaction_answers_.push_back({prompt.question.target, prompt.question.asked, command.verb});
     auto &defender = actor(prompt.question.target);
     if (command.verb == "shield")
@@ -18307,7 +18309,7 @@ void Session::dispatch(const Command &command)
     }
     else if (graze_)
     {
-        const auto g = *graze_;
+        const auto g = std::move(*graze_);
         graze_.reset();
         if (command.verb == "effect_use")
         {
@@ -18349,7 +18351,7 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "mind_use" || command.verb == "mind_skip")
     {
-        const auto check = *check_choice_;
+        const auto check = std::move(*check_choice_);
         check_choice_.reset();
         const int boost = command.verb == "mind_use" ? roll(10) : 0;
         if (boost && check.natural + d.medicine + check.guidance + boost >= 10)
@@ -20411,7 +20413,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     // callers never receive a partially restored session or lose a live one.
     // The constructor checks identities/geometry; saved order and RNG then
     // replace its fresh initiative state before relational checks run.
-    auto session = std::make_unique<Session>(content, std::move(encounter), 0, true);
+    auto session = std::make_unique<Session>(std::move(content), std::move(encounter), 0, true);
     session->actors_ = std::move(actors);
     session->rng_ = rng;
     session->revision_ = revision;
@@ -23037,7 +23039,7 @@ class Module final : public RulesModule
         std::vector<std::pair<Actor, VitalState *>> members;
         for (const auto &member : party)
             if (&member.state.get() != &user_state)
-                members.push_back({camp_actor(member.sheet, member.state), &member.state.get()});
+                members.emplace_back(camp_actor(member.sheet, member.state), &member.state.get());
         std::vector<Actor *> chosen{&caster};
         for (auto &[actor, state] : members)
             chosen.push_back(&actor);
@@ -24209,7 +24211,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         row >> std::ws;
         if (!row.eof())
             throw std::runtime_error("Unknown creature fields: " + key);
-        content.definitions.emplace(std::move(key), d);
+        content.definitions.emplace(std::move(key), std::move(d));
     }
     if (content.definitions.empty())
         throw std::runtime_error("Empty rules content");

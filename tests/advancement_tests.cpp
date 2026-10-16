@@ -613,7 +613,7 @@ void asi_conformance()
                 baseline.advance(id, baseline.default_advancement(id));
             auto wounded = baseline.checkpoint();
             wounded.roster.front().vitals.hit_points -= 3;
-            baseline.restore(wounded);
+            baseline.restore(std::move(wounded));
             const auto original = baseline.member(id);
             const auto initial = saved(baseline);
             if (!npc)
@@ -770,7 +770,7 @@ void verify_asi_ui(const char *klass, const char *file)
         .party);
     auto state = expected.checkpoint();
     state.selected_slot = actual.state().selected_slot;
-    expected.restore(state);
+    expected.restore(std::move(state));
     check(
         encode_campaign(actual, nullptr, assets) == encode_campaign(expected, nullptr, assets),
         "UI ASI exactly matches native scores, sources, spells, HP, equipment, resources and history");

@@ -228,7 +228,7 @@ void run()
     for (auto &m : state.roster)
         if (m.id == dead)
             m.vitals = {0, true, "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0", "Dead"};
-    excluded.restore(state);
+    excluded.restore(std::move(state));
     check(bool(excluded.rest(RestKind::long_rest)) && !excluded.state().training_rest,
           "Unqualified/dead/reserve/pending-training members do not gain replacement windows");
 }

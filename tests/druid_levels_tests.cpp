@@ -351,7 +351,7 @@ void reincarnate_checks()
         if (m.id == fallen)
             m.vitals = unit(*c, 5).persistent;
     coins(state.wealth, Coin::gold) = 1000;
-    party.restore(state);
+    party.restore(std::move(state));
     check_throws([&]
     {
         party.use_camp_action(healer, fallen, "reincarnate");

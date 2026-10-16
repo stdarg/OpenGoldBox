@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <iterator>
 #include <limits>
 #include <queue>
 #include <set>
@@ -194,7 +195,8 @@ void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string
 void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string reward_id)
 {
     auto participants = campaign_ ? campaign_->participants() : party();
-    participants.insert(participants.end(), enemies.begin(), enemies.end());
+    participants.insert(participants.end(), std::make_move_iterator(enemies.begin()),
+                        std::make_move_iterator(enemies.end()));
     auto next = module_->create(
     {   arena(), std::move(participants), campaign_ ? campaign_->state().next_combat_scope : 1, 100,
         campaign_ ? coins(campaign_->state().wealth, Coin::gold) : 0

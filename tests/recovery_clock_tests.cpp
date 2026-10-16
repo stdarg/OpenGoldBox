@@ -224,7 +224,7 @@ void combat_and_campaign()
     const auto id = party.add_pc(character);
     auto checkpoint = party.checkpoint();
     checkpoint.roster[0].vitals = stable;
-    party.restore(checkpoint);
+    party.restore(std::move(checkpoint));
     const auto saved = encode_campaign(party, nullptr, "clock");
     auto disk = decode_campaign(saved, *srd5::character_rules(), *rules, "clock", nullptr);
     CampaignParty restored(module());

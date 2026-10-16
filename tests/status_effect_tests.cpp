@@ -452,7 +452,7 @@ void campaign()
             vitals = unit(*session, member.id).persistent;
         member.vitals = with_effects(vitals, blind());
     }
-    party.restore(state);
+    party.restore(std::move(state));
     party.advance_time(std::chrono::milliseconds(1234));
     const auto saved = encode_campaign(party, nullptr, "conditions");
     auto loaded = decode_campaign(saved, *srd5::character_rules(), *rules, "conditions", nullptr);
@@ -532,7 +532,7 @@ void original_encounter_scope()
     }
     auto state = party->checkpoint();
     state.next_combat_scope = 11;
-    party->restore(state);
+    party->restore(std::move(state));
     CombatDemo demo(module());
     demo.campaign_party(party);
     CampaignEncounter encounter;

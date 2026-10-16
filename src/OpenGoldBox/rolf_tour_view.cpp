@@ -1290,7 +1290,7 @@ void RolfTourView::check_town()
         if (campaign_->profile(id).armor_class != ac)
             throw std::runtime_error("Inventory Unequip did not remove shield AC");
         required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
-        const auto retained = campaign_->checkpoint();
+        auto retained = campaign_->checkpoint();
         auto changed = retained;
         auto &member = changed.roster.at(0);
         auto inventory = member.character.inventory();
@@ -1305,7 +1305,7 @@ void RolfTourView::check_town()
         member.character.replace_inventory(std::move(inventory));
         member.equipped.clear();
         member.vitals = {member.character.sheet().hit_points, false, {}};
-        campaign_->restore(changed);
+        campaign_->restore(std::move(changed));
         refresh_inventory();
         required_node<ItemList>(*this, "InventoryPanel/Items").select(0);
         required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
@@ -1319,7 +1319,7 @@ void RolfTourView::check_town()
                                                               .name = "Quarterstaff",
                                                               .quantity = 1});
         wielder.equipped.push_back(staff);
-        campaign_->restore(staff_fixture);
+        campaign_->restore(std::move(staff_fixture));
         refresh_inventory();
         if (campaign_->profile(id).weapon_hands != 1)
             throw std::runtime_error("A shield must keep the quarterstaff one-handed");
@@ -1327,7 +1327,7 @@ void RolfTourView::check_town()
         required_node<Button>(*this, "InventoryPanel/Unequip").emit_signal("pressed");
         if (campaign_->profile(id).weapon_hands != 2)
             throw std::runtime_error("Removing the shield must free the second hand");
-        campaign_->restore(retained);
+        campaign_->restore(std::move(retained));
         refresh_inventory();
         capture_frame("phlan-inventory");
         required_node<Button>(*this, "InventoryPanel/Close").emit_signal("pressed");
@@ -1713,14 +1713,14 @@ void RolfTourView::check_recovery()
         {
             // A wounded member gives the reloaded rest something to heal; the
             // route then continues from the unwounded party.
-            const auto rested = campaign_->checkpoint();
+            auto rested = campaign_->checkpoint();
             auto wounded = rested;
             wounded.roster.at(0).vitals.hit_points = 1;
             campaign_->restore(std::move(wounded));
             (void)campaign_->rest(opengold::RestKind::short_rest);
             save_check_("short-rest-spending");
             campaign_->finish_short_rest(campaign_->state().short_rest->ticket);
-            campaign_->restore(rested);
+            campaign_->restore(std::move(rested));
         }
         capture_frame("party-rest");
         recovery_stage_ = 8;

@@ -349,7 +349,7 @@ void campaign_and_rest()
             const auto patient = party.add_pc(hero("wizard", 1));
             auto state = party.checkpoint();
             rules->set_hit_points(state.roster[1].vitals, state.roster[1].character.sheet(), 0);
-            party.restore(state);
+            party.restore(std::move(state));
             auto actors = party.participants();
             actors[0].cell = {1, 1};
             actors[1].cell = {2, 1};

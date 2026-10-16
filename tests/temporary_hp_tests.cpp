@@ -330,7 +330,7 @@ void campaign()
         rules->grant_temporary_hit_points(member.vitals, member.character.sheet(),
         {8, "spell:fixture"}, TemporaryHpChoice::use_new);
     }
-    party.restore(state);
+    party.restore(std::move(state));
     const auto bytes = saved(party);
     auto copy = loaded(bytes);
     check(saved(copy) == bytes,

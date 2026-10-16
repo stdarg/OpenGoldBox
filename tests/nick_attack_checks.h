@@ -150,7 +150,7 @@ void grants_and_budgets()
     // An unrelated Bonus Action does not consume Nick.
     auto state = p.checkpoint();
     state.roster[0].vitals.hit_points -= 3;
-    p.restore(state);
+    p.restore(std::move(state));
     c = battle(p);
     act(*c, "second_wind");
     act(*c, "melee", 99);
@@ -381,7 +381,7 @@ void ui_fixtures()
     // Wounded, so the spent-bonus fixture can use Second Wind.
     auto saved = p.checkpoint();
     saved.roster[0].vitals.hit_points -= 3;
-    p.restore(saved);
+    p.restore(std::move(saved));
     auto actors = p.participants();
     actors.front().cell = {1, 1};
     actors.push_back({99, "vanguard", "Target", Side::opposition, {2, 1}});

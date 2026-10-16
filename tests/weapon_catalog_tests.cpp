@@ -381,7 +381,7 @@ void campaign()
         auto state = party.checkpoint();
         state.roster[0].vitals = {
             5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
-        party.restore(state);
+        party.restore(std::move(state));
         party.equip(id, item);
         const auto before = encode_campaign(party, nullptr, "catalog");
         if (e.has("two-handed"))
