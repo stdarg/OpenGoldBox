@@ -3589,6 +3589,14 @@ class Session final : public CombatSession
         unsigned slot{};   // the slot level a zone whose damage grows with it was cast at
     };
     std::vector<Zone> zones_;
+    // walled_board()'s last results, without and with the walls only force
+    // stops; a session is used from one thread at a time (Item 16).
+    struct WalledBoard
+    {
+        std::vector<Cell> walls;
+        Battlefield board;
+    };
+    mutable std::array<std::optional<WalledBoard>, 2> walled_boards_;
     std::shared_ptr<ProfileDefinitions> profiles_ = std::make_shared<ProfileDefinitions>();
     std::vector<ChampionMove> champion_offers_;
     std::optional<EffectReaction> effect_reaction_origin_;
@@ -3880,16 +3888,26 @@ class Session final : public CombatSession
         });
     }
 
-    Battlefield walled_board(bool force) const
+    // The board with the walls standing now, built again only when they
+    // change: line of sight asks for it many times a command. The board
+    // itself never changes during a fight.
+    const Battlefield &walled_board(bool force) const
     {
-        auto board = board_;
+        std::vector<Cell> walls;
         for (const auto &zone : zones_)
             if (zone.kind == ZoneKind::stone_wall ||
                     (force && (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::ice_wall)))
-                for (const auto cell : zone.cells)
-                    board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
-                        Terrain::obstacle;
-        return board;
+                walls.insert(walls.end(), zone.cells.begin(), zone.cells.end());
+        auto &cached = walled_boards_[force ? 1 : 0];
+        if (!cached || cached->walls != walls)
+        {
+            auto board = board_;
+            for (const auto cell : walls)
+                board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
+                    Terrain::obstacle;
+            cached = WalledBoard{std::move(walls), std::move(board)};
+        }
+        return cached->board;
     }
 
     // Heavily Obscured squares block sight into and out of them.
@@ -11297,6 +11315,7 @@ bool Session::confused_turn(Actor &a)
         constexpr std::array<Cell, 4> directions{Cell{0, -1}, Cell{1, 0}, Cell{0, 1}, Cell{-1, 0}};
         const auto step = directions[static_cast<std::size_t>(roll(4) - 1)];
         int left = movement_left(a);
+        const auto board = zoned_board();
         for (Cell next{a.source.cell.x + step.x, a.source.cell.y + step.y};
                 board_.contains(next) && board_.at(next) != Terrain::obstacle && left >= 5 &&
                 std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -11305,7 +11324,7 @@ bool Session::confused_turn(Actor &a)
         });
         next = {next.x + step.x, next.y + step.y})
         {
-            left -= zoned_board().at(next) == Terrain::difficult ? 10 : 5;
+            left -= board.at(next) == Terrain::difficult ? 10 : 5;
             if (left < 0)
                 break;
             a.source.cell = next;
@@ -11377,9 +11396,10 @@ Actor &Session::summon(const Actor &caster, std::string definition, std::string 
 std::vector<Cell> Session::free_squares_near(Cell from) const
 {
     std::vector<Cell> cells;
+    const auto board = zoned_board();
     for (int y = 0; y < board_.height; ++y)
         for (int x = 0; x < board_.width; ++x)
-            if (const Cell cell{x, y}; zoned_board().at(cell) != Terrain::obstacle &&
+            if (const Cell cell{x, y}; board.at(cell) != Terrain::obstacle &&
                     !guarded_square(cell) &&
                     std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
         {
@@ -14278,13 +14298,14 @@ bool Session::can_hide(const Actor &a) const
         if (enemy.source.side == a.source.side || !conscious(enemy) ||
                 obscured(enemy, enemy.source.cell) || obscured(enemy, a.source.cell))
             return false;
+        if (!def(a).naturally_stealthy)
+            return detail::has_line_of_sight(board_, enemy.source.cell, a.source.cell);
         auto board = board_;
-        if (def(a).naturally_stealthy)
-            for (const auto &other : actors_)
-                if (!other.life.dead && other.source.id != a.source.id &&
-                        other.source.id != enemy.source.id && def(other).size > def(a).size)
-                    board.terrain[other.source.cell.y * board_.width + other.source.cell.x] =
-                        Terrain::obstacle;
+        for (const auto &other : actors_)
+            if (!other.life.dead && other.source.id != a.source.id &&
+                    other.source.id != enemy.source.id && def(other).size > def(a).size)
+                board.terrain[other.source.cell.y * board_.width + other.source.cell.x] =
+                    Terrain::obstacle;
         return detail::has_line_of_sight(board, enemy.source.cell, a.source.cell);
     });
 }
@@ -18037,8 +18058,8 @@ void Session::perform(const Command &command)
         return;
     }
     // Undo everything the command did before the hit: the replay rolls the
-    // same dice from the same state.
-    const Session before = *this;
+    // same dice from the same state. The restore moves, as submit()'s does.
+    Session before = *this;
     try
     {
         askable_ = true;
@@ -18051,15 +18072,15 @@ void Session::perform(const Command &command)
     }
     catch (const ReactionQuestion &question)
     {
-        *this = before;
-        reaction_prompt_ = PendingReaction{question, command, reaction_answers_};
+        *this = std::move(before);
+        reaction_prompt_ = PendingReaction{question, command, std::move(reaction_answers_)};
         reaction_answers_.clear();
     }
 }
 
 void Session::answer_reaction(const Command &command)
 {
-    const auto prompt = *reaction_prompt_;
+    const auto prompt = std::move(*reaction_prompt_);
     reaction_prompt_.reset();
     reaction_answers_ = prompt.answers;
     reaction_answers_.push_back({prompt.question.target, prompt.question.asked, command.verb});
@@ -23879,7 +23900,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.237", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.238", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
