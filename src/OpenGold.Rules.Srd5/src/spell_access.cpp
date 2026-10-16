@@ -172,6 +172,10 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"stoneskin", "Stoneskin", 4, 0, druid_list | ranger_list | sorcerer_list | wizard_list},
     Spell{"conjure_woodland_beings", "Conjure Woodland Beings", 4, 0, druid_list | ranger_list},
     Spell{"dominate_beast", "Dominate Beast", 4, 0, druid_list | ranger_list | sorcerer_list},
+    Spell{"mass_healing_word", "Mass Healing Word", 3, 0, bard_list | cleric_list},
+    Spell{"spirit_guardians", "Spirit Guardians", 3, 0, cleric_list},
+    Spell{"bestow_curse", "Bestow Curse", 3, 0, bard_list | cleric_list | wizard_list},
+    Spell{"animate_dead", "Animate Dead", 3, 0, cleric_list | wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};
@@ -290,7 +294,11 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::cleric, "aid", 3},
     AlwaysPrepared{CharacterClass::cleric, "bless", 3},
     AlwaysPrepared{CharacterClass::cleric, "cure_wounds", 3},
-    AlwaysPrepared{CharacterClass::cleric, "lesser_restoration", 3}};
+    AlwaysPrepared{CharacterClass::cleric, "lesser_restoration", 3},
+    AlwaysPrepared{CharacterClass::cleric, "mass_healing_word", 5},
+    AlwaysPrepared{CharacterClass::cleric, "revivify", 5},
+    AlwaysPrepared{CharacterClass::cleric, "aura_of_life", 7},
+    AlwaysPrepared{CharacterClass::cleric, "death_ward", 7}};
 
 const PreparedCaster *prepared_caster(CharacterClass klass)
 {
@@ -1314,6 +1322,18 @@ std::vector<AdvancementOption> magic_initiate_feats(std::span<const FeatureGrant
 bool prepares_spells(CharacterClass klass)
 {
     return klass == CharacterClass::wizard || prepared_caster(klass);
+}
+
+bool on_class_list(CharacterClass klass, std::string_view spell)
+{
+    const auto *caster = prepared_caster(klass);
+    const auto found = std::find_if(spells.begin(), spells.end(), [&](const auto & s)
+    {
+        return s.id == spell;
+    });
+    const unsigned list = klass == CharacterClass::wizard ? wizard_list
+                          : caster ? caster->list : 0u;
+    return found != spells.end() && (found->lists & list);
 }
 
 std::vector<std::string> known_cantrip_ids(const SpellAccess &access)

@@ -744,6 +744,22 @@ TrainingChoiceGroup defensive_tactics_options()
     return group;
 }
 
+// Blessed Strikes: the Cleric's choice at level seven (SRD 5.2.1 p. 38).
+TrainingChoiceGroup blessed_strikes_options()
+{
+    TrainingChoiceGroup group{std::string(blessed_strikes), "Blessed Strikes", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 7;
+    group.options = {
+        {   "divine_strike", "Divine Strike",
+            "Once on each of your turns, a weapon hit deals 1d8 more Necrotic or Radiant damage."
+        },
+        {   "potent_spellcasting", "Potent Spellcasting",
+            "Add your Wisdom modifier to the damage of your Cleric cantrips."
+        }};
+    return group;
+}
+
 // Circle of the Land: the land type that picks the Circle Spells (SRD 5.2.1 p. 46).
 TrainingChoiceGroup land_options()
 {

@@ -48,7 +48,7 @@ Leveled preparation and Divine Order are in
 
 ## Persistence
 
-**PC42** combat recipes store an explicit spell ID list; the existing grant
+**PC43** combat recipes store an explicit spell ID list; the existing grant
 section contains the spell sources and the spell list must agree with them.
 Campaign saves store explicit starting cantrip choices. Campaigns replay creation
 and recorded advancement to reconstruct knowledge, including now-unprepared

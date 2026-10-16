@@ -218,6 +218,13 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 15)
             add("feature:smite_of_protection", "subclass:paladin:devotion");
     }
+    if (klass == CharacterClass::cleric)
+    {
+        if (level == 5)
+            add("feature:sear_undead", "class:cleric");
+        if (level == 6)
+            add("feature:blessed_healer", "subclass:cleric:life");
+    }
     // Roving's Climb and Swim Speeds are cut (SCOPE-2); its Speed stays.
     if (klass == CharacterClass::ranger)
     {
@@ -449,6 +456,14 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                     (grant.id == "prey:colossus_slayer" || grant.id == "prey:horde_breaker"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == blessed_strikes)
+        {
+            // Blessed Strikes: one of its two options, chosen at level seven.
+            require(klass == CharacterClass::cleric && grant.level == 7 && grant.choices.empty() &&
+                    (grant.id == "strikes:divine_strike" ||
+                     grant.id == "strikes:potent_spellcasting"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == defensive_tactics)
         {
             // Defensive Tactics: one of its two options, chosen at level seven.
@@ -525,6 +540,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({"subclass:ranger:hunter", 0}));
     if (klass == CharacterClass::ranger && level >= 7)
         require(entitlements.contains({std::string(defensive_tactics), 0}));
+    if (klass == CharacterClass::cleric && level >= 7)
+        require(entitlements.contains({std::string(blessed_strikes), 0}));
     if (klass == CharacterClass::fighter && level >= 7)
         require(entitlements.contains({std::string(champion_style), 0}));
     require(required.empty() && advancement_count == feats_by(klass, level));

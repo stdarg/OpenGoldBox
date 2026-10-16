@@ -218,7 +218,7 @@ void access()
         });
     }
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC42 1 2 4 fire_bolt poison_spray ray_of_frost shocking_grasp "),
+    check(profile.starts_with("PC43 1 2 4 fire_bolt poison_spray ray_of_frost shocking_grasp "),
           "The recipe lists all four selected cantrips");
     profile.replace(0, 4, "PC28");
     rejects(

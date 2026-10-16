@@ -196,7 +196,7 @@ void access()
             });
         }
     const auto profile = rules->character_profile(h.sheet(), {}).data;
-    const std::string spells = "PC42 1 0 2 sacred_flame cure_wounds ";
+    const std::string spells = "PC43 1 0 2 sacred_flame cure_wounds ";
     check(profile.starts_with(spells), "The recipe lists the selected cantrip");
     const auto rejects_recipe = [&](const std::string & recipe)
     {
@@ -211,7 +211,7 @@ void access()
         });
     };
     rejects_recipe("PC28" + profile.substr(4));
-    rejects_recipe("PC42 1 0 1 cure_wounds " + profile.substr(spells.size()));
+    rejects_recipe("PC43 1 0 1 cure_wounds " + profile.substr(spells.size()));
     auto invalid = h.sheet();
     for (auto &g : invalid.grants)
         if (g.id == "spell:sacred_flame")

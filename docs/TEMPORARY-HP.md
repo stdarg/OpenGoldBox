@@ -74,7 +74,7 @@ pool, actor rows retain Adrenaline Rush uses and whether its movement allowance
 was used this turn. A final section stores the optional unresolved offer. Restore
 validates entitlement, amount/source, spent costs, movement capacity, conscious
 recipient and absence of a competing opportunity queue before committing.
-**PC42** requires the fixed sourced Orc grant.
+**PC43** requires the fixed sourced Orc grant.
 **SRD9** records uses with existing resources, pool, Hit Dice, mortality clocks
 and effects. Orc use counts survive reloads.
 Malformed counters, source IDs, pending offers and trailing fields reject before

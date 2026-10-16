@@ -135,7 +135,7 @@ void medicine_combat()
     VitalState scratch;
     check(character.advance(*rules, scratch), "Scholar medic advances normally");
     const auto profile = rules->character_profile(character.sheet(), {}).data;
-    check(profile.starts_with("PC42 "), "Scholar combat uses the current profile version");
+    check(profile.starts_with("PC43 "), "Scholar combat uses the current profile version");
     auto encounter = [&](const std::string & data)
     {
         return Encounter{{8, 8, std::vector<Terrain>(64)},

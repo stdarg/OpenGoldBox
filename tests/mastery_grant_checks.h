@@ -65,7 +65,7 @@ void run()
         check(h.sheet().training.masteries.size() == options.count,
               "Real character creation produces chosen mastery grants");
         auto rules = module();
-        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
+        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC43 "),
               "Chosen masteries use validated combat recipes");
         for (unsigned n = 0; n < options.count; ++n)
         {

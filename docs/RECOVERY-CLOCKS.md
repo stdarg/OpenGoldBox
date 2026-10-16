@@ -72,7 +72,7 @@ snapshots and failed original events cannot partially advance recovery.
 In **OGCOMBAT 40**, each actor row stores the remaining death-save and
 Stable-recovery milliseconds after its Hit Dice count. **SRD11** vital
 continuation carries both clocks alongside existing pools, counters, Hit Dice
-and FX8 effects. **PC42** includes the fixed Dwarf resistance grant;
+and FX8 effects. **PC43** includes the fixed Dwarf resistance grant;
 see [typed damage](DAMAGE.md).
 
 Clocks must agree with vitality: healthy/dead creatures have none, Stable

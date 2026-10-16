@@ -366,7 +366,7 @@ void two_weapon_equipment()
               party.member(id).item_sources.at(unit).stored.type == 8,
               "A split equipped unit retains the original item provenance");
         const auto profile = party.profile(id);
-        check(profile.data.starts_with("PC42 ") && profile.weapon_hands == 1 &&
+        check(profile.data.starts_with("PC43 ") && profile.weapon_hands == 1 &&
               profile.equipment_positions[0].source == "Main hand" &&
               profile.equipment_positions[1].source == "Other hand",
               "Dual weapons use one hand each and report both positions");

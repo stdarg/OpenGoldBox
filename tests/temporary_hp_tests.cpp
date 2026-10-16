@@ -308,7 +308,7 @@ void actual_combat()
           "Stale attack cannot consume a pool twice");
     // A forged actor row cannot introduce a negative pool.
     auto corrupt = saved;
-    const auto at = corrupt.find(" 0 \"\" 0 0", corrupt.find("PC42"));
+    const auto at = corrupt.find(" 0 \"\" 0 0", corrupt.find("PC43"));
     check(at != corrupt.npos, "Current actor has the empty pool suffix");
     corrupt.replace(at, 9, " -1 \"x\" 0 0");
     rejects(

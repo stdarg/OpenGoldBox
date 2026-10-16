@@ -158,7 +158,7 @@ void grants()
         check(srd5::detail::has_grant(h.sheet().grants, "feature:tactical_mind") == mind,
               "Tactical Mind attained from level two");
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        check(profile.starts_with("PC42 "), "Every profile uses the current profile tag");
+        check(profile.starts_with("PC43 "), "Every profile uses the current profile tag");
         if (mind)
         {
             profile.replace(0, 4, "PC29");

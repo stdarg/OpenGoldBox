@@ -243,7 +243,7 @@ void access()
               "Advancement retains chosen cantrips, source and correct entitlement");
     }
     auto profile = rules->character_profile(hero().sheet(), {}).data;
-    check(profile.starts_with("PC42 1 ") && profile.find(" poison_spray ") != profile.npos,
+    check(profile.starts_with("PC43 1 ") && profile.find(" poison_spray ") != profile.npos,
           "Explicit cantrip choice belongs to the profile recipe");
     profile.replace(0, 4, "PC10");
     rejects(

@@ -182,7 +182,7 @@ void access()
                 }
         check(checked, "Real attack bonus observed");
         auto profile = rules->character_profile(h.sheet(), {}).data;
-        check(profile.starts_with("PC42 ") && profile.find(" chill_touch ") != profile.npos,
+        check(profile.starts_with("PC43 ") && profile.find(" chill_touch ") != profile.npos,
               "Profile lists the learned cantrip");
         profile.replace(0, 4, "PC28");
         rejects(

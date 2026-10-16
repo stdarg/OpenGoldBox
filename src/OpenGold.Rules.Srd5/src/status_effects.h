@@ -265,9 +265,18 @@ enum class EffectKind : unsigned
     // Superior Hunter's Defense (Hunter 15): Resistance to the DamageType in
     // `dc` until the end of the turn.
     defending = 105,
+    // Spirit Guardians: the creature has saved against them this turn.
+    guarded = 106,
+    // Bestow Curse: `dc` indexes curses; 10 more when no Concentration holds it.
+    cursed = 107,
+    // Animate Dead's minute of casting, on its caster: `dc` is the slot level,
+    // spent only once the corpses rise.
+    animating = 108,
+    // Animate Dead: a Zombie its source commands (LEVELS-1).
+    raised = 109,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = defending
+    last = raised
 };
 
 // Magic Circle's creature types, by `dc`.

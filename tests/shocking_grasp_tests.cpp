@@ -151,7 +151,7 @@ void access()
           access.cantrips[0].source_id == "class:wizard:spellcasting",
           "Real Wizard source");
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC42 1 0 2 shocking_grasp magic_missile "),
+    check(profile.starts_with("PC43 1 0 2 shocking_grasp magic_missile "),
           "The recipe lists the selected cantrip");
     profile.replace(0, 4, "PC32");
     rejects(

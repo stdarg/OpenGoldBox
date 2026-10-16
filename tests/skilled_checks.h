@@ -180,7 +180,7 @@ void persistence()
     auto p = ready("wizard", "sage");
     p.advance(1, pick(p, {"skill:stealth", "skill:perception", "skill:survival"}));
     const auto sheet = p.member(1).character.sheet();
-    check(p.rule_module().character_profile(sheet, {}).data.starts_with("PC42 "),
+    check(p.rule_module().character_profile(sheet, {}).data.starts_with("PC43 "),
           "A Skilled profile is written in the current profile format");
     const auto saved = encode_campaign(p, nullptr, "skilled-persist");
     CampaignParty reloaded(module());

@@ -206,7 +206,8 @@ void table()
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
               spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||
-              spell.pattern == SpellPattern::save_condition || spell.pattern == SpellPattern::camp,
+              spell.pattern == SpellPattern::save_condition || spell.pattern == SpellPattern::camp ||
+              spell.pattern == SpellPattern::heal,
               "Only multi-instance patterns repeat or choose several creatures");
         // Thunderwave's push rides on a failed save against its damage.
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
@@ -254,7 +255,7 @@ struct Probe
 };
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
-    {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
+    {"cleric", 4}, {"cleric", 8}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
 
@@ -436,16 +437,16 @@ void behaviour()
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command, Resistance,
-        // Guidance, Chromatic Orb and Protection from Energy are offered once per option, camp spells only outside combat, area spells are aimed,
+        // Guidance, Chromatic Orb, Protection from Energy and Bestow Curse are offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
-        // Revivify a dead one
+        // Revivify a dead one, Animate Dead a corpse
         // Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
         // Remove Curse, which needs a cursed creature, and Dominate Beast, a Beast.
         if (row.pattern == SpellPattern::smite ||
-                ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
-                 row.instances > 1) ||
+                ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
+                  row.pattern == SpellPattern::heal) && row.instances > 1) ||
                 row.target == SpellTarget::dying_ally || row.target == SpellTarget::dead_ally ||
                 row.rider == Rider::command || row.rider == Rider::resistance ||
                 row.rider == Rider::guidance ||
@@ -457,6 +458,7 @@ void behaviour()
                 row.pattern == SpellPattern::weapon_strike ||
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
+                row.rider == Rider::bestow_curse || row.target == SpellTarget::corpse ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
                 row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
@@ -474,7 +476,7 @@ void behaviour()
 
 // ---- profile tag ----------------------------------------------------------
 //
-// A stored profile carries exactly one tag, PC42, followed by an explicit
+// A stored profile carries exactly one tag, PC43, followed by an explicit
 // spell list. Profiles are untrusted input (PRD section 20): any other tag
 // must be rejected, never treated as "has everything".
 void profile_tags()
@@ -498,7 +500,7 @@ void profile_tags()
     };
 
     const auto rogue = rules->character_profile(hero("rogue", 1, {}).sheet(), {}).data;
-    check(rogue.starts_with("PC42 "), "A Rogue profile writes the only profile tag");
+    check(rogue.starts_with("PC43 "), "A Rogue profile writes the only profile tag");
 
     // A Wizard profile writes an explicit spell list. Split it so the tag and
     // the spell list can be replaced independently.
@@ -515,7 +517,7 @@ void profile_tags()
         listed += " " + spell;
     }
     std::getline(split, rest);
-    check(tag == "PC42" && count > 0, "A Wizard profile stores spells as an explicit list");
+    check(tag == "PC43" && count > 0, "A Wizard profile stores spells as an explicit list");
     const auto rebuild = [&](const std::string & new_tag, const std::string & spell_field)
     {
         return new_tag + " " + level + " " + features + " " + spell_field + rest;
@@ -525,17 +527,17 @@ void profile_tags()
     // Unrecognised tags: earlier profile tags, non-numeric, and not a PC tag at
     // all. An unknown tag must never read as "has everything".
     for (const auto &bad :
-            {"PC00", "PC35", "PC41", "PC43", "PC99", "PCxx", "XX35", "PC-1"
+            {"PC00", "PC35", "PC42", "PC44", "PC99", "PCxx", "XX35", "PC-1"
             })
         check(!loads(rebuild(bad, listed)),
               ("Profile tag " + std::string(bad) + " must be rejected").c_str());
 
-    check(loads(rebuild("PC42", "2 fire_bolt magic_missile")),
+    check(loads(rebuild("PC43", "2 fire_bolt magic_missile")),
           "An explicit spell list loads and satisfies the Wizard grant cross-check");
-    check(!loads(rebuild("PC42", "1 not_a_spell")), "An unknown spell id in the list is rejected");
-    check(!loads(rebuild("PC42", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
-    check(!loads(rebuild("PC42", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
-    check(!loads(rebuild("PC42", "2 fire_bolt sacred_flame")),
+    check(!loads(rebuild("PC43", "1 not_a_spell")), "An unknown spell id in the list is rejected");
+    check(!loads(rebuild("PC43", "99 fire_bolt")), "A spell count beyond the catalog is rejected");
+    check(!loads(rebuild("PC43", "2 fire_bolt fire_bolt")), "A duplicate spell id is rejected");
+    check(!loads(rebuild("PC43", "2 fire_bolt sacred_flame")),
           "A spell the class cannot access is rejected");
 }
 

@@ -224,7 +224,7 @@ void access()
         (void)rules->character_profile(invalid, {});
     });
     auto profile = rules->character_profile(hero().sheet(), {}).data;
-    check(profile.starts_with("PC42 1 ") && profile.find(" eldritch_blast ") != profile.npos,
+    check(profile.starts_with("PC43 1 ") && profile.find(" eldritch_blast ") != profile.npos,
           "Profile lists the selected cantrip");
     profile.replace(0, 4, "PC24");
     rejects(

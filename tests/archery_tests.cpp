@@ -305,14 +305,14 @@ void forged_profiles()
             {99, "vanguard", "Target", Side::opposition, {5, 1}}
         }};
     auto wrong_mask = profile;
-    replace(wrong_mask, "PC42 4 4 ", "PC42 4 0 ");
+    replace(wrong_mask, "PC43 4 4 ", "PC43 4 0 ");
     encounter.participants[0].character_profile = wrong_mask;
     rejects(
         [&]
     {
         (void)rules->create(encounter, 13);
     });
-    replace(profile, "PC42", "PC16");
+    replace(profile, "PC43", "PC16");
     encounter.participants[0].character_profile = profile;
     rejects(
         [&]

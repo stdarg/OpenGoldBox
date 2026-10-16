@@ -32,7 +32,7 @@ and Savage Attacker rolls. One-handed, Ranged, thrown, spell and unarmed attacks
 do not benefit. The Savage Attacker log line shows the resulting totals.
 There are no new combat saving controls.
 
-PC42 validates the new grants; internal combat27 retains signed pending damage
+PC43 validates the new grants; internal combat27 retains signed pending damage
 and the exact RNG continuation. Campaign19 stores a class style choice separately
 from the level-four feat and from locked starting training.
 

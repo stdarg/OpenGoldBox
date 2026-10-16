@@ -39,8 +39,8 @@ std::unique_ptr<RulesModule> rules()
 {
     return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "creature zombie 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
-                               "type zombie undead\n" +
+                               "creature walker 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
+                               "type walker undead\n" +
                                "creature viper 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
                                "damage_types viper poison poison\n" +
                                "creature shade 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n" +
@@ -161,7 +161,7 @@ std::unique_ptr<CombatSession> turned(const RulesModule &module)
 {
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = battle(module, cleric(2), "zombie", seed);
+        auto c = battle(module, cleric(2), "walker", seed);
         check(submit(*c, "turn_undead", 1) && channel(*c) == 1, "Turn Undead spends a use");
         if (logged(*c, "Enemy is turned."))
             return c;
@@ -239,7 +239,7 @@ void incapacitated_turning_checks()
         auto c = module->create({{12, 4, std::vector<Terrain>(48)},
             {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, hero},
                 {98, "campaign-character", "Foe", Side::opposition, {7, 1}, foe},
-                {99, "zombie", "Enemy", Side::opposition, {3, 1}}
+                {99, "walker", "Enemy", Side::opposition, {3, 1}}
             }},
         seed);
         // The turned zombie must move before it may end its turn.
@@ -463,7 +463,7 @@ void hold_person_checks()
 {
     auto module = rules();
     const auto hero = holding_cleric();
-    auto undead = battle(*module, hero, "zombie");
+    auto undead = battle(*module, hero, "walker");
     check(!submit(*undead, "hold_person", 99), "Hold Person holds only a Humanoid");
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {

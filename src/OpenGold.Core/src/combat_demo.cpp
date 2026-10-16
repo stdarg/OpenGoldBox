@@ -885,9 +885,11 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         if (command.verb == "divine_smite_free")
             return command;
     // Favored Enemy's Hunter's Mark and moving it cost no slot, and Horde
-    // Breaker's attack and Superior Hunter's Prey cost nothing, so they come first.
+    // Breaker's attack, Superior Hunter's Prey and Divine Strike cost nothing,
+    // so they come first.
     for (const auto verb : {"hunters_mark_move", "hunters_mark_free", "horde_breaker",
-                            "superior_hunters_prey", "spiritual_weapon_strike"
+                            "superior_hunters_prey", "divine_strike_radiant",
+                            "spiritual_weapon_strike"
                            })
         for (const auto &command : offered)
             if (command.verb == verb)

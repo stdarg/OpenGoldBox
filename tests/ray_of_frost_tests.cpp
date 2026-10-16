@@ -154,7 +154,7 @@ void access()
           access.cantrips[0].acquired_level == 1,
           "Ordinary starting choice has real source and acquisition level");
     auto profile = rules->character_profile(h.sheet(), {}).data;
-    check(profile.starts_with("PC42 1 ") && profile.find(" ray_of_frost ") != profile.npos,
+    check(profile.starts_with("PC43 1 ") && profile.find(" ray_of_frost ") != profile.npos,
           "Profile lists the chosen spell by id");
     profile.replace(0, 4, "PC13");
     rejects(

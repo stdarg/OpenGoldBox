@@ -49,6 +49,7 @@ enum class SpellTarget : unsigned
     ally,         // same side, including the caster
     dying_ally,   // same side, at 0 Hit Points and neither Stable nor dead
     dead_ally,    // same side and dead; offered on its own (Revivify)
+    corpse,       // a Small or Medium Humanoid enemy's corpse; offered on its own (Animate Dead)
     self,         // the caster only
     area          // an area aimed at a point within range (CLASS-5)
 };
@@ -137,7 +138,11 @@ enum class Rider : unsigned
     plant_growth,
     stoneskin,
     conjure_woodland_beings,
-    dominate_beast
+    dominate_beast,
+    mass_healing_word,
+    spirit_guardians,
+    bestow_curse,
+    animate_dead
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -1410,6 +1415,63 @@ inline constexpr std::array spell_table
         .concentration = true,
         .evocation = true,
         .wall = 50},
+    // SRD 5.2.1 p. 148: up to six creatures within 60 feet regain 2d4 + the
+    // spellcasting modifier.
+    SpellDef{
+        .id = "mass_healing_word",
+        .label = "Mass Healing Word",
+        .level = 3,
+        .pattern = SpellPattern::heal,
+        .target = SpellTarget::wounded_ally,
+        .range = 60,
+        .bonus_action = true,
+        .requires_sight = true,
+        .dice = {2, 4, 0},
+        .add_casting_modifier = true,
+        .instances = 6,
+        .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 164: spirits in a 15-foot Emanation around the caster halve
+    // enemies' Speed; one coming into it or ending its turn there makes a
+    // Wisdom save, once a turn.
+    SpellDef{
+        .id = "spirit_guardians",
+        .label = "Spirit Guardians",
+        .level = 3,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::self,
+        .range = 15,
+        .save = Ability::wisdom,
+        .half_on_success = true,
+        .damage = DamageType::radiant,
+        .dice = {3, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::spirit_guardians,
+        .concentration = true},
+    // SRD 5.2.1 pp. 112-113: a touched creature that fails a Wisdom save
+    // suffers one curse the caster picks, offered as "bestow_curse_<curse>".
+    SpellDef{
+        .id = "bestow_curse",
+        .label = "Bestow Curse",
+        .level = 3,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::bestow_curse,
+        .concentration = true},
+    // SRD 5.2.1 p. 108: a minute's casting (LEVELS-1: ten rounds in a fight)
+    // raises a Humanoid corpse as a Zombie the caster commands; two more from
+    // each slot level above 3.
+    SpellDef{
+        .id = "animate_dead",
+        .label = "Animate Dead",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::corpse,
+        .range = 10,
+        .upcast = {.extra_instances = 2},
+        .rider = Rider::animate_dead},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -1735,6 +1797,26 @@ inline std::optional<DamageType> energy_type(std::string_view verb)
     return damage_type(verb);
 }
 
+// Bestow Curse's curses, each offered as "bestow_curse_<curse>": Disadvantage
+// on one ability's checks and saves, on attacks against the caster, a Wisdom
+// save each turn or only the Dodge action, or 1d8 more Necrotic damage from
+// the caster.
+inline constexpr std::array<std::string_view, 9> curses{"strength", "dexterity", "constitution",
+    "intelligence", "wisdom", "charisma", "attacks", "dodge", "necrotic"};
+
+// The index in curses a Bestow Curse verb names, if it is one.
+inline std::optional<int> curse_of(std::string_view verb)
+{
+    verb = without_cast_suffix(verb);
+    if (!verb.starts_with("bestow_curse_"))
+        return std::nullopt;
+    verb.remove_prefix(13);
+    const auto found = std::find(curses.begin(), curses.end(), verb);
+    if (found == curses.end())
+        return std::nullopt;
+    return static_cast<int>(found - curses.begin());
+}
+
 // A wall's directions on the battle map (LEVELS-3), each offered as
 // "<spell>_<direction>": along a row, along a column, or along either diagonal.
 inline constexpr std::array<std::string_view, 4> wall_directions{"horizontal", "vertical",
@@ -1757,6 +1839,8 @@ inline const SpellDef *find_spell(std::string_view id)
     id = without_cast_suffix(id);
     if (energy_type(id))
         id = "protection_from_energy";
+    if (curse_of(id))
+        id = "bestow_curse";
     if (const auto direction = wall_direction(id))
         id.remove_suffix(wall_directions[*direction].size() + 1);
     if (command_option(id))

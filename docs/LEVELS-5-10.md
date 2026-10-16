@@ -20,6 +20,7 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
   ([Spell slots](SPELL-SLOTS.md)).
 - Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)), with every
   kept Paladin spell.
+- Cleric to level 8: done ([Cleric](CLERIC.md#levels-515)).
 - Ranger to level 15: done ([Ranger](RANGER.md#levels-515)), with the first
   wall (Wind Wall), Plant Growth's Overgrowth and the shared system for
   controlled creatures (Dominate Beast).

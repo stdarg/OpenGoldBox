@@ -194,7 +194,7 @@ void grants_and_checks()
         check(has_grant("subclass:champion") == champion &&
               has_grant("feature:remarkable_athlete") == champion,
               "Subclass and both feature grants follow ordinary level three acquisition");
-        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC42 "),
+        check(rules->character_profile(h.sheet(), {}).data.starts_with("PC43 "),
               "Every profile uses the current profile tag");
         const auto athletics = rules->ability_check(h.sheet(), {}, Ability::strength, "athletics");
         check(athletics.advantage == champion,

@@ -143,7 +143,7 @@ The Versatile grip is not stored: it follows the other hand at attack time
 ([AUTO-1](SRD-DECISIONS.md#auto-1-2026-09-30-automatic-choices-with-logging)).
 See [equipment](PARTY.md#versatile-grip) for the seven supported Versatile weapons.
 
-Profiles (PC42) store the background ID and acquired feature/feat grants after the gear list. Each
+Profiles (PC43) store the background ID and acquired feature/feat grants after the gear list. Each
 records a stable rules ID, source ID, acquisition level and named choices.
 The rules validate entitlements, prerequisites, duplicates and ability choices
 before deriving combat effects. See [advancement](ADVANCEMENT.md).

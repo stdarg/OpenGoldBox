@@ -166,7 +166,7 @@ the remaining die count, and an **FX8** effects record.
 
 **OGCOMBAT 40** stores each actor's remaining dice; authored combat definitions
 without a character recipe receive zero, without inventing monster Hit Dice
-mechanics. **PC42** recipes derive capacity from class and level.
+mechanics. **PC43** recipes derive capacity from class and level.
 
 The campaign save stores the next rest-session ID and optional completed
 Short Rest continuation after the party/town payload. It stores the

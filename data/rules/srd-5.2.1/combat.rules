@@ -139,3 +139,10 @@ perception lizardfolk 3
 perception troll 5
 perception norris-the-gray 0
 perception slums-magic-user 1
+# Animate Dead's Zombie (SRD 5.2.1): Slam, Poison Immunity, Undead Fortitude.
+creature zombie 8 15 -2 20 3 1 8 1 0 0 0 0 0 0 0 0 0 1 0
+saves zombie 1 -2 3 -4 0 -3
+damage_types zombie bludgeoning bludgeoning
+affinity zombie stat:poison immunity poison
+type zombie undead
+undead_fortitude zombie

@@ -11,6 +11,80 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 | 2 | Channel Divinity | Delivered (rules 0.6.82) |
 | 3 | Cleric Subclass (Life Domain) | Delivered (rules 0.6.83; Aid 0.6.84) |
 | 4 | Ability Score Improvement | Delivered earlier |
+| 5 | Sear Undead, level-3 spells | Delivered (rules 0.6.213) |
+| 6 | Blessed Healer (Life), Channel Divinity 3 | Delivered (rules 0.6.213) |
+| 7 | Blessed Strikes, Divine Spark 2d8, level-4 spells | Delivered (rules 0.6.213) |
+| 8 | Ability Score Improvement | Delivered (rules 0.6.213) |
+
+## Levels 5–15
+
+The Cleric advances to level 8 for now; level 9 waits for its level-5
+spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Spellcasting:** level-3 slots from 5 (two, three from 6), level-4 slots
+  from 7 (one, two from 8); prepared spells 9, 10, 11, 12 at levels 5–8.
+- **Level-3 spells** (5): Animate Dead, Beacon of Hope, Bestow Curse, Dispel
+  Magic, Magic Circle, Protection from Energy, Remove Curse, Revivify and
+  Spirit Guardians, and Mass Healing Word; the Life Domain always prepares
+  Mass Healing Word and Revivify. Clairvoyance, Create Food and Water,
+  Daylight, Glyph of Warding, Meld into Stone, Sending, Speak with Dead,
+  Tongues and Water Walk are cut (LEVELS-1).
+- **Level-4 spells** (7): Aura of Life, Banishment, Death Ward, Freedom of
+  Movement and Guardian of Faith; the Life Domain always prepares Aura of Life
+  and Death Ward. Control Water, Divination, Locate Creature and Stone Shape
+  are cut.
+- **Sear Undead** (5): Turn Undead rolls a d8 for each point of the Wisdom
+  modifier (at least one) once; each Undead that fails its save takes that
+  much Radiant damage, and stays turned.
+- **Blessed Healer** (Life 6): when a spell cast with a slot restores Hit
+  Points to another creature, the Cleric regains 2 + the slot's level.
+- **Channel Divinity:** three uses from level 6.
+- **Blessed Strikes** (7), chosen in the level-up Training dropdown:
+  - **Divine Strike:** once on each of its turns, after a weapon hit, the
+    Bonus Action list's smite window offers **Divine Strike (Radiant)** and
+    **Divine Strike (Necrotic)**: 1d8 more damage of that type, part of the
+    hit (a Critical Hit doubles it). The party AI takes Radiant.
+  - **Potent Spellcasting:** the Wisdom modifier is added to the damage of
+    Cleric cantrips (Sacred Flame).
+- **Divine Spark** rolls 2d8 from level 7.
+- **Ability Score Improvement** (8): a feat or ability points.
+- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 8,
+  features and prepared counts by level, the level-3 and level-4 spells,
+  slots and Channel Divinity uses, each spell below, Sear Undead, Blessed
+  Healer, Divine Strike once a turn, a campaign round trip).
+
+### The new level-3 spells
+
+- **Mass Healing Word** (Bonus Action, 60 feet): up to six creatures, chosen
+  one click at a time as for Bless, each regain 2d4 + the Wisdom modifier
+  (1d4 more for each slot level above 3).
+- **Spirit Guardians** (Action, Concentration up to 10 minutes): spirits in a
+  15-foot Emanation around the Cleric, drawn on the map. The Cleric's allies
+  are unaffected. An enemy's Speed is halved there (its squares count as
+  Difficult Terrain for it); each enemy the Cleric can see makes a Wisdom
+  save the first time in a turn the Emanation reaches it or it ends its turn
+  there, taking 3d8 Radiant damage, half on a success (1d8 more for each slot
+  level above 3). An evil Cleric's guardians deal Necrotic damage instead
+  (the character profile carries the alignment, recipe `PC43`).
+- **Bestow Curse** (Action, touch, Concentration up to 1 minute; none from a
+  level-5 slot): the A cycle offers each curse against an adjacent creature,
+  which makes a Wisdom save: Disadvantage on one ability's saves (pick the
+  ability), Disadvantage on its attacks against the Cleric, a Wisdom save at
+  the start of each of its turns or only the Dodge action, or 1d8 more
+  Necrotic damage whenever the Cleric damages it with an attack roll or a
+  spell. Remove Curse ends it.
+- **Animate Dead** (a minute's casting, 10 feet): the A cycle offers it
+  against an enemy's corpse, a Small or Medium Humanoid; a higher slot takes
+  two more corpses for each level above 3. As with Magic Circle, the casting
+  holds Concentration and takes the Cleric's Action on each turn of its
+  minute (ten rounds, LEVELS-1); broken off, it fails and keeps its slot.
+  Then each corpse rises as a Zombie (SRD stat block, with Undead Fortitude)
+  that fights for the party right after the Cleric, under the player's
+  control (LEVELS-1). The Zombies fall again when the fight ends (LEVELS-3),
+  and count as defeated enemies for experience.
+- Combat checkpoints keep each actor's Divine Strike and controlled-creature
+  state (`OGCOMBAT 56`, unchanged).
 
 ## Channel Divinity
 

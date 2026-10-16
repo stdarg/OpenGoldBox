@@ -30,6 +30,8 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
         std::span<const rules::FeatureGrant> grants);
 // Wizards prepare from a spellbook; Clerics and Paladins from their class list.
 bool prepares_spells(CharacterClass klass);
+// Whether a spell is on a class's spell list in the game.
+bool on_class_list(CharacterClass klass, std::string_view spell);
 std::vector<std::string> casting_ids(const rules::SpellAccess &);
 
 // One Magic Initiate feat's spells and the ability it casts them with.

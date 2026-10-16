@@ -98,7 +98,7 @@ Q38/Q39 were approved on 2026-09-25 after the 14:46 UTC continuation. Implementa
 Q38/Q39 were approved on 2026-09-25. The rules module now resolves Medicine
 through the validated training profile, grants Tactical Mind through ordinary
 Fighter advancement and suspends an eligible failed check for the user's choice.
-PC42 recipes record the Fighter entitlement, added through the existing replay
+PC43 recipes record the Fighter entitlement, added through the existing replay
 path. The combat checkpoint preserves the original failed roll, target and spent
 Action type along with resource/RNG state.
 
