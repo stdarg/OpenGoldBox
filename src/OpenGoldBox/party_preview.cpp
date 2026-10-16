@@ -2,6 +2,7 @@
 #include <godot_cpp/classes/option_button.hpp>
 #include <chrono>
 #include <godot_cpp/classes/check_box.hpp>
+#include "application_settings.h"
 #include "godot_images.h"
 #include "godot_nodes.h"
 #include "localization.h"
@@ -184,6 +185,13 @@ void CharacterCreationView::reincarnate_check()
         check(error_.is_empty(), error_.utf8().get_data());
     };
     const auto &slots = campaign_->state().slots;
+    const auto reincarnate_save = []
+    {
+        const auto path = presentation::path_from_godot(
+                              ProjectSettings::get_singleton()->globalize_path("user://checks/reincarnate.ogs"));
+        std::filesystem::create_directories(path.parent_path());
+        return path;
+    };
     switch (reincarnate_stage_++)
     {
     case 0:
@@ -270,6 +278,9 @@ void CharacterCreationView::reincarnate_check()
     }
     case 7:
         capture("reincarnate-town.png");
+        // The party alone: the check's town is not idle enough to save.
+        write_campaign_file(reincarnate_save(),
+                            encode_campaign(*campaign_, nullptr, campaign_asset_identity(presentation::path_from_godot(settings::game_path()))));
         // A Human body whose Versatile feat is Magic Initiate, for its spell page.
         begin_reincarnation({slots[0], slots[1], "reincarnate"}, "human");
         creator_->training_choice({.group = "species:human:versatile", .option = "magic_initiate_cleric",
@@ -282,8 +293,16 @@ void CharacterCreationView::reincarnate_check()
         check(creator_->step() == CreationStep::spell_choices, "Magic Initiate's spells come next");
         break;
     case 9:
+    {
         capture("reincarnate-human-spells.png");
+        // Loading a campaign with the pages open ends them before the old
+        // campaign, whose rules the creator borrows, goes (#239).
+        // The check's town is mid-tour; after a defeat a game loads anywhere.
+        campaign_defeated_ = true;
+        load_campaign(reincarnate_save());
+        check(!reincarnation_ && !creator_->reincarnating(), "Loading ends the reincarnation pages");
         break;
+    }
     default:
     {
         press("Restart");
@@ -796,6 +815,24 @@ void CharacterCreationView::finish_reincarnation()
 
 void CharacterCreationView::leave_reincarnation()
 {
+    end_reincarnation();
+    refresh_party();
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
+        town->show();
+        town->set_process(true);
+        town->set_process_input(true);
+        town->resume_party();
+    }
+    auto *back = &required_node<Button>(*this, "ReturnParty");
+    move_child(back, get_child_count() - 1);
+    back->show();
+}
+
+void CharacterCreationView::end_reincarnation()
+{
+    if (!reincarnation_)
+        return;
     reincarnation_.reset();
     creator_ = std::make_unique<CharacterCreator>(
                    srd5::character_rules(),
@@ -811,17 +848,6 @@ void CharacterCreationView::leave_reincarnation()
     required_node<Button>(*this, "AddParty").set_text(i18n::text(N_("Add to party")));
     recommend_portrait();
     refresh();
-    refresh_party();
-    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
-    {
-        town->show();
-        town->set_process(true);
-        town->set_process_input(true);
-        town->resume_party();
-    }
-    auto *back = &required_node<Button>(*this, "ReturnParty");
-    move_child(back, get_child_count() - 1);
-    back->show();
 }
 
 void CharacterCreationView::connect_party_button(const char *path, PartyAction action)

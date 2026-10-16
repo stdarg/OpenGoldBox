@@ -137,6 +137,7 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
         presentation::attach_child(*this, std::move(owned));
     }
     // All decoding, resource loading and character validation completed above.
+    end_reincarnation();
     campaign_ = std::move(replacement);
     campaign_defeated_ = false;
     required_node<Window>(*this, "Defeat").hide();

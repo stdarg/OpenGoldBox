@@ -50,7 +50,8 @@ class CharacterCreator
     // the species' choices, a Human's Versatile Magic Initiate spells and the
     // look change: the species page, those spells, the combat icon and the
     // portrait, then the sheet. `rules` replays the character's levels and
-    // must outlive the creator.
+    // must outlive the creator: the game view ends the pages before it
+    // replaces the campaign that owns it.
     CharacterCreator(std::unique_ptr<rules::CharacterRules> creation, const rules::RulesModule &rules,
                      const Character &former, std::string_view species);
     [[nodiscard]] bool reincarnating() const

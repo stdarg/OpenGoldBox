@@ -20,7 +20,7 @@ msgstr "   Dados de Golpe: {level}d{die}"
 msgid "   Party gold {gold}   XP {xp}"
 msgstr "   Oro del grupo {gold}   PX {xp}"
 
-#: src/OpenGoldBox/party_preview.cpp:339
+#: src/OpenGoldBox/party_preview.cpp:369
 msgid " (Reserve)"
 msgstr " (Reserva)"
 
@@ -497,7 +497,7 @@ msgstr "Añade primero un miembro al grupo"
 msgid "Add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn."
 msgstr "Suma tu bonificador por competencia a Iniciativa; puedes intercambiarla con un aliado apto antes del primer turno."
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1464 src/OpenGoldBox/party_preview.cpp:800
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:1168 src/OpenGoldBox/godot/scenes/character_creation.tscn:1464 src/OpenGoldBox/party_preview.cpp:848
 msgid "Add to party"
 msgstr "Añadir al grupo"
 
@@ -630,7 +630,7 @@ msgstr "Género: todos"
 msgid "All races"
 msgstr "Todas las razas"
 
-#: src/OpenGoldBox/character_pool_dialog.cpp:131
+#: src/OpenGoldBox/character_pool_dialog.cpp:132
 msgid "All six PC positions are occupied."
 msgstr "Las seis plazas de personajes jugadores están ocupadas."
 
@@ -638,7 +638,7 @@ msgstr "Las seis plazas de personajes jugadores están ocupadas."
 msgid "Ally"
 msgstr "Aliado"
 
-#: src/OpenGoldBox/character_pool_dialog.cpp:130
+#: src/OpenGoldBox/character_pool_dialog.cpp:131
 msgid "Already added. Use Rejoin party for a reserved member."
 msgstr "Ya se ha añadido. Usa Volver al grupo para un miembro en reserva."
 
@@ -1347,7 +1347,7 @@ msgstr "Acampar [C]"
 msgid "Camp actions are for active members"
 msgstr "Las acciones de campamento son para miembros activos"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:165
+#: src/OpenGoldBox/campaign_save_view.cpp:166
 msgid "Campaign loaded."
 msgstr "Campaña cargada."
 
@@ -2157,7 +2157,7 @@ msgstr "Crear muertos vivientes"
 msgid "Create a character before saving"
 msgstr "Crea un personaje antes de guardarlo"
 
-#: src/OpenGoldBox/party_preview.cpp:350
+#: src/OpenGoldBox/party_preview.cpp:380
 msgid "Create a character, finish its sheet, then Add to party.\n\nSix PC positions and two NPC positions. Removed members remain in the roster."
 msgstr "Crea un personaje, termina su hoja y pulsa Añadir al grupo.\n\nHay seis plazas para personajes jugadores y dos para PNJ. Los miembros retirados permanecen en la lista."
 
@@ -2290,11 +2290,11 @@ msgstr "Reducir el zoom del campo de batalla en 10 puntos porcentuales"
 msgid "Decrease battlefield zoom by 100 percentage points"
 msgstr "Reducir el zoom del campo de batalla en 100 puntos porcentuales"
 
-#: src/OpenGoldBox/party_preview.cpp:1398
+#: src/OpenGoldBox/party_preview.cpp:1435
 msgid "Defeat"
 msgstr "Derrota"
 
-#: src/OpenGoldBox/party_preview.cpp:1470
+#: src/OpenGoldBox/party_preview.cpp:1507
 msgid "Defeat test"
 msgstr "Prueba de derrota"
 
@@ -2811,7 +2811,7 @@ msgstr "Equipado"
 msgid "Equipped / "
 msgstr "Equipado / "
 
-#: src/OpenGoldBox/party_preview.cpp:897 src/OpenGoldBox/rolf_tour_view.cpp:419
+#: src/OpenGoldBox/party_preview.cpp:934 src/OpenGoldBox/rolf_tour_view.cpp:419
 msgid "Equipped."
 msgstr "Equipado."
 
@@ -2859,7 +2859,7 @@ msgstr "Exhalar (Aliento de dragón)"
 msgid "Exit"
 msgstr "Salir"
 
-#: src/OpenGoldBox/party_preview.cpp:1409
+#: src/OpenGoldBox/party_preview.cpp:1446
 msgid "Exit to OS"
 msgstr "Salir del juego"
 
@@ -3107,7 +3107,7 @@ msgstr "Termina las elecciones de conjuros del descanso largo antes de modificar
 msgid "Finish Long Rest spell choices before combat"
 msgstr "Termina las elecciones de conjuros del descanso largo antes del combate"
 
-#: src/OpenGoldBox/party_preview.cpp:1315
+#: src/OpenGoldBox/party_preview.cpp:1352
 msgid "Finish combat, dialogue or shopping before returning to the party."
 msgstr "Termina el combate, el diálogo o las compras antes de volver al grupo."
 
@@ -4074,7 +4074,7 @@ msgstr "Plaga de insectos"
 msgid "Insight"
 msgstr "Perspicacia"
 
-#: src/OpenGoldBox/party_preview.cpp:1314
+#: src/OpenGoldBox/party_preview.cpp:1351
 msgid "Inspect your party and equipment."
 msgstr "Examina tu grupo y su equipo."
 
@@ -4533,7 +4533,7 @@ msgstr "Cargar"
 msgid "Load Character"
 msgstr "Cargar personaje"
 
-#: src/OpenGoldBox/party_preview.cpp:1402
+#: src/OpenGoldBox/party_preview.cpp:1439
 msgid "Load a saved game to continue."
 msgstr "Carga una partida guardada para continuar."
 
@@ -5223,7 +5223,7 @@ msgstr "Neutral malvado"
 msgid "Neutral Good"
 msgstr "Neutral bueno"
 
-#: src/OpenGoldBox/party_preview.cpp:390
+#: src/OpenGoldBox/party_preview.cpp:420
 msgid "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk."
 msgstr "Los nuevos personajes empiezan con 3d6 × 10 po / Guardar partida guarda esta campaña en disco."
 
@@ -6351,7 +6351,7 @@ msgstr "Talento fiable: el d20 de {roll} de {name} cuenta como 10."
 msgid "Religion"
 msgstr "Religión"
 
-#: src/OpenGoldBox/party_preview.cpp:1409
+#: src/OpenGoldBox/party_preview.cpp:1446
 msgid "Reload a Saved Game"
 msgstr "Cargar una partida"
 
@@ -6612,7 +6612,7 @@ msgstr "Tipo de descanso"
 msgid "Restart"
 msgstr "Reiniciar"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:208
+#: src/OpenGoldBox/campaign_save_view.cpp:209
 msgid "Restart test"
 msgstr "Prueba de reinicio"
 
@@ -7527,7 +7527,7 @@ msgstr "Destello estelar"
 msgid "Start"
 msgstr "Empezar"
 
-#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:799
+#: src/OpenGoldBox/godot/scenes/character_creation.tscn:376 src/OpenGoldBox/party_preview.cpp:847
 msgid "Start over"
 msgstr "Empezar de nuevo"
 
@@ -7539,11 +7539,11 @@ msgstr "Nivel inicial"
 msgid "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."
 msgstr "OpenGoldBox usa los requisitos de multiclase como mínimos de clase inicial. No cumples los requisitos de las clases desactivadas; vuelve atrás para reasignar puntuaciones o bonificaciones."
 
-#: src/OpenGoldBox/character_pool_dialog.cpp:133
+#: src/OpenGoldBox/character_pool_dialog.cpp:134
 msgid "Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding."
 msgstr "Empieza con 3d6 x 10 po para comprar su equipo. Previsualiza retratos y ambas poses de combate antes de añadirlo."
 
-#: src/OpenGoldBox/character_pool_dialog.cpp:134
+#: src/OpenGoldBox/character_pool_dialog.cpp:135
 msgid "Starts with 3d6 x 10 gp to buy its gear. This class can explore and equip gear; its combat features are not implemented yet."
 msgstr "Empieza con 3d6 x 10 po para comprar su equipo. Esta clase puede explorar y equipar objetos; sus rasgos de combate aún no están implementados."
 
@@ -8839,7 +8839,7 @@ msgstr "Tu arma cuerpo a cuerpo es tu arma de pacto: competencia, Carisma para s
 msgid "Your party flees the battle."
 msgstr "Tu grupo huye de la batalla."
 
-#: src/OpenGoldBox/party_preview.cpp:1400
+#: src/OpenGoldBox/party_preview.cpp:1437
 msgid "Your party has been defeated."
 msgstr "Tu grupo ha sido derrotado."
 

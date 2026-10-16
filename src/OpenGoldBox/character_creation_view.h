@@ -133,6 +133,9 @@ class CharacterCreationView : public godot::Control
     unsigned reincarnate_stage_{}, reincarnate_frames_{};
     void finish_reincarnation();
     void leave_reincarnation();
+    // Drops the reincarnation pages' creator, which borrows the campaign's
+    // rules module, before that campaign is replaced (#239).
+    void end_reincarnation();
     void setup_advancement();
     void refresh_advancement_arrows();
     void open_advancement(std::int64_t id);
