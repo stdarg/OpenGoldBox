@@ -16,8 +16,9 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Wizard (Evoker) from level 5 to 8 (LEVELS-1): level-3 and level-4 spells,
-// Memorize Spell, Arcane Recovery's larger choices and Sculpt Spells at 6.
+// A Wizard (Evoker) from level 5 to 10 (LEVELS-1, LEVELS-4): level-3 to
+// level-5 spells, summoned creatures, Memorize Spell, Arcane Recovery's larger
+// choices, Sculpt Spells at 6 and Empowered Evocation at 10.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -94,6 +95,7 @@ CharacterSheet with_spells(const Character &hero, const std::vector<std::string>
             for (auto g = sheet.grants.begin(); g != sheet.grants.end(); ++g)
                 if (g->id.starts_with("spell:") && g->level >= 5 &&
                         g->source_id == "class:wizard:spellcasting" &&
+                        g->choices.contains("access") && g->choices.at("access") == "spellbook" &&
                         std::find(spells.begin(), spells.end(), g->id.substr(6)) == spells.end() &&
                         (learned == sheet.grants.end() || g->level > learned->level))
                     learned = g;
@@ -197,13 +199,19 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 8, "A Wizard stops at 8 for now");
+    check(party.member(id).character.sheet().level == 10, "A Wizard stops at 10 for now");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
-    {5, 9}, {6, 10}, {7, 11}, {8, 12}
+    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}
 })
     check(rules->spell_access(wizard(level).sheet()).prepared_choices == count,
-          "Prepared spells: 9 at 5 to 12 at 8");
+          "Prepared spells: 9 at 5 to 15 at 10");
+    check(rules->spell_access(wizard(10).sheet()).cantrip_choices == 5, "A fifth cantrip at 10");
+    const auto grants = wizard(10).sheet().grants;
+    check(std::any_of(grants.begin(), grants.end(), [](const auto & g)
+    {
+        return g.id == "feature:empowered_evocation" && g.level == 10;
+    }), "Empowered Evocation at 10");
     auto four = wizard(4).sheet();
     four.level = 5;
     const auto learning = rules->spell_choice_options(four, SpellChoiceContext::advancement).learning;
@@ -223,11 +231,14 @@ void progression_checks()
     auto c7 = field(*dummies, wizard(7).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
     auto c8 = field(*dummies, wizard(8).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
     check(slots(*c7, 4) == 1 && slots(*c8, 4) == 2, "One level-4 slot at 7, two at 8");
+    auto c9 = field(*dummies, wizard(9).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    auto c10 = field(*dummies, wizard(10).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(slots(*c9, 5) == 1 && slots(*c10, 5) == 2, "One level-5 slot at 9, two at 10");
     const auto bytes = encode_campaign(party, nullptr, "wizard-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "wizard-levels", nullptr).party);
-    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-8 Wizard saves and reloads");
+    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-10 Wizard saves and reloads");
 }
 
 void memorize_spell_checks()
@@ -779,6 +790,205 @@ void hound_and_elementals_checks()
     check(burned, "A hit on a creature in the Emanation deals the chosen type");
 }
 
+bool has_combatant(const CombatSession &c, std::string_view form)
+{
+    const auto all = c.snapshot().combatants;
+    return std::any_of(all.begin(), all.end(), [&](const auto & a)
+    {
+        return a.form == form;
+    });
+}
+
+EntityId combatant_with(const CombatSession &c, std::string_view form)
+{
+    for (const auto &a : c.snapshot().combatants)
+        if (a.form == form)
+            return a.id;
+    return 0;
+}
+
+void level_five_checks()
+{
+    const auto rules = dummy_rules();
+    // Cone of Cold.
+    auto cone = field(*rules, with_spells(wizard(9), {"cone_of_cold"}),
+    {{98, "dummy", "Foe", Side::opposition, {5, 2}}}, 1);
+    check(submit(*cone, "cone_of_cold") && submit_cell(*cone, "area_move", Cell{5, 2}) &&
+          submit(*cone, "area_cast") && logged(*cone, " Cold damage."), "Cone of Cold");
+    // Hold Monster and Dominate Person.
+    bool held = false, dominated = false;
+    for (std::uint64_t seed = 1; seed < 40 && (!held || !dominated); ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(9), {"hold_monster", "dominate_person"}),
+        {{98, "dummy", "Foe", Side::opposition, {5, 2}}}, seed);
+        if (!held)
+        {
+            check(submit(*c, "hold_monster", 98) || (c->snapshot().spell_targeting && submit(*c, "spell_cast")),
+                  "Hold Monster");
+            if (c->snapshot().spell_targeting)
+                check(submit(*c, "spell_cast"), "Hold the chosen foe");
+            held = unit(*c, 98).status.find("Paralyzed") != std::string::npos;
+            continue;
+        }
+        check(submit(*c, "dominate_person", 98), "Dominate Person");
+        dominated = logged(*c, "Foe is dominated by Wizard.");
+    }
+    check(held && dominated, "Hold Monster paralyzes and Dominate Person dominates");
+}
+
+void cloudkill_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(9), {"cloudkill"}),
+    {{98, "dummy", "Foe", Side::opposition, {7, 2}}}, 1);
+    check(submit(*c, "cloudkill") && submit_cell(*c, "area_move", Cell{7, 2}) &&
+          submit(*c, "area_cast"), "Cast Cloudkill");
+    check(logged(*c, " Poison damage from the fog.") &&
+          !c->snapshot().obscured.empty(), "Cloudkill's fog");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the fog");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(logged(*c, "The cloud drifts."), "The fog drifts at the start of the Wizard's turn");
+}
+
+void conjure_elemental_checks()
+{
+    const auto rules = dummy_rules();
+    bool held = false;
+    for (std::uint64_t seed = 1; seed < 40 && !held; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(9), {"conjure_elemental"}),
+        {{98, "dummy", "Foe", Side::opposition, {8, 2}}}, seed);
+        check(offered(*c, "conjure_elemental_water") && submit(*c, "conjure_elemental_fire") &&
+              submit_cell(*c, "area_move", Cell{6, 2}) && submit(*c, "area_cast") &&
+              logged(*c, "An elemental spirit appears."), "Conjure Elemental");
+        to_turn(*c, 98);
+        held = logged(*c, "Foe is Restrained by the spirit.") && logged(*c, " Fire damage from the elemental spirit.");
+        if (held)
+        {
+            const auto saved = c->save();
+            check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spirit");
+        }
+    }
+    check(held, "The spirit seizes a foe starting its turn beside it");
+}
+
+void summon_dragon_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(9), {"summon_dragon"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(offered(*c, "summon_dragon_acid") && submit(*c, "summon_dragon_fire") &&
+          submit_cell(*c, "area_move", Cell{4, 2}) && submit(*c, "area_cast") &&
+          logged(*c, "A Draconic Spirit answers Wizard.") && has_combatant(*c, "draconic_spirit"),
+          "A Draconic Spirit appears with the dragon's art");
+    const auto spirit = combatant_with(*c, "draconic_spirit");
+    const auto order = c->snapshot().combatants;
+    check(order[1].id == spirit || std::find_if(order.begin(), order.end(), [&](const auto & a)
+    {
+        return a.id == 1;
+    }) + 1 == std::find_if(order.begin(), order.end(), [&](const auto & a)
+    {
+        return a.id == spirit;
+    }), "It acts right after the Wizard");
+    check(unit(*c, spirit).armor_class == 19 && unit(*c, spirit).max_hit_points == 50,
+          "A level-5 spirit: AC 19, 50 Hit Points");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spirit");
+    check(submit(*c, "end"), "End the Wizard's turn");
+    check(c->snapshot().actor == spirit && offered(*c, "spirit_breath"),
+          "The spirit acts next and may breathe");
+    check(submit(*c, "spirit_breath") && submit_cell(*c, "area_move", Cell{9, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "Draconic Spirit breathes.") &&
+          !offered(*c, "spirit_breath"), "It breathes once a turn");
+}
+
+void animate_objects_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(9), {"animate_objects"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*c, "animate_objects", 1) && logged(*c, " objects animate for Wizard."),
+          "Animate Objects");
+    unsigned objects = 0;
+    for (const auto &a : c->snapshot().combatants)
+        objects += a.form == "animated_object";
+    check(objects >= 3, "As many objects as the Intelligence modifier");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the objects");
+}
+
+void mislead_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(9), {"mislead"}),
+    {{98, "brute", "Foe", Side::opposition, {4, 2}}}, 1);
+    check(submit(*c, "mislead", 1) && unit(*c, 1).status.find("Invisible") != std::string::npos &&
+          has_combatant(*c, "copy:1"), "Mislead: Invisible, with a double wearing the Wizard's art");
+    const auto twin = combatant_with(*c, "copy:1");
+    to_turn(*c, 98);
+    Command near;
+    for (const auto &command : c->legal_commands())
+        if (command.verb == "move" && std::max(std::abs(command.destination.x - unit(*c, twin).cell.x),
+                                               std::abs(command.destination.y - unit(*c, twin).cell.y)) == 1)
+            near = command;
+    if (near.actor)
+        check(c->submit(near), "The foe closes on the double");
+    check(submit(*c, "melee", twin) && logged(*c, "The attack passes through an illusory double.") &&
+          !offered(*c, "melee", twin), "An attack passes through the double, and foes ignore it after");
+}
+
+void telekinesis_checks()
+{
+    const auto rules = dummy_rules();
+    bool moved = false;
+    for (std::uint64_t seed = 1; seed < 40 && !moved; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(9), {"telekinesis"}),
+        {{98, "dummy", "Foe", Side::opposition, {5, 2}}}, seed);
+        check(submit(*c, "telekinesis", 98) && c->snapshot().area_targeting &&
+              submit_cell(*c, "area_move", Cell{10, 2}) && submit(*c, "area_cast") &&
+              logged(*c, "Foe Strength save:"), "Telekinesis seizes the foe");
+        if (unit(*c, 98).cell != (Cell{10, 2}))
+            continue;
+        moved = true;
+        check(unit(*c, 98).status.find("Restrained") != std::string::npos, "The foe is held");
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        check(offered(*c, "telekinesis_again", 98), "A Magic action seizes it again");
+    }
+    check(moved, "A seed where the foe fails its save");
+}
+
+void walls_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(10), {"wall_of_force", "wall_of_stone"}),
+    {{98, "dummy", "Foe", Side::opposition, {8, 2}}}, 1);
+    check(offered(*c, "fire_bolt", 98), "Fire Bolt before the wall");
+    check(offered(*c, "wall_of_force_ring") && submit(*c, "wall_of_force_vertical") &&
+          submit_cell(*c, "area_move", Cell{5, 2}) && submit(*c, "area_cast") &&
+          c->snapshot().battlefield.at({5, 2}) == Terrain::obstacle &&
+          logged(*c, "A wall of force springs up."), "A Wall of Force across the field");
+    check(!offered(*c, "fire_bolt", 98), "Nothing passes through it");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the wall");
+}
+
+void arcane_hand_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(9), {"arcane_hand"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*c, "arcane_hand") && submit_cell(*c, "area_move", Cell{5, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "A hand of shimmering force appears."), "Arcane Hand");
+    check(offered(*c, "hand_push", 98) && submit(*c, "hand_fist", 98) &&
+          logged(*c, "The hand strikes Foe.") && unit(*c, 1).bonus_action,
+          "The hand strikes as it appears, without the Bonus Action");
+    check(!offered(*c, "hand_fist", 98) || unit(*c, 1).bonus_action, "Later, with the Bonus Action");
+}
+
 void sculpt_checks()
 {
     const auto rules = dummy_rules();
@@ -826,6 +1036,15 @@ int main()
         vitriol_checks();
         wall_of_fire_checks();
         hound_and_elementals_checks();
+        level_five_checks();
+        cloudkill_checks();
+        conjure_elemental_checks();
+        summon_dragon_checks();
+        animate_objects_checks();
+        mislead_checks();
+        telekinesis_checks();
+        walls_checks();
+        arcane_hand_checks();
     }
     catch (const std::exception &error)
     {

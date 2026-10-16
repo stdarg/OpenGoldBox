@@ -15,16 +15,19 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 6 | Sculpt Spells (Evoker) | Delivered (rules 0.6.217; before, at level 3) |
 | 7 | Level-4 spells | Delivered (rules 0.6.218) |
 | 8 | Ability Score Improvement | Delivered (rules 0.6.218) |
+| 9 | Level-5 spells | Delivered (rules 0.6.220) |
+| 10 | Empowered Evocation (Evoker), fifth cantrip | Delivered (rules 0.6.220) |
 
 ## Levels 5–15
 
-The Wizard advances to level 8 for now; level 9 waits for its level-5 spells
+The Wizard advances to level 10 for now; level 11 waits for its level-6 spells
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 - **Spellcasting** (SRD 5.2.1 p. 77): level-3 slots from 5 (two, three from
-  6), level-4 slots from 7 (one, two from 8); prepared spells 9, 10, 11 and
-  12 at levels 5–8; the spellbook gains two spells per level, of
+  6), level-4 slots from 7 (one, two from 8), level-5 slots from 9 (one, two
+  from 10); prepared spells 9, 10, 11, 12, 14 and 15 at levels 5–10; the
+  spellbook gains two spells per level, of
   any level the Wizard has slots for (half its level, rounded up); a fifth
   cantrip at 10.
 - **Level-3 spells** (5): Animate Dead, Bestow Curse, Blink, Counterspell,
@@ -53,11 +56,22 @@ The Wizard advances to level 8 for now; level 9 waits for its level-5 spells
   Hallucinatory Terrain, Locate Creature, Private Sanctum, Secret Chest and
   Stone Shape are cut.
 - **Ability Score Improvement** (8): a feat or ability points.
+- **Level-5 spells** (9): Animate Objects, Arcane Hand, Cloudkill, Cone of
+  Cold, Conjure Elemental, Dominate Person, Hold Monster, Mislead, Summon
+  Dragon, Telekinesis, Wall of Force and Wall of Stone (below). Contact Other
+  Plane, Creation, Dream, Geas, Legend Lore, Modify Memory, Passwall, Planar
+  Binding, Scrying, Seeming, Telepathic Bond and Teleportation Circle are cut.
+- **Empowered Evocation** (Evoker 10): the Intelligence modifier is added to
+  the damage roll of a Wizard Evocation spell (Fire Bolt, Fireball, Cone of
+  Cold…). Magic Missile's darts, each its own roll, take none.
+- **A fifth cantrip** (10).
 - Verification: `opengold_wizard_levels_tests` (the campaign's stop at 6,
   prepared counts, level-3 spells in the level-5 spellbook choice, slots, a
   campaign round trip, Memorize Spell's one change and the campaign's Short
   Rest window, Arcane Recovery of a level-3 slot, each level-3 and level-4
-  spell, Sculpt Spells at 6 and not 5) and `opengold_wizard_spell_tests`.
+  spell, each level-5 spell and its summoned creatures, Sculpt Spells at 6
+  and not 5, Empowered Evocation and the fifth cantrip at 10) and
+  `opengold_wizard_spell_tests`.
 
 ### The level-3 spells
 
@@ -107,6 +121,82 @@ The Wizard advances to level 8 for now; level 9 waits for its level-5 spells
   free one.
 - **Tiny Hut** (camp, the whole party): for 8 hours no rest is interrupted
   (LEVELS-1).
+
+### Summoned creatures (LEVELS-4)
+
+Summon Dragon's spirit, Animate Objects' objects and Mislead's double join the
+fight as new combatants on the Wizard's side, right after the Wizard in the
+turn order, controlled by the player. Their attacks use the Wizard's spell
+attack bonus. They vanish when the Wizard's Concentration ends, when they drop
+to 0 Hit Points, and with the fight. The Draconic Spirit wears the icon of
+Tyranthraxus, the original's dragon; an Animated Object, the Skeleton's;
+Mislead's double, the Wizard's own.
+
+### The level-5 spells
+
+- **Animate Objects** (Action, Concentration up to 1 minute): as many Medium
+  objects as the Intelligence modifier rise in the free squares nearest the
+  Wizard (LEVELS-1): AC 15, 10 Hit Points, a Slam for 1d4 + 3 Force (1d4 more
+  per slot level above 5).
+- **Arcane Hand** (Action, 120 feet, Concentration up to 1 minute): a hand of
+  force in a free square. As it appears, and later with a Bonus Action, it
+  moves up to 60 feet beside a creature and **Clenched Fist** (a melee spell
+  attack, 5d8 Force, 2d8 more per slot level above 5) or **Forceful Hand** (a
+  Strength save or a push of 5 feet plus five times the Intelligence
+  modifier, away from the hand). The hand cannot be attacked: the game has no
+  attacks on objects. Grasping Hand and Interposing Hand stay cut.
+- **Cloudkill** (Action, 120 feet, Concentration up to 10 minutes): a
+  20-foot-radius fog, Heavily Obscured. A creature in it as it appears, that
+  it drifts over, that enters it or ends its turn there makes a Constitution
+  save once a turn against 5d8 Poison, half on a success (1d8 more per slot
+  level above 5). It drifts 10 feet away from the Wizard at the start of each
+  of the Wizard's turns.
+- **Cone of Cold** (Action): a 60-foot Cone; Constitution save, 8d8 Cold, half
+  on a success; 1d8 more per slot level above 5.
+- **Conjure Elemental** (Action, 60 feet, Concentration up to 10 minutes): one
+  entry per element: air (Lightning), earth (Thunder), fire (Fire) or water
+  (Cold). A Large spirit, two squares by two, drawn as spirits. While it
+  holds no one, an enemy that enters its space or starts its turn within 5
+  feet of it makes a Dexterity save or takes 8d8 of its type and is
+  Restrained; at the start of each of its turns the held creature saves
+  again, taking 4d8 on a failure and breaking free on a success. 1d8 more per
+  slot level above 5.
+- **Dominate Person** (Action, 60 feet, Concentration up to 1 minute):
+  Dominate Beast's control (LEVELS-1) for a Humanoid.
+- **Hold Monster** (Action, 90 feet, Concentration up to 1 minute): Hold Person
+  for any creature; one more creature per slot level above 5.
+- **Mislead** (Action, Concentration up to 1 hour): the Wizard turns Invisible
+  (until it attacks or casts) and an illusory double appears in the nearest
+  free square. The double takes no turns and nothing harms it; a foe's attack
+  on it passes through, and foes ignore it after (LEVELS-1). **Move the
+  double** (a Magic action) moves it up to twice the Wizard's Speed, beside a
+  creature the Wizard can see.
+- **Summon Dragon** (Action, 60 feet, Concentration up to 1 hour): one entry
+  per type, Acid, Cold, Fire, Lightning or Poison, which is both the spirit's
+  breath and the Resistance the Wizard shares. The Draconic Spirit (SRD
+  5.2.1 p. 166): AC 14 + the spell's level, 50 Hit Points and 10 more per
+  level above 5, Resistance to Acid, Cold, Fire, Lightning and Poison, and as
+  many Rends (1d6 + 4 + the level, reach 10 feet) as half the spell's level;
+  **Breath Weapon**, once on each of its turns besides its Rends, a 30-foot
+  Cone for 2d6, a Dexterity save against the Wizard's spell DC halving it.
+  The SRD lets the breath's type and the shared Resistance be chosen apart.
+- **Telekinesis** (Action, Concentration up to 10 minutes): pick a Huge or
+  smaller creature within 60 feet, then the square it should go to, up to 30
+  feet away; a failed Strength save moves it there in a straight line and
+  leaves it Restrained until the end of the Wizard's next turn. A wall or a
+  creature in the way stops it, with PUSH-1's damage for the distance it
+  could not cover. Later, **Telekinesis** (a Magic action, no slot) seizes it
+  or another creature again. Objects are left out (LEVELS-1).
+- **Wall of Force** (Action, 120 feet, Concentration up to 10 minutes): a wall
+  100 feet long in any of the four directions, or a ring 20 feet across
+  (LEVELS-3), drawn as obstacles. Nothing passes through it: no movement,
+  attack, spell or area. A creature in its line is pushed to the nearest free
+  square beside it.
+- **Wall of Stone** (Action, 120 feet, Concentration up to 10 minutes): a
+  stone wall 100 feet long in any of the four directions; it blocks
+  movement, sight and every effect, and leaves out squares a creature stands
+  in. Its panels cannot be attacked, and it never becomes permanent: fights
+  end long before its 10 minutes.
 
 ### The level-4 spells
 

@@ -192,7 +192,14 @@ bool CombatView::sprite_facing_left(std::int64_t id) const
 
 const CombatView::SpriteArt *CombatView::combatant_art(const CombatantView &a) const
 {
-    // A Druid in Wild Shape shows its Beast form.
+    // A Druid in Wild Shape shows its Beast form, as does a creature in a
+    // Polymorph form; summoned creatures have their own art, and Mislead's
+    // double wears its caster's.
+    if (a.form.starts_with("copy:"))
+    {
+        const auto copied = art_.find(static_cast<EntityId>(std::stoull(a.form.substr(5))));
+        return copied == art_.end() ? nullptr : &copied->second;
+    }
     if (const auto form = form_art_.find(a.form); !a.form.empty() && form != form_art_.end())
         return &form->second;
     const auto found = art_.find(a.id);
@@ -847,10 +854,14 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
         const char *form, *archive;
         std::uint8_t icon;
     };
+    // Summon Dragon's spirit wears Tyranthraxus's icon, Animate Objects' objects
+    // the Skeleton's (LEVELS-4).
     constexpr std::array form_icons{FormIcon{"wolf", "CPIC4.DAX", 106},
                                     FormIcon{"boar", "CPIC6.DAX", 120},
                                     FormIcon{"giant_lizard", "CPIC8.DAX", 59},
-                                    FormIcon{"giant_snake", "CPIC5.DAX", 60}};
+                                    FormIcon{"giant_snake", "CPIC5.DAX", 60},
+                                    FormIcon{"draconic_spirit", "CPIC5.DAX", 66},
+                                    FormIcon{"animated_object", "CPIC4.DAX", 34}};
     if (std::filesystem::is_directory(directory))
         for (const auto &file : std::filesystem::directory_iterator(directory))
         {

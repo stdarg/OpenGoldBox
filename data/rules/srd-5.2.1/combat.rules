@@ -155,3 +155,88 @@ affinity ghoul stat:poison immunity poison
 type ghoul undead
 multiattack ghoul 2
 melee_extra_damage ghoul 1 6 necrotic
+# Summon Dragon's Draconic Spirit (SRD 5.2.1 p. 166), one stat block per
+# spell level: AC 14 + the level, 50 Hit Points and 10 more per level above 5,
+# Rend 1d6 + 4 + the level Piercing (reach 10 feet), half the level in Rends.
+# Its attack bonus is its summoner's spell attack bonus, set when it appears.
+creature draconic-spirit-5 19 50 2 30 0 1 6 9 0 0 0 0 0 0 0 0 0 1 0
+saves draconic-spirit-5 4 2 3 0 2 2
+size draconic-spirit-5 large
+type draconic-spirit-5 dragon
+damage_types draconic-spirit-5 piercing piercing
+multiattack draconic-spirit-5 2
+affinity draconic-spirit-5 stat:acid resistance acid
+affinity draconic-spirit-5 stat:cold resistance cold
+affinity draconic-spirit-5 stat:fire resistance fire
+affinity draconic-spirit-5 stat:lightning resistance lightning
+affinity draconic-spirit-5 stat:poison resistance poison
+creature draconic-spirit-6 20 60 2 30 0 1 6 10 0 0 0 0 0 0 0 0 0 1 0
+saves draconic-spirit-6 4 2 3 0 2 2
+size draconic-spirit-6 large
+type draconic-spirit-6 dragon
+damage_types draconic-spirit-6 piercing piercing
+multiattack draconic-spirit-6 3
+affinity draconic-spirit-6 stat:acid resistance acid
+affinity draconic-spirit-6 stat:cold resistance cold
+affinity draconic-spirit-6 stat:fire resistance fire
+affinity draconic-spirit-6 stat:lightning resistance lightning
+affinity draconic-spirit-6 stat:poison resistance poison
+creature draconic-spirit-7 21 70 2 30 0 1 6 11 0 0 0 0 0 0 0 0 0 1 0
+saves draconic-spirit-7 4 2 3 0 2 2
+size draconic-spirit-7 large
+type draconic-spirit-7 dragon
+damage_types draconic-spirit-7 piercing piercing
+multiattack draconic-spirit-7 3
+affinity draconic-spirit-7 stat:acid resistance acid
+affinity draconic-spirit-7 stat:cold resistance cold
+affinity draconic-spirit-7 stat:fire resistance fire
+affinity draconic-spirit-7 stat:lightning resistance lightning
+affinity draconic-spirit-7 stat:poison resistance poison
+creature draconic-spirit-8 22 80 2 30 0 1 6 12 0 0 0 0 0 0 0 0 0 1 0
+saves draconic-spirit-8 4 2 3 0 2 2
+size draconic-spirit-8 large
+type draconic-spirit-8 dragon
+damage_types draconic-spirit-8 piercing piercing
+multiattack draconic-spirit-8 4
+affinity draconic-spirit-8 stat:acid resistance acid
+affinity draconic-spirit-8 stat:cold resistance cold
+affinity draconic-spirit-8 stat:fire resistance fire
+affinity draconic-spirit-8 stat:lightning resistance lightning
+affinity draconic-spirit-8 stat:poison resistance poison
+creature draconic-spirit-9 23 90 2 30 0 1 6 13 0 0 0 0 0 0 0 0 0 1 0
+saves draconic-spirit-9 4 2 3 0 2 2
+size draconic-spirit-9 large
+type draconic-spirit-9 dragon
+damage_types draconic-spirit-9 piercing piercing
+multiattack draconic-spirit-9 4
+affinity draconic-spirit-9 stat:acid resistance acid
+affinity draconic-spirit-9 stat:cold resistance cold
+affinity draconic-spirit-9 stat:fire resistance fire
+affinity draconic-spirit-9 stat:lightning resistance lightning
+affinity draconic-spirit-9 stat:poison resistance poison
+# Animate Objects' Medium Animated Object (SRD 5.2.1 p. 108): AC 15, 10 Hit
+# Points, Slam 1d4 + 3 Force and 1d4 more per spell level above 5. Its attack
+# bonus is its animator's spell attack bonus, set when it rises.
+creature animated-object-5 15 10 0 30 0 1 4 3 0 0 0 0 0 0 0 0 0 1 0
+saves animated-object-5 3 0 0 -4 -4 -5
+type animated-object-5 construct
+damage_types animated-object-5 force force
+creature animated-object-6 15 10 0 30 0 2 4 3 0 0 0 0 0 0 0 0 0 1 0
+saves animated-object-6 3 0 0 -4 -4 -5
+type animated-object-6 construct
+damage_types animated-object-6 force force
+creature animated-object-7 15 10 0 30 0 3 4 3 0 0 0 0 0 0 0 0 0 1 0
+saves animated-object-7 3 0 0 -4 -4 -5
+type animated-object-7 construct
+damage_types animated-object-7 force force
+creature animated-object-8 15 10 0 30 0 4 4 3 0 0 0 0 0 0 0 0 0 1 0
+saves animated-object-8 3 0 0 -4 -4 -5
+type animated-object-8 construct
+damage_types animated-object-8 force force
+creature animated-object-9 15 10 0 30 0 5 4 3 0 0 0 0 0 0 0 0 0 1 0
+saves animated-object-9 3 0 0 -4 -4 -5
+type animated-object-9 construct
+damage_types animated-object-9 force force
+# Mislead's illusory double: intangible, it never fights.
+creature illusory-double 10 1 0 30 0 1 2 0 0 0 0 0 0 0 0 0 0 1 0
+saves illusory-double 0 0 0 0 0 0

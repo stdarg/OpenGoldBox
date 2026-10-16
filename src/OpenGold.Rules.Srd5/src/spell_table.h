@@ -179,7 +179,17 @@ enum class Rider : unsigned
     vitriolic_sphere,
     wall_of_fire,
     faithful_hound,
-    conjure_minor_elementals
+    conjure_minor_elementals,
+    arcane_hand,
+    cloudkill,
+    conjure_elemental,
+    dominate_person,
+    summon_dragon,
+    wall_of_force,
+    wall_of_stone,
+    animate_objects,
+    mislead,
+    telekinesis
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2219,6 +2229,197 @@ inline constexpr std::array spell_table
         .upcast = {.extra_dice = 1},
         .rider = Rider::conjure_minor_elementals,
         .concentration = true},
+    // SRD 5.2.1 p. 110: a Large hand of force in a free square within 120 feet;
+    // as it appears, and with a Bonus Action later, it moves up to 60 feet and
+    // strikes (Clenched Fist, 5d8 Force) or pushes (Forceful Hand); 2d8 more
+    // Force per slot level above 5.
+    SpellDef{
+        .id = "arcane_hand",
+        .label = "Arcane Hand",
+        .level = 5,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::area,
+        .range = 120,
+        .melee = true,
+        .damage = DamageType::force,
+        .dice = {5, 8, 0},
+        .upcast = {.extra_dice = 2},
+        .rider = Rider::arcane_hand,
+        .concentration = true,
+        .evocation = true},
+    // SRD 5.2.1 p. 116: a 20-foot-radius Sphere of poison fog within 120 feet,
+    // Heavily Obscured; a Constitution save against 5d8 Poison, half on a
+    // success, on casting, when it moves onto a creature, when one enters it or
+    // ends its turn there, once a turn; it drifts 10 feet away from the caster
+    // at the start of each of its turns; 1d8 more per slot level above 5.
+    SpellDef{
+        .id = "cloudkill",
+        .label = "Cloudkill",
+        .level = 5,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::poison,
+        .dice = {5, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::cloudkill,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 117: a 60-foot Cone; Constitution save, 8d8 Cold, half on
+    // a success; 1d8 more per slot level above 5.
+    SpellDef{
+        .id = "cone_of_cold",
+        .label = "Cone of Cold",
+        .level = 5,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::cold,
+        .dice = {8, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .cone = 60,
+        .evocation = true},
+    // SRD 5.2.1 p. 118: a Large spirit of air, earth, fire or water in a free
+    // space within 60 feet; a creature entering its space or starting its turn
+    // within 5 feet of it saves (Dexterity) against 8d8 and Restrained, when
+    // it holds no one; the held creature saves again at the start of its
+    // turns, 4d8 on a failure; 1d8 more per slot level above 5.
+    SpellDef{
+        .id = "conjure_elemental",
+        .label = "Conjure Elemental",
+        .level = 5,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .damage = DamageType::lightning,
+        .dice = {8, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::conjure_elemental,
+        .concentration = true},
+    // SRD 5.2.1 p. 126: Dominate Beast for a Humanoid.
+    SpellDef{
+        .id = "dominate_person",
+        .label = "Dominate Person",
+        .level = 5,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::dominate_person,
+        .concentration = true,
+        .humanoid_only = true},
+    // SRD 5.2.1 p. 140: Hold Person for any creature; one more per slot level
+    // above 5.
+    SpellDef{
+        .id = "hold_monster",
+        .label = "Hold Monster",
+        .level = 5,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 90,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::hold_person,
+        .concentration = true},
+    // SRD 5.2.1 p. 166: a Draconic Spirit in a free space within 60 feet,
+    // fighting for the caster; its breath and the caster's shared Resistance
+    // are of one type, chosen at the casting.
+    SpellDef{
+        .id = "summon_dragon",
+        .label = "Summon Dragon",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 60,
+        .rider = Rider::summon_dragon,
+        .concentration = true},
+    // The Draconic Spirit's Breath Weapon: a 30-foot Cone, Dexterity save
+    // against 2d6 of its type, half on a success.
+    SpellDef{
+        .id = "spirit_breath",
+        .label = "Breath Weapon",
+        .level = 0,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 30,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {2, 6, 0},
+        .cone = 30},
+    // SRD 5.2.1 p. 172: an invisible wall of force 100 feet long, or a ring 20
+    // feet across (LEVELS-3); nothing passes through it.
+    SpellDef{
+        .id = "wall_of_force",
+        .label = "Wall of Force",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 120,
+        .rider = Rider::wall_of_force,
+        .concentration = true,
+        .evocation = true,
+        .wall = 100,
+        .ring = 20},
+    // SRD 5.2.1 p. 173: a wall of stone 100 feet long; it blocks movement,
+    // sight and every effect.
+    SpellDef{
+        .id = "wall_of_stone",
+        .label = "Wall of Stone",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 120,
+        .rider = Rider::wall_of_stone,
+        .concentration = true,
+        .evocation = true,
+        .wall = 100},
+    // SRD 5.2.1 p. 108: as many Medium objects as the spellcasting modifier
+    // rise beside the caster (LEVELS-1), fighting for it.
+    SpellDef{
+        .id = "animate_objects",
+        .label = "Animate Objects",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::animate_objects,
+        .concentration = true},
+    // SRD 5.2.1 p. 150: the caster turns Invisible and an illusory double
+    // stands in its place (LEVELS-1).
+    SpellDef{
+        .id = "mislead",
+        .label = "Mislead",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::mislead,
+        .concentration = true},
+    // SRD 5.2.1 p. 167: a Strength save or a Huge or smaller creature within
+    // 60 feet moves up to 30 feet where the caster likes and is Restrained
+    // until the end of the caster's next turn; a Magic action repeats it.
+    SpellDef{
+        .id = "telekinesis",
+        .label = "Telekinesis",
+        .level = 5,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::strength,
+        .rider = Rider::telekinesis,
+        .concentration = true},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -2658,6 +2859,12 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "fire_shield";
     if (id.starts_with("conjure_minor_elementals_"))
         id = "conjure_minor_elementals";
+    if (id.starts_with("conjure_elemental_"))
+        id = "conjure_elemental";
+    if (id.starts_with("summon_dragon_"))
+        id = "summon_dragon";
+    if (id == "telekinesis_again")
+        id = "telekinesis";
     if (id.starts_with("polymorph_"))
         id = "polymorph";
     if (id == "dimension_door_with")

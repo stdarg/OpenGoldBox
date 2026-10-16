@@ -256,7 +256,7 @@ struct Probe
     unsigned level;
 };
 
-constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 8}, {"cleric", 1},
+constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 10}, {"cleric", 1},
     {"cleric", 4}, {"cleric", 15}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
@@ -404,8 +404,8 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     check(!at_range->submit(*offer) && at_range->save() == settled, "A spent ticket is inert");
 }
 
-// The probe sheet with `row` prepared in place of its last prepared spell (and,
-// for a Wizard, in its book), so
+// The probe sheet with `row` prepared in place of a prepared spell (and, for a
+// Wizard, in its book in place of the spell learned last), so
 // every row is reached however many rows the class list grows by. Unchanged
 // when the class cannot prepare it.
 CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, const SpellDef &row)
@@ -415,11 +415,27 @@ CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, con
             std::find(prepared.begin(), prepared.end(), row.id) != prepared.end())
         return sheet;
     auto trial = sheet;
-    // A Wizard prepares from its book, so the book entry changes with it.
-    for (auto &grant : trial.grants)
-        if (grant.id == "spell:" + trial.prepared_spells.back())
-            grant.id = "spell:" + std::string(row.id);
-    trial.prepared_spells.back() = std::string(row.id);
+    // A Wizard prepares from its book, so a book entry changes with it: the
+    // one learned last, whose level allows the higher spells.
+    auto book = trial.grants.end();
+    for (auto grant = trial.grants.begin(); grant != trial.grants.end(); ++grant)
+        if (grant->choices.contains("access") && grant->choices.at("access") == "spellbook" &&
+                (book == trial.grants.end() || grant->level > book->level))
+            book = grant;
+    auto replaced = trial.prepared_spells.end() - 1;
+    if (book != trial.grants.end())
+    {
+        const auto old = book->id.substr(6);
+        book->id = "spell:" + std::string(row.id);
+        if (const auto found = std::find(trial.prepared_spells.begin(), trial.prepared_spells.end(), old);
+                found != trial.prepared_spells.end())
+            replaced = found;
+    }
+    else
+        for (auto &grant : trial.grants)
+            if (grant.id == "spell:" + *replaced)
+                grant.id = "spell:" + std::string(row.id);
+    *replaced = std::string(row.id);
     try
     {
         (void)rules.character_profile(trial, {});
@@ -448,8 +464,10 @@ void behaviour()
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
         // Remove Curse and Greater Restoration, which need a cursed or charmed
-        // creature, and Dominate Beast, a Beast; Fire Shield, Polymorph and
-        // Conjure Minor Elementals are offered once per shield, form and type.
+        // creature, and Dominate Beast, a Beast, as the Wizard's cover Dominate
+        // Person and Telekinesis, aimed after its creature; Fire Shield,
+        // Polymorph and Conjure Minor Elementals are offered once per shield,
+        // form and type.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
                   row.pattern == SpellPattern::heal) && row.instances > 1) ||
@@ -464,6 +482,7 @@ void behaviour()
                 row.pattern == SpellPattern::weapon_strike ||
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
+                row.rider == Rider::dominate_person || row.rider == Rider::telekinesis ||
                 row.rider == Rider::bestow_curse || row.target == SpellTarget::corpse ||
                 row.rider == Rider::contagion || row.rider == Rider::greater_restoration ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||

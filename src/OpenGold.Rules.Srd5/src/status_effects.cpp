@@ -136,7 +136,9 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::lethargic && kind != EffectKind::retching &&
             kind != EffectKind::ethereal && kind != EffectKind::sleeted &&
             kind != EffectKind::groped && kind != EffectKind::vitriol &&
-            kind != EffectKind::wall_burned) ||
+            kind != EffectKind::wall_burned && kind != EffectKind::breathed &&
+            kind != EffectKind::lifted && kind != EffectKind::hand_ready &&
+            kind != EffectKind::clouded) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -484,7 +486,8 @@ bool restrained(const EffectState &effects)
 {
     return (has_effect(effects, EffectKind::ensnaring_strike) ||
             has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed) ||
-            has_effect(effects, EffectKind::tentacled)) &&
+            has_effect(effects, EffectKind::tentacled) || has_effect(effects, EffectKind::engulfed) ||
+            has_effect(effects, EffectKind::lifted)) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
@@ -550,7 +553,9 @@ int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath ||
            kind == EffectKind::energy_ward || kind == EffectKind::defending ||
-           kind == EffectKind::minor_elementals
+           kind == EffectKind::minor_elementals || kind == EffectKind::spirit_breath ||
+           kind == EffectKind::shared_resistance || kind == EffectKind::engulfed ||
+           kind == EffectKind::elemental_spirit
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::dominated ? 40
            : kind == EffectKind::cursed ? 18
@@ -563,6 +568,8 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::knitting ? 9
            : kind == EffectKind::fire_shield ? 1
            : kind == EffectKind::haunted ? 13
+           : kind == EffectKind::summoned ? 30
+           : kind == EffectKind::illusory ? 1
            : kind == EffectKind::polymorphed ? static_cast<int>(beast_forms.size())
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
@@ -604,6 +611,10 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::sheltered:
         return 28800000; // 8 hours
     case EffectKind::polymorphed:
+    case EffectKind::summoned:
+    case EffectKind::illusory:
+    case EffectKind::spirit_breath:
+    case EffectKind::shared_resistance:
         return 3600000; // Concentration, up to 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -665,6 +676,9 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::flame_blade:
     case EffectKind::fire_shield:
     case EffectKind::minor_elementals:
+    case EffectKind::engulfed:
+    case EffectKind::elemental_spirit:
+    case EffectKind::telekinetic:
     case EffectKind::aura_of_life:
     case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes
@@ -958,7 +972,9 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::lethargic || kind == EffectKind::retching ||
                            kind == EffectKind::ethereal || kind == EffectKind::sleeted ||
                            kind == EffectKind::groped || kind == EffectKind::vitriol ||
-                           kind == EffectKind::wall_burned ||
+                           kind == EffectKind::wall_burned || kind == EffectKind::breathed ||
+                           kind == EffectKind::lifted || kind == EffectKind::hand_ready ||
+                           kind == EffectKind::clouded ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -1034,7 +1050,8 @@ EffectState read_effects(std::istream &in)
                                               kind == EffectKind::lit ||
                                               kind == EffectKind::veiled ||
                                               kind == EffectKind::lethargic ||
-                                              kind == EffectKind::vitriol)
+                                              kind == EffectKind::vitriol ||
+                                              kind == EffectKind::lifted)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

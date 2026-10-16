@@ -358,9 +358,32 @@ enum class EffectKind : unsigned
     // Conjure Minor Elementals, on its caster: `dc` is the extra damage's
     // DamageType.
     minor_elementals = 144,
+    // A summoned creature (Summon Dragon, Animate Objects, Mislead's double),
+    // held by its source's Concentration; `dc` is its attack bonus.
+    summoned = 145,
+    // Summon Dragon's spirit: `dc` is its breath's DamageType.
+    spirit_breath = 146,
+    // The spirit has breathed this turn.
+    breathed = 147,
+    // Summon Dragon, on its caster: Resistance to the DamageType in `dc`.
+    shared_resistance = 148,
+    // Mislead's double: `dc` 1 once an attack has passed through it.
+    illusory = 149,
+    // Conjure Elemental: Restrained by the spirit; `dc` is the DamageType.
+    engulfed = 150,
+    // Conjure Elemental, on its caster: `dc` is the spirit's DamageType.
+    elemental_spirit = 151,
+    // Telekinesis: Restrained until the end of the caster's next turn.
+    lifted = 152,
+    // Telekinesis, on its caster: a Magic action moves a creature again.
+    telekinetic = 153,
+    // Arcane Hand: the hand acts without a Bonus Action the turn it appears.
+    hand_ready = 154,
+    // Cloudkill: the creature has saved against the fog this turn.
+    clouded = 155,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = minor_elementals
+    last = clouded
 };
 
 // Magic Circle's creature types, by `dc`.

@@ -233,6 +233,8 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
             add("feature:memorize_spell", "class:wizard");
         if (level == 6)
             add("feature:sculpt_spells", "subclass:wizard:evoker");
+        if (level == 10)
+            add("feature:empowered_evocation", "subclass:wizard:evoker");
     }
     // Roving's Climb and Swim Speeds are cut (SCOPE-2); its Speed stays.
     if (klass == CharacterClass::ranger)
