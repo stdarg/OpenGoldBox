@@ -199,7 +199,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring ||
            kind == detail::EffectKind::energy_ward || kind == detail::EffectKind::stoneskin ||
            kind == detail::EffectKind::dominated || kind == detail::EffectKind::cursed ||
-           kind == detail::EffectKind::animating;
+           kind == detail::EffectKind::animating || kind == detail::EffectKind::dispel_evil;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -275,6 +275,9 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::stoneskin:
     case Kind::dominated:
         return 4u;
+    case Kind::contagion:
+    case Kind::dispel_evil:
+        return 5u;
     default:
         return std::nullopt;
     }
@@ -448,6 +451,14 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::cleric, "death_ward", 7},
     SpellAccessRow{CharacterClass::cleric, "freedom_of_movement", 7},
     SpellAccessRow{CharacterClass::cleric, "guardian_of_faith", 7},
+    // Cleric level-5 spells, with the level-5 slots of Cleric level 9.
+    SpellAccessRow{CharacterClass::cleric, "contagion", 9},
+    SpellAccessRow{CharacterClass::cleric, "dispel_evil_and_good", 9},
+    SpellAccessRow{CharacterClass::cleric, "flame_strike", 9},
+    SpellAccessRow{CharacterClass::cleric, "greater_restoration", 9},
+    SpellAccessRow{CharacterClass::cleric, "insect_plague", 9},
+    SpellAccessRow{CharacterClass::cleric, "mass_cure_wounds", 9},
+    SpellAccessRow{CharacterClass::cleric, "raise_dead", 9},
     // Ranger level-4 spells, with the level-4 slot of Ranger level 13.
     SpellAccessRow{CharacterClass::ranger, "conjure_woodland_beings", 13},
     SpellAccessRow{CharacterClass::ranger, "dominate_beast", 13},
@@ -798,6 +809,8 @@ struct Definition
     // Strikes' Divine Strike (its d8s, two from 14) or Potent Spellcasting.
     bool sear_undead{}, blessed_healer{}, potent_spellcasting{};
     int divine_strike{};
+    // Cleric 10: Divine Intervention's use per Long Rest (in Actor::arcane).
+    int divine_intervention{};
     // A Zombie's Undead Fortitude: a save to stay at 1 Hit Point.
     bool undead_fortitude{};
     bool life_domain{};   // Cleric level 3: Disciple of Life and Preserve Life
@@ -1162,6 +1175,8 @@ constexpr std::array resource_descriptors
     ResourceDescriptor{"persistent_rage", "Persistent Rage", &Actor::arcane,
         &Definition::persistent_rage, 0, true},
     ResourceDescriptor{"tireless", "Tireless", &Actor::arcane, &Definition::tireless, 0, true},
+    ResourceDescriptor{"divine_intervention", "Divine Intervention", &Actor::arcane,
+        &Definition::divine_intervention, 0, true},
     ResourceDescriptor{"natures_veil", "Nature's Veil", &Actor::lay_on_hands,
         &Definition::natures_veil, 0, true}};
 
@@ -1265,7 +1280,7 @@ int surge_capacity(const Definition &d)
 int arcane_capacity(const Definition &d)
 {
     return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable +
-           d.persistent_rage + d.tireless;
+           d.persistent_rage + d.tireless + d.divine_intervention;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -1434,6 +1449,12 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
         a.initiate_casts &= ~initiate_bit(a.definition, spell.id);
         return;
     }
+    // Divine Intervention: its once-per-Long-Rest use instead of a slot.
+    if (verb.ends_with(detail::intervention_suffix))
+    {
+        --a.arcane;
+        return;
+    }
     --a.slots[slot_level_of(verb, spell)];
     a.spent_slot = true;
 }
@@ -1441,6 +1462,15 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
 bool unconscious(const Actor &a)
 {
     return a.life.hp == 0;
+}
+
+// Raise Dead's penalty to D20 Tests, one less after each Long Rest.
+int return_penalty(const Actor &a)
+{
+    for (const auto &e : a.effects.active)
+        if (e.kind == detail::EffectKind::returned)
+            return e.dc;
+    return 0;
 }
 
 bool conscious(const Actor &a)
@@ -1473,7 +1503,7 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
         return kind == detail::EffectKind::blindness || kind == detail::EffectKind::dazzled;
     if (condition == "paralyzed")
         return kind == detail::EffectKind::hold_person;
-    return kind == detail::EffectKind::poisoned;
+    return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion;
 }
 
 std::string condition_name(std::string_view condition)
@@ -1557,6 +1587,17 @@ std::size_t ward_of(std::string_view verb)
     const auto type = detail::without_cast_suffix(verb).substr(std::string_view("magic_circle_").size());
     return static_cast<std::size_t>(std::find(detail::ward_types.begin(), detail::ward_types.end(),
                                               type) - detail::ward_types.begin());
+}
+
+// Whether Greater Restoration has a harm to end on the creature: Charmed
+// (index 0) or a curse (index 1).
+bool has_greater_harm(const Actor &a, std::size_t harm)
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
+    {
+        return harm ? curse(e.kind)
+               : e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated;
+    });
 }
 
 // Whether Lesser Restoration has a condition to end on the creature.
@@ -1853,6 +1894,7 @@ character_definition(std::string_view bytes,
     d.divine_spark = klass == CharacterClass::cleric && level >= 2;
     d.sear_undead = klass == CharacterClass::cleric && level >= 5;
     d.blessed_healer = klass == CharacterClass::cleric && level >= 6;
+    d.divine_intervention = klass == CharacterClass::cleric && level >= 10 ? 1 : 0;
     d.life_domain = klass == CharacterClass::cleric && level >= 3;
     d.evoker = klass == CharacterClass::wizard && level >= 3;
     d.free_smite = klass == CharacterClass::paladin && level >= 2 ? 1 : 0;
@@ -2575,7 +2617,7 @@ class Session final : public CombatSession
                 detail::d20({d.champion || d.feral_instinct,
                              d.str_dex_disadvantage || a.source.surprised, d.lucky},
                             rng_) +
-                d.initiative;
+                d.initiative - return_penalty(a);
             a.movement = a.form ? a.form->speed : d.speed;
             actors_.push_back(std::move(a));
         }
@@ -2747,7 +2789,8 @@ class Session final : public CombatSession
         overgrowth,     // Plant Growth's Overgrowth, lasting the fight
         beings,         // Conjure Woodland Beings' 10-foot Emanation, around its caster
         guardians,      // Spirit Guardians' 15-foot Emanation, around its caster
-        raising         // the corpses Animate Dead is being cast on
+        raising,        // the corpses Animate Dead is being cast on
+        swarm           // Insect Plague's swarm, Difficult Terrain
     };
     struct Zone
     {
@@ -3255,6 +3298,21 @@ class Session final : public CombatSession
     [[nodiscard]] const detail::Effect *curse_on(const Actor &a, int curse) const;
     // Bestow Curse's necrotic curse: 1d8 more when the caster damages it.
     void curse_strikes(const Actor &caster, Actor &target);
+    // Insect Plague: a creature in the swarm saves once a turn.
+    void swarm_strikes(const Zone &swarm, Actor &creature);
+    // Mass Cure Wounds: up to six allies in its Sphere, the most hurt first.
+    void mass_cure(Actor &cleric, const detail::SpellDef &spell, std::string_view verb,
+                   const std::vector<Cell> &cells);
+    // Contagion: a Constitution save at the end of each of its turns until
+    // three successes end it or three failures make it last.
+    void contagion_save(Actor &a);
+    // Dispel Evil and Good: whether a creature is of the types it wards
+    // against; whether an effect is a charm or fear such a creature caused;
+    // whether an ally suffers one.
+    [[nodiscard]] bool otherworldly(const Actor &a) const;
+    [[nodiscard]] static bool enchants(const detail::Effect &e);
+    [[nodiscard]] bool otherworldly_source(const detail::Effect &e) const;
+    [[nodiscard]] bool enchanted_by_otherworld(const Actor &a) const;
     // Superior Hunter's Defense: Resistance to the hit's type for the turn.
     void hunters_defense(Actor &target, detail::DamageType type);
     void spikes_pierce(Actor &creature);
@@ -4231,7 +4289,7 @@ Battlefield Session::zoned_board() const
     for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
                 zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
-                zone.kind == ZoneKind::spikes)
+                zone.kind == ZoneKind::spikes || zone.kind == ZoneKind::swarm)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == Terrain::open)
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
@@ -4406,7 +4464,7 @@ Snapshot Session::snapshot() const
             s.guardians.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::circle)
             s.circles.insert(s.circles.end(), zone.cells.begin(), zone.cells.end());
-        else if (zone.kind == ZoneKind::animals)
+        else if (zone.kind == ZoneKind::animals || zone.kind == ZoneKind::swarm)
             s.spirits.insert(s.spirits.end(), zone.cells.begin(), zone.cells.end());
         else if (emanates(zone))
         {
@@ -5224,6 +5282,59 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::animate_dead:
         begin_animating(a, target, spell, slot_level_of(verb, spell));
         return;
+    case detail::Rider::contagion:
+    {
+        const int amount = resolved_damage(target, spell.damage, dice(spell.dice));
+        log(target.source.name + " takes " + std::to_string(amount) + " Necrotic damage.",
+        {
+            "{name} takes {damage} {type} damage.",
+            {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", "Necrotic", true}}
+        });
+        damage(target, amount);
+        if (target.life.dead || !detail::can_apply(target.effects))
+            return;
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::contagion,
+                                    static_cast<int>(*detail::contagion_ability(verb)));
+        log(target.source.name + " is Poisoned by the contagion.",
+        {"{name} is Poisoned by the contagion.", {{"name", target.source.name}}});
+        return;
+    }
+    case detail::Rider::dispel_evil_and_good:
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::dispel_evil, 0);
+        log(a.source.name + " gains Dispel Evil and Good.",
+        {"{name} gains {spell}.", {{"name", a.source.name}, {"spell", "Dispel Evil and Good", true}}});
+        return;
+    case detail::Rider::greater_restoration:
+    {
+        const auto harm = *detail::greater_harm(verb);
+        if (detail::greater_harms[harm] == "charmed")
+        {
+            std::erase_if(target.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::charmed ||
+                       e.kind == detail::EffectKind::dominated;
+            });
+            release(target);
+            log(target.source.name + " is no longer Charmed.",
+            {"{name} is no longer Charmed.", {{"name", target.source.name}}});
+        }
+        else
+        {
+            std::erase_if(target.effects.active, [](const auto & e)
+            {
+                return curse(e.kind);
+            });
+            log(target.source.name + "'s curses end.",
+            {"{name}'s curses end.", {{"name", target.source.name}}});
+        }
+        return;
+    }
+    case detail::Rider::insect_plague:
+    case detail::Rider::mass_cure_wounds:
+        return; // An aimed area, resolved by cast_area().
+
     case detail::Rider::barkskin:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::barkskin, 0);
@@ -5413,9 +5524,21 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::lesser_restoration:
     {
         const auto condition = *detail::restoration_condition(verb);
+        // Contagion's Poisoned ends only on a successful Constitution save.
+        const auto *contagion = [&]() -> const detail::Effect *
+        {
+            for (const auto &e : target.effects.active)
+                if (e.kind == detail::EffectKind::contagion)
+                    return &e;
+            return nullptr;
+        }();
+        const bool holds = contagion && condition == "poisoned" &&
+                           !saving_throw_succeeds(target, detail::Ability::constitution,
+                                                  spell_dc(a, "contagion"));
         std::erase_if(target.effects.active, [&](const auto & e)
         {
-            return gives_condition(e.kind, condition);
+            return gives_condition(e.kind, condition) &&
+                   !(holds && e.kind == detail::EffectKind::contagion);
         });
         const std::string message = condition == "blinded"     ? "{name} is no longer Blinded."
                                      : condition == "paralyzed" ? "{name} is no longer Paralyzed."
@@ -5846,9 +5969,13 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue;
         // Quickened Spell offers an Action spell in the Bonus Action pass.
         const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
-        if (as_bonus != bonus_pass)
-            continue;
-        if (!detail::knows_spell(d.spells, spell.id))
+        // Divine Intervention (Cleric 10): any Cleric spell of level 5 or lower,
+        // prepared or not, cast as a Magic action without a slot.
+        const bool intervene = !bonus_pass && d.divine_intervention && a.arcane > 0 &&
+                               spell.level && spell.level <= 5 &&
+                               detail::on_class_list(CharacterClass::cleric, spell.id);
+        const bool usual = as_bonus == bonus_pass && detail::knows_spell(d.spells, spell.id);
+        if (!usual && !intervene)
             continue;
         switch (spell.target)
         {
@@ -5923,7 +6050,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                  def(other).creature_type != "beast") ||
                 (spell.rider == detail::Rider::shillelagh && !d.shillelagh_weapon))
             continue;
-        if (as_bonus ? !a.bonus : !a.actions.available(true))
+        if (usual ? (as_bonus ? !a.bonus : !a.actions.available(true))
+                : !a.actions.available(true))
             continue;
         const bool aimed = spell.target == detail::SpellTarget::area;
         const auto offer = [&](std::string verb, std::string label)
@@ -5935,14 +6063,17 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // a turn, or with Magic Initiate's free cast, which spends no slot.
         const auto offer_leveled = [&](const std::string & verb, const std::string & label)
         {
-            if (!a.spent_slot)
+            if (usual && !a.spent_slot)
                 for (const unsigned level : cast_levels(a, spell))
                 {
                     auto [cast_verb, cast_label] = cast_at(spell, level, verb, label);
                     offer(std::move(cast_verb), std::move(cast_label));
                 }
-            if (a.initiate_casts & initiate_bit(d, spell.id))
+            if (usual && (a.initiate_casts & initiate_bit(d, spell.id)))
                 offer(verb + std::string(detail::initiate_suffix), label + " (Magic Initiate)");
+            if (intervene)
+                offer(verb + std::string(detail::intervention_suffix),
+                      label + " (Divine Intervention)");
         };
         if (spell.id == "chromatic_orb")
         {
@@ -5992,6 +6123,26 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                                              "Magic Circle: " + ward_label(type));
                 offer(std::move(verb), std::move(label));
             }
+            continue;
+        }
+        if (spell.rider == detail::Rider::contagion)
+        {
+            constexpr std::array<std::pair<std::string_view, std::string_view>, 6> abilities{{
+                    {"strength", "Strength"}, {"dexterity", "Dexterity"},
+                    {"constitution", "Constitution"}, {"intelligence", "Intelligence"},
+                    {"wisdom", "Wisdom"}, {"charisma", "Charisma"}
+                }};
+            for (const auto &[id, name] : abilities)
+                offer_leveled("contagion_" + std::string(id), "Contagion: " + std::string(name));
+            continue;
+        }
+        if (spell.rider == detail::Rider::greater_restoration)
+        {
+            for (std::size_t n = 0; n < detail::greater_harms.size(); ++n)
+                if (has_greater_harm(other, n))
+                    offer_leveled("greater_restoration_" + std::string(detail::greater_harms[n]),
+                                  std::string("Greater Restoration: ") +
+                                  (n ? "curse" : "Charmed"));
             continue;
         }
         if (spell.rider == detail::Rider::bestow_curse)
@@ -6378,6 +6529,19 @@ std::vector<Command> Session::offered_commands() const
                     auto [verb, label] = cast_at(animate, level, "animate_dead", "Animate Dead");
                     add(id, std::move(verb), std::move(label), other.source.id);
                 }
+    // Dispel Evil and Good: a Magic action ends it to free an ally within 5
+    // feet from such creatures' charm or fear, or to send one of them home.
+    if (detail::has_effect(a.effects, detail::EffectKind::dispel_evil) && a.actions.available(true))
+        for (const auto &other : actors_)
+        {
+            if (other.life.dead || distance(a.source.cell, other.source.cell) > 5)
+                continue;
+            if (other.source.side == a.source.side && enchanted_by_otherworld(other))
+                add(id, "dispel_break", "Dispel Evil and Good: Break Enchantment", other.source.id);
+            if (other.source.side != a.source.side && other.life.hp > 0 && otherworldly(other) &&
+                    can_see(a, other))
+                add(id, "dispel_dismissal", "Dispel Evil and Good: Dismissal", other.source.id);
+        }
     // Abjure Foes: enemies the Paladin sees within 60 feet.
     if (a.channel_divinity > 0 && a.actions.available() && d.abjure_foes)
         for (const auto &other : actors_)
@@ -7669,6 +7833,11 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     if (def(caster).agonizing.contains(spell.id))
         rolled.bonus += casting_modifier(def(caster));
     const int total = spell_dice(caster, rolled);
+    // Flame Strike's Radiant beside its Fire, resisted on its own.
+    auto second = spell.second_dice;
+    second.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
+    const int second_total = second.count ? spell_dice(caster, second) : 0;
+    const auto second_type = std::string(detail::damage_name(spell.second_damage));
     const auto damage_type = spell.id.starts_with("breath_weapon_")
                              ? *def(caster).breath
                              : cast_damage_type(detail::dragon_type(verb).value_or(spell.damage));
@@ -7695,6 +7864,17 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
             {{"name", other.source.name}, {"damage", std::to_string(amount)}, {"type", type, true}}
         });
         damage(other, amount);
+        if (second_total && !other.life.dead)
+        {
+            const int more = resolved_damage(other, spell.second_damage,
+                                             evaded(other, spell.save, halved, saved, second_total));
+            log(other.source.name + " takes " + std::to_string(more) + " " + second_type + " damage.",
+            {
+                "{name} takes {damage} {type} damage.",
+                {{"name", other.source.name}, {"damage", std::to_string(more)}, {"type", second_type, true}}
+            });
+            damage(other, more);
+        }
         if (amount)
             curse_strikes(caster, other);
         if (!saved && spell.rider == detail::Rider::thunderwave && !other.life.dead)
@@ -8228,6 +8408,134 @@ void Session::curse_strikes(const Actor &caster, Actor &target)
     damage(target, extra, false);
 }
 
+void Session::swarm_strikes(const Zone &swarm, Actor &creature)
+{
+    // Every creature in it but the caster saves, once per turn; the swarm may
+    // have ended with its caster's Concentration mid-turn.
+    const bool standing = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::swarm && zone.caster == swarm.caster;
+    });
+    if (!standing || creature.source.id == swarm.caster || creature.life.dead ||
+            creature.life.hp == 0 || absent(creature) ||
+            detail::has_effect(creature.effects, detail::EffectKind::swarmed))
+        return;
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == swarm.caster;
+    });
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    if (detail::can_apply(creature.effects))
+        detail::apply_poisoned(creature.effects,
+                               caster != actors_.end() ? effect_source(*caster) : effect_source(creature),
+                               caster != actors_.end() ? caster->source.name : creature.source.name,
+                               rest_of_turn, detail::EffectKind::swarmed);
+    const auto &spell = *detail::find_spell("insect_plague");
+    const bool saved = saving_throw_succeeds(creature, spell.save, swarm.save_dc);
+    const int count = spell.dice.count + static_cast<int>(swarm.slot - spell.level);
+    const int rolled = dice({count, spell.dice.sides, 0});
+    const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
+    log(creature.source.name + " takes " + std::to_string(amount) +
+        " Piercing damage from the swarm.",
+    {
+        "{name} takes {damage} Piercing damage from the swarm.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+}
+
+void Session::mass_cure(Actor &cleric, const detail::SpellDef &spell, std::string_view verb,
+                        const std::vector<Cell> &cells)
+{
+    // The caster's choice of up to six creatures in the Sphere: here its
+    // allies who can be healed, the most hurt first.
+    std::vector<Actor *> hurt;
+    for (auto &other : actors_)
+        if (other.source.side == cleric.source.side && !other.life.dead && !absent(other) &&
+                other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
+                std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            hurt.push_back(&other);
+    std::sort(hurt.begin(), hurt.end(), [&](const Actor * x, const Actor * y)
+    {
+        return x->life.hp * max_hp(*y) < y->life.hp * max_hp(*x);
+    });
+    if (hurt.size() > spell.instances)
+        hurt.resize(spell.instances);
+    auto rolled = spell.dice;
+    rolled.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
+    rolled.bonus = casting_modifier(def(cleric), spell.id);
+    std::vector<EntityId> healed;
+    for (auto *other : hurt)
+    {
+        heal(*other, healing_roll(*other, rolled) + disciple_of_life(cleric, slot_level_of(verb, spell)));
+        healed.push_back(other->source.id);
+    }
+    blessed_healer(cleric, spell, verb, healed);
+}
+
+void Session::contagion_save(Actor &a)
+{
+    auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::contagion;
+    });
+    if (found == a.effects.active.end() || found->dc >= 300 || a.life.hp == 0)
+        return;
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.id == found->source_actor;
+    });
+    const int dc = caster != actors_.end() ? spell_dc(*caster, "contagion") : 15;
+    const bool saved = saving_throw_succeeds(a, detail::Ability::constitution, dc);
+    // Re-found: the save may have changed the effects.
+    found = std::find_if(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::contagion;
+    });
+    if (found == a.effects.active.end())
+        return;
+    found->dc += saved ? 10 : 100;
+    if ((found->dc / 10) % 10 >= 3)
+    {
+        a.effects.active.erase(found);
+        log(a.source.name + " shakes off the contagion.",
+        {"{name} shakes off the contagion.", {{"name", a.source.name}}});
+    }
+    else if (found->dc >= 300)
+        log(a.source.name + "'s contagion takes hold for seven days.",
+        {"{name}'s contagion takes hold for seven days.", {{"name", a.source.name}}});
+}
+
+bool Session::otherworldly(const Actor &a) const
+{
+    const auto &type = def(a).creature_type;
+    return type == "celestial" || type == "elemental" || type == "fey" || type == "fiend" ||
+           type == "undead";
+}
+
+bool Session::enchants(const detail::Effect &e)
+{
+    return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated ||
+           e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured;
+}
+
+bool Session::otherworldly_source(const detail::Effect &e) const
+{
+    return e.source_scope == scope_ &&
+           std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.id == e.source_actor && otherworldly(other);
+    });
+}
+
+bool Session::enchanted_by_otherworld(const Actor &a) const
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
+    {
+        return enchants(e) && otherworldly_source(e);
+    });
+}
+
 void Session::hunters_defense(Actor &target, detail::DamageType type)
 {
     const auto found = std::find_if(reaction_answers_.begin(), reaction_answers_.end(),
@@ -8677,6 +8985,26 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         pack.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(std::move(pack));
         log("A pack of spirit animals appears.", {"A pack of spirit animals appears.", {}});
+        return;
+    }
+    if (spell.rider == detail::Rider::insect_plague)
+    {
+        // Everyone in the swarm when it appears saves, once this turn.
+        begin_concentration(a, spell);
+        Zone swarm{a.source.id, ZoneKind::swarm,
+                   area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+        swarm.save_dc = area_dc(a, spell);
+        swarm.slot = slot_level_of(aimed.verb, spell);
+        zones_.push_back(swarm);
+        for (auto &other : actors_)
+            if (in_zone(swarm, other.source.cell))
+                swarm_strikes(swarm, other);
+        return;
+    }
+    if (spell.rider == detail::Rider::mass_cure_wounds)
+    {
+        mass_cure(a, spell, aimed.verb,
+                  area_cells(spell, aimed.verb, a.source.cell, aimed.center));
         return;
     }
     if (spell.rider == detail::Rider::wind_wall)
@@ -9255,6 +9583,9 @@ void Session::fall(Actor &a)
     if (a.source.side == Side::party && a.life.dead && detail::can_apply(a.effects))
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::fallen, 0);
+    if (a.source.side == Side::party && a.life.dead && detail::can_apply(a.effects))
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::deceased, 0);
 }
 
 void Session::revivify(Actor &cleric, const Command &command)
@@ -9948,12 +10279,16 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.advantage = true;
     if (detail::sapped(a.effects) ||
             detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
+            detail::has_effect(a.effects, detail::EffectKind::contagion) ||
             detail::has_effect(a.effects, detail::EffectKind::scorched) ||
             !fears_in_sight(a).empty())
         result.disadvantage = true;
     // Ray of Enfeeblement: Disadvantage on Strength-based attack rolls, here
     // every melee weapon attack.
     if (!spell && !ranged && detail::has_effect(a.effects, detail::EffectKind::enfeebled))
+        result.disadvantage = true;
+    // Dispel Evil and Good: such creatures attack its caster with Disadvantage.
+    if (detail::has_effect(target.effects, detail::EffectKind::dispel_evil) && otherworldly(a))
         result.disadvantage = true;
     // Bestow Curse: Disadvantage on attack rolls against its caster.
     if (const auto *curse = curse_on(a, 6); curse && curse->source_actor == target.source.id)
@@ -10355,7 +10690,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                  : !ranged && shillelagh(a) ? casting_bonus(d, "shillelagh")
                  : ranged ? d.ranged_bonus
                  : d.melee_bonus) + blessing_die(a) +
-                (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic;
+                (spell || ranged ? 0 : sacred_weapon_bonus(a)) + weapon_magic -
+                return_penalty(a);
     // Sundering Blow: +5 to the next attack roll another creature makes against it.
     if (detail::spend_sundering(target.effects, effect_source(a)))
     {
@@ -11664,7 +12000,7 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         return false;
     }
     // Warding Bond: +1 to saving throws; Smite of Protection +2 to Dexterity saves.
-    const int bless = blessing_die(target) +
+    const int bless = blessing_die(target) - return_penalty(target) +
                       (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
                       aura_of_protection(target) +
                       (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0);
@@ -11675,8 +12011,15 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     modifiers.disadvantage |= heightened_target_ == target.source.id || disadvantage;
     // Staggering Blow: Disadvantage on the next saving throw.
     modifiers.disadvantage |= detail::spend_staggering(actor(target.source.id).effects);
-    // Bestow Curse: Disadvantage on the cursed ability's saves.
-    modifiers.disadvantage |= curse_on(target, static_cast<int>(ability)) != nullptr;
+    // Bestow Curse: Disadvantage on the cursed ability's saves; Contagion too,
+    // on the ability chosen.
+    modifiers.disadvantage |= curse_on(target, static_cast<int>(ability)) != nullptr ||
+                              std::any_of(target.effects.active.begin(), target.effects.active.end(),
+                                          [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::contagion &&
+               e.dc % 10 == static_cast<int>(ability);
+    });
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
     // Beacon of Hope: Advantage on Wisdom saves.
@@ -11949,6 +12292,7 @@ void Session::end_turn()
         return e.kind == detail::EffectKind::metamagic;
     });
     restore_self(actors_[turn_]);
+    contagion_save(actors_[turn_]);
     spring_zones(actors_[turn_], ZoneKind::grease);
     burn_beside_spheres(actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
@@ -11958,7 +12302,9 @@ void Session::end_turn()
         if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
             blow(zone, actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
-        if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell)) ||
+        if (zone.kind == ZoneKind::swarm && in_zone(zone, actors_[turn_].source.cell))
+            swarm_strikes(zone, actors_[turn_]);
+        else if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell)) ||
                 (emanates(zone) && zone.caster != actors_[turn_].source.id &&
                  in_emanation(zone, actors_[turn_].source.cell)))
             spirits_strike(zone, actors_[turn_]);
@@ -12036,6 +12382,9 @@ void Session::progress_movement()
             if (zone.kind == ZoneKind::animals && near_pack(zone, destination) &&
                     !near_pack(zone, departed))
                 spirits_strike(zone, a);
+            if (zone.kind == ZoneKind::swarm && in_zone(zone, destination) &&
+                    !in_zone(zone, departed))
+                swarm_strikes(zone, a);
             // The Emanation reaches a creature coming into it, and the
             // creatures its caster carries it onto.
             if (emanates(zone) && zone.caster != a.source.id &&
@@ -13213,6 +13562,36 @@ void Session::dispatch(const Command &command)
         attack(a, target, AttackRange::melee,
                SpellAttack{.dice = {1, 8, casting_modifier(d)}, .type = detail::DamageType::force});
     }
+    else if (command.verb == "dispel_break" || command.verb == "dispel_dismissal")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        auto &target = actor(command.target);
+        if (command.verb == "dispel_break")
+        {
+            std::erase_if(target.effects.active, [&](const auto & e)
+            {
+                return enchants(e) && otherworldly_source(e);
+            });
+            release(target);
+            log(a.source.name + " breaks the enchantment on " + target.source.name + ".",
+            {
+                "{name} breaks the enchantment on {target}.",
+                {{"name", a.source.name}, {"target", target.source.name}}
+            });
+        }
+        else if (!saving_throw_succeeds(target, detail::Ability::charisma,
+                                        spell_dc(a, "dispel_evil_and_good")))
+        {
+            // Sent home, it counts as defeated, as a banished one does (LEVELS-1).
+            target.life.hp = 0;
+            target.life.dead = true;
+            target.life.recovery = {};
+            log(target.source.name + " is sent home.",
+            {"{name} is sent home.", {{"name", target.source.name}}});
+        }
+        end_concentration(a);
+    }
     else if (command.verb == "woodland_disengage")
     {
         a.bonus = false;
@@ -13472,8 +13851,8 @@ void Session::dispatch(const Command &command)
     else if (is_smite(command.verb))
         resolve_smite(a, command.verb);
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
-             bonus_spell && (bonus_spell->bonus_action ||
-                             readies(a, Metamagic::quickened, *bonus_spell)))
+             bonus_spell && !command.verb.ends_with(detail::intervention_suffix) &&
+             (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell)))
     {
         // A Bonus Action spell spends no Action, so it resolves outside the
         // Action block below.
@@ -14748,10 +15127,11 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::raising) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::swarm) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
-                 kind != static_cast<unsigned>(ZoneKind::guardians)) ||
+                 kind != static_cast<unsigned>(ZoneKind::guardians) &&
+                 kind != static_cast<unsigned>(ZoneKind::swarm)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
@@ -15213,6 +15593,12 @@ class Module final : public RulesModule
                 "Blessed Strikes: Divine Strike (once on each of your turns a weapon hit deals 1d8 more Radiant or Necrotic damage) or Potent Spellcasting (your Wisdom modifier added to your Cleric cantrips' damage).\nDivine Spark rolls 2d8. A level 4 spell slot and Cleric spells: Aura of Life, Banishment, Death Ward, Freedom of Movement and Guardian of Faith; Life Domain: Aura of Life and Death Ward are always prepared.";
         if (klass == CharacterClass::cleric && result.level == 8)
             result.description = "A feat or ability points.";
+        if (klass == CharacterClass::cleric && result.level == 9)
+            result.description =
+                "Level 5 spell slots and Cleric spells: Contagion, Dispel Evil and Good, Flame Strike, Insect Plague and Raise Dead; Life Domain: Greater Restoration and Mass Cure Wounds are always prepared.\nProficiency Bonus +4.";
+        if (klass == CharacterClass::cleric && result.level == 10)
+            result.description =
+                "Divine Intervention: once per Long Rest, a Magic action casts any Cleric spell of level 5 or lower without a spell slot.\nA fifth cantrip.";
         if (klass == CharacterClass::cleric && result.level == 6)
             result.description =
                 "Life Domain: Blessed Healer. When a spell slot's healing restores Hit Points to another creature, you regain 2 + the slot's level.\nA third Channel Divinity use.";
@@ -16194,6 +16580,14 @@ class Module final : public RulesModule
                    e.kind == detail::EffectKind::trait_uses ||
                    e.kind == detail::EffectKind::heroic_inspiration;
         });
+        // Back from the dead: the penalty eases by 1 with each Long Rest.
+        for (auto &e : actor.effects.active)
+            if (e.kind == detail::EffectKind::returned)
+                --e.dc;
+        std::erase_if(actor.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::returned && e.dc <= 0;
+        });
         // Resourceful: a Human finishes the Long Rest with Heroic Inspiration.
         if (d.resourceful && detail::can_apply(actor.effects))
             // Camp effects carry scope 1: there is no encounter to source them.
@@ -16366,7 +16760,7 @@ class Module final : public RulesModule
     {
         // Revivify's offering: 300 gp times the revived member's level (LEVELS-1).
         const auto *spell = detail::find_spell(action);
-        return spell && spell->rider == detail::Rider::revivify
+        return spell && (spell->rider == detail::Rider::revivify || spell->id == "raise_dead")
                ? static_cast<unsigned>(300 * target.level) : 0;
     }
 
@@ -16447,6 +16841,14 @@ class Module final : public RulesModule
             for (const unsigned level : cast_levels(actor, raise))
             {
                 auto [verb, label] = cast_at(raise, level, "revivify", "Revivify");
+                actions.push_back({std::move(verb), {std::move(label), {}}});
+            }
+        // Raise Dead: an hour's casting on a member dead up to ten days.
+        if (const auto &raise = *detail::find_spell("raise_dead");
+                detail::knows_spell(d.spells, raise.id))
+            for (const unsigned level : cast_levels(actor, raise))
+            {
+                auto [verb, label] = cast_at(raise, level, "raise_dead", "Raise Dead");
                 actions.push_back({std::move(verb), {std::move(label), {}}});
             }
         // Magic Circle in camp: a ward against one creature type, an hour and
@@ -16530,6 +16932,30 @@ class Module final : public RulesModule
             patient.life.stable = false;
             patient.life.recovery = {};
             patient.life.hp = 1;
+            user_state = vitals(caster);
+            target_state = vitals(healed);
+            return;
+        }
+        if (const auto *raise = detail::find_spell(action); raise && raise->id == "raise_dead")
+        {
+            if (self || !patient.life.dead ||
+                    !detail::has_effect(patient.effects, detail::EffectKind::deceased))
+                throw std::runtime_error("Raise Dead needs a member dead up to ten days");
+            pay_for_spell(caster, action, *raise);
+            std::erase_if(patient.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::fallen || e.kind == detail::EffectKind::deceased ||
+                       e.kind == detail::EffectKind::poisoned;
+            });
+            patient.life.dead = false;
+            patient.life.successes = patient.life.failures = 0;
+            patient.life.stable = false;
+            patient.life.recovery = {};
+            patient.life.hp = 1;
+            // Camp effects carry scope 1: there is no encounter to source them.
+            if (detail::can_apply(patient.effects))
+                detail::apply_spell_benefit(patient.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                            user.name, detail::EffectKind::returned, 4);
             user_state = vitals(caster);
             target_state = vitals(healed);
             return;
@@ -17499,7 +17925,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.213", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.214", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

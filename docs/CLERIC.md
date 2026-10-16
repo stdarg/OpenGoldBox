@@ -15,10 +15,12 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 | 6 | Blessed Healer (Life), Channel Divinity 3 | Delivered (rules 0.6.213) |
 | 7 | Blessed Strikes, Divine Spark 2d8, level-4 spells | Delivered (rules 0.6.213) |
 | 8 | Ability Score Improvement | Delivered (rules 0.6.213) |
+| 9 | Level-5 spells | Delivered (rules 0.6.214) |
+| 10 | Divine Intervention | Delivered (rules 0.6.214) |
 
 ## Levels 5–15
 
-The Cleric advances to level 8 for now; level 9 waits for its level-5
+The Cleric advances to level 10 for now; level 11 waits for its level-6
 spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
@@ -49,10 +51,21 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
     Cleric cantrips (Sacred Flame).
 - **Divine Spark** rolls 2d8 from level 7.
 - **Ability Score Improvement** (8): a feat or ability points.
-- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 8,
+- **Level-5 spells** (9): one level-5 slot at 9, two at 10; prepared spells
+  14 and 15. Contagion, Dispel Evil and Good, Flame Strike, Greater
+  Restoration, Insect Plague, Mass Cure Wounds and Raise Dead; the Life Domain
+  always prepares Greater Restoration and Mass Cure Wounds. Commune, Geas,
+  Hallow, Legend Lore, Planar Binding and Scrying are cut (LEVELS-1).
+- **Divine Intervention** (10): once per Long Rest ("Divine Intervention" in
+  the resources), a Magic action casts any Cleric spell of level 5 or lower,
+  prepared or not, without a slot: the A cycle lists each such spell again as
+  "… (Divine Intervention)". A Bonus Action spell cast this way takes the
+  Action. Revivify, Raise Dead and Magic Circle are not offered through it.
+- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 10,
   features and prepared counts by level, the level-3 and level-4 spells,
   slots and Channel Divinity uses, each spell below, Sear Undead, Blessed
-  Healer, Divine Strike once a turn, a campaign round trip).
+  Healer, Divine Strike once a turn, a campaign round trip, each level-5 spell
+  and Divine Intervention).
 
 ### The new level-3 spells
 
@@ -85,6 +98,45 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   and count as defeated enemies for experience.
 - Combat checkpoints keep each actor's Divine Strike and controlled-creature
   state (`OGCOMBAT 56`, unchanged).
+
+### The level-5 spells
+
+- **Flame Strike** (Action, 60 feet): aimed like Entangle, a 10-foot-radius
+  column; each creature in it makes a Dexterity save against 5d6 Fire and
+  5d6 Radiant damage, half on a success, each type resisted on its own (1d6
+  of each more for each slot level above 5).
+- **Insect Plague** (Action, 300 feet, Concentration up to 10 minutes): a
+  20-foot-radius swarm, Difficult Terrain, drawn on the map. Each creature in
+  it when it appears, entering it or ending its turn there makes a
+  Constitution save, once a turn, against 4d10 Piercing damage, half on a
+  success (1d10 more for each slot level above 5). As with the game's other
+  areas the caster is spared. Its light obscurement has nothing to act on.
+- **Mass Cure Wounds** (Action, 60 feet): aimed at a point, a 30-foot-radius
+  Sphere; up to six allies in it regain 5d8 + the Wisdom modifier (1d8 more
+  for each slot level above 5). Adaptation: the six are picked for the
+  player, the most hurt allies first, as the caster's choice of creatures in
+  the Sphere would be.
+- **Greater Restoration** (Action, touch): the A cycle offers what afflicts an
+  ally: **Charmed** (also ends a domination) or **curse** (Bestow Curse,
+  Hex). Exhaustion, ability score and Hit Point maximum reductions and
+  Petrified have nothing to act on yet.
+- **Contagion** (Action, touch): one entry per ability; a creature that fails
+  a Constitution save takes 11d8 Necrotic damage and is Poisoned, with
+  Disadvantage on that ability's saves. It saves again at the end of each of
+  its turns: three successes end it, three failures make it last seven days.
+  Lesser Restoration ends its Poisoned only if the creature succeeds on a
+  Constitution save.
+- **Dispel Evil and Good** (Action, Concentration up to 1 minute):
+  Celestials, Elementals, Fey, Fiends and Undead attack the Cleric with
+  Disadvantage. A Magic action ends it early with **Break Enchantment** (an
+  ally within 5 feet is freed from such creatures' charm or fear) or
+  **Dismissal** (such a creature within 5 feet makes a Charisma save or is
+  sent home, counting as defeated, as a banished one is).
+- **Raise Dead** (an hour's casting, in camp): from the Camp dialog's Cast /
+  Use list, on a member dead up to ten days, for an offering of 300 gp times
+  its level (LEVELS-1). It returns with 1 Hit Point and a −4 penalty to
+  attack rolls, saving throws and Initiative that lessens by 1 with each Long
+  Rest.
 
 ## Channel Divinity
 

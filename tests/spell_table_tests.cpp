@@ -255,7 +255,7 @@ struct Probe
 };
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
-    {"cleric", 4}, {"cleric", 8}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
+    {"cleric", 4}, {"cleric", 10}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
 
@@ -437,13 +437,14 @@ void behaviour()
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command, Resistance,
-        // Guidance, Chromatic Orb, Protection from Energy and Bestow Curse are offered once per option, camp spells only outside combat, area spells are aimed,
+        // Guidance, Chromatic Orb, Protection from Energy, Bestow Curse and Contagion are offered once per option, camp spells only outside combat, area spells are aimed,
         // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
         // Revivify a dead one, Animate Dead a corpse
         // Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
-        // Remove Curse, which needs a cursed creature, and Dominate Beast, a Beast.
+        // Remove Curse and Greater Restoration, which need a cursed or charmed
+        // creature, and Dominate Beast, a Beast.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
                   row.pattern == SpellPattern::heal) && row.instances > 1) ||
@@ -459,6 +460,7 @@ void behaviour()
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
                 row.rider == Rider::bestow_curse || row.target == SpellTarget::corpse ||
+                row.rider == Rider::contagion || row.rider == Rider::greater_restoration ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
                 row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||

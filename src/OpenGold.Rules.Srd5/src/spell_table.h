@@ -142,7 +142,12 @@ enum class Rider : unsigned
     mass_healing_word,
     spirit_guardians,
     bestow_curse,
-    animate_dead
+    animate_dead,
+    contagion,
+    dispel_evil_and_good,
+    insect_plague,
+    mass_cure_wounds,
+    greater_restoration
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -185,6 +190,10 @@ struct SpellDef
     // or the length of a straight wall through the aimed square, feet, in a
     // direction the verb names (LEVELS-3)
     int wall{};
+    // A second damage type rolled beside `damage`, such as Flame Strike's
+    // Radiant; upcasting adds to both.
+    DamageType second_damage{DamageType::fire};
+    DamageDice second_dice{};
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -1472,6 +1481,103 @@ inline constexpr std::array spell_table
         .range = 10,
         .upcast = {.extra_instances = 2},
         .rider = Rider::animate_dead},
+    // SRD 5.2.1 p. 119: a touched creature that fails a Constitution save takes
+    // 11d8 Necrotic damage and is Poisoned, with Disadvantage on one ability's
+    // saves, offered as "contagion_<ability>".
+    SpellDef{
+        .id = "contagion",
+        .label = "Contagion",
+        .level = 5,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .requires_effect_capacity = true,
+        .save = Ability::constitution,
+        .damage = DamageType::necrotic,
+        .dice = {11, 8, 0},
+        .rider = Rider::contagion},
+    // SRD 5.2.1 p. 124: Celestials, Elementals, Fey, Fiends and Undead attack
+    // the caster with Disadvantage; it ends early to free a creature from their
+    // charm or fear, or to send one of them home.
+    SpellDef{
+        .id = "dispel_evil_and_good",
+        .label = "Dispel Evil and Good",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::dispel_evil_and_good,
+        .concentration = true},
+    // SRD 5.2.1 p. 132: a 10-foot-radius column of fire and radiance.
+    SpellDef{
+        .id = "flame_strike",
+        .label = "Flame Strike",
+        .level = 5,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {5, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .radius = 10,
+        .evocation = true,
+        .second_damage = DamageType::radiant,
+        .second_dice = {5, 6, 0}},
+    // SRD 5.2.1 p. 143: a 20-foot-radius swarm, Difficult Terrain; a creature
+    // in it when it appears, entering it or ending its turn there saves, once
+    // a turn.
+    SpellDef{
+        .id = "insect_plague",
+        .label = "Insect Plague",
+        .level = 5,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 300,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::piercing,
+        .dice = {4, 10, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::insect_plague,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 147: up to six creatures in a 30-foot-radius Sphere regain
+    // 5d8 + the spellcasting modifier.
+    SpellDef{
+        .id = "mass_cure_wounds",
+        .label = "Mass Cure Wounds",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 60,
+        .dice = {5, 8, 0},
+        .add_casting_modifier = true,
+        .instances = 6,
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::mass_cure_wounds,
+        .radius = 30},
+    // SRD 5.2.1 p. 137: a touch ends one of Charmed, a curse or another
+    // lasting harm, offered as "greater_restoration_<harm>".
+    SpellDef{
+        .id = "greater_restoration",
+        .label = "Greater Restoration",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::greater_restoration},
+    // SRD 5.2.1 p. 157: an hour's casting revives a creature dead up to ten
+    // days with 1 Hit Point and a -4 penalty to D20 Tests; cast in camp for an
+    // offering of 300 gp times its level (LEVELS-1).
+    SpellDef{
+        .id = "raise_dead",
+        .label = "Raise Dead",
+        .level = 5,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::dead_ally,
+        .range = 5},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -1641,8 +1747,10 @@ inline constexpr std::array spell_table
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in
-// "_initiate".
+// "_initiate", and one cast through a Cleric's Divine Intervention in
+// "_intervention".
 inline constexpr std::string_view initiate_suffix = "_initiate";
+inline constexpr std::string_view intervention_suffix = "_intervention";
 
 // The slot level a "_N" verb names, or 0.
 inline unsigned cast_slot_level(std::string_view verb)
@@ -1653,13 +1761,16 @@ inline unsigned cast_slot_level(std::string_view verb)
     return digit >= '2' && digit <= '9' ? static_cast<unsigned>(digit - '0') : 0;
 }
 
-// The verb without its "_N" or "_initiate" form, naming the spell or option cast.
+// The verb without its "_N", "_initiate" or "_intervention" form, naming the
+// spell or option cast.
 inline std::string_view without_cast_suffix(std::string_view verb)
 {
     if (cast_slot_level(verb))
         verb.remove_suffix(2);
     else if (verb.ends_with(initiate_suffix))
         verb.remove_suffix(initiate_suffix.size());
+    else if (verb.ends_with(intervention_suffix))
+        verb.remove_suffix(intervention_suffix.size());
     return verb;
 }
 
@@ -1817,6 +1928,37 @@ inline std::optional<int> curse_of(std::string_view verb)
     return static_cast<int>(found - curses.begin());
 }
 
+// What Greater Restoration ends, each offered as "greater_restoration_<harm>".
+inline constexpr std::array<std::string_view, 2> greater_harms{"charmed", "curse"};
+
+// The index in greater_harms a Greater Restoration verb names, if it is one.
+inline std::optional<std::size_t> greater_harm(std::string_view verb)
+{
+    verb = without_cast_suffix(verb);
+    if (!verb.starts_with("greater_restoration_"))
+        return std::nullopt;
+    verb.remove_prefix(20);
+    const auto found = std::find(greater_harms.begin(), greater_harms.end(), verb);
+    if (found == greater_harms.end())
+        return std::nullopt;
+    return static_cast<std::size_t>(found - greater_harms.begin());
+}
+
+// The ability a Contagion verb ("contagion_<ability>") names, if it is one.
+inline std::optional<std::size_t> contagion_ability(std::string_view verb)
+{
+    constexpr std::array<std::string_view, 6> abilities{"strength", "dexterity", "constitution",
+        "intelligence", "wisdom", "charisma"};
+    verb = without_cast_suffix(verb);
+    if (!verb.starts_with("contagion_"))
+        return std::nullopt;
+    verb.remove_prefix(10);
+    const auto found = std::find(abilities.begin(), abilities.end(), verb);
+    if (found == abilities.end())
+        return std::nullopt;
+    return static_cast<std::size_t>(found - abilities.begin());
+}
+
 // A wall's directions on the battle map (LEVELS-3), each offered as
 // "<spell>_<direction>": along a row, along a column, or along either diagonal.
 inline constexpr std::array<std::string_view, 4> wall_directions{"horizontal", "vertical",
@@ -1841,6 +1983,10 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "protection_from_energy";
     if (curse_of(id))
         id = "bestow_curse";
+    if (greater_harm(id))
+        id = "greater_restoration";
+    if (contagion_ability(id))
+        id = "contagion";
     if (const auto direction = wall_direction(id))
         id.remove_suffix(wall_directions[*direction].size() + 1);
     if (command_option(id))

@@ -130,7 +130,7 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::dazed && kind != EffectKind::smite_protected &&
             kind != EffectKind::faith_tested && kind != EffectKind::pack_tested &&
             kind != EffectKind::beings_tested && kind != EffectKind::veiled &&
-            kind != EffectKind::guarded) ||
+            kind != EffectKind::guarded && kind != EffectKind::swarmed) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -531,6 +531,8 @@ int benefit_value_limit(EffectKind kind)
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::dominated ? 40
            : kind == EffectKind::cursed ? 18
+           : kind == EffectKind::contagion ? 335
+           : kind == EffectKind::returned ? 4
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
@@ -569,6 +571,12 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::mage_armor:
     case EffectKind::death_ward:
         return 28800000; // 8 hours
+    case EffectKind::contagion:
+        return 604800000; // 7 days
+    case EffectKind::deceased:
+        return 864000000; // 10 days
+    case EffectKind::returned:
+        return 345600000; // four Long Rests' worth, ended by them
     case EffectKind::prayer_of_healing:
     case EffectKind::raised:
     case EffectKind::relentless_used:
@@ -601,6 +609,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::dominated:
     case EffectKind::cursed:
     case EffectKind::animating:
+    case EffectKind::dispel_evil:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
@@ -886,7 +895,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::dazed || kind == EffectKind::smite_protected ||
                            kind == EffectKind::faith_tested || kind == EffectKind::pack_tested ||
                            kind == EffectKind::beings_tested || kind == EffectKind::veiled ||
-                           kind == EffectKind::guarded ||
+                           kind == EffectKind::guarded || kind == EffectKind::swarmed ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||

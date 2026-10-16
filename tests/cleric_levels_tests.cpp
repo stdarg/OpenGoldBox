@@ -16,9 +16,9 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Cleric (Life Domain) from level 5 to 8 (LEVELS-1, LEVELS-2): level-3 and
-// level-4 spells, Sear Undead, Blessed Healer, a third Channel Divinity use,
-// Blessed Strikes and Divine Spark's 2d8.
+// A Cleric (Life Domain) from level 5 to 10 (LEVELS-1, LEVELS-2): level-3 to
+// level-5 spells, Sear Undead, Blessed Healer, a third Channel Divinity use,
+// Blessed Strikes, Divine Spark's 2d8 and Divine Intervention.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -200,8 +200,8 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 8,
-          "A Cleric stops at 8 until its level-5 spells exist");
+    check(party.member(id).character.sheet().level == 10,
+          "A Cleric stops at 10 until its level-6 spells exist");
     check(grants(cleric(5), "feature:sear_undead", 5) &&
           grants(cleric(6), "feature:blessed_healer", 6),
           "Sear Undead at 5, Blessed Healer at 6");
@@ -252,7 +252,26 @@ void progression_checks()
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "cleric-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "cleric-levels") == bytes,
-          "A level-8 Cleric saves and reloads");
+          "A level-10 Cleric saves and reloads");
+    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
+{
+    {9, 14}, {10, 15}
+})
+    check(rules->spell_access(cleric(level).sheet()).prepared_choices == count,
+          "Prepared spells: 14 at 9, 15 at 10");
+    for (const auto *spell : {"contagion", "dispel_evil_and_good", "flame_strike", "insect_plague",
+                              "raise_dead"
+                             })
+        check(preparable(cleric(9), spell), std::string("A level-9 Cleric can prepare ") + spell);
+    check(!preparable(cleric(8), "flame_strike"), "No level-5 spells at 8");
+    auto c9 = chapel(*dummies, cleric(9).sheet(), "dummy", 1);
+    check(slots(*c9, 5) == 1 && slots(*chapel(*dummies, cleric(10).sheet(), "dummy", 1), 5) == 2,
+          "One level-5 slot at 9, two at 10");
+    check(offered(*c9, "mass_cure_wounds") && offered(*c9, "greater_restoration_charmed") == false,
+          "Mass Cure Wounds is always prepared at 9");
+    check(grants(cleric(10), "feature:divine_intervention", 10) &&
+          remaining(*chapel(*dummies, cleric(10).sheet(), "dummy", 1), "divine_intervention") == 1,
+          "Divine Intervention at 10, once per Long Rest");
 }
 
 void mass_healing_word_checks()
@@ -426,6 +445,191 @@ void blessed_strikes_checks()
     check(potent->submit(step) && submit(*potent, "melee", 98) &&
           !offered(*potent, "divine_strike_radiant"), "Potent Spellcasting has no Divine Strike");
 }
+// The Cleric's sheet with `spells` prepared in place of its first ones.
+CharacterSheet with_spells(const Character &hero, const std::vector<std::string> &spells)
+{
+    auto sheet = hero.sheet();
+    auto &prepared = sheet.prepared_spells;
+    std::size_t next = 0;
+    for (const auto &spell : spells)
+        if (std::find(prepared.begin(), prepared.end(), spell) == prepared.end())
+            prepared[next++] = spell;
+    return sheet;
+}
+
+bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == verb && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+void flame_strike_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = chapel(*rules, with_spells(cleric(9), {"flame_strike"}), "dummy", 1);
+    check(submit(*c, "flame_strike") && submit_cell(*c, "area_move", Cell{3, 2}) &&
+          submit(*c, "area_cast") && slots(*c, 5) == 0, "Flame Strike falls on the foe");
+    check(logged(*c, "Foe takes ") && logged(*c, " Fire damage.") && logged(*c, " Radiant damage."),
+          "Flame Strike deals Fire and Radiant damage");
+}
+
+void insect_plague_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = chapel(*rules, with_spells(cleric(9), {"insect_plague"}), "dummy", 1);
+    check(submit(*c, "insect_plague") && submit_cell(*c, "area_move", Cell{6, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "Foe Constitution save:") &&
+          logged(*c, " Piercing damage from the swarm."), "Insect Plague strikes the foe");
+    check(c->snapshot().battlefield.at({6, 2}) == Terrain::difficult,
+          "The swarm is Difficult Terrain");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the swarm");
+    to_turn(*c, 98);
+    const auto before = log_lines(*c).size();
+    check(submit(*c, "end"), "The foe ends its turn in the swarm");
+    const auto log = log_lines(*c);
+    check(std::any_of(log.begin() + static_cast<std::ptrdiff_t>(before), log.end(),
+                      [](const auto & line)
+    {
+        return line.find(" Piercing damage from the swarm.") != std::string::npos;
+    }), "Ending a turn in the swarm forces another save");
+}
+
+void mass_cure_wounds_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = chapel(*rules, cleric(9).sheet(), "dummy", 1);
+    check(submit(*c, "mass_cure_wounds") && submit_cell(*c, "area_move", Cell{1, 2}) &&
+          submit(*c, "area_cast") && unit(*c, 2).hit_points > 3 && unit(*c, 3).hit_points > 3 &&
+          unit(*c, 98).hit_points == 1000 && slots(*c, 5) == 0,
+          "Mass Cure Wounds heals the allies in its Sphere, not the foe");
+}
+
+void greater_restoration_checks()
+{
+    const auto rules = dummy_rules();
+    const std::string hexed =
+        "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 "
+        "1 56 77 99 \"Witch\" 0 3600000 0 0";
+    const std::vector<std::string> gear{"mace"};
+    auto c = rules->create({{12, 5, std::vector<Terrain>(60)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 2},
+                rules->character_profile(cleric(9).sheet(), gear).data},
+            {2, "dummy", "Ally", Side::party, {1, 1}, {}, VitalState{3, false, hexed}},
+            {98, "dummy", "Foe", Side::opposition, {6, 2}}
+        }},
+    1);
+    to_turn(*c, 1);
+    check(offered(*c, "greater_restoration_curse", 2) &&
+          !offered(*c, "greater_restoration_charmed", 2), "Greater Restoration offers what afflicts");
+    check(submit(*c, "greater_restoration_curse", 2) && logged(*c, "Ally's curses end.") &&
+          slots(*c, 5) == 0, "Greater Restoration ends the curse");
+}
+
+void contagion_checks()
+{
+    const auto rules = dummy_rules();
+    bool sick = false;
+    for (std::uint64_t seed = 1; seed < 40 && !sick; ++seed)
+    {
+        auto c = chapel(*rules, with_spells(cleric(9), {"contagion"}), "dummy", seed);
+        Command step;
+        for (const auto &command : c->legal_commands())
+            if (command.verb == "move" && command.destination == Cell{2, 2})
+                step = command;
+        check(c->submit(step) && offered(*c, "contagion_wisdom", 98), "Contagion offers each ability");
+        check(submit(*c, "contagion_wisdom", 98), "Cast Contagion");
+        if (!logged(*c, "Foe is Poisoned by the contagion."))
+            continue;
+        sick = true;
+        check(logged(*c, " Necrotic damage."), "Contagion's 11d8 Necrotic damage");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the contagion");
+        to_turn(*c, 98);
+        check(submit(*c, "end") && logged(*c, "Foe Constitution save:"),
+              "The contagion is saved against at the end of each turn");
+    }
+    check(sick, "A seed where the foe fails its save");
+}
+
+void dispel_evil_checks()
+{
+    const auto rules = dummy_rules();
+    bool sent = false;
+    for (std::uint64_t seed = 1; seed < 40 && !sent; ++seed)
+    {
+        auto c = chapel(*rules, with_spells(cleric(9), {"dispel_evil_and_good"}), "walker", seed);
+        check(submit(*c, "dispel_evil_and_good", 1) &&
+              logged(*c, "Cleric gains Dispel Evil and Good."), "Cast Dispel Evil and Good");
+        to_turn(*c, 98);
+        Command closer;
+        for (const auto &command : c->legal_commands())
+            if (command.verb == "move" && command.destination == Cell{2, 2})
+                closer = command;
+        check(c->submit(closer) && submit(*c, "melee", 1), "The walker attacks the Cleric");
+        bool disadvantaged = false;
+        for (const auto &line : log_lines(*c))
+            if (line.starts_with("Foe -> Cleric"))
+                disadvantaged = line.find("(disadvantage)") != std::string::npos;
+        check(disadvantaged, "An Undead attacks the Cleric with Disadvantage");
+        to_turn(*c, 1);
+        check(offered(*c, "dispel_dismissal", 98) && submit(*c, "dispel_dismissal", 98),
+              "Dismissal targets the Undead within 5 feet");
+        sent = logged(*c, "Foe is sent home.");
+    }
+    check(sent, "Dismissal sends an Undead home when its save fails");
+}
+
+void raise_dead_checks()
+{
+    const auto rules = module();
+    const auto healer = with_spells(cleric(9), {"raise_dead"});
+    VitalState healer_vitals{healer.hit_points, false, {}};
+    const auto actions = rules->camp_actions(healer, healer_vitals);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "raise_dead";
+    }), "Raise Dead is a camp action");
+    auto fallen_draft = draft();
+    fallen_draft.name = "Fallen";
+    const Character fallen_hero(*srd5::character_rules(), fallen_draft, {});
+    const EntityId fallen = 5;
+    // A death in a fight: the brute hits the Fallen until it dies.
+    const auto dummies = dummy_rules();
+    const std::vector<std::string> gear{"mace"};
+    auto c = dummies->create({{12, 5, std::vector<Terrain>(60)},
+        {   {fallen, "campaign-character", "Fallen", Side::party, {1, 2},
+                dummies->character_profile(fallen_hero.sheet(), gear).data},
+            {7, "dummy", "Watcher", Side::party, {10, 4}},
+            {98, "brute", "Foe", Side::opposition, {2, 2}}
+        }},
+    1);
+    for (unsigned turns = 0; turns < 40 && !unit(*c, fallen).dead; ++turns)
+        if (!(c->snapshot().actor == 98 && submit(*c, "melee", fallen)))
+            check(submit(*c, "end") || submit(*c, "decline"), "Pass the turn");
+    check(unit(*c, fallen).dead, "The brute kills the Fallen");
+    auto target = unit(*c, fallen).persistent;
+    RandomState random{1};
+    rules->use_camp_action(healer, healer_vitals, fallen_hero.sheet(), target, "raise_dead", random);
+    check(!target.dead && target.hit_points == 1, "Raise Dead returns the Fallen with 1 Hit Point");
+    check(rules->camp_action_gold(fallen_hero.sheet(), "raise_dead") == 300,
+          "Raise Dead's offering: 300 gp times the level");
+}
+
+void divine_intervention_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = chapel(*rules, cleric(10).sheet(), "dummy", 1);
+    check(offered(*c, "flame_strike_intervention") && offered(*c, "cure_wounds_intervention", 2),
+          "Divine Intervention offers any Cleric spell of level 5 or lower");
+    check(submit(*c, "flame_strike_intervention") && submit_cell(*c, "area_move", Cell{3, 2}) &&
+          submit(*c, "area_cast") && slots(*c, 5) == 2 &&
+          remaining(*c, "divine_intervention") == 0 && !unit(*c, 1).action,
+          "Divine Intervention casts Flame Strike with its use and no slot");
+    check(!offered(*c, "cure_wounds_intervention", 2), "Once per Long Rest");
+}
 } // namespace
 
 int main()
@@ -439,6 +643,14 @@ int main()
         animate_dead_checks();
         sear_undead_checks();
         blessed_strikes_checks();
+        flame_strike_checks();
+        insect_plague_checks();
+        mass_cure_wounds_checks();
+        greater_restoration_checks();
+        contagion_checks();
+        dispel_evil_checks();
+        raise_dead_checks();
+        divine_intervention_checks();
     }
     catch (const std::exception &error)
     {

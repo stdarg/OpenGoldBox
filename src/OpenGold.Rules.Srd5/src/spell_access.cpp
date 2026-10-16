@@ -176,6 +176,14 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"spirit_guardians", "Spirit Guardians", 3, 0, cleric_list},
     Spell{"bestow_curse", "Bestow Curse", 3, 0, bard_list | cleric_list | wizard_list},
     Spell{"animate_dead", "Animate Dead", 3, 0, cleric_list | wizard_list},
+    Spell{"contagion", "Contagion", 5, 0, cleric_list | druid_list},
+    Spell{"dispel_evil_and_good", "Dispel Evil and Good", 5, 0, cleric_list | paladin_list},
+    Spell{"flame_strike", "Flame Strike", 5, 0, cleric_list},
+    Spell{"greater_restoration", "Greater Restoration", 5, 0,
+        bard_list | cleric_list | druid_list | paladin_list | ranger_list},
+    Spell{"insect_plague", "Insect Plague", 5, 0, cleric_list | druid_list | sorcerer_list},
+    Spell{"mass_cure_wounds", "Mass Cure Wounds", 5, 0, bard_list | cleric_list | druid_list},
+    Spell{"raise_dead", "Raise Dead", 5, 0, bard_list | cleric_list | paladin_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};
@@ -298,7 +306,9 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::cleric, "mass_healing_word", 5},
     AlwaysPrepared{CharacterClass::cleric, "revivify", 5},
     AlwaysPrepared{CharacterClass::cleric, "aura_of_life", 7},
-    AlwaysPrepared{CharacterClass::cleric, "death_ward", 7}};
+    AlwaysPrepared{CharacterClass::cleric, "death_ward", 7},
+    AlwaysPrepared{CharacterClass::cleric, "greater_restoration", 9},
+    AlwaysPrepared{CharacterClass::cleric, "mass_cure_wounds", 9}};
 
 const PreparedCaster *prepared_caster(CharacterClass klass)
 {

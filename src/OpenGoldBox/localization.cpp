@@ -92,6 +92,13 @@ String text(std::string_view source)
     if (source.empty())
         return {};
     const String translated = TranslationServer::get_singleton()->translate(gs(source));
+    // "Flame Strike (Divine Intervention)", a spell cast through a Cleric's
+    // Divine Intervention, is translated in two parts.
+    constexpr std::string_view intervention = " (Divine Intervention)";
+    if (translated == gs(source) && source.size() > intervention.size() &&
+            source.ends_with(intervention))
+        return format(N_("{spell} (Divine Intervention)"),
+                      {{"spell", text(source.substr(0, source.size() - intervention.size()))}});
     // "Cure Wounds (level 3 slot)", a spell cast from a higher slot, is
     // translated in two parts when the whole has no entry of its own.
     constexpr std::string_view slot_prefix = " (level ", slot_suffix = " slot)";

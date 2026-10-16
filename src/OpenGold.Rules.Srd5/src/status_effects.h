@@ -274,9 +274,22 @@ enum class EffectKind : unsigned
     animating = 108,
     // Animate Dead: a Zombie its source commands (LEVELS-1).
     raised = 109,
+    // Contagion: Poisoned, with Disadvantage on one ability's saves; `dc` is
+    // the ability, 10 for each end-of-turn success and 100 for each failure.
+    contagion = 110,
+    // Dispel Evil and Good, on its caster: Celestials, Elementals, Fey, Fiends
+    // and Undead attack it with Disadvantage.
+    dispel_evil = 111,
+    // Insect Plague: the creature has saved against a swarm this turn.
+    swarmed = 112,
+    // A dead party member within Raise Dead's ten days.
+    deceased = 113,
+    // Back from the dead (Raise Dead): `dc` is the penalty to D20 Tests, one
+    // less after each Long Rest.
+    returned = 114,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = raised
+    last = returned
 };
 
 // Magic Circle's creature types, by `dc`.

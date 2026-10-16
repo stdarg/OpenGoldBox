@@ -102,8 +102,8 @@ unsigned level_cap(CharacterClass character_class)
            character_class == CharacterClass::rogue ||
            character_class == CharacterClass::paladin ||
            character_class == CharacterClass::ranger ? 15
-           // A Cleric stops at 8 until its level-5 spells exist.
-           : character_class == CharacterClass::cleric ? 8 : 4;
+           // A Cleric stops at 10 until its level-6 spells exist.
+           : character_class == CharacterClass::cleric ? 10 : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)
