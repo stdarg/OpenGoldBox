@@ -67,6 +67,17 @@ std::shared_ptr<const EclProgram> EclCatalog::find(const ScriptId &id) const
 
 namespace
 {
+// The entry for `location` in a machine's sorted variable table, or none.
+template <class Table>
+auto bound_variable(Table &table, std::uint16_t location) noexcept -> decltype(&*table.begin())
+{
+    const auto found = std::lower_bound(table.begin(), table.end(), location,
+                                        [](const auto & entry, std::uint16_t key)
+    {
+        return entry.first < key;
+    });
+    return found != table.end() && found->first == location ? &*found : nullptr;
+}
 // A machine runs nothing without a program, so a missing one is refused
 // before any member is built from it.
 std::shared_ptr<const EclProgram> required_program(std::shared_ptr<const EclProgram> program)
@@ -148,7 +159,16 @@ void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
     require_configurable();
     if (program_address(address))
         throw EclError("Program addresses cannot be bound as variables");
-    variables_[address.location] = byte_address(address) ? v & 255 : v;
+    const std::uint16_t value = byte_address(address) ? v & 255 : v;
+    const auto found = std::lower_bound(variables_.begin(), variables_.end(), address.location,
+                                        [](const auto & entry, std::uint16_t key)
+    {
+        return entry.first < key;
+    });
+    if (found != variables_.end() && found->first == address.location)
+        found->second = value;
+    else
+        variables_.insert(found, {address.location, value});
 }
 
 void EclMachine::bind_string(EclAddress address, std::string_view v)
@@ -175,10 +195,10 @@ std::uint16_t EclMachine::variable(EclAddress address) const
             throw EclError("Read beyond loaded script image");
         return image_[offset];
     }
-    const auto it = variables_.find(address.location);
-    if (it == variables_.end())
+    const auto *bound = bound_variable(variables_, address.location);
+    if (!bound)
         throw EclError("Unbound variable address " + std::to_string(address.location));
-    return it->second;
+    return bound->second;
 }
 
 std::string EclMachine::string(EclAddress address) const
@@ -213,7 +233,8 @@ void EclMachine::write(EclAddress address, std::uint16_t v)
         }
     }
     else
-        variables_.at(address.location) = byte_address(address) ? v & 255 : v;
+        // variable() above has checked the address is bound.
+        bound_variable(variables_, address.location)->second = byte_address(address) ? v & 255 : v;
 }
 
 void EclMachine::write_string(EclAddress address, std::string_view v)

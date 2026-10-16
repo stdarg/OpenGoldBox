@@ -447,11 +447,41 @@ template <bool Reading> struct SaveCodec
             }
     }
 
+    // A script's variables, written as a map's entries are (the count, then
+    // each address and value in address order) from the machine's sorted
+    // table.
+    template <class Table>
+    void variable_table(Table &table)
+    {
+        std::uint64_t count = table.size();
+        field(count);
+        require(count <= 65536, "Save map too large");
+        if constexpr (reading)
+        {
+            table.clear();
+            for (std::uint64_t i = 0; i < count; ++i)
+            {
+                std::uint16_t address{}, value{};
+                fields(address, value);
+                table.emplace_back(address, value);
+            }
+            std::sort(table.begin(), table.end());
+            require(std::adjacent_find(table.begin(), table.end(), [](const auto & a, const auto & b)
+            {
+                return a.first == b.first;
+            }) == table.end(), "Duplicate save map key");
+        }
+        else
+            for (const auto &[address, value] : table)
+                fields(address, value);
+    }
+
     void machine(Visited<por::EclMachine> v)
     {
         require(v.state_ == por::EclState::idle || v.state_ == por::EclState::completed || reading,
                 "Cannot save a pending script");
-        fields(v.variables_, v.image_, v.instruction_spans_, v.conditions_, v.next_request_,
+        variable_table(v.variables_);
+        fields(v.image_, v.instruction_spans_, v.conditions_, v.next_request_,
                v.total_instructions_);
         std::string rng;
         if constexpr (!reading)

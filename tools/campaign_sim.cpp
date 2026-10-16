@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <iostream>
 #include <map>
 
@@ -26,8 +27,14 @@ namespace
 {
 std::unique_ptr<rules::RulesModule> module()
 {
-    return srd5::load(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
-                      "data/rules/srd-5.2.1/combat.rules");
+    // Read once; each fight's demo owns a module parsed from the text.
+    static const std::string content = []
+    {
+        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules",
+                         std::ios::binary);
+        return std::string{std::istreambuf_iterator<char>(in), {}};
+    }();
+    return srd5::parse_content(content);
 }
 
 struct PartyPlan
@@ -609,11 +616,15 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
         add_enemies(room, fight);
         combat.encounter(std::move(room), seed);
     }
-    for (unsigned commands = 0;
-            commands < 20000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
-            ++commands)
-        if (!combat.submit(choose_demo_command(combat.combat())))
+    // One snapshot a command: the outcome and the AI's choice both read it.
+    for (unsigned commands = 0; commands < 20000; ++commands)
+    {
+        const auto state = combat.combat().snapshot();
+        if (state.outcome != rules::Outcome::ongoing)
+            break;
+        if (!combat.submit(choose_demo_command(state, combat.combat().legal_commands())))
             throw std::runtime_error("Combat refused the demo command");
+    }
     return combat.combat().snapshot().outcome == rules::Outcome::victory;
 }
 
@@ -705,11 +716,13 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
             combat.campaign_party(party);
             combat.encounter(encounter, seed * 100 + n);
             unsigned commands = 0;
-            for (; commands < 20000 &&
-                    combat.combat().snapshot().outcome == rules::Outcome::ongoing;
-                    ++commands)
+            // One snapshot a command: the outcome and the AI's choice both read it.
+            for (; commands < 20000; ++commands)
             {
-                const auto command = choose_demo_command(combat.combat());
+                const auto state = combat.combat().snapshot();
+                if (state.outcome != rules::Outcome::ongoing)
+                    break;
+                const auto command = choose_demo_command(state, combat.combat().legal_commands());
                 if (command.actor < 1000 && command.verb != "move" && command.verb != "end" &&
                         command.verb != "area_move")
                     for (const auto id : party->state().slots)

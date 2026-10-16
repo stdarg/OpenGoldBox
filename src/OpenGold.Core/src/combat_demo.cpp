@@ -742,6 +742,11 @@ Command choose_demo_command(const CombatSession &session)
     return choose_from(session.snapshot(), session.legal_commands());
 }
 
+Command choose_demo_command(const rules::Snapshot &state, const std::vector<Command> &offered)
+{
+    return choose_from(state, offered);
+}
+
 namespace
 {
 // The AI does not know where a hidden enemy is (HIDE-1): it chooses as if the

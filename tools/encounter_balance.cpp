@@ -13,6 +13,8 @@
 #include "opengold/srd5.h"
 #include "opengold/ecl_party_host.h"
 #include <algorithm>
+#include <fstream>
+#include <iterator>
 #include <cmath>
 #include <cstdio>
 #include <iostream>
@@ -29,7 +31,16 @@ std::filesystem::path content_pack =
 
 std::unique_ptr<rules::RulesModule> module()
 {
-    return srd5::load(content_pack);
+    // Read once per pack; each fight's demo owns a module parsed from the text.
+    static std::filesystem::path read_from;
+    static std::string content;
+    if (read_from != content_pack)
+    {
+        std::ifstream in(content_pack, std::ios::binary);
+        content.assign(std::istreambuf_iterator<char>(in), {});
+        read_from = content_pack;
+    }
+    return srd5::parse_content(content);
 }
 
 // Abilities from best roll to worst.
@@ -216,10 +227,15 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         CombatDemo combat(module());
         combat.campaign_party(party);
         combat.encounter(fight, seed);
-        for (unsigned n = 0;
-                n < 20000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing; ++n)
-            if (!combat.submit(choose_demo_command(combat.combat())))
+        // One snapshot a command: the outcome and the AI's choice both read it.
+        for (unsigned n = 0; n < 20000; ++n)
+        {
+            const auto state = combat.combat().snapshot();
+            if (state.outcome != rules::Outcome::ongoing)
+                break;
+            if (!combat.submit(choose_demo_command(state, combat.combat().legal_commands())))
                 throw std::runtime_error("Combat refused the demo command");
+        }
         const auto result = combat.combat().snapshot();
         ++tally.fights;
         tally.wins += result.outcome == rules::Outcome::victory;

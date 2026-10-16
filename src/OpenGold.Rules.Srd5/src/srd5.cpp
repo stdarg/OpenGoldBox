@@ -3372,9 +3372,10 @@ class Session final : public CombatSession
         // Contingency: a spell waiting for the fight to start takes effect.
         if (!restoring)
             for (auto &a : actors_)
-                for (const auto &e : std::vector<detail::Effect>(a.effects.active))
-                    if (e.kind == detail::EffectKind::contingency && e.dc % 4 == 1)
-                        fire_contingency(a);
+                if (detail::has_effect(a.effects, detail::EffectKind::contingency))
+                    for (const auto &e : std::vector<detail::Effect>(a.effects.active))
+                        if (e.kind == detail::EffectKind::contingency && e.dc % 4 == 1)
+                            fire_contingency(a);
         update_outcome();
         frost_movement_ = std::any_of(
                               actors_.begin(), actors_.end(),
@@ -3721,7 +3722,9 @@ class Session final : public CombatSession
     {
         const int cap = std::max(0, def(a).melee_ability);
         const std::array parts{detail::DamagePart{def(a).melee_type, cap}};
-        auto defenses = affinities(target);
+        std::vector<detail::DamageAffinity> added;
+        const auto all = affinities(target, added);
+        std::vector<detail::DamageAffinity> defenses(all.begin(), all.end());
         // The approved Graze policy permits reductions, never vulnerability increases.
         std::erase_if(defenses,
                       [](const auto & affinity)
@@ -4525,8 +4528,11 @@ class Session final : public CombatSession
     void finish_reaction();
     int resolved_damage(Actor &target, detail::DamageType type, int amount);
     // The creature's damage affinities with those its effects grant: Warding
-    // Bond resists all damage, Protection from Poison resists Poison.
-    [[nodiscard]] std::vector<detail::DamageAffinity> affinities(const Actor &target) const;
+    // Bond resists all damage, Protection from Poison resists Poison. The
+    // creature's own list is read as it is unless something is added, which
+    // `added` then holds with it, so most damage copies nothing.
+    [[nodiscard]] std::span<const detail::DamageAffinity>
+    affinities(const Actor &target, std::vector<detail::DamageAffinity> &added) const;
     // Sanctuary: whether the warded target stops this attack or harmful spell,
     // after the attacker's Wisdom save. Attacking or casting ends the
     // attacker's own Sanctuary.
@@ -9504,7 +9510,8 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
         {"The oil on {name} burns for 5 more damage.", {{"name", target.source.name}}});
     }
     const std::array parts{detail::DamagePart{type, amount}};
-    const auto result = detail::resolve_damage(parts, affinities(target));
+    std::vector<detail::DamageAffinity> added;
+    const auto result = detail::resolve_damage(parts, affinities(target, added));
     if (def(target).regeneration && result.total > 0 &&
             (type == detail::DamageType::acid || type == detail::DamageType::fire))
         target.regeneration_blocked = true;
@@ -9547,12 +9554,14 @@ void Session::damage(Actor &target, int amount, bool critical)
                          detail::has_effect(target.effects, detail::EffectKind::raised)) &&
                         !def(target).regeneration};
     detail::damage_life(target.life, amount, max_hp(target), options);
-    // Contingency: dropping to half Hit Points or to 0 sets off its spell.
-    for (const auto &e : std::vector<detail::Effect>(target.effects.active))
-        if (e.kind == detail::EffectKind::contingency && !target.life.dead &&
-                ((e.dc % 4 == 0 && target.life.hp * 2 <= max_hp(target)) ||
-                 (e.dc % 4 == 2 && target.life.hp == 0)))
-            fire_contingency(target);
+    // Contingency: dropping to half Hit Points or to 0 sets off its spell. A
+    // copy of the effects, which firing changes, only when one waits.
+    if (detail::has_effect(target.effects, detail::EffectKind::contingency))
+        for (const auto &e : std::vector<detail::Effect>(target.effects.active))
+            if (e.kind == detail::EffectKind::contingency && !target.life.dead &&
+                    ((e.dc % 4 == 0 && target.life.hp * 2 <= max_hp(target)) ||
+                     (e.dc % 4 == 2 && target.life.hp == 0)))
+                fire_contingency(target);
     // A summoned creature vanishes at 0 Hit Points; a simulacrum melts away.
     if (target.life.hp == 0 && detail::has_effect(target.effects, detail::EffectKind::summoned))
     {
@@ -14169,9 +14178,11 @@ int Session::armor_class(const Actor &target) const
     return armor_class_of(target) + (smite_protected(target) ? 2 : 0);
 }
 
-std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) const
+std::span<const detail::DamageAffinity>
+Session::affinities(const Actor &target, std::vector<detail::DamageAffinity> &added) const
 {
-    auto result = def(target).affinities;
+    auto &result = added;
+    result.clear();
     if (detail::has_effect(target.effects, detail::EffectKind::warding_bond))
         result.push_back({detail::AffinityKind::resistance, std::nullopt, "spell:warding_bond"});
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_poison))
@@ -14230,6 +14241,11 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (in_aura_of_life(target))
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::necrotic,
                           "spell:aura_of_life"});
+    const auto &own = def(target).affinities;
+    if (result.empty())
+        return own;
+    // The creature's own first, as they always came.
+    result.insert(result.begin(), own.begin(), own.end());
     return result;
 }
 
@@ -17814,10 +17830,12 @@ int Session::cut_damage(const Actor &roller, const Actor &target, int amount,
     // Used without asking, and only when the roll would drop the target to 0
     // Hit Points and the d6 could keep it standing (CUT-1). The estimate
     // counts resistances and Temporary Hit Points, nothing rolled later.
+    std::vector<detail::DamageAffinity> added;
+    const auto defenses = affinities(target, added);
     const auto taken = [&](int rolled)
     {
         const std::array parts{detail::DamagePart{type, std::max(0, rolled)}};
-        return detail::resolve_damage(parts, affinities(target)).total;
+        return detail::resolve_damage(parts, defenses).total;
     };
     const int standing = target.life.hp + target.life.temporary_hp.amount;
     auto *const bard = cutting_bard(roller);
@@ -23900,7 +23918,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.239", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.240", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

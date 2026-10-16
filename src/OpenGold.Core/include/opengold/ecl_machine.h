@@ -179,7 +179,9 @@ class EclMachine
     std::shared_ptr<const EclProgram> program_;
     EclState state_{EclState::idle};
     std::uint32_t pc_{};
-    std::map<std::uint16_t, std::uint16_t> variables_;
+    // Address and value, sorted by address: copying the machine, as every
+    // rollback point does, takes one allocation for them.
+    std::vector<std::pair<std::uint16_t, std::uint16_t>> variables_;
     std::vector<std::uint8_t> image_;
     std::mt19937 random_{5489U}; // Reproducible OpenGoldBox RNG, not the DOS RNG sequence.
     std::set<std::uint8_t> host_opcodes_;

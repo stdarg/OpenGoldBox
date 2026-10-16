@@ -905,15 +905,20 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     e.remaining_ms -= static_cast<unsigned>(step);
                 if (e.save_in_ms)
                     e.save_in_ms -= static_cast<unsigned>(step);
-                EffectEvent event{subject.id, e};
-                if (!e.remaining_ms)
-                    event.removed = true;
-                else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
-                          e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
-                          e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
-                          e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused ||
-                          e.kind == EffectKind::time_slowed) &&
-                         !e.save_in_ms)
+                // The effect as this step found it, for an event built only
+                // when an observer hears of a save or a removal.
+                const auto kind = e.kind;
+                const auto remaining = e.remaining_ms, save_in = e.save_in_ms;
+                std::optional<SaveResult> save;
+                int inspiration = 0;
+                bool removed = !e.remaining_ms;
+                if (!removed &&
+                        (e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
+                         e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
+                         e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
+                         e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused ||
+                         e.kind == EffectKind::time_slowed) &&
+                        !e.save_in_ms)
                 {
                     // Blindness, Ray of Enfeeblement and Knock Out repeat a Constitution save,
                     // the others a Wisdom one, at the end of each of the target's turns.
@@ -942,20 +947,19 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                                 heightened_against(subject.effects.get(), e.source_scope,
                                                    e.source_actor, repeated_save_spell(e.kind));
                         modifiers.disadvantage |= spend_staggering(subject.effects.get());
-                        event.save = saving_throw(ability,
+                        save = saving_throw(ability,
                                                   subject.saves[static_cast<unsigned>(ability)] + bless,
                                                   e.dc, modifiers, rng);
-                        if (!event.save->success && !inspiration_spent)
-                            event.inspiration = inspiration_die(effects, *event.save, rng);
-                        if (event.inspiration)
+                        if (!save->success && !inspiration_spent)
+                            inspiration = inspiration_die(effects, *save, rng);
+                        if (inspiration)
                         {
                             inspiration_spent = true;
-                            event.save->success = event.save->natural + event.save->bonus +
-                                                  event.inspiration >= event.save->dc;
+                            save->success = save->natural + save->bonus + inspiration >= save->dc;
                         }
-                        event.removed = event.save->success;
+                        removed = save->success;
                         // A drowsy sleeper that fails falls Unconscious, no more saves.
-                        if (!event.save->success && e.kind == EffectKind::drowsy)
+                        if (!save->success && e.kind == EffectKind::drowsy)
                         {
                             e.kind = EffectKind::asleep;
                             e.save_in_ms = 0;
@@ -963,10 +967,16 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         }
                     }
                 }
-                if (event.removed)
+                if (removed)
                     e.remaining_ms = 0;
-                if (observe && (event.save || event.removed))
+                if (observe && (save || removed))
+                {
+                    EffectEvent event{subject.id, e, save, inspiration, removed};
+                    event.effect.kind = kind;
+                    event.effect.remaining_ms = remaining;
+                    event.effect.save_in_ms = save_in;
                     observe(event);
+                }
             }
             std::erase_if(effects,
                           [](const auto & e)
