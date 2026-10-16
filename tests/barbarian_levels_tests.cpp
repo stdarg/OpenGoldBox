@@ -194,9 +194,13 @@ void relentless_checks()
         auto c = duel(*rules, barbarian(11), seed, {2, 1}, VitalState{1, false, {}, {}}, "brute");
         check(submit(*c, "rage") && submit(*c, "end"), "Rage, then wait");
         // Retaliation is declined.
-        for (unsigned steps = 0; steps < 6 && c->snapshot().outcome == Outcome::ongoing &&
-                (c->snapshot().actor == 98 || c->snapshot().reaction_pending); ++steps)
+        for (unsigned steps = 0; steps < 6; ++steps)
+        {
+            const auto now = c->snapshot();
+            if (now.outcome != Outcome::ongoing || (now.actor != 98 && !now.reaction_pending))
+                break;
             check(submit(*c, "decline") || c->submit(choose_demo_command(*c)), "The brute acts");
+        }
         if (!logged(*c, "Berserker tries Relentless Rage."))
             continue;
         tried = true;

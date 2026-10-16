@@ -38,7 +38,7 @@ Character hero(std::string klass = "fighter", std::string race = "orc")
 
 ResourcePool pool(const Character &c, const VitalState &state)
 {
-    for (auto p : module()->recovery_info(c.sheet(), state).resources)
+    for (const auto &p : module()->recovery_info(c.sheet(), state).resources)
         if (p.id == "adrenaline_rush")
             return p;
     return {};
@@ -46,7 +46,7 @@ ResourcePool pool(const Character &c, const VitalState &state)
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
-    for (auto a : c.snapshot().combatants)
+    for (const auto &a : c.snapshot().combatants)
         if (a.id == id)
             return a;
     throw std::runtime_error("Missing actor");
@@ -54,7 +54,7 @@ CombatantView unit(const CombatSession &c, EntityId id = 1)
 
 Command command(const CombatSession &c, std::string_view verb)
 {
-    for (auto a : c.legal_commands())
+    for (const auto &a : c.legal_commands())
         if (a.verb == verb)
             return a;
     throw std::runtime_error("Missing command: " + std::string(verb));
@@ -62,7 +62,7 @@ Command command(const CombatSession &c, std::string_view verb)
 
 bool has(const CombatSession &c, std::string_view verb)
 {
-    for (auto a : c.legal_commands())
+    for (const auto &a : c.legal_commands())
         if (a.verb == verb)
             return true;
     return false;

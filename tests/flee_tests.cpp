@@ -295,7 +295,8 @@ void cornered_at_once()
                 return condition.source == "Fleeing in panic";
             }), "Failing to get away, it is no longer fleeing in panic");
             const auto failed_at = s.log().size();
-            while (c->snapshot().actor == 9 && c->snapshot().outcome == Outcome::ongoing)
+            for (auto now = c->snapshot(); now.actor == 9 && now.outcome == Outcome::ongoing;
+                    now = c->snapshot())
                 check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
             const auto log = c->snapshot().log();
             check(std::find(log.begin() + static_cast<std::ptrdiff_t>(failed_at), log.end(),

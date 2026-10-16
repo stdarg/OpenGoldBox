@@ -117,11 +117,15 @@ std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::
 {
     auto combat = party.rule_module().create(encounter(party), seed);
     bool used = false;
-    for (int step = 0; step < 200 && combat->snapshot().outcome == Outcome::ongoing; ++step)
+    for (int step = 0; step < 200; ++step)
     {
-        auto command = choose_demo_command(*combat);
+        const auto now = combat->snapshot();
+        if (now.outcome != Outcome::ongoing)
+            break;
+        const auto legal_commands = combat->legal_commands();
+        auto command = choose_demo_command(now, legal_commands);
         if (!used)
-            for (const auto &legal : combat->legal_commands())
+            for (const auto &legal : legal_commands)
                 if (std::find(verbs.begin(), verbs.end(), legal.verb) != verbs.end())
                 {
                     command = legal;
@@ -131,7 +135,7 @@ std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::
         if (verbose && step < 12)
         {
             std::cerr << "  verbs:";
-            for (const auto &legal : combat->legal_commands())
+            for (const auto &legal : legal_commands)
                 std::cerr << ' ' << legal.verb;
             std::cerr << "\n  -> " << command.verb << '\n';
         }

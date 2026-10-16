@@ -122,11 +122,8 @@ CombatantView unit(const CombatSession &session, EntityId id)
 void next_round(CombatSession &session)
 {
     const auto round = session.snapshot().round;
-    do
-    {
+    for (auto now = session.snapshot(); now.round == round || now.actor != 1; now = session.snapshot())
         check(session.submit(command(session, "end")), "End turn accepted");
-    }
-    while (session.snapshot().round == round || session.snapshot().actor != 1);
 }
 
 void turn_budget_tests()

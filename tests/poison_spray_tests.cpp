@@ -190,7 +190,7 @@ void access()
           access.cantrips[0].source_id == "class:wizard:spellcasting" &&
           access.cantrips[0].acquired_level == 1,
           "Actual creation selection has Wizard source and first acquisition level");
-    for (auto bad : std::vector<std::vector<std::string>>
+    for (const auto &bad : std::vector<std::vector<std::string>>
 {
     {"poison_spray", "poison_spray"},
     {"magic_missile"},

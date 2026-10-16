@@ -23,7 +23,7 @@ void access()
     check(rules->spell_access(selected(true).sheet()).cantrips.size() == 2,
           "Two supported choices can complete starting cantrips");
     auto d = draft();
-    for (auto bad : std::vector<std::vector<std::string>>
+    for (const auto &bad : std::vector<std::vector<std::string>>
 {
     {"poison_spray", "poison_spray"}, {"eldritch_blast", "poison_spray", "fire_bolt"}
 })
@@ -126,7 +126,7 @@ void eligibility()
         }
     }
     // Full hands block nothing (CLASS-11); untrained armor does.
-    for (auto gear : std::vector<std::vector<std::string>>
+    for (const auto &gear : std::vector<std::vector<std::string>>
 {
     {"quarterstaff", "shield"}, {"wand", "shield"}
 })

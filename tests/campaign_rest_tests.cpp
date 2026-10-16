@@ -724,7 +724,7 @@ struct CampFixture
         party->restore(wounded);
         auto resources = std::make_shared<por::PhlanResources>();
         resources->programs[0] = script;
-        town = std::make_unique<por::RolfTourSession>(por::GeoMap{}, script,
+        town = std::make_unique<por::RolfTourSession>(por::GeoMap{}, std::move(script),
                 std::array<Image, 3> {}, 0x9914,
                 por::WallArtSet{}, resources);
         town->campaign_party(party);

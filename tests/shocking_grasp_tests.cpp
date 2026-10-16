@@ -415,7 +415,7 @@ void legality()
         }
     }
     // Full hands block nothing (CLASS-11); untrained armor does.
-    for (auto gear : std::vector<std::vector<std::string>>
+    for (const auto &gear : std::vector<std::vector<std::string>>
 {
     {"quarterstaff", "shield"}, {"wand", "shield"}
 })

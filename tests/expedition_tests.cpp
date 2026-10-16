@@ -946,7 +946,7 @@ void defeat_four_orcs(Expedition &trip)
 // Accepts the inn's quote ("YES") or declines it, and names the payer.
 Answer inn_answer(bool stay, std::string payer)
 {
-    return [stay, payer](const por::TourSnapshot & s)
+    return [stay, payer = std::move(payer)](const por::TourSnapshot & s)
     {
         for (std::size_t n = 0; n < s.choices.size(); ++n)
             if (s.choices[n] == (stay ? "YES" : "NO") || s.choices[n] == payer)

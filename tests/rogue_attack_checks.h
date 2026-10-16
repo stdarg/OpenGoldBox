@@ -422,7 +422,7 @@ void run()
         while (c->snapshot().actor != 99)
             act(*c, "end");
         move(*c, {4, 1});
-        while (c->snapshot().reaction_pending && c->snapshot().actor != 1)
+        for (auto now = c->snapshot(); now.reaction_pending && now.actor != 1; now = c->snapshot())
             act(*c, "decline");
         check(c->snapshot().actor == 1 && c->snapshot().reaction_pending,
               "Enemy movement offers actual Rogue opportunity attack");

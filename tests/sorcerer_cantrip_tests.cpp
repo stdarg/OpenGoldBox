@@ -166,7 +166,7 @@ void access()
     for (const auto &spell : access.cantrips)
         check(spell.source_id == "class:sorcerer:spellcasting" && spell.acquired_level == 1,
               "Real source and acquisition level");
-    for (auto bad : std::vector<std::vector<std::string>> {{"fire_bolt", "fire_bolt"},
+    for (const auto &bad : std::vector<std::vector<std::string>> {{"fire_bolt", "fire_bolt"},
     {"eldritch_blast"},
     {"sacred_flame"},
     {"magic_missile"},
