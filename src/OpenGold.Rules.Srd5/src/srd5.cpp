@@ -2369,7 +2369,7 @@ character_definition(std::string_view bytes,
     const CharacterClass klass = *character_class;
     if (level > detail::level_cap(klass))
         throw std::runtime_error("Invalid character profile");
-    const auto races = character_rules()->choices(CreationField::race);
+    const auto &races = detail::creation_choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
                      [&](const auto & r)
 {
@@ -23273,7 +23273,7 @@ class Module final : public RulesModule
                                        std::string_view skill) const override
     {
         const auto d = character_definition(character_profile(sheet, gear).data);
-        auto result = character_rules()->ability_check(sheet, ability, skill);
+        auto result = detail::creation_rules().ability_check(sheet, ability, skill);
         const bool strength_or_dexterity =
             ability == Ability::strength || ability == Ability::dexterity;
         result.disadvantage =
@@ -23303,7 +23303,7 @@ class Module final : public RulesModule
     CharacterProfile character_profile(const CharacterSheet &sheet,
                                        std::span<const std::string> gear) const override
     {
-        if (sheet.identity != character_rules()->identity() || sheet.level < 1)
+        if (sheet.identity != detail::creation_rules().identity() || sheet.level < 1)
             throw std::runtime_error("Unsupported character rules identity or level");
         const auto klass = detail::class_of(sheet);
         if (static_cast<unsigned>(sheet.level) > detail::level_cap(klass))
@@ -23900,7 +23900,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.238", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.239", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

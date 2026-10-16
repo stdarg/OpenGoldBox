@@ -362,7 +362,7 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
 ClassRequirements CreatorRules::class_requirements(std::string_view id) const
 {
     using enum Ability;
-    const std::array<std::vector<Ability>, 12> primary
+    static const std::array<std::vector<Ability>, 12> primary
     {
         {   {strength}, {charisma}, {wisdom}, {wisdom}, {strength, dexterity},
             {dexterity, wisdom}, {strength, charisma}, {dexterity, wisdom}, {dexterity},
@@ -605,6 +605,25 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     return s;
 }
 } // namespace
+
+namespace detail
+{
+const rules::CharacterRules &creation_rules()
+{
+    static const CreatorRules rules;
+    return rules;
+}
+
+const std::vector<rules::CreationChoice> &creation_choices(rules::CreationField field)
+{
+    using enum rules::CreationField;
+    static const std::array lists{creation_rules().choices(race), creation_rules().choices(gender),
+                                  creation_rules().choices(character_class),
+                                  creation_rules().choices(alignment),
+                                  creation_rules().choices(background)};
+    return lists.at(static_cast<std::size_t>(field));
+}
+} // namespace detail
 
 std::unique_ptr<rules::CharacterRules> character_rules()
 {

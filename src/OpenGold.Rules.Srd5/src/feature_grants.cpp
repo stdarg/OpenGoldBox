@@ -32,7 +32,7 @@ std::string class_source(CharacterClass klass)
 // The stable ID of the creation choice a sheet names by its label.
 std::string choice_id(rules::CreationField field, std::string_view label, const char *unknown)
 {
-    const auto choices = character_rules()->choices(field);
+    const auto &choices = creation_choices(field);
     const auto found = std::find_if(choices.begin(), choices.end(),
                                     [&](const rules::CreationChoice & choice)
     {

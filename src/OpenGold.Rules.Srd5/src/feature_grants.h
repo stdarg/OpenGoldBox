@@ -6,6 +6,10 @@
 
 namespace opengold::srd5::detail
 {
+// The module's creation rules, which hold no state, made once; and a
+// creation field's choices, listed once (labels, IDs and descriptions).
+const rules::CharacterRules &creation_rules();
+const std::vector<rules::CreationChoice> &creation_choices(rules::CreationField field);
 // A sheet stores its race's and background's labels; these recover the
 // stable IDs that grants are sourced from. Each throws for a label no choice
 // has, rather than deriving an ID from the label's spelling.
