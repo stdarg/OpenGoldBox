@@ -1,8 +1,9 @@
 // Included by the SRD session implementation. All trigger legality and outcomes
 // remain in the static rules library; presentation consumes the resulting views.
-Actor Session::mastery_actor(const PendingMastery &m) const
+Definition Session::mastery_definition(const PendingMastery &m) const
 {
-    return thrown_actor(actor(m.actor), m.weapon);
+    const auto &attacker = actor(m.actor);
+    return def(attacker, thrown_loadout(attacker, m.weapon));
 }
 
 std::vector<EntityId> Session::cleave_targets(const PendingMastery &m,
@@ -13,7 +14,7 @@ std::vector<EntityId> Session::cleave_targets(const PendingMastery &m,
     const auto &first = actor(m.target);
     if (a.cleave_used)
         return result;
-    const auto reach = def(mastery_actor(m)).reach;
+    const auto reach = mastery_definition(m).reach;
     for (const auto &target : actors_)
         if (target.source.id != m.actor && target.source.id != m.target && !target.life.dead &&
                 distance(first.source.cell, target.source.cell) <= 5 &&
@@ -154,8 +155,7 @@ OptionalEffectChoice Session::effect_choices() const
         Message description;
         if (m.kind == detail::Mastery::topple)
         {
-            const auto attacking = mastery_actor(m);
-            const auto &d = def(attacking);
+            const auto d = mastery_definition(m);
             const int dc =
                 8 + 2 + (d.level - 1) / 4 + (m.ranged ? d.ranged_ability : d.melee_ability);
             description =
@@ -283,8 +283,7 @@ bool Session::use_effect(const Command &command)
             }
             else if (m.kind == detail::Mastery::topple)
             {
-                const auto attacking = mastery_actor(m);
-                const auto &d = def(attacking);
+                const auto d = mastery_definition(m);
                 if (!saving_throw_succeeds(target, detail::Ability::constitution,
                                            8 + 2 + (d.level - 1) / 4 +
                                            (m.ranged ? d.ranged_ability : d.melee_ability)))
@@ -329,14 +328,13 @@ void Session::validate_mastery_state() const
                 board_.at(m.origin) == Terrain::obstacle ||
                 (m.targeting && m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push))
             throw std::runtime_error("Invalid pending mastery source");
-        const auto attacking = mastery_actor(m);
-        const auto &d = def(attacking);
+        const auto d = mastery_definition(m);
         const auto range = m.ranged ? AttackRange::ranged : AttackRange::melee;
         // Tactical Master's Push or Slow replaced a mastery the weapon has.
         const bool mastery_ok =
-            m.tactical ? d.tactical_master && weapon_mastery(attacking, range) != detail::Mastery::none &&
+            m.tactical ? d.tactical_master && weapon_mastery(*a, d, range) != detail::Mastery::none &&
             (m.kind == detail::Mastery::push || m.kind == detail::Mastery::slow)
-            : weapon_mastery(attacking, range) == m.kind;
+            : weapon_mastery(*a, d, range) == m.kind;
         if (!mastery_ok ||
                 distance(m.origin, t->source.cell) > (m.ranged ? d.long_range : d.reach) ||
                 !line_of_sight(m.origin, t->source.cell) ||

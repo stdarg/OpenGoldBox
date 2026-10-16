@@ -3255,6 +3255,42 @@ struct ResolvedAttack
     bool savage{}; // Savage Attacker rerolled the damage
 };
 
+// Character definitions by profile and equipment, each parsed once. A pure
+// function of its inputs, so copies of a session share one cache; a session
+// is used from one thread at a time (Effective Modern C++ Item 16).
+class ProfileDefinitions
+{
+  public:
+    // `keys` replaces the profile's own equipment when given.
+    Definition of(std::string_view profile,
+                  std::optional<std::span<const std::string>> keys = std::nullopt)
+    {
+        std::string key(profile);
+        key += keys ? '\x1e' : '\x1f';
+        if (keys)
+            for (const auto &item : *keys)
+                (key += item) += '\x1f';
+        if (const auto found = parsed_.find(key); found != parsed_.end())
+            return found->second;
+        // A long fight with many changes of gear keeps the cache bounded.
+        if (parsed_.size() >= 512)
+            parsed_.clear();
+        return parsed_.emplace(std::move(key), character_definition(profile, keys)).first->second;
+    }
+
+  private:
+    std::unordered_map<std::string, Definition> parsed_;
+};
+
+// What an attack is made with when it is not the attacker's own loadout: an
+// Unarmed Strike, a thrown, off-hand or Torch strike, True Strike.
+struct Loadout
+{
+    Definition definition;
+    unsigned selected_weapon{};
+    bool light_damage{};
+};
+
 class Session final : public CombatSession
 {
   public:
@@ -3553,6 +3589,7 @@ class Session final : public CombatSession
         unsigned slot{};   // the slot level a zone whose damage grows with it was cast at
     };
     std::vector<Zone> zones_;
+    std::shared_ptr<ProfileDefinitions> profiles_ = std::make_shared<ProfileDefinitions>();
     std::vector<ChampionMove> champion_offers_;
     std::optional<EffectReaction> effect_reaction_origin_;
     // Reactions to a hit (Shield, Deflect Attacks) land deep inside a command.
@@ -3652,7 +3689,9 @@ class Session final : public CombatSession
         return mastery_.has_value() || !champion_offers_.empty();
     }
 
-    Actor mastery_actor(const PendingMastery &) const;
+    // The statistics of the attack that earned the mastery, with the weapon it
+    // was made with.
+    Definition mastery_definition(const PendingMastery &) const;
     std::vector<EntityId> cleave_targets(const PendingMastery &,
                                          std::optional<Cell> from = {}) const;
     std::vector<Cell> push_cells(const PendingMastery &, std::optional<Cell> from = {}) const;
@@ -3695,8 +3734,8 @@ class Session final : public CombatSession
     bool has_nick(const Actor &) const;
     bool nick_weapon(const Actor &, unsigned item) const;
     void qualify_light(Actor &, unsigned item);
-    Actor item_actor(const Actor &, unsigned item) const;
-    Actor unarmed_actor(const Actor &a) const;
+    Loadout item_loadout(const Actor &, unsigned item) const;
+    Loadout unarmed_loadout(const Actor &a) const;
     void use_focus_movement(Actor &a, std::string_view verb, EntityId carried = 0);
     void use_font_of_magic(Actor &a, std::string_view verb);
     void ready_metamagic(Actor &a, std::string_view choice);
@@ -3704,7 +3743,7 @@ class Session final : public CombatSession
     bool weapon_reaction(const Actor &, const Definition &) const;
     bool has_weapon_reaction(const Actor &, Cell, Cell) const;
     void validate_light() const;
-    Actor thrown_actor(const Actor &, std::string_view weapon) const;
+    Loadout thrown_loadout(const Actor &, std::string_view weapon) const;
     void throw_weapon(Actor &, Actor &, unsigned item, bool light = false);
     // Whether a character carries an item it does not already wield.
     bool carries(const Actor &, std::string_view key) const;
@@ -3745,7 +3784,10 @@ class Session final : public CombatSession
     void throw_gear(Actor &, Actor &, const detail::ThrownGear &);
     std::vector<HeldItemView> items_;
     void initialize_items();
-    Definition equipped_definition(const Actor &a, const std::vector<HeldItemView> &items) const;
+    // The actor's statistics with what it holds, `selected` its weapon in
+    // hand (its own selection when 0).
+    Definition equipped_definition(const Actor &a, const std::vector<HeldItemView> &items,
+                                   unsigned selected = 0) const;
     std::vector<LogEntry> log_;
     std::vector<Cell> path_;
     std::size_t path_index_{};
@@ -4430,9 +4472,16 @@ class Session final : public CombatSession
     // loadout's definition, held weapon and light-attack flag for the attack,
     // so what the attack does to the attacker (Fire Shield, Sanctuary ending,
     // once-a-turn features) happens to the attacker itself.
-    bool attack_as(Actor &a, const Actor &loadout, Actor &target, AttackRange range);
+    bool attack_as(Actor &a, Loadout loadout, Actor &target, AttackRange range);
+    // The statistics an attack with the loadout uses: a Wild Shape form's
+    // still, as def() gives.
+    static const Definition &def(const Actor &a, const Loadout &loadout)
+    {
+        return a.form ? *a.form : loadout.definition;
+    }
     detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
-    bool mastery_capacity(const Actor &, const Actor &, AttackRange range) const;
+    detail::Mastery weapon_mastery(const Actor &, const Definition &, AttackRange range) const;
+    bool mastery_capacity(const Actor &, const Definition &, const Actor &, AttackRange range) const;
     detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, AttackRange range,
                                            AttackSource source) const;
     Dice weapon_dice(const Actor &a, AttackRange range) const;
@@ -4740,11 +4789,11 @@ void Session::use_focus_movement(Actor &a, std::string_view verb, EntityId carri
     }
 }
 
-Actor Session::unarmed_actor(const Actor &a) const
+Loadout Session::unarmed_loadout(const Actor &a) const
 {
     // A Monk's Unarmed Strike: the Martial Arts die plus its modifier, with no
     // weapon's mastery, grip or feat riders.
-    auto result = a;
+    Loadout result{a.definition, a.selected_weapon, a.light_damage};
     auto &d = result.definition;
     d.melee = {1, d.martial_die, d.martial_modifier};
     d.melee_bonus = 2 + (d.level - 1) / 4 + d.martial_modifier;
@@ -4758,15 +4807,12 @@ Actor Session::unarmed_actor(const Actor &a) const
     return result;
 }
 
-Actor Session::item_actor(const Actor &a, unsigned token) const
+Loadout Session::item_loadout(const Actor &a, unsigned token) const
 {
     const auto &item = items_.at(token - 1);
     if (item.holder != a.source.id || item.stowed || !detail::weapon(item.definition))
         throw std::runtime_error("Weapon is not held");
-    auto result = a;
-    result.selected_weapon = token;
-    result.definition = equipped_definition(result, items_);
-    return result;
+    return {equipped_definition(a, items_, token), token, a.light_damage};
 }
 
 bool Session::has_nick(const Actor &a) const
@@ -4943,38 +4989,37 @@ void Session::initialize_items()
     items_active_ = true;
 }
 
-Definition Session::equipped_definition(const Actor &a,
-                                        const std::vector<HeldItemView> &items) const
+Definition Session::equipped_definition(const Actor &a, const std::vector<HeldItemView> &items,
+                                        unsigned selected) const
 {
     if (a.source.character_profile.empty())
         throw std::runtime_error("Equipment exchange requires a character equipment profile");
-    const auto original = character_definition(a.source.character_profile);
+    if (!selected)
+        selected = a.selected_weapon;
     std::vector<std::string> keys;
-    for (const auto &key : original.equipment_keys)
+    for (const auto &key : profiles_->of(a.source.character_profile).equipment_keys)
         if (key != "shield" && !detail::weapon(key))
             keys.push_back(key);
-    if (a.selected_weapon)
+    if (selected)
         for (const auto &item : items)
-            if (item.id == a.selected_weapon && item.holder == a.source.id && !item.stowed)
+            if (item.id == selected && item.holder == a.source.id && !item.stowed)
                 keys.push_back(item.definition);
     for (const auto &item : items)
-        if (item.holder == a.source.id && !item.stowed && item.id != a.selected_weapon &&
+        if (item.holder == a.source.id && !item.stowed && item.id != selected &&
                 !(a.shield_off && item.definition == "shield"))
             keys.push_back(item.definition);
-    return character_definition(a.source.character_profile, std::span<const std::string>(keys));
+    return profiles_->of(a.source.character_profile, std::span<const std::string>(keys));
 }
 
-Actor Session::thrown_actor(const Actor &a, std::string_view weapon) const
+Loadout Session::thrown_loadout(const Actor &a, std::string_view weapon) const
 {
-    auto result = a;
     std::vector<std::string> keys;
     for (const auto &key : a.definition.equipment_keys)
         if (!detail::weapon(key))
             keys.push_back(key);
     keys.emplace_back(weapon);
-    result.definition =
-        character_definition(a.source.character_profile, std::span<const std::string>(keys));
-    return result;
+    return {profiles_->of(a.source.character_profile, std::span<const std::string>(keys)),
+            a.selected_weapon, a.light_damage};
 }
 
 bool Session::carries(const Actor &a, std::string_view key) const
@@ -5173,7 +5218,7 @@ void Session::remove_fled()
 // A carried Torch strikes as a Simple Melee weapon for 1 Fire damage.
 void Session::torch_attack(Actor &a, Actor &target)
 {
-    attack_as(a, thrown_actor(a, "torch"), target, AttackRange::melee);
+    attack_as(a, thrown_loadout(a, "torch"), target, AttackRange::melee);
 }
 
 // Acid, Alchemist's Fire or Oil thrown in place of an attack: the target makes
@@ -5226,9 +5271,9 @@ void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear
 // carried, so throwing never changes what the thrower holds.
 void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
 {
-    auto attacker = thrown_actor(a, items_.at(token - 1).definition);
+    auto attacker = thrown_loadout(a, items_.at(token - 1).definition);
     attacker.light_damage = light;
-    attack_as(a, attacker, target, AttackRange::ranged);
+    attack_as(a, std::move(attacker), target, AttackRange::ranged);
     if (mastery_)
         mastery_->thrown_item = token;
 }
@@ -5566,6 +5611,8 @@ Snapshot Session::snapshot() const
     if (temporary_offer_)
         s.temporary_hp_offer = TemporaryHpOffer{actors_[turn_].source.id,
                                                 actors_[turn_].life.temporary_hp, *temporary_offer_};
+    // What may be done now, the same for every combatant's weapons below.
+    const auto offered = legal_commands();
     for (const auto &a : actors_)
     {
         std::string status = a.life.dead      ? "Dead"
@@ -5619,7 +5666,6 @@ Snapshot Session::snapshot() const
                 if (item.holder == a.source.id)
                     if (const auto *w = detail::weapon(item.definition); w && w->thrown)
                     {
-                        const auto offered = legal_commands();
                         view.thrown_weapons.push_back({item.id, item.label,
                                                        std::any_of(offered.begin(), offered.end(),
                                                                [&](const auto & c)
@@ -5630,7 +5676,6 @@ Snapshot Session::snapshot() const
                     }
         view.selected_weapon = held_weapon(a);
         view.nick_mastery = has_nick(a);
-        const auto offered = legal_commands();
         unsigned hand_index = 0;
         for (const auto &item : items_)
             if (item.holder == a.source.id)
@@ -8146,8 +8191,7 @@ std::vector<Command> Session::offered_commands() const
             if (item.holder == a.source.id && !item.stowed && detail::weapon(item.definition) &&
                     item.id != held_weapon(a))
             {
-                const auto choice = item_actor(a, item.id);
-                if (!reacting || weapon_reaction(choice, def(choice)))
+                if (!reacting || weapon_reaction(a, def(a, item_loadout(a, item.id))))
                 {
                     add(a.source.id, "weapon_select", "Select weapon");
                     commands.back().item = item.id;
@@ -8175,18 +8219,20 @@ std::vector<Command> Session::offered_commands() const
                     command.verb != "opportunity" && command.verb != "light_melee" &&
                     command.verb != "nick_melee")
                 return false;
-            auto attacking = actor(command.actor);
-            if (command.item)
-            {
-                if (command.verb == "throw" || command.verb == "light_throw" ||
-                        command.verb == "nick_throw")
-                    attacking = thrown_actor(attacking,
-                                             items_.at(command.item - 1).definition);
-                else if ((command.verb.starts_with("light_") ||
-                          command.verb.starts_with("nick_")))
-                    attacking = item_actor(attacking, command.item);
-            }
-            return !mastery_capacity(attacking, actor(command.target), range);
+            const auto &attacker = actor(command.actor);
+            const auto &target = actor(command.target);
+            // A thrown, light or nick attack is made with that weapon.
+            if (command.item && (command.verb == "throw" || command.verb == "light_throw" ||
+                                 command.verb == "nick_throw"))
+                return !mastery_capacity(attacker,
+                                         def(attacker, thrown_loadout(attacker,
+                                                 items_.at(command.item - 1).definition)),
+                                         target, range);
+            if (command.item && (command.verb.starts_with("light_") ||
+                                 command.verb.starts_with("nick_")))
+                return !mastery_capacity(attacker, def(attacker, item_loadout(attacker, command.item)),
+                                         target, range);
+            return !mastery_capacity(attacker, def(attacker), target, range);
         });
         return commands;
     };
@@ -14532,7 +14578,11 @@ void Session::burn_searing_smites(Actor &a)
 
 detail::Mastery Session::weapon_mastery(const Actor &a, AttackRange range) const
 {
-    const auto &d = def(a);
+    return weapon_mastery(a, def(a), range);
+}
+
+detail::Mastery Session::weapon_mastery(const Actor &a, const Definition &d, AttackRange range) const
+{
     if (d.masteries.empty() || (range == AttackRange::melee && d.ranged_weapon))
         return detail::Mastery::none;
     for (const auto &key : d.equipment_keys)
@@ -14547,9 +14597,10 @@ detail::Mastery Session::weapon_mastery(const Actor &a, AttackRange range) const
     return detail::Mastery::none;
 }
 
-bool Session::mastery_capacity(const Actor &a, const Actor &target, AttackRange range) const
+bool Session::mastery_capacity(const Actor &a, const Definition &d, const Actor &target,
+                               AttackRange range) const
 {
-    const auto kind = weapon_mastery(a, range);
+    const auto kind = weapon_mastery(a, d, range);
     if (kind != detail::Mastery::sap && kind != detail::Mastery::vex)
         return true;
     return detail::can_apply_attack_mastery(target.effects,
@@ -15440,25 +15491,23 @@ bool Session::mark_can_move(const Actor &caster) const
     return marked;
 }
 
-bool Session::attack_as(Actor &a, const Actor &loadout, Actor &target, AttackRange range)
+bool Session::attack_as(Actor &a, Loadout loadout, Actor &target, AttackRange range)
 {
     // Given back however the attack ends, a reaction prompt unwinding it too.
     struct Lent
     {
         Actor &a;
-        Definition definition;
-        unsigned selected_weapon;
-        bool light_damage;
+        Loadout own;
 
         ~Lent()
         {
-            a.definition = std::move(definition);
-            a.selected_weapon = selected_weapon;
-            a.light_damage = light_damage;
+            a.definition = std::move(own.definition);
+            a.selected_weapon = own.selected_weapon;
+            a.light_damage = own.light_damage;
         }
-    } lent{a, std::exchange(a.definition, loadout.definition),
-           std::exchange(a.selected_weapon, loadout.selected_weapon),
-           std::exchange(a.light_damage, loadout.light_damage)};
+    } lent{a, {std::exchange(a.definition, std::move(loadout.definition)),
+               std::exchange(a.selected_weapon, loadout.selected_weapon),
+               std::exchange(a.light_damage, loadout.light_damage)}};
     return attack(a, target, range);
 }
 
@@ -15466,7 +15515,7 @@ void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
 {
     // The attack uses the spellcasting modifier for its attack and damage
     // rolls; `casting` is that modifier plus the +2 Proficiency Bonus.
-    auto striker = a;
+    Loadout striker{a.definition, a.selected_weapon, a.light_damage};
     auto &d = striker.definition;
     const int modifier = casting_modifier(d, "true_strike");
     d.melee_bonus += modifier - d.melee_ability;
@@ -15482,7 +15531,7 @@ void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
     }
     log(a.source.name + " casts True Strike.",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
-    attack_as(a, striker, target, AttackRange::melee);
+    attack_as(a, std::move(striker), target, AttackRange::melee);
 }
 
 std::vector<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
@@ -18291,9 +18340,9 @@ void Session::dispatch(const Command &command)
             throw_weapon(a, actor(command.target), command.item, true);
         else
         {
-            auto attacker = item_actor(a, command.item);
+            auto attacker = item_loadout(a, command.item);
             attacker.light_damage = true;
-            attack_as(a, attacker, actor(command.target),
+            attack_as(a, std::move(attacker), actor(command.target),
                       command.verb == "light_ranged" || command.verb == "nick_ranged"
                       ? AttackRange::ranged
                       : AttackRange::melee);
@@ -18389,7 +18438,7 @@ void Session::dispatch(const Command &command)
         const int strikes = d.heightened_focus ? 3 : 2;
         for (int strike = 0; strike < strikes && actor(command.target).life.hp > 0; ++strike)
         {
-            const bool hit = attack_as(a, unarmed_actor(a), actor(command.target), AttackRange::melee);
+            const bool hit = attack_as(a, unarmed_loadout(a), actor(command.target), AttackRange::melee);
             if (hit && actor(command.target).life.hp > 0)
                 open_hand(a, actor(command.target), command.verb);
         }
@@ -18540,7 +18589,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "martial_arts")
     {
         a.bonus = false;
-        attack_as(a, unarmed_actor(a), actor(command.target), AttackRange::melee);
+        attack_as(a, unarmed_loadout(a), actor(command.target), AttackRange::melee);
     }
     else if (command.verb == "rage")
     {
@@ -19309,7 +19358,7 @@ void Session::dispatch(const Command &command)
             torch_attack(a, actor(command.target));
         else if (command.verb == "shoot")
         {
-            attack_as(a, thrown_actor(a, carried_ranged_weapon(a)), actor(command.target),
+            attack_as(a, thrown_loadout(a, carried_ranged_weapon(a)), actor(command.target),
                       AttackRange::ranged);
         }
         else if (const auto *gear = command.verb.starts_with("throw_")
@@ -23830,7 +23879,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.236", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.237", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
