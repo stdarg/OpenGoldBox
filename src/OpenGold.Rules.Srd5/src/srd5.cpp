@@ -214,7 +214,10 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::summoned || kind == detail::EffectKind::spirit_breath ||
            kind == detail::EffectKind::shared_resistance || kind == detail::EffectKind::illusory ||
            kind == detail::EffectKind::engulfed || kind == detail::EffectKind::elemental_spirit ||
-           kind == detail::EffectKind::telekinetic;
+           kind == detail::EffectKind::telekinetic || kind == detail::EffectKind::eye_panic ||
+           kind == detail::EffectKind::sickened || kind == detail::EffectKind::eye_resisted ||
+           kind == detail::EffectKind::eyebiting || kind == detail::EffectKind::stoning ||
+           kind == detail::EffectKind::petrified || kind == detail::EffectKind::dancing;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -312,6 +315,12 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::lifted:
         return 5u;
     case Kind::true_seeing:
+    case Kind::contingency:
+    case Kind::eye_panic:
+    case Kind::sickened:
+    case Kind::stoning:
+    case Kind::petrified:
+    case Kind::dancing:
         return 6u;
     case Kind::regenerating:
         return 7u;
@@ -350,6 +359,7 @@ bool splits_among_targets(const detail::SpellDef &spell)
 bool selects_creatures(const detail::SpellDef &spell)
 {
     return splits_among_targets(spell) || spell.pattern == detail::SpellPattern::buff ||
+           spell.id == "chain_lightning" ||
            spell.rider == detail::Rider::command || spell.rider == detail::Rider::abjure_foes ||
            (spell.pattern == detail::SpellPattern::heal && spell.instances > 1) ||
            (spell.pattern == detail::SpellPattern::save_condition &&
@@ -358,6 +368,29 @@ bool selects_creatures(const detail::SpellDef &spell)
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
 // Smite's slotless cast, and a "_N" verb a cast from a higher slot.
+// Contingency's spell (LEVELS-3): a spell of level 5 or lower cast with an
+// action that can take effect on its caster, without a choice of its own.
+bool contingent(const detail::SpellDef &spell)
+{
+    return spell.level >= 1 && spell.level <= 5 && !spell.bonus_action &&
+           (spell.pattern == detail::SpellPattern::buff || spell.pattern == detail::SpellPattern::heal) &&
+           (spell.target == detail::SpellTarget::self || spell.target == detail::SpellTarget::ally ||
+            spell.target == detail::SpellTarget::wounded_ally) &&
+           spell.instances == 1 && spell.rider != detail::Rider::fire_shield &&
+           spell.rider != detail::Rider::protection_from_energy &&
+           spell.rider != detail::Rider::conjure_minor_elementals &&
+           spell.rider != detail::Rider::enlarge_reduce && spell.rider != detail::Rider::regenerate &&
+           spell.rider != detail::Rider::animate_objects && spell.rider != detail::Rider::mislead;
+}
+
+// A Contingency trigger as players read it, by its index in contingency_triggers.
+std::string_view contingency_label(std::size_t trigger)
+{
+    constexpr std::array<std::string_view, 3> labels{"at half Hit Points", "when a fight starts",
+                                                     "at 0 Hit Points"};
+    return labels.at(trigger);
+}
+
 // A command that is a Magic action or another magical effect (Antimagic
 // Field, LEVELS-4): Channel Divinity's uses, a spell's later actions, Lay On
 // Hands, Wild Shape and a Dragonborn's Breath Weapon. Spells are kept out of
@@ -658,6 +691,21 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::wizard, "telekinesis", 9},
     SpellAccessRow{CharacterClass::wizard, "wall_of_force", 9},
     SpellAccessRow{CharacterClass::wizard, "wall_of_stone", 9},
+    // Wizard level-6 spells, with the level-6 slot of Wizard level 11.
+    SpellAccessRow{CharacterClass::wizard, "chain_lightning", 11},
+    SpellAccessRow{CharacterClass::wizard, "circle_of_death", 11},
+    SpellAccessRow{CharacterClass::wizard, "contingency", 11},
+    SpellAccessRow{CharacterClass::wizard, "create_undead", 11},
+    SpellAccessRow{CharacterClass::wizard, "disintegrate", 11},
+    SpellAccessRow{CharacterClass::wizard, "eyebite", 11},
+    SpellAccessRow{CharacterClass::wizard, "flesh_to_stone", 11},
+    SpellAccessRow{CharacterClass::wizard, "freezing_sphere", 11},
+    SpellAccessRow{CharacterClass::wizard, "globe_of_invulnerability", 11},
+    SpellAccessRow{CharacterClass::wizard, "irresistible_dance", 11},
+    SpellAccessRow{CharacterClass::wizard, "magic_jar", 11},
+    SpellAccessRow{CharacterClass::wizard, "sunbeam", 11},
+    SpellAccessRow{CharacterClass::wizard, "true_seeing", 11},
+    SpellAccessRow{CharacterClass::wizard, "wall_of_ice", 11},
     SpellAccessRow{CharacterClass::sorcerer, "fire_bolt", 1},
     SpellAccessRow{CharacterClass::sorcerer, "poison_spray", 1},
     SpellAccessRow{CharacterClass::sorcerer, "ray_of_frost", 1},
@@ -1709,7 +1757,7 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
     if (condition == "paralyzed")
         return kind == detail::EffectKind::hold_person;
     return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
-           kind == detail::EffectKind::retching;
+           kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened;
 }
 
 std::string condition_name(std::string_view condition)
@@ -1801,7 +1849,8 @@ bool has_greater_harm(const Actor &a, std::size_t harm)
 {
     return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
     {
-        return harm == 2 ? e.kind == detail::EffectKind::drained
+        return harm == 3 ? e.kind == detail::EffectKind::petrified
+               : harm == 2 ? e.kind == detail::EffectKind::drained
                : harm ? curse(e.kind)
                : e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated;
     });
@@ -2855,6 +2904,12 @@ class Session final : public CombatSession
         log("Combat begins. Each square is 5 feet.");
         if (!restoring)
             wake_resting_participants();
+        // Contingency: a spell waiting for the fight to start takes effect.
+        if (!restoring)
+            for (auto &a : actors_)
+                for (const auto &e : std::vector<detail::Effect>(a.effects.active))
+                    if (e.kind == detail::EffectKind::contingency && e.dc % 4 == 1)
+                        fire_contingency(a);
         update_outcome();
         frost_movement_ = std::any_of(
                               actors_.begin(), actors_.end(),
@@ -3036,7 +3091,9 @@ class Session final : public CombatSession
         cloud,          // Cloudkill's fog; cells.front() is its centre
         elemental,      // Conjure Elemental's Large spirit, two squares by two
         force_wall,     // Wall of Force, which nothing passes
-        stone_wall      // Wall of Stone, which blocks movement, sight and effects
+        stone_wall,     // Wall of Stone, which blocks movement, sight and effects
+        globe,          // Globe of Invulnerability's still 10-foot sphere
+        ice_wall        // Wall of Ice, which blocks movement and effects
     };
     struct Zone
     {
@@ -3332,7 +3389,8 @@ class Session final : public CombatSession
     {
         return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
         {
-            return zone.kind == ZoneKind::stone_wall || (force && zone.kind == ZoneKind::force_wall);
+            return zone.kind == ZoneKind::stone_wall ||
+                   (force && (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::ice_wall));
         });
     }
 
@@ -3340,7 +3398,8 @@ class Session final : public CombatSession
     {
         auto board = board_;
         for (const auto &zone : zones_)
-            if (zone.kind == ZoneKind::stone_wall || (force && zone.kind == ZoneKind::force_wall))
+            if (zone.kind == ZoneKind::stone_wall ||
+                    (force && (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::ice_wall)))
                 for (const auto cell : zone.cells)
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                         Terrain::obstacle;
@@ -3637,6 +3696,11 @@ class Session final : public CombatSession
     void choke_cloud(const Zone &cloud, Actor &creature);
     // Telekinesis: the creature, failing its save, is moved toward `to`.
     void hurl(Actor &caster, Actor &creature, Cell to);
+    // Globe of Invulnerability: whether a spell of `level` the caster casts
+    // from outside a globe leaves the square inside it be.
+    [[nodiscard]] bool globe_wards(const Actor &caster, Cell cell, unsigned level) const;
+    // Contingency: the stored spell takes effect on its caster.
+    void fire_contingency(Actor &a);
     // Hypnotic Pattern and Fear: each creature in the area that fails its
     // Wisdom save is entranced or terrified while the caster concentrates.
     void enchant_area(Actor &caster, const detail::SpellDef &spell, const std::vector<Cell> &cells);
@@ -4656,7 +4720,8 @@ Battlefield Session::zoned_board() const
     auto board = board_;
     // Walls of Force and Stone stop movement.
     for (const auto &zone : zones_)
-        if (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::stone_wall)
+        if (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::stone_wall ||
+                zone.kind == ZoneKind::ice_wall)
             for (const auto cell : zone.cells)
                 board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                     Terrain::obstacle;
@@ -5314,6 +5379,14 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::haunted, "Phantasmal Killer"},
                     std::pair{detail::EffectKind::polymorphed, "Polymorphed"},
                     std::pair{detail::EffectKind::sphered, "Resilient Sphere"},
+                    std::pair{detail::EffectKind::eye_panic, "Frightened (Eyebite)"},
+                    std::pair{detail::EffectKind::sickened, "Poisoned (Eyebite)"},
+                    std::pair{detail::EffectKind::stoning, "Restrained (Flesh to Stone)"},
+                    std::pair{detail::EffectKind::petrified, "Petrified"},
+                    std::pair{detail::EffectKind::dancing, "Charmed (Irresistible Dance)"},
+                    std::pair{detail::EffectKind::jigging, "Dancing"},
+                    std::pair{detail::EffectKind::jarred, "Body left behind (Magic Jar)"},
+                    std::pair{detail::EffectKind::contingency, "Contingency"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -5683,6 +5756,66 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::dominate_person:
         dominate(a, target, dc);
         return;
+    case detail::Rider::disintegrate:
+    case detail::Rider::wall_of_ice:
+        return; // Resolved with its damage, and an aimed area.
+    case detail::Rider::eyebite:
+    {
+        // Asleep (Sleep's Unconscious), panicked or sickened, as chosen.
+        const auto effect = detail::without_cast_suffix(verb).substr(std::string_view("eyebite_").size());
+        if (effect == "asleep")
+            detail::apply_asleep(target.effects, effect_source(a), a.source.name);
+        else
+            detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                        effect == "panicked" ? detail::EffectKind::eye_panic
+                                        : detail::EffectKind::sickened, 0);
+        if (!detail::has_effect(a.effects, detail::EffectKind::eyebiting))
+            detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::eyebiting, 0);
+        log(target.source.name + (effect == "asleep" ? " falls asleep." : effect == "panicked"
+                                  ? " panics." : " is sickened."),
+        {
+            effect == "asleep" ? "{name} falls asleep." : effect == "panicked" ? "{name} panics."
+            : "{name} is sickened.",
+            {{"name", target.source.name}}
+        });
+        return;
+    }
+    case detail::Rider::flesh_to_stone:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::stoning, 0);
+        log(target.source.name + " begins to turn to stone.",
+        {"{name} begins to turn to stone.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::irresistible_dance:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::dancing, 0);
+        log(target.source.name + " breaks into a helpless dance.",
+        {"{name} breaks into a helpless dance.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::magic_jar:
+        // The caster's soul takes the body (LEVELS-3); its own lies helpless.
+        dominate(a, target, dc);
+        if (detail::can_apply(a.effects))
+            detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::jarred, 0);
+        return;
+    case detail::Rider::globe_of_invulnerability:
+    {
+        // Still, where it was raised; it wards against spells of level 5 or
+        // lower, one more per slot level above 6.
+        std::vector<Cell> cells;
+        for (int y = 0; y < board_.height; ++y)
+            for (int x = 0; x < board_.width; ++x)
+                if (distance(a.source.cell, Cell{x, y}) <= 10)
+                    cells.push_back({x, y});
+        Zone globe{a.source.id, ZoneKind::globe, std::move(cells)};
+        globe.slot = slot_level_of(verb, spell);
+        zones_.push_back(std::move(globe));
+        log("A shimmering globe rises around " + a.source.name + ".",
+        {"A shimmering globe rises around {name}.", {{"name", a.source.name}}});
+        return;
+    }
     case detail::Rider::arcane_hand:
     case detail::Rider::cloudkill:
     case detail::Rider::conjure_elemental:
@@ -5786,6 +5919,14 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             release(target);
             log(target.source.name + " is no longer Charmed.",
             {"{name} is no longer Charmed.", {{"name", target.source.name}}});
+        }
+        else if (detail::greater_harms[harm] == "petrified")
+        {
+            std::erase_if(target.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::petrified || e.kind == detail::EffectKind::stoning;
+            });
+            log(target.source.name + " is flesh again.", {"{name} is flesh again.", {{"name", target.source.name}}});
         }
         else if (detail::greater_harms[harm] == "drained")
         {
@@ -6562,6 +6703,34 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             apply_rider(spell, verb, a, a, dc);
             return;
         }
+        // Chain Lightning: the first creature and those chosen within 30 feet
+        // of it each save against one roll.
+        if (spell.id == "chain_lightning")
+        {
+            log(a.source.name + " casts " + name + ".",
+            {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", name, true}}});
+            const Cell first = actor(targets.front()).source.cell;
+            const int rolled_damage = spell_dice(a, rolled);
+            const auto type = std::string(detail::damage_name(spell.damage));
+            for (const auto id : targets)
+            {
+                auto &struck = actor(id);
+                if (struck.life.dead || absent(struck) || sealed_off(struck) ||
+                        globe_wards(a, struck.source.cell, slot_level_of(verb, spell)) ||
+                        (id != targets.front() && distance(first, struck.source.cell) > 30))
+                    continue;
+                const bool saved = saving_throw_succeeds(struck, spell.save, dc);
+                const int amount = resolved_damage(struck, spell.damage,
+                                                   evaded(struck, spell.save, true, saved, rolled_damage));
+                log(struck.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
+                {
+                    "{name} takes {damage} {type} damage.",
+                    {{"name", struck.source.name}, {"damage", std::to_string(amount)}, {"type", type, true}}
+                });
+                damage(struck, amount);
+            }
+            return;
+        }
         auto &target = actor(target_id);
         if (sanctuary_stops(a, target))
             return;
@@ -6600,6 +6769,19 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         damage(target, amount);
         if (amount)
             curse_strikes(a, target);
+        // Disintegrate: a creature it drops to 0 Hit Points turns to dust, which
+        // only Resurrection revives (LEVELS-3).
+        if (spell.rider == detail::Rider::disintegrate && amount > 0 && target.life.hp == 0)
+        {
+            target.life.dead = true;
+            target.life.recovery = {};
+            if (detail::can_apply(target.effects))
+                detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                            detail::EffectKind::dust, 0);
+            log(target.source.name + " turns to dust.", {"{name} turns to dust.", {{"name", target.source.name}}});
+            fall(target);
+            return;
+        }
         // Harm: the Hit Point maximum drops by the damage, never below 1, unless
         // Aura of Life guards it.
         if (!saved && spell.rider == detail::Rider::harm && amount > 0 && !target.life.dead &&
@@ -6642,10 +6824,38 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             heat_metal(a, target);
             return;
         }
-        // A willing creature forgoes the save.
+        // A willing creature forgoes the save; a Construct turns no flesh to
+        // stone.
+        const bool construct = spell.rider == detail::Rider::flesh_to_stone &&
+                               def(target).creature_type == "construct";
         if (verb == "enlarge" ||
-                !saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))
+                (!construct && !saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell))))
             apply_rider(spell, verb, a, target, dc);
+        else if (spell.rider == detail::Rider::eyebite && detail::can_apply(target.effects))
+        {
+            // It cannot be targeted again by this casting.
+            detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::eye_resisted, 0);
+            if (!detail::has_effect(a.effects, detail::EffectKind::eyebiting))
+                detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                            detail::EffectKind::eyebiting, 0);
+        }
+        else if (spell.rider == detail::Rider::flesh_to_stone && detail::can_apply(target.effects))
+        {
+            detail::apply_poisoned(target.effects, effect_source(a), a.source.name, next_turn_ms(a),
+                                   detail::EffectKind::rooted);
+            log(target.source.name + " stiffens: Speed 0 until " + a.source.name + "'s next turn.",
+            {"{name} stiffens: Speed 0 until {caster}'s next turn.", {{"name", target.source.name}, {"caster", a.source.name}}});
+        }
+        else if (spell.rider == detail::Rider::irresistible_dance && detail::can_apply(target.effects))
+        {
+            const auto index = index_of(target.source.id);
+            const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+            detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
+                                   next_turn_ms(target) + slot, detail::EffectKind::jigging);
+            log(target.source.name + " dances in place until the end of its next turn.",
+            {"{name} dances in place until the end of its next turn.", {{"name", target.source.name}}});
+        }
         else if (spell.rider == detail::Rider::ray_of_enfeeblement)
         {
             // A success still leaves Disadvantage on its next attack roll until
@@ -6778,6 +6988,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         const bool aimed = spell.target == detail::SpellTarget::area;
         const auto offer = [&](std::string verb, std::string label)
         {
+            // Globe of Invulnerability: a spell too weak for it is not cast at
+            // a creature inside.
+            if (!aimed && globe_wards(a, other.source.cell, slot_level_of(verb, spell)))
+                return;
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
@@ -6864,7 +7078,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 if (has_greater_harm(other, n))
                     offer_leveled("greater_restoration_" + std::string(detail::greater_harms[n]),
                                   std::string("Greater Restoration: ") +
-                                  (n == 2 ? "Hit Point maximum" : n ? "curse" : "Charmed"));
+                                  (n == 3 ? "Petrified" : n == 2 ? "Hit Point maximum" : n ? "curse" : "Charmed"));
             continue;
         }
         if (spell.rider == detail::Rider::bestow_curse)
@@ -6911,6 +7125,16 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 offer_leveled("conjure_minor_elementals_" + std::string(type),
                               "Conjure Minor Elementals: " +
                               std::string(detail::damage_name(detail::damage_type(type))));
+            continue;
+        }
+        // Eyebite: asleep, panicked or sickened, as chosen; not a creature that
+        // resisted this casting.
+        if (spell.rider == detail::Rider::eyebite)
+        {
+            if (detail::has_effect(other.effects, detail::EffectKind::eye_resisted))
+                continue;
+            for (const auto effect : {"asleep", "panicked", "sickened"})
+                offer_leveled("eyebite_" + std::string(effect), "Eyebite: " + std::string(effect));
             continue;
         }
         // Conjure Elemental: the spirit's element; Summon Dragon: the spirit's
@@ -7318,6 +7542,7 @@ std::vector<Command> Session::offered_commands() const
             if (other.source.side == a.source.side && other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= raise.range &&
                     detail::has_effect(other.effects, detail::EffectKind::fallen) &&
+                    !detail::has_effect(other.effects, detail::EffectKind::dust) &&
                     std::cmp_less_equal(300 * def(other).level, gold_ - offerings_gold_))
                 for (const unsigned level : cast_levels(a, raise))
                 {
@@ -7614,6 +7839,27 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
                 if (pillar_reaches(zone, other))
                     add(id, "move_pillar", "Move the pillar of light", other.source.id);
+    // Eyebite: a Magic action on later turns targets another creature.
+    if (detail::has_effect(a.effects, detail::EffectKind::eyebiting) && a.actions.available(true))
+        for (const auto &other : actors_)
+            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                    !absent(other) && !sealed_off(other) && can_see(a, other) &&
+                    distance(a.source.cell, other.source.cell) <= 60 &&
+                    !std::any_of(other.effects.active.begin(), other.effects.active.end(), [&](const auto & e)
+        {
+            return e.source_actor == id && e.source_scope == scope_ &&
+                   (e.kind == detail::EffectKind::eye_resisted || e.kind == detail::EffectKind::eye_panic ||
+                    e.kind == detail::EffectKind::sickened || e.kind == detail::EffectKind::asleep);
+            }))
+                for (const auto effect : {"asleep", "panicked", "sickened"})
+                    add(id, "evil_eye_" + std::string(effect), "Eyebite: " + std::string(effect), other.source.id);
+    // Irresistible Dance: the dancer's action repeats the save.
+    if (detail::has_effect(a.effects, detail::EffectKind::dancing) && a.actions.available())
+        add(id, "stop_dancing", "Try to stop dancing", id);
+    // Magic Jar: the possessing soul's Magic action returns it to its body.
+    if (const auto *boss = controller(a); boss && a.actions.available(true) &&
+            detail::has_effect(boss->effects, detail::EffectKind::jarred))
+        add(id, "leave_host", "Return to your body (Magic Jar)", id);
     // Arcane Hand: as it appears, then with a Bonus Action, the hand moves up
     // to 60 feet and strikes or pushes a creature beside it.
     for (const auto &zone : zones_)
@@ -8147,7 +8393,8 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
     const auto terror = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                      [&](const auto & e)
     {
-        return e.kind == detail::EffectKind::terrified && e.source_scope == scope_ &&
+        return (e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::eye_panic) &&
+               e.source_scope == scope_ &&
                std::any_of(feared.begin(), feared.end(), [&](const Actor * other)
         {
             return other->source.id == e.source_actor;
@@ -8296,6 +8543,12 @@ void Session::damage(Actor &target, int amount, bool critical)
                          detail::has_effect(target.effects, detail::EffectKind::raised)) &&
                         !def(target).regeneration};
     detail::damage_life(target.life, amount, max_hp(target), options);
+    // Contingency: dropping to half Hit Points or to 0 sets off its spell.
+    for (const auto &e : std::vector<detail::Effect>(target.effects.active))
+        if (e.kind == detail::EffectKind::contingency && !target.life.dead &&
+                ((e.dc % 4 == 0 && target.life.hp * 2 <= max_hp(target)) ||
+                 (e.dc % 4 == 2 && target.life.hp == 0)))
+            fire_contingency(target);
     // A summoned creature vanishes at 0 Hit Points.
     if (target.life.hp == 0 && detail::has_effect(target.effects, detail::EffectKind::summoned))
     {
@@ -8361,18 +8614,54 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     if (killed && target.life.dead)
         fall(target);
-    // Dominate Beast: damage lets the creature save again; a success ends the spell.
-    if (const auto *boss = controller(target); boss && target.life.hp > 0 && !target.life.dead)
+    // Dominate Beast: damage lets the creature save again; a success ends the
+    // spell. Magic Jar's caster returns to its body then.
+    const auto dominated = std::find_if(target.effects.active.begin(), target.effects.active.end(),
+                                        [](const auto & e)
     {
-        const auto dominated = std::find_if(target.effects.active.begin(),
-                                            target.effects.active.end(), [](const auto & e)
-        {
-            return e.kind == detail::EffectKind::dominated;
-        });
+        return e.kind == detail::EffectKind::dominated;
+    });
+    if (const auto *boss = controller(target);
+            boss && dominated != target.effects.active.end() && target.life.hp > 0 && !target.life.dead)
+    {
         if (saving_throw_succeeds(target, detail::Ability::wisdom, dominated->dc))
         {
-            end_concentration(actor(boss->source.id));
+            auto &caster = actor(boss->source.id);
+            end_concentration(caster);
+            std::erase_if(target.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::dominated;
+            });
             release(target);
+            if (std::erase_if(caster.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::jarred;
+        }))
+            log(caster.source.name + "'s soul returns to its body.",
+            {"{name}'s soul returns to its body.", {{"name", caster.source.name}}});
+        }
+    }
+    // Magic Jar: the host's death sends the caster's soul home on a Charisma
+    // save against its own spell DC, or kills the caster.
+    else if (const auto *jarrer = controller(target);
+             jarrer && dominated != target.effects.active.end() && target.life.dead &&
+             detail::has_effect(jarrer->effects, detail::EffectKind::jarred))
+    {
+        auto &caster = actor(jarrer->source.id);
+        std::erase_if(caster.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::jarred;
+        });
+        if (saving_throw_succeeds(caster, detail::Ability::charisma, spell_dc(caster, "magic_jar")))
+            log(caster.source.name + "'s soul returns to its body.",
+            {"{name}'s soul returns to its body.", {{"name", caster.source.name}}});
+        else
+        {
+            caster.life.hp = 0;
+            caster.life.dead = true;
+            caster.life.recovery = {};
+            log(caster.source.name + " dies with its host.", {"{name} dies with its host.", {{"name", caster.source.name}}});
+            fall(caster);
         }
     }
     // Relentless Rage: a raging Barbarian dropped to 0 Hit Points but not
@@ -8862,7 +9151,7 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(spared.begin(), spared.end(), other.source.id) != spared.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
-                sealed_off(other))
+                sealed_off(other) || globe_wards(caster, other.source.cell, slot_level_of(verb, spell)))
             continue;
         const bool saved = saving_throw_succeeds(other, spell.save, dc);
         // Potent Cantrip: an Evoker's saved-against cantrip still deals half.
@@ -8938,7 +9227,7 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
                 (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects) ||
-                sealed_off(other))
+                sealed_off(other) || globe_wards(caster, other.source.cell, spell.level))
             continue;
         if (sleep && (def(other).sleepless || def(other).creature_type == "undead" ||
                       def(other).creature_type == "construct"))
@@ -9388,6 +9677,7 @@ void Session::settle_dominated()
 bool Session::animatable(const Actor &corpse, const Actor &caster) const
 {
     return corpse.life.dead && corpse.source.side != caster.source.side && !absent(corpse) &&
+           !detail::has_effect(corpse.effects, detail::EffectKind::dust) &&
            def(corpse).creature_type == "humanoid" && (def(corpse).size == 1 || def(corpse).size == 2) &&
            distance(caster.source.cell, corpse.source.cell) <= 10 &&
            std::none_of(zones_.begin(), zones_.end(), [&](const auto & zone)
@@ -10132,6 +10422,44 @@ void Session::hurl(Actor &caster, Actor &creature, Cell to)
         slam(creature, 5 * (squares - moved));
 }
 
+bool Session::globe_wards(const Actor &caster, Cell cell, unsigned level) const
+{
+    return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::globe && in_zone(zone, cell) &&
+               !in_zone(zone, caster.source.cell) && level <= zone.slot - 1;
+    });
+}
+
+void Session::fire_contingency(Actor &a)
+{
+    const auto stored = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                     [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::contingency;
+    });
+    if (stored == a.effects.active.end() || a.life.dead)
+        return;
+    const auto &spell = detail::spell_table.at(static_cast<std::size_t>(stored->dc / 4));
+    a.effects.active.erase(stored);
+    log("Contingency: " + std::string(spell.label) + " takes effect on " + a.source.name + ".",
+    {
+        "Contingency: {spell} takes effect on {name}.",
+        {{"spell", std::string(spell.label), true}, {"name", a.source.name}}
+    });
+    if (spell.pattern == detail::SpellPattern::heal)
+    {
+        auto rolled = spell.dice;
+        if (spell.add_casting_modifier)
+            rolled.bonus = casting_modifier(def(a), spell.id);
+        heal(a, healing_roll(a, rolled) + disciple_of_life(a, spell.level));
+        return;
+    }
+    if (spell.concentration)
+        begin_concentration(a, spell);
+    apply_rider(spell, spell.id, a, a, spell_dc(a, spell.id));
+}
+
 void Session::end_polymorph(Actor &a)
 {
     std::erase_if(a.effects.active, [](const auto & e)
@@ -10174,6 +10502,7 @@ void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
                 !detail::can_apply(other.effects) || (pattern && detail::blinded(other.effects)) ||
+                globe_wards(caster, other.source.cell, spell.level) ||
                 saving_throw_succeeds(other, spell.save, dc, false,
                                       heightened_against(other, caster, spell.id)))
             continue;
@@ -11035,6 +11364,29 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         {"A Draconic Spirit answers {name}.", {{"name", summoner.source.name}}});
         return;
     }
+    if (spell.rider == detail::Rider::wall_of_ice)
+    {
+        // A creature in its way is pushed aside and saves against the cold.
+        begin_concentration(a, spell);
+        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        std::vector<Cell> struck;
+        for (const auto &other : actors_)
+            if (!other.life.dead && other.source.id != a.source.id &&
+                    std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+                struck.push_back(other.source.cell);
+        damage_area(a, spell, aimed.verb, struck, area_dc(a, spell));
+        zones_.push_back({a.source.id, ZoneKind::ice_wall, cells});
+        for (auto &other : actors_)
+            if (!other.life.dead && std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+                if (const auto squares = free_squares_near(other.source.cell); !squares.empty())
+                {
+                    other.source.cell = squares.front();
+                    log(other.source.name + " is pushed aside by the wall.",
+                    {"{name} is pushed aside by the wall.", {{"name", other.source.name}}});
+                }
+        log("A wall of ice rises.", {"A wall of ice rises.", {}});
+        return;
+    }
     if (spell.rider == detail::Rider::wall_of_stone || spell.rider == detail::Rider::wall_of_force)
     {
         // Stone cannot fill a creature's square; force pushes the creature
@@ -11682,7 +12034,8 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
 {
     const auto &spell = *detail::find_spell(selection.verb);
     const bool quickened = readies(a, Metamagic::quickened, spell);
-    if (splits_among_targets(spell) || spell.pattern == detail::SpellPattern::heal)
+    if (splits_among_targets(spell) || spell.pattern == detail::SpellPattern::heal ||
+            spell.id == "chain_lightning")
     {
         if (quickened || spell.bonus_action)
             a.bonus = false;
@@ -11734,7 +12087,8 @@ std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
         return result;
     for (const auto &e : a.effects.active)
         if ((e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
-                e.kind == detail::EffectKind::terrified) && e.source_scope == scope_)
+                e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::eye_panic) &&
+                e.source_scope == scope_)
             for (const auto &other : actors_)
                 if (other.source.id == e.source_actor && !other.life.dead &&
                         line_of_sight(a.source.cell, other.source.cell))
@@ -12136,6 +12490,9 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (detail::has_effect(target.effects, detail::EffectKind::feasted))
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                           "spell:heroes_feast"});
+    // Petrified: Resistance to every damage.
+    if (detail::has_effect(target.effects, detail::EffectKind::petrified))
+        result.push_back({detail::AffinityKind::resistance, std::nullopt, "condition:petrified"});
     // Summon Dragon's shared Resistance.
     for (const auto &e : target.effects.active)
         if (e.kind == detail::EffectKind::shared_resistance)
@@ -12457,7 +12814,8 @@ void Session::drop_concentration_effects(const Actor &caster)
             std::erase_if(*effects, [&](const auto & e)
         {
             return concentration_effect(e.kind) && e.source_actor == caster.source.id &&
-                   e.source_scope == scope_ && !(e.kind == detail::EffectKind::cursed && e.dc >= 10);
+                   e.source_scope == scope_ && !(e.kind == detail::EffectKind::cursed && e.dc >= 10) &&
+                   !(e.kind == detail::EffectKind::petrified && e.dc);
         });
     log(caster.source.name + " loses Concentration.",
     {"{name} loses Concentration.", {{"name", caster.source.name}}});
@@ -12616,6 +12974,13 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // Blur: attack rolls against the creature have Disadvantage.
     if (detail::has_effect(target.effects, detail::EffectKind::blur))
         result.disadvantage = true;
+    // Irresistible Dance: a dancer attacks with Disadvantage and is attacked
+    // with Advantage; a Petrified creature is attacked with Advantage.
+    if (detail::has_effect(a.effects, detail::EffectKind::dancing))
+        result.disadvantage = true;
+    if (detail::has_effect(target.effects, detail::EffectKind::dancing) ||
+            detail::has_effect(target.effects, detail::EffectKind::petrified))
+        result.advantage = true;
     // Holy Aura: attackers have Disadvantage against the creatures it wards.
     if (holy_aura(target))
         result.disadvantage = true;
@@ -13874,7 +14239,12 @@ void Session::update_outcome()
     // Mislead's double is no one.
     for (const auto &a : actors_)
         if (a.life.hp > 0 && !a.life.dead && !a.fled &&
-                !detail::has_effect(a.effects, detail::EffectKind::illusory))
+                !detail::has_effect(a.effects, detail::EffectKind::illusory) &&
+                !std::any_of(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+    {
+        // Stone for good is out of the fight.
+        return e.kind == detail::EffectKind::petrified && e.dc;
+    }))
             ((a.source.side == Side::party) != a.turned ? party : enemies) = true;
     if (!party || !enemies)
     {
@@ -14458,7 +14828,8 @@ void Session::log_save(const Actor &target, const detail::SaveResult &result)
 bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability, int dc,
                                     bool advantage, bool disadvantage)
 {
-    if (detail::paralyzed(target.effects) && !unconscious(target) &&
+    if ((detail::paralyzed(target.effects) ||
+            detail::has_effect(target.effects, detail::EffectKind::petrified)) && !unconscious(target) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
     {
         const std::string name = ability == detail::Ability::strength ? "Strength" : "Dexterity";
@@ -14534,6 +14905,9 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     // Haste: Advantage on Dexterity saves.
     modifiers.advantage |= ability == detail::Ability::dexterity &&
                            detail::has_effect(target.effects, detail::EffectKind::hasted);
+    // Irresistible Dance: Disadvantage on Dexterity saves.
+    modifiers.disadvantage |= ability == detail::Ability::dexterity &&
+                              detail::has_effect(target.effects, detail::EffectKind::dancing);
     // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
     modifiers.advantage |= ability == detail::Ability::dexterity && def(target).danger_sense &&
                            !detail::incapacitated(target.effects);
@@ -14632,6 +15006,9 @@ void Session::advance_turn_time()
     // Haste that ran its minute, blinkers back from the Ethereal Plane, and
     // Vitriolic Sphere's later acid.
     std::vector<EntityId> hastened, returned, corroded;
+    // Flesh to Stone held for its full minute: the stone lasts.
+    std::vector<detail::Effect> stoned;
+    std::vector<EntityId> stoned_targets;
     for (auto &a : actors_)
     {
         auto saves = def(a).saves;
@@ -14669,6 +15046,10 @@ void Session::advance_turn_time()
             returned.push_back(event.target);
         if (event.removed && event.effect.kind == detail::EffectKind::vitriol)
             corroded.push_back(event.target);
+        if (event.removed && event.effect.kind == detail::EffectKind::petrified && !event.effect.dc)
+            stoned.push_back(event.effect);
+        if (event.removed && event.effect.kind == detail::EffectKind::petrified && !event.effect.dc)
+            stoned_targets.push_back(event.target);
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -14722,6 +15103,16 @@ void Session::advance_turn_time()
     }
     for (const auto id : hastened)
         tire(actor(id));
+    for (std::size_t n = 0; n < stoned.size(); ++n)
+    {
+        auto &target = actor(stoned_targets[n]);
+        auto statue = stoned[n];
+        statue.dc = 1;
+        statue.remaining_ms = 4000000000u;
+        statue.id = target.effects.next_id++;
+        target.effects.active.push_back(statue);
+        log(target.source.name + " stays stone.", {"{name} stays stone.", {{"name", target.source.name}}});
+    }
     for (const auto id : corroded)
     {
         auto &target = actor(id);
@@ -14872,6 +15263,44 @@ void Session::end_turn()
             spirits_strike(zone, actors_[turn_]);
         else if (zone.kind == ZoneKind::pillar && in_zone(zone, actors_[turn_].source.cell))
             bathe(zone, actors_[turn_]);
+    // Flesh to Stone: a Constitution save at the end of each of its turns;
+    // three successes end it, three failures turn the creature to stone.
+    for (auto &e : actors_[turn_].effects.active)
+        if (e.kind == detail::EffectKind::stoning && e.source_scope == scope_ &&
+                !actors_[turn_].life.dead)
+        {
+            const auto source = e.source_actor;
+            const bool saved = saving_throw_succeeds(actors_[turn_], detail::Ability::constitution,
+                               spell_dc(actor(source), "flesh_to_stone"));
+            e.dc += saved ? 1 : 10;
+            if (e.dc % 10 >= 3)
+            {
+                end_concentration(actor(source));
+                log(actors_[turn_].source.name + " shakes off the stone.",
+                {"{name} shakes off the stone.", {{"name", actors_[turn_].source.name}}});
+            }
+            else if (e.dc / 10 >= 3)
+            {
+                e.kind = detail::EffectKind::petrified;
+                e.dc = 0;
+                log(actors_[turn_].source.name + " turns to stone.",
+                {"{name} turns to stone.", {{"name", actors_[turn_].source.name}}});
+            }
+            break;
+        }
+    // Eyebite: panic ends at least 60 feet from the caster, out of its sight.
+    std::erase_if(actors_[turn_].effects.active, [&](const auto & e)
+    {
+        if (e.kind != detail::EffectKind::eye_panic || e.source_scope != scope_)
+            return false;
+        const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & other)
+        {
+            return other.source.id == e.source_actor;
+        });
+        return caster == actors_.end() ||
+               (distance(caster->source.cell, actors_[turn_].source.cell) >= 60 &&
+                !can_see(actors_[turn_], *caster));
+    });
     // Phantasmal Killer: a Wisdom save at the end of each of its turns; a
     // failure deals the Psychic damage again, a success ends the spell.
     for (const auto &e : std::vector<detail::Effect>(actors_[turn_].effects.active))
@@ -16328,6 +16757,54 @@ void Session::dispatch(const Command &command)
                 hand.cells = {spectral_cell(target, hand.cells.front())};
             }
         }
+    }
+    else if (command.verb.starts_with("evil_eye_"))
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        auto &target = actor(command.target);
+        const auto &spell = *detail::find_spell("eyebite");
+        const auto effect = "eyebite_" + command.verb.substr(std::string_view("evil_eye_").size());
+        log(a.source.name + " turns its eyes on " + target.source.name + ".",
+        {"{name} turns its eyes on {target}.", {{"name", a.source.name}, {"target", target.source.name}}});
+        if (!saving_throw_succeeds(target, spell.save, spell_dc(a, spell.id)))
+            apply_rider(spell, effect, a, target, spell_dc(a, spell.id));
+        else if (detail::can_apply(target.effects))
+            detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::eye_resisted, 0);
+    }
+    else if (command.verb == "stop_dancing")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend();
+        const auto dance = std::find_if(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::dancing;
+        });
+        if (saving_throw_succeeds(a, detail::Ability::wisdom, spell_dc(actor(dance->source_actor), "irresistible_dance")))
+        {
+            std::erase_if(a.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::dancing;
+            });
+            log(a.source.name + " stops dancing.", {"{name} stops dancing.", {{"name", a.source.name}}});
+        }
+    }
+    else if (command.verb == "leave_host")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        auto &caster = actor(controller(a)->source.id);
+        std::erase_if(a.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::dominated;
+        });
+        std::erase_if(caster.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::jarred;
+        });
+        log(caster.source.name + "'s soul returns to its body.",
+        {"{name}'s soul returns to its body.", {{"name", caster.source.name}}});
     }
     else if (command.verb == "move_double")
     {
@@ -17941,7 +18418,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::stone_wall) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::ice_wall) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
                  kind != static_cast<unsigned>(ZoneKind::guardians) &&
@@ -17954,7 +18431,8 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                  kind != static_cast<unsigned>(ZoneKind::elementals) &&
                  kind != static_cast<unsigned>(ZoneKind::hand) &&
                  kind != static_cast<unsigned>(ZoneKind::cloud) &&
-                 kind != static_cast<unsigned>(ZoneKind::elemental)) ||
+                 kind != static_cast<unsigned>(ZoneKind::elemental) &&
+                 kind != static_cast<unsigned>(ZoneKind::globe)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
@@ -18424,6 +18902,11 @@ class Module final : public RulesModule
         if (klass == CharacterClass::wizard && result.level == 9)
             result.description =
                 "A level 5 spell slot and Wizard spells: Animate Objects, Arcane Hand, Cloudkill, Cone of Cold, Conjure Elemental, Dominate Person, Hold Monster, Mislead, Summon Dragon, Telekinesis, Wall of Force and Wall of Stone.\nProficiency Bonus +4.";
+        if (klass == CharacterClass::wizard && result.level == 11)
+            result.description =
+                "A level 6 spell slot and Wizard spells: Chain Lightning, Circle of Death, Contingency, Create Undead, Disintegrate, Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability, Irresistible Dance, Magic Jar, Sunbeam, True Seeing and Wall of Ice.";
+        if (klass == CharacterClass::wizard && result.level == 12)
+            result.description = "A feat or ability points.";
         if (klass == CharacterClass::wizard && result.level == 10)
             result.description =
                 "Empowered Evocation: your Intelligence modifier is added to the damage of your Wizard Evocation spells.\nA fifth cantrip.";
@@ -19729,6 +20212,29 @@ class Module final : public RulesModule
                     spell.rider != detail::Rider::regenerate) ||
                     !detail::knows_spell(d.spells, spell.id))
                 continue;
+            // Contingency: each spell of level 5 or lower the caster can cast
+            // on itself with an action, with each trigger (LEVELS-3).
+            if (spell.id == "contingency")
+            {
+                if (!lowest_slot(actor, 6))
+                    continue;
+                // A slot for Contingency, and another for the stored spell.
+                auto after = actor;
+                --after.slots[lowest_slot(actor, 6)];
+                for (const auto &stored : detail::spell_table)
+                    if (contingent(stored) && detail::knows_spell(d.spells, stored.id) &&
+                            lowest_slot(after, stored.level))
+                        for (std::size_t trigger = 0; trigger < detail::contingency_triggers.size(); ++trigger)
+                            actions.push_back({"contingency_" + std::string(stored.id) + "_" +
+                                               std::string(detail::contingency_triggers[trigger]),
+                                               {
+                                                   "Contingency: {spell} ({trigger})",
+                                                   {   {"spell", std::string(stored.label), true},
+                                                       {"trigger", std::string(contingency_label(trigger)), true}
+                                                   }
+                                               }, true});
+                continue;
+            }
             const bool party = spell.instances > 1;
             for (const unsigned level : cast_levels(actor, spell))
             {
@@ -19777,7 +20283,8 @@ class Module final : public RulesModule
                 raise && raise->rider == detail::Rider::revivify)
         {
             if (self || !patient.life.dead ||
-                    !detail::has_effect(patient.effects, detail::EffectKind::fallen))
+                    !detail::has_effect(patient.effects, detail::EffectKind::fallen) ||
+                    detail::has_effect(patient.effects, detail::EffectKind::dust))
                 throw std::runtime_error("Revivify needs a member dead less than a minute");
             pay_for_spell(caster, action, *raise);
             std::erase_if(patient.effects.active, [](const auto & e)
@@ -19800,14 +20307,15 @@ class Module final : public RulesModule
         if (raise && (raise->id == "raise_dead" || resurrection))
         {
             if (self || !patient.life.dead ||
-                    (!resurrection && !detail::has_effect(patient.effects, detail::EffectKind::deceased)))
+                    (!resurrection && (!detail::has_effect(patient.effects, detail::EffectKind::deceased) ||
+                                       detail::has_effect(patient.effects, detail::EffectKind::dust))))
                 throw std::runtime_error(resurrection ? "Resurrection needs a dead member"
                                          : "Raise Dead needs a member dead up to ten days");
             pay_for_spell(caster, action, *raise);
             std::erase_if(patient.effects.active, [](const auto & e)
             {
                 return e.kind == detail::EffectKind::fallen || e.kind == detail::EffectKind::deceased ||
-                       e.kind == detail::EffectKind::poisoned;
+                       e.kind == detail::EffectKind::poisoned || e.kind == detail::EffectKind::dust;
             });
             patient.life.dead = false;
             patient.life.successes = patient.life.failures = 0;
@@ -19993,6 +20501,32 @@ class Module final : public RulesModule
         {
             // The campaign moves the party (LEVELS-3); the rules spend the slot.
             pay_for_spell(caster, action, spell);
+            user_state = vitals(caster);
+            return;
+        }
+        if (spell.id == "contingency")
+        {
+            // Both slots are spent; the stored spell waits on the caster.
+            const auto rest = action.substr(std::string_view("contingency_").size());
+            const auto split = rest.rfind('_');
+            const auto *stored = detail::find_spell(rest.substr(0, split));
+            const auto trigger = std::find(detail::contingency_triggers.begin(),
+                                           detail::contingency_triggers.end(), rest.substr(split + 1));
+            if (!stored || !contingent(*stored) || trigger == detail::contingency_triggers.end())
+                throw std::runtime_error("That contingency cannot be set");
+            pay_for_spell(caster, cast_at(spell, lowest_slot(caster, 6), "contingency", "").first, spell);
+            pay_for_spell(caster, cast_at(*stored, lowest_slot(caster, stored->level), std::string(stored->id),
+                                          "").first, *stored);
+            std::erase_if(caster.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::contingency;
+            });
+            // Camp effects carry scope 1: there is no encounter to source them.
+            if (detail::can_apply(caster.effects))
+                detail::apply_spell_benefit(caster.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                            user.name, detail::EffectKind::contingency,
+                                            static_cast<int>(stored - detail::spell_table.data()) * 4 +
+                                            static_cast<int>(trigger - detail::contingency_triggers.begin()));
             user_state = vitals(caster);
             return;
         }
@@ -20853,7 +21387,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.220", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.221", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

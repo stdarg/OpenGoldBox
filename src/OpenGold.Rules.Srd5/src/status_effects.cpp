@@ -138,7 +138,8 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::groped && kind != EffectKind::vitriol &&
             kind != EffectKind::wall_burned && kind != EffectKind::breathed &&
             kind != EffectKind::lifted && kind != EffectKind::hand_ready &&
-            kind != EffectKind::clouded) ||
+            kind != EffectKind::clouded && kind != EffectKind::rooted &&
+            kind != EffectKind::jigging) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -207,7 +208,9 @@ int speed_penalty(const EffectState &effects)
     // Repeated instances of one source do not stack, but these distinct
     // features each reduce Speed by 10 feet.
     if (restrained(effects) || paralyzed(effects) || has_effect(effects, EffectKind::lethargic) ||
-            has_effect(effects, EffectKind::entranced))
+            has_effect(effects, EffectKind::entranced) || has_effect(effects, EffectKind::petrified) ||
+            has_effect(effects, EffectKind::jarred) || has_effect(effects, EffectKind::rooted) ||
+            has_effect(effects, EffectKind::dancing) || has_effect(effects, EffectKind::jigging))
         return 1000;
     // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
     const bool free = has_effect(effects, EffectKind::free_moving);
@@ -434,9 +437,19 @@ bool stunned(const EffectState &effects)
     });
 }
 
+void apply_asleep(EffectState &effects, EffectSource source, std::string name)
+{
+    if (!can_apply(effects) || !recorded(source, name))
+        throw std::runtime_error("Invalid sleep");
+    effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
+                              EffectKind::asleep, 0, 60000, 0});
+    effects.prone = true;
+}
+
 bool incapacitated(const EffectState &effects)
 {
-    return paralyzed(effects) || stunned(effects) ||
+    return paralyzed(effects) || stunned(effects) || has_effect(effects, EffectKind::petrified) ||
+           has_effect(effects, EffectKind::jarred) ||
            has_effect(effects, EffectKind::lethargic) ||
            has_effect(effects, EffectKind::entranced) ||
            has_effect(effects, EffectKind::banished) ||
@@ -487,7 +500,7 @@ bool restrained(const EffectState &effects)
     return (has_effect(effects, EffectKind::ensnaring_strike) ||
             has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed) ||
             has_effect(effects, EffectKind::tentacled) || has_effect(effects, EffectKind::engulfed) ||
-            has_effect(effects, EffectKind::lifted)) &&
+            has_effect(effects, EffectKind::lifted) || has_effect(effects, EffectKind::stoning)) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
@@ -569,7 +582,9 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::fire_shield ? 1
            : kind == EffectKind::haunted ? 13
            : kind == EffectKind::summoned ? 30
-           : kind == EffectKind::illusory ? 1
+           : kind == EffectKind::illusory || kind == EffectKind::petrified ? 1
+           : kind == EffectKind::stoning ? 32
+           : kind == EffectKind::contingency ? static_cast<int>(spell_table.size()) * 4
            : kind == EffectKind::polymorphed ? static_cast<int>(beast_forms.size())
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
@@ -613,6 +628,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::polymorphed:
     case EffectKind::summoned:
     case EffectKind::illusory:
+    case EffectKind::jarred:
     case EffectKind::spirit_breath:
     case EffectKind::shared_resistance:
         return 3600000; // Concentration, up to 1 hour
@@ -627,7 +643,11 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::returned:
         return 345600000; // four Long Rests' worth, ended by them
     case EffectKind::drained:
+    case EffectKind::dust:
+    case EffectKind::petrified: // a minute, or for good once its spell lasted it
         return 4000000000u; // until Greater Restoration ends it
+    case EffectKind::contingency:
+        return 864000000; // 10 days
     case EffectKind::prayer_of_healing:
     case EffectKind::feasted:
     case EffectKind::raised:
@@ -671,6 +691,12 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::greater_invisible:
     case EffectKind::haunted:
     case EffectKind::sphered:
+    case EffectKind::eye_panic:
+    case EffectKind::sickened:
+    case EffectKind::eye_resisted:
+    case EffectKind::eyebiting:
+    case EffectKind::stoning:
+    case EffectKind::dancing:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
@@ -974,7 +1000,8 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::groped || kind == EffectKind::vitriol ||
                            kind == EffectKind::wall_burned || kind == EffectKind::breathed ||
                            kind == EffectKind::lifted || kind == EffectKind::hand_ready ||
-                           kind == EffectKind::clouded ||
+                           kind == EffectKind::clouded || kind == EffectKind::rooted ||
+                           kind == EffectKind::jigging ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -1051,7 +1078,9 @@ EffectState read_effects(std::istream &in)
                                               kind == EffectKind::veiled ||
                                               kind == EffectKind::lethargic ||
                                               kind == EffectKind::vitriol ||
-                                              kind == EffectKind::lifted)
+                                              kind == EffectKind::lifted ||
+                                              kind == EffectKind::rooted ||
+                                              kind == EffectKind::jigging)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

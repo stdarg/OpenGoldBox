@@ -207,7 +207,7 @@ void table()
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
               spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||
               spell.pattern == SpellPattern::save_condition || spell.pattern == SpellPattern::camp ||
-              spell.pattern == SpellPattern::heal,
+              spell.pattern == SpellPattern::heal || spell.id == std::string_view("chain_lightning"),
               "Only multi-instance patterns repeat or choose several creatures");
         // Thunderwave's push rides on a failed save against its damage.
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
@@ -256,7 +256,7 @@ struct Probe
     unsigned level;
 };
 
-constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 10}, {"cleric", 1},
+constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 12}, {"cleric", 1},
     {"cleric", 4}, {"cleric", 15}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
@@ -389,12 +389,14 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
 
     // A rider is observable whenever the spell actually landed. Spiritual
     // Weapon's rider is its force on the battlefield, Ice Knife's a burst,
-    // Dissonant Whispers' a flight and Vampiric Touch's the caster's healing,
+    // Dissonant Whispers' a flight, Vampiric Touch's the caster's healing and
+    // Disintegrate's dust,
     // not conditions (a saved-against Whispers still deals half damage, as a
     // saved-against Harm does).
     if (row.rider != Rider::none && row.rider != Rider::spiritual_weapon &&
             row.rider != Rider::ice_knife && row.rider != Rider::dissonant_whispers &&
             row.rider != Rider::harm && row.rider != Rider::vampiric_touch &&
+            row.rider != Rider::disintegrate &&
             after_target.hit_points < before_target.hit_points)
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");
@@ -465,7 +467,8 @@ void behaviour()
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
         // Remove Curse and Greater Restoration, which need a cursed or charmed
         // creature, and Dominate Beast, a Beast, as the Wizard's cover Dominate
-        // Person and Telekinesis, aimed after its creature; Fire Shield,
+        // Person, Telekinesis, aimed after its creature, Chain Lightning, a
+        // choice of creatures, and Eyebite, one entry per effect; Fire Shield,
         // Polymorph and Conjure Minor Elementals are offered once per shield,
         // form and type.
         if (row.pattern == SpellPattern::smite ||
@@ -483,6 +486,7 @@ void behaviour()
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
                 row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
                 row.rider == Rider::dominate_person || row.rider == Rider::telekinesis ||
+                row.id == std::string_view("chain_lightning") || row.rider == Rider::eyebite ||
                 row.rider == Rider::bestow_curse || row.target == SpellTarget::corpse ||
                 row.rider == Rider::contagion || row.rider == Rider::greater_restoration ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||

@@ -381,9 +381,38 @@ enum class EffectKind : unsigned
     hand_ready = 154,
     // Cloudkill: the creature has saved against the fog this turn.
     clouded = 155,
+    // Disintegrate: a body turned to dust, which only Resurrection revives.
+    dust = 156,
+    // Contingency, on its caster: `dc` is the stored spell's index in
+    // spell_table times 4 plus the trigger (contingency_triggers).
+    contingency = 157,
+    // Eyebite: Frightened, fleeing the caster with the Dash action, until it
+    // stands 60 feet away out of the caster's sight. (Its sleep is Sleep's.)
+    eye_panic = 158,
+    // Eyebite: Poisoned.
+    sickened = 159,
+    // Eyebite: the creature saved, so this casting cannot target it again.
+    eye_resisted = 160,
+    // Eyebite, on its caster: a Magic action targets another creature.
+    eyebiting = 161,
+    // Flesh to Stone: Restrained; `dc` is the successes plus 10 for each failure.
+    stoning = 162,
+    // Flesh to Stone: Petrified; `dc` 1 once its full minute made it last.
+    petrified = 163,
+    // Flesh to Stone, saved against: Speed 0 until the start of the caster's
+    // next turn.
+    rooted = 164,
+    // Irresistible Dance: Charmed and dancing.
+    dancing = 165,
+    // Irresistible Dance, saved against: dancing in place until the end of
+    // its next turn.
+    jigging = 166,
+    // Magic Jar, on its caster: the body lies helpless while its soul
+    // possesses another.
+    jarred = 167,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = clouded
+    last = jarred
 };
 
 // Magic Circle's creature types, by `dc`.
@@ -563,6 +592,8 @@ void apply_entangle(EffectState &, EffectSource source, std::string name,
 [[nodiscard]] bool paralyzed(const EffectState &effects);
 // Stunned: by a Stunning Strike, or for an hour by Divine Word.
 [[nodiscard]] bool stunned(const EffectState &effects);
+// Eyebite's sleep: Sleep's Unconscious, held by the source's Concentration.
+void apply_asleep(EffectState &effects, EffectSource source, std::string name);
 // Incapacitated by a spell: Paralyzed, Sleep or Hideous Laughter.
 [[nodiscard]] bool incapacitated(const EffectState &effects);
 // A repeated save condition with its first save `first_save_ms` away:

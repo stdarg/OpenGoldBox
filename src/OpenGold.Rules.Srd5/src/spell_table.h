@@ -189,7 +189,15 @@ enum class Rider : unsigned
     wall_of_stone,
     animate_objects,
     mislead,
-    telekinesis
+    telekinesis,
+    contingency,
+    disintegrate,
+    eyebite,
+    flesh_to_stone,
+    globe_of_invulnerability,
+    irresistible_dance,
+    magic_jar,
+    wall_of_ice
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2420,6 +2428,172 @@ inline constexpr std::array spell_table
         .save = Ability::strength,
         .rider = Rider::telekinesis,
         .concentration = true},
+    // SRD 5.2.1 p. 114: a creature within 150 feet and up to three others
+    // within 30 feet of it, chosen; each makes a Dexterity save against 10d8
+    // Lightning, half on a success; one more bolt per slot level above 6.
+    SpellDef{
+        .id = "chain_lightning",
+        .label = "Chain Lightning",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 150,
+        .requires_sight = true,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::lightning,
+        .dice = {10, 8, 0},
+        .instances = 4,
+        .upcast = {.extra_instances = 1},
+        .evocation = true},
+    // SRD 5.2.1 p. 115: a 60-foot-radius Sphere within 150 feet;
+    // Constitution save, 8d8 Necrotic, half on a success; 2d8 more per slot
+    // level above 6.
+    SpellDef{
+        .id = "circle_of_death",
+        .label = "Circle of Death",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::necrotic,
+        .dice = {8, 8, 0},
+        .upcast = {.extra_dice = 2},
+        .radius = 60},
+    // SRD 5.2.1 p. 119: in camp, a spell of level 5 or lower that can target
+    // the caster waits for a trigger from a fixed menu (LEVELS-3): dropping to
+    // half Hit Points, a fight starting, or dropping to 0.
+    SpellDef{
+        .id = "contingency",
+        .label = "Contingency",
+        .level = 6,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::self,
+        .range = 5},
+    // SRD 5.2.1 p. 124: a Dexterity save or 10d6 + 40 Force; a creature
+    // reduced to 0 Hit Points turns to dust; 3d6 more per slot level above 6.
+    SpellDef{
+        .id = "disintegrate",
+        .label = "Disintegrate",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::dexterity,
+        .damage = DamageType::force,
+        .dice = {10, 6, 40},
+        .upcast = {.extra_dice = 3},
+        .rider = Rider::disintegrate},
+    // SRD 5.2.1 p. 129: a creature within 60 feet makes a Wisdom save or is
+    // put to sleep, panicked or sickened, as chosen; a Magic action targets
+    // another on later turns.
+    SpellDef{
+        .id = "eyebite",
+        .label = "Eyebite",
+        .level = 6,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::eyebite,
+        .concentration = true},
+    // SRD 5.2.1 p. 133: a Constitution save or Restrained, saving again at
+    // the end of each turn: three successes end it, three failures Petrify.
+    SpellDef{
+        .id = "flesh_to_stone",
+        .label = "Flesh to Stone",
+        .level = 6,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::constitution,
+        .rider = Rider::flesh_to_stone,
+        .concentration = true},
+    // SRD 5.2.1 p. 134: a 60-foot-radius Sphere within 300 feet; Constitution
+    // save, 10d6 Cold, half on a success; 1d6 more per slot level above 6.
+    SpellDef{
+        .id = "freezing_sphere",
+        .label = "Freezing Sphere",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 300,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::cold,
+        .dice = {10, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .radius = 60,
+        .evocation = true},
+    // SRD 5.2.1 p. 136: a still 10-foot Emanation; spells of level 5 or lower
+    // (one more per slot level above 6) cast from outside do not affect what
+    // is inside.
+    SpellDef{
+        .id = "globe_of_invulnerability",
+        .label = "Globe of Invulnerability",
+        .level = 6,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::globe_of_invulnerability,
+        .concentration = true},
+    // SRD 5.2.1 p. 143: a Wisdom save or Charmed and dancing: Speed 0,
+    // Disadvantage on Dexterity saves and attack rolls, attackers with
+    // Advantage; an action repeats the save. A success dances one turn.
+    SpellDef{
+        .id = "irresistible_dance",
+        .label = "Irresistible Dance",
+        .level = 6,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::irresistible_dance,
+        .concentration = true},
+    // SRD 5.2.1 p. 146: the caster's soul possesses a Humanoid within 100
+    // feet that fails a Charisma save, working as Dominate Person while its
+    // body lies helpless (LEVELS-3).
+    SpellDef{
+        .id = "magic_jar",
+        .label = "Magic Jar",
+        .level = 6,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 100,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::charisma,
+        .rider = Rider::magic_jar,
+        .humanoid_only = true},
+    // SRD 5.2.1 p. 172: a wall of ice 100 feet long or a ring 20 feet across;
+    // a creature in its way is pushed aside and saves (Dexterity) against
+    // 10d6 Cold; 2d6 more per slot level above 6.
+    SpellDef{
+        .id = "wall_of_ice",
+        .label = "Wall of Ice",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::cold,
+        .dice = {10, 6, 0},
+        .upcast = {.extra_dice = 2},
+        .rider = Rider::wall_of_ice,
+        .concentration = true,
+        .evocation = true,
+        .wall = 100,
+        .ring = 20},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -2772,7 +2946,8 @@ inline std::optional<int> curse_of(std::string_view verb)
 
 // What Greater Restoration ends, each offered as "greater_restoration_<harm>":
 // Charmed, a curse, or Harm's lowered Hit Point maximum.
-inline constexpr std::array<std::string_view, 3> greater_harms{"charmed", "curse", "drained"};
+inline constexpr std::array<std::string_view, 4> greater_harms{"charmed", "curse", "drained",
+    "petrified"};
 
 // The index in greater_harms a Greater Restoration verb names, if it is one.
 inline std::optional<std::size_t> greater_harm(std::string_view verb)
@@ -2807,6 +2982,12 @@ inline std::optional<std::size_t> contagion_ability(std::string_view verb)
 // or, for a wall that allows it, as a ring.
 inline constexpr std::array<std::string_view, 5> wall_directions{"horizontal", "vertical",
     "rising", "falling", "ring"};
+
+// Contingency's triggers (LEVELS-3), each offered as
+// "contingency_<spell>_<trigger>": dropping to half Hit Points, a fight
+// starting, or dropping to 0.
+inline constexpr std::array<std::string_view, 3> contingency_triggers{"bloodied", "fight",
+    "fallen"};
 
 // The burning side of Wall of Fire, two for each direction in wall_directions
 // order, each offered as "<spell>_<direction>_<side>".
@@ -2865,6 +3046,10 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "summon_dragon";
     if (id == "telekinesis_again")
         id = "telekinesis";
+    if (id.starts_with("eyebite_"))
+        id = "eyebite";
+    if (id.starts_with("contingency_"))
+        id = "contingency";
     if (id.starts_with("polymorph_"))
         id = "polymorph";
     if (id == "dimension_door_with")

@@ -17,10 +17,12 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 8 | Ability Score Improvement | Delivered (rules 0.6.218) |
 | 9 | Level-5 spells | Delivered (rules 0.6.220) |
 | 10 | Empowered Evocation (Evoker), fifth cantrip | Delivered (rules 0.6.220) |
+| 11 | Level-6 spells | Delivered (rules 0.6.221) |
+| 12 | Ability Score Improvement | Delivered (rules 0.6.221) |
 
 ## Levels 5–15
 
-The Wizard advances to level 10 for now; level 11 waits for its level-6 spells
+The Wizard advances to level 12 for now; level 13 waits for its level-7 spells
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
@@ -65,6 +67,14 @@ The Wizard advances to level 10 for now; level 11 waits for its level-6 spells
   the damage roll of a Wizard Evocation spell (Fire Bolt, Fireball, Cone of
   Cold…). Magic Missile's darts, each its own roll, take none.
 - **A fifth cantrip** (10).
+- **Level-6 spells** (11): one level-6 slot; prepared spells 16 at 11 and 12.
+  Chain Lightning, Circle of Death, Contingency, Create Undead, Disintegrate,
+  Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability,
+  Irresistible Dance, Magic Jar, Sunbeam, True Seeing and Wall of Ice (below;
+  the Cleric's are described [there](CLERIC.md#the-level-6-spells)). Arcane
+  Gate, Drawmij's Instant Summons, Find the Path, Guards and Wards, Move
+  Earth, Programmed Illusion and the like are cut.
+- **Ability Score Improvement** (12): a feat or ability points.
 - Verification: `opengold_wizard_levels_tests` (the campaign's stop at 6,
   prepared counts, level-3 spells in the level-5 spellbook choice, slots, a
   campaign round trip, Memorize Spell's one change and the campaign's Short
@@ -121,6 +131,69 @@ The Wizard advances to level 10 for now; level 11 waits for its level-6 spells
   free one.
 - **Tiny Hut** (camp, the whole party): for 8 hours no rest is interrupted
   (LEVELS-1).
+
+### The level-6 spells
+
+- **Chain Lightning** (Action, 150 feet): choose a creature, then up to three
+  more within 30 feet of it (one more per slot level above 6); each makes a
+  Dexterity save against one roll of 10d8 Lightning, half on a success. A
+  chosen creature farther from the first is spared.
+- **Circle of Death** (Action, 150 feet): a 60-foot-radius Sphere;
+  Constitution save, 8d8 Necrotic, half on a success; 2d8 more per slot level
+  above 6.
+- **Contingency** (camp): one entry per spell and trigger, "Contingency: False
+  Life (when a fight starts)"; the triggers are a fight starting, dropping to
+  half Hit Points and dropping to 0 (LEVELS-3). It spends a level-6 slot and
+  one for the stored spell, any spell of level 5 or lower the Wizard can cast
+  on itself with an action and no further choice (False Life, Mage Armor,
+  Blur, Haste, Stoneskin, Greater Invisibility, Cure Wounds…). The spell takes
+  effect on the Wizard alone, once, and lasts its usual time; a new
+  Contingency replaces an old one. It keeps for 10 days.
+- **Disintegrate** (Action, 60 feet): a Dexterity save or 10d6 + 40 Force (3d6
+  more per slot level above 6); a creature it drops to 0 Hit Points turns to
+  dust, dead at once, and only Resurrection revives it (LEVELS-3): Revivify,
+  Raise Dead and Animate Dead cannot. Objects and a Wall of Force have
+  nothing to target it with yet.
+- **Eyebite** (Action, Concentration up to 1 minute): one entry per effect on
+  a creature within 60 feet: **asleep** (Sleep's Unconscious, ended by damage
+  or a shake), **panicked** (Frightened, fleeing the Wizard with the Dash
+  action until it stands 60 feet away out of the Wizard's sight) or
+  **sickened** (Poisoned), on a failed Wisdom save. On later turns a Magic
+  action targets another creature; one that saved is not offered again.
+- **Flesh to Stone** (Action, 60 feet, Concentration up to 1 minute): a
+  Constitution save or Restrained; a success leaves Speed 0 until the
+  Wizard's next turn, and a Construct always succeeds. The Restrained
+  creature saves again at the end of each of its turns: three successes end
+  the spell, three failures turn it to stone (Petrified: Incapacitated, Speed
+  0, Resistance to all damage, failing Strength and Dexterity saves, attacked
+  with Advantage). Held for the full minute, the stone lasts until **Greater
+  Restoration: Petrified**, and a foe of stone counts as out of the fight.
+- **Freezing Sphere** (Action, 300 feet): a 60-foot-radius Sphere;
+  Constitution save, 10d6 Cold, half on a success; 1d6 more per slot level
+  above 6. Freezing water and keeping the globe for later are left out.
+- **Globe of Invulnerability** (Action, Concentration up to 1 minute): a still
+  10-foot sphere around where the Wizard stands. A spell of level 5 or lower
+  (one more per slot level above 6) cast from outside is not offered against
+  a creature inside, and its area spares those inside.
+- **Irresistible Dance** (Action, 30 feet, Concentration up to 1 minute): a
+  failed Wisdom save sets the creature dancing: Charmed, Speed 0,
+  Disadvantage on Dexterity saves and attack rolls, attacked with Advantage;
+  **Try to stop dancing** (its action) repeats the save. A success leaves it
+  dancing in place (Speed 0) until the end of its next turn.
+- **Magic Jar** (Action, 100 feet): a Humanoid that fails a Charisma save is
+  possessed: the player controls it as Dominate Person's creature, while the
+  Wizard's body lies helpless (Incapacitated, Speed 0) (LEVELS-3). Damage
+  lets the host save again, as Dominate does; **Return to your body** (the
+  host's Magic action) ends it. If the host dies, the Wizard makes a Charisma
+  save against its own spell DC: its soul returns on a success, and it dies
+  on a failure. It ends with the fight.
+- **Wall of Ice** (Action, 120 feet, Concentration up to 10 minutes): a wall
+  100 feet long in any of the four directions, or a ring 20 feet across
+  (LEVELS-3), drawn as obstacles; it blocks movement and effects but not
+  sight. A creature in its way is pushed to the nearest free square and makes
+  a Dexterity save against 10d6 Cold (2d6 more per slot level above 6), half
+  on a success. Its sections cannot be attacked, so its frigid air never
+  forms.
 
 ### Summoned creatures (LEVELS-4)
 

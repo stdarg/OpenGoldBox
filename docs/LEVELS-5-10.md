@@ -21,7 +21,7 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)), with every
   kept Paladin spell.
 - Cleric to level 15: done ([Cleric](CLERIC.md#levels-515)).
-- Wizard to level 10: done ([Wizard](WIZARD.md#levels-515)), with Memorize
+- Wizard to level 12: done ([Wizard](WIZARD.md#levels-515)), with Memorize
   Spell and summoned creatures (LEVELS-4); Slow waits for a decision.
 - Cantrip damage by character level (5, 11, 17): done ([Spell slots](SPELL-SLOTS.md#cantrip-damage-by-level)).
 - Ranger to level 15: done ([Ranger](RANGER.md#levels-515)), with the first

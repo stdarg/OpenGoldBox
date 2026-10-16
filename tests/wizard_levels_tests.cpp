@@ -199,13 +199,13 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 10, "A Wizard stops at 10 for now");
+    check(party.member(id).character.sheet().level == 12, "A Wizard stops at 12 for now");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
-    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}
+    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}, {11, 16}, {12, 16}
 })
     check(rules->spell_access(wizard(level).sheet()).prepared_choices == count,
-          "Prepared spells: 9 at 5 to 15 at 10");
+          "Prepared spells: 9 at 5 to 16 at 12");
     check(rules->spell_access(wizard(10).sheet()).cantrip_choices == 5, "A fifth cantrip at 10");
     const auto grants = wizard(10).sheet().grants;
     check(std::any_of(grants.begin(), grants.end(), [](const auto & g)
@@ -234,11 +234,13 @@ void progression_checks()
     auto c9 = field(*dummies, wizard(9).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
     auto c10 = field(*dummies, wizard(10).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
     check(slots(*c9, 5) == 1 && slots(*c10, 5) == 2, "One level-5 slot at 9, two at 10");
+    auto c11 = field(*dummies, wizard(11).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(slots(*c11, 6) == 1, "A level-6 slot at 11");
     const auto bytes = encode_campaign(party, nullptr, "wizard-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "wizard-levels", nullptr).party);
-    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-10 Wizard saves and reloads");
+    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-12 Wizard saves and reloads");
 }
 
 void memorize_spell_checks()
@@ -989,6 +991,165 @@ void arcane_hand_checks()
     check(!offered(*c, "hand_fist", 98) || unit(*c, 1).bonus_action, "Later, with the Bonus Action");
 }
 
+void level_six_checks()
+{
+    const auto rules = dummy_rules();
+    // Chain Lightning: the first foe and others within 30 feet of it.
+    auto chain = field(*rules, with_spells(wizard(11), {"chain_lightning"}),
+    {   {97, "dummy", "First", Side::opposition, {6, 2}},
+        {98, "dummy", "Near", Side::opposition, {8, 2}},
+        {99, "dummy", "Far", Side::opposition, {13, 6}}
+    }, 1);
+    check(submit(*chain, "chain_lightning", 97) && submit(*chain, "chain_lightning", 98) &&
+          submit(*chain, "chain_lightning", 99) && submit(*chain, "spell_cast") &&
+          logged(*chain, "First takes ") && logged(*chain, "Near takes ") && !logged(*chain, "Far takes "),
+          "Chain Lightning leaps only within 30 feet of the first foe");
+    // Circle of Death and Freezing Sphere.
+    auto circle = field(*rules, with_spells(wizard(11), {"circle_of_death"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*circle, "circle_of_death") && submit_cell(*circle, "area_move", Cell{9, 2}) &&
+          submit(*circle, "area_cast") && logged(*circle, " Necrotic damage."), "Circle of Death");
+    // Disintegrate turns a creature it drops to dust.
+    bool dust = false;
+    for (std::uint64_t seed = 1; seed < 40 && !dust; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(11), {"disintegrate"}),
+        {{98, "dummy", "Foe", Side::opposition, {5, 2}, {}, VitalState{30, false, {}}}}, seed);
+        check(submit(*c, "disintegrate", 98), "Disintegrate");
+        dust = logged(*c, "Foe turns to dust.");
+    }
+    check(dust, "Disintegrate turns a creature it drops to dust");
+}
+
+void eyebite_checks()
+{
+    const auto rules = dummy_rules();
+    bool asleep = false;
+    for (std::uint64_t seed = 1; seed < 40 && !asleep; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(11), {"eyebite"}),
+        {   {97, "dummy", "Other", Side::opposition, {6, 4}},
+            {98, "dummy", "Foe", Side::opposition, {6, 2}}
+        }, seed);
+        check(offered(*c, "eyebite_sickened", 98) && submit(*c, "eyebite_asleep", 98) &&
+              logged(*c, "Foe Wisdom save:"), "Eyebite");
+        if (!logged(*c, "Foe falls asleep."))
+            continue;
+        asleep = true;
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        check(offered(*c, "evil_eye_panicked", 97) && !offered(*c, "evil_eye_panicked", 98),
+              "A Magic action targets another creature");
+    }
+    check(asleep, "A seed where the foe falls asleep");
+}
+
+void flesh_and_dance_checks()
+{
+    const auto rules = dummy_rules();
+    bool stone = false, dancing = false;
+    for (std::uint64_t seed = 1; seed < 60 && (!stone || !dancing); ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(11), {"flesh_to_stone"}),
+        {{98, "dummy", "Foe", Side::opposition, {5, 2}}}, seed);
+        if (!stone)
+        {
+            check(submit(*c, "flesh_to_stone", 98), "Flesh to Stone");
+            for (unsigned turns = 0; turns < 8 && !logged(*c, "Foe turns to stone.") &&
+                    logged(*c, "Foe begins to turn to stone."); ++turns)
+                check(submit(*c, "end"), "Pass a turn");
+            stone = logged(*c, "Foe turns to stone.");
+            if (stone)
+                check(unit(*c, 98).status.find("Petrified") != std::string::npos, "Petrified");
+        }
+        auto d = field(*rules, with_spells(wizard(11), {"irresistible_dance"}),
+        {{98, "dummy", "Foe", Side::opposition, {3, 2}}}, seed);
+        if (!dancing && submit(*d, "irresistible_dance", 98) &&
+                logged(*d, "Foe breaks into a helpless dance."))
+        {
+            dancing = true;
+            to_turn(*d, 98);
+            check(offered(*d, "stop_dancing") && !offered(*d, "move"), "The dancer can only try to stop");
+        }
+    }
+    check(stone && dancing, "Flesh to Stone petrifies and Irresistible Dance sets a foe dancing");
+}
+
+void globe_checks()
+{
+    const auto rules = dummy_rules();
+    const std::vector<std::string> gear{"quarterstaff"};
+    auto c = rules->create({{14, 7, std::vector<Terrain>(98)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 2},
+                rules->character_profile(with_spells(wizard(11), {"globe_of_invulnerability"}), gear).data},
+            {98, "campaign-character", "Rival", Side::opposition, {8, 2},
+                rules->character_profile(wizard(5, "Rival").sheet(), gear).data}
+        }},
+    1);
+    to_turn(*c, 1);
+    check(submit(*c, "globe_of_invulnerability", 1) &&
+          logged(*c, "A shimmering globe rises around Wizard."), "Globe of Invulnerability");
+    to_turn(*c, 98);
+    check(!offered(*c, "fire_bolt", 1), "A spell of level 5 or lower is not cast into the globe");
+}
+
+void magic_jar_checks()
+{
+    const auto rules = dummy_rules();
+    bool possessed = false;
+    for (std::uint64_t seed = 1; seed < 40 && !possessed; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(11), {"magic_jar"}),
+        {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, seed);
+        check(submit(*c, "magic_jar", 98) && logged(*c, "Foe Charisma save:"), "Magic Jar");
+        if (!logged(*c, "Foe is dominated by Wizard."))
+            continue;
+        possessed = true;
+        check(unit(*c, 1).status.find("Magic Jar") != std::string::npos, "The Wizard's body lies helpless");
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 98);
+        check(submit(*c, "leave_host", 98) && logged(*c, "Wizard's soul returns to its body."),
+              "The soul returns to its body");
+    }
+    check(possessed, "A seed where the foe fails its save");
+}
+
+void wall_of_ice_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(11), {"wall_of_ice"}),
+    {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(submit(*c, "wall_of_ice_vertical") && submit_cell(*c, "area_move", Cell{6, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "A wall of ice rises.") &&
+          logged(*c, "Foe is pushed aside by the wall.") && logged(*c, " Cold damage.") &&
+          c->snapshot().battlefield.at({6, 2}) == Terrain::obstacle, "Wall of Ice");
+}
+
+void contingency_checks()
+{
+    const auto rules = module();
+    const auto caster = with_spells(wizard(11), {"contingency", "false_life"});
+    VitalState state{caster.hit_points, false, {}};
+    const auto actions = rules->camp_actions(caster, state);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "contingency_false_life_fight";
+    }), "Contingency offers each spell with each trigger");
+    std::vector<CampTarget> party{{caster, state}};
+    RandomState random{1};
+    rules->use_party_camp_action(caster, state, party, "contingency_false_life_fight", random);
+    const auto dummies = dummy_rules();
+    const std::vector<std::string> gear{"quarterstaff"};
+    auto c = dummies->create({{14, 7, std::vector<Terrain>(98)},
+        {   {1, "campaign-character", "Wizard", Side::party, {1, 2},
+                dummies->character_profile(caster, gear).data, state},
+            {98, "dummy", "Foe", Side::opposition, {9, 2}}
+        }},
+    1);
+    check(logged(*c, "Contingency: False Life takes effect on Wizard.") &&
+          unit(*c, 1).temporary_hp.amount > 0, "The stored spell takes effect as the fight starts");
+}
+
 void sculpt_checks()
 {
     const auto rules = dummy_rules();
@@ -1045,6 +1206,13 @@ int main()
         telekinesis_checks();
         walls_checks();
         arcane_hand_checks();
+        level_six_checks();
+        eyebite_checks();
+        flesh_and_dance_checks();
+        globe_checks();
+        magic_jar_checks();
+        wall_of_ice_checks();
+        contingency_checks();
     }
     catch (const std::exception &error)
     {

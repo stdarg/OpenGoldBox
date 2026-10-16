@@ -245,6 +245,17 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"animate_objects", "Animate Objects", 5, 0, bard_list | sorcerer_list | wizard_list},
     Spell{"mislead", "Mislead", 5, 0, bard_list | warlock_list | wizard_list},
     Spell{"telekinesis", "Telekinesis", 5, 0, sorcerer_list | wizard_list},
+    Spell{"chain_lightning", "Chain Lightning", 6, 0, sorcerer_list | wizard_list},
+    Spell{"circle_of_death", "Circle of Death", 6, 0, sorcerer_list | warlock_list | wizard_list},
+    Spell{"contingency", "Contingency", 6, 0, wizard_list},
+    Spell{"disintegrate", "Disintegrate", 6, 0, sorcerer_list | wizard_list},
+    Spell{"eyebite", "Eyebite", 6, 0, bard_list | sorcerer_list | warlock_list | wizard_list},
+    Spell{"flesh_to_stone", "Flesh to Stone", 6, 0, druid_list | sorcerer_list | wizard_list},
+    Spell{"freezing_sphere", "Freezing Sphere", 6, 0, sorcerer_list | wizard_list},
+    Spell{"globe_of_invulnerability", "Globe of Invulnerability", 6, 0, sorcerer_list | wizard_list},
+    Spell{"irresistible_dance", "Irresistible Dance", 6, 0, bard_list | wizard_list},
+    Spell{"magic_jar", "Magic Jar", 6, 0, wizard_list},
+    Spell{"wall_of_ice", "Wall of Ice", 6, 0, wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};
