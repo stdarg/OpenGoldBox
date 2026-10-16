@@ -143,7 +143,12 @@ void print_equipment(const opengold::por::CreatureCatalog &catalog)
 {
     for (const auto &conversion : slums_conversions)
     {
-        const auto &creature = catalog.find({2, conversion.record})->get();
+        const auto found = catalog.find({2, conversion.record});
+        if (!found)
+            throw opengold::por::CatalogError(std::string("Missing creature record for ") +
+                                              conversion.creature + ": bank 2, record " +
+                                              std::to_string(conversion.record));
+        const auto &creature = found->get();
         std::string armor = "none";
         bool metal = false;
         for (const auto &item : creature.equipment)
