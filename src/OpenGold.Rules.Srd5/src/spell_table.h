@@ -166,7 +166,18 @@ enum class Rider : unsigned
     sleet_storm,
     stinking_cloud,
     vampiric_touch,
-    blink
+    blink,
+    black_tentacles,
+    confusion,
+    dimension_door,
+    fire_shield,
+    greater_invisibility,
+    ice_storm,
+    phantasmal_killer,
+    polymorph,
+    resilient_sphere,
+    vitriolic_sphere,
+    wall_of_fire
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -1977,6 +1988,205 @@ inline constexpr std::array spell_table
         .target = SpellTarget::self,
         .range = 5,
         .instances = 8},
+    // SRD 5.2.1 p. 113: a 20-foot square of tentacles within 90 feet,
+    // Difficult Terrain; on casting, entering or ending a turn there, once a
+    // turn, a Strength save or 3d6 Bludgeoning and Restrained.
+    SpellDef{
+        .id = "black_tentacles",
+        .label = "Black Tentacles",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 90,
+        .save = Ability::strength,
+        .damage = DamageType::bludgeoning,
+        .dice = {3, 6, 0},
+        .rider = Rider::black_tentacles,
+        .concentration = true,
+        .area = 20},
+    // SRD 5.2.1 p. 113: Constitution save, 8d8 Necrotic, half on a success; a
+    // Plant fails; 1d8 more for each slot level above 4.
+    SpellDef{
+        .id = "blight",
+        .label = "Blight",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .requires_sight = true,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::necrotic,
+        .dice = {8, 8, 0},
+        .upcast = {.extra_dice = 1}},
+    // SRD 5.2.1 p. 114: Charm Person for any creature; one more for each slot
+    // level above 4.
+    SpellDef{
+        .id = "charm_monster",
+        .label = "Charm Monster",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::charm_person},
+    // SRD 5.2.1 p. 117: a 10-foot-radius Sphere within 90 feet; a Wisdom save
+    // or no Bonus Actions or Reactions and a d10 for each turn's behavior,
+    // saving again at the end of each turn; 5 feet more radius per slot level.
+    SpellDef{
+        .id = "confusion",
+        .label = "Confusion",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 90,
+        .save = Ability::wisdom,
+        .upcast = {.extra_radius = 5},
+        .rider = Rider::confusion,
+        .concentration = true,
+        .radius = 10},
+    // SRD 5.2.1 p. 123: a teleport up to 500 feet, with one willing creature
+    // within 5 feet if the caster likes.
+    SpellDef{
+        .id = "dimension_door",
+        .label = "Dimension Door",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 500,
+        .rider = Rider::dimension_door},
+    // SRD 5.2.1 p. 132: 10 minutes of Resistance to Cold (warm) or Fire
+    // (chill); a creature within 5 feet that hits the caster in melee takes
+    // 2d8 Fire or Cold.
+    SpellDef{
+        .id = "fire_shield",
+        .label = "Fire Shield",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .dice = {2, 8, 0},
+        .rider = Rider::fire_shield,
+        .evocation = true},
+    // SRD 5.2.1 p. 137: touch; Invisible, whether or not it attacks.
+    SpellDef{
+        .id = "greater_invisibility",
+        .label = "Greater Invisibility",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .requires_effect_capacity = true,
+        .rider = Rider::greater_invisibility,
+        .concentration = true},
+    // SRD 5.2.1 p. 141: a 20-foot-radius Cylinder within 300 feet; Dexterity
+    // save, 2d10 Bludgeoning and 4d6 Cold, half on a success; Difficult
+    // Terrain until the end of the caster's next turn; 1d10 more Bludgeoning
+    // for each slot level above 4.
+    SpellDef{
+        .id = "ice_storm",
+        .label = "Ice Storm",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 300,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::bludgeoning,
+        .dice = {2, 10, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::ice_storm,
+        .radius = 20,
+        .evocation = true,
+        .second_damage = DamageType::cold,
+        .second_dice = {4, 6, 0}},
+    // SRD 5.2.1 p. 152: a Wisdom save against 4d10 Psychic and Disadvantage
+    // on attack rolls, again at the end of each of its turns; half and the
+    // end on a success; 1d10 more for each slot level above 4.
+    SpellDef{
+        .id = "phantasmal_killer",
+        .label = "Phantasmal Killer",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 120,
+        .requires_sight = true,
+        .save = Ability::wisdom,
+        .half_on_success = true,
+        .damage = DamageType::psychic,
+        .dice = {4, 10, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::phantasmal_killer,
+        .concentration = true},
+    // SRD 5.2.1 p. 153: a Wisdom save or a creature becomes one of the game's
+    // Beast forms, with Temporary Hit Points of the Beast's Hit Points.
+    SpellDef{
+        .id = "polymorph",
+        .label = "Polymorph",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::polymorph,
+        .concentration = true},
+    // SRD 5.2.1 p. 158: a Large or smaller creature, a Dexterity save or sealed
+    // in a sphere nothing passes through.
+    SpellDef{
+        .id = "resilient_sphere",
+        .label = "Resilient Sphere",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::any_creature,
+        .range = 30,
+        .requires_effect_capacity = true,
+        .save = Ability::dexterity,
+        .rider = Rider::resilient_sphere,
+        .concentration = true},
+    // SRD 5.2.1 p. 172: a 20-foot-radius Sphere within 150 feet; Dexterity
+    // save, 10d4 Acid and 5d4 more at the end of its next turn, half the first
+    // only on a success; 2d4 more for each slot level above 4.
+    SpellDef{
+        .id = "vitriolic_sphere",
+        .label = "Vitriolic Sphere",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::acid,
+        .dice = {10, 4, 0},
+        .upcast = {.extra_dice = 2},
+        .rider = Rider::vitriolic_sphere,
+        .radius = 20,
+        .evocation = true},
+    // SRD 5.2.1 p. 172: a wall of fire 60 feet long or a ring 20 feet across;
+    // Dexterity save, 5d8 Fire, half on a success, as it appears; its burning
+    // side scorches a creature ending its turn within 10 feet, and one
+    // entering or ending its turn in the wall; 1d8 more per slot level.
+    SpellDef{
+        .id = "wall_of_fire",
+        .label = "Wall of Fire",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {5, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::wall_of_fire,
+        .concentration = true,
+        .evocation = true,
+        .wall = 60,
+        .ring = 20},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -2365,11 +2575,29 @@ inline std::optional<std::size_t> contagion_ability(std::string_view verb)
 inline constexpr std::array<std::string_view, 5> wall_directions{"horizontal", "vertical",
     "rising", "falling", "ring"};
 
+// The burning side of Wall of Fire, two for each direction in wall_directions
+// order, each offered as "<spell>_<direction>_<side>".
+inline constexpr std::array<std::string_view, 10> wall_sides{"north", "south", "west", "east",
+    "northwest", "southeast", "northeast", "southwest", "inner", "outer"};
+
+// The side a wall verb names, as an index into wall_sides, if it names one.
+inline std::optional<std::size_t> wall_side(std::string_view verb)
+{
+    for (std::size_t n = 0; n < wall_sides.size(); ++n)
+        if (verb.ends_with(wall_sides[n]) && verb.size() > wall_sides[n].size() &&
+                verb[verb.size() - wall_sides[n].size() - 1] == '_' &&
+                verb.find("wall_of_fire") == 0)
+            return n;
+    return std::nullopt;
+}
+
 // The direction a wall verb names, as an index into wall_directions, if it
 // names one.
 inline std::optional<std::size_t> wall_direction(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
+    if (const auto side = wall_side(verb))
+        verb.remove_suffix(wall_sides[*side].size() + 1);
     for (std::size_t n = 0; n < wall_directions.size(); ++n)
         if (verb.ends_with(wall_directions[n]) && verb.size() > wall_directions[n].size() &&
                 verb[verb.size() - wall_directions[n].size() - 1] == '_')
@@ -2390,8 +2618,16 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "contagion";
     if (id == "sunbeam_line")
         id = "sunbeam";
+    if (const auto side = wall_side(id))
+        id.remove_suffix(wall_sides[*side].size() + 1);
     if (const auto direction = wall_direction(id))
         id.remove_suffix(wall_directions[*direction].size() + 1);
+    if (id.starts_with("fire_shield_"))
+        id = "fire_shield";
+    if (id.starts_with("polymorph_"))
+        id = "polymorph";
+    if (id == "dimension_door_with")
+        id = "dimension_door";
     if (command_option(id))
         id = "command";
     if (resistance_type(id))

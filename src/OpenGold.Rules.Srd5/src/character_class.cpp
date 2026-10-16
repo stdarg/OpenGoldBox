@@ -103,8 +103,8 @@ unsigned level_cap(CharacterClass character_class)
            character_class == CharacterClass::paladin ||
            character_class == CharacterClass::ranger ||
            character_class == CharacterClass::cleric ? 15
-           // A Wizard stops at 6 until its level-4 spells exist.
-           : character_class == CharacterClass::wizard ? 6 : 4;
+           // A Wizard stops at 8 until its level-5 spells exist.
+           : character_class == CharacterClass::wizard ? 8 : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)

@@ -256,7 +256,7 @@ struct Probe
     unsigned level;
 };
 
-constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 6}, {"cleric", 1},
+constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 8}, {"cleric", 1},
     {"cleric", 4}, {"cleric", 15}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
@@ -448,7 +448,8 @@ void behaviour()
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
         // Remove Curse and Greater Restoration, which need a cursed or charmed
-        // creature, and Dominate Beast, a Beast.
+        // creature, and Dominate Beast, a Beast; Fire Shield and Polymorph
+        // are offered once per shield and form.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
                   row.pattern == SpellPattern::heal) && row.instances > 1) ||
@@ -468,7 +469,8 @@ void behaviour()
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
                 row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
-                row.rider == Rider::remove_curse)
+                row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
+                row.rider == Rider::polymorph)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

@@ -331,9 +331,33 @@ enum class EffectKind : unsigned
     sheltered = 132,
     // Sleet Storm: the creature has saved against the sleet this turn.
     sleeted = 133,
+    // Black Tentacles: Restrained until it escapes or the spell ends; `dc` is
+    // the escape's DC.
+    tentacled = 134,
+    // Black Tentacles: the creature has saved against them this turn.
+    groped = 135,
+    // Confusion: no Bonus Actions or Reactions and a d10 for each turn's
+    // behavior; a Wisdom save at the end of each of its turns.
+    confused = 136,
+    // Fire Shield: `dc` 0 is the warm shield (Cold Resistance, Fire back), 1
+    // the chill one (Fire Resistance, Cold back).
+    fire_shield = 137,
+    // Greater Invisibility: Invisible, whether or not it attacks.
+    greater_invisible = 138,
+    // Phantasmal Killer: Disadvantage on attack rolls; `dc` is the dice of
+    // Psychic damage each failed end-of-turn save deals.
+    haunted = 139,
+    // Polymorph: a Beast form; `dc` is its index in beast_forms, plus 1.
+    polymorphed = 140,
+    // Resilient Sphere: sealed in, nothing passing in or out.
+    sphered = 141,
+    // Vitriolic Sphere: 5d4 Acid at the end of its next turn.
+    vitriol = 142,
+    // Wall of Fire: the creature has been burned entering the wall this turn.
+    wall_burned = 143,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = sleeted
+    last = wall_burned
 };
 
 // Magic Circle's creature types, by `dc`.

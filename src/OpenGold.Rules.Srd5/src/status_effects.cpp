@@ -1,4 +1,5 @@
 #include "status_effects.h"
+#include "beast_forms.h"
 #include "damage.h"
 #include "dice.h"
 #include "spell_table.h"
@@ -133,7 +134,9 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::guarded && kind != EffectKind::swarmed &&
             kind != EffectKind::bladed && kind != EffectKind::bathed &&
             kind != EffectKind::lethargic && kind != EffectKind::retching &&
-            kind != EffectKind::ethereal && kind != EffectKind::sleeted) ||
+            kind != EffectKind::ethereal && kind != EffectKind::sleeted &&
+            kind != EffectKind::groped && kind != EffectKind::vitriol &&
+            kind != EffectKind::wall_burned) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -266,6 +269,8 @@ std::string_view repeated_save_spell(EffectKind kind)
         return "sleep";
     case EffectKind::laughing:
         return "hideous_laughter";
+    case EffectKind::confused:
+        return "confusion";
     default:
         return "ray_of_enfeeblement";
     }
@@ -443,7 +448,7 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSour
 {
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
             kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
-            kind != EffectKind::knocked_out) ||
+            kind != EffectKind::knocked_out && kind != EffectKind::confused) ||
             !can_apply(effects) ||
             !recorded(source, name) || save.dc < -2 || save.dc > 38 || !save.first_save_ms ||
             save.first_save_ms > round_ms)
@@ -478,14 +483,16 @@ void apply_sanctuary(EffectState &effects, EffectSource source,
 bool restrained(const EffectState &effects)
 {
     return (has_effect(effects, EffectKind::ensnaring_strike) ||
-            has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed)) &&
+            has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed) ||
+            has_effect(effects, EffectKind::tentacled)) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
 void apply_entangle(EffectState &effects, EffectSource source,
                     std::string name, int dc, EffectKind kind)
 {
-    if ((kind != EffectKind::entangle && kind != EffectKind::webbed) || !can_apply(effects) ||
+    if ((kind != EffectKind::entangle && kind != EffectKind::webbed &&
+            kind != EffectKind::tentacled) || !can_apply(effects) ||
             !recorded(source, name) || dc < -2 || dc > 38)
         throw std::runtime_error("Invalid Entangle application");
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
@@ -553,6 +560,9 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::animating ? 19
            : kind == EffectKind::worded ? 2
            : kind == EffectKind::knitting ? 9
+           : kind == EffectKind::fire_shield ? 1
+           : kind == EffectKind::haunted ? 13
+           : kind == EffectKind::polymorphed ? static_cast<int>(beast_forms.size())
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
@@ -592,6 +602,8 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 3600000; // 1 hour
     case EffectKind::sheltered:
         return 28800000; // 8 hours
+    case EffectKind::polymorphed:
+        return 3600000; // Concentration, up to 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
     case EffectKind::death_ward:
@@ -644,9 +656,13 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::terrified:
     case EffectKind::vampiric:
     case EffectKind::blinking:
+    case EffectKind::greater_invisible:
+    case EffectKind::haunted:
+    case EffectKind::sphered:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
+    case EffectKind::fire_shield:
     case EffectKind::aura_of_life:
     case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes
@@ -811,7 +827,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                 else if ((e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
                           e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
                           e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
-                          e.kind == EffectKind::knocked_out) &&
+                          e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused) &&
                          !e.save_in_ms)
                 {
                     // Blindness, Ray of Enfeeblement and Knock Out repeat a Constitution save,
@@ -939,6 +955,8 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::bladed || kind == EffectKind::bathed ||
                            kind == EffectKind::lethargic || kind == EffectKind::retching ||
                            kind == EffectKind::ethereal || kind == EffectKind::sleeted ||
+                           kind == EffectKind::groped || kind == EffectKind::vitriol ||
+                           kind == EffectKind::wall_burned ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -959,7 +977,7 @@ EffectState read_effects(std::istream &in)
         const bool turn_save = kind == EffectKind::searing_smite ||
                                kind == EffectKind::ensnaring_strike ||
                                kind == EffectKind::entangle ||
-                               kind == EffectKind::webbed ||
+                               kind == EffectKind::webbed || kind == EffectKind::tentacled ||
                                kind == EffectKind::sanctuary ||
                                kind == EffectKind::asleep;
         // A spell benefit has no save; `dc` carries its value.
@@ -993,7 +1011,7 @@ EffectState read_effects(std::istream &in)
                     kind != EffectKind::hold_person &&
                     kind != EffectKind::drowsy && kind != EffectKind::laughing &&
                     kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
-                    kind != EffectKind::knocked_out) ||
+                    kind != EffectKind::knocked_out && kind != EffectKind::confused) ||
                 e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 ||
                 (!timed && (e.dc < -2 || e.dc > 38 || !e.remaining_ms || e.remaining_ms > 60000 ||
@@ -1013,7 +1031,8 @@ EffectState read_effects(std::istream &in)
                                               kind == EffectKind::raging ||
                                               kind == EffectKind::lit ||
                                               kind == EffectKind::veiled ||
-                                              kind == EffectKind::lethargic)
+                                              kind == EffectKind::lethargic ||
+                                              kind == EffectKind::vitriol)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

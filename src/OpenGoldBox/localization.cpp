@@ -99,6 +99,14 @@ String text(std::string_view source)
             source.ends_with(intervention))
         return format(N_("{spell} (Divine Intervention)"),
                       {{"spell", text(source.substr(0, source.size() - intervention.size()))}});
+    // "Dimension Door with Ilsa", a spell that takes a companion, is
+    // translated in two parts: the companion is a name.
+    constexpr std::string_view companion = "Dimension Door with ";
+    if (translated == gs(source) && source.starts_with(companion) &&
+            source.size() > companion.size() && !source.ends_with(" slot)"))
+        return format(N_("{spell} with {name}"),
+                      {{"spell", text("Dimension Door")},
+                       {"name", gs(source.substr(companion.size()))}});
     // "Cure Wounds (level 3 slot)", a spell cast from a higher slot, is
     // translated in two parts when the whole has no entry of its own.
     constexpr std::string_view slot_prefix = " (level ", slot_suffix = " slot)";

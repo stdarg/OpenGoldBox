@@ -13,15 +13,18 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 4 | Ability Score Improvement | Delivered earlier |
 | 5 | Memorize Spell, level-3 spells | Delivered (rules 0.6.217) |
 | 6 | Sculpt Spells (Evoker) | Delivered (rules 0.6.217; before, at level 3) |
+| 7 | Level-4 spells | Delivered (rules 0.6.218) |
+| 8 | Ability Score Improvement | Delivered (rules 0.6.218) |
 
 ## Levels 5–15
 
-The Wizard advances to level 6 for now; level 7 waits for its level-4 spells
+The Wizard advances to level 8 for now; level 9 waits for its level-5 spells
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 - **Spellcasting** (SRD 5.2.1 p. 77): level-3 slots from 5 (two, three from
-  6); prepared spells 9 and 10; the spellbook gains two spells per level, of
+  6), level-4 slots from 7 (one, two from 8); prepared spells 9, 10, 11 and
+  12 at levels 5–8; the spellbook gains two spells per level, of
   any level the Wizard has slots for (half its level, rounded up); a fifth
   cantrip at 10.
 - **Level-3 spells** (5): Animate Dead, Bestow Curse, Blink, Counterspell,
@@ -42,11 +45,19 @@ The Wizard advances to level 6 for now; level 7 waits for its level-4 spells
   original three read "Spell slots of levels 3" or "… of levels 2, 1".
 - **Sculpt Spells** moves to level 6, where the SRD puts it; it was given at
   level 3 before. Potent Cantrip stays at 3.
+- **Level-4 spells** (7): Banishment, Black Tentacles, Blight, Charm Monster,
+  Confusion, Dimension Door, Fire Shield, Greater Invisibility, Ice Storm,
+  Phantasmal Killer, Polymorph, Resilient Sphere, Stoneskin, Vitriolic Sphere
+  and Wall of Fire (below). Conjure Minor Elementals and Faithful Hound wait
+  for decisions. Arcane Eye, Control Water, Divination, Fabricate,
+  Hallucinatory Terrain, Locate Creature, Private Sanctum, Secret Chest and
+  Stone Shape are cut.
+- **Ability Score Improvement** (8): a feat or ability points.
 - Verification: `opengold_wizard_levels_tests` (the campaign's stop at 6,
   prepared counts, level-3 spells in the level-5 spellbook choice, slots, a
   campaign round trip, Memorize Spell's one change and the campaign's Short
-  Rest window, Arcane Recovery of a level-3 slot, each level-3 spell, Sculpt
-  Spells at 6 and not 5) and `opengold_wizard_spell_tests`.
+  Rest window, Arcane Recovery of a level-3 slot, each level-3 and level-4
+  spell, Sculpt Spells at 6 and not 5) and `opengold_wizard_spell_tests`.
 
 ### The level-3 spells
 
@@ -96,6 +107,73 @@ The Wizard advances to level 6 for now; level 7 waits for its level-4 spells
   free one.
 - **Tiny Hut** (camp, the whole party): for 8 hours no rest is interrupted
   (LEVELS-1).
+
+### The level-4 spells
+
+- **Black Tentacles** (Action, 90 feet, Concentration up to 1 minute): a
+  20-foot square, Difficult Terrain. A creature in it when it appears, that
+  enters it or ends its turn there makes a Strength save, once a turn, or
+  takes 3d6 Bludgeoning and is Restrained ("Restrained (Black Tentacles)");
+  **Escape the tentacles** spends an action on an Athletics check against the
+  spell's DC, as Entangle's vines do.
+- **Blight** (Action, 30 feet): a Constitution save against 8d8 Necrotic,
+  half on a success; a Plant fails it; 1d8 more per slot level above 4. The
+  withering of plants has nothing to act on.
+- **Charm Monster** (Action, 30 feet): Charm Person for any creature, one more
+  for each slot level above 4.
+- **Confusion** (Action, 90 feet, Concentration up to 1 minute): a
+  10-foot-radius Sphere (5 feet more per slot level above 4); a Wisdom save
+  or Confused: no Bonus Actions or Reactions, and a d10 at the start of each
+  turn: on 1 it wanders north, east, south or west as far as its movement
+  goes (provoking no Opportunity Attacks); on 2–6 it does nothing; on 7–8 it
+  makes one melee attack against a random creature within reach, if any; on
+  9–10 it acts as it likes. It saves again at the end of each of its turns.
+- **Dimension Door** (Action, 500 feet): the Wizard teleports to any free
+  square on the battlefield, seen or not; **Dimension Door with** an ally
+  within 5 feet takes that ally too, to the nearest free square. With two
+  allies beside it, a click starts the entry of the first; the A cycle lists
+  both.
+- **Fire Shield** (Action, 10 minutes): **(warm)** gives Resistance to Cold,
+  **(chill)** to Fire; a creature within 5 feet that hits the Wizard in melee
+  takes 2d8 Fire from the warm shield or 2d8 Cold from the chill one. Its
+  light has nothing to act on.
+- **Greater Invisibility** (Action, touch, Concentration up to 1 minute): the
+  creature is Invisible, and attacking or casting does not end it.
+- **Ice Storm** (Action, 300 feet): a 20-foot-radius area; Dexterity save,
+  2d10 Bludgeoning and 4d6 Cold, half on a success (1d10 more Bludgeoning per
+  slot level above 4); the hail is Difficult Terrain until the end of the
+  Wizard's next turn.
+- **Phantasmal Killer** (Action, 120 feet, Concentration up to 1 minute): a
+  Wisdom save against 4d10 Psychic (1d10 more per slot level above 4); on a
+  failure the creature has Disadvantage on attack rolls and saves again at
+  the end of each of its turns, taking the damage again on a failure; a
+  success, at the casting or later, ends the spell.
+- **Polymorph** (Action, 60 feet, Concentration up to 1 hour): a creature the
+  Wizard sees makes a Wisdom save or becomes one of the game's Beast forms,
+  Wild Shape's (CLASS-10): **Polymorph: Wolf**, Boar, Giant Lizard or Giant
+  Snake. It takes the Beast's statistics and attacks, cannot cast spells, and
+  gains Temporary Hit Points equal to the Beast's Hit Points (11, 13, 19 and
+  13). The spell ends when those are gone or Concentration ends. The forms
+  are all Challenge Rating 1/4; the game's stat blocks carry no Challenge
+  Rating, so the SRD's limit to a form no stronger than the creature is not
+  checked.
+- **Resilient Sphere** (Action, 30 feet, Concentration up to 1 minute): a
+  Large creature or smaller makes a Dexterity save or is sealed in a sphere.
+  Nothing reaches it from outside (attacks, spells, areas), and it reaches
+  nothing outside; on its turn it only rolls the sphere, at half Speed, which
+  takes its action.
+- **Vitriolic Sphere** (Action, 150 feet): a 20-foot-radius Sphere; Dexterity
+  save, 10d4 Acid and 5d4 more at the end of its next turn, half the first
+  only on a success; 2d4 more initial Acid per slot level above 4.
+- **Wall of Fire** (Action, 120 feet, Concentration up to 1 minute): a wall 60
+  feet long in any of the four directions, or a ring 20 feet across
+  (LEVELS-3), drawn as a wall; each entry names the side that burns
+  ("Wall of Fire (vertical, east side burning)", "… (ring, inner side
+  burning)"). Each creature in it as it rises makes a Dexterity save against
+  5d8 Fire, half on a success. A creature that enters the wall (once a turn)
+  or ends its turn in it or within 10 feet on the burning side takes 5d8 Fire.
+  1d8 more per slot level above 4. The wall hides the creatures in it, as fog
+  does; it does not block sight beyond it.
 
 ## Spells
 
