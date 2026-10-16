@@ -19,10 +19,13 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 10 | Empowered Evocation (Evoker), fifth cantrip | Delivered (rules 0.6.220) |
 | 11 | Level-6 spells | Delivered (rules 0.6.221) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.221) |
+| 13 | Level-7 spells | Delivered (rules 0.6.222); Simulacrum next, Teleport waits for travel |
+| 14 | Overchannel (Evoker) | Delivered (rules 0.6.222) |
+| 15 | Level-8 spells | Delivered (rules 0.6.222) |
 
 ## Levels 5–15
 
-The Wizard advances to level 12 for now; level 13 waits for its level-7 spells
+The Wizard advances to level 15, the cap
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
@@ -75,13 +78,35 @@ The Wizard advances to level 12 for now; level 13 waits for its level-7 spells
   Gate, Drawmij's Instant Summons, Find the Path, Guards and Wards, Move
   Earth, Programmed Illusion and the like are cut.
 - **Ability Score Improvement** (12): a feat or ability points.
+- **Level-7 spells** (13): one level-7 slot; prepared spells 17. Arcane
+  Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray
+  and Reverse Gravity (below). Simulacrum comes next, as a camp spell.
+  Teleport takes the party to towns and areas it has visited (LEVELS-3); New
+  Phlan is the only one built, so it waits for travel beyond the city.
+  Etherealness, Magnificent Mansion, Mirage Arcane, Plane Shift, Project
+  Image, Sequester and Symbol are cut.
+- **Overchannel** (Evoker 14): **Overchannel (free)** in the turn's menu,
+  which takes no action, readies it for the turn; the next Wizard spell that
+  deals damage, cast with a level 1–5 slot, deals the most its dice can show
+  on the turn it is cast (Magic Missile's darts too; damage on later turns
+  is rolled). The first use after a Long Rest is free. After it, the entry
+  reads **Overchannel (2d12 Necrotic per slot level to you)**, 3d12 the next
+  time and so on: the Wizard takes that damage, ignoring Resistance and
+  Immunity, right after the spell.
+- **Level-8 spells** (15): one level-8 slot; prepared spells 18 at 14 and 19
+  at 15. Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud,
+  Maze, Mind Blank, Power Word Stun and Sunburst (below; Antimagic Field and
+  Sunburst work as for the [Cleric](CLERIC.md#the-level-8-spells)).
+  Antipathy/Sympathy, Clone, Control Weather, Demiplane and Telepathy are
+  cut.
 - Verification: `opengold_wizard_levels_tests` (the campaign's stop at 6,
   prepared counts, level-3 spells in the level-5 spellbook choice, slots, a
   campaign round trip, Memorize Spell's one change and the campaign's Short
   Rest window, Arcane Recovery of a level-3 slot, each level-3 and level-4
   spell, each level-5 spell and its summoned creatures, Sculpt Spells at 6
-  and not 5, Empowered Evocation and the fifth cantrip at 10) and
-  `opengold_wizard_spell_tests`.
+  and not 5, Empowered Evocation and the fifth cantrip at 10, each level-6,
+  level-7 and level-8 spell tested, and Overchannel's free first use and the
+  damage after it) and `opengold_wizard_spell_tests`.
 
 ### The level-3 spells
 
@@ -131,6 +156,78 @@ The Wizard advances to level 12 for now; level 13 waits for its level-7 spells
   free one.
 - **Tiny Hut** (camp, the whole party): for 8 hours no rest is interrupted
   (LEVELS-1).
+
+### The level-8 spells
+
+- **Befuddlement** (Action, 150 feet): an Intelligence save against 10d12
+  Psychic, half on a success. A failure also leaves the creature
+  **Befuddled**: it can cast no spells and take no Magic actions. It lasts 30
+  days, or until Heal or **Greater Restoration: Befuddlement** ends it; the
+  SRD's save every 30 days is not rolled, so it simply ends then.
+- **Dominate Monster** (Action, 60 feet, Concentration up to 1 hour): Dominate
+  Person for any creature. The creature has Advantage on the save, as it does
+  against Dominate Beast and Dominate Person, since it is always being fought.
+- **Incendiary Cloud** (Action, 150 feet, Concentration up to 1 minute): a
+  20-foot-radius cloud, Heavily Obscured, that works as Cloudkill's fog does:
+  a Dexterity save against 10d8 Fire, half on a success, as it appears, when
+  it drifts over a creature, when a creature enters it or ends its turn there,
+  once per turn; it drifts 10 feet away from the Wizard as the Wizard's turn
+  starts.
+- **Maze** (Action, 60 feet, Concentration up to 10 minutes): no save; the
+  creature is lost in a demiplane, off the battlefield. Each of its turns goes
+  to a DC 20 Intelligence (Investigation) check (a monster uses its
+  Intelligence save bonus); a success brings it back to its square, or the
+  nearest free one, and ends the spell, as the spell's end does.
+- **Mind Blank** (Action, Touch, 24 hours): Immunity to Psychic damage; Charm
+  Person, Charm Monster, the Dominate spells, Magic Jar, Irresistible Dance
+  and Hypnotic Pattern have no effect on the creature. It lasts into later
+  fights.
+- **Power Word Stun** (Action, 60 feet): no save. A creature with 150 Hit
+  Points or fewer is **Stunned**, making a Constitution save at the end of
+  each of its turns to end it; one with more cannot move until the start of
+  the Wizard's next turn.
+
+### The level-7 spells
+
+- **Arcane Sword** (Action, 90 feet, Concentration up to 1 minute): a sword
+  appears beside a creature and makes a melee spell attack, 4d12 + the
+  Intelligence modifier Force on a hit. On the Wizard's later turns, **Arcane
+  Sword attack** (a Bonus Action) moves it up to 30 feet and attacks again. It
+  is drawn as Spiritual Weapon's force is.
+- **Delayed Blast Fireball** (Action, 150 feet, Concentration up to 1
+  minute): a bead waits at the aimed square. When the spell ends, by **Burst
+  the bead (Delayed Blast Fireball)** (no action), a broken Concentration or
+  the Wizard falling, it bursts in a 20-foot-radius Sphere: a Dexterity save
+  against 12d6 Fire, half on a success, 1d6 more for each of the Wizard's
+  turns it waited and each slot level above 7. Touching or throwing the bead
+  is left out.
+- **Finger of Death** (Action, 60 feet): a Constitution save against 7d8 + 30
+  Necrotic, half on a success. A Humanoid it kills rises as a Zombie at the
+  start of the Wizard's next turn, fighting for the Wizard until the fight
+  ends (LEVELS-3).
+- **Forcecage** (Action, 100 feet, Concentration up to 1 hour): **Forcecage
+  (cage)**, a 20-foot square, or **Forcecage (box)**, a 10-foot one, aimed
+  like an area. Nothing walks across its edge, in or out. No weapon attack
+  crosses a cage's bars, while spells do; nothing at all crosses a box: no
+  attack, spell or area. A creature inside that teleports out (Misty Step,
+  Dimension Door) first makes a Charisma save, and on a failure the spell is
+  wasted. Its ruby dust is free (LEVELS-3).
+- **Prismatic Spray** (Action, a 60-foot Cone): each creature makes one
+  Dexterity save, then a d8 picks its ray: red, orange, yellow, green or blue
+  deal 12d6 Fire, Acid, Lightning, Poison or Cold (half on a success); on a
+  failed save, indigo Restrains it, with a Constitution save at the end of
+  each of its turns until three successes free it or three failures turn it
+  to stone for good, and violet Blinds it until a Wisdom save at the start of
+  the Wizard's next turn: a success ends the blindness, a failure sends it to
+  another plane, which counts as defeated (LEVELS-1). An 8 strikes with two
+  rays, rolling again for each and rerolling 8s.
+- **Reverse Gravity** (Action, 100 feet, Concentration up to 1 minute): each
+  creature in a 50-foot-radius circle, the Wizard included, makes a Dexterity
+  save; on a failure it falls upward, taking 3d6 Bludgeoning, the PUSH-1
+  scale's most, since the cylinder is 100 feet high (LEVELS-3). While it hangs
+  there it cannot move, makes and suffers no melee attacks and makes no
+  Opportunity Attacks; ranged attacks and spells still reach it. When the
+  spell ends it falls back down for another 3d6.
 
 ### The level-6 spells
 

@@ -197,7 +197,19 @@ enum class Rider : unsigned
     globe_of_invulnerability,
     irresistible_dance,
     magic_jar,
-    wall_of_ice
+    wall_of_ice,
+    arcane_sword,
+    delayed_blast_fireball,
+    finger_of_death,
+    forcecage,
+    prismatic_spray,
+    reverse_gravity,
+    befuddlement,
+    dominate_monster,
+    incendiary_cloud,
+    maze,
+    mind_blank,
+    power_word_stun
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2594,6 +2606,187 @@ inline constexpr std::array spell_table
         .evocation = true,
         .wall = 100,
         .ring = 20},
+    // SRD 5.2.1 p. 110: a spectral sword within 90 feet makes a melee spell
+    // attack against a creature beside it for 4d12 + the spellcasting
+    // modifier Force; later, a Bonus Action moves it 30 feet and attacks.
+    SpellDef{
+        .id = "arcane_sword",
+        .label = "Arcane Sword",
+        .level = 7,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 95,
+        .melee = true,
+        .damage = DamageType::force,
+        .dice = {4, 12, 0},
+        .add_casting_modifier = true,
+        .rider = Rider::arcane_sword,
+        .concentration = true,
+        .evocation = true},
+    // SRD 5.2.1 p. 122: a bead within 150 feet bursts in a 20-foot-radius
+    // Sphere when the spell ends; Dexterity save, 12d6 Fire, half on a
+    // success, 1d6 more for each of the caster's turns it waited and each
+    // slot level above 7.
+    SpellDef{
+        .id = "delayed_blast_fireball",
+        .label = "Delayed Blast Fireball",
+        .level = 7,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {12, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::delayed_blast_fireball,
+        .concentration = true,
+        .radius = 20,
+        .evocation = true},
+    // SRD 5.2.1 p. 131: a Constitution save against 7d8 + 30 Necrotic, half
+    // on a success; a Humanoid it kills rises as the caster's Zombie.
+    SpellDef{
+        .id = "finger_of_death",
+        .label = "Finger of Death",
+        .level = 7,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::necrotic,
+        .dice = {7, 8, 30},
+        .rider = Rider::finger_of_death},
+    // SRD 5.2.1 p. 134: a 20-foot cage or a 10-foot box of force within 100
+    // feet; the creatures inside cannot leave it but by teleporting after a
+    // Charisma save. The box also stops spells and attacks.
+    SpellDef{
+        .id = "forcecage",
+        .label = "Forcecage",
+        .level = 7,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 100,
+        .rider = Rider::forcecage,
+        .concentration = true,
+        .area = 20},
+    // SRD 5.2.1 p. 154: a 60-foot Cone; each creature makes a Dexterity save
+    // against a random ray: 12d6 Fire, Acid, Lightning, Poison or Cold (half
+    // on a success), indigo's turning to stone, violet's blinding banishment,
+    // or two rays.
+    SpellDef{
+        .id = "prismatic_spray",
+        .label = "Prismatic Spray",
+        .level = 7,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {12, 6, 0},
+        .rider = Rider::prismatic_spray,
+        .cone = 60,
+        .evocation = true},
+    // SRD 5.2.1 p. 159: a 50-foot-radius Cylinder within 100 feet; each
+    // creature that fails a Dexterity save falls upward, out of melee reach,
+    // and falls back when the spell ends (LEVELS-3).
+    SpellDef{
+        .id = "reverse_gravity",
+        .label = "Reverse Gravity",
+        .level = 7,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 100,
+        .save = Ability::dexterity,
+        .rider = Rider::reverse_gravity,
+        .concentration = true,
+        .radius = 50},
+    // SRD 5.2.1 p. 112: an Intelligence save against 10d12 Psychic, half on a
+    // success; a failure also stops the creature's spells and Magic actions.
+    SpellDef{
+        .id = "befuddlement",
+        .label = "Befuddlement",
+        .level = 8,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 150,
+        .requires_sight = true,
+        .save = Ability::intelligence,
+        .half_on_success = true,
+        .damage = DamageType::psychic,
+        .dice = {10, 12, 0},
+        .rider = Rider::befuddlement},
+    // SRD 5.2.1 p. 125: Dominate Person for any creature.
+    SpellDef{
+        .id = "dominate_monster",
+        .label = "Dominate Monster",
+        .level = 8,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::dominate_monster,
+        .concentration = true},
+    // SRD 5.2.1 p. 142: a 20-foot-radius cloud within 150 feet, Heavily
+    // Obscured; Dexterity save, 10d8 Fire, half on a success, when it appears
+    // and for a creature it reaches or that ends its turn in it; it drifts 10
+    // feet away from the caster each turn.
+    SpellDef{
+        .id = "incendiary_cloud",
+        .label = "Incendiary Cloud",
+        .level = 8,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {10, 8, 0},
+        .rider = Rider::incendiary_cloud,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 148: no save; the creature is lost in a maze until a DC 20
+    // Intelligence (Investigation) check or the spell's end.
+    SpellDef{
+        .id = "maze",
+        .label = "Maze",
+        .level = 8,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::intelligence,
+        .rider = Rider::maze,
+        .concentration = true},
+    // SRD 5.2.1 p. 149: for 24 hours, Immunity to Psychic damage and the
+    // Charmed condition, and no mind control.
+    SpellDef{
+        .id = "mind_blank",
+        .label = "Mind Blank",
+        .level = 8,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::mind_blank},
+    // SRD 5.2.1 p. 154: no save; a creature with 150 Hit Points or fewer is
+    // Stunned, saving (Constitution) at the end of each of its turns; one with
+    // more has Speed 0 until the caster's next turn.
+    SpellDef{
+        .id = "power_word_stun",
+        .label = "Power Word Stun",
+        .level = 8,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::constitution,
+        .rider = Rider::power_word_stun},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -2945,9 +3138,10 @@ inline std::optional<int> curse_of(std::string_view verb)
 }
 
 // What Greater Restoration ends, each offered as "greater_restoration_<harm>":
-// Charmed, a curse, or Harm's lowered Hit Point maximum.
-inline constexpr std::array<std::string_view, 4> greater_harms{"charmed", "curse", "drained",
-    "petrified"};
+// Charmed, a curse, Harm's lowered Hit Point maximum, Petrified, or
+// Befuddlement.
+inline constexpr std::array<std::string_view, 5> greater_harms{"charmed", "curse", "drained",
+    "petrified", "befuddled"};
 
 // The index in greater_harms a Greater Restoration verb names, if it is one.
 inline std::optional<std::size_t> greater_harm(std::string_view verb)
@@ -3050,6 +3244,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "eyebite";
     if (id.starts_with("contingency_"))
         id = "contingency";
+    if (id.starts_with("forcecage_"))
+        id = "forcecage";
     if (id.starts_with("polymorph_"))
         id = "polymorph";
     if (id == "dimension_door_with")

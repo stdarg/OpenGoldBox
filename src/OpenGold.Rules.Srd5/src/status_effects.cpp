@@ -210,7 +210,8 @@ int speed_penalty(const EffectState &effects)
     if (restrained(effects) || paralyzed(effects) || has_effect(effects, EffectKind::lethargic) ||
             has_effect(effects, EffectKind::entranced) || has_effect(effects, EffectKind::petrified) ||
             has_effect(effects, EffectKind::jarred) || has_effect(effects, EffectKind::rooted) ||
-            has_effect(effects, EffectKind::dancing) || has_effect(effects, EffectKind::jigging))
+            has_effect(effects, EffectKind::dancing) || has_effect(effects, EffectKind::jigging) ||
+            has_effect(effects, EffectKind::aloft))
         return 1000;
     // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
     const bool free = has_effect(effects, EffectKind::free_moving);
@@ -433,7 +434,8 @@ bool stunned(const EffectState &effects)
 {
     return std::any_of(effects.active.begin(), effects.active.end(), [](const auto & e)
     {
-        return e.kind == EffectKind::stunned || (e.kind == EffectKind::worded && e.dc == 1);
+        return e.kind == EffectKind::stunned || e.kind == EffectKind::word_stunned ||
+               (e.kind == EffectKind::worded && e.dc == 1);
     });
 }
 
@@ -452,7 +454,7 @@ bool incapacitated(const EffectState &effects)
            has_effect(effects, EffectKind::jarred) ||
            has_effect(effects, EffectKind::lethargic) ||
            has_effect(effects, EffectKind::entranced) ||
-           has_effect(effects, EffectKind::banished) ||
+           has_effect(effects, EffectKind::banished) || has_effect(effects, EffectKind::mazed) ||
            has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
            has_effect(effects, EffectKind::knocked_out);
@@ -500,7 +502,8 @@ bool restrained(const EffectState &effects)
     return (has_effect(effects, EffectKind::ensnaring_strike) ||
             has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed) ||
             has_effect(effects, EffectKind::tentacled) || has_effect(effects, EffectKind::engulfed) ||
-            has_effect(effects, EffectKind::lifted) || has_effect(effects, EffectKind::stoning)) &&
+            has_effect(effects, EffectKind::lifted) || has_effect(effects, EffectKind::stoning) ||
+            has_effect(effects, EffectKind::indigo)) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
@@ -530,7 +533,7 @@ bool blinded(const EffectState &effects)
                        [](const auto & e)
     {
         return e.kind == EffectKind::blindness || e.kind == EffectKind::dazzled ||
-               e.kind == EffectKind::worded;
+               e.kind == EffectKind::worded || e.kind == EffectKind::violet;
     });
 }
 
@@ -570,7 +573,10 @@ int benefit_value_limit(EffectKind kind)
            kind == EffectKind::shared_resistance || kind == EffectKind::engulfed ||
            kind == EffectKind::elemental_spirit
            ? static_cast<int>(DamageType::count) - 1
-           : kind == EffectKind::dominated ? 40
+           : kind == EffectKind::dominated || kind == EffectKind::violet ||
+             kind == EffectKind::befuddled || kind == EffectKind::word_stunned ? 40
+           : kind == EffectKind::indigo ? 4033
+           : kind == EffectKind::overchanneled ? 20
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4
@@ -652,6 +658,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::feasted:
     case EffectKind::raised:
     case EffectKind::relentless_used:
+    case EffectKind::overchanneled:
     case EffectKind::trait_uses:
     case EffectKind::heroic_inspiration:
         return 86400000; // until a Long Rest, at most a day
@@ -697,7 +704,18 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::eyebiting:
     case EffectKind::stoning:
     case EffectKind::dancing:
+    case EffectKind::aloft:
+    case EffectKind::rising:
+    case EffectKind::indigo:
+    case EffectKind::violet:
+    case EffectKind::word_stunned:
         return 60000; // 1 minute
+    case EffectKind::mazed:
+        return 600000; // Concentration, up to 10 minutes
+    case EffectKind::mind_blank:
+        return 86400000; // 24 hours
+    case EffectKind::befuddled:
+        return 2592000000u; // 30 days
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
     case EffectKind::fire_shield:
@@ -709,6 +727,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes
     case EffectKind::metamagic:
+    case EffectKind::overchannel:
     case EffectKind::defended:
     case EffectKind::pack_moved:
     case EffectKind::defending:

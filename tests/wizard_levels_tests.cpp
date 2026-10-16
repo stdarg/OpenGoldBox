@@ -199,19 +199,25 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 12, "A Wizard stops at 12 for now");
+    check(party.member(id).character.sheet().level == 15, "A Wizard reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
-    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}, {11, 16}, {12, 16}
+    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}, {11, 16}, {12, 16}, {13, 17}, {14, 18},
+    {15, 19}
 })
     check(rules->spell_access(wizard(level).sheet()).prepared_choices == count,
-          "Prepared spells: 9 at 5 to 16 at 12");
+          "Prepared spells: 9 at 5 to 19 at 15");
     check(rules->spell_access(wizard(10).sheet()).cantrip_choices == 5, "A fifth cantrip at 10");
     const auto grants = wizard(10).sheet().grants;
     check(std::any_of(grants.begin(), grants.end(), [](const auto & g)
     {
         return g.id == "feature:empowered_evocation" && g.level == 10;
     }), "Empowered Evocation at 10");
+    const auto later = wizard(14).sheet().grants;
+    check(std::any_of(later.begin(), later.end(), [](const auto & g)
+    {
+        return g.id == "feature:overchannel" && g.level == 14;
+    }), "Overchannel at 14");
     auto four = wizard(4).sheet();
     four.level = 5;
     const auto learning = rules->spell_choice_options(four, SpellChoiceContext::advancement).learning;
@@ -236,11 +242,15 @@ void progression_checks()
     check(slots(*c9, 5) == 1 && slots(*c10, 5) == 2, "One level-5 slot at 9, two at 10");
     auto c11 = field(*dummies, wizard(11).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
     check(slots(*c11, 6) == 1, "A level-6 slot at 11");
+    auto c13 = field(*dummies, wizard(13).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    auto c15 = field(*dummies, wizard(15).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(slots(*c13, 7) == 1 && slots(*c13, 8) == 0 && slots(*c15, 8) == 1,
+          "A level-7 slot at 13, a level-8 slot at 15");
     const auto bytes = encode_campaign(party, nullptr, "wizard-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "wizard-levels", nullptr).party);
-    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-12 Wizard saves and reloads");
+    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-15 Wizard saves and reloads");
 }
 
 void memorize_spell_checks()
@@ -1125,6 +1135,166 @@ void wall_of_ice_checks()
           c->snapshot().battlefield.at({6, 2}) == Terrain::obstacle, "Wall of Ice");
 }
 
+void arcane_sword_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(13), {"arcane_sword"}),
+    {{98, "dummy", "Foe", Side::opposition, {8, 2}}}, 1);
+    check(submit(*c, "arcane_sword", 98) && logged(*c, "Wizard -> Foe") &&
+          c->snapshot().spiritual_weapons.size() == 1 &&
+          !offered(*c, "arcane_sword_strike", 98), "Arcane Sword strikes as it appears, not again this turn");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(submit(*c, "arcane_sword_strike", 98) && logged(*c, "Wizard's Arcane Sword strikes."),
+          "A Bonus Action strikes again on a later turn");
+}
+
+void delayed_blast_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(13), {"delayed_blast_fireball"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*c, "delayed_blast_fireball") && submit_cell(*c, "area_move", Cell{9, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "A glowing bead hangs in the air.") &&
+          !logged(*c, "The bead bursts."), "The bead waits");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(submit(*c, "detonate") && logged(*c, "The bead bursts.") && logged(*c, " Fire damage."),
+          "Ending the spell bursts the bead");
+}
+
+void finger_of_death_checks()
+{
+    const auto rules = dummy_rules();
+    bool risen = false;
+    for (std::uint64_t seed = 1; seed < 20 && !risen; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(13), {"finger_of_death"}),
+        {   {97, "dummy", "Other", Side::opposition, {12, 6}},
+            {98, "dummy", "Foe", Side::opposition, {5, 2}, {}, VitalState{20, false, {}}}
+        }, seed);
+        check(submit(*c, "finger_of_death", 98), "Finger of Death");
+        if (!unit(*c, 98).dead)
+            continue;
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        risen = logged(*c, "Foe rises as a Zombie.");
+    }
+    check(risen, "A Humanoid slain by Finger of Death rises as a Zombie");
+}
+
+void forcecage_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(13), {"forcecage"}),
+    {{98, "dummy", "Foe", Side::opposition, {8, 3}}}, 1);
+    check(submit(*c, "forcecage_cage") && submit_cell(*c, "area_move", Cell{8, 3}) &&
+          submit(*c, "area_cast") && logged(*c, "A cage of force closes."), "Forcecage");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 98);
+    // The 20-foot cage around (8, 3) spans columns 7 to 10 and rows 2 to 5.
+    const auto commands = c->legal_commands();
+    check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
+    {
+        return command.verb == "move" && (command.destination.x < 7 || command.destination.x > 10 ||
+                                          command.destination.y < 2 || command.destination.y > 5);
+    }), "No move leaves the cage");
+}
+
+void prismatic_and_gravity_checks()
+{
+    const auto rules = dummy_rules();
+    auto spray = field(*rules, with_spells(wizard(13), {"prismatic_spray"}),
+    {{98, "dummy", "Foe", Side::opposition, {5, 2}}}, 1);
+    check(submit(*spray, "prismatic_spray") && submit_cell(*spray, "area_move", Cell{5, 2}) &&
+          submit(*spray, "area_cast") && logged(*spray, "Foe is struck by the "), "Prismatic Spray");
+    bool lifted = false;
+    for (std::uint64_t seed = 1; seed < 30 && !lifted; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(13), {"reverse_gravity"}),
+        {{98, "dummy", "Foe", Side::opposition, {12, 2}}}, seed);
+        check(submit(*c, "reverse_gravity") && submit_cell(*c, "area_move", Cell{12, 5}) &&
+              submit(*c, "area_cast"), "Reverse Gravity");
+        if (!logged(*c, "Foe falls upward."))
+            continue;
+        lifted = true;
+        check(logged(*c, "Foe takes ") && unit(*c, 98).status.find("Fallen upward") != std::string::npos,
+              "The foe falls upward and is hurt");
+    }
+    check(lifted, "A seed where the foe fails its save");
+}
+
+void level_eight_checks()
+{
+    const auto rules = dummy_rules();
+    // Power Word Stun: Stunned at 150 Hit Points or fewer, held in place above.
+    auto stun = field(*rules, with_spells(wizard(15), {"power_word_stun"}),
+    {   {97, "dummy", "Small", Side::opposition, {5, 2}, {}, VitalState{100, false, {}}},
+        {98, "dummy", "Big", Side::opposition, {6, 4}}
+    }, 1);
+    check(submit(*stun, "power_word_stun", 97) && logged(*stun, "Small is Stunned."),
+          "Power Word Stun stuns a creature of 150 Hit Points or fewer");
+    auto held = field(*rules, with_spells(wizard(15), {"power_word_stun"}),
+    {{98, "dummy", "Big", Side::opposition, {6, 4}}}, 1);
+    check(submit(*held, "power_word_stun", 98) && logged(*held, "Big cannot move until Wizard's next turn."),
+          "Above 150 Hit Points its Speed is 0");
+    // Maze: no save; the lost creature's turns go to seeking the way out.
+    auto maze = field(*rules, with_spells(wizard(15), {"maze"}),
+    {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(submit(*maze, "maze", 98) && logged(*maze, "Foe is lost in a maze.") && unit(*maze, 98).banished,
+          "Maze");
+    check(submit(*maze, "end") && logged(*maze, "Foe Investigation check: d20 "),
+          "The lost creature seeks the way out");
+    // Mind Blank: Immunity to Psychic damage and charms.
+    auto blank = field(*rules, with_spells(wizard(15), {"mind_blank"}),
+    {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(submit(*blank, "mind_blank", 1) && unit(*blank, 1).status.find("Mind Blank") != std::string::npos,
+          "Mind Blank");
+    // Befuddlement and Dominate Monster.
+    bool befuddled = false, dominated = false;
+    for (std::uint64_t seed = 1; seed < 40 && (!befuddled || !dominated); ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(15), {"befuddlement"}),
+        {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, seed);
+        check(submit(*c, "befuddlement", 98) && logged(*c, " Psychic damage."), "Befuddlement");
+        befuddled |= unit(*c, 98).status.find("Befuddled") != std::string::npos;
+        auto d = field(*rules, with_spells(wizard(15), {"dominate_monster"}),
+        {{98, "brute", "Brute", Side::opposition, {6, 2}}}, seed);
+        check(submit(*d, "dominate_monster", 98), "Dominate Monster");
+        dominated |= logged(*d, "Brute is dominated by Wizard.");
+    }
+    check(befuddled && dominated, "Befuddlement and Dominate Monster land");
+    // Incendiary Cloud burns as it appears.
+    auto cloud = field(*rules, with_spells(wizard(15), {"incendiary_cloud"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*cloud, "incendiary_cloud") && submit_cell(*cloud, "area_move", Cell{9, 2}) &&
+          submit(*cloud, "area_cast") && logged(*cloud, "Fire damage from the embers."),
+          "Incendiary Cloud");
+}
+
+void overchannel_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, wizard(14).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    const auto commands = c->legal_commands();
+    check(std::any_of(commands.begin(), commands.end(), [](const auto & command)
+    {
+        return command.verb == "overchannel" && command.label == "Overchannel (free)";
+    }), "The first Overchannel is free");
+    // Magic Missile's three darts are aimed one click at a time.
+    check(submit(*c, "overchannel") && submit(*c, "magic_missile", 98) &&
+          submit(*c, "magic_missile", 98) && submit(*c, "magic_missile", 98) &&
+          logged(*c, "Wizard overchannels the spell.") &&
+          logged(*c, "Wizard casts Magic Missile for 15 force damage."),
+          "Overchannel deals Magic Missile's maximum damage");
+    check(!logged(*c, "from Overchannel"), "The first use costs nothing");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(submit(*c, "overchannel") && submit(*c, "magic_missile", 98) &&
+          submit(*c, "magic_missile", 98) && submit(*c, "magic_missile", 98) &&
+          logged(*c, "Necrotic damage from Overchannel."), "A second use hurts the Wizard");
+}
+
 void contingency_checks()
 {
     const auto rules = module();
@@ -1213,6 +1383,13 @@ int main()
         magic_jar_checks();
         wall_of_ice_checks();
         contingency_checks();
+        arcane_sword_checks();
+        delayed_blast_checks();
+        finger_of_death_checks();
+        forcecage_checks();
+        prismatic_and_gravity_checks();
+        level_eight_checks();
+        overchannel_checks();
     }
     catch (const std::exception &error)
     {

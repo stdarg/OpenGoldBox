@@ -256,7 +256,7 @@ struct Probe
     unsigned level;
 };
 
-constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 12}, {"cleric", 1},
+constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 15}, {"cleric", 1},
     {"cleric", 4}, {"cleric", 15}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
@@ -388,15 +388,17 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
               "An attack never restores hit points");
 
     // A rider is observable whenever the spell actually landed. Spiritual
-    // Weapon's rider is its force on the battlefield, Ice Knife's a burst,
-    // Dissonant Whispers' a flight, Vampiric Touch's the caster's healing and
-    // Disintegrate's dust,
-    // not conditions (a saved-against Whispers still deals half damage, as a
-    // saved-against Harm does).
+    // Weapon's rider is its force on the battlefield, as Arcane Sword's is its
+    // sword, Ice Knife's a burst, Dissonant Whispers' a flight, Vampiric
+    // Touch's the caster's healing, Disintegrate's dust and Finger of Death's
+    // Zombie, not conditions (a saved-against Whispers still deals half
+    // damage, as a saved-against Harm or Befuddlement does).
     if (row.rider != Rider::none && row.rider != Rider::spiritual_weapon &&
+            row.rider != Rider::arcane_sword &&
             row.rider != Rider::ice_knife && row.rider != Rider::dissonant_whispers &&
             row.rider != Rider::harm && row.rider != Rider::vampiric_touch &&
-            row.rider != Rider::disintegrate &&
+            row.rider != Rider::disintegrate && row.rider != Rider::finger_of_death &&
+            row.rider != Rider::befuddlement &&
             after_target.hit_points < before_target.hit_points)
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");

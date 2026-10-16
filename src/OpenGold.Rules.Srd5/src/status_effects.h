@@ -410,9 +410,34 @@ enum class EffectKind : unsigned
     // Magic Jar, on its caster: the body lies helpless while its soul
     // possesses another.
     jarred = 167,
+    // Reverse Gravity: fallen upward, out of melee reach, until it ends.
+    aloft = 168,
+    // Finger of Death: a slain Humanoid that rises as a Zombie at the start
+    // of its slayer's next turn.
+    rising = 169,
+    // Prismatic Spray's indigo ray: Restrained; `dc` is the save DC times 100
+    // plus the successes plus 10 for each failure.
+    indigo = 170,
+    // Prismatic Spray's violet ray: Blinded until a Wisdom save at the start
+    // of the caster's next turn; `dc` is the save DC.
+    violet = 171,
+    // Befuddlement: no spells or Magic actions; `dc` is the save DC.
+    befuddled = 172,
+    // Mind Blank: Immunity to Psychic damage and the Charmed condition.
+    mind_blank = 173,
+    // Maze: lost in a demiplane until a DC 20 Intelligence (Investigation)
+    // check or the end of the spell.
+    mazed = 174,
+    // Power Word Stun: Stunned until a Constitution save at the end of one of
+    // its turns; `dc` is the save DC.
+    word_stunned = 175,
+    // Overchannel (Evoker 14), readied: the next Wizard spell deals maximum damage.
+    overchannel = 176,
+    // Overchannel's uses since the last Long Rest, in `dc`.
+    overchanneled = 177,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = jarred
+    last = overchanneled
 };
 
 // Magic Circle's creature types, by `dc`.
