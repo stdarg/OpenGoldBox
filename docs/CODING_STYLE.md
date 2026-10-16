@@ -137,6 +137,31 @@ add `--extra-arg=-isysroot$(xcrun --show-sdk-path)`. `.clang-tidy` sets
 `FormatStyle: file`, so inserted braces follow `.clang-format` (Allman). Review
 brace fixes on their own, separately from a formatting pass.
 
+## Pre-commit hook
+
+`tools/git-hooks/pre-commit` applies both tools to the C++ files a commit
+stages. Turn it on once per clone; worktrees share the setting:
+
+```
+git config core.hooksPath tools/git-hooks
+```
+
+On each commit that stages C++ files it:
+
+1. Stops if `clang-format` or `git-clang-format` is missing, or is not LLVM 23,
+   since another major release would reformat lines nobody changed.
+2. Formats the staged lines (`git clang-format --staged`) and stages the
+   result. If a file to format also has unstaged changes, re-staging it would
+   commit those too, so instead it shows the formatting and stops; run
+   `git clang-format --staged`, stage the result and commit again.
+3. Runs clang-tidy on each staged file and stops on a missing brace. It uses
+   the first of `build`, `build-game`, `build/debug` and `build/macos-universal`
+   that has a `compile_commands.json`. Without clang-tidy or such a build, and
+   for a header that only compiles inside the file including it, it says the
+   braces were not checked and lets the commit through.
+
+`git commit --no-verify` skips the hook for one commit.
+
 ## Editor integration
 
 Point the editor at the pinned clang-format binary and the repository's
@@ -162,8 +187,8 @@ each header once, from one file that includes it, with a header filter naming
 only that header. Afterwards, check that comments heading an `else` branch did
 not move into the block before it.
 
-No automated check runs yet; adding `clang-format --dry-run -Werror` and
-clang-tidy to a build or CI step would keep the tree from drifting.
+The [pre-commit hook](#pre-commit-hook) keeps each commit in the style; there
+is no CI check.
 
 ## References
 

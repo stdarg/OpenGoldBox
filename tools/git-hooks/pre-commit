@@ -1,0 +1,96 @@
+#!/bin/sh
+# Keeps committed C++ in the style of docs/CODING_STYLE.md: clang-format layout
+# and clang-tidy's required braces, on the C++ files being committed.
+#
+# Install once per clone (worktrees share it):
+#     git config core.hooksPath tools/git-hooks
+# Skip it for one commit: git commit --no-verify
+
+set -u
+
+cpp_files=$(git diff --cached --name-only --diff-filter=ACMR -- \
+    '*.cpp' '*.h' '*.hpp' '*.cc' '*.inl')
+if [ -z "$cpp_files" ]; then
+    exit 0
+fi
+
+for tool in clang-format git-clang-format; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "pre-commit: $tool not found; install LLVM 23 (docs/CODING_STYLE.md)." >&2
+        exit 1
+    fi
+done
+
+# Another major release lays code out differently and would reformat lines
+# nobody changed.
+major=$(clang-format --version | sed -n 's/.*version \([0-9][0-9]*\)\..*/\1/p')
+if [ "$major" != 23 ]; then
+    echo "pre-commit: found clang-format $major; the style is pinned to LLVM 23" \
+        "(docs/CODING_STYLE.md)." >&2
+    exit 1
+fi
+
+# git clang-format exits 1 when the staged lines need formatting.
+if ! git clang-format --staged --diff >/dev/null 2>&1; then
+    # Formatting rewrites the working-tree file, so re-staging it would also
+    # stage changes the author left out of this commit.
+    partly_staged=""
+    for file in $cpp_files; do
+        if ! git diff --quiet -- "$file"; then
+            partly_staged="$partly_staged $file"
+        fi
+    done
+    if [ -n "$partly_staged" ]; then
+        git clang-format --staged --diff >&2
+        echo "pre-commit: the staged C++ lines above need formatting, and these files" \
+            "also have unstaged changes:$partly_staged" >&2
+        echo "Run 'git clang-format --staged', stage the result and commit again." >&2
+        exit 1
+    fi
+    git clang-format --staged >/dev/null
+    # shellcheck disable=SC2086 # One path per word; the tree has no spaces in C++ paths.
+    git add -- $cpp_files
+    echo "pre-commit: formatted the staged C++ lines with clang-format."
+fi
+
+# Braces need clang-tidy and a configured build's compile_commands.json.
+build=""
+for dir in build build-game build/debug build/macos-universal; do
+    if [ -f "$dir/compile_commands.json" ]; then
+        build=$dir
+        break
+    fi
+done
+if [ -z "$build" ] || ! command -v clang-tidy >/dev/null 2>&1; then
+    echo "pre-commit: braces NOT checked: this needs clang-tidy and a configured build" \
+        "(docs/CODING_STYLE.md)." >&2
+    exit 0
+fi
+
+# Homebrew's clang-tidy does not find Apple's SDK headers by itself.
+sysroot=""
+if command -v xcrun >/dev/null 2>&1; then
+    sysroot="--extra-arg=-isysroot$(xcrun --show-sdk-path)"
+fi
+
+missing_braces=0
+unchecked=""
+for file in $cpp_files; do
+    output=$(clang-tidy -p "$build" --quiet $sysroot "$file" 2>&1)
+    if printf '%s\n' "$output" | grep -q "readability-braces-around-statements"; then
+        printf '%s\n' "$output" | grep -A3 "readability-braces-around-statements" >&2
+        missing_braces=1
+    elif printf '%s\n' "$output" | grep -q "error:"; then
+        # A header that only compiles inside its includer, or code that does
+        # not compile yet.
+        unchecked="$unchecked $file"
+    fi
+done
+if [ -n "$unchecked" ]; then
+    echo "pre-commit: braces NOT checked (did not compile on its own):$unchecked" >&2
+fi
+if [ "$missing_braces" -ne 0 ]; then
+    echo "pre-commit: every if, else and loop body needs braces. Add them, or run" \
+        "'clang-tidy -p $build --fix <file>' (docs/CODING_STYLE.md), and commit again." >&2
+    exit 1
+fi

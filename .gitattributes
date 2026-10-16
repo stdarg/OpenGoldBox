@@ -6,3 +6,6 @@
 # the script unrunnable on macOS and Linux. Batch files are the reverse.
 *.sh text eol=lf
 *.cmd text eol=crlf
+
+# Git hooks are shell scripts: LF on every platform, like *.sh.
+tools/git-hooks/* text eol=lf
