@@ -142,6 +142,7 @@ func _build_ui() -> void:
     preview.add_child(variant_choice)
     show_new_art = CheckButton.new()
     show_new_art.text = "Show new art when available"
+    show_new_art.button_pressed = true
     show_new_art.toggled.connect(func(_enabled: bool): _show_monster_image())
     preview.add_child(show_new_art)
 
@@ -161,7 +162,7 @@ func _build_ui() -> void:
     gear_heading.add_theme_font_size_override("font_size", 20)
     editor.add_child(gear_heading)
     var gear_hint := Label.new()
-    gear_hint.text = "1H weapons and shields stay paired; ranged and 2H weapons are separate setups."
+    gear_hint.text = "Click an item's type to change it. The art selector pairs 1H weapons with shields; ranged and 2H weapons use separate art."
     gear_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     editor.add_child(gear_hint)
     var gear_scroll := ScrollContainer.new()
@@ -250,6 +251,7 @@ func _select_monster(list_index: int) -> void:
     for item in record.equipment:
         _append_gear_row(item)
     save_button.disabled = false
+    variant_choice.clear()
     _refresh_variants()
 
 func _append_gear_row(item: Dictionary) -> void:
@@ -258,12 +260,15 @@ func _append_gear_row(item: Dictionary) -> void:
     line.set_meta("source_type", int(item.get("source_type", -1)))
     line.set_meta("source_hands", int(item.get("source_hands", -1)))
     line.set_meta("source_range", int(item.get("source_range", -1)))
-    var kind := OptionButton.new()
-    for label in ["1H weapon", "2H weapon", "Ranged", "Shield", "Gear"]: kind.add_item(label)
+    var kind := Button.new()
     var role := str(item.get("weapon_role", "one_hand")) if item.kind == "weapon" else str(item.kind)
-    kind.select(GEAR_ROLES.find(role))
+    _set_gear_role(kind, role)
     kind.custom_minimum_size.x = 125
-    kind.item_selected.connect(func(_index: int): _gear_changed())
+    kind.tooltip_text = "Click to change this item's type"
+    kind.pressed.connect(func():
+        _set_gear_role(kind, GEAR_ROLES[(GEAR_ROLES.find(str(kind.get_meta("role"))) + 1) % GEAR_ROLES.size()])
+        _gear_changed()
+    )
     line.add_child(kind)
     var name := LineEdit.new()
     name.text = str(item.name)
@@ -286,6 +291,12 @@ func _append_gear_row(item: Dictionary) -> void:
     line.add_child(remove)
     gear_rows.add_child(line)
 
+func _set_gear_role(button: Button, role: String) -> void:
+    var index := GEAR_ROLES.find(role)
+    if index < 0: index = GEAR_ROLES.size() - 1
+    button.set_meta("role", GEAR_ROLES[index])
+    button.text = ["1H weapon", "2H weapon", "Ranged", "Shield", "Gear"][index]
+
 func _add_gear() -> void:
     if selected < 0: return
     var item_id := "added_%d" % Time.get_ticks_usec()
@@ -302,10 +313,10 @@ func _store_draft() -> void:
     record.flag_for_regeneration = regeneration_flag.button_pressed
     var equipment: Array = []
     for line in gear_rows.get_children():
-        var kind: OptionButton = line.get_child(0)
+        var kind: Button = line.get_child(0)
         var name: LineEdit = line.get_child(1)
         var readied: CheckButton = line.get_child(2)
-        var role: String = GEAR_ROLES[kind.selected]
+        var role: String = str(kind.get_meta("role"))
         equipment.append({
             "id": line.get_meta("id"),
             "kind": "weapon" if role in ["one_hand", "two_hand", "ranged"] else role,
@@ -387,9 +398,21 @@ func _show_monster_image() -> void:
 
 func _metadata_check() -> void:
     assert(rows.size() >= 170)
+    assert(show_new_art.button_pressed)
     assert(MonsterMetadata.source_weapon_role(36, 1) == "one_hand")
     assert(MonsterMetadata.source_weapon_role(43, 2) == "ranged")
     assert(MonsterMetadata.source_weapon_role(38, 2) == "two_hand")
+    var captain_found := false
+    for index in range(rows.size()):
+        var source_record: Dictionary = MonsterMetadata.new_record(rows[index], catalog.monster_art(index))
+        if rows[index].key == "MON6CHA.DAX:102":
+            captain_found = true
+            assert(source_record.variants.size() == 2)
+            assert(source_record.variants[0].weapon_role == "one_hand")
+            assert(not source_record.variants[0].shield_id.is_empty())
+            assert(source_record.variants[1].weapon_role == "ranged")
+            assert(source_record.variants[1].shield_id.is_empty())
+    assert(captain_found)
     var first: Dictionary = rows[0]
     var art: Dictionary = catalog.monster_art(0)
     var migration_row: Dictionary = first.duplicate(true)
@@ -437,7 +460,8 @@ func _metadata_check() -> void:
     assert(loaded.data.variants[2].id == ranged_id)
     sample.equipment = [sample.equipment[0], sample.equipment[5]]
     MonsterMetadata.rebuild_variants(sample)
-    assert(sample.variants.size() == 1 and sample.variants[0].id == "default")
+    assert(sample.variants.size() == 1 and sample.variants[0].id == "w1__one_hand")
+    assert(sample.variants[0].label == "Sword" and sample.variants[0].shield_id.is_empty())
     sample.equipment = [
         {"id": "s1", "kind": "shield", "name": "Round shield", "source_type": 59, "readied": true}]
     MonsterMetadata.rebuild_variants(sample)
@@ -461,11 +485,14 @@ func _metadata_check() -> void:
     draft_records[first.key] = loaded.data
     _select_monster(0)
     assert(variant_choice.item_count == 4)
-    var bow_kind: OptionButton = gear_rows.get_child(1).get_child(0)
-    bow_kind.select(0)
+    var bow_kind: Button = gear_rows.get_child(1).get_child(0)
+    assert(bow_kind.get_meta("role") == "ranged")
+    bow_kind.pressed.emit()
+    assert(bow_kind.get_meta("role") == "shield")
+    _set_gear_role(bow_kind, "one_hand")
     _gear_changed()
     assert(variant_choice.item_count == 5)
-    bow_kind.select(2)
+    _set_gear_role(bow_kind, "ranged")
     _gear_changed()
     assert(variant_choice.item_count == 4)
     variant_choice.select(2)
@@ -483,7 +510,7 @@ func _metadata_check() -> void:
     assert(monster_source.text.begins_with("New art"))
     assert(monster_image.texture == art_cache[ready_path])
     variant_choice.select(0)
-    _show_monster_image()
+    variant_choice.item_selected.emit(0)
     assert(monster_source.text.begins_with("New art"))
     assert(monster_image.texture == art_cache[pair_path])
     assert(monster_image.texture != art_cache[ready_path])
@@ -494,7 +521,7 @@ func _metadata_check() -> void:
     assert(monster_image.texture != art_cache[ready_path])
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
-    print("Monster metadata checks passed: JSON save/load, editable drafts, paired melee plus separate ranged/2H setups, default pair, new art and original fallback")
+    print("Monster metadata checks passed: decoded sword/shield plus crossbow, JSON save/load, editable drafts, one setup dropdown, paired melee, solo ranged/2H, default pair, new art and original fallback")
     get_tree().quit()
 
 func _remove_check_tree(path: String) -> void:

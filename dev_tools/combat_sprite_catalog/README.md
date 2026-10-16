@@ -33,18 +33,20 @@ the monster name, original creature and art source files/records, description,
 regeneration flag, equipment, and image variants. Unsaved edits remain available
 while switching between records during the current session.
 
-The equipment editor distinguishes **1H weapon**, **2H weapon**, and **Ranged**.
-It seeds these roles from the original item types and hand counts; you can correct
-the role in the list. Every one-handed weapon combines with every shield as a
-single setup. The monster cannot select that weapon or shield alone. Each ranged
-or two-handed weapon is a separate setup without a shield, so a monster can
-switch between sword-and-shield and bow art. The **Equipment setup for
-ready/action art** dropdown selects a whole setup and its ready/action images.
-If no selectable setup exists, the record has one **Default** pair. Put
+The equipment editor labels each item **1H weapon**, **2H weapon**, **Ranged**,
+**Shield**, or **Gear** from the original item data. Click an item's type button
+to correct it. The monster pane has one dropdown, **Equipment setup for
+ready/action art**, with complete setups such as **Mace + Shield** and **Bow**.
+Each one-handed weapon pairs with each available shield, and neither is offered
+alone when both are present. Ranged and two-handed weapons are separate setups;
+a lone one-handed weapon is offered alone when there is no shield. Each setup
+selects its own ready/action images. A creature without a weapon setup has one
+**Default** pair. Put
 independently created PNGs at
 `dev_tools/combat_sprite_catalog/art/<source-key>/<variant-id>/ready.png` and
-`action.png`. The JSON's `variants` entries contain these relative paths. Enable
-**Show new art when available** to preview them; a missing or invalid PNG falls
+`action.png`. The JSON's `variants` entries contain these relative paths.
+**Show new art when available** starts enabled; turn it off to inspect the
+original art. A missing or invalid PNG falls
 back to that monster's original pose. The original image and binding remain
 visible through the source label. This tool prepares and previews art; it does
 not generate replacement images.

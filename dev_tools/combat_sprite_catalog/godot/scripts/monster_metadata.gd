@@ -96,14 +96,18 @@ static func rebuild_variants(record: Dictionary) -> void:
     var variants: Array = []
     var key: String = record.source.key
     for weapon in one_hand:
-        for shield in shields:
-            var variant_id := "%s__%s" % [weapon.id, shield.id]
+        # A one-handed weapon and an available shield are one complete setup.
+        # Only offer the weapon alone when this creature has no shield at all.
+        var partners: Array = shields if not shields.is_empty() else [{}]
+        for shield in partners:
+            var shield_id := str(shield.get("id", ""))
+            var variant_id := "%s__%s" % [weapon.id, shield_id if not shield_id.is_empty() else "one_hand"]
             variants.append({
                 "id": variant_id,
-                "label": "%s + %s" % [weapon.name, shield.name],
+                "label": "%s + %s" % [weapon.name, shield.name] if not shield_id.is_empty() else str(weapon.name),
                 "weapon_role": "one_hand",
                 "weapon_id": weapon.id,
-                "shield_id": shield.id,
+                "shield_id": shield_id,
                 "ready": "art/%s/%s/ready.png" % [record_id(key), variant_id],
                 "action": "art/%s/%s/action.png" % [record_id(key), variant_id],
             })
@@ -112,7 +116,7 @@ static func rebuild_variants(record: Dictionary) -> void:
         var variant_id := "%s__%s" % [weapon.id, role]
         variants.append({
             "id": variant_id,
-            "label": "%s (%s)" % [weapon.name, "ranged" if role == "ranged" else "two-handed"],
+            "label": str(weapon.name),
             "weapon_role": role,
             "weapon_id": weapon.id,
             "shield_id": "",
