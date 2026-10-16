@@ -325,8 +325,25 @@ class CampaignParty
     bool combat_registered_{};
     std::uint64_t combat_elapsed_{};
     unsigned combat_offerings_{}; // gold the current fight's offerings already took
+    // The fight's members whose identity apply_combat() has checked, with the
+    // Hit Point maximum it was checked at: a member is checked again only
+    // when that changes.
+    std::vector<std::pair<MemberId, int>> combat_checked_;
     void elapse(PartyState &state, std::chrono::milliseconds elapsed,
                 std::span<const MemberId> in_combat = {}) const;
+    // Time passing, worked out without touching the party (everything that
+    // can throw), then applied with moves only, so a caller need not copy the
+    // whole party to stay atomic.
+    struct Elapsed
+    {
+        std::vector<std::pair<MemberId, rules::VitalState>> vitals;
+        RandomState random;
+        std::uint64_t time_minutes{};
+        unsigned subminute_milliseconds{};
+    };
+    [[nodiscard]] Elapsed elapsed(const PartyState &state, std::chrono::milliseconds elapsed,
+                                  std::span<const MemberId> in_combat = {}) const;
+    static void apply(PartyState &state, Elapsed &&elapsed) noexcept;
     // A member of `state`, which may be a working copy of state_. Throws for a
     // missing id rather than dereferencing the end of the roster.
     [[nodiscard]] static const PartyMember &member_in(const PartyState &state, MemberId id);

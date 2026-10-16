@@ -1039,15 +1039,21 @@ void CampaignParty::advance_time(std::chrono::milliseconds elapsed)
     const bool passes = elapsed != std::chrono::milliseconds::zero();
     if ((state_.spell_rest || state_.training_rest) && passes)
         throw std::runtime_error("Finish Long Rest spell choices before advancing time");
-    auto next = state_;
-    elapse(next, elapsed);
+    // Everything that can throw comes first; then only moves.
+    apply(state_, this->elapsed(state_, elapsed));
     if (passes)
-        next.short_rest.reset();
-    state_ = std::move(next);
+        state_.short_rest.reset();
 }
 
 void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
                            std::span<const MemberId> in_combat) const
+{
+    apply(state, this->elapsed(state, elapsed, in_combat));
+}
+
+CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
+        std::chrono::milliseconds elapsed,
+        std::span<const MemberId> in_combat) const
 {
     if (elapsed < std::chrono::milliseconds::zero())
         throw std::runtime_error("Time cannot run backwards");
@@ -1056,6 +1062,8 @@ void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
     const auto minutes = milliseconds / 60000 + remainder / 60000;
     if (minutes > std::numeric_limits<std::uint64_t>::max() - state.time_minutes)
         throw std::runtime_error("Campaign clock overflow");
+    Elapsed result{{}, state.random_state, state.time_minutes + minutes,
+                   static_cast<unsigned>(remainder % 60000)};
     std::vector<rules::Participant> participants;
     for (const auto &member : state.roster)
     {
@@ -1071,11 +1079,21 @@ void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
                                 profile.data,
                                 member.vitals});
     }
-    rules_->elapse(participants, elapsed, state.random_state);
-    for (const auto &participant : participants)
-        member_in(state, participant.id).vitals = *participant.state;
-    state.time_minutes += minutes;
-    state.subminute_milliseconds = static_cast<unsigned>(remainder % 60000);
+    rules_->elapse(participants, elapsed, result.random);
+    for (auto &participant : participants)
+        result.vitals.emplace_back(participant.id, std::move(*participant.state));
+    return result;
+}
+
+void CampaignParty::apply(PartyState &state, Elapsed &&elapsed) noexcept
+{
+    for (auto &[id, vitals] : elapsed.vitals)
+        for (auto &member : state.roster)
+            if (member.id == id)
+                member.vitals = std::move(vitals);
+    state.random_state = elapsed.random;
+    state.time_minutes = elapsed.time_minutes;
+    state.subminute_milliseconds = elapsed.subminute_milliseconds;
 }
 
 namespace
@@ -1502,6 +1520,7 @@ void CampaignParty::begin_combat()
     combat_registered_ = false;
     combat_elapsed_ = 0;
     combat_offerings_ = 0;
+    combat_checked_.clear();
 }
 
 void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
@@ -1513,41 +1532,77 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     if (snapshot.offerings_gold < combat_offerings_ ||
             snapshot.offerings_gold - combat_offerings_ > coins(state_.wealth, Coin::gold))
         throw std::runtime_error("Combat offerings exceed the party purse");
-    auto next = state_;
-    // Revivify's offering is paid from the party purse as it is made.
-    coins(next.wealth, Coin::gold) -= snapshot.offerings_gold - combat_offerings_;
+    // Everything that can throw is worked out first, without touching the
+    // party; the commit below only moves. A member is copied only when the
+    // fight used up thrown gear it carried.
     std::vector<MemberId> active;
     for (const auto &actor : snapshot.combatants)
         if (actor.side == rules::Side::party)
             active.push_back(actor.id);
     // Combat has already advanced active actors' effects and mortality. Only reserves
     // need campaign-side updates, preventing duplicate recovery rolls.
-    elapse(next,
-           std::chrono::milliseconds{
-               static_cast<std::chrono::milliseconds::rep>(snapshot.elapsed_milliseconds -
-                       combat_elapsed_)},
-           active);
+    auto reserves = elapsed(state_,
+                            std::chrono::milliseconds{
+                                static_cast<std::chrono::milliseconds::rep>(snapshot.elapsed_milliseconds -
+                                        combat_elapsed_)},
+                            active);
+    std::vector<std::pair<MemberId, rules::VitalState>> vitals;
+    std::vector<PartyMember> thrown;
+    std::vector<std::pair<MemberId, int>> newly_checked;
     for (const auto &actor : snapshot.combatants)
         if (actor.side == rules::Side::party)
         {
-            const auto it = std::find_if(next.roster.begin(), next.roster.end(),
+            const auto it = std::find_if(state_.roster.begin(), state_.roster.end(),
                                          [&](const auto & m)
             {
                 return m.id == actor.id;
             });
-            if (it == next.roster.end() ||
-                    actor.max_hit_points != rules_->hit_point_maximum(it->character.sheet(),
-                            actor.persistent))
+            if (it == state_.roster.end())
                 throw std::runtime_error("Combat party identity mismatch");
-            (void)rules_->character_profile(it->character.sheet(), equipped_definitions(*it));
-            it->vitals = actor.persistent;
-            for (const auto &[definition, left] : actor.thrown_gear_left)
-                keep_thrown_gear(*it, definition, left);
+            const auto checked = std::find(combat_checked_.begin(), combat_checked_.end(),
+                                           std::pair{actor.id, actor.max_hit_points});
+            if (checked == combat_checked_.end())
+            {
+                if (actor.max_hit_points != rules_->hit_point_maximum(it->character.sheet(),
+                        actor.persistent))
+                    throw std::runtime_error("Combat party identity mismatch");
+                (void)rules_->character_profile(it->character.sheet(), equipped_definitions(*it));
+                newly_checked.emplace_back(actor.id, actor.max_hit_points);
+            }
+            vitals.emplace_back(actor.id, actor.persistent);
+            if (!actor.thrown_gear_left.empty())
+            {
+                auto member = *it;
+                for (const auto &[definition, left] : actor.thrown_gear_left)
+                    keep_thrown_gear(member, definition, left);
+                thrown.push_back(std::move(member));
+            }
         }
-    next.short_rest.reset();
+    // Room now, so the commit allocates nothing.
+    combat_checked_.reserve(combat_checked_.size() + newly_checked.size());
+    // Revivify's offering is paid from the party purse as it is made.
+    coins(state_.wealth, Coin::gold) -= snapshot.offerings_gold - combat_offerings_;
+    apply(state_, std::move(reserves));
+    for (auto &member : state_.roster)
+    {
+        for (auto &changed : thrown)
+            if (changed.id == member.id)
+                member = std::move(changed);
+        for (auto &[id, state] : vitals)
+            if (id == member.id)
+                member.vitals = std::move(state);
+    }
+    state_.short_rest.reset();
     if (!combat_registered_)
-        ++next.next_combat_scope;
-    state_ = std::move(next);
+        ++state_.next_combat_scope;
+    std::erase_if(combat_checked_, [&](const auto & entry)
+    {
+        return std::any_of(newly_checked.begin(), newly_checked.end(), [&](const auto & now)
+        {
+            return now.first == entry.first;
+        });
+    });
+    combat_checked_.insert(combat_checked_.end(), newly_checked.begin(), newly_checked.end());
     combat_elapsed_ = snapshot.elapsed_milliseconds;
     combat_offerings_ = snapshot.offerings_gold;
     combat_registered_ = true;
