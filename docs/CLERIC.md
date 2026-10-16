@@ -19,12 +19,16 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 | 10 | Divine Intervention | Delivered (rules 0.6.214) |
 | 11 | Level-6 spells, cantrip damage | Delivered (rules 0.6.215) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.215) |
+| 13 | Level-7 spells, Divine Spark 3d8 | Delivered (rules 0.6.216) |
+| 14 | Improved Blessed Strikes | Delivered (rules 0.6.216) |
+| 15 | Level-8 spells | Delivered (rules 0.6.216) |
 
 ## Levels 5–15
 
-The Cleric advances to level 12 for now; level 13 waits for its level-7
-spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
-[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+The Cleric advances to the game's cap of 15
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15),
+[LEVELS-3](SRD-DECISIONS.md#levels-3-2026-10-15-the-open-decisions-of-levels-1115)).
 
 - **Spellcasting:** level-3 slots from 5 (two, three from 6), level-4 slots
   from 7 (one, two from 8); prepared spells 9, 10, 11, 12 at levels 5–8.
@@ -70,12 +74,26 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 - **Cantrips** deal two dice from level 5 and three from 11 (Sacred Flame 3d8
   at 11), as every class's do (see [Spell slots](SPELL-SLOTS.md)).
 - **Ability Score Improvement** (12): a feat or ability points.
-- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 12,
+- **Level-7 spells** (13): one level-7 slot; prepared spells 17 at 13 and
+  14, 18 at 15. Conjure Celestial, Divine Word, Fire Storm, Regenerate and
+  Resurrection (below). Etherealness, Plane Shift and Symbol are cut.
+- **Divine Spark** rolls 3d8 from level 13.
+- **Improved Blessed Strikes** (14): Divine Strike deals 2d8. With Potent
+  Spellcasting, after a Cleric cantrip (Sacred Flame) deals damage, the
+  Bonus Action list offers **Potent Spellcasting: Temporary Hit Points** for
+  the Cleric or an ally within 60 feet, once that turn: twice the Wisdom
+  modifier. The Cleric is asked whether to keep Temporary Hit Points it
+  already has; an ally keeps the larger amount.
+- **Level-8 spells** (15): one level-8 slot. Antimagic Field, Earthquake,
+  Holy Aura and Sunburst (below). Control Weather is cut.
+- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 15,
   features and prepared counts by level, the level-3 and level-4 spells,
   slots and Channel Divinity uses, each spell below, Sear Undead, Blessed
   Healer, Divine Strike once a turn, a campaign round trip, each level-5 spell
   and Divine Intervention, each level-6 spell, Sacred Flame's dice at 4, 5
-  and 11) and `opengold_word_of_recall_tests` (with the installed game: the
+  and 11, each level-7 and level-8 spell, Resurrection and Regenerate in
+  camp, Improved Blessed Strikes' Temporary Hit Points) and
+  `opengold_word_of_recall_tests` (with the installed game: the
   refusal without a sanctuary, preparing it at the Temple of Tyr, the trip
   back from the training schools).
 
@@ -186,6 +204,77 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   whole party back there (LEVELS-3), from a district by running the town's
   entry script as the gate does. Without a prepared sanctuary it is refused
   and spends nothing. The sanctuary is kept in campaign saves (format 30).
+
+### The level-7 spells
+
+- **Conjure Celestial** (Action, 90 feet, Concentration up to 10 minutes): a
+  pillar of light 10 feet in radius, drawn as moonlight. The light falls on
+  each creature the Cleric can see in it when it appears, when the pillar
+  moves onto it, when it enters, and when it ends its turn there, once a
+  turn: the Cleric's allies regain 4d12 + the Wisdom modifier (Disciple of
+  Life adds its 2 + the slot level), the others make a Dexterity save against
+  6d12 Radiant damage, half on a success; 1d12 more of each for each slot
+  level above 7. The SRD lets the caster choose the light for each creature;
+  the game heals allies and sears the rest. Once the Cleric has moved on its
+  turn, **Move the pillar of light** moves it up to 30 feet, onto a creature
+  the Cleric can see.
+- **Divine Word** (Bonus Action, 30 feet): each foe in range makes a Charisma
+  save. On a failure, by its current Hit Points: 20 or fewer, it dies; 21–30,
+  Blinded and Stunned for an hour; 31–40, Blinded for 10 minutes; 41–50,
+  Deafened, which is not modeled (DEAF-1). A Celestial, an Elemental, a Fey or
+  a Fiend that fails is sent back to its plane and counts as defeated, as
+  after Banishment (LEVELS-1). The SRD's "creatures of your choice" are the
+  Cleric's foes.
+- **Fire Storm** (Action, 150 feet): up to ten 10-foot cubes, each touching
+  another, placed one at a time (LEVELS-3). The board splits into cubes two
+  squares by two; aiming starts with one cube on the nearest foe. A click on
+  a free cube that touches a placed one adds it; a click on the cube placed
+  last removes it, and a click on another placed cube selects it; while only
+  one cube is placed, a click anywhere moves it. The arrow keys step a whole
+  cube. Each creature in the storm makes a Dexterity save against 7d10 Fire
+  damage, half on a success. Flammable objects have nothing to burn.
+- **Regenerate** (a minute's casting, touch): in a fight the casting takes
+  Concentration and the Cleric's Action on each of its turns for 10 rounds,
+  as Animate Dead's does; broken, it fails and keeps its slot. Then the
+  creature regains 4d8 + 15 Hit Points (Disciple of Life adds its share) and,
+  for an hour, 1 Hit Point at the start of each of its turns ("Regenerate"
+  in its conditions). In camp, the hour of regaining 1 Hit Point a turn heals
+  the member fully. Severed limbs have nothing to regrow.
+- **Resurrection** (camp, an hour's casting): any dead member, however long
+  dead, returns with all its Hit Points and the −4 penalty Raise Dead gives,
+  which lessens by 1 with each Long Rest. It takes Raise Dead's offering, 300
+  gp × the member's level, and can revive a creature turned to dust
+  (LEVELS-3). The SRD's century and old-age limits never arise.
+
+### The level-8 spells
+
+- **Antimagic Field** (Action, Concentration up to 1 hour): a 10-foot
+  Emanation around the Cleric, drawn as a ward. No one in it casts a spell,
+  the Cleric included; no spell is cast on a creature in it; spell areas and
+  lasting spell zones (Spirit Guardians, Insect Plague, a Moonbeam and the
+  like) do not affect a creature in it. A creature's spell effects (Bless,
+  Hold Person, True Seeing and every other effect Dispel Magic could end) are
+  suppressed while it stands in the field: they do nothing, their time still
+  runs, and they return when it leaves or the field ends. Magic actions that
+  are not spells (Channel Divinity, a Sunbeam's new Line) still work, and
+  magic items and teleportation have nothing to act on yet.
+- **Earthquake** (Action, 500 feet, Concentration up to 1 minute): a tremor
+  100 feet in radius, Difficult Terrain. When it is cast and at the end of
+  each of the Cleric's turns, every creature in it makes a Dexterity save; on
+  a failure it falls Prone and loses Concentration, the Cleric too.
+  Fissures and collapsing structures are left out: the battlefield has no
+  depth or buildings with Hit Points.
+- **Holy Aura** (Action, Concentration up to 1 minute): a 30-foot Emanation
+  around the Cleric, drawn as a ward. The Cleric's allies in it (the SRD's
+  "creatures of your choice") have Advantage on every saving throw, and
+  attack rolls against them have Disadvantage. A Fiend or an Undead that hits
+  one of them with a melee attack makes a Constitution save or is Blinded
+  until the end of its next turn.
+- **Sunburst** (Action, 150 feet): a 60-foot-radius Sphere; each creature in
+  it makes a Constitution save against 12d6 Radiant damage and is Blinded for
+  a minute on a failure, saving again at the end of each of its turns; half
+  and not Blinded on a success. It ends spell Darkness in the Sphere. Allies
+  in the Sphere are not spared.
 
 ## Channel Divinity
 

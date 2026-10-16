@@ -16,10 +16,10 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Cleric (Life Domain) from level 5 to 12 (LEVELS-1, LEVELS-2): level-3 to
-// level-6 spells, Sear Undead, Blessed Healer, a third Channel Divinity use,
-// Blessed Strikes, Divine Spark's 2d8, Divine Intervention, and its cantrips'
-// growing dice.
+// A Cleric (Life Domain) from level 5 to 15 (LEVELS-1, LEVELS-2, LEVELS-3):
+// level-3 to level-8 spells, Sear Undead, Blessed Healer, a third Channel
+// Divinity use, Blessed Strikes and their improvement, Divine Spark's 2d8,
+// Divine Intervention, and its cantrips' growing dice.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -45,7 +45,9 @@ std::unique_ptr<RulesModule> dummy_rules()
                                "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
                                "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
                                "creature walker 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
-                               "type walker undead\n");
+                               "type walker undead\n"
+                               "creature haunt 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "type haunt undead\n");
 }
 
 CharacterDraft draft()
@@ -201,8 +203,7 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 12,
-          "A Cleric stops at 12 until its level-7 spells exist");
+    check(party.member(id).character.sheet().level == 15, "A Cleric reaches the cap of 15");
     check(grants(cleric(5), "feature:sear_undead", 5) &&
           grants(cleric(6), "feature:blessed_healer", 6),
           "Sear Undead at 5, Blessed Healer at 6");
@@ -263,6 +264,23 @@ void progression_checks()
         check(preparable(cleric(11), spell), std::string("A level-11 Cleric can prepare ") + spell);
     check(slots(*chapel(*dummies, cleric(11).sheet(), "dummy", 1), 6) == 1,
           "One level-6 slot at 11");
+    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
+{
+    {13, 17}, {14, 17}, {15, 18}
+})
+    check(rules->spell_access(cleric(level).sheet()).prepared_choices == count,
+          "Prepared spells: 17 at 13 and 14, 18 at 15");
+    for (const auto *spell : {"conjure_celestial", "divine_word", "fire_storm", "regenerate",
+                              "resurrection"
+                             })
+        check(preparable(cleric(13), spell), std::string("A level-13 Cleric can prepare ") + spell);
+    check(!preparable(cleric(12), "fire_storm"), "No level-7 spells at 12");
+    for (const auto *spell : {"antimagic_field", "earthquake", "holy_aura", "sunburst"})
+        check(preparable(cleric(15), spell), std::string("A level-15 Cleric can prepare ") + spell);
+    check(!preparable(cleric(14), "sunburst"), "No level-8 spells at 14");
+    check(slots(*chapel(*dummies, cleric(13).sheet(), "dummy", 1), 7) == 1 &&
+          slots(*chapel(*dummies, cleric(15).sheet(), "dummy", 1), 8) == 1,
+          "A level-7 slot at 13, a level-8 slot at 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
     {9, 14}, {10, 15}
@@ -598,10 +616,10 @@ void raise_dead_checks()
     const auto healer = with_spells(cleric(9), {"raise_dead"});
     VitalState healer_vitals{healer.hit_points, false, {}};
     const auto actions = rules->camp_actions(healer, healer_vitals);
-    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    check(std::count_if(actions.begin(), actions.end(), [](const auto & a)
     {
         return a.id == "raise_dead";
-    }), "Raise Dead is a camp action");
+    }) == 1, "Raise Dead is a camp action, listed once");
     auto fallen_draft = draft();
     fallen_draft.name = "Fallen";
     const Character fallen_hero(*srd5::character_rules(), fallen_draft, {});
@@ -714,6 +732,249 @@ void heroes_feast_checks()
           "Heroes' Feast raises the Hit Point maximum and heals as much");
 }
 
+// The Cleric (1) at (1, 2) and its creatures, on the Cleric's turn.
+std::unique_ptr<CombatSession> field(const RulesModule &rules, const CharacterSheet &sheet,
+                                     std::vector<Participant> others, std::uint64_t seed)
+{
+    const std::vector<std::string> gear{"mace"};
+    others.insert(others.begin(), {1, "campaign-character", "Cleric", Side::party, {1, 2},
+                                   rules.character_profile(sheet, gear).data
+                                  });
+    auto c = rules.create({{12, 5, std::vector<Terrain>(60)}, std::move(others)}, seed);
+    to_turn(*c, 1);
+    return c;
+}
+
+bool step_to(CombatSession &c, Cell cell)
+{
+    return submit_cell(c, "move", cell);
+}
+
+void conjure_celestial_checks()
+{
+    const auto rules = dummy_rules();
+    const auto sheet = with_spells(cleric(13), {"conjure_celestial"});
+    auto c = field(*rules, sheet,
+    {   {2, "dummy", "Ally", Side::party, {1, 1}, {}, VitalState{3, false, {}}},
+        {98, "dummy", "Foe", Side::opposition, {3, 2}},
+        {97, "dummy", "Other", Side::opposition, {8, 2}}
+    }, 1);
+    check(submit(*c, "conjure_celestial") && submit_cell(*c, "area_move", Cell{2, 2}) &&
+          submit(*c, "area_cast") && slots(*c, 7) == 0, "The pillar of light appears");
+    check(logged(*c, "Healing light shines on Ally.") && unit(*c, 2).hit_points > 3,
+          "The light heals an ally");
+    check(logged(*c, "Foe Dexterity save:") && logged(*c, "Radiant damage from the searing light."),
+          "The light sears a foe");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the pillar");
+    check(!offered(*c, "move_pillar"), "The pillar moves only once the Cleric has");
+    check(step_to(*c, Cell{2, 3}) && offered(*c, "move_pillar", 97) &&
+          submit(*c, "move_pillar", 97) && logged(*c, "Cleric moves the pillar of light.") &&
+          logged(*c, "Other Dexterity save:"), "The pillar moves onto another foe and sears it");
+    check(!offered(*c, "move_pillar"), "Once a turn");
+}
+
+void divine_word_checks()
+{
+    const auto rules = dummy_rules();
+    bool all = false;
+    for (std::uint64_t seed = 1; seed < 60 && !all; ++seed)
+    {
+        auto c = field(*rules, with_spells(cleric(13), {"divine_word"}),
+        {   {96, "dummy", "Low", Side::opposition, {3, 1}, {}, VitalState{15, false, {}}},
+            {97, "dummy", "Mid", Side::opposition, {3, 2}, {}, VitalState{25, false, {}}},
+            {98, "dummy", "High", Side::opposition, {3, 3}, {}, VitalState{35, false, {}}}
+        }, seed);
+        check(submit(*c, "divine_word", 1) && !unit(*c, 1).bonus_action && unit(*c, 1).action &&
+              logged(*c, "Cleric utters a divine word."), "Divine Word is a Bonus Action");
+        all = logged(*c, "Low dies.") && logged(*c, "Mid is Blinded and Stunned.") &&
+              logged(*c, "High is Blinded.");
+        if (!all)
+            continue;
+        check(unit(*c, 96).dead, "20 Hit Points or fewer: it dies");
+        const auto status = unit(*c, 97).status;
+        check(status.find("Blinded") != std::string::npos && status.find("Stunned") != std::string::npos,
+              "21 to 30 Hit Points: Blinded and Stunned");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the word's effects");
+    }
+    check(all, "A seed where all three fail their saves");
+}
+
+void fire_storm_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = chapel(*rules, with_spells(cleric(13), {"fire_storm"}), "dummy", 1);
+    const auto cells = [&]
+    {
+        return c->snapshot().area_targeting->cells.size();
+    };
+    check(submit(*c, "fire_storm") && cells() == 4 && c->snapshot().area_targeting->step == 2,
+          "Fire Storm starts with one 10-foot cube");
+    check(submit_cell(*c, "area_move", Cell{4, 2}) && cells() == 8, "A touching cube is added");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the cubes being placed");
+    check(submit_cell(*c, "area_move", Cell{5, 3}) && cells() == 4,
+          "Clicking the current cube again removes it");
+    check(submit_cell(*c, "area_move", Cell{10, 0}) && cells() == 4 &&
+          c->snapshot().area_targeting->center == Cell{10, 0}, "A lone cube moves anywhere");
+    check(submit_cell(*c, "area_move", Cell{3, 2}) && submit(*c, "area_cast") &&
+          slots(*c, 7) == 0 && logged(*c, "Foe Dexterity save:") && logged(*c, " Fire damage."),
+          "The storm burns the foe");
+}
+
+void regenerate_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = chapel(*rules, with_spells(cleric(13), {"regenerate"}), "dummy", 1);
+    check(submit(*c, "regenerate", 2) && slots(*c, 7) == 0 &&
+          logged(*c, "Cleric begins casting Regenerate."), "Regenerate begins on the ally");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the casting");
+    for (unsigned turns = 0; turns < 60 && !logged(*c, "Regenerate takes hold of Ally."); ++turns)
+        check(submit(*c, "end"), "Pass the minute of casting");
+    check(logged(*c, "Cleric keeps casting Regenerate.") && unit(*c, 2).hit_points >= 3 + 19,
+          "After a minute the ally regains 4d8 + 15");
+    const auto before = log_lines(*c).size();
+    check(submit(*c, "end"), "End a turn");
+    to_turn(*c, 2);
+    const auto log = log_lines(*c);
+    check(std::any_of(log.begin() + static_cast<std::ptrdiff_t>(before), log.end(),
+                      [](const auto & line)
+    {
+        return line == "Ally recovers 1 HP.";
+    }), "Then 1 Hit Point at the start of each of its turns");
+}
+
+void resurrection_checks()
+{
+    const auto rules = module();
+    const auto healer = with_spells(cleric(13), {"resurrection", "regenerate"});
+    VitalState healer_vitals{healer.hit_points, false, {}};
+    auto fallen_draft = draft();
+    fallen_draft.name = "Fallen";
+    const Character fallen_hero(*srd5::character_rules(), fallen_draft, {});
+    VitalState target{0, true, {}};
+    RandomState random{1};
+    rules->use_camp_action(healer, healer_vitals, fallen_hero.sheet(), target, "resurrection", random);
+    check(!target.dead && target.hit_points == fallen_hero.sheet().hit_points,
+          "Resurrection returns any dead member with all its Hit Points");
+    check(rules->camp_action_gold(fallen_hero.sheet(), "resurrection") == 300,
+          "Resurrection's offering: 300 gp times the level");
+    // The level-7 slot is spent; a rested Cleric casts Regenerate.
+    VitalState rested{healer.hit_points, false, {}}, hurt{1, false, {}};
+    rules->use_camp_action(healer, rested, fallen_hero.sheet(), hurt, "regenerate", random);
+    check(hurt.hit_points == fallen_hero.sheet().hit_points, "Regenerate in camp heals fully");
+}
+
+void earthquake_checks()
+{
+    const auto rules = dummy_rules();
+    bool shook = false;
+    for (std::uint64_t seed = 1; seed < 40 && !shook; ++seed)
+    {
+        auto c = chapel(*rules, with_spells(cleric(15), {"earthquake"}), "dummy", seed);
+        check(submit(*c, "earthquake") && submit_cell(*c, "area_move", Cell{6, 2}) &&
+              submit(*c, "area_cast") && slots(*c, 8) == 0 && logged(*c, "The ground shakes.") &&
+              logged(*c, "Foe Dexterity save:"), "Earthquake shakes the ground");
+        if (logged(*c, "Cleric loses Concentration."))
+            continue;
+        check(c->snapshot().battlefield.at({10, 4}) == Terrain::difficult,
+              "The tremor is Difficult Terrain");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the tremor");
+        check(submit(*c, "end"), "End the Cleric's turn");
+        const auto log = log_lines(*c);
+        shook = std::count(log.begin(), log.end(), "The ground shakes.") == 2;
+    }
+    check(shook, "The tremor comes again at the end of the Cleric's turn");
+}
+
+void holy_aura_checks()
+{
+    const auto rules = dummy_rules();
+    bool blinded = false;
+    for (std::uint64_t seed = 1; seed < 60 && !blinded; ++seed)
+    {
+        auto c = field(*rules, with_spells(cleric(15), {"holy_aura"}),
+        {{98, "haunt", "Foe", Side::opposition, {3, 2}}}, seed);
+        check(submit(*c, "holy_aura", 1) && slots(*c, 8) == 0 && !c->snapshot().circles.empty() &&
+              logged(*c, "A holy aura shines around Cleric."), "Holy Aura shines");
+        to_turn(*c, 98);
+        check(step_to(*c, Cell{2, 2}) && submit(*c, "melee", 1), "The Undead attacks the Cleric");
+        bool disadvantaged = false;
+        for (const auto &line : log_lines(*c))
+            if (line.starts_with("Foe -> Cleric"))
+                disadvantaged = line.find("(disadvantage)") != std::string::npos;
+        check(disadvantaged, "Attacks on a warded creature have Disadvantage");
+        blinded = logged(*c, "Foe is Blinded by the holy aura.");
+    }
+    check(blinded, "An Undead that hits a warded creature may be Blinded");
+}
+
+void sunburst_checks()
+{
+    const auto rules = dummy_rules();
+    bool blinded = false;
+    for (std::uint64_t seed = 1; seed < 40 && !blinded; ++seed)
+    {
+        auto c = chapel(*rules, with_spells(cleric(15), {"sunburst"}), "dummy", seed);
+        check(submit(*c, "sunburst") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+              submit(*c, "area_cast") && slots(*c, 8) == 0 &&
+              logged(*c, "Foe Constitution save:") && logged(*c, " Radiant damage."),
+              "Sunburst flashes");
+        blinded = logged(*c, "Foe is Blinded.");
+        if (blinded)
+            check(unit(*c, 98).status.find("Blinded") != std::string::npos,
+                  "A failed save leaves it Blinded");
+    }
+    check(blinded, "A seed where the foe fails its save");
+}
+
+void antimagic_checks()
+{
+    const auto rules = dummy_rules();
+    // The ally has True Seeing, an hour's spell.
+    const std::string seeing =
+        "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 2 1 "
+        "1 117 77 99 \"Sage\" 0 3600000 0 0";
+    auto c = field(*rules, with_spells(cleric(15), {"antimagic_field"}),
+    {   {2, "dummy", "Ally", Side::party, {1, 1}, {}, VitalState{3, false, seeing}},
+        {98, "dummy", "Foe", Side::opposition, {8, 2}}
+    }, 1);
+    check(unit(*c, 2).status.find("True Seeing") != std::string::npos, "The ally has True Seeing");
+    check(submit(*c, "antimagic_field", 1) && logged(*c, "An aura of antimagic surrounds Cleric."),
+          "Antimagic Field surrounds the Cleric");
+    check(unit(*c, 2).status.find("True Seeing") == std::string::npos,
+          "The ally's spell is suppressed in the field");
+    check(!offered(*c, "sacred_flame"), "No one casts a spell in the field");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps what the field suppresses");
+    check(unit(*c, 2).persistent.resources.find("117") != std::string::npos,
+          "The suppressed spell is kept with the ally");
+}
+
+void improved_strikes_checks()
+{
+    const auto rules = dummy_rules();
+    auto plain = chapel(*rules, cleric(13, "potent_spellcasting").sheet(), "dummy", 1);
+    check(submit(*plain, "sacred_flame", 98) && !offered(*plain, "potent_vitality"),
+          "No vitality before 14");
+    bool given = false;
+    for (std::uint64_t seed = 1; seed < 40 && !given; ++seed)
+    {
+        auto c = chapel(*rules, cleric(14, "potent_spellcasting").sheet(), "dummy", seed);
+        check(submit(*c, "sacred_flame", 98), "Cast Sacred Flame");
+        if (!offered(*c, "potent_vitality", 2))
+            continue;
+        check(submit(*c, "potent_vitality", 2) && unit(*c, 2).temporary_hp.amount >= 2 &&
+              logged(*c, "Cleric gives vitality to Ally.") && !offered(*c, "potent_vitality"),
+              "Twice the Wisdom modifier in Temporary Hit Points, once");
+        given = true;
+    }
+    check(given, "A seed where Sacred Flame deals damage");
+}
+
 void cantrip_checks()
 {
     // Sacred Flame: 1d8 at 4, 2d8 from 5, 3d8 from 11.
@@ -771,6 +1032,16 @@ int main()
         level_six_checks();
         heroes_feast_checks();
         cantrip_checks();
+        conjure_celestial_checks();
+        divine_word_checks();
+        fire_storm_checks();
+        regenerate_checks();
+        resurrection_checks();
+        earthquake_checks();
+        holy_aura_checks();
+        sunburst_checks();
+        antimagic_checks();
+        improved_strikes_checks();
     }
     catch (const std::exception &error)
     {

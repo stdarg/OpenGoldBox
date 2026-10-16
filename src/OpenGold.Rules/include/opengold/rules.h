@@ -629,6 +629,7 @@ struct AreaTargeting
     std::string verb;
     Cell center;
     std::vector<Cell> cells;
+    int step{1}; // squares an arrow key moves the aim: 2 for Fire Storm's 10-foot cubes
 };
 
 struct FreeMovement

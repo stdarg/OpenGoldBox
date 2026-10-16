@@ -193,6 +193,15 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"true_seeing", "True Seeing", 6, 0,
         bard_list | cleric_list | sorcerer_list | warlock_list | wizard_list},
     Spell{"word_of_recall", "Word of Recall", 6, 0, cleric_list},
+    Spell{"conjure_celestial", "Conjure Celestial", 7, 0, cleric_list},
+    Spell{"divine_word", "Divine Word", 7, 0, cleric_list},
+    Spell{"fire_storm", "Fire Storm", 7, 0, cleric_list | druid_list | sorcerer_list},
+    Spell{"regenerate", "Regenerate", 7, 0, bard_list | cleric_list | druid_list},
+    Spell{"resurrection", "Resurrection", 7, 0, bard_list | cleric_list},
+    Spell{"antimagic_field", "Antimagic Field", 8, 0, cleric_list | wizard_list},
+    Spell{"earthquake", "Earthquake", 8, 0, cleric_list | druid_list | sorcerer_list},
+    Spell{"holy_aura", "Holy Aura", 8, 0, cleric_list},
+    Spell{"sunburst", "Sunburst", 8, 0, cleric_list | druid_list | sorcerer_list | wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};

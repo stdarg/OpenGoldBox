@@ -1543,8 +1543,8 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                 immediate("spell_cancel");
             else if (const auto step = movement_direction(code, key->is_shift_pressed()))
             {
-                const auto center = demo_.snapshot().area_targeting->center;
-                aim_area_at({center.x + step->x, center.y + step->y});
+                const auto aim = *demo_.snapshot().area_targeting;
+                aim_area_at({aim.center.x + step->x * aim.step, aim.center.y + step->y * aim.step});
             }
             get_viewport()->set_input_as_handled();
             return;

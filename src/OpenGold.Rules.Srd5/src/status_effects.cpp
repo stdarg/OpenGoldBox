@@ -131,7 +131,7 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::faith_tested && kind != EffectKind::pack_tested &&
             kind != EffectKind::beings_tested && kind != EffectKind::veiled &&
             kind != EffectKind::guarded && kind != EffectKind::swarmed &&
-            kind != EffectKind::bladed) ||
+            kind != EffectKind::bladed && kind != EffectKind::bathed) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -416,9 +416,17 @@ bool paralyzed(const EffectState &effects)
            !has_effect(effects, EffectKind::free_moving);
 }
 
+bool stunned(const EffectState &effects)
+{
+    return std::any_of(effects.active.begin(), effects.active.end(), [](const auto & e)
+    {
+        return e.kind == EffectKind::stunned || (e.kind == EffectKind::worded && e.dc == 1);
+    });
+}
+
 bool incapacitated(const EffectState &effects)
 {
-    return paralyzed(effects) || has_effect(effects, EffectKind::stunned) ||
+    return paralyzed(effects) || stunned(effects) ||
            has_effect(effects, EffectKind::banished) ||
            has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
@@ -493,7 +501,8 @@ bool blinded(const EffectState &effects)
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
     {
-        return e.kind == EffectKind::blindness || e.kind == EffectKind::dazzled;
+        return e.kind == EffectKind::blindness || e.kind == EffectKind::dazzled ||
+               e.kind == EffectKind::worded;
     });
 }
 
@@ -537,6 +546,8 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::drained ? 2000
            : kind == EffectKind::feasted ? 20
            : kind == EffectKind::animating ? 19
+           : kind == EffectKind::worded ? 2
+           : kind == EffectKind::knitting ? 9
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
@@ -571,6 +582,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::energy_ward:
     case EffectKind::stoneskin:
     case EffectKind::true_seeing:
+    case EffectKind::worded:
+    case EffectKind::regenerating:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -618,6 +631,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::cursed:
     case EffectKind::animating:
     case EffectKind::dispel_evil:
+    case EffectKind::knitting:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
@@ -628,6 +642,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::defended:
     case EffectKind::pack_moved:
     case EffectKind::defending:
+    case EffectKind::vitality:
         return 6000; // the rest of the turn, cleared when it ends
     case EffectKind::extended:
         return 1200000; // a doubled 10-minute Concentration
@@ -909,7 +924,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::faith_tested || kind == EffectKind::pack_tested ||
                            kind == EffectKind::beings_tested || kind == EffectKind::veiled ||
                            kind == EffectKind::guarded || kind == EffectKind::swarmed ||
-                           kind == EffectKind::bladed ||
+                           kind == EffectKind::bladed || kind == EffectKind::bathed ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||

@@ -296,9 +296,22 @@ enum class EffectKind : unsigned
     true_seeing = 117,
     // Blade Barrier: the creature has saved against the blades this turn.
     bladed = 118,
+    // Conjure Celestial: the pillar's light has touched the creature this turn.
+    bathed = 119,
+    // Divine Word: `dc` 1 is Blinded and Stunned for an hour, 2 Blinded for
+    // 10 minutes.
+    worded = 120,
+    // Regenerate: 1 Hit Point regained at the start of each of its turns.
+    regenerating = 121,
+    // Regenerate's minute of casting, on the creature it is cast on: `dc` is
+    // the slot level, given back if the casting fails.
+    knitting = 122,
+    // Improved Blessed Strikes (Cleric 14): a Cleric cantrip has just dealt
+    // damage, so the caster may grant Temporary Hit Points this turn.
+    vitality = 123,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = bladed
+    last = vitality
 };
 
 // Magic Circle's creature types, by `dc`.
@@ -476,6 +489,8 @@ void apply_entangle(EffectState &, EffectSource source, std::string name,
 // Paralyzed: Incapacitated and Speed 0; it fails Strength and Dexterity saves,
 // attacks against it have Advantage and hits within 5 feet are critical.
 [[nodiscard]] bool paralyzed(const EffectState &effects);
+// Stunned: by a Stunning Strike, or for an hour by Divine Word.
+[[nodiscard]] bool stunned(const EffectState &effects);
 // Incapacitated by a spell: Paralyzed, Sleep or Hideous Laughter.
 [[nodiscard]] bool incapacitated(const EffectState &effects);
 // A repeated save condition with its first save `first_save_ms` away:

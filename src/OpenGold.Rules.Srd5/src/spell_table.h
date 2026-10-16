@@ -152,7 +152,14 @@ enum class Rider : unsigned
     create_undead,
     harm,
     sunbeam,
-    true_seeing
+    true_seeing,
+    conjure_celestial,
+    divine_word,
+    regenerate,
+    antimagic_field,
+    earthquake,
+    holy_aura,
+    sunburst
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -201,6 +208,9 @@ struct SpellDef
     DamageDice second_dice{};
     // A wall that may also stand as a ring of this diameter, feet (LEVELS-3).
     int ring{};
+    // Or up to this many 10-foot cubes the caster places one by one, each
+    // touching another (Fire Storm, LEVELS-3).
+    unsigned storm{};
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -1692,6 +1702,127 @@ inline constexpr std::array spell_table
         .target = SpellTarget::self,
         .range = 5,
         .instances = 8},
+    // SRD 5.2.1 p. 118: a pillar of light 10 feet in radius; each creature in
+    // it regains 4d12 + the spellcasting modifier or saves for 6d12 Radiant.
+    // The caster's allies heal and the others burn; it moves with its caster.
+    SpellDef{
+        .id = "conjure_celestial",
+        .label = "Conjure Celestial",
+        .level = 7,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 90,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::radiant,
+        .dice = {6, 12, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::conjure_celestial,
+        .concentration = true,
+        .radius = 10},
+    // SRD 5.2.1 p. 125: a Bonus Action; each foe within 30 feet makes a
+    // Charisma save, and by its Hit Points one that fails dies, is Blinded
+    // and Stunned, or is Blinded; Deafened is not modeled (DEAF-1).
+    SpellDef{
+        .id = "divine_word",
+        .label = "Divine Word",
+        .level = 7,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 30,
+        .bonus_action = true,
+        .rider = Rider::divine_word,
+        .evocation = true},
+    // SRD 5.2.1 p. 132: up to ten 10-foot cubes within 150 feet, each
+    // touching another; Dexterity save, 7d10 Fire, half on a success.
+    SpellDef{
+        .id = "fire_storm",
+        .label = "Fire Storm",
+        .level = 7,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {7, 10, 0},
+        .evocation = true,
+        .storm = 10},
+    // SRD 5.2.1 p. 158: a minute's casting; the creature regains 4d8 + 15 Hit
+    // Points, then 1 at the start of each of its turns for an hour.
+    SpellDef{
+        .id = "regenerate",
+        .label = "Regenerate",
+        .level = 7,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .dice = {4, 8, 15},
+        .rider = Rider::regenerate},
+    // SRD 5.2.1 p. 158: an hour's casting in camp; a dead creature returns
+    // with all its Hit Points and a -4 penalty that eases with Long Rests.
+    SpellDef{
+        .id = "resurrection",
+        .label = "Resurrection",
+        .level = 7,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::dead_ally,
+        .range = 5},
+    // SRD 5.2.1 p. 109: a 10-foot Emanation where no spell is cast, which no
+    // spell reaches, and where ongoing spells are suppressed.
+    SpellDef{
+        .id = "antimagic_field",
+        .label = "Antimagic Field",
+        .level = 8,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::antimagic_field,
+        .concentration = true},
+    // SRD 5.2.1 p. 127: a 100-foot-radius tremor, Difficult Terrain; on
+    // casting and at the end of each of the caster's turns a creature there
+    // saves or falls Prone and loses Concentration. No fissures or collapsing
+    // structures.
+    SpellDef{
+        .id = "earthquake",
+        .label = "Earthquake",
+        .level = 8,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 500,
+        .save = Ability::dexterity,
+        .rider = Rider::earthquake,
+        .concentration = true,
+        .radius = 100},
+    // SRD 5.2.1 p. 141: a 30-foot Emanation; the caster's allies in it have
+    // Advantage on saves and attackers Disadvantage against them, and a Fiend
+    // or Undead that hits one in melee saves or is Blinded.
+    SpellDef{
+        .id = "holy_aura",
+        .label = "Holy Aura",
+        .level = 8,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::holy_aura,
+        .concentration = true},
+    // SRD 5.2.1 p. 167: a 60-foot-radius Sphere within 150 feet; Constitution
+    // save, 12d6 Radiant and Blinded for a minute, saving again at the end of
+    // each turn; half and no blindness on a success. It ends spell Darkness.
+    SpellDef{
+        .id = "sunburst",
+        .label = "Sunburst",
+        .level = 8,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::radiant,
+        .dice = {12, 6, 0},
+        .rider = Rider::sunburst,
+        .radius = 60,
+        .evocation = true},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",

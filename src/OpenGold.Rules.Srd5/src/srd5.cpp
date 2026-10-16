@@ -171,8 +171,12 @@ detail::EffectKind rider_effect(detail::Rider rider)
            ? detail::EffectKind::protection_from_evil_and_good
            : rider == detail::Rider::hunters_mark ? detail::EffectKind::hunters_mark
            : rider == detail::Rider::longstrider  ? detail::EffectKind::longstrider
-           // Animate Dead's minute of casting ends before its Concentration.
-           : rider == detail::Rider::animate_dead ? detail::EffectKind::hunters_mark
+           // A minute of casting ends before its Concentration.
+           : rider == detail::Rider::animate_dead || rider == detail::Rider::create_undead ||
+             rider == detail::Rider::regenerate || rider == detail::Rider::antimagic_field
+           ? detail::EffectKind::hunters_mark
+           // Conjure Celestial lasts 10 minutes.
+           : rider == detail::Rider::conjure_celestial ? detail::EffectKind::shield_of_faith
            : detail::EffectKind::divine_favor;
 }
 
@@ -199,7 +203,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring ||
            kind == detail::EffectKind::energy_ward || kind == detail::EffectKind::stoneskin ||
            kind == detail::EffectKind::dominated || kind == detail::EffectKind::cursed ||
-           kind == detail::EffectKind::animating || kind == detail::EffectKind::dispel_evil;
+           kind == detail::EffectKind::animating || kind == detail::EffectKind::dispel_evil ||
+           kind == detail::EffectKind::knitting;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -280,6 +285,8 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
         return 5u;
     case Kind::true_seeing:
         return 6u;
+    case Kind::regenerating:
+        return 7u;
     default:
         return std::nullopt;
     }
@@ -360,7 +367,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 56;
+constexpr unsigned checkpoint_format = 57;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -471,6 +478,17 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::cleric, "sunbeam", 11},
     SpellAccessRow{CharacterClass::cleric, "true_seeing", 11},
     SpellAccessRow{CharacterClass::cleric, "word_of_recall", 11},
+    // Cleric level-7 spells, with the level-7 slot of Cleric level 13.
+    SpellAccessRow{CharacterClass::cleric, "conjure_celestial", 13},
+    SpellAccessRow{CharacterClass::cleric, "divine_word", 13},
+    SpellAccessRow{CharacterClass::cleric, "fire_storm", 13},
+    SpellAccessRow{CharacterClass::cleric, "regenerate", 13},
+    SpellAccessRow{CharacterClass::cleric, "resurrection", 13},
+    // Cleric level-8 spells, with the level-8 slot of Cleric level 15.
+    SpellAccessRow{CharacterClass::cleric, "antimagic_field", 15},
+    SpellAccessRow{CharacterClass::cleric, "earthquake", 15},
+    SpellAccessRow{CharacterClass::cleric, "holy_aura", 15},
+    SpellAccessRow{CharacterClass::cleric, "sunburst", 15},
     // Ranger level-4 spells, with the level-4 slot of Ranger level 13.
     SpellAccessRow{CharacterClass::ranger, "conjure_woodland_beings", 13},
     SpellAccessRow{CharacterClass::ranger, "dominate_beast", 13},
@@ -1095,7 +1113,23 @@ struct Actor
     bool involuntary_overlap{}; // Interrupted in an occupied space; retained through recovery until
     // separated.
     detail::EffectState effects;
+    // Spell effects an Antimagic Field suppresses while the creature stands in
+    // it; their time still runs, and they return when it leaves.
+    std::vector<detail::Effect> suppressed;
 };
+
+// The actor's effects with those an Antimagic Field suppresses, in the order
+// they were applied: what a save or a checkpoint keeps.
+detail::EffectState all_effects(const Actor &a)
+{
+    auto effects = a.effects;
+    effects.active.insert(effects.active.end(), a.suppressed.begin(), a.suppressed.end());
+    std::sort(effects.active.begin(), effects.active.end(), [](const auto & x, const auto & y)
+    {
+        return x.id < y.id;
+    });
+    return effects;
+}
 
 // The actor's AC with its lasting effects. Mage Armor replaces an unarmored
 // base AC. Barkskin: an AC of 17 if it was lower. Shield of Faith: +2. Warding
@@ -2381,7 +2415,7 @@ VitalState vitals(const Actor &a)
         << a.rushes << ' ' << a.surges << ' ' << a.arcane << ' ' << a.lay_on_hands << ' '
         << a.free_casts << ' ' << a.channel_divinity << ' ' << a.initiate_casts << ' ';
     // A creature hides from one fight's enemies; it is not hidden after it.
-    auto effects = a.effects;
+    auto effects = all_effects(a);
     std::erase_if(effects.active, [](const auto & e)
     {
         return e.kind == detail::EffectKind::hidden;
@@ -2788,6 +2822,9 @@ class Session final : public CombatSession
         EntityId caster{};
         std::string verb;
         Cell center;
+        // Fire Storm: the corners of the 10-foot cubes placed so far, each on
+        // even coordinates (LEVELS-3).
+        std::vector<Cell> cubes;
     };
     std::optional<PendingArea> area_;
     // A spell's lasting area, which lasts as long as its caster's Concentration
@@ -2816,7 +2853,11 @@ class Session final : public CombatSession
         raising,        // the corpses Animate Dead or Create Undead is being cast on
         swarm,          // Insect Plague's swarm, Difficult Terrain
         blades,         // Blade Barrier's wall or ring, Difficult Terrain
-        sunbeam         // Sunbeam's mote above its caster, while it lasts
+        sunbeam,        // Sunbeam's mote above its caster, while it lasts
+        pillar,         // Conjure Celestial's pillar of light; cells.front() is its centre
+        quake,          // Earthquake's tremor, Difficult Terrain
+        holy,           // Holy Aura's 30-foot Emanation, around its caster
+        antimagic       // Antimagic Field's 10-foot Emanation, around its caster
     };
     struct Zone
     {
@@ -3332,6 +3373,35 @@ class Session final : public CombatSession
     // Insect Plague and Blade Barrier: a creature in the swarm or the blades
     // saves once a turn.
     void swarm_strikes(const Zone &swarm, Actor &creature);
+    // Conjure Celestial: the squares of a pillar centred on a square; the
+    // light on a creature in it, once a turn (its caster's allies heal, the
+    // others save against Radiant); the pillar moving onto a creature.
+    [[nodiscard]] std::vector<Cell> pillar_cells(Cell center) const;
+    void bathe(const Zone &pillar, Actor &creature);
+    [[nodiscard]] bool pillar_reaches(const Zone &pillar, const Actor &onto) const;
+    void move_pillar(Actor &caster, const Actor &onto);
+    // Divine Word: each foe within 30 feet saves or suffers by its Hit Points.
+    void divine_word(Actor &cleric, int dc);
+    // Earthquake: each creature in the tremor saves or falls Prone and loses
+    // Concentration.
+    void tremor(const Zone &quake);
+    // Regenerate, its minute of casting over: the Hit Points and the
+    // regeneration.
+    void finish_knitting(Actor &target, EntityId caster);
+    // Holy Aura: the aura that wards a creature, an ally of its caster in it.
+    [[nodiscard]] const Zone *holy_aura(const Actor &a) const;
+    // Antimagic Field: whether a square is in one; moving each creature's
+    // spell effects aside while it is in one and back once it is not.
+    [[nodiscard]] bool in_antimagic(Cell cell) const;
+    void suppress_spells();
+    // Fire Storm: placing or removing a 10-foot cube at a square (LEVELS-3),
+    // and the squares the cubes fill.
+    void place_storm_cube(Cell cell);
+    [[nodiscard]] std::vector<Cell> storm_cells(const std::vector<Cell> &cubes) const;
+    // Improved Blessed Strikes (Cleric 14): after a Cleric cantrip damages a
+    // creature, Temporary Hit Points of twice the Wisdom modifier.
+    void ready_vitality(Actor &caster, const detail::SpellDef &spell, std::size_t damaged_before);
+    void grant_vitality(Actor &cleric, Actor &target);
     // Mass Cure Wounds: up to six allies in its Sphere, the most hurt first.
     void mass_cure(Actor &cleric, const detail::SpellDef &spell, std::string_view verb,
                    const std::vector<Cell> &cells);
@@ -4322,7 +4392,7 @@ Battlefield Session::zoned_board() const
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
                 zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
                 zone.kind == ZoneKind::spikes || zone.kind == ZoneKind::swarm ||
-                zone.kind == ZoneKind::blades)
+                zone.kind == ZoneKind::blades || zone.kind == ZoneKind::quake)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == Terrain::open)
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
@@ -4492,8 +4562,15 @@ Snapshot Session::snapshot() const
             s.spiritual_weapons.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::flaming_sphere)
             s.flaming_spheres.push_back(zone.cells.front());
-        else if (zone.kind == ZoneKind::moonbeam)
+        else if (zone.kind == ZoneKind::moonbeam || zone.kind == ZoneKind::pillar)
             s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::holy || zone.kind == ZoneKind::antimagic)
+        {
+            for (int y = 0; y < board_.height; ++y)
+                for (int x = 0; x < board_.width; ++x)
+                    if (const Cell cell{x, y}; in_emanation(zone, cell))
+                        s.circles.push_back(cell);
+        }
         else if (zone.kind == ZoneKind::guardian)
             s.guardians.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::circle)
@@ -4539,9 +4616,12 @@ Snapshot Session::snapshot() const
     if (area_)
     {
         s.actor = area_->caster;
+        const auto &spell = *detail::find_spell(area_->verb);
         s.area_targeting = AreaTargeting{area_->caster, area_->verb, area_->center,
-                                         area_cells(*detail::find_spell(area_->verb), area_->verb,
-                                                    actor(area_->caster).source.cell, area_->center)};
+                                         spell.storm ? storm_cells(area_->cubes)
+                                         : area_cells(spell, area_->verb,
+                                                      actor(area_->caster).source.cell, area_->center),
+                                         spell.storm ? 2 : 1};
     }
     if (!champion_move_ && effect_waiting())
     {
@@ -4936,6 +5016,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::drained, "Hit Point maximum lowered (Harm)"},
                     std::pair{detail::EffectKind::feasted, "Heroes' Feast"},
                     std::pair{detail::EffectKind::true_seeing, "True Seeing"},
+                    std::pair{detail::EffectKind::regenerating, "Regenerate"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -5023,7 +5104,7 @@ Snapshot Session::snapshot() const
             s.combatants.back().status += " | Paralyzed";
             s.combatants.back().conditions.push_back({"Paralyzed", {}});
         }
-        if (detail::has_effect(a.effects, detail::EffectKind::stunned))
+        if (detail::stunned(a.effects))
         {
             messages.push_back({"Stunned", {}});
             s.combatants.back().status += " | Stunned";
@@ -5395,6 +5476,36 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::create_undead:
         begin_animating(a, target, spell, slot_level_of(verb, spell) + 10);
         return;
+    case detail::Rider::conjure_celestial:
+    case detail::Rider::earthquake:
+    case detail::Rider::sunburst:
+        return; // An aimed area, resolved by cast_area().
+    case detail::Rider::divine_word:
+        divine_word(a, dc);
+        return;
+    case detail::Rider::regenerate:
+        // A minute of casting: Concentration, and the caster's Action each turn.
+        begin_concentration(a, spell);
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::knitting,
+                                    static_cast<int>(slot_level_of(verb, spell)));
+        log(a.source.name + " begins casting Regenerate.",
+        {"{name} begins casting {spell}.", {{"name", a.source.name}, {"spell", "Regenerate", true}}});
+        return;
+    case detail::Rider::antimagic_field:
+        zones_.push_back({a.source.id, ZoneKind::antimagic, {a.source.cell}});
+        log("An aura of antimagic surrounds " + a.source.name + ".",
+        {"An aura of antimagic surrounds {name}.", {{"name", a.source.name}}});
+        return;
+    case detail::Rider::holy_aura:
+    {
+        Zone aura{a.source.id, ZoneKind::holy, {a.source.cell}};
+        aura.save_dc = dc;
+        zones_.push_back(std::move(aura));
+        log("A holy aura shines around " + a.source.name + ".",
+        {"A holy aura shines around {name}.", {{"name", a.source.name}}});
+        return;
+    }
 
     case detail::Rider::barkskin:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
@@ -5688,7 +5799,9 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     end_sanctuary(a);
     const bool was_invisible = invisible(a);
     const auto id = a.source.id;
+    const auto damaged_before = damage_taken_.size();
     cast_resolved_spell(spell, verb, a, std::span<const EntityId>(&target_id, 1));
+    ready_vitality(actor(id), spell, damaged_before);
     if (was_invisible)
         end_invisibility(id);
     end_hiding(id);
@@ -6078,8 +6191,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
 {
     // The Bonus Action pass runs before the loop that skips corpses, so filter
     // them here too; the Action pass has already done it and is unaffected.
-    // A raging creature cannot cast spells.
-    if (other.life.dead || rage_of(a))
+    // A raging creature cannot cast spells, nor anyone in an Antimagic Field.
+    if (other.life.dead || rage_of(a) || in_antimagic(a.source.cell))
         return;
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
@@ -6133,6 +6246,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             continue; // Offered with the corpses it can raise (Animate Dead).
         }
         if (feet > spell_range(a, spell))
+            continue;
+        // No spell reaches into an Antimagic Field.
+        if (spell.target != detail::SpellTarget::area && in_antimagic(other.source.cell))
             continue;
         if (spell.requires_sight && !can_see(a, other))
             continue;
@@ -6416,7 +6532,7 @@ std::vector<Command> Session::offered_commands() const
                 if (distance(caster.source.cell, Cell{x, y}) <= spell_range(caster, spell) &&
                         aimable(Cell{x, y}))
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
-        if (aimable(area_->center))
+        if (spell.storm ? !area_->cubes.empty() : aimable(area_->center))
             add(caster.source.id, "area_cast", "Cast spell");
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
@@ -6430,7 +6546,8 @@ std::vector<Command> Session::offered_commands() const
         const bool split = splits_among_targets(spell);
         for (const auto &other : actors_)
         {
-            if (other.life.dead || distance(caster.source.cell, other.source.cell) > spell.range)
+            if (other.life.dead || distance(caster.source.cell, other.source.cell) > spell.range ||
+                    in_antimagic(other.source.cell))
                 continue;
             // Abjure Foes: enemies the Paladin sees.
             if (spell.rider == detail::Rider::abjure_foes &&
@@ -6916,6 +7033,23 @@ std::vector<Command> Session::offered_commands() const
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                         can_see(a, other) && pack_destination(zone, other))
                     add(id, "move_spirit_pack", "Move spirit pack", other.source.id);
+    // Conjure Celestial: once the caster has moved this turn, the pillar may
+    // move too, onto a creature it can see.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::pillar && zone.caster == id && a.moved &&
+                !detail::has_effect(a.effects, detail::EffectKind::pack_moved) &&
+                detail::can_apply(a.effects))
+            for (const auto &other : actors_)
+                if (pillar_reaches(zone, other))
+                    add(id, "move_pillar", "Move the pillar of light", other.source.id);
+    // Improved Blessed Strikes (Cleric 14): after a Cleric cantrip's damage,
+    // Temporary Hit Points for the Cleric or a creature within 60 feet.
+    if (detail::has_effect(a.effects, detail::EffectKind::vitality))
+        for (const auto &other : actors_)
+            if (other.source.side == a.source.side && !other.life.dead && !absent(other) &&
+                    distance(a.source.cell, other.source.cell) <= 60)
+                add(id, "potent_vitality", "Potent Spellcasting: Temporary Hit Points",
+                    other.source.id);
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus)
@@ -7920,6 +8054,8 @@ void Session::aim_area(const Command &command)
         area_.reset();
     else if (command.verb == "area_cast")
         cast_area();
+    else if (detail::find_spell(area_->verb)->storm)
+        place_storm_cube(command.destination);
     else
         area_->center = command.destination;
 }
@@ -7998,7 +8134,8 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         if (other.life.dead || other.source.id == caster.source.id || absent(other) ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(spared.begin(), spared.end(), other.source.id) != spared.end() ||
-                std::find(careful.begin(), careful.end(), other.source.id) != careful.end())
+                std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
+                in_antimagic(other.source.cell))
             continue;
         const bool saved = saving_throw_succeeds(other, spell.save, dc);
         // Potent Cantrip: an Evoker's saved-against cantrip still deals half.
@@ -8036,6 +8173,15 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
                                    next_turn_ms(caster), detail::EffectKind::dazzled);
             log(other.source.name + " is Blinded.", {"{name} is Blinded.", {{"name", other.source.name}}});
         }
+        // Sunburst: Blinded for a minute, saving again at the end of each turn.
+        if (!saved && spell.rider == detail::Rider::sunburst && !other.life.dead &&
+                detail::can_apply(other.effects))
+        {
+            detail::apply_blindness(other.effects, effect_source(caster), caster.source.name,
+                                    detail::RepeatingSave{.dc = dc,
+                                                          .first_save_ms = next_save_ms(other.source.id)});
+            log(other.source.name + " is Blinded.", {"{name} is Blinded.", {{"name", other.source.name}}});
+        }
     }
 }
 
@@ -8055,7 +8201,8 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
                 absent(other) ||
                 std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
                 std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
-                (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects))
+                (sleep && other.source.side == caster.source.side) || !detail::can_apply(other.effects) ||
+                in_antimagic(other.source.cell))
             continue;
         if (sleep && (def(other).sleepless || def(other).creature_type == "undead" ||
                       def(other).creature_type == "construct"))
@@ -8262,7 +8409,7 @@ bool Session::near_pack(const Zone &pack, Cell cell)
 bool Session::in_emanation(const Zone &zone, Cell cell) const
 {
     return distance(actor(zone.caster).source.cell, cell) <=
-           (zone.kind == ZoneKind::guardians ? 15 : 10);
+           (zone.kind == ZoneKind::holy ? 30 : zone.kind == ZoneKind::guardians ? 15 : 10);
 }
 
 bool Session::emanates(const Zone &zone)
@@ -8289,7 +8436,8 @@ void Session::spirits_strike(const Zone &zone, Actor &creature)
                         : detail::EffectKind::beings_tested;
     if (!standing || caster == actors_.end() || creature.source.side == caster->source.side ||
             creature.life.dead || creature.life.hp == 0 || absent(creature) ||
-            detail::has_effect(creature.effects, tested) || !can_see(*caster, creature))
+            detail::has_effect(creature.effects, tested) || !can_see(*caster, creature) ||
+            in_antimagic(creature.source.cell))
         return;
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
@@ -8584,7 +8732,7 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
     });
     if (!standing || creature.source.id == swarm.caster || creature.life.dead ||
             creature.life.hp == 0 || absent(creature) ||
-            detail::has_effect(creature.effects, tested))
+            detail::has_effect(creature.effects, tested) || in_antimagic(creature.source.cell))
         return;
     const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
     {
@@ -8616,6 +8764,302 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
             {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
         });
     damage(creature, amount);
+}
+
+std::vector<Cell> Session::pillar_cells(Cell center) const
+{
+    // A 10-foot radius around the centre, which comes first.
+    std::vector<Cell> cells{center};
+    for (int y = 0; y < board_.height; ++y)
+        for (int x = 0; x < board_.width; ++x)
+            if (const Cell cell{x, y}; cell != center && distance(center, cell) <= 10)
+                cells.push_back(cell);
+    return cells;
+}
+
+void Session::bathe(const Zone &pillar, Actor &creature)
+{
+    // The light falls on a creature its caster can see, once a turn; the
+    // pillar may have ended with its caster's Concentration mid-turn.
+    const bool standing = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::pillar && zone.caster == pillar.caster;
+    });
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == pillar.caster;
+    });
+    if (!standing || caster == actors_.end() || creature.life.dead || absent(creature) ||
+            in_antimagic(creature.source.cell) ||
+            detail::has_effect(creature.effects, detail::EffectKind::bathed) ||
+            !can_see(*caster, creature))
+        return;
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    if (detail::can_apply(creature.effects))
+        detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
+                               rest_of_turn, detail::EffectKind::bathed);
+    const auto &spell = *detail::find_spell("conjure_celestial");
+    const int more = static_cast<int>(pillar.slot - spell.level);
+    // Healing Light for the caster's allies: 4d12 + the spellcasting modifier.
+    if (creature.source.side == caster->source.side)
+    {
+        log("Healing light shines on " + creature.source.name + ".",
+        {"Healing light shines on {name}.", {{"name", creature.source.name}}});
+        heal(creature, healing_roll(creature, {4 + more, 12, casting_modifier(def(*caster))}) +
+             disciple_of_life(*caster, pillar.slot));
+        return;
+    }
+    // Searing Light for the others: a Dexterity save against 6d12 Radiant.
+    const bool saved = saving_throw_succeeds(creature, spell.save, pillar.save_dc, false,
+                                             heightened_against(creature, *caster, spell.id));
+    const int rolled = dice({spell.dice.count + more, spell.dice.sides, 0});
+    const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
+    log(creature.source.name + " takes " + std::to_string(amount) +
+        " Radiant damage from the searing light.",
+    {
+        "{name} takes {damage} Radiant damage from the searing light.",
+        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+    });
+    damage(creature, amount);
+}
+
+bool Session::pillar_reaches(const Zone &pillar, const Actor &onto) const
+{
+    // It moves up to 30 feet, here onto a creature its caster can see.
+    return !onto.life.dead && !absent(onto) && !in_zone(pillar, onto.source.cell) &&
+           distance(pillar.cells.front(), onto.source.cell) <= 30 &&
+           can_see(actor(pillar.caster), onto);
+}
+
+void Session::move_pillar(Actor &caster, const Actor &onto)
+{
+    auto &pillar = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::pillar && zone.caster == caster.source.id;
+    });
+    const auto before = pillar;
+    pillar.cells = pillar_cells(onto.source.cell);
+    const auto after = pillar;
+    // Conjure Animals' marker serves: no caster holds both spells.
+    detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
+                                detail::EffectKind::pack_moved, 0);
+    log(caster.source.name + " moves the pillar of light.",
+    {"{name} moves the pillar of light.", {{"name", caster.source.name}}});
+    for (auto &other : actors_)
+        if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+            bathe(after, other);
+}
+
+void Session::divine_word(Actor &cleric, int dc)
+{
+    const auto &spell = *detail::find_spell("divine_word");
+    log(cleric.source.name + " utters a divine word.",
+    {"{name} utters a divine word.", {{"name", cleric.source.name}}});
+    for (auto &other : actors_)
+    {
+        if (other.source.side == cleric.source.side || other.life.dead || absent(other) ||
+                distance(cleric.source.cell, other.source.cell) > spell.range ||
+                in_antimagic(other.source.cell) ||
+                saving_throw_succeeds(other, detail::Ability::charisma, dc, false,
+                                      heightened_against(other, cleric, spell.id)))
+            continue;
+        const auto &type = def(other).creature_type;
+        const bool sent_home = type == "celestial" || type == "elemental" || type == "fey" ||
+                               type == "fiend";
+        // Sent home for a day, it counts as defeated, as after Banishment
+        // (LEVELS-1); 20 Hit Points or fewer, it dies.
+        if (sent_home || other.life.hp <= 20)
+        {
+            other.life.hp = 0;
+            other.life.dead = true;
+            other.life.recovery = {};
+            if (sent_home)
+                log(other.source.name + " is sent back to its plane.",
+                {"{name} is sent back to its plane.", {{"name", other.source.name}}});
+            else
+                log(other.source.name + " dies.", {"{name} dies.", {{"name", other.source.name}}});
+            fall(other);
+            continue;
+        }
+        if (other.life.hp > 40 || !detail::can_apply(other.effects))
+            continue;
+        // 21-30 Hit Points: Blinded and Stunned for an hour; 31-40: Blinded for
+        // 10 minutes. Deafened is not modeled (DEAF-1).
+        const bool stunned = other.life.hp <= 30;
+        detail::apply_spell_benefit(other.effects, effect_source(cleric), cleric.source.name,
+                                    detail::EffectKind::worded, stunned ? 1 : 2);
+        if (stunned)
+            log(other.source.name + " is Blinded and Stunned.",
+            {"{name} is Blinded and Stunned.", {{"name", other.source.name}}});
+        else
+        {
+            other.effects.active.back().remaining_ms = 600000;
+            log(other.source.name + " is Blinded.", {"{name} is Blinded.", {{"name", other.source.name}}});
+        }
+    }
+}
+
+void Session::tremor(const Zone &quake)
+{
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == quake.caster;
+    });
+    if (caster == actors_.end())
+        return;
+    const auto &spell = *detail::find_spell("earthquake");
+    log("The ground shakes.", {"The ground shakes.", {}});
+    for (auto &other : actors_)
+    {
+        if (other.life.dead || absent(other) || !in_zone(quake, other.source.cell) ||
+                in_antimagic(other.source.cell) ||
+                saving_throw_succeeds(other, spell.save, quake.save_dc, false,
+                                      heightened_against(other, *caster, spell.id)))
+            continue;
+        if (!other.effects.prone)
+        {
+            other.effects.prone = true;
+            log(other.source.name + " is knocked Prone.",
+            {"{name} is knocked Prone.", {{"name", other.source.name}}});
+        }
+        // Its caster too: the tremor may end itself.
+        end_concentration(other);
+    }
+}
+
+void Session::finish_knitting(Actor &target, EntityId caster)
+{
+    if (target.life.dead)
+        return;
+    const auto &spell = *detail::find_spell("regenerate");
+    log("Regenerate takes hold of " + target.source.name + ".",
+    {"{spell} takes hold of {name}.", {{"spell", "Regenerate", true}, {"name", target.source.name}}});
+    heal(target, healing_roll(target, spell.dice) +
+         disciple_of_life(actor(caster), spell.level));
+    std::erase_if(target.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::regenerating;
+    });
+    if (detail::can_apply(target.effects))
+        detail::apply_spell_benefit(target.effects, effect_source(actor(caster)),
+                                    actor(caster).source.name, detail::EffectKind::regenerating, 0);
+}
+
+const Session::Zone *Session::holy_aura(const Actor &a) const
+{
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::holy && actor(zone.caster).source.side == a.source.side &&
+                in_emanation(zone, a.source.cell) && !in_antimagic(a.source.cell))
+            return &zone;
+    return nullptr;
+}
+
+bool Session::in_antimagic(Cell cell) const
+{
+    return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::antimagic && in_emanation(zone, cell);
+    });
+}
+
+void Session::suppress_spells()
+{
+    for (auto &a : actors_)
+        if (!a.life.dead && in_antimagic(a.source.cell))
+        {
+            const auto spells = std::stable_partition(
+                                    a.effects.active.begin(), a.effects.active.end(),
+                                    [](const auto & e)
+            {
+                return !spell_level_of(e.kind);
+            });
+            a.suppressed.insert(a.suppressed.end(), spells, a.effects.active.end());
+            a.effects.active.erase(spells, a.effects.active.end());
+        }
+        else if (!a.suppressed.empty())
+        {
+            a.effects = all_effects(a);
+            a.suppressed.clear();
+        }
+}
+
+void Session::place_storm_cube(Cell cell)
+{
+    // The board splits into 10-foot cubes, two squares by two. Clicking the
+    // current cube again removes it; another placed cube becomes current; a
+    // new one must touch a placed cube, unless it is the only one, which
+    // then moves.
+    const Cell cube{cell.x - cell.x % 2, cell.y - cell.y % 2};
+    auto &cubes = area_->cubes;
+    const auto placed = std::find(cubes.begin(), cubes.end(), cube);
+    if (placed != cubes.end())
+    {
+        if (cube == area_->center && cubes.size() > 1)
+        {
+            cubes.erase(placed);
+            area_->center = cubes.back();
+        }
+        else
+            area_->center = cube;
+        return;
+    }
+    const bool touches = std::any_of(cubes.begin(), cubes.end(), [&](Cell other)
+    {
+        return std::abs(other.x - cube.x) <= 2 && std::abs(other.y - cube.y) <= 2;
+    });
+    if (cubes.size() == 1 && !touches)
+        cubes.front() = cube;
+    else if (touches && cubes.size() < detail::find_spell(area_->verb)->storm)
+        cubes.push_back(cube);
+    else
+        return;
+    area_->center = cube;
+}
+
+std::vector<Cell> Session::storm_cells(const std::vector<Cell> &cubes) const
+{
+    std::vector<Cell> cells;
+    for (const auto cube : cubes)
+        for (const auto cell : {cube, Cell{cube.x + 1, cube.y}, Cell{cube.x, cube.y + 1},
+                                    Cell{cube.x + 1, cube.y + 1}
+                               })
+            if (board_.contains(cell))
+                cells.push_back(cell);
+    return cells;
+}
+
+void Session::ready_vitality(Actor &caster, const detail::SpellDef &spell,
+                             std::size_t damaged_before)
+{
+    // Potent Spellcasting from Cleric 14, after a Cleric cantrip damaged someone.
+    if (!def(caster).potent_spellcasting || def(caster).level < 14 || spell.level ||
+            !detail::on_class_list(CharacterClass::cleric, spell.id) ||
+            damaged_before >= damage_taken_.size() || !detail::can_apply(caster.effects) ||
+            detail::has_effect(caster.effects, detail::EffectKind::vitality))
+        return;
+    detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
+                                detail::EffectKind::vitality, 0);
+}
+
+void Session::grant_vitality(Actor &cleric, Actor &target)
+{
+    std::erase_if(cleric.effects.active, [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::vitality;
+    });
+    // Temporary Hit Points do not stack: the Cleric is asked, as for False
+    // Life; another creature keeps the larger.
+    TemporaryHitPoints offered{2 * std::max(1, casting_modifier(def(cleric))),
+                               "feature:improved_blessed_strikes"};
+    log(cleric.source.name + " gives vitality to " + target.source.name + ".",
+    {
+        "{name} gives vitality to {target}.",
+        {{"name", cleric.source.name}, {"target", target.source.name}}
+    });
+    if (target.life.temporary_hp.amount && target.source.id == cleric.source.id)
+        temporary_offer_ = std::move(offered);
+    else if (target.life.temporary_hp.amount < offered.amount)
+        detail::grant_temporary_hp(target.life, offered, TemporaryHpChoice::use_new);
 }
 
 void Session::mass_cure(Actor &cleric, const detail::SpellDef &spell, std::string_view verb,
@@ -8753,7 +9197,8 @@ void Session::moonbeam_burns(const Zone &beam, Actor &creature)
         return zone.kind == ZoneKind::moonbeam && zone.caster == beam.caster;
     });
     if (!shining || creature.life.dead || creature.life.hp == 0 ||
-            detail::has_effect(creature.effects, detail::EffectKind::moonlit))
+            detail::has_effect(creature.effects, detail::EffectKind::moonlit) ||
+            in_antimagic(creature.source.cell))
         return;
     const auto &caster = actor(beam.caster);
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
@@ -9085,7 +9530,8 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     // Heightened Spell takes the first enemy in the area.
     if (casting_with(Metamagic::heightened))
-        for (const auto cell : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+        for (const auto cell : spell.storm ? storm_cells(aimed.cubes)
+                : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
             for (const auto &other : actors_)
                 if (!heightened_target_ && !other.life.dead && other.source.cell == cell &&
                         other.source.side != a.source.side)
@@ -9231,6 +9677,56 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::overgrowth, std::move(grown),
                           std::numeric_limits<std::uint64_t>::max()});
         log("The plants grow thick and overgrown.", {"The plants grow thick and overgrown.", {}});
+        return;
+    }
+    if (spell.rider == detail::Rider::conjure_celestial)
+    {
+        // The light falls on everyone in the pillar when it appears.
+        begin_concentration(a, spell);
+        Zone pillar{a.source.id, ZoneKind::pillar, pillar_cells(aimed.center)};
+        pillar.save_dc = area_dc(a, spell);
+        pillar.slot = slot_level_of(aimed.verb, spell);
+        zones_.push_back(pillar);
+        for (auto &other : actors_)
+            if (in_zone(pillar, other.source.cell))
+                bathe(pillar, other);
+        return;
+    }
+    if (spell.rider == detail::Rider::earthquake)
+    {
+        // The tremor shakes the ground, without regard to walls, as it starts.
+        begin_concentration(a, spell);
+        Zone quake{a.source.id, ZoneKind::quake,
+                   area_shape(spell, aimed.verb, a.source.cell, aimed.center)};
+        quake.save_dc = area_dc(a, spell);
+        zones_.push_back(quake);
+        tremor(quake);
+        return;
+    }
+    if (spell.storm)
+    {
+        damage_area(a, spell, aimed.verb, storm_cells(aimed.cubes), area_dc(a, spell));
+        return;
+    }
+    if (spell.rider == detail::Rider::sunburst)
+    {
+        // Spell Darkness in the Sphere ends.
+        const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
+        std::vector<EntityId> darkened;
+        for (const auto &zone : zones_)
+            if (zone.kind == ZoneKind::darkness &&
+                    std::any_of(zone.cells.begin(), zone.cells.end(), [&](Cell cell)
+        {
+            return std::find(cells.begin(), cells.end(), cell) != cells.end();
+            }))
+            darkened.push_back(zone.caster);
+        for (const auto id : darkened)
+        {
+            log("The sunlight ends the magical Darkness.",
+            {"The sunlight ends the magical Darkness.", {}});
+            end_concentration(actor(id));
+        }
+        damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
         return;
     }
     if (spell.rider == detail::Rider::misty_step)
@@ -9660,7 +10156,9 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
             a.nick_origin = 0;
             (void)a.actions.spend(true);
         }
+        const auto damaged_before = damage_taken_.size();
         cast_resolved_spell(spell, selection.verb, a, selection.chosen);
+        ready_vitality(a, spell, damaged_before);
         return;
     }
     take_metamagic(a, spell);
@@ -10377,6 +10875,15 @@ void Session::drop_concentration_effects(const Actor &caster)
             log("The undead fail to rise; the spell slot is kept.",
             {"The undead fail to rise; the spell slot is kept.", {}});
         }
+    for (const auto &other : actors_)
+        for (const auto &e : other.effects.active)
+            if (e.kind == detail::EffectKind::knitting && e.source_actor == caster.source.id &&
+                    e.source_scope == scope_)
+            {
+                ++actor(caster.source.id).slots[static_cast<unsigned>(e.dc)];
+                log("Regenerate fails; the spell slot is kept.",
+                {"{spell} fails; the spell slot is kept.", {{"spell", "Regenerate", true}}});
+            }
     // Banishment ends early: its creatures come back.
     std::vector<EntityId> banished;
     for (const auto &other : actors_)
@@ -10386,15 +10893,18 @@ void Session::drop_concentration_effects(const Actor &caster)
                 banished.push_back(other.source.id);
     // A curse from a level-5 slot is not held by Concentration.
     for (auto &other : actors_)
-        std::erase_if(other.effects.active, [&](const auto & e)
-    {
-        return concentration_effect(e.kind) && e.source_actor == caster.source.id &&
-               e.source_scope == scope_ && !(e.kind == detail::EffectKind::cursed && e.dc >= 10);
-    });
+        for (auto *effects : {&other.effects.active, &other.suppressed})
+            std::erase_if(*effects, [&](const auto & e)
+        {
+            return concentration_effect(e.kind) && e.source_actor == caster.source.id &&
+                   e.source_scope == scope_ && !(e.kind == detail::EffectKind::cursed && e.dc >= 10);
+        });
     log(caster.source.name + " loses Concentration.",
     {"{name} loses Concentration.", {{"name", caster.source.name}}});
     for (const auto id : banished)
         return_from_banishment(actor(id));
+    // An Antimagic Field that ended gives back what it held.
+    suppress_spells();
 }
 
 void Session::burn_searing_smites(Actor &a)
@@ -10539,11 +11049,14 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     // Blur: attack rolls against the creature have Disadvantage.
     if (detail::has_effect(target.effects, detail::EffectKind::blur))
         result.disadvantage = true;
+    // Holy Aura: attackers have Disadvantage against the creatures it wards.
+    if (holy_aura(target))
+        result.disadvantage = true;
     // Guiding Bolt: the next attack roll against the target has Advantage.
     if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
         result.advantage = true;
     // Stunned: attack rolls against it have Advantage.
-    if (detail::has_effect(target.effects, detail::EffectKind::stunned))
+    if (detail::stunned(target.effects))
         result.advantage = true;
     // Restrained: attacks against it have Advantage, its own have Disadvantage.
     if (detail::restrained(target.effects))
@@ -11051,6 +11564,23 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         target.effects.prone = true;
         log(target.source.name + " is knocked Prone.",
         {"{name} is knocked Prone.", {{"name", target.source.name}}});
+    }
+    // Holy Aura: a Fiend or Undead that hits a warded creature in melee saves
+    // or is Blinded until the end of its next turn.
+    if (const auto *aura = hit && !ranged ? holy_aura(target) : nullptr;
+            aura && (d.creature_type == "fiend" || d.creature_type == "undead") && !a.life.dead &&
+            detail::can_apply(a.effects))
+    {
+        const auto &caster = actor(aura->caster);
+        if (!saving_throw_succeeds(a, detail::Ability::constitution, aura->save_dc))
+        {
+            const auto index = index_of(a.source.id);
+            const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+            detail::apply_poisoned(a.effects, effect_source(caster), caster.source.name,
+                                   next_turn_ms(a) + slot, detail::EffectKind::dazzled);
+            log(a.source.name + " is Blinded by the holy aura.",
+            {"{name} is Blinded by the holy aura.", {{"name", a.source.name}}});
+        }
     }
     // A hit's added damage of a second type (the Hobgoblin Warrior's poison,
     // a Ghoul's Necrotic bite).
@@ -11961,6 +12491,10 @@ bool Session::begin_turn()
         if (a.life.hp == 0)
             return false;
     }
+    // Regenerate: 1 Hit Point at the start of each of its turns.
+    if (detail::has_effect(a.effects, detail::EffectKind::regenerating) && !a.life.dead &&
+            a.life.hp < max_hp(a) && !detail::healing_blocked(a.effects))
+        heal(a, 1);
     // Aura of Life: an ally at 0 Hit Points regains 1 as its turn starts.
     if (a.life.hp == 0 && !a.life.dead && in_aura_of_life(a) &&
             !detail::healing_blocked(a.effects))
@@ -12019,7 +12553,8 @@ bool Session::begin_turn()
         {
             return e.kind == detail::EffectKind::defended ||
                    e.kind == detail::EffectKind::pack_moved ||
-                   e.kind == detail::EffectKind::defending;
+                   e.kind == detail::EffectKind::defending ||
+                   e.kind == detail::EffectKind::vitality;
         });
         actor.horde_origin = 0;
         actor.prey_used = false;
@@ -12078,6 +12613,22 @@ bool Session::begin_turn()
             {"{name} keeps casting {spell}.", {{"name", a.source.name}, {"spell", spell, true}}});
             break;
         }
+    // Regenerate: its caster keeps casting through the minute.
+    if (std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
+{
+    return std::any_of(other.effects.active.begin(), other.effects.active.end(),
+                       [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::knitting && e.source_actor == a.source.id &&
+                   e.source_scope == scope_;
+        });
+    }))
+    {
+        (void)a.actions.spend(true);
+        log(a.source.name + " keeps casting Regenerate.",
+        {"{name} keeps casting {spell}.", {{"name", a.source.name}, {"spell", "Regenerate", true}}});
+    }
+
     // Bestow Curse: a Wisdom save as its turn starts, or only the Dodge action.
     if (const auto *curse = curse_on(a, 7); curse && conscious(a))
         if (const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -12192,7 +12743,7 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         return false;
     }
-    if (detail::has_effect(target.effects, detail::EffectKind::stunned) &&
+    if (detail::stunned(target.effects) &&
             (ability == detail::Ability::strength || ability == detail::Ability::dexterity))
     {
         const std::string name = ability == detail::Ability::strength ? "Strength" : "Dexterity";
@@ -12249,6 +12800,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     });
     // Gnomish Cunning: Advantage on Intelligence, Wisdom and Charisma saves.
     modifiers.advantage |= def(target).gnomish_cunning && detail::mental(ability);
+    // Holy Aura: Advantage on every save.
+    modifiers.advantage |= holy_aura(target) != nullptr;
     // Beacon of Hope: Advantage on Wisdom saves.
     modifiers.advantage |= ability == detail::Ability::wisdom &&
                            detail::has_effect(target.effects, detail::EffectKind::hopeful);
@@ -12345,6 +12898,8 @@ void Session::advance_turn_time()
     std::vector<std::pair<EntityId, unsigned>> circled;
     // Animate Dead or Create Undead (true) cast for its full minute.
     std::vector<std::pair<EntityId, bool>> animated;
+    // Regenerate cast for its full minute: the creature and its caster.
+    std::vector<std::pair<EntityId, EntityId>> knitted;
     for (auto &a : actors_)
     {
         auto saves = def(a).saves;
@@ -12374,6 +12929,8 @@ void Session::advance_turn_time()
             circled.push_back({event.target, static_cast<unsigned>(event.effect.dc)});
         if (event.removed && event.effect.kind == detail::EffectKind::animating)
             animated.push_back({event.target, event.effect.dc >= 10});
+        if (event.removed && event.effect.kind == detail::EffectKind::knitting)
+            knitted.push_back({event.target, event.effect.source_actor});
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -12420,6 +12977,21 @@ void Session::advance_turn_time()
             }
     for (const auto &[id, ghouls] : animated)
         finish_animating(actor(id), ghouls ? "ghoul" : "zombie");
+    for (const auto &[id, caster] : knitted)
+    {
+        finish_knitting(actor(id), caster);
+        actor(caster).concentration.stop();
+    }
+    // Suppressed effects keep time too.
+    for (auto &a : actors_)
+    {
+        for (auto &e : a.suppressed)
+            e.remaining_ms -= std::min(e.remaining_ms, delta);
+        std::erase_if(a.suppressed, [](const auto & e)
+        {
+            return !e.remaining_ms;
+        });
+    }
     // After a full minute an Aberration, a Celestial, an Elemental, a Fey or a
     // Fiend never comes back: it counts as defeated (LEVELS-1); any other
     // creature returns.
@@ -12536,6 +13108,12 @@ void Session::end_turn()
                 (emanates(zone) && zone.caster != actors_[turn_].source.id &&
                  in_emanation(zone, actors_[turn_].source.cell)))
             spirits_strike(zone, actors_[turn_]);
+        else if (zone.kind == ZoneKind::pillar && in_zone(zone, actors_[turn_].source.cell))
+            bathe(zone, actors_[turn_]);
+    // Earthquake: the tremor again at the end of each of its caster's turns.
+    for (const auto &zone : std::vector<Zone>(zones_))
+        if (zone.kind == ZoneKind::quake && zone.caster == actors_[turn_].source.id)
+            tremor(zone);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -12613,6 +13191,9 @@ void Session::progress_movement()
             if ((zone.kind == ZoneKind::swarm || zone.kind == ZoneKind::blades) &&
                     in_zone(zone, destination) && !in_zone(zone, departed))
                 swarm_strikes(zone, a);
+            if (zone.kind == ZoneKind::pillar && in_zone(zone, destination) &&
+                    !in_zone(zone, departed))
+                bathe(zone, a);
             // The Emanation reaches a creature coming into it, and the
             // creatures its caster carries it onto.
             if (emanates(zone) && zone.caster != a.source.id &&
@@ -12627,6 +13208,7 @@ void Session::progress_movement()
                         spirits_strike(zone, other);
         }
         guardian_tests(a);
+        suppress_spells();
         if (caught)
             break;
     }
@@ -12680,6 +13262,7 @@ bool Session::submit(const Command &command)
         }
         if (outcome_ != Outcome::ongoing)
             advance_turn_time();
+        suppress_spells();
     }
     catch (...)
     {
@@ -13842,6 +14425,10 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "move_spirit_pack")
         move_spirit_pack(a, actor(command.target));
+    else if (command.verb == "move_pillar")
+        move_pillar(a, actor(command.target));
+    else if (command.verb == "potent_vitality")
+        grant_vitality(a, actor(command.target));
     else if (command.verb == "superior_hunters_prey")
     {
         a.prey_used = true;
@@ -14043,7 +14630,16 @@ void Session::dispatch(const Command &command)
     }
     else if (const auto *aimed = detail::find_spell(command.verb);
              aimed && aimed->target == detail::SpellTarget::area)
+    {
         area_ = PendingArea{a.source.id, command.verb, default_area_center(a, *aimed)};
+        // Fire Storm's first cube holds the preview's square.
+        if (aimed->storm)
+        {
+            area_->center = {area_->center.x - area_->center.x % 2,
+                             area_->center.y - area_->center.y % 2};
+            area_->cubes.push_back(area_->center);
+        }
+    }
     else if (detail::without_cast_suffix(command.verb) == "revivify")
         revivify(a, command);
     else if (command.verb == "abjure_foes" &&
@@ -14280,7 +14876,7 @@ std::string Session::save() const
         << offerings_gold_ << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
     {
-        detail::write_effects(out, a.effects);
+        detail::write_effects(out, all_effects(a));
         out << '\n';
     }
     out << static_cast<bool>(temporary_offer_) << '\n';
@@ -14364,8 +14960,12 @@ std::string Session::save() const
     out << '\n';
     out << static_cast<bool>(area_);
     if (area_)
+    {
         out << ' ' << area_->caster << ' ' << area_->verb << ' ' << area_->center.x << ' '
-            << area_->center.y;
+            << area_->center.y << ' ' << area_->cubes.size();
+        for (const auto cube : area_->cubes)
+            out << ' ' << cube.x << ' ' << cube.y;
+    }
     out << '\n' << zones_.size();
     for (const auto &zone : zones_)
     {
@@ -15327,12 +15927,21 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     if (aiming)
     {
         PendingArea area;
-        input >> area.caster >> area.verb >> area.center.x >> area.center.y;
+        std::size_t cubes{};
+        input >> area.caster >> area.verb >> area.center.x >> area.center.y >> cubes;
         const auto *spell = detail::find_spell(area.verb);
         if (!input || !spell || spell->target != detail::SpellTarget::area ||
                 !known_actor(area.caster) || !session->board_.contains(area.center) ||
-                session->selection_)
+                session->selection_ || cubes > spell->storm || (spell->storm && !cubes))
             throw std::runtime_error("Invalid area aim");
+        for (std::size_t n = 0; n < cubes; ++n)
+        {
+            Cell cube;
+            input >> cube.x >> cube.y;
+            if (!input || !session->board_.contains(cube) || cube.x % 2 || cube.y % 2)
+                throw std::runtime_error("Invalid area aim");
+            area.cubes.push_back(cube);
+        }
         session->area_ = std::move(area);
     }
     std::size_t zones{};
@@ -15355,11 +15964,13 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::sunbeam) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::antimagic) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
                  kind != static_cast<unsigned>(ZoneKind::guardians) &&
-                 kind != static_cast<unsigned>(ZoneKind::swarm)) ||
+                 kind != static_cast<unsigned>(ZoneKind::swarm) &&
+                 kind != static_cast<unsigned>(ZoneKind::blades) &&
+                 kind != static_cast<unsigned>(ZoneKind::pillar)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
@@ -15474,6 +16085,8 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     input >> std::ws;
     if (!input.eof())
         throw std::runtime_error("Trailing checkpoint data");
+    // A checkpoint keeps suppressed effects with the others.
+    session->suppress_spells();
     return session;
 }
 
@@ -15829,6 +16442,15 @@ class Module final : public RulesModule
                 "A level 6 spell slot and Cleric spells: Blade Barrier, Create Undead, Harm, Heal, Heroes' Feast, Sunbeam, True Seeing and Word of Recall.\nCantrips deal more damage.";
         if (klass == CharacterClass::cleric && result.level == 12)
             result.description = "A feat or ability points.";
+        if (klass == CharacterClass::cleric && result.level == 13)
+            result.description =
+                "A level 7 spell slot and Cleric spells: Conjure Celestial, Divine Word, Fire Storm, Regenerate and Resurrection.\nDivine Spark rolls 3d8.";
+        if (klass == CharacterClass::cleric && result.level == 14)
+            result.description =
+                "Improved Blessed Strikes: Divine Strike deals 2d8; Potent Spellcasting also lets a Cleric cantrip that deals damage give you or a creature within 60 feet Temporary Hit Points equal to twice your Wisdom modifier.";
+        if (klass == CharacterClass::cleric && result.level == 15)
+            result.description =
+                "A level 8 spell slot and Cleric spells: Antimagic Field, Earthquake, Holy Aura and Sunburst.";
         if (klass == CharacterClass::cleric && result.level == 10)
             result.description =
                 "Divine Intervention: once per Long Rest, a Magic action casts any Cleric spell of level 5 or lower without a spell slot.\nA fifth cantrip.";
@@ -16993,7 +17615,8 @@ class Module final : public RulesModule
     {
         // Revivify's offering: 300 gp times the revived member's level (LEVELS-1).
         const auto *spell = detail::find_spell(action);
-        return spell && (spell->rider == detail::Rider::revivify || spell->id == "raise_dead")
+        return spell && (spell->rider == detail::Rider::revivify || spell->id == "raise_dead" ||
+                         spell->id == "resurrection")
                ? static_cast<unsigned>(300 * target.level) : 0;
     }
 
@@ -17076,14 +17699,6 @@ class Module final : public RulesModule
                 auto [verb, label] = cast_at(raise, level, "revivify", "Revivify");
                 actions.push_back({std::move(verb), {std::move(label), {}}});
             }
-        // Raise Dead: an hour's casting on a member dead up to ten days.
-        if (const auto &raise = *detail::find_spell("raise_dead");
-                detail::knows_spell(d.spells, raise.id))
-            for (const unsigned level : cast_levels(actor, raise))
-            {
-                auto [verb, label] = cast_at(raise, level, "raise_dead", "Raise Dead");
-                actions.push_back({std::move(verb), {std::move(label), {}}});
-            }
         // Magic Circle in camp: a ward against one creature type, an hour and
         // one more for each slot level above 3, for the whole party's rest.
         if (const auto &circle = *detail::find_spell("magic_circle");
@@ -17102,7 +17717,8 @@ class Module final : public RulesModule
             // cast in camp too.
             if ((spell.pattern != detail::SpellPattern::heal &&
                     spell.pattern != detail::SpellPattern::camp &&
-                    spell.rider != detail::Rider::aid && spell.rider != detail::Rider::death_ward) ||
+                    spell.rider != detail::Rider::aid && spell.rider != detail::Rider::death_ward &&
+                    spell.rider != detail::Rider::regenerate) ||
                     !detail::knows_spell(d.spells, spell.id))
                 continue;
             const bool party = spell.instances > 1;
@@ -17169,11 +17785,16 @@ class Module final : public RulesModule
             target_state = vitals(healed);
             return;
         }
-        if (const auto *raise = detail::find_spell(action); raise && raise->id == "raise_dead")
+        // Resurrection: an hour's casting on any dead member, who returns with
+        // all its Hit Points (LEVELS-3: even one turned to dust).
+        const auto *raise = detail::find_spell(action);
+        const bool resurrection = raise && raise->id == "resurrection";
+        if (raise && (raise->id == "raise_dead" || resurrection))
         {
             if (self || !patient.life.dead ||
-                    !detail::has_effect(patient.effects, detail::EffectKind::deceased))
-                throw std::runtime_error("Raise Dead needs a member dead up to ten days");
+                    (!resurrection && !detail::has_effect(patient.effects, detail::EffectKind::deceased)))
+                throw std::runtime_error(resurrection ? "Resurrection needs a dead member"
+                                         : "Raise Dead needs a member dead up to ten days");
             pay_for_spell(caster, action, *raise);
             std::erase_if(patient.effects.active, [](const auto & e)
             {
@@ -17184,7 +17805,7 @@ class Module final : public RulesModule
             patient.life.successes = patient.life.failures = 0;
             patient.life.stable = false;
             patient.life.recovery = {};
-            patient.life.hp = 1;
+            patient.life.hp = resurrection ? max_hp(patient) : 1;
             // Camp effects carry scope 1: there is no encounter to source them.
             if (detail::can_apply(patient.effects))
                 detail::apply_spell_benefit(patient.effects, detail::EffectSource{.scope = 1, .actor = 1},
@@ -17212,6 +17833,17 @@ class Module final : public RulesModule
         if (patient.life.dead || patient.life.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
         const bool can_heal = !detail::healing_blocked(patient.effects);
+        if (const auto *regenerate = detail::find_spell(action);
+                regenerate && regenerate->rider == detail::Rider::regenerate)
+        {
+            // An hour of regaining 1 Hit Point a turn heals a member fully.
+            pay_for_spell(caster, action, *regenerate);
+            (void)detail::heal_life(patient.life, maximum - patient.life.hp, maximum, can_heal);
+            user_state = vitals(caster);
+            if (!self)
+                target_state = vitals(healed);
+            return;
+        }
         auto rng = random_state.value;
         if (action == "lay_on_hands")
         {
@@ -18198,7 +18830,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.215", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.216", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
