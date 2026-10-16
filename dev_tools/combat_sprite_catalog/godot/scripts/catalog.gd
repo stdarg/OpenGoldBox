@@ -118,6 +118,19 @@ func _build_ui() -> void:
     preview.custom_minimum_size.x = 400
     preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     columns.add_child(preview)
+    var variant_label := Label.new()
+    variant_label.text = "Weapon set"
+    variant_label.add_theme_font_size_override("font_size", 20)
+    preview.add_child(variant_label)
+    variant_choice = OptionButton.new()
+    variant_choice.custom_minimum_size.y = 42
+    variant_choice.item_selected.connect(func(_index: int): _show_monster_image())
+    preview.add_child(variant_choice)
+    show_new_art = CheckButton.new()
+    show_new_art.text = "Show new art when available"
+    show_new_art.button_pressed = true
+    show_new_art.toggled.connect(func(_enabled: bool): _show_monster_image())
+    preview.add_child(show_new_art)
     var image_frame := Control.new()
     image_frame.custom_minimum_size = Vector2(360, 390)
     image_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -133,17 +146,6 @@ func _build_ui() -> void:
     monster_source.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     monster_source.custom_minimum_size.y = 80
     preview.add_child(monster_source)
-    var variant_label := Label.new()
-    variant_label.text = "Weapon set — combat art preview"
-    preview.add_child(variant_label)
-    variant_choice = OptionButton.new()
-    variant_choice.item_selected.connect(func(_index: int): _show_monster_image())
-    preview.add_child(variant_choice)
-    show_new_art = CheckButton.new()
-    show_new_art.text = "Show new art when available"
-    show_new_art.button_pressed = true
-    show_new_art.toggled.connect(func(_enabled: bool): _show_monster_image())
-    preview.add_child(show_new_art)
 
     var editor := VBoxContainer.new()
     editor.custom_minimum_size.x = 400

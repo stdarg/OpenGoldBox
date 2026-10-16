@@ -35,8 +35,8 @@ while switching between records during the current session.
 
 The equipment editor labels each item **1H weapon**, **2H weapon**, **Ranged**,
 **Shield**, or **Gear** from the original item data. Click an item's type button
-to correct it. The monster pane has one **Weapon set — combat art preview**
-dropdown, with complete setups such as **Mace + Shield** and **Bow**.
+to correct it. The **Weapon set** dropdown sits directly above the monster
+image, with complete setups such as **Mace + Shield** and **Bow**.
 Each one-handed weapon pairs with each available shield, and neither is offered
 alone when both are present. Ranged and two-handed weapons are separate setups;
 a lone one-handed weapon is offered alone when there is no shield. Each setup
