@@ -27,7 +27,6 @@ var metadata_status: Label
 var draft_records: Dictionary = {}
 var load_errors: Dictionary = {}
 var metadata_root := ""
-var art_cache: Dictionary = {}
 var status: Label
 var character_panel
 
@@ -135,7 +134,7 @@ func _build_ui() -> void:
     monster_source.custom_minimum_size.y = 80
     preview.add_child(monster_source)
     var variant_label := Label.new()
-    variant_label.text = "Equipment setup for ready/action art"
+    variant_label.text = "Weapon set — combat art preview"
     preview.add_child(variant_label)
     variant_choice = OptionButton.new()
     variant_choice.item_selected.connect(func(_index: int): _show_monster_image())
@@ -373,18 +372,16 @@ func _show_monster_image() -> void:
     if selected < 0: return
     var art: Dictionary = catalog.monster_art(selected)
     var source_note := ""
-    var replacement_path := ""
     var variant := _selected_variant()
     if show_new_art.button_pressed and not variant.is_empty():
-        replacement_path = MonsterMetadata.art_path(str(rows[selected].key), str(variant.id), action, metadata_root)
+        var replacement_path: String = MonsterMetadata.art_path(str(rows[selected].key), str(variant.id), action, metadata_root)
         if FileAccess.file_exists(replacement_path):
-            if not art_cache.has(replacement_path):
-                var image := Image.new()
-                if image.load(replacement_path) == OK:
-                    art_cache[replacement_path] = ImageTexture.create_from_image(image)
-            if art_cache.has(replacement_path):
-                monster_image.texture = art_cache[replacement_path]
-                source_note = "New art · %s" % replacement_path
+            var image := Image.new()
+            if image.load(replacement_path) == OK:
+                # Art is edited outside the tool. Reload when the user chooses a
+                # set or the pose changes so a replaced PNG appears immediately.
+                monster_image.texture = ImageTexture.create_from_image(image)
+                source_note = "New art · %s · %s · %s" % [variant.label, "Action" if action else "Ready", replacement_path]
     if source_note.is_empty():
         monster_image.texture = catalog.monster_image(selected, action)
         if show_new_art.button_pressed:
@@ -495,6 +492,7 @@ func _metadata_check() -> void:
     _set_gear_role(bow_kind, "ranged")
     _gear_changed()
     assert(variant_choice.item_count == 4)
+    var equipment_before: String = JSON.stringify(draft_records[first.key].equipment)
     variant_choice.select(2)
     var image := Image.create_empty(2, 2, false, Image.FORMAT_RGBA8)
     image.fill(Color(0.8, 0.2, 0.1))
@@ -505,23 +503,45 @@ func _metadata_check() -> void:
     assert(DirAccess.make_dir_recursive_absolute(pair_path.get_base_dir()) == OK)
     image.fill(Color(0.1, 0.8, 0.2))
     assert(image.save_png(pair_path) == OK)
-    show_new_art.button_pressed = true
-    _show_monster_image()
+    var pair_action_path: String = MonsterMetadata.art_path(first.key, "w1__s1", true, metadata_root)
+    image.fill(Color(0.1, 0.2, 0.8))
+    assert(image.save_png(pair_action_path) == OK)
+    var ranged_action_path: String = MonsterMetadata.art_path(first.key, ranged_id, true, metadata_root)
+    image.fill(Color(0.8, 0.8, 0.1))
+    assert(image.save_png(ranged_action_path) == OK)
+    variant_choice.item_selected.emit(2)
     assert(monster_source.text.begins_with("New art"))
-    assert(monster_image.texture == art_cache[ready_path])
+    assert(monster_source.text.contains("Long bow"))
+    var pixel: Color = monster_image.texture.get_image().get_pixel(0, 0)
+    assert(pixel.r > 0.7 and pixel.g < 0.3)
     variant_choice.select(0)
     variant_choice.item_selected.emit(0)
     assert(monster_source.text.begins_with("New art"))
-    assert(monster_image.texture == art_cache[pair_path])
-    assert(monster_image.texture != art_cache[ready_path])
-    variant_choice.select(2)
+    assert(monster_source.text.contains("Sword + Round shield"))
+    pixel = monster_image.texture.get_image().get_pixel(0, 0)
+    assert(pixel.g > 0.7 and pixel.b < 0.3)
+    assert(JSON.stringify(draft_records[first.key].equipment) == equipment_before)
     action = true
     _show_monster_image()
+    pixel = monster_image.texture.get_image().get_pixel(0, 0)
+    assert(pixel.b > 0.7 and pixel.g < 0.3)
+    variant_choice.select(2)
+    variant_choice.item_selected.emit(2)
+    pixel = monster_image.texture.get_image().get_pixel(0, 0)
+    assert(pixel.r > 0.7 and pixel.g > 0.7 and pixel.b < 0.3)
+    image.fill(Color(0.7, 0.1, 0.7))
+    assert(image.save_png(ranged_action_path) == OK)
+    _show_monster_image()
+    pixel = monster_image.texture.get_image().get_pixel(0, 0)
+    assert(pixel.r > 0.6 and pixel.g < 0.3 and pixel.b > 0.6)
+    assert(DirAccess.remove_absolute(ranged_action_path) == OK)
+    _show_monster_image()
     assert(monster_source.text.begins_with("Original fallback"))
-    assert(monster_image.texture != art_cache[ready_path])
+    assert(monster_source.text.contains("Long bow"))
+    assert(JSON.stringify(draft_records[first.key].equipment) == equipment_before)
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
-    print("Monster metadata checks passed: decoded sword/shield plus crossbow, JSON save/load, editable drafts, one setup dropdown, paired melee, solo ranged/2H, default pair, new art and original fallback")
+    print("Monster metadata checks passed: decoded sword/shield plus crossbow, JSON save/load, editable drafts, one weapon-set dropdown swaps ready/action art without changing gear, PNG reload, original fallback")
     get_tree().quit()
 
 func _remove_check_tree(path: String) -> void:

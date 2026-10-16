@@ -35,21 +35,25 @@ while switching between records during the current session.
 
 The equipment editor labels each item **1H weapon**, **2H weapon**, **Ranged**,
 **Shield**, or **Gear** from the original item data. Click an item's type button
-to correct it. The monster pane has one dropdown, **Equipment setup for
-ready/action art**, with complete setups such as **Mace + Shield** and **Bow**.
+to correct it. The monster pane has one **Weapon set — combat art preview**
+dropdown, with complete setups such as **Mace + Shield** and **Bow**.
 Each one-handed weapon pairs with each available shield, and neither is offered
 alone when both are present. Ranged and two-handed weapons are separate setups;
 a lone one-handed weapon is offered alone when there is no shield. Each setup
-selects its own ready/action images. A creature without a weapon setup has one
+swaps the existing monster preview to its own ready/action images, which continue
+alternating every second. Changing the dropdown does not change the monster's
+gear. A creature without a weapon setup has one
 **Default** pair. Put
 independently created PNGs at
 `dev_tools/combat_sprite_catalog/art/<source-key>/<variant-id>/ready.png` and
 `action.png`. The JSON's `variants` entries contain these relative paths.
 **Show new art when available** starts enabled; turn it off to inspect the
 original art. A missing or invalid PNG falls
-back to that monster's original pose. The original image and binding remain
-visible through the source label. This tool prepares and previews art; it does
-not generate replacement images.
+back to that monster's original pose, and the source label names the selected
+set and missing pose. Replacing a PNG while the tool is open refreshes the
+preview on its next update. Turn off **Show new art when available** to inspect
+the original image and binding in the source label. This tool prepares and
+previews art; it does not generate replacement images.
 
 The **Character sprites** tab uses the game's `CharacterArt` compositor and
 combat-body assignment catalog. Its controls fill the pane, following the
