@@ -1,6 +1,7 @@
 extends Control
 
 const Evidence = preload("res://scripts/art_script_evidence.gd")
+const MonsterMetadata = preload("res://scripts/monster_metadata.gd")
 
 var catalog := SpriteCatalog.new()
 var rows: Array = []
@@ -15,11 +16,23 @@ var name_filter: LineEdit
 var monster_title: Label
 var monster_image: TextureRect
 var monster_source: Label
-var gear_text: RichTextLabel
+var description_edit: TextEdit
+var gear_rows: VBoxContainer
+var regeneration_flag: CheckButton
+var show_new_art: CheckButton
+var variant_choice: OptionButton
+var save_button: Button
+var metadata_status: Label
+var draft_records: Dictionary = {}
+var load_errors: Dictionary = {}
+var metadata_root := ""
+var art_cache: Dictionary = {}
 var status: Label
 var character_panel
 
 func _ready() -> void:
+    if "--metadata-check" in OS.get_cmdline_user_args():
+        metadata_root = ProjectSettings.globalize_path("user://metadata-check-%d" % Time.get_ticks_usec())
     _build_ui()
     var game_dir := OS.get_environment("OPENGOLD_GAME_DIR")
     if game_dir.is_empty(): game_dir = ProjectSettings.get_setting("opengold/game_directory", "")
@@ -45,7 +58,10 @@ func _ready() -> void:
                 if candidate.has("key"): used[candidate.key] = true
     _rebuild_list()
     status.text = "%d monster/NPC records and combat image pairs. Unused means no reference in decoded ECL evidence; dynamic paths may be unresolved." % rows.size()
-    if "--catalog-check" in OS.get_cmdline_user_args(): _catalog_check()
+    if "--metadata-check" in OS.get_cmdline_user_args():
+        _metadata_check()
+    elif "--catalog-check" in OS.get_cmdline_user_args():
+        _catalog_check()
 
 func _process(delta: float) -> void:
     if selected < 0: return
@@ -94,10 +110,19 @@ func _build_ui() -> void:
     monster_title = Label.new()
     monster_title.add_theme_font_size_override("font_size", 24)
     detail.add_child(monster_title)
+    var columns := HBoxContainer.new()
+    columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    columns.add_theme_constant_override("separation", 18)
+    detail.add_child(columns)
+    var preview := VBoxContainer.new()
+    preview.custom_minimum_size.x = 400
+    preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    columns.add_child(preview)
     var image_frame := Control.new()
     image_frame.custom_minimum_size = Vector2(360, 390)
     image_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    detail.add_child(image_frame)
+    image_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    preview.add_child(image_frame)
     monster_image = TextureRect.new()
     monster_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     monster_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -106,14 +131,59 @@ func _build_ui() -> void:
     image_frame.add_child(monster_image)
     monster_source = Label.new()
     monster_source.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-    detail.add_child(monster_source)
+    monster_source.custom_minimum_size.y = 80
+    preview.add_child(monster_source)
+    var variant_label := Label.new()
+    variant_label.text = "Weapon + shield image pair"
+    preview.add_child(variant_label)
+    variant_choice = OptionButton.new()
+    variant_choice.item_selected.connect(func(_index: int): _show_monster_image())
+    preview.add_child(variant_choice)
+    show_new_art = CheckButton.new()
+    show_new_art.text = "Show new art when available"
+    show_new_art.toggled.connect(func(_enabled: bool): _show_monster_image())
+    preview.add_child(show_new_art)
+
+    var editor := VBoxContainer.new()
+    editor.custom_minimum_size.x = 400
+    editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    columns.add_child(editor)
+    var description_heading := Label.new()
+    description_heading.text = "Description for new art"
+    editor.add_child(description_heading)
+    description_edit = TextEdit.new()
+    description_edit.custom_minimum_size.y = 165
+    description_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+    editor.add_child(description_edit)
     var gear_heading := Label.new()
-    gear_heading.text = "Weapons and gear"
+    gear_heading.text = "Weapons, shields and gear"
     gear_heading.add_theme_font_size_override("font_size", 20)
-    detail.add_child(gear_heading)
-    gear_text = RichTextLabel.new()
-    gear_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    detail.add_child(gear_text)
+    editor.add_child(gear_heading)
+    var gear_hint := Label.new()
+    gear_hint.text = "Only complete weapon + shield pairs get separate images."
+    gear_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    editor.add_child(gear_hint)
+    var gear_scroll := ScrollContainer.new()
+    gear_scroll.custom_minimum_size.y = 190
+    gear_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    editor.add_child(gear_scroll)
+    gear_rows = VBoxContainer.new()
+    gear_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    gear_scroll.add_child(gear_rows)
+    var add_gear := Button.new()
+    add_gear.text = "Add weapon or gear"
+    add_gear.pressed.connect(_add_gear)
+    editor.add_child(add_gear)
+    regeneration_flag = CheckButton.new()
+    regeneration_flag.text = "Flag for regeneration"
+    editor.add_child(regeneration_flag)
+    save_button = Button.new()
+    save_button.text = "Save monster data"
+    save_button.pressed.connect(_save_monster)
+    editor.add_child(save_button)
+    metadata_status = Label.new()
+    metadata_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    editor.add_child(metadata_status)
     status = Label.new()
     status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     detail.add_child(status)
@@ -122,6 +192,7 @@ func _build_ui() -> void:
     tabs.add_child(character_panel)
 
 func _rebuild_list() -> void:
+    _store_draft()
     monster_list.clear()
     visible_rows.clear()
     var query := name_filter.text.strip_edges()
@@ -139,7 +210,14 @@ func _rebuild_list() -> void:
         monster_image.texture = null
         monster_image.offset_top = 0.0
         monster_source.text = ""
-        gear_text.text = ""
+        variant_choice.clear()
+        description_edit.text = ""
+        for child in gear_rows.get_children():
+            gear_rows.remove_child(child)
+            child.queue_free()
+        regeneration_flag.set_pressed_no_signal(false)
+        metadata_status.text = ""
+        save_button.disabled = true
         return
     var next := visible_rows.find(selected)
     if next < 0: next = 0
@@ -148,6 +226,7 @@ func _rebuild_list() -> void:
 
 func _select_monster(list_index: int) -> void:
     if list_index < 0 or list_index >= visible_rows.size(): return
+    _store_draft()
     selected = visible_rows[list_index]
     action = false
     elapsed = 0.0
@@ -156,21 +235,231 @@ func _select_monster(list_index: int) -> void:
     # The Medusa icon sits at the top edge of its source frame. Lower its
     # presentation within the existing preview area so the head has breathing room.
     monster_image.offset_top = 64.0 if str(row.name).to_upper() == "MEDUSA" else 0.0
-    var lines: PackedStringArray = []
-    for item in row.equipment:
-        lines.append("• %s%s (type %d)" % [item.label, "  ·  readied" if item.readied else "", item.type])
-    gear_text.text = "\n".join(lines) if not lines.is_empty() else "No item record entries"
+    if not draft_records.has(row.key):
+        var loaded: Dictionary = MonsterMetadata.load_record(row, catalog.monster_art(selected), metadata_root)
+        draft_records[row.key] = loaded.data
+        if not loaded.error.is_empty(): load_errors[row.key] = loaded.error
+    metadata_status.text = str(load_errors.get(row.key, ""))
+    var record: Dictionary = draft_records[row.key]
+    description_edit.text = record.description
+    regeneration_flag.set_pressed_no_signal(bool(record.flag_for_regeneration))
+    for child in gear_rows.get_children():
+        gear_rows.remove_child(child)
+        child.queue_free()
+    for item in record.equipment:
+        _append_gear_row(item)
+    save_button.disabled = false
+    _refresh_variants()
+
+func _append_gear_row(item: Dictionary) -> void:
+    var line := HBoxContainer.new()
+    line.set_meta("id", str(item.id))
+    line.set_meta("source_type", int(item.get("source_type", -1)))
+    var kind := OptionButton.new()
+    for label in ["Weapon", "Shield", "Gear"]: kind.add_item(label)
+    kind.select(["weapon", "shield", "gear"].find(str(item.kind)))
+    kind.custom_minimum_size.x = 115
+    kind.item_selected.connect(func(_index: int): _gear_changed())
+    line.add_child(kind)
+    var name := LineEdit.new()
+    name.text = str(item.name)
+    name.placeholder_text = "Item name"
+    name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    name.text_changed.connect(func(_value: String): _gear_changed())
+    line.add_child(name)
+    var readied := CheckButton.new()
+    readied.text = "Ready"
+    readied.button_pressed = bool(item.get("readied", false))
+    readied.toggled.connect(func(_value: bool): _gear_changed())
+    line.add_child(readied)
+    var remove := Button.new()
+    remove.text = "Remove"
+    remove.pressed.connect(func():
+        gear_rows.remove_child(line)
+        line.queue_free()
+        _gear_changed()
+    )
+    line.add_child(remove)
+    gear_rows.add_child(line)
+
+func _add_gear() -> void:
+    if selected < 0: return
+    var item_id := "added_%d" % Time.get_ticks_usec()
+    _append_gear_row({"id": item_id, "source_type": -1, "kind": "gear", "name": "", "readied": false})
+    _gear_changed()
+    var line: HBoxContainer = gear_rows.get_child(gear_rows.get_child_count() - 1)
+    line.get_child(1).grab_focus()
+
+func _store_draft() -> void:
+    if selected < 0 or not draft_records.has(rows[selected].key): return
+    var record: Dictionary = draft_records[rows[selected].key]
+    record.description = description_edit.text
+    record.flag_for_regeneration = regeneration_flag.button_pressed
+    var equipment: Array = []
+    for line in gear_rows.get_children():
+        var kind: OptionButton = line.get_child(0)
+        var name: LineEdit = line.get_child(1)
+        var readied: CheckButton = line.get_child(2)
+        equipment.append({
+            "id": line.get_meta("id"),
+            "kind": ["weapon", "shield", "gear"][kind.selected],
+            "name": name.text.strip_edges(),
+            "source_type": line.get_meta("source_type"),
+            "readied": readied.button_pressed,
+        })
+    record.equipment = equipment
+    MonsterMetadata.rebuild_variants(record)
+
+func _gear_changed() -> void:
+    _store_draft()
+    _refresh_variants()
+
+func _refresh_variants() -> void:
+    if selected < 0: return
+    var previous := ""
+    if variant_choice.selected >= 0:
+        previous = str(variant_choice.get_item_metadata(variant_choice.selected))
+    variant_choice.clear()
+    var record: Dictionary = draft_records[rows[selected].key]
+    for variant in record.variants:
+        variant_choice.add_item(str(variant.label))
+        variant_choice.set_item_metadata(variant_choice.item_count - 1, variant.id)
+    var next := 0
+    for index in range(variant_choice.item_count):
+        if variant_choice.get_item_metadata(index) == previous:
+            next = index
+            break
+    variant_choice.select(next)
+    variant_choice.disabled = variant_choice.item_count <= 1
     _show_monster_image()
 
-func _show_monster_image() -> void:
-    var art: Dictionary = catalog.monster_art(selected)
-    monster_image.texture = catalog.monster_image(selected, action)
-    if art.is_empty():
-        monster_source.text = "No supported ready/action CPIC binding for this record. Source: %s" % rows[selected].key
-    elif art.get("assembled", false):
-        monster_source.text = "%s · %s · %s" % ["Action" if action else "Ready", rows[selected].key, art.basis]
+func _save_monster() -> void:
+    if selected < 0: return
+    _store_draft()
+    var record: Dictionary = draft_records[rows[selected].key]
+    var error: String = MonsterMetadata.save_record(record, metadata_root)
+    if error.is_empty():
+        load_errors.erase(rows[selected].key)
+        metadata_status.text = "Saved %s" % MonsterMetadata.json_path(rows[selected].key, metadata_root).get_file()
     else:
-        monster_source.text = "%s · %s record %d / %d · %s" % ["Action" if action else "Ready", art.archive, art.record + (128 if action else 0), art.record, art.basis]
+        metadata_status.text = error
+
+func _selected_variant() -> Dictionary:
+    if selected < 0 or variant_choice.selected < 0: return {}
+    var record: Dictionary = draft_records[rows[selected].key]
+    return record.variants[variant_choice.selected]
+
+func _show_monster_image() -> void:
+    if selected < 0: return
+    var art: Dictionary = catalog.monster_art(selected)
+    var source_note := ""
+    var replacement_path := ""
+    var variant := _selected_variant()
+    if show_new_art.button_pressed and not variant.is_empty():
+        replacement_path = MonsterMetadata.art_path(str(rows[selected].key), str(variant.id), action, metadata_root)
+        if FileAccess.file_exists(replacement_path):
+            if not art_cache.has(replacement_path):
+                var image := Image.new()
+                if image.load(replacement_path) == OK:
+                    art_cache[replacement_path] = ImageTexture.create_from_image(image)
+            if art_cache.has(replacement_path):
+                monster_image.texture = art_cache[replacement_path]
+                source_note = "New art · %s" % replacement_path
+    if source_note.is_empty():
+        monster_image.texture = catalog.monster_image(selected, action)
+        if show_new_art.button_pressed:
+            source_note = "Original fallback · no new %s image for %s. " % ["action" if action else "ready", variant.get("label", "default")]
+    if art.is_empty():
+        monster_source.text = source_note if source_note.begins_with("New art") else source_note + "No supported ready/action CPIC binding. Source: %s" % rows[selected].key
+    elif art.get("assembled", false):
+        monster_source.text = source_note if source_note.begins_with("New art") else source_note + "%s · %s · %s" % ["Action" if action else "Ready", rows[selected].key, art.basis]
+    else:
+        monster_source.text = source_note if source_note.begins_with("New art") else source_note + "%s · %s record %d / %d · %s" % ["Action" if action else "Ready", art.archive, art.record + (128 if action else 0), art.record, art.basis]
+
+func _metadata_check() -> void:
+    assert(rows.size() >= 170)
+    var first: Dictionary = rows[0]
+    var art: Dictionary = catalog.monster_art(0)
+    var sample: Dictionary = MonsterMetadata.new_record(first, art)
+    sample.equipment = [
+        {"id": "w1", "kind": "weapon", "name": "Sword", "source_type": 36, "readied": true},
+        {"id": "w2", "kind": "weapon", "name": "Mace", "source_type": 23, "readied": false},
+        {"id": "s1", "kind": "shield", "name": "Round shield", "source_type": 59, "readied": true},
+        {"id": "s2", "kind": "shield", "name": "Kite shield", "source_type": -1, "readied": false},
+        {"id": "g1", "kind": "gear", "name": "Cloak", "source_type": -1, "readied": false},
+    ]
+    MonsterMetadata.rebuild_variants(sample)
+    assert(sample.variants.size() == 4)
+    for variant in sample.variants:
+        assert(not str(variant.weapon_id).is_empty() and not str(variant.shield_id).is_empty())
+    var pair_id: String = sample.variants[2].id
+    sample.description = "Original, independently described creature."
+    sample.flag_for_regeneration = true
+    assert(MonsterMetadata.save_record(sample, metadata_root).is_empty())
+    var loaded: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
+    assert(loaded.error.is_empty())
+    assert(loaded.data.description == sample.description and loaded.data.flag_for_regeneration)
+    assert(loaded.data.equipment.size() == 5 and loaded.data.variants.size() == 4)
+    assert(loaded.data.variants[2].id == pair_id)
+    sample.equipment = [sample.equipment[0], sample.equipment[4]]
+    MonsterMetadata.rebuild_variants(sample)
+    assert(sample.variants.size() == 1 and sample.variants[0].id == "default")
+    sample.equipment = [
+        {"id": "s1", "kind": "shield", "name": "Round shield", "source_type": 59, "readied": true}]
+    MonsterMetadata.rebuild_variants(sample)
+    assert(sample.variants.size() == 1 and sample.variants[0].id == "default")
+    sample.equipment = []
+    MonsterMetadata.rebuild_variants(sample)
+    assert(sample.variants.size() == 1 and sample.variants[0].id == "default")
+
+    # Draft changes survive switching records; the selector follows edited gear.
+    _select_monster(0)
+    description_edit.text = "Unsaved draft"
+    regeneration_flag.button_pressed = true
+    _select_monster(1)
+    _select_monster(0)
+    assert(description_edit.text == "Unsaved draft" and regeneration_flag.button_pressed)
+    save_button.pressed.emit()
+    var saved_draft: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
+    assert(saved_draft.error.is_empty())
+    assert(saved_draft.data.description == "Unsaved draft" and saved_draft.data.flag_for_regeneration)
+    _select_monster(1)
+    draft_records[first.key] = loaded.data
+    _select_monster(0)
+    assert(variant_choice.item_count == 4)
+    variant_choice.select(2)
+    var image := Image.create_empty(2, 2, false, Image.FORMAT_RGBA8)
+    image.fill(Color(0.8, 0.2, 0.1))
+    var ready_path: String = MonsterMetadata.art_path(first.key, pair_id, false, metadata_root)
+    assert(DirAccess.make_dir_recursive_absolute(ready_path.get_base_dir()) == OK)
+    assert(image.save_png(ready_path) == OK)
+    show_new_art.button_pressed = true
+    _show_monster_image()
+    assert(monster_source.text.begins_with("New art"))
+    assert(monster_image.texture == art_cache[ready_path])
+    action = true
+    _show_monster_image()
+    assert(monster_source.text.begins_with("Original fallback"))
+    assert(monster_image.texture != art_cache[ready_path])
+    show_new_art.button_pressed = false
+    _remove_check_tree(metadata_root)
+    print("Monster metadata checks passed: JSON save/load, editable drafts, 4 complete variants, default pair, new art and original fallback")
+    get_tree().quit()
+
+func _remove_check_tree(path: String) -> void:
+    var directory := DirAccess.open(path)
+    if directory == null: return
+    directory.list_dir_begin()
+    while true:
+        var name := directory.get_next()
+        if name.is_empty(): break
+        var child := path.path_join(name)
+        if directory.current_is_dir():
+            _remove_check_tree(child)
+        else:
+            DirAccess.remove_absolute(child)
+    directory.list_dir_end()
+    DirAccess.remove_absolute(path)
 
 func _catalog_check() -> void:
     assert(rows.size() >= 170)

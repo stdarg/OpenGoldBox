@@ -23,6 +23,27 @@ Type any part of a monster or NPC name into **Filter by name** above the list
 to narrow it as you type. Matching ignores letter case and works together with
 **Hide unused monsters / NPCs**. Clear the field to show all names again.
 
+The monster pane is also an editor for independent replacement art metadata.
+Enter a description, edit the decoded equipment list, set **Flag for regeneration**
+when art needs another pass, and press **Save monster data**. The first save
+creates `dev_tools/combat_sprite_catalog/json/<source-key>.json` (lowercase,
+with punctuation replaced by underscores); each monster
+or unidentified sprite has its own file, even when names repeat. The JSON records
+the monster name, original creature and art source files/records, description,
+regeneration flag, equipment, and image variants. Unsaved edits remain available
+while switching between records during the current session.
+
+Each weapon combines with each shield in the editable list. The **Weapon + shield
+image pair** dropdown selects one combination and its ready/action images. There
+are no weapon-only or shield-only combinations. If no complete pair exists, the
+record has one **Default** ready/action pair. Put independently created PNGs at
+`dev_tools/combat_sprite_catalog/art/<source-key>/<variant-id>/ready.png` and
+`action.png`. The JSON's `variants` entries contain these relative paths. Enable
+**Show new art when available** to preview them; a missing or invalid PNG falls
+back to that monster's original pose. The original image and binding remain
+visible through the source label. This tool prepares and previews art; it does
+not generate replacement images.
+
 The **Character sprites** tab uses the game's `CharacterArt` compositor and
 combat-body assignment catalog. Its controls fill the pane, following the
 game's Combat appearance screen: step through 14 heads and the distinct body
@@ -45,3 +66,6 @@ It checks the complete displayed catalog, both monster poses, the unused and
 name filters, and character ready/action previews across every weapon with shield.
 It also checks the in-pane Head and Body buttons, color swatches, Large size,
 and that the character pane has no scrolling selection panel.
+
+Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
+draft retention, variant pairing, replacement preview, and original fallback.

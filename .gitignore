@@ -41,6 +41,9 @@ dev_tools/replacement_art_creator/godot/art/*.png.import
 !/art/heads/*.png
 !/art/heads/sources/*.png
 
+# Independently generated monster combat art for the standalone catalog.
+!/dev_tools/combat_sprite_catalog/art/**/*.png
+
 # Splash artwork used by the packaged game
 !/art/OpenGoldBoxSplashBackground.png
 !/art/OpenGoldBoxEngineLettering.png
