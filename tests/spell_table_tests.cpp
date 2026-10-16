@@ -255,7 +255,7 @@ struct Probe
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
     {"cleric", 4}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
-    {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
+    {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
 
 // The widest legitimate caster for a class and level: every cantrip its own
@@ -442,7 +442,7 @@ void behaviour()
         // Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
-        // and Remove Curse, which needs a cursed creature.
+        // Remove Curse, which needs a cursed creature, and Dominate Beast, a Beast.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition) &&
                  row.instances > 1) ||
@@ -456,7 +456,7 @@ void behaviour()
                 row.pattern == SpellPattern::exploration ||
                 row.pattern == SpellPattern::weapon_strike ||
                 row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
-                row.rider == Rider::protection_from_energy ||
+                row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
                 row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
                 row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||

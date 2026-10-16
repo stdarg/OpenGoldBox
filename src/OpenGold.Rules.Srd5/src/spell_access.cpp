@@ -169,6 +169,9 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"conjure_animals", "Conjure Animals", 3, 0, druid_list | ranger_list},
     Spell{"wind_wall", "Wind Wall", 3, 0, druid_list | ranger_list},
     Spell{"plant_growth", "Plant Growth", 3, 0, bard_list | druid_list | ranger_list},
+    Spell{"stoneskin", "Stoneskin", 4, 0, druid_list | ranger_list | sorcerer_list | wizard_list},
+    Spell{"conjure_woodland_beings", "Conjure Woodland Beings", 4, 0, druid_list | ranger_list},
+    Spell{"dominate_beast", "Dominate Beast", 4, 0, druid_list | ranger_list | sorcerer_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};

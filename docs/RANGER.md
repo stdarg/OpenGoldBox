@@ -21,11 +21,14 @@ SRD 5.2.1 pp. 57–60. This page grows with each Ranger increment.
 | 10 | Tireless | Temporary Hit Points delivered (rules 0.6.211); the Exhaustion half has nothing to act on |
 | 11 | Superior Hunter's Prey (Hunter) | Delivered (rules 0.6.211) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.211) |
+| 13 | Relentless Hunter, level-4 spells | Delivered (rules 0.6.212) |
+| 14 | Nature's Veil | Delivered (rules 0.6.212) |
+| 15 | Superior Hunter's Defense (Hunter) | Delivered (rules 0.6.212) |
 
 ## Levels 5–15
 
-The Ranger advances to level 12 for now; level 13 waits for its level-4
-spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+The Ranger advances to level 15, the game's cap
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 - **Extra Attack** (5): two attacks with each Attack action.
@@ -67,14 +70,31 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   offers **Superior Hunter's Prey** against each other enemy it can see within
   30 feet of that creature; the click deals the mark's 1d6 Force damage to it
   (LEVELS-2). The party AI uses it whenever it is offered.
-- Verification: `opengold_ranger_levels_tests` (the campaign's stop at 12,
-  features by level, prepared counts 5 at level 4 to 7 at 8, the level-2
-  spells preparable, slots, Favored Enemy's count, Roving, Extra Attack,
-  Escape the Horde on an Opportunity Attack, Multiattack Defense after a hit
-  and not after a miss, the rest swap, Ensnaring Strike from a level-2 slot
-  and its checkpoint, a campaign round trip; Expertise at 9, prepared counts
-  and slots to 12, the level-3 spells preparable, Tireless, Superior Hunter's
-  Prey's targets and checkpoint, and each level-3 spell below).
+- **Relentless Hunter** (13): damage never forces a Concentration save while
+  the Ranger's Concentration holds Hunter's Mark; dropping to 0 Hit Points
+  still ends it.
+- **Level-4 spells** (13): one level-4 slot at 13 and 14, two at 15;
+  prepared spells 11, 11, 12 at levels 13–15; five free Hunter's Marks from
+  13. The list gains Conjure Woodland Beings, Dominate Beast, Freedom of
+  Movement and Stoneskin (below); Locate Creature is cut (LEVELS-1).
+- **Nature's Veil** (14): a Bonus Action makes the Ranger Invisible until the
+  end of its next turn, as many times as its Wisdom modifier (at least once)
+  per Long Rest ("Nature's Veil" in the Bonus Action list and resources).
+  Attacking does not end it.
+- **Superior Hunter's Defense** (Hunter 15): when an attack hits the Ranger,
+  the React/Decline prompt offers it (LEVELS-2); the Reaction gives
+  Resistance to the hit's damage type, this hit included, until the turn
+  ends. Like Uncanny Dodge it answers attack hits only.
+- Verification: `opengold_ranger_levels_tests` (the campaign's stop at 15,
+  features by level, prepared counts 5 at level 4 to 12 at 15, the level-2
+  to level-4 spells preparable, slots, Favored Enemy's count, Roving, Extra
+  Attack, Escape the Horde on an Opportunity Attack, Multiattack Defense
+  after a hit and not after a miss, the rest swap, Ensnaring Strike from a
+  level-2 slot and its checkpoint, a campaign round trip, Expertise at 9,
+  Tireless, Superior Hunter's Prey's targets and checkpoint, Relentless
+  Hunter against a Concentration save at 12, Nature's Veil's Disadvantage,
+  Superior Hunter's Defense's prompt, and each level-3 and level-4 spell
+  below).
 
 ### The level-3 spells
 
@@ -108,7 +128,31 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   Central Wilderness's fights, which the game does not have yet. Enrichment
   has nothing to act on.
 - Combat checkpoints became `OGCOMBAT 56` (the battlefield's plants, each
-  zone's slot level, Superior Hunter's Prey's state).
+  zone's slot level, Superior Hunter's Prey's state, a dominated creature's
+  side).
+
+### The level-4 spells
+
+- **Stoneskin** (Action, touch, Concentration up to 1 hour): Resistance to
+  Bludgeoning, Piercing and Slashing damage.
+- **Conjure Woodland Beings** (Action, Concentration up to 10 minutes):
+  spirits fill a 10-foot Emanation around the Ranger, drawn on the map. Each
+  enemy the Ranger can see makes a Wisdom save the first time in a turn the
+  Emanation reaches it (the Ranger moving near it, or it moving into the
+  Emanation) or it ends its turn there, taking 5d8 Force damage, half on a
+  success (1d8 more for each slot level above 4). While it lasts, the Bonus
+  Action list offers **Disengage (Conjure Woodland Beings)**.
+- **Dominate Beast** (Action, 60 feet, Concentration up to 1 minute): offered
+  only against a Beast. On a failed Wisdom save (with Advantage, since the
+  party is fighting it) the creature is Dominated: it fights on the party's
+  side and takes its turns right after the Ranger, under the player's
+  control ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510)'s
+  shared system for summoned and controlled creatures). One that has already
+  acted in the round it was dominated waits for the next round. Whenever it
+  takes damage it saves again, and a success ends the spell. It makes an
+  Opportunity Attack only with the Ranger's Reaction too, spending both. It
+  still counts as an enemy for the fight's outcome: the fight is not won
+  while it stands. When the spell ends it returns to its own side.
 
 ## Spellcasting
 

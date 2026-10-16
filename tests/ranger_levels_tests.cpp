@@ -16,10 +16,11 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Ranger (Hunter) from level 5 to 12 (LEVELS-1, LEVELS-2): Extra Attack,
-// Roving, Defensive Tactics, more free Hunter's Marks, level-2 and level-3
-// slots and spells, Ensnaring Strike from a higher slot, Expertise, Tireless
-// and Superior Hunter's Prey.
+// A Ranger (Hunter) from level 5 to 15 (LEVELS-1, LEVELS-2): Extra Attack,
+// Roving, Defensive Tactics, more free Hunter's Marks, level-2 to level-4
+// slots and spells, Ensnaring Strike from a higher slot, Expertise, Tireless,
+// Superior Hunter's Prey, Relentless Hunter, Nature's Veil and Superior
+// Hunter's Defense.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -105,7 +106,9 @@ std::unique_ptr<RulesModule> dummy_rules()
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
                                "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
-                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature beast 30 1000 10 30 2 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "type beast beast\n");
 }
 
 std::vector<std::string> log_lines(const CombatSession &c)
@@ -184,11 +187,11 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 12,
-          "A Ranger stops at 12 until its level-4 spells exist");
+    check(party.member(id).character.sheet().level == 15,
+          "A Ranger reaches the game's cap of 15: " +
+          std::to_string(party.member(id).character.sheet().level));
     const auto eight = ranger(8);
-    check(!rules->advancement_options(ranger(12).sheet()).level,
-          "Level 12 is the Ranger's cap for now");
+    check(!rules->advancement_options(ranger(15).sheet()).level, "Level 15 is the cap");
     check(grants(eight, "feature:extra_attack", 5) && grants(eight, "feature:roving", 6) &&
           grants(eight, "tactics:escape_the_horde", 7), "The level 5-7 features arrive at their levels");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
@@ -226,7 +229,7 @@ void progression_checks()
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "ranger-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "ranger-levels") == bytes,
-          "A level-12 Ranger saves and reloads");
+          "A level-15 Ranger saves and reloads");
 }
 
 void high_progression_checks()
@@ -269,6 +272,23 @@ void high_progression_checks()
     check(slots(*c, 3) == 2 && slots(*duel(*dummies, ranger(11), "dummy", 1), 3) == 3,
           "Two level-3 slots at 9, three at 11");
     check(remaining(*c, "favored_enemy") == 4, "Favored Enemy: four free Hunter's Marks at 9");
+    const auto thirteen = ranger(13);
+    check(grants(thirteen, "feature:relentless_hunter", 13) &&
+          grants(ranger(14), "feature:natures_veil", 14) &&
+          grants(ranger(15), "feature:superior_hunters_defense", 15),
+          "Relentless Hunter at 13, Nature's Veil at 14, Superior Hunter's Defense at 15");
+    check(rules->spell_access(thirteen.sheet()).prepared_choices == 11 &&
+          rules->spell_access(ranger(15).sheet()).prepared_choices == 12,
+          "Prepared spells: 11 at 13, 12 at 15");
+    check(!preparable(ranger(12), "stoneskin"), "No level-4 spells at level 12");
+    for (const auto *spell : {"conjure_woodland_beings", "dominate_beast", "freedom_of_movement",
+                              "stoneskin"
+                             })
+        check(preparable(thirteen, spell), std::string("A level-13 Ranger can prepare ") + spell);
+    auto t = duel(*dummies, thirteen, "dummy", 1);
+    check(slots(*t, 4) == 1 && slots(*duel(*dummies, ranger(15), "dummy", 1), 4) == 2 &&
+          remaining(*t, "favored_enemy") == 5,
+          "One level-4 slot at 13, two at 15; five free Hunter's Marks");
 }
 
 void tireless_checks()
@@ -599,6 +619,167 @@ void plant_growth_checks()
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the overgrowth");
 }
+// A Ranger of the level with `spell` prepared, beside a brute that always
+// hits and a beast 10 feet from it, on the Ranger's turn.
+std::unique_ptr<CombatSession> wilds(const RulesModule &rules, unsigned level,
+                                     std::string spell, std::uint64_t seed)
+{
+    auto sheet = ranger(level).sheet();
+    auto &prepared = sheet.prepared_spells;
+    if (std::find(prepared.begin(), prepared.end(), spell) == prepared.end())
+        prepared[0] = std::move(spell);
+    const std::vector<std::string> gear{"longsword"};
+    auto c = rules.create({{12, 5, std::vector<Terrain>(60)},
+        {   {1, "campaign-character", "Ranger", Side::party, {1, 2},
+                rules.character_profile(sheet, gear).data},
+            {98, "brute", "Foe", Side::opposition, {2, 2}},
+            {99, "beast", "Wolf", Side::opposition, {3, 3}}
+        }},
+    seed);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        check(submit(*c, "end"), "Reach the Ranger's turn");
+    return c;
+}
+
+// The brute's next attack on the Ranger, from the Ranger's turn.
+void brute_attacks(CombatSession &c)
+{
+    for (unsigned turns = 0; c.snapshot().actor != 98 && turns < 6; ++turns)
+        check(submit(c, "end"), "Reach the brute's turn");
+    check(submit(c, "melee", 1), "The brute attacks the Ranger");
+}
+
+void relentless_hunter_checks()
+{
+    const auto rules = dummy_rules();
+    for (const unsigned level : {12u, 13u})
+    {
+        auto c = wilds(*rules, level, "cure_wounds", 1);
+        check(submit(*c, "hunters_mark_free", 98), "Mark the brute");
+        brute_attacks(*c);
+        const bool saved = logged(*c, "Ranger Constitution save:");
+        check(saved == (level == 12),
+              level == 12 ? "Damage tests the Ranger's Concentration at 12"
+              : "Relentless Hunter: no Concentration save for Hunter's Mark at 13");
+    }
+}
+
+void natures_veil_checks()
+{
+    const auto rules = dummy_rules();
+    check(!offered(*wilds(*rules, 13, "stoneskin", 1), "natures_veil"), "No Nature's Veil at 13");
+    auto c = wilds(*rules, 14, "stoneskin", 1);
+    const auto uses = remaining(*c, "natures_veil");
+    check(uses >= 1 && submit(*c, "natures_veil", 1) && remaining(*c, "natures_veil") == uses - 1 &&
+          !offered(*c, "natures_veil"), "Nature's Veil spends the Bonus Action and a use");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the veil");
+    brute_attacks(*c);
+    bool disadvantaged = false;
+    for (const auto &line : log_lines(*c))
+        if (line.starts_with("Foe -> Ranger"))
+            disadvantaged = line.find("(disadvantage)") != std::string::npos;
+    check(disadvantaged, "An attack on the veiled Ranger has Disadvantage");
+}
+
+void hunters_defense_checks()
+{
+    const auto rules = dummy_rules();
+    auto fourteen = wilds(*rules, 14, "stoneskin", 1);
+    brute_attacks(*fourteen);
+    check(!offered(*fourteen, "superior_defense"), "No Superior Hunter's Defense at 14");
+    auto c = wilds(*rules, 15, "stoneskin", 1);
+    brute_attacks(*c);
+    check(c->snapshot().reaction_pending && offered(*c, "superior_defense"),
+          "A hit asks the Ranger about Superior Hunter's Defense");
+    check(submit(*c, "superior_defense", 0) &&
+          logged(*c, "Ranger uses Superior Hunter's Defense: Resistance to ") &&
+          !unit(*c, 1).reaction, "The Reaction gives Resistance to the hit's type");
+}
+
+void stoneskin_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = wilds(*rules, 13, "stoneskin", 1);
+    check(submit(*c, "stoneskin", 1) && logged(*c, "Ranger gains Stoneskin.") && slots(*c, 4) == 0 &&
+          !offered(*c, "stoneskin"), "Stoneskin spends the level-4 slot");
+}
+
+void woodland_beings_checks()
+{
+    const auto rules = dummy_rules();
+    bool struck = false;
+    for (std::uint64_t seed = 1; seed < 40 && !struck; ++seed)
+    {
+        auto sheet = ranger(13).sheet();
+        auto &prepared = sheet.prepared_spells;
+        if (std::find(prepared.begin(), prepared.end(), "conjure_woodland_beings") == prepared.end())
+            prepared[0] = "conjure_woodland_beings";
+        const std::vector<std::string> gear{"longsword"};
+        auto c = rules->create({{12, 5, std::vector<Terrain>(60)},
+            {   {1, "campaign-character", "Ranger", Side::party, {1, 2},
+                    rules->character_profile(sheet, gear).data},
+                {98, "dummy", "Foe", Side::opposition, {7, 2}}
+            }},
+        seed);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+            check(submit(*c, "end"), "Reach the Ranger's turn");
+        check(submit(*c, "conjure_woodland_beings", 1) && slots(*c, 4) == 0 &&
+              logged(*c, "Woodland spirits flit around Ranger.") && !c->snapshot().spirits.empty(),
+              "Conjure Woodland Beings surrounds the Ranger with spirits");
+        check(offered(*c, "woodland_disengage"), "Disengage as a Bonus Action while it lasts");
+        Command step;
+        for (const auto &command : c->legal_commands())
+            if (command.verb == "move" && command.destination == Cell{5, 2})
+                step = command;
+        check(step.actor == 1 && c->submit(step), "The Ranger carries its spirits toward the dummy");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spirits");
+        check(logged(*c, "Foe Wisdom save:"), "The spirits reaching the dummy force a save");
+        struck = logged(*c, " Force damage from the woodland spirits.");
+    }
+    check(struck, "The woodland spirits deal Force damage");
+}
+
+void dominate_beast_checks()
+{
+    const auto rules = dummy_rules();
+    bool dominated = false;
+    for (std::uint64_t seed = 1; seed < 60 && !dominated; ++seed)
+    {
+        auto c = wilds(*rules, 13, "dominate_beast", seed);
+        const auto commands = c->legal_commands();
+        check(!std::any_of(commands.begin(), commands.end(), [](const auto & o)
+        {
+            return o.verb == "dominate_beast" && o.target == 98;
+        }), "Dominate Beast is offered only against a Beast");
+        check(submit(*c, "dominate_beast", 99), "Cast Dominate Beast on the wolf");
+        if (!logged(*c, "Wolf is dominated by Ranger."))
+            continue;
+        dominated = true;
+        check(unit(*c, 99).side == Side::party, "The dominated wolf fights for the party");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the domination");
+        const auto order = c->snapshot().combatants;
+        const auto place = [&](EntityId id)
+        {
+            return std::find_if(order.begin(), order.end(), [&](const auto & a)
+            {
+                return a.id == id;
+            }) - order.begin();
+        };
+        check(place(99) == place(1) + 1, "The wolf takes its turns right after the Ranger");
+        for (unsigned turns = 0; c->snapshot().actor != 99 && turns < 6; ++turns)
+            check(submit(*c, "end"), "Reach the wolf's turn");
+        check(c->snapshot().actor == 99 && offered(*c, "melee"), "The player commands the wolf");
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+            check(submit(*c, "end"), "Back to the Ranger");
+        check(submit(*c, "hunters_mark_free", 98) && logged(*c, "Wolf is no longer dominated.") &&
+              unit(*c, 99).side == Side::opposition,
+              "Another Concentration spell ends the domination");
+    }
+    check(dominated, "A seed where the wolf fails its save");
+}
 } // namespace
 
 int main()
@@ -618,6 +799,12 @@ int main()
         conjure_animals_checks();
         wind_wall_checks();
         plant_growth_checks();
+        relentless_hunter_checks();
+        natures_veil_checks();
+        hunters_defense_checks();
+        stoneskin_checks();
+        woodland_beings_checks();
+        dominate_beast_checks();
     }
     catch (const std::exception &error)
     {

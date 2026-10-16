@@ -195,7 +195,8 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::shining || kind == detail::EffectKind::hopeful ||
            kind == detail::EffectKind::aura_of_life || kind == detail::EffectKind::banished ||
            kind == detail::EffectKind::circling || kind == detail::EffectKind::ensnaring ||
-           kind == detail::EffectKind::energy_ward;
+           kind == detail::EffectKind::energy_ward || kind == detail::EffectKind::stoneskin ||
+           kind == detail::EffectKind::dominated;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -267,6 +268,8 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::aura_of_life:
     case Kind::free_moving:
     case Kind::banished:
+    case Kind::stoneskin:
+    case Kind::dominated:
         return 4u;
     default:
         return std::nullopt;
@@ -422,6 +425,11 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::ranger, "protection_from_energy", 9},
     SpellAccessRow{CharacterClass::ranger, "revivify", 9},
     SpellAccessRow{CharacterClass::ranger, "wind_wall", 9},
+    // Ranger level-4 spells, with the level-4 slot of Ranger level 13.
+    SpellAccessRow{CharacterClass::ranger, "conjure_woodland_beings", 13},
+    SpellAccessRow{CharacterClass::ranger, "dominate_beast", 13},
+    SpellAccessRow{CharacterClass::ranger, "freedom_of_movement", 13},
+    SpellAccessRow{CharacterClass::ranger, "stoneskin", 13},
     // Blessed and Druidic Warrior's cantrips; spell access checks the feature itself.
     SpellAccessRow{CharacterClass::ranger, "poison_spray", 2},
     SpellAccessRow{CharacterClass::paladin, "sacred_flame", 2},
@@ -997,6 +1005,10 @@ struct Actor
     // just damaged, within 30 feet of which the mark's damage may strike another.
     bool prey_used{};
     EntityId prey_origin{};
+    // Dominated (Dominate Beast): it fights on its controller's side, not its
+    // own, and waits out the turn it would get again in the round it was
+    // dominated after it had already acted.
+    bool turned{}, skips_turn{};
     bool resistance_used{}; // Resistance (the cantrip) reduces damage once per turn
     bool regeneration_blocked{}; // Took Acid or Fire damage since its last turn began
     // Downed with Regeneration: the round it may get back up, 3d6 rounds after it
@@ -2677,7 +2689,8 @@ class Session final : public CombatSession
         circle,         // Magic Circle, held by Concentration while it is cast
         animals,        // Conjure Animals' Large pack of spirits, two squares by two
         wind_wall,      // Wind Wall's squares
-        overgrowth      // Plant Growth's Overgrowth, lasting the fight
+        overgrowth,     // Plant Growth's Overgrowth, lasting the fight
+        beings          // Conjure Woodland Beings' 10-foot Emanation, around its caster
     };
     struct Zone
     {
@@ -2749,6 +2762,7 @@ class Session final : public CombatSession
     [[nodiscard]] bool can_shield(const Actor &target) const;
     [[nodiscard]] bool can_deflect(const Actor &target, bool deflectable) const;
     [[nodiscard]] bool can_dodge(const Actor &target) const;
+    [[nodiscard]] bool can_defend(const Actor &target) const;
     // Uncanny Dodge (Rogue 5): the hit's damage halved, when the Rogue chose it.
     int dodged(Actor &target, int amount);
     void ask_reaction(const Actor &target, Asked asked, bool deflectable = false,
@@ -2977,8 +2991,7 @@ class Session final : public CombatSession
     {
         // Faerie Fire, Starry Wisp and Shining Smite keep a creature from
         // being Invisible.
-        return (detail::has_effect(target.effects, detail::EffectKind::invisible) ||
-                hidden(target)) &&
+        return (invisible(target) || hidden(target)) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility) &&
                !detail::has_effect(target.effects, detail::EffectKind::outlined) &&
                !detail::has_effect(target.effects, detail::EffectKind::lit) &&
@@ -3142,17 +3155,32 @@ class Session final : public CombatSession
     void moonbeam_burns(const Zone &beam, Actor &creature);
     // Moonbeam's beam moves onto a creature, burning those it reaches.
     void move_moonbeam(Actor &caster, const Actor &onto);
-    // Conjure Animals: whether a square is within 10 feet of the pack, a
-    // Dexterity save of a creature that comes there (once a turn), the
+    // Conjure Animals: whether a square is within 10 feet of the pack, the
     // pack's squares beside a creature within 30 feet of where it is, and
     // its move there, which strikes those it comes near.
     [[nodiscard]] static bool near_pack(const Zone &pack, Cell cell);
-    void pack_strikes(const Zone &pack, Actor &creature);
+    // Conjure Woodland Beings: whether a square is within the Emanation.
+    [[nodiscard]] bool near_beings(const Zone &beings, Cell cell) const;
+    // The spirits of Conjure Animals or Conjure Woodland Beings strike a
+    // creature that comes near or ends its turn there: a save, once a turn.
+    void spirits_strike(const Zone &zone, Actor &creature);
     [[nodiscard]] std::optional<std::vector<Cell>> pack_destination(const Zone &pack,
             const Actor &onto) const;
     void move_spirit_pack(Actor &caster, const Actor &onto);
     // Wind Wall: whether a shot from one square to another crosses its wind.
     [[nodiscard]] bool across_wind_wall(Cell from, Cell to) const;
+    // Dominate Beast (LEVELS-1): the creature fights for its caster; it moves
+    // in the turn order to right after its caster once the command is done.
+    void dominate(Actor &caster, Actor &target, int dc);
+    // The creature controlling a dominated one, if any.
+    [[nodiscard]] const Actor *controller(const Actor &a) const;
+    // A dominated creature whose spell has ended returns to its own side.
+    void release(Actor &a);
+    // Releases ended dominations and puts each dominated creature right after
+    // its controller; only between commands, as it moves actors.
+    void settle_dominated();
+    // Superior Hunter's Defense: Resistance to the hit's type for the turn.
+    void hunters_defense(Actor &target, detail::DamageType type);
     void spikes_pierce(Actor &creature);
     // Wild Shape's Beast form, kept in step with the wild_shape effect.
     static void refresh_form(Actor &a);
@@ -4293,6 +4321,13 @@ Snapshot Session::snapshot() const
             s.circles.insert(s.circles.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::animals)
             s.spirits.insert(s.spirits.end(), zone.cells.begin(), zone.cells.end());
+        else if (zone.kind == ZoneKind::beings)
+        {
+            for (int y = 0; y < board_.height; ++y)
+                for (int x = 0; x < board_.width; ++x)
+                    if (const Cell cell{x, y}; near_beings(zone, cell))
+                        s.spirits.push_back(cell);
+        }
         else if (zone.kind == ZoneKind::wind_wall)
             s.walls.insert(s.walls.end(), zone.cells.begin(), zone.cells.end());
     s.log_entries = log_;
@@ -4533,6 +4568,10 @@ Snapshot Session::snapshot() const
         if (def(a).intimidating_presence)
             view.bonus_actions.insert(view.bonus_actions.end(),
                                       {"intimidating_presence", "intimidating_presence_rage"});
+        if (def(a).natures_veil)
+            view.bonus_actions.push_back("natures_veil");
+        if (detail::knows_spell(def(a).spells, "conjure_woodland_beings"))
+            view.bonus_actions.push_back("woodland_disengage");
         if (def(a).martial_arts)
             view.bonus_actions.push_back("martial_arts");
         if (def(a).innate_sorcery)
@@ -4709,6 +4748,10 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::enfeebled, "Enfeebled (Ray of Enfeeblement)"},
                     std::pair{detail::EffectKind::acid_arrow, "Burning acid (Acid Arrow)"},
                     std::pair{detail::EffectKind::invisible, "Invisible"},
+                    std::pair{detail::EffectKind::veiled, "Invisible (Nature's Veil)"},
+                    std::pair{detail::EffectKind::stoneskin, "Stoneskin"},
+                    std::pair{detail::EffectKind::energy_ward, "Protection from Energy"},
+                    std::pair{detail::EffectKind::dominated, "Dominated"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -5027,6 +5070,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     }
     case detail::Rider::faerie_fire:
+    case detail::Rider::conjure_animals:
+    case detail::Rider::wind_wall:
+    case detail::Rider::plant_growth:
         return; // An aimed area, resolved by cast_area().
     case detail::Rider::shillelagh:
     case detail::Rider::produce_flame:
@@ -5043,6 +5089,26 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
         return;
     }
+    case detail::Rider::stoneskin:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::stoneskin, 0);
+        log(target.source.name + " gains Stoneskin.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Stoneskin", true}}});
+        return;
+    case detail::Rider::conjure_woodland_beings:
+    {
+        // The spirits strike only creatures that later come near or stay.
+        Zone beings{a.source.id, ZoneKind::beings, {a.source.cell}};
+        beings.save_dc = spell_dc(a, spell.id);
+        beings.slot = slot_level_of(verb, spell);
+        zones_.push_back(std::move(beings));
+        log("Woodland spirits flit around " + a.source.name + ".",
+        {"Woodland spirits flit around {name}.", {{"name", a.source.name}}});
+        return;
+    }
+    case detail::Rider::dominate_beast:
+        dominate(a, target, dc);
+        return;
     case detail::Rider::barkskin:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::barkskin, 0);
@@ -5554,6 +5620,13 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     }
     case detail::SpellPattern::save_damage:
     {
+        // Conjure Woodland Beings' spirits strike only later, around the caster.
+        if (spell.rider == detail::Rider::conjure_woodland_beings)
+        {
+            begin_concentration(a, spell);
+            apply_rider(spell, verb, a, a, dc);
+            return;
+        }
         auto &target = actor(target_id);
         if (sanctuary_stops(a, target))
             return;
@@ -5713,6 +5786,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                  detail::has_effect(other.effects, detail::EffectKind::magic_weapon)) ||
                 (spell.rider == detail::Rider::barkskin &&
                  detail::has_effect(other.effects, detail::EffectKind::barkskin)) ||
+                (spell.rider == detail::Rider::stoneskin &&
+                 detail::has_effect(other.effects, detail::EffectKind::stoneskin)) ||
+                (spell.rider == detail::Rider::dominate_beast &&
+                 def(other).creature_type != "beast") ||
                 (spell.rider == detail::Rider::shillelagh && !d.shillelagh_weapon))
             continue;
         if (as_bonus ? !a.bonus : !a.actions.available(true))
@@ -5895,6 +5972,8 @@ std::vector<Command> Session::offered_commands() const
                 add(who.source.id, "deflect", "Deflect Attacks");
             if (question.asked == Asked::hit && can_dodge(who))
                 add(who.source.id, "uncanny_dodge", "Uncanny Dodge");
+            if (question.asked == Asked::hit && can_defend(who))
+                add(who.source.id, "superior_defense", "Superior Hunter's Defense");
         }
         add(who.source.id, "decline", "Decline reaction");
         return commands;
@@ -6339,6 +6418,17 @@ std::vector<Command> Session::offered_commands() const
     // Expeditious Retreat: Dash as a Bonus Action while it lasts.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
         add(id, "retreat_dash", "Expeditious Retreat: Dash");
+    // Conjure Woodland Beings: Disengage as a Bonus Action while it lasts.
+    if (a.bonus && !a.disengaged && std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+{
+    return zone.kind == ZoneKind::beings && zone.caster == id;
+}))
+    add(id, "woodland_disengage", "Disengage (Conjure Woodland Beings)");
+    // Nature's Veil (Ranger 14): a Bonus Action makes the Ranger Invisible
+    // until the end of its next turn.
+    if (a.bonus && d.natures_veil && a.lay_on_hands > 0 &&
+            !detail::has_effect(a.effects, detail::EffectKind::veiled) && detail::can_apply(a.effects))
+        add(id, "natures_veil", "Nature's Veil", id);
     // Flaming Sphere: a Bonus Action rolls it up to 30 feet into a creature's
     // space, where it stops beside the creature and burns it.
     for (const auto &zone : zones_)
@@ -6953,6 +7043,20 @@ void Session::damage(Actor &target, int amount, bool critical)
     }
     if (killed && target.life.dead)
         fall(target);
+    // Dominate Beast: damage lets the creature save again; a success ends the spell.
+    if (const auto *boss = controller(target); boss && target.life.hp > 0 && !target.life.dead)
+    {
+        const auto dominated = std::find_if(target.effects.active.begin(),
+                                            target.effects.active.end(), [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::dominated;
+        });
+        if (saving_throw_succeeds(target, detail::Ability::wisdom, dominated->dc))
+        {
+            end_concentration(actor(boss->source.id));
+            release(target);
+        }
+    }
     // Relentless Rage: a raging Barbarian dropped to 0 Hit Points but not
     // killed outright makes a Constitution save, DC 10 and 5 more for each
     // earlier try since its last rest; success leaves twice its level in Hit
@@ -7643,39 +7747,55 @@ bool Session::near_pack(const Zone &pack, Cell cell)
     });
 }
 
-void Session::pack_strikes(const Zone &pack, Actor &creature)
+bool Session::near_beings(const Zone &beings, Cell cell) const
+{
+    return distance(actor(beings.caster).source.cell, cell) <= 10;
+}
+
+void Session::spirits_strike(const Zone &zone, Actor &creature)
 {
     // The caster forces a save on each enemy it can see, once per turn; the
-    // pack may have ended with its caster's Concentration mid-turn.
+    // spirits may have ended with their caster's Concentration mid-turn.
+    const bool pack = zone.kind == ZoneKind::animals;
     const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
     {
-        return a.source.id == pack.caster;
+        return a.source.id == zone.caster;
     });
-    const bool standing = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    const bool standing = std::any_of(zones_.begin(), zones_.end(), [&](const auto & other)
     {
-        return zone.kind == ZoneKind::animals && zone.caster == pack.caster;
+        return other.kind == zone.kind && other.caster == zone.caster;
     });
+    const auto tested = pack ? detail::EffectKind::pack_tested : detail::EffectKind::beings_tested;
     if (!standing || caster == actors_.end() || creature.source.side == caster->source.side ||
             creature.life.dead || creature.life.hp == 0 || absent(creature) ||
-            detail::has_effect(creature.effects, detail::EffectKind::pack_tested) ||
-            !can_see(*caster, creature))
+            detail::has_effect(creature.effects, tested) || !can_see(*caster, creature))
         return;
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
         detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
-                               rest_of_turn, detail::EffectKind::pack_tested);
-    const auto &spell = *detail::find_spell("conjure_animals");
-    if (saving_throw_succeeds(creature, spell.save, pack.save_dc, false,
-                              heightened_against(creature, *caster, spell.id)))
+                               rest_of_turn, tested);
+    const auto &spell = *detail::find_spell(pack ? "conjure_animals" : "conjure_woodland_beings");
+    const bool saved = saving_throw_succeeds(creature, spell.save, zone.save_dc, false,
+                                             heightened_against(creature, *caster, spell.id));
+    if (saved && !spell.half_on_success)
         return;
-    const int count = spell.dice.count + static_cast<int>(pack.slot - spell.level);
-    const int amount = resolved_damage(creature, spell.damage, dice({count, 10, 0}));
-    log(creature.source.name + " takes " + std::to_string(amount) +
-        " Slashing damage from the spirit pack.",
-    {
-        "{name} takes {damage} Slashing damage from the spirit pack.",
-        {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
-    });
+    const int count = spell.dice.count + static_cast<int>(zone.slot - spell.level);
+    const int rolled = dice({count, spell.dice.sides, 0});
+    const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
+    if (pack)
+        log(creature.source.name + " takes " + std::to_string(amount) +
+            " Slashing damage from the spirit pack.",
+        {
+            "{name} takes {damage} Slashing damage from the spirit pack.",
+            {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+        });
+    else
+        log(creature.source.name + " takes " + std::to_string(amount) +
+            " Force damage from the woodland spirits.",
+        {
+            "{name} takes {damage} Force damage from the woodland spirits.",
+            {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+        });
     damage(creature, amount);
 }
 
@@ -7729,7 +7849,7 @@ void Session::move_spirit_pack(Actor &caster, const Actor &onto)
     {"{name} moves the spirit pack.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
         if (near_pack(after, other.source.cell) && !near_pack(before, other.source.cell))
-            pack_strikes(after, other);
+            spirits_strike(after, other);
 }
 
 bool Session::across_wind_wall(Cell from, Cell to) const
@@ -7748,6 +7868,91 @@ bool Session::across_wind_wall(Cell from, Cell to) const
         return true;
     }
     return false;
+}
+
+void Session::dominate(Actor &caster, Actor &target, int dc)
+{
+    detail::apply_spell_benefit(target.effects, effect_source(caster), caster.source.name,
+                                detail::EffectKind::dominated, dc);
+    log(target.source.name + " is dominated by " + caster.source.name + ".",
+    {
+        "{name} is dominated by {caster}.",
+        {{"name", target.source.name}, {"caster", caster.source.name}}
+    });
+    if (target.source.side == caster.source.side)
+        return;
+    target.source.side = caster.source.side;
+    target.turned = true;
+}
+
+const Actor *Session::controller(const Actor &a) const
+{
+    for (const auto &e : a.effects.active)
+        if (e.kind == detail::EffectKind::dominated && e.source_scope == scope_)
+            for (const auto &other : actors_)
+                if (other.source.id == e.source_actor)
+                    return &other;
+    return nullptr;
+}
+
+void Session::release(Actor &a)
+{
+    if (!a.turned || detail::has_effect(a.effects, detail::EffectKind::dominated))
+        return;
+    a.turned = a.skips_turn = false;
+    a.source.side = a.source.side == Side::party ? Side::opposition : Side::party;
+    log(a.source.name + " is no longer dominated.",
+    {"{name} is no longer dominated.", {{"name", a.source.name}}});
+}
+
+void Session::settle_dominated()
+{
+    for (auto &a : actors_)
+        release(a);
+    for (bool moved = true; moved;)
+    {
+        moved = false;
+        for (std::size_t from = 0; from < actors_.size() && !moved; ++from)
+        {
+            const auto *boss = controller(actors_[from]);
+            if (!actors_[from].turned || !boss || index_of(boss->source.id) + 1 == from)
+                continue;
+            const auto boss_id = boss->source.id;
+            auto creature = std::move(actors_[from]);
+            // One that has already acted this round waits for the next.
+            creature.skips_turn = from < turn_;
+            actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(from));
+            if (from < turn_)
+                --turn_;
+            const auto after = index_of(boss_id) + 1;
+            actors_.insert(actors_.begin() + static_cast<std::ptrdiff_t>(after), std::move(creature));
+            moved = true;
+        }
+    }
+}
+
+void Session::hunters_defense(Actor &target, detail::DamageType type)
+{
+    const auto found = std::find_if(reaction_answers_.begin(), reaction_answers_.end(),
+                                    [&](const auto & answer)
+    {
+        return answer.target == target.source.id && answer.asked == Asked::hit &&
+               answer.verb == "superior_defense";
+    });
+    if (found == reaction_answers_.end())
+        return;
+    found->verb = "defended";
+    const auto name = std::string(detail::damage_name(type));
+    if (!detail::can_apply(target.effects))
+        return;
+    detail::apply_spell_benefit(target.effects, effect_source(target), target.source.name,
+                                detail::EffectKind::defending, static_cast<int>(type));
+    log(target.source.name + " uses Superior Hunter's Defense: Resistance to " + name +
+        " damage this turn.",
+    {
+        "{name} uses Superior Hunter's Defense: Resistance to {type} damage this turn.",
+        {{"name", target.source.name}, {"type", name, true}}
+    });
 }
 
 std::vector<Cell> Session::beam_cells(Cell center) const
@@ -7927,7 +8132,10 @@ void Session::slam(Actor &target, int short_feet)
 
 bool Session::provokes(const Actor &other, const Actor &moving, Cell from, Cell to) const
 {
+    // A dominated creature reacts only with its controller's Reaction too.
+    const auto *boss = controller(other);
     return other.source.side != moving.source.side && conscious(other) && other.reaction &&
+           (!boss || (boss->reaction && conscious(*boss))) &&
            !detail::has_effect(other.effects, detail::EffectKind::turned) &&
            !detail::incapacitated(other.effects) && !detail::opportunity_blocked(other.effects) &&
            !charmed_by(other, moving.source.id) && has_weapon_reaction(other, from, to) &&
@@ -8667,8 +8875,8 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
         return false;
     return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
     {
-        return e.kind == detail::EffectKind::charmed && e.source_actor == other &&
-               e.source_scope == scope_;
+        return (e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated) &&
+               e.source_actor == other && e.source_scope == scope_;
     });
 }
 
@@ -8995,7 +9203,8 @@ bool Session::fought_advantage(const detail::SpellDef &spell)
 {
     // Charm Person: Advantage on the save while the caster's side fights the
     // creature, which in combat is always.
-    return spell.rider == detail::Rider::charm_person;
+    return spell.rider == detail::Rider::charm_person ||
+           spell.rider == detail::Rider::dominate_beast;
 }
 
 int Session::armor_class(const Actor &target) const
@@ -9017,6 +9226,14 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
             result.push_back({detail::AffinityKind::resistance,
                               static_cast<detail::DamageType>(e.dc),
                               "spell:protection_from_energy"});
+        else if (e.kind == detail::EffectKind::defending)
+            result.push_back({detail::AffinityKind::resistance,
+                              static_cast<detail::DamageType>(e.dc),
+                              "feature:superior_hunters_defense"});
+    if (detail::has_effect(target.effects, detail::EffectKind::stoneskin))
+        for (const auto type : {detail::DamageType::bludgeoning, detail::DamageType::piercing,
+                                detail::DamageType::slashing})
+            result.push_back({detail::AffinityKind::resistance, type, "spell:stoneskin"});
     if (rage_of(target))
         for (const auto type : {detail::DamageType::bludgeoning, detail::DamageType::piercing,
                                 detail::DamageType::slashing})
@@ -9068,7 +9285,8 @@ void Session::extend_rage(Actor &a)
 
 bool Session::invisible(const Actor &a)
 {
-    return detail::has_effect(a.effects, detail::EffectKind::invisible);
+    return detail::has_effect(a.effects, detail::EffectKind::invisible) ||
+           detail::has_effect(a.effects, detail::EffectKind::veiled);
 }
 
 void Session::end_invisibility(EntityId id)
@@ -9920,6 +10138,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     int rolled = std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled);
     if (hit)
         rolled = std::max(0, rolled - cut_damage(a, target, rolled, damage_type));
+    if (hit)
+        hunters_defense(target, damage_type);
     const int amount = hit ? dodged(target, deflected(a, target, rolled, damage_type, ranged)) : 0;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
@@ -10593,10 +10813,11 @@ void Session::update_outcome()
     // Decided once: a later call must not announce the outcome again.
     if (outcome_ != Outcome::ongoing)
         return;
+    // A dominated creature still counts for its own side.
     bool party = false, enemies = false;
     for (const auto &a : actors_)
         if (a.life.hp > 0 && !a.life.dead && !a.fled)
-            (a.source.side == Side::party ? party : enemies) = true;
+            ((a.source.side == Side::party) != a.turned ? party : enemies) = true;
     if (!party || !enemies)
     {
         // No member left on the field: it fled if anyone got away.
@@ -10616,6 +10837,8 @@ void Session::update_outcome()
             end_concentration(a);
             end_wild_shape(a);
         }
+        for (auto &a : actors_)
+            release(a);
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -10736,9 +10959,16 @@ void Session::get_up(Actor &a)
 
 bool Session::begin_turn()
 {
+    for (auto &other : actors_)
+        release(other);
     auto &a = actors_[turn_];
     if (a.fled)
         return false;
+    if (a.skips_turn)
+    {
+        a.skips_turn = false;
+        return false;
+    }
     if (a.source.side != Side::party && conscious(a))
     {
         check_morale(a);
@@ -10870,7 +11100,8 @@ bool Session::begin_turn()
         std::erase_if(actor.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::defended ||
-                   e.kind == detail::EffectKind::pack_moved;
+                   e.kind == detail::EffectKind::pack_moved ||
+                   e.kind == detail::EffectKind::defending;
         });
         actor.horde_origin = 0;
         actor.prey_used = false;
@@ -11340,8 +11571,10 @@ void Session::end_turn()
         if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
             blow(zone, actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
-        if (zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell))
-            pack_strikes(zone, actors_[turn_]);
+        if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell)) ||
+                (zone.kind == ZoneKind::beings && zone.caster != actors_[turn_].source.id &&
+                 near_beings(zone, actors_[turn_].source.cell)))
+            spirits_strike(zone, actors_[turn_]);
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -11415,7 +11648,18 @@ void Session::progress_movement()
                 moonbeam_burns(zone, a);
             if (zone.kind == ZoneKind::animals && near_pack(zone, destination) &&
                     !near_pack(zone, departed))
-                pack_strikes(zone, a);
+                spirits_strike(zone, a);
+            // The Emanation reaches a creature coming into it, and the
+            // creatures its caster carries it onto.
+            if (zone.kind == ZoneKind::beings && zone.caster != a.source.id &&
+                    near_beings(zone, destination) && !near_beings(zone, departed))
+                spirits_strike(zone, a);
+            if (zone.kind == ZoneKind::beings && zone.caster == a.source.id)
+                for (auto &other : actors_)
+                    if (other.source.id != a.source.id &&
+                            distance(destination, other.source.cell) <= 10 &&
+                            distance(departed, other.source.cell) > 10)
+                        spirits_strike(zone, other);
         }
         guardian_tests(a);
         if (caught)
@@ -11448,6 +11692,8 @@ bool Session::submit(const Command &command)
             answer_reaction(command);
         else
             perform(command);
+        if (!reaction_prompt_)
+            settle_dominated();
         notice_hidden();
         // Revisions are command tickets; zero is reserved for invalid commands.
         // Unsigned wrap is defined, but must skip that reserved value.
@@ -11497,6 +11743,13 @@ bool Session::can_shield(const Actor &target) const
            !detail::has_effect(target.effects, detail::EffectKind::shield);
 }
 
+bool Session::can_defend(const Actor &target) const
+{
+    // Superior Hunter's Defense: the Reaction when an attack would damage it.
+    return def(target).superior_defense && conscious(target) && target.reaction &&
+           !detail::incapacitated(target.effects);
+}
+
 bool Session::can_dodge(const Actor &target) const
 {
     // Uncanny Dodge: the attacker must be seen; a Blinded Rogue sees no one.
@@ -11522,7 +11775,8 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
         asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::boon ||
         asked == Asked::endure || asked == Asked::thunder || asked == Asked::retaliate ||
         (can_shield(target) && !critical) ||
-        (asked == Asked::hit && (can_deflect(target, deflectable) || can_dodge(target)));
+        (asked == Asked::hit &&
+         (can_deflect(target, deflectable) || can_dodge(target) || can_defend(target)));
     if (askable)
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
 }
@@ -11928,7 +12182,7 @@ void Session::perform(const Command &command)
         return can_shield(other) || def(other).deflect ||
                detail::knows_spell(def(other).spells, "hellish_rebuke") ||
                def(other).giant != GiantBoon::none || def(other).retaliation ||
-               def(other).uncanny_dodge;
+               def(other).uncanny_dodge || def(other).superior_defense;
     });
     damage_taken_.clear();
     if (!askable)
@@ -11981,7 +12235,8 @@ void Session::answer_reaction(const Command &command)
         log(defender.source.name + " casts Shield.",
         {"{name} casts {spell}.", {{"name", defender.source.name}, {"spell", "Shield", true}}});
     }
-    else if (command.verb == "deflect" || command.verb == "uncanny_dodge")
+    else if (command.verb == "deflect" || command.verb == "uncanny_dodge" ||
+             command.verb == "superior_defense")
         defender.reaction = false;
     perform(prompt.command);
 }
@@ -12569,6 +12824,26 @@ void Session::dispatch(const Command &command)
         attack(a, target, AttackRange::melee,
                SpellAttack{.dice = {1, 8, casting_modifier(d)}, .type = detail::DamageType::force});
     }
+    else if (command.verb == "woodland_disengage")
+    {
+        a.bonus = false;
+        a.disengaged = true;
+        log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "natures_veil")
+    {
+        a.bonus = false;
+        --a.lay_on_hands;
+        const auto index = index_of(a.source.id);
+        const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+        detail::apply_poisoned(a.effects, effect_source(a), a.source.name, next_turn_ms(a) + slot,
+                               detail::EffectKind::veiled);
+        log(a.source.name + " uses Nature's Veil and is Invisible until the end of its next turn.",
+        {
+            "{name} uses Nature's Veil and is Invisible until the end of its next turn.",
+            {{"name", a.source.name}}
+        });
+    }
     else if (command.verb == "move_spirit_pack")
         move_spirit_pack(a, actor(command.target));
     else if (command.verb == "superior_hunters_prey")
@@ -12686,6 +12961,8 @@ void Session::dispatch(const Command &command)
         if (command.verb == "opportunity")
         {
             a.reaction = false;
+            if (const auto *boss = controller(a))
+                actor(boss->source.id).reaction = false;
             opportunity_ = true;
             attack(a, actor(command.target), AttackRange::melee);
             opportunity_ = false;
@@ -12961,7 +13238,7 @@ std::string Session::save() const
             out << ' ' << id;
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
-            << a.prey_used << ' ' << a.prey_origin << ' '
+            << a.prey_used << ' ' << a.prey_origin << ' ' << a.turned << ' ' << a.skips_turn << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
             << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
@@ -13168,6 +13445,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
           actor.horde_used >> actor.horde_origin >> actor.prey_used >> actor.prey_origin >>
+          actor.turned >> actor.skips_turn >>
           actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
           actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
@@ -13609,6 +13887,10 @@ void Session::validate_restored_state() const
     for (const auto &a : actors_)
         if (a.life.hp > max_hp(a))
             throw std::runtime_error("Invalid checkpoint Hit Points");
+    for (const auto &a : actors_)
+        if ((a.turned != detail::has_effect(a.effects, detail::EffectKind::dominated)) ||
+                (a.skips_turn && !a.turned))
+            throw std::runtime_error("Invalid dominated creature");
     for (const auto &a : actors_)
         for (const auto origin : {a.horde_origin, a.prey_origin})
             if (origin && std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -14057,8 +14339,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::overgrowth) || zone.slot > 9 ||
-                (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals)) ||
+                kind > static_cast<unsigned>(ZoneKind::beings) || zone.slot > 9 ||
+                (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
+                 kind != static_cast<unsigned>(ZoneKind::beings)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
@@ -14106,7 +14389,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
                      answer.verb != "giant_boon" && answer.verb != "stones_endurance" &&
                      answer.verb != "storms_thunder" && answer.verb != "retaliate" &&
-                     answer.verb != "uncanny_dodge" &&
+                     answer.verb != "uncanny_dodge" && answer.verb != "superior_defense" &&
                      answer.verb != "decline"))
                 throw std::runtime_error("Invalid reaction prompt");
             answer.asked = static_cast<Asked>(kind);
@@ -14644,6 +14927,15 @@ class Module final : public RulesModule
                 "Hunter: Superior Hunter's Prey. Once a turn, after you damage the creature your Hunter's Mark marks, the mark's damage can also strike another creature within 30 feet of it.\nA second level 3 spell slot.";
         if (klass == CharacterClass::ranger && result.level == 12)
             result.description = "A feat or ability points.";
+        if (klass == CharacterClass::ranger && result.level == 13)
+            result.description =
+                "Relentless Hunter: taking damage cannot break your Concentration on Hunter's Mark.\nA level 4 spell slot and Ranger spells: Conjure Woodland Beings, Dominate Beast, Freedom of Movement and Stoneskin.\nA fifth free Hunter's Mark (Favored Enemy); Proficiency Bonus +5.";
+        if (klass == CharacterClass::ranger && result.level == 14)
+            result.description =
+                "Nature's Veil: a Bonus Action makes you Invisible until the end of your next turn, as many times as your Wisdom modifier per Long Rest.";
+        if (klass == CharacterClass::ranger && result.level == 15)
+            result.description =
+                "Hunter: Superior Hunter's Defense. When an attack hits you, your Reaction gives you Resistance to its damage type for the rest of the turn.\nA second level 4 spell slot.";
         if (klass == CharacterClass::paladin && result.level == 5)
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nLevel 2 spell slots and Paladin spells, among them Shining Smite; Divine Smite from a level 2 slot deals 3d8. Aid is always prepared.\nProficiency Bonus +3.";
@@ -16782,7 +17074,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.211", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.212", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

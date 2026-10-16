@@ -134,7 +134,10 @@ enum class Rider : unsigned
     protection_from_energy,
     conjure_animals,
     wind_wall,
-    plant_growth
+    plant_growth,
+    stoneskin,
+    conjure_woodland_beings,
+    dominate_beast
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -1407,6 +1410,47 @@ inline constexpr std::array spell_table
         .concentration = true,
         .evocation = true,
         .wall = 50},
+    // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
+    SpellDef{
+        .id = "stoneskin",
+        .label = "Stoneskin",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::stoneskin,
+        .concentration = true},
+    // SRD 5.2.1 p. 118: spirits in a 10-foot Emanation around the caster; a
+    // creature that comes into it or ends its turn there makes a Wisdom save,
+    // once a turn.
+    SpellDef{
+        .id = "conjure_woodland_beings",
+        .label = "Conjure Woodland Beings",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::self,
+        .range = 10,
+        .save = Ability::wisdom,
+        .half_on_success = true,
+        .damage = DamageType::force,
+        .dice = {5, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::conjure_woodland_beings,
+        .concentration = true},
+    // SRD 5.2.1 p. 125: a Beast that fails a Wisdom save fights for the caster,
+    // acting right after it (LEVELS-1), saving again whenever it takes damage.
+    SpellDef{
+        .id = "dominate_beast",
+        .label = "Dominate Beast",
+        .level = 4,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .save = Ability::wisdom,
+        .rider = Rider::dominate_beast,
+        .concentration = true},
     // SRD 5.2.1 p. 153: Overgrowth only; Enrichment has nothing to act on.
     SpellDef{
         .id = "plant_growth",

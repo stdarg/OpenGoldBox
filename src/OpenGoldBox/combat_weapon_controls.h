@@ -113,6 +113,8 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
             : verb == "extend_rage"       ? "Extend Rage"
             : verb == "intimidating_presence" ? "Intimidating Presence"
             : verb == "intimidating_presence_rage" ? "Intimidating Presence (1 Rage)"
+            : verb == "natures_veil"      ? "Nature's Veil"
+            : verb == "woodland_disengage" ? "Disengage (Conjure Woodland Beings)"
             : verb == "divine_smite_free" ? "Divine Smite (Paladin's Smite)"
             : verb == "divine_smite"      ? "Divine Smite"
             : verb == "searing_smite"     ? "Searing Smite"

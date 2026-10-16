@@ -253,9 +253,21 @@ enum class EffectKind : unsigned
     pack_tested = 99,
     // Conjure Animals, on its caster: the pack has moved this turn.
     pack_moved = 100,
+    // Stoneskin: Resistance to Bludgeoning, Piercing and Slashing damage.
+    stoneskin = 101,
+    // Conjure Woodland Beings: the creature has saved against its spirits this turn.
+    beings_tested = 102,
+    // Dominate Beast: Charmed and fighting for the source (LEVELS-1); `dc` is
+    // the save it repeats when damaged.
+    dominated = 103,
+    // Nature's Veil (Ranger 14): Invisible until the end of its next turn.
+    veiled = 104,
+    // Superior Hunter's Defense (Hunter 15): Resistance to the DamageType in
+    // `dc` until the end of the turn.
+    defending = 105,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = pack_moved
+    last = defending
 };
 
 // Magic Circle's creature types, by `dc`.

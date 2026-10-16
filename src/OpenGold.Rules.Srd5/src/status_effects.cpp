@@ -128,7 +128,8 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::moonlit && kind != EffectKind::scorched &&
             kind != EffectKind::stunned && kind != EffectKind::staggered &&
             kind != EffectKind::dazed && kind != EffectKind::smite_protected &&
-            kind != EffectKind::faith_tested && kind != EffectKind::pack_tested) ||
+            kind != EffectKind::faith_tested && kind != EffectKind::pack_tested &&
+            kind != EffectKind::beings_tested && kind != EffectKind::veiled) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -525,8 +526,9 @@ void apply_searing_smite(EffectState &effects, EffectSource source,
 int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath ||
-           kind == EffectKind::energy_ward
+           kind == EffectKind::energy_ward || kind == EffectKind::defending
            ? static_cast<int>(DamageType::count) - 1
+           : kind == EffectKind::dominated ? 40
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
@@ -559,6 +561,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::hidden:
     case EffectKind::free_moving:
     case EffectKind::energy_ward:
+    case EffectKind::stoneskin:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -592,6 +595,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::shillelagh:
     case EffectKind::heated:
     case EffectKind::ensnaring:
+    case EffectKind::dominated:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
@@ -601,6 +605,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::metamagic:
     case EffectKind::defended:
     case EffectKind::pack_moved:
+    case EffectKind::defending:
         return 6000; // the rest of the turn, cleared when it ends
     case EffectKind::extended:
         return 1200000; // a doubled 10-minute Concentration
@@ -875,6 +880,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::staggering || kind == EffectKind::sundered ||
                            kind == EffectKind::dazed || kind == EffectKind::smite_protected ||
                            kind == EffectKind::faith_tested || kind == EffectKind::pack_tested ||
+                           kind == EffectKind::beings_tested || kind == EffectKind::veiled ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -947,7 +953,8 @@ EffectState read_effects(std::istream &in)
                                               kind == EffectKind::dazzled ||
                                               kind == EffectKind::acid_arrow ||
                                               kind == EffectKind::raging ||
-                                              kind == EffectKind::lit)
+                                              kind == EffectKind::lit ||
+                                              kind == EffectKind::veiled)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");
