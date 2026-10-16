@@ -1,4 +1,5 @@
 #include "opengold/sound_player.h"
+#include "test_support.h"
 
 #include <cmath>
 #include <iostream>
@@ -21,19 +22,7 @@ void require(bool condition, const char *message)
         throw std::runtime_error(message);
 }
 
-template <class Exception, class F> void rejects(F action)
-{
-    bool rejected = false;
-    try
-    {
-        action();
-    }
-    catch (const Exception &)
-    {
-        rejected = true;
-    }
-    require(rejected, "Expected exception was not raised");
-}
+using opengold::test::rejects;
 
 SoundEffect tone(unsigned id)
 {

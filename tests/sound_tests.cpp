@@ -1,4 +1,5 @@
 #include "opengold/speaker_audio.h"
+#include "test_support.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -17,19 +18,7 @@ void require(bool ok, const char *message)
         throw std::runtime_error(message);
 }
 
-template <class F> void rejects(F action)
-{
-    bool rejected = false;
-    try
-    {
-        action();
-    }
-    catch (const std::runtime_error &)
-    {
-        rejected = true;
-    }
-    require(rejected, "Malformed sound input was accepted");
-}
+using opengold::test::rejects;
 
 void word(Bytes &b, std::size_t at, unsigned value)
 {
@@ -63,27 +52,27 @@ void packing()
             "EXEPACK runs");
     auto bad = file;
     bad[41] = 255;
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)unpack_sound_executable(bad);
     });
     bad = file;
     bad[42] = 0x90;
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)unpack_sound_executable(bad);
     });
     bad = file;
     word(bad, 8, 0xffff);
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)unpack_sound_executable(bad);
     });
     for (std::size_t i = 0; i < 32; ++i)
-        rejects(
+        rejects<std::runtime_error>(
             [&]
     {
         (void)unpack_sound_executable(std::span(file).first(i));
@@ -113,21 +102,21 @@ void sequences()
     require(ticks[1].enabled && !ticks.back().enabled, "Speaker gate/termination");
     auto bad = data;
     bad[17] = 49;
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
     });
     bad = data;
     bad[16] = 0xfa;
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
     });
     bad = data;
     command(bad, 254, 38, 65535);
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)decode_speaker_sequence(bad,
@@ -135,14 +124,14 @@ void sequences()
     });
     bad = Bytes(16);
     command(bad, 254, 38, 16);
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)decode_speaker_sequence(bad, {16, 0, 0, 0});
     });
     bad = Bytes(16);
     command(bad, 255, 0, 65535);
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)decode_speaker_sequence(bad, {16, 0, 0, 0});

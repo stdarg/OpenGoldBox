@@ -1,6 +1,7 @@
 #include "opengold/srd5.h"
 #include "opengold/combat_demo.h"
 #include "opengold/character_rules.h"
+#include "test_support.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -16,25 +17,8 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F &&f, const char *message)
-{
-    bool failed = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        failed = true;
-    }
-    check(failed, message);
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 std::filesystem::path pack()
 {

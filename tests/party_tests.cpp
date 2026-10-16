@@ -9,6 +9,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <array>
 #include <cstdlib>
@@ -25,25 +26,8 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool rejected = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        rejected = true;
-    }
-    check(rejected, "Operation should reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 // A slot and a member ID are both small numbers, and the member in a slot changes
 // as the party changes, so selection must not take a MemberId (Effective C++ Item 18).

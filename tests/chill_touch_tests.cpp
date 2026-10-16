@@ -3,6 +3,7 @@
 #include "life_cycle.h"
 #include "recovery_timeline.h"
 #include "status_effects.h"
+#include "test_support.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -16,25 +17,8 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool v, const char *m)
-{
-    if (!v)
-        throw std::runtime_error(m);
-}
-
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Malformed state must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 std::string read(const std::filesystem::path &p)
 {

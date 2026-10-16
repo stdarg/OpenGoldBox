@@ -7,6 +7,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -44,24 +45,8 @@ bool requested_fixtures_written()
     return requested;
 }
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> bool rejects(F f)
-{
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        return true;
-    }
-    return false;
-}
+using opengold::test::check;
+using opengold::test::throws;
 
 std::unique_ptr<rules::RulesModule> module()
 {
@@ -188,7 +173,7 @@ void coin_purse_tests()
 
     auto everything = view;
     std::fill(everything.begin(), everything.begin() + 5, 0);
-    check(rejects([&]
+    check(throws([&]
     {
         (void)settle_script_coins(gold_and_silver, everything);
     }),
@@ -1128,7 +1113,7 @@ void fetch_potion(Expedition &trip, const std::string &assets)
         town.advance(.5);
     check(town.snapshot().phase == por::TourPhase::awaiting_continue,
           "The booth's dialogue waits for an answer");
-    check(rejects([&]
+    check(throws([&]
     {
         (void)encode_campaign(*party, &town, assets);
     }),

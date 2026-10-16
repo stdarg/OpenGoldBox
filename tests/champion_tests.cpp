@@ -1,6 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "dice.h"
+#include "test_support.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -13,25 +14,8 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const char *why)
-{
-    if (!ok)
-        throw std::runtime_error(why);
-}
-
-template <class F> void rejects(F f)
-{
-    bool bad = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        bad = true;
-    }
-    check(bad, "Malformed state must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 auto module()
 {

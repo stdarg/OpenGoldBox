@@ -2,6 +2,7 @@
 #include "opengold/save_file.h"
 #include "opengold/srd5.h"
 #include "opengold/combat_demo.h"
+#include "test_support.h"
 #include <iostream>
 #include <chrono>
 #include <fstream>
@@ -26,25 +27,8 @@ struct TestDirectory
     }
 };
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Invalid save must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 // The message f throws, or an empty string when f does not throw.
 template <class F> std::string rejection_message(F f)

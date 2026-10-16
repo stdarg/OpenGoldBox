@@ -1,4 +1,5 @@
 #include "combat_grid.h"
+#include "test_support.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -11,24 +12,8 @@ using namespace opengold::srd5::detail;
 
 namespace
 {
-void check(bool condition, const char *message)
-{
-    if (!condition)
-        throw std::runtime_error(message);
-}
-
-template <class Function> void rejects(Function function)
-{
-    try
-    {
-        function();
-    }
-    catch (const std::runtime_error &)
-    {
-        return;
-    }
-    throw std::runtime_error("Invalid grid input was accepted");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 // Independent, deliberately slow graph oracle: inspect every pair of cells,
 // then relax all edges repeatedly (Bellman-Ford), without a priority queue.
@@ -258,40 +243,40 @@ void boundaries_and_ties()
           "Movement requires a single step");
     check(!has_line_of_sight(board, {std::numeric_limits<int>::min(), 0}, {0, 0}),
           "Outside sight endpoint rejected");
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)grid.reachable(-1);
     });
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)MovementGrid(board, {1, 1}, {});
     });
     auto invalid = board;
     invalid.terrain.pop_back();
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)MovementGrid(invalid, {0, 0}, {});
     });
     invalid = board;
     invalid.width = std::numeric_limits<int>::max();
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)MovementGrid(invalid, {0, 0}, {});
     });
     invalid = board;
     invalid.terrain[0] = static_cast<Terrain>(4);
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)MovementGrid(invalid, {0, 0}, {});
     });
     invalid = board;
     invalid.plants.assign(2, true);
-    rejects(
+    rejects<std::runtime_error>(
         [&]
     {
         (void)MovementGrid(invalid, {0, 0}, {});

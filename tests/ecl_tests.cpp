@@ -1,4 +1,5 @@
 #include "opengold/ecl_machine.h"
+#include "test_support.h"
 #include <chrono>
 #include <algorithm>
 #include <cstdlib>
@@ -47,25 +48,8 @@ concept ExposesRawValue = requires(const Argument &argument)
 
 static_assert(!ExposesRawValue<EclHostArgument>);
 
-void check(bool condition, const char *message)
-{
-    if (!condition)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F fn)
-{
-    bool threw = false;
-    try
-    {
-        fn();
-    }
-    catch (const EclError &)
-    {
-        threw = true;
-    }
-    check(threw, "Expected ECL error");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 Bytes record(const Bytes &body)
 {
@@ -92,7 +76,7 @@ EclMachine machine(const Bytes &body)
 void construction()
 {
     // A machine is never built without a program to copy its image from.
-    rejects([]
+    rejects<EclError>([]
     {
         EclMachine vm(nullptr);
     });
@@ -114,12 +98,12 @@ void host_random_and_string_copy()
     const auto request = vm.run().request;
     check(request.has_value(), "Surprise host request");
     auto replay = vm;
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)vm.host_random(request->id + 1, 6);
     });
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)vm.host_random(request->id, 0);
@@ -131,7 +115,7 @@ void host_random_and_string_copy()
               "Host dice are bounded and checkpoint deterministic");
     }
     check(vm.resume_host(request->id, {}), "Complete host dice request");
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)vm.host_random(request->id, 6);
@@ -141,31 +125,31 @@ void host_random_and_string_copy()
 void decoding()
 {
     check(unpack_ecl_text(Bytes{4, 32, 192}) == "ABC", "Six-bit packed text");
-    rejects(
+    rejects<EclError>(
         []
     {
         (void)EclProgram::decode({}, "empty");
     });
-    rejects(
+    rejects<EclError>(
         []
     {
         (void)EclProgram::decode(Bytes(70000), "huge");
     });
-    rejects(
+    rejects<EclError>(
         []
     {
         (void)EclProgram::decode(record(Bytes(7680)), "beyond PoR zone");
     });
     auto bad = record({0});
     bad[2] = 0;
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)EclProgram::decode(bad, "entry");
     });
     bad = record({0});
     bad[4] = 0;
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)EclProgram::decode(bad, "target");
@@ -177,7 +161,7 @@ void decoding()
             })
     {
         const auto p = program(body);
-        rejects(
+        rejects<EclError>(
             [&]
         {
             (void)p->instruction(0x9914);
@@ -185,7 +169,7 @@ void decoding()
     }
     const auto p = program({52, 0, 1, 0});
     check(p->instruction(0x9914).next == 0x9917, "PoR one-operand ECL CLOCK grammar");
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)p->instruction(0x9918);
@@ -290,7 +274,7 @@ void suspension()
           "Waiting does not reexecute menu");
     check(!vm.resume(id + 1, 0) && !vm.resume(id) && !vm.resume(id, 2),
           "Stale/invalid menu replies");
-    rejects(
+    rejects<EclError>(
         [&]
     {
         vm.bind_variable(EclAddress{0x9700}, 99);
@@ -488,19 +472,19 @@ void host_argument_kinds()
           address.address() == EclAddress{0x6DCB} && text.kind() == EclArgumentKind::text &&
           text.text() == "Fight",
           "Host arguments read back as their own kind");
-    rejects([&]
+    rejects<EclError>([&]
     {
         (void)number.address();
     });
-    rejects([&]
+    rejects<EclError>([&]
     {
         (void)address.number();
     });
-    rejects([&]
+    rejects<EclError>([&]
     {
         (void)text.number();
     });
-    rejects([&]
+    rejects<EclError>([&]
     {
         (void)number.text();
     });
@@ -693,7 +677,7 @@ struct Fixture
 void catalogs()
 {
     Fixture f;
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)EclCatalog::load(f.path);
@@ -710,7 +694,7 @@ void catalogs()
     EclMachine vm(held);
     check(vm.start(4) && vm.run().state == EclState::completed, "Program outlives catalog");
     f.write("ECL2.DAX", true);
-    rejects(
+    rejects<EclError>(
         [&]
     {
         (void)EclCatalog::load(f.path);

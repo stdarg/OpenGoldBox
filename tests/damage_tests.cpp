@@ -15,6 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 #include "split_aim.h"
+#include "test_support.h"
 using namespace opengold;
 using namespace opengold::rules;
 namespace damage = opengold::srd5::detail;
@@ -25,25 +26,8 @@ using damage::DamageType;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Invalid damage data must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 std::string read(const std::filesystem::path &p)
 {

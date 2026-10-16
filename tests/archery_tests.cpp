@@ -1,6 +1,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
 #include "combat_fixture.h"
+#include "test_support.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -14,25 +15,8 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool failed = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        failed = true;
-    }
-    check(failed, "Invalid feat operation must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 std::string read(const std::filesystem::path &p)
 {

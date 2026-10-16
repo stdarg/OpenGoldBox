@@ -1,4 +1,5 @@
 #include "opengold/encounter_budget.h"
+#include "test_support.h"
 #include <array>
 #include <iostream>
 #include <stdexcept>
@@ -7,24 +8,8 @@ using namespace opengold;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> bool rejects(F f)
-{
-    try
-    {
-        f();
-    }
-    catch (const std::invalid_argument &)
-    {
-        return true;
-    }
-    return false;
-}
+using opengold::test::check;
+using opengold::test::throws;
 
 // SRD 5.2.1 p. 202 Moderate budgets, per character, summed over the party.
 void budgets()
@@ -41,12 +26,12 @@ void budgets()
           "A mixed-level party sums each character's own budget");
     const std::array<unsigned, 1> twentieth{20};
     check(encounter_xp_budget(twentieth, 100) == 13200, "The table runs to level 20");
-    check(rejects([&]
+    check(throws<std::invalid_argument>([&]
     {
         (void)encounter_xp_budget(six_level_two, 201);
     }), "Challenge is at most 200");
     const std::array<unsigned, 1> invalid{21};
-    check(rejects([&]
+    check(throws<std::invalid_argument>([&]
     {
         (void)encounter_xp_budget(invalid, 100);
     }), "Levels outside the table are rejected");

@@ -1,6 +1,7 @@
 #include "opengold/character_art.h"
 #include "opengold/character_creator.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <set>
 #include <cstdlib>
@@ -17,25 +18,8 @@ IconPose pose_of(bool action)
     return action ? IconPose::action : IconPose::ready;
 }
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F action, const char *message)
-{
-    bool rejected = false;
-    try
-    {
-        action();
-    }
-    catch (const std::exception &)
-    {
-        rejected = true;
-    }
-    check(rejected, message);
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 // A roll and an ability are different kinds of number, so passing them in the
 // wrong order must not compile (Effective C++ Item 18).

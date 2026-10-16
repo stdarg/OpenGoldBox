@@ -3,6 +3,7 @@
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
+#include "test_support.h"
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
@@ -21,25 +22,8 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f, const char *message)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, message);
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 std::unique_ptr<RulesModule> module()
 {

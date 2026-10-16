@@ -4,6 +4,7 @@
 #include "combat_fixture.h"
 #include "status_effects.h"
 #include "weapons.h"
+#include "test_support.h"
 #include <fstream>
 #include <cstdlib>
 #include <algorithm>
@@ -19,25 +20,8 @@ namespace fx = opengold::srd5::detail;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool failed = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        failed = true;
-    }
-    check(failed, "Invalid effect input accepted");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 // An effect's scope and source, and a save's DC and first-save delay, are
 // integers of the same kind side by side, so they travel in named structs:

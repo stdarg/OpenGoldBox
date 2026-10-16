@@ -1,5 +1,6 @@
 #include <sstream>
 #include "status_effects.h"
+#include "test_support.h"
 namespace fx = opengold::srd5::detail;
 #include "opengold/campaign_save.h"
 #include "opengold/character_pool.h"
@@ -13,11 +14,7 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
+using opengold::test::check;
 
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
@@ -64,19 +61,7 @@ std::string read(const std::filesystem::path &p)
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Invalid spell data must reject");
-}
+using opengold::test::rejects;
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {

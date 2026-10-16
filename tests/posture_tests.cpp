@@ -7,6 +7,7 @@
 #include "combat_grid.h"
 #include "recovery_timeline.h"
 #include "status_effects.h"
+#include "test_support.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -18,25 +19,8 @@ namespace fx = opengold::srd5::detail;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool failed = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        failed = true;
-    }
-    check(failed, "Invalid posture state accepted");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 auto module()
 {

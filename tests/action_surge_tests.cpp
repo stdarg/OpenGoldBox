@@ -3,6 +3,7 @@
 #include "action_budget.h"
 #include <filesystem>
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -13,11 +14,7 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-        throw std::runtime_error(message);
-}
+using opengold::test::check;
 
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
@@ -53,19 +50,7 @@ Command command(const CombatSession &c, std::string_view verb, EntityId target =
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Invalid state must reject");
-}
+using opengold::test::rejects;
 
 bool has(const CombatSession &c, std::string_view verb)
 {

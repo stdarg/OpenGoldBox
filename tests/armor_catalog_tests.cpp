@@ -3,6 +3,7 @@
 #include "opengold/srd5.h"
 #include "armor.h"
 #include "status_effects.h"
+#include "test_support.h"
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -15,25 +16,8 @@ namespace catalog = opengold::srd5::detail;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Invalid equipment/check must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 const auto fixtures = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "tests/fixtures";
 

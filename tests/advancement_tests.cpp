@@ -7,30 +7,14 @@
 #include <stdexcept>
 #include <utility>
 #include "split_aim.h"
+#include "test_support.h"
 using namespace opengold;
 using namespace opengold::rules;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-        throw std::runtime_error(message);
-}
-
-template <class F> void rejects(F f)
-{
-    bool caught = false;
-    try
-    {
-        f();
-    }
-    catch (const std::exception &)
-    {
-        caught = true;
-    }
-    check(caught, "Invalid choice must reject");
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
 auto module()
 {
