@@ -90,7 +90,7 @@ bool save_proficient(CharacterClass character_class, unsigned level, Ability abi
             (ability == Ability::wisdom || ability == Ability::charisma));
 }
 
-bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
+bool healing_blocked(const EffectState &effects, std::uint64_t after_ms) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [&](const auto & e)
@@ -151,7 +151,7 @@ void apply_poisoned(EffectState &effects, EffectSource source,
                               0, duration_ms, 0});
 }
 
-bool opportunity_blocked(const EffectState &effects)
+bool opportunity_blocked(const EffectState &effects) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
@@ -206,7 +206,7 @@ void apply_shocking_grasp(EffectState &effects, EffectSource source,
                               EffectKind::shocking_grasp, 0, duration_ms, 0});
 }
 
-int speed_penalty(const EffectState &effects)
+int speed_penalty(const EffectState &effects) noexcept
 {
     // Repeated instances of one source do not stack, but these distinct
     // features each reduce Speed by 10 feet.
@@ -224,7 +224,7 @@ int speed_penalty(const EffectState &effects)
            (has_effect(effects, EffectKind::longstrider) ? 10 : 0);
 }
 
-bool slowed(const EffectState &effects)
+bool slowed(const EffectState &effects) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
@@ -233,7 +233,7 @@ bool slowed(const EffectState &effects)
     });
 }
 
-bool frosted(const EffectState &effects)
+bool frosted(const EffectState &effects) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
@@ -316,7 +316,7 @@ void apply_frosts_chill(EffectState &effects, EffectSource source,
                               EffectKind::frosts_chill, 0, duration_ms, 0});
 }
 
-bool sapped(const EffectState &effects)
+bool sapped(const EffectState &effects) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
@@ -325,7 +325,7 @@ bool sapped(const EffectState &effects)
     });
 }
 
-bool vexed_by(const EffectState &effects, EffectSource source)
+bool vexed_by(const EffectState &effects, EffectSource source) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [&](const auto & e)
@@ -335,7 +335,7 @@ bool vexed_by(const EffectState &effects, EffectSource source)
     });
 }
 
-bool studied_by(const EffectState &effects, EffectSource source)
+bool studied_by(const EffectState &effects, EffectSource source) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [&](const auto & e)
@@ -360,7 +360,7 @@ void apply_studied(EffectState &effects, EffectSource source, std::string name,
                               EffectKind::studied, 0, duration_ms, 0});
 }
 
-bool has_attack_mastery(const EffectState &effects)
+bool has_attack_mastery(const EffectState &effects) noexcept
 {
     return sapped(effects) || slowed(effects) ||
            std::any_of(effects.active.begin(), effects.active.end(),
@@ -429,13 +429,13 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, Effect
 
 // Every Paralyzed and Restrained effect in the game is magic, which Freedom of
 // Movement keeps off.
-bool paralyzed(const EffectState &effects)
+bool paralyzed(const EffectState &effects) noexcept
 {
     return has_effect(effects, EffectKind::hold_person) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
-bool stunned(const EffectState &effects)
+bool stunned(const EffectState &effects) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(), [](const auto & e)
     {
@@ -453,7 +453,7 @@ void apply_asleep(EffectState &effects, EffectSource source, std::string name)
     effects.prone = true;
 }
 
-bool incapacitated(const EffectState &effects)
+bool incapacitated(const EffectState &effects) noexcept
 {
     return paralyzed(effects) || stunned(effects) || has_effect(effects, EffectKind::petrified) ||
            has_effect(effects, EffectKind::jarred) ||
@@ -504,7 +504,7 @@ void apply_sanctuary(EffectState &effects, EffectSource source,
                               EffectKind::sanctuary, dc, 60000, 0});
 }
 
-bool restrained(const EffectState &effects)
+bool restrained(const EffectState &effects) noexcept
 {
     return (has_effect(effects, EffectKind::ensnaring_strike) ||
             has_effect(effects, EffectKind::entangle) || has_effect(effects, EffectKind::webbed) ||
@@ -534,7 +534,7 @@ void apply_ensnaring_strike(EffectState &effects, EffectSource source,
                               EffectKind::ensnaring_strike, dc, 60000, 0});
 }
 
-bool blinded(const EffectState &effects)
+bool blinded(const EffectState &effects) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [](const auto & e)
@@ -544,7 +544,7 @@ bool blinded(const EffectState &effects)
     });
 }
 
-bool can_apply(const EffectState &effects)
+bool can_apply(const EffectState &effects) noexcept
 {
     return effects.active.size() < effect_limit &&
            effects.next_id < std::numeric_limits<std::uint64_t>::max();
@@ -814,7 +814,7 @@ int hit_point_bonus(const EffectState &effects)
     return aid + feast - drained;
 }
 
-bool has_effect(const EffectState &effects, EffectKind kind)
+bool has_effect(const EffectState &effects, EffectKind kind) noexcept
 {
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [&](const auto & e)

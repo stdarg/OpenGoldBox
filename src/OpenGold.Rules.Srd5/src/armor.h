@@ -51,7 +51,7 @@ inline constexpr std::array armors
     // Zero duration denotes a Utilize action, not a free equipment change.
     Armor{"shield", "Shield", ArmorCategory::shield, 2, 0, false, 6, 1000, 0, 0}};
 
-inline const Armor *armor(std::string_view key)
+inline constexpr const Armor *armor(std::string_view key)
 {
     for (const auto &item : armors)
         if (item.key == key)

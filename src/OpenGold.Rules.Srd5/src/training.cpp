@@ -571,16 +571,6 @@ TrainingChoiceGroup scholar_options(std::span<const FeatureGrant> grants)
     return group;
 }
 
-const ExpertisePick *expertise_pick(std::string_view source)
-{
-    const auto found = std::find_if(expertise_picks.begin(), expertise_picks.end(),
-                                    [&](const auto & pick)
-    {
-        return pick.source == source;
-    });
-    return found == expertise_picks.end() ? nullptr : &*found;
-}
-
 TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
                                       std::span<const FeatureGrant> grants)
 {

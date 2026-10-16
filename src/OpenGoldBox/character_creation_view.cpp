@@ -49,7 +49,7 @@ namespace
 {
 using presentation::gs;
 
-const std::array<const char *, 9> steps
+constexpr std::array<const char *, 9> steps
 {
     N_("Name, Race & Gender"), N_("Alignment"),         N_("Attributes"),
     N_("Class"),               N_("Training"),          N_("Spell Choices"),
@@ -70,16 +70,13 @@ CreationField choice_field(CreationStep step)
     }
 }
 
-const std::array<const char *, 6> full_abilities{N_("Strength"),     N_("Dexterity"),
-    N_("Constitution"), N_("Intelligence"),
-    N_("Wisdom"),       N_("Charisma")};
-const std::array<const char *, 16> colors
+constexpr std::array<const char *, 16> colors
 {
     N_("Black"),     N_("Blue"),       N_("Green"),       N_("Cyan"),
     N_("Red"),       N_("Magenta"),    N_("Brown"),       N_("Light gray"),
     N_("Dark gray"), N_("Light blue"), N_("Light green"), N_("Light cyan"),
     N_("Light red"), N_("Pink"),       N_("Yellow"),      N_("White")};
-const std::array<const char *, 6> parts{N_("Weapon"), N_("Body"), N_("Hair / Face"),
+constexpr std::array<const char *, 6> parts{N_("Weapon"), N_("Body"), N_("Hair / Face"),
     N_("Shield"), N_("Arms"), N_("Legs")};
 
 std::string signed_number(int n)
@@ -583,7 +580,7 @@ void CharacterCreationView::refresh()
         {
             const auto ability = rules::all_abilities[i];
             auto *b = &required_node<Button>(*this, gs("Ability" + std::to_string(i)));
-            b->set_text(String(std::cmp_equal(selected_score_, i) ? "> " : "") + i18n::text(full_abilities[i]));
+            b->set_text(String(std::cmp_equal(selected_score_, i) ? "> " : "") + i18n::text(i18n::ability_names[i]));
             b->set_disabled(!d.rolled);
             std::string dice;
             if (d.rolled &&
@@ -1327,7 +1324,7 @@ void CharacterCreationView::check_run()
             {
                 const auto &s = completed_->sheet();
                 const auto ability = rules::all_abilities[i];
-                const auto heading = "[b]" + std::string(full_abilities[i]) + "[/b]\n";
+                const auto heading = "[b]" + std::string(i18n::ability_names[i]) + "[/b]\n";
                 if (s.bonuses[ability] == 0)
                 {
                     if (text.contains(gs(heading)))

@@ -594,7 +594,7 @@ struct RepeatingSave
 };
 
 // At a future boundary, effects expiring at that boundary no longer prevent healing.
-[[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0);
+[[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0) noexcept;
 void apply_chill_touch(EffectState &effects, EffectSource source,
                        std::string name, unsigned duration_ms);
 void apply_guiding_bolt(EffectState &effects, EffectSource source,
@@ -603,14 +603,14 @@ void apply_guiding_bolt(EffectState &effects, EffectSource source,
 // caster's next turn).
 void apply_poisoned(EffectState &effects, EffectSource source,
                     std::string name, unsigned duration_ms, EffectKind kind = EffectKind::poisoned);
-[[nodiscard]] bool opportunity_blocked(const EffectState &effects);
+[[nodiscard]] bool opportunity_blocked(const EffectState &effects) noexcept;
 void apply_shocking_grasp(EffectState &effects, EffectSource source,
                           std::string name, unsigned duration_ms);
 // The net Speed reduction from effects; negative when Longstrider raises Speed,
 // and enough to bring any Speed to 0 while Restrained.
-[[nodiscard]] int speed_penalty(const EffectState &effects);
-[[nodiscard]] bool slowed(const EffectState &effects);
-[[nodiscard]] bool frosted(const EffectState &effects);
+[[nodiscard]] int speed_penalty(const EffectState &effects) noexcept;
+[[nodiscard]] bool slowed(const EffectState &effects) noexcept;
+[[nodiscard]] bool frosted(const EffectState &effects) noexcept;
 void apply_ray_of_frost(EffectState &effects, EffectSource source,
                         std::string name, unsigned duration_ms);
 void apply_frosts_chill(EffectState &effects, EffectSource source,
@@ -621,9 +621,9 @@ void apply_hamstring(EffectState &effects, EffectSource source, std::string name
 // Whether Heightened Spell marked the creature for the source's spell.
 [[nodiscard]] bool heightened_against(const EffectState &effects, std::uint64_t source_scope,
                                       rules::EntityId source_actor, std::string_view spell);
-[[nodiscard]] bool sapped(const EffectState &effects);
-[[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source);
-[[nodiscard]] bool studied_by(const EffectState &effects, EffectSource source);
+[[nodiscard]] bool sapped(const EffectState &effects) noexcept;
+[[nodiscard]] bool vexed_by(const EffectState &effects, EffectSource source) noexcept;
+[[nodiscard]] bool studied_by(const EffectState &effects, EffectSource source) noexcept;
 // Brutal Strike's Staggering Blow or Sundering Blow, until the start of the
 // Barbarian's next turn, `duration_ms` from now.
 void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource source,
@@ -635,13 +635,13 @@ void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource sourc
 // Replaces the source's earlier Studied Attacks mark on the creature.
 void apply_studied(EffectState &effects, EffectSource source, std::string name,
                    unsigned duration_ms);
-[[nodiscard]] bool has_attack_mastery(const EffectState &effects);
+[[nodiscard]] bool has_attack_mastery(const EffectState &effects) noexcept;
 [[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, EffectSource source);
 void apply_attack_mastery(EffectState &, EffectKind, EffectSource source,
                           std::string name, unsigned duration_ms);
 void consume_attack_masteries(EffectState &attacker, EffectState &target, EffectSource source);
-[[nodiscard]] bool blinded(const EffectState &effects);
-[[nodiscard]] bool can_apply(const EffectState &effects);
+[[nodiscard]] bool blinded(const EffectState &effects) noexcept;
+[[nodiscard]] bool can_apply(const EffectState &effects) noexcept;
 void apply_blindness(EffectState &effects, EffectSource source,
                      std::string name, RepeatingSave save);
 void apply_ensnaring_strike(EffectState &, EffectSource source,
@@ -650,16 +650,16 @@ void apply_entangle(EffectState &, EffectSource source, std::string name,
                     int dc, EffectKind kind = EffectKind::entangle);
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
-[[nodiscard]] bool restrained(const EffectState &effects);
+[[nodiscard]] bool restrained(const EffectState &effects) noexcept;
 // Paralyzed: Incapacitated and Speed 0; it fails Strength and Dexterity saves,
 // attacks against it have Advantage and hits within 5 feet are critical.
-[[nodiscard]] bool paralyzed(const EffectState &effects);
+[[nodiscard]] bool paralyzed(const EffectState &effects) noexcept;
 // Stunned: by a Stunning Strike, or for an hour by Divine Word.
-[[nodiscard]] bool stunned(const EffectState &effects);
+[[nodiscard]] bool stunned(const EffectState &effects) noexcept;
 // Eyebite's sleep: Sleep's Unconscious, held by the source's Concentration.
 void apply_asleep(EffectState &effects, EffectSource source, std::string name);
 // Incapacitated by a spell: Paralyzed, Sleep or Hideous Laughter.
-[[nodiscard]] bool incapacitated(const EffectState &effects);
+[[nodiscard]] bool incapacitated(const EffectState &effects) noexcept;
 // A repeated save condition with its first save `first_save_ms` away:
 // Sleep's drowsiness, Hideous Laughter, Ray of Enfeeblement or Frightened.
 void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
@@ -678,7 +678,7 @@ void apply_command(EffectState &, EffectSource source, std::string name,
                    CommandOption option, unsigned duration_ms);
 // The Command the target must obey, if any.
 [[nodiscard]] const Effect *command_effect(const EffectState &);
-bool has_effect(const EffectState &, EffectKind);
+bool has_effect(const EffectState &, EffectKind) noexcept;
 // Aid's increase to the Hit Point maximum; Aid does not stack with itself.
 [[nodiscard]] int hit_point_bonus(const EffectState &);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);

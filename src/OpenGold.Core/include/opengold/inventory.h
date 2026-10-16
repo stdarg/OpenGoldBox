@@ -37,12 +37,12 @@ struct NewItem
 class Inventory
 {
   public:
-    [[nodiscard]] std::span<const InventoryItem> items() const
+    [[nodiscard]] std::span<const InventoryItem> items() const noexcept
     {
         return items_;
     }
 
-    [[nodiscard]] bool empty() const
+    [[nodiscard]] bool empty() const noexcept
     {
         return items_.empty();
     }

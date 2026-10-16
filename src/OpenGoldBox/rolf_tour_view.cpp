@@ -1,6 +1,7 @@
 #include "godot_images.h"
 #include "godot_nodes.h"
 #include "application_settings.h"
+#include "character_text.h"
 #include "localization.h"
 #include "game_resources.h"
 #include "rolf_tour_view.h"
@@ -47,7 +48,7 @@ namespace
 {
 const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0, 1),
     Vector2(-1, 0)};
-const std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"), N_("West")};
+constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"), N_("West")};
 
 // The areas the session can enter: the town (0), the Slums (20) and Kuto's
 // Well's plaza (29) and catacombs (32).
@@ -454,12 +455,10 @@ void RolfTourView::party_selected(std::int64_t index)
                            std::to_string(campaign_->profile(m.id).armor_class) + " / HP " +
                            std::to_string(m.vitals.hit_points) + "/" +
                            std::to_string(s.hit_points) + "\n" + m.vitals.description + "\n\n";
-        const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
-                                                "Intelligence", "Wisdom",    "Charisma"};
         for (unsigned i = 0; i < 6; ++i)
         {
             const auto ability = opengold::rules::all_abilities[i];
-            text += std::string(names[i]) + ": " + std::to_string(s.scores[ability]) + " / Save " +
+            text += std::string(i18n::ability_names[i]) + ": " + std::to_string(s.scores[ability]) + " / Save " +
                     std::to_string(s.saving_throws[ability]) + "\n";
         }
         required_node<RichTextLabel>(*this, "MemberSheet/Text")

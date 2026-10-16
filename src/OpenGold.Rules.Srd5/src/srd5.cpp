@@ -114,7 +114,7 @@ constexpr std::array<std::string_view, 10> metamagic_labels{"Careful Spell", "Di
 constexpr std::array<std::string_view, 6> transmuted_types{"acid", "cold", "fire", "lightning",
     "poison", "thunder"};
 
-int metamagic_cost(Metamagic option)
+constexpr int metamagic_cost(Metamagic option)
 {
     return option == Metamagic::heightened || option == Metamagic::quickened ? 2 : 1;
 }
@@ -162,7 +162,7 @@ bool metamagic_applies(Metamagic option, const detail::SpellDef &spell)
 }
 
 // The lasting benefit a buff spell's rider applies.
-detail::EffectKind rider_effect(detail::Rider rider)
+constexpr detail::EffectKind rider_effect(detail::Rider rider)
 {
     return rider == detail::Rider::shield_of_faith ? detail::EffectKind::shield_of_faith
            : rider == detail::Rider::heroism       ? detail::EffectKind::heroism
@@ -182,7 +182,7 @@ detail::EffectKind rider_effect(detail::Rider rider)
 }
 
 // Effects that end with their caster's Concentration.
-bool concentration_effect(detail::EffectKind kind)
+constexpr bool concentration_effect(detail::EffectKind kind)
 {
     return kind == detail::EffectKind::shield_of_faith || kind == detail::EffectKind::heroism ||
            kind == detail::EffectKind::bless ||
@@ -224,7 +224,7 @@ bool concentration_effect(detail::EffectKind kind)
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
 // a feature's, a weapon's or a marker's, which Dispel Magic leaves be.
-std::optional<unsigned> spell_level_of(detail::EffectKind kind)
+constexpr std::optional<unsigned> spell_level_of(detail::EffectKind kind)
 {
     using Kind = detail::EffectKind;
     switch (kind)
@@ -3102,9 +3102,12 @@ VitalState vitals(const Actor &a)
     return {a.life.hp, a.life.dead, out.str(), description};
 }
 
-int distance(Cell a, Cell b)
+constexpr int distance(Cell a, Cell b)
 {
-    return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)) * 5;
+    // std::abs is not constexpr before C++23.
+    const int across = a.x > b.x ? a.x - b.x : b.x - a.x;
+    const int down = a.y > b.y ? a.y - b.y : b.y - a.y;
+    return std::max(across, down) * 5;
 }
 
 bool same_command(const Command &a, const Command &b)
@@ -3971,10 +3974,10 @@ class Session final : public CombatSession
     // end is an ordinary call after the action rather than a destructor's work,
     // so an exception (a reaction question undoing the action) skips it and
     // nothing can throw from a destructor (Effective C++ Item 8).
-    [[nodiscard]] static bool invisible(const Actor &a);
+    [[nodiscard]] static bool invisible(const Actor &a) noexcept;
     void end_invisibility(EntityId id);
     // The Barbarian's Rage effect, if it is raging; borrowed from its effects.
-    [[nodiscard]] static const detail::Effect *rage_of(const Actor &a);
+    [[nodiscard]] static const detail::Effect *rage_of(const Actor &a) noexcept;
     [[nodiscard]] unsigned rage_duration(const Actor &a) const;
     void extend_rage(Actor &a);
 
@@ -4097,7 +4100,7 @@ class Session final : public CombatSession
     void condition_area(Actor &caster, const detail::SpellDef &spell,
                         const std::vector<Cell> &cells);
     [[nodiscard]] bool teleport_open(const Actor &caster, Cell cell) const;
-    [[nodiscard]] static bool in_zone(const Zone &zone, Cell cell);
+    [[nodiscard]] static bool in_zone(const Zone &zone, Cell cell) noexcept;
     // Makes a creature in a Grease or Web zone save; true when it is caught.
     bool spring_zone(const Zone &zone, Actor &creature);
     void spring_zones(Actor &creature, ZoneKind kind);
@@ -4283,7 +4286,7 @@ class Session final : public CombatSession
     // against; whether an effect is a charm or fear such a creature caused;
     // whether an ally suffers one.
     [[nodiscard]] bool otherworldly(const Actor &a) const;
-    [[nodiscard]] static bool enchants(const detail::Effect &e);
+    [[nodiscard]] static bool enchants(const detail::Effect &e) noexcept;
     [[nodiscard]] bool otherworldly_source(const detail::Effect &e) const;
     [[nodiscard]] bool enchanted_by_otherworld(const Actor &a) const;
     // Superior Hunter's Defense: Resistance to the hit's type for the turn.
@@ -4389,7 +4392,7 @@ class Session final : public CombatSession
     [[nodiscard]] static std::vector<ReadyMetamagic> readied_metamagic(const Actor &a);
     // How many options the Sorcerer may ready for one spell (Sorcery
     // Incarnate, Sorcerer 7: two while Innate Sorcery is active).
-    [[nodiscard]] static std::size_t metamagic_room(const Actor &a);
+    [[nodiscard]] static std::size_t metamagic_room(const Actor &a) noexcept;
     // A readied option, if it can change this spell and is affordable.
     [[nodiscard]] static bool readies(const Actor &a, Metamagic option,
                                       const detail::SpellDef &spell);
@@ -4448,7 +4451,7 @@ class Session final : public CombatSession
     // Enlarge or Reduce changes a weapon hit's damage.
     int resized_damage(const Actor &a, int amount);
     int burst_damage(const SpellAttack &spell, bool critical);
-    [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell);
+    [[nodiscard]] static bool fought_advantage(const detail::SpellDef &spell) noexcept;
     // Whether `a` is Charmed by `other`, which it then cannot attack or target.
     [[nodiscard]] bool charmed_by(const Actor &a, EntityId other) const;
     [[nodiscard]] bool aura_covers(const Actor &paladin, const Actor &a) const;
@@ -12143,7 +12146,7 @@ bool Session::otherworldly(const Actor &a) const
            type == "undead";
 }
 
-bool Session::enchants(const detail::Effect &e)
+bool Session::enchants(const detail::Effect &e) noexcept
 {
     return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated ||
            e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
@@ -12242,7 +12245,7 @@ void Session::spikes_pierce(Actor &creature)
     damage(creature, amount);
 }
 
-bool Session::in_zone(const Zone &zone, Cell cell)
+bool Session::in_zone(const Zone &zone, Cell cell) noexcept
 {
     return std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
 }
@@ -14179,7 +14182,7 @@ int Session::healing_roll(const Actor &target, detail::DamageDice rolled)
     return rolled.count * rolled.sides + rolled.bonus;
 }
 
-bool Session::fought_advantage(const detail::SpellDef &spell)
+bool Session::fought_advantage(const detail::SpellDef &spell) noexcept
 {
     // Charm Person and the Dominate spells: Advantage on the save while the
     // caster's side fights the creature, which in combat is always.
@@ -14279,7 +14282,7 @@ std::vector<EntityId> Session::bonds_on(const Actor &target) const
     return casters;
 }
 
-const detail::Effect *Session::rage_of(const Actor &a)
+const detail::Effect *Session::rage_of(const Actor &a) noexcept
 {
     const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                     [](const auto & e)
@@ -14302,7 +14305,7 @@ void Session::extend_rage(Actor &a)
             e.remaining_ms = rage_duration(a);
 }
 
-bool Session::invisible(const Actor &a)
+bool Session::invisible(const Actor &a) noexcept
 {
     return detail::has_effect(a.effects, detail::EffectKind::invisible) ||
            detail::has_effect(a.effects, detail::EffectKind::veiled) ||
@@ -15604,7 +15607,7 @@ std::vector<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
     return result;
 }
 
-std::size_t Session::metamagic_room(const Actor &a)
+std::size_t Session::metamagic_room(const Actor &a) noexcept
 {
     return a.definition.sorcery_incarnate &&
            detail::has_effect(a.effects, detail::EffectKind::innate_sorcery) ? 2 : 1;
@@ -23868,7 +23871,7 @@ class Module final : public RulesModule
 
     // A subclass's single choice, stored as a grant sourced from its group
     // ("prey:colossus_slayer" from "subclass:ranger:hunter"), once it is made.
-    static std::string_view subclass_choice_prefix(std::string_view group)
+    static constexpr std::string_view subclass_choice_prefix(std::string_view group)
     {
         return group == "subclass:ranger:hunter" ? "prey:"
                : group == detail::defensive_tactics ? "tactics:"
@@ -24003,7 +24006,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         {
             std::string size;
             row >> size;
-            const std::array<std::string_view, 6> names{"tiny",  "small", "medium",
+            static constexpr std::array<std::string_view, 6> names{"tiny",  "small", "medium",
                     "large", "huge",  "gargantuan"};
             const auto found = std::find(names.begin(), names.end(), size);
             if (!row || !content.definitions.contains(key) || found == names.end() ||
@@ -24020,7 +24023,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             // SRD 5.2.1 creature types; a definition without a row is Humanoid.
             std::string type;
             row >> type;
-            const std::array<std::string_view, 14> types{
+            static constexpr std::array<std::string_view, 14> types{
                 "aberration", "beast", "celestial", "construct", "dragon", "elemental", "fey",
                 "fiend", "giant", "humanoid", "monstrosity", "ooze", "plant", "undead"};
             if (!row || !content.definitions.contains(key) ||

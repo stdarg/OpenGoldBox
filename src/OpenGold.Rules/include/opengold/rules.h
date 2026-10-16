@@ -76,22 +76,22 @@ template <class T> class AbilityArray
         return values_[ability_index(ability)];
     }
 
-    [[nodiscard]] constexpr auto begin()
+    [[nodiscard]] constexpr auto begin() noexcept
     {
         return values_.begin();
     }
 
-    [[nodiscard]] constexpr auto end()
+    [[nodiscard]] constexpr auto end() noexcept
     {
         return values_.end();
     }
 
-    [[nodiscard]] constexpr auto begin() const
+    [[nodiscard]] constexpr auto begin() const noexcept
     {
         return values_.begin();
     }
 
-    [[nodiscard]] constexpr auto end() const
+    [[nodiscard]] constexpr auto end() const noexcept
     {
         return values_.end();
     }

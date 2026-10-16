@@ -8,7 +8,7 @@ namespace opengold::por
 {
 namespace
 {
-int signed_byte(std::uint8_t value)
+constexpr int signed_byte(std::uint8_t value)
 {
     return value < 128 ? value : static_cast<int>(value) - 256;
 }

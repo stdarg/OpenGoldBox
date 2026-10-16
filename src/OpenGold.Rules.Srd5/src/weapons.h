@@ -545,7 +545,7 @@ inline bool weapon_proficient(CharacterClass klass, const Weapon &weapon)
            (klass == CharacterClass::monk && weapon.light);
 }
 
-inline const Weapon *weapon(std::string_view key)
+inline constexpr const Weapon *weapon(std::string_view key)
 {
     for (const auto &value : weapons)
         if (value.key == key)

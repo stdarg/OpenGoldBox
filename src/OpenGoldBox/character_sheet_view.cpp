@@ -23,8 +23,6 @@ namespace
 using presentation::signed_number;
 using presentation::rich_text_literal;
 using presentation::gs;
-const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
-    "Intelligence", "Wisdom",    "Charisma"};
 
 } // namespace
 
@@ -94,7 +92,7 @@ void CharacterCreationView::show_modifiers()
         const auto ability = rules::all_abilities[i];
         if (s.bonuses[ability] == 0)
             continue;
-        text += "[theme_emphasis]" + i18n::utf8(names[i]) + "[/theme_emphasis]\n" +
+        text += "[theme_emphasis]" + i18n::utf8(i18n::ability_names[i]) + "[/theme_emphasis]\n" +
         i18n::formatted("Rolled score: {score}", {{"score", s.base[ability]}}) + "\n";
         for (const auto &source : s.ability_adjustments)
             if (source.bonuses[ability])
@@ -190,7 +188,7 @@ void CharacterCreationView::update_saving_throws(String value)
         text += i18n::formatted(
                     "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n",
         {
-            {"ability", i18n::text(names[i])},
+            {"ability", i18n::text(i18n::ability_names[i])},
             {"bonus", gs(signed_number(s.saving_throws[ability]))},
             {"target", target},
             {"modifier", gs(signed_number(s.modifiers[ability]))},

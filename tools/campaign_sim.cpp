@@ -15,6 +15,7 @@
 #include "opengold/srd5.h"
 #include "opengold/ecl_party_host.h"
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <fstream>
 #include <iterator>
@@ -262,14 +263,19 @@ const std::vector<Step> arc{
 const std::size_t kutos_well_start = 15;
 
 // Spells the demo policy uses well, prepared on gaining a level when offered.
-const std::map<std::string, std::vector<std::string>> preferred_spells{
+struct PreferredSpells
+{
+    std::string_view class_id;
+    std::array<std::string_view, 5> spells; // Unused places are empty.
+};
+constexpr std::array<PreferredSpells, 7> preferred_spells{{
     {"cleric", {"spiritual_weapon", "healing_word", "cure_wounds", "guiding_bolt", "hold_person"}},
     {"druid", {"moonbeam", "healing_word", "cure_wounds"}},
     {"bard", {"healing_word", "dissonant_whispers", "cure_wounds", "hold_person"}},
     {"sorcerer", {"magic_missile", "scorching_ray", "shield", "hold_person"}},
     {"warlock", {"hex", "hold_person"}},
     {"paladin", {"cure_wounds"}},
-    {"ranger", {"cure_wounds"}}};
+    {"ranger", {"cure_wounds"}}}};
 
 // The default advancement, with the class's preferred spells swapped in for
 // the last unlocked defaults where the rules accept them.
@@ -277,17 +283,22 @@ rules::AdvancementChoice advancement(const CampaignParty &party, MemberId id)
 {
     auto choice = party.default_advancement(id);
     const auto &class_id = party.member(id).character.creation_data().character_class;
-    const auto found = preferred_spells.find(class_id);
+    const auto found = std::find_if(preferred_spells.begin(), preferred_spells.end(),
+                                    [&](const PreferredSpells &p)
+    {
+        return p.class_id == class_id;
+    });
     if (found == preferred_spells.end())
         return choice;
-    for (const auto &spell : found->second)
+    const auto &spells = found->spells;
+    for (const auto spell : spells)
     {
-        if (std::find(choice.spells.begin(), choice.spells.end(), spell) != choice.spells.end())
+        if (spell.empty() ||
+                std::find(choice.spells.begin(), choice.spells.end(), spell) != choice.spells.end())
             continue;
         for (auto slot = choice.spells.rbegin(); slot != choice.spells.rend(); ++slot)
         {
-            const bool preferred = std::find(found->second.begin(), found->second.end(), *slot) !=
-                                   found->second.end();
+            const bool preferred = std::find(spells.begin(), spells.end(), *slot) != spells.end();
             if (preferred)
                 continue;
             auto trial = choice;

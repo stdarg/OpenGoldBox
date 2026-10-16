@@ -2,10 +2,11 @@
 #include "opengold/character_pool.h"
 #include "opengold/dice.h"
 #include <algorithm>
-#include <map>
+#include <array>
 #include <numeric>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
 namespace opengold
 {
@@ -234,8 +235,8 @@ struct StartingKit
 StartingKit starting_kit(std::string_view character_class)
 {
     using namespace item_type;
-    static const std::map<std::string_view, StartingKit> kits
-    {
+    static constexpr std::array<std::pair<std::string_view, StartingKit>, 12> kits
+    {{
         {"barbarian", {battleaxe, none, true, longbow, arrow}},
         {"bard", {dagger, leather, false, shortbow, arrow}},
         {"cleric", {mace, leather, true, light_crossbow, bolt}},
@@ -248,8 +249,11 @@ StartingKit starting_kit(std::string_view character_class)
         {"sorcerer", {dagger, none, false, light_crossbow, bolt}},
         {"warlock", {quarterstaff, leather, false, light_crossbow, bolt}},
         {"wizard", {quarterstaff, none, false, light_crossbow, bolt}},
-    };
-    const auto kit = kits.find(character_class);
+    }};
+    const auto kit = std::find_if(kits.begin(), kits.end(), [&](const auto &entry)
+    {
+        return entry.first == character_class;
+    });
     if (kit == kits.end())
         throw std::runtime_error("No starting kit for class " + std::string(character_class));
     return kit->second;

@@ -3132,7 +3132,7 @@ inline constexpr std::string_view arcanum_suffix = "_arcanum";
 inline constexpr std::string_view natural_suffix = "_natural";
 
 // The slot level a "_N" verb names, or 0.
-inline unsigned cast_slot_level(std::string_view verb)
+inline constexpr unsigned cast_slot_level(std::string_view verb)
 {
     if (verb.size() < 3 || verb[verb.size() - 2] != '_')
         return 0;
@@ -3142,7 +3142,7 @@ inline unsigned cast_slot_level(std::string_view verb)
 
 // The verb without its "_N", "_initiate" or "_intervention" form, naming the
 // spell or option cast.
-inline std::string_view without_cast_suffix(std::string_view verb)
+inline constexpr std::string_view without_cast_suffix(std::string_view verb)
 {
     if (cast_slot_level(verb))
         verb.remove_suffix(2);

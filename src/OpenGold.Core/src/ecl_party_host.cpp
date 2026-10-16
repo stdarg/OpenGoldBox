@@ -1,7 +1,7 @@
 #include "opengold/ecl_party_host.h"
 #include "opengold/coin_purse.h"
 #include <algorithm>
-#include <map>
+#include <array>
 #include <optional>
 #include <stdexcept>
 #include <string_view>
@@ -52,12 +52,15 @@ int adnd_thac0(AdndGroup group, unsigned level)
 // or nullopt for items that are not armor. A shield improves AC by one.
 std::optional<int> adnd_armor(std::string_view definition)
 {
-    static const std::map<std::string_view, int> suits{
+    static constexpr std::array<std::pair<std::string_view, int>, 12> suits{{
         {"padded", 8},      {"leather", 8},     {"studded_leather", 7},
         {"hide", 6},        {"chain_shirt", 6}, {"scale_mail", 6},
         {"breastplate", 5}, {"half_plate", 4},  {"ring_mail", 7},
-        {"chain_mail", 5},  {"splint", 4},      {"plate", 3}};
-    const auto found = suits.find(definition);
+        {"chain_mail", 5},  {"splint", 4},      {"plate", 3}}};
+    const auto found = std::find_if(suits.begin(), suits.end(), [&](const auto &suit)
+    {
+        return suit.first == definition;
+    });
     if (found == suits.end())
         return std::nullopt;
     return found->second;

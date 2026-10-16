@@ -40,17 +40,17 @@ class Character
     Character(const rules::CharacterRules &rules, rules::CharacterDraft creation,
               por::CharacterAppearance appearance);
 
-    [[nodiscard]] const rules::CharacterDraft &creation_data() const
+    [[nodiscard]] const rules::CharacterDraft &creation_data() const noexcept
     {
         return creation_;
     }
 
-    [[nodiscard]] const rules::CharacterSheet &sheet() const
+    [[nodiscard]] const rules::CharacterSheet &sheet() const noexcept
     {
         return sheet_;
     }
 
-    [[nodiscard]] const por::CharacterAppearance &appearance() const
+    [[nodiscard]] const por::CharacterAppearance &appearance() const noexcept
     {
         return appearance_;
     }
@@ -73,7 +73,7 @@ class Character
                 std::span<const TrainingChoiceEdit> training_edits,
                 std::span<const HallTraining> hall_training);
 
-    [[nodiscard]] const Inventory &inventory() const
+    [[nodiscard]] const Inventory &inventory() const noexcept
     {
         return inventory_;
     }
@@ -109,22 +109,22 @@ class Character
                                std::uint64_t rest_session);
     void train_at_hall(const rules::RulesModule &, std::string grant);
 
-    [[nodiscard]] const auto &hall_training() const
+    [[nodiscard]] const auto &hall_training() const noexcept
     {
         return hall_training_;
     }
 
-    [[nodiscard]] const auto &training_edits() const
+    [[nodiscard]] const auto &training_edits() const noexcept
     {
         return training_edits_;
     }
 
-    [[nodiscard]] const auto &spell_edits() const
+    [[nodiscard]] const auto &spell_edits() const noexcept
     {
         return spell_edits_;
     }
 
-    [[nodiscard]] const auto &advancements() const
+    [[nodiscard]] const auto &advancements() const noexcept
     {
         return advancements_;
     }

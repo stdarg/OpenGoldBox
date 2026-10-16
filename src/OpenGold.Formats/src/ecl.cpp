@@ -6,7 +6,7 @@ namespace opengold::por
 const EclOpcode &ecl_opcode(std::uint8_t op)
 {
     // PoR PC 1.3: sources and per-opcode host responsibilities in docs/SCRIPTS.md.
-    static const std::array<EclOpcode, 62> specs{{{"EXIT", 0, false, true},
+    static constexpr std::array<EclOpcode, 62> specs{{{"EXIT", 0, false, true},
             {"GOTO", 1, false, true},
             {"GOSUB", 1, false, true},
             {"COMPARE", 2, false, true},

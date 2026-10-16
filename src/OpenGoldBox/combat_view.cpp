@@ -60,7 +60,7 @@ namespace
 {
 using presentation::gs;
 
-const std::array<std::pair<const char *, const char *>, 10> action_buttons
+constexpr std::array<std::pair<const char *, const char *>, 10> action_buttons
 {
     {   {"Melee", "melee"},
         {"Ranged", "ranged"},

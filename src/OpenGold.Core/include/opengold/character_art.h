@@ -112,22 +112,22 @@ class CharacterArt
     void set_combat_head(unsigned id, IndexedIcon icon);
     void set_combat_body(unsigned id, IndexedIcon icon);
 
-    [[nodiscard]] const std::map<unsigned, PortraitPart> &heads() const
+    [[nodiscard]] const std::map<unsigned, PortraitPart> &heads() const noexcept
     {
         return heads_;
     }
 
-    [[nodiscard]] const std::map<unsigned, PortraitPart> &bodies() const
+    [[nodiscard]] const std::map<unsigned, PortraitPart> &bodies() const noexcept
     {
         return bodies_;
     }
 
-    [[nodiscard]] const std::map<unsigned, IndexedIcon> &combat_heads() const
+    [[nodiscard]] const std::map<unsigned, IndexedIcon> &combat_heads() const noexcept
     {
         return combat_heads_;
     }
 
-    [[nodiscard]] const std::map<unsigned, IndexedIcon> &combat_bodies() const
+    [[nodiscard]] const std::map<unsigned, IndexedIcon> &combat_bodies() const noexcept
     {
         return combat_bodies_;
     }

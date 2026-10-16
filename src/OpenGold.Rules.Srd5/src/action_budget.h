@@ -14,12 +14,12 @@ struct ActionBudget
     // Spending another action ends that Attack action.
     unsigned extra_attacks{};
 
-    bool available(bool magic = false) const
+    bool available(bool magic = false) const noexcept
     {
         return normal || (!magic && surge);
     }
 
-    bool spend(bool magic = false)
+    bool spend(bool magic = false) noexcept
     {
         extra_attacks = 0;
         if (!magic && surge)
@@ -36,7 +36,7 @@ struct ActionBudget
     }
 
     // Makes one of the Attack action's later attacks, if one is left.
-    bool attack_again()
+    bool attack_again() noexcept
     {
         if (!extra_attacks)
             return false;

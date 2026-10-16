@@ -21,7 +21,13 @@ inline constexpr std::array expertise_picks{
     ExpertisePick{CharacterClass::bard, 2, "class:bard:expertise:2", "Bard Expertise"},
     ExpertisePick{CharacterClass::bard, 9, "class:bard:expertise:9", "Bard Expertise"}};
 // The pick whose grants come from `source`, or none.
-const ExpertisePick *expertise_pick(std::string_view source);
+inline constexpr const ExpertisePick *expertise_pick(std::string_view source)
+{
+    for (const auto &pick : expertise_picks)
+        if (pick.source == source)
+            return &pick;
+    return nullptr;
+}
 rules::TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
         std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);

@@ -54,7 +54,7 @@ class CharacterCreator
     // replaces the campaign that owns it.
     CharacterCreator(std::unique_ptr<rules::CharacterRules> creation, const rules::RulesModule &rules,
                      const Character &former, std::string_view species);
-    [[nodiscard]] bool reincarnating() const
+    [[nodiscard]] bool reincarnating() const noexcept
     {
         return former_.has_value();
     }
@@ -68,22 +68,22 @@ class CharacterCreator
     // The cantrips to choose; none while reincarnating.
     [[nodiscard]] rules::TrainingChoiceGroup cantrip_options() const;
 
-    [[nodiscard]] const rules::CharacterRules &rules() const
+    [[nodiscard]] const rules::CharacterRules &rules() const noexcept
     {
         return *rules_;
     }
 
-    [[nodiscard]] const rules::CharacterDraft &draft() const
+    [[nodiscard]] const rules::CharacterDraft &draft() const noexcept
     {
         return draft_;
     }
 
-    [[nodiscard]] const por::CharacterAppearance &appearance() const
+    [[nodiscard]] const por::CharacterAppearance &appearance() const noexcept
     {
         return appearance_;
     }
 
-    [[nodiscard]] CreationStep step() const
+    [[nodiscard]] CreationStep step() const noexcept
     {
         return step_;
     }
@@ -108,7 +108,7 @@ class CharacterCreator
 
     // Gold the character joins the party with: 3d6 x 10 gp, the original
     // game's 30 to 180 gp for buying equipment. Zero until the first roll.
-    [[nodiscard]] std::uint16_t starting_gold() const
+    [[nodiscard]] std::uint16_t starting_gold() const noexcept
     {
         return starting_gold_;
     }

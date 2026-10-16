@@ -44,7 +44,7 @@ inline constexpr std::array beast_forms{
     BeastForm{"tiger", "Tiger", "Rend", 3, 13, 40, 3, 3, {3, 3, 2}, 5, {2, 6, 3}, false, false, false,
               false, 30, 8, true, true}};
 
-inline const BeastForm *beast_form(std::string_view key)
+inline constexpr const BeastForm *beast_form(std::string_view key)
 {
     for (const auto &form : beast_forms)
         if (form.key == key)

@@ -142,7 +142,7 @@ class CampaignParty
   public:
     explicit CampaignParty(std::unique_ptr<rules::RulesModule> rules);
 
-    [[nodiscard]] const PartyState &state() const
+    [[nodiscard]] const PartyState &state() const noexcept
     {
         return state_;
     }
@@ -298,12 +298,12 @@ class CampaignParty
     // A simulacrum that melted away in the fight leaves the party.
     void end_combat() noexcept;
 
-    [[nodiscard]] bool in_combat() const
+    [[nodiscard]] bool in_combat() const noexcept
     {
         return combat_;
     }
 
-    [[nodiscard]] const rules::RulesModule &rule_module() const
+    [[nodiscard]] const rules::RulesModule &rule_module() const noexcept
     {
         return *rules_;
     }

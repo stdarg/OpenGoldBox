@@ -1,3 +1,4 @@
+#include "character_text.h"
 #include "godot_text.h"
 #include "level_up_dialog.h"
 #include "spell_choice_controls.h"
@@ -69,11 +70,10 @@ void LevelUpDialog::bind_controls()
     auto *training = &required_node<OptionButton>(*this, "AdvancementTraining");
     training->connect("item_selected",
                       presentation::guarded(this, &LevelUpDialog::advancement_changed));
-    const std::array<const char *, 6> abilities{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
     for (unsigned i = 0; i < 6; ++i)
     {
         required_node<Label>(*this, String("AbilityLabel") + String::num_uint64(i))
-        .set_text(i18n::text(abilities[i]));
+        .set_text(i18n::text(i18n::ability_short[i]));
         auto *points = &required_node<OptionButton>(
                            *this, String("Ability") + String::num_uint64(i));
         for (int n = 0; n <= 2; ++n)
@@ -292,7 +292,7 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
 {
     if (advancement_refreshing_)
         return;
-    const std::array<const char *, 3> names{"SwapCantrip", "SwapSpell", "SwapOption"};
+    static constexpr std::array<const char *, 3> names{"SwapCantrip", "SwapSpell", "SwapOption"};
     const auto value = [&](const String & node)
     {
         auto &dropdown = required_node<OptionButton>(*this, String("SwapPage/") + node);
@@ -751,9 +751,8 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         const auto shown = opengold::rules::all_abilities[i];
         advancement_choice_.abilities[shown] = ability ? points->get_selected() : 0;
         const auto value = campaign().member(advancing_).character.sheet().scores[shown];
-        const std::array<const char *, 6> labels{"STR", "DEX", "CON", "INT", "WIS", "CHA"};
         required_node<Label>(*this, String("AbilityLabel") + String::num_uint64(i))
-        .set_text(i18n::text(labels[i]) + " " + String::num_int64(value) +
+        .set_text(i18n::text(i18n::ability_short[i]) + " " + String::num_int64(value) +
                   String::utf8(" → ") +
                   String::num_int64(value + advancement_choice_.abilities[shown]));
     }

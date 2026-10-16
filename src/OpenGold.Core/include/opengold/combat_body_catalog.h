@@ -53,17 +53,17 @@ class CombatBodyCatalog
     void delete_combination(const std::string &combination);
     void clear_assignments();
 
-    [[nodiscard]] const BodyAssignments &bodies() const
+    [[nodiscard]] const BodyAssignments &bodies() const noexcept
     {
         return bodies_;
     }
 
-    [[nodiscard]] const std::vector<CombatLookOption> &options() const
+    [[nodiscard]] const std::vector<CombatLookOption> &options() const noexcept
     {
         return options_;
     }
 
-    [[nodiscard]] const std::set<std::string> &deleted() const
+    [[nodiscard]] const std::set<std::string> &deleted() const noexcept
     {
         return deleted_;
     }
