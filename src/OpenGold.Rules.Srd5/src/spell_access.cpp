@@ -376,6 +376,12 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::sorcerer, "chromatic_orb", 3},
     AlwaysPrepared{CharacterClass::sorcerer, "command", 3},
     AlwaysPrepared{CharacterClass::sorcerer, "dragons_breath", 3},
+    // Fiend Spells (SRD 5.2.1 p. 76): Geas is cut.
+    AlwaysPrepared{CharacterClass::warlock, "fireball", 5},
+    AlwaysPrepared{CharacterClass::warlock, "stinking_cloud", 5},
+    AlwaysPrepared{CharacterClass::warlock, "fire_shield", 7},
+    AlwaysPrepared{CharacterClass::warlock, "wall_of_fire", 7},
+    AlwaysPrepared{CharacterClass::warlock, "insect_plague", 9},
     // Draconic Spells (SRD 5.2.1 p. 70): Fly, Arcane Eye and Legend Lore are cut.
     AlwaysPrepared{CharacterClass::sorcerer, "fear", 5},
     AlwaysPrepared{CharacterClass::sorcerer, "charm_monster", 7},

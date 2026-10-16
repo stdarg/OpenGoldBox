@@ -238,6 +238,8 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 14)
             add("feature:overchannel", "subclass:wizard:evoker");
     }
+    if (klass == CharacterClass::warlock && level == 6)
+        add("feature:dark_ones_own_luck", "subclass:warlock:fiend");
     if (klass == CharacterClass::sorcerer)
     {
         if (level == 5)
@@ -494,6 +496,18 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                      grant.id == "affinity:poison"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == fiendish_resilience)
+        {
+            // Fiendish Resilience: any type but Force, chosen at level ten.
+            constexpr std::array<std::string_view, 12> types{"acid", "bludgeoning", "cold", "fire",
+                "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing",
+                "thunder"};
+            require(klass == CharacterClass::warlock && grant.level == 10 && grant.choices.empty() &&
+                    grant.id.starts_with("resilience:") &&
+                    std::find(types.begin(), types.end(), std::string_view(grant.id).substr(11)) !=
+                    types.end());
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == defensive_tactics)
         {
             // Defensive Tactics: one of its two options, chosen at level seven.
@@ -574,6 +588,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({std::string(blessed_strikes), 0}));
     if (klass == CharacterClass::sorcerer && level >= 6)
         require(entitlements.contains({std::string(elemental_affinity), 0}));
+    if (klass == CharacterClass::warlock && level >= 10)
+        require(entitlements.contains({std::string(fiendish_resilience), 0}));
     if (klass == CharacterClass::fighter && level >= 7)
         require(entitlements.contains({std::string(champion_style), 0}));
     require(required.empty() && advancement_count == feats_by(klass, level));

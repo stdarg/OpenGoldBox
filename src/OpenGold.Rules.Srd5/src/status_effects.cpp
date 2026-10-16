@@ -577,7 +577,7 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::dominated || kind == EffectKind::violet ||
              kind == EffectKind::befuddled || kind == EffectKind::word_stunned ? 40
            : kind == EffectKind::indigo ? 4033
-           : kind == EffectKind::overchanneled ? 20
+           : kind == EffectKind::overchanneled || kind == EffectKind::luck_used ? 20
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4
@@ -663,6 +663,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::relentless_used:
     case EffectKind::overchanneled:
     case EffectKind::wings_used:
+    case EffectKind::luck_used:
     case EffectKind::trait_uses:
     case EffectKind::heroic_inspiration:
         return 86400000; // until a Long Rest, at most a day

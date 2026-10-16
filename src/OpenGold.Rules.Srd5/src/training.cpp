@@ -614,18 +614,33 @@ std::vector<const SpellDef *> damage_cantrips(std::span<const FeatureGrant> gran
 }
 } // namespace
 
+unsigned new_invocations(unsigned level)
+{
+    // One at 1, two more at 2 and at 5, one more at 7, 9, 12 and 15.
+    return level == 1 ? 1 : level == 2 || level == 5 ? 2
+           : level == 7 || level == 9 || level == 12 || level == 15 ? 1 : 0;
+}
+
+std::string invocations_source(unsigned level)
+{
+    return "class:warlock:invocations:" + std::to_string(level);
+}
+
 TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGrant> grants,
                                        std::string_view source)
 {
-    TrainingChoiceGroup group{std::string(source), "Eldritch Invocations", level == 1 ? 1u : 2u,
-                              {}, TrainingChoiceControl::checkboxes};
+    TrainingChoiceGroup group{std::string(source), "Eldritch Invocations",
+                              std::max(1u, new_invocations(level)), {},
+                              TrainingChoiceControl::checkboxes};
     group.acquired_level = level;
+    // `prerequisite` is an invocation the Warlock must hold first.
     struct Invocation
     {
         std::string_view id, label, description;
         unsigned level;
+        std::string_view prerequisite;
     };
-    static constexpr std::array<Invocation, 12> all{{
+    static constexpr std::array<Invocation, 15> all{{
         {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1},
         {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2},
         {"eldritch_mind", "Eldritch Mind", "Advantage on Constitution saves to keep Concentration.", 1},
@@ -637,7 +652,10 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         {"lessons_magic_initiate_druid", "Lessons of the First Ones: Magic Initiate (Druid)", "Gain the Magic Initiate feat with the Druid spell list.", 2},
         {"lessons_magic_initiate_wizard", "Lessons of the First Ones: Magic Initiate (Wizard)", "Gain the Magic Initiate feat with the Wizard spell list.", 2},
         {"pact_of_the_blade", "Pact of the Blade", "Your melee weapon is your pact weapon: proficiency, Charisma for its attack and damage rolls, and Necrotic, Psychic or Radiant damage if you like.", 1},
-        {"pact_of_the_tome", "Pact of the Tome", "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.", 1}}};
+        {"pact_of_the_tome", "Pact of the Tome", "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.", 1},
+        {"eldritch_smite", "Eldritch Smite", "Once per turn, when your pact weapon hits, spend a Pact Magic slot: 1d8 Force damage and 1d8 more per slot level, and a Huge or smaller creature is knocked Prone.", 5, "pact_of_the_blade"},
+        {"thirsting_blade", "Thirsting Blade", "Attack twice with your pact weapon when you take the Attack action.", 5, "pact_of_the_blade"},
+        {"lifedrinker", "Lifedrinker", "Once per turn, when your pact weapon hits, 1d6 more Necrotic, Psychic or Radiant damage; you may spend a Hit Point Die to regain Hit Points.", 9, "pact_of_the_blade"}}};
     const auto held = [&](const std::string & id, const std::string & feat)
     {
         return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
@@ -653,7 +671,10 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         const auto feat = id.starts_with("lessons_magic_initiate_") || id == "lessons_skilled"
                           ? "feat:" + id.substr(8)
                           : std::string();
-        if (invocation.level <= level && !held("invocation:" + id, feat))
+        // A listing for labels (no source) shows every invocation.
+        const bool qualified = invocation.prerequisite.empty() || source.empty() ||
+                               held("invocation:" + std::string(invocation.prerequisite), {});
+        if (invocation.level <= level && qualified && !held("invocation:" + id, feat))
             group.options.push_back({id, std::string(invocation.label),
                                      std::string(invocation.description)});
     }
@@ -795,6 +816,22 @@ TrainingChoiceGroup metamagic_options(unsigned level, std::span<const FeatureGra
     {
         return has_grant(held, "metamagic:" + option.id);
     });
+    return group;
+}
+
+// Fiendish Resilience: the Fiend Warlock's resisted type at level ten, which
+// any rest may change (SRD 5.2.1 p. 76).
+TrainingChoiceGroup fiendish_resilience_options()
+{
+    TrainingChoiceGroup group{std::string(fiendish_resilience), "Fiendish Resilience", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 10;
+    for (const auto type : {"acid", "bludgeoning", "cold", "fire", "lightning", "necrotic",
+                            "piercing", "poison", "psychic", "radiant", "slashing", "thunder"})
+    {
+        const std::string label(damage_name(damage_type(type)));
+        group.options.push_back({type, label, "Resistance to " + label + " damage."});
+    }
     return group;
 }
 
@@ -1010,10 +1047,15 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 selected.push_back(grant.id.substr(5));
                 continue;
             }
-            if (grant.source_id == "class:warlock:invocations:2")
+            if (grant.source_id.starts_with("class:warlock:invocations:"))
             {
-                // Level two, or the later level it was taken at in a swap.
-                require(klass == CharacterClass::warlock && grant.level >= 2 &&
+                // The level it was gained at, or a later level it was taken
+                // at in a swap.
+                const auto offered = static_cast<unsigned>(
+                                         std::stoi(grant.source_id.substr(std::string_view("class:warlock:invocations:").size())));
+                require(klass == CharacterClass::warlock && offered >= 2 &&
+                        grant.source_id == invocations_source(offered) &&
+                        new_invocations(offered) > 0 && grant.level >= offered &&
                         grant.choices.empty());
                 const auto group = invocation_options(grant.level, grants, grant.source_id);
                 require(std::any_of(group.options.begin(), group.options.end(),
@@ -1022,7 +1064,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                     return grant.id == "invocation:" + option.id;
                 }));
                 auto &selected = choices[grant.source_id];
-                require(selected.size() < 2);
+                require(selected.size() < new_invocations(offered));
                 selected.push_back(grant.id.substr(11));
                 continue;
             }
@@ -1161,7 +1203,8 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
     starting.erase("class:sorcerer:metamagic:10");
-    starting.erase("class:warlock:invocations:2");
+    for (unsigned level = 2; level <= 15; ++level)
+        starting.erase(invocations_source(level));
     starting.erase(std::string(lessons_skilled));
     // A swapped level-1 invocation is checked above, not as a starting choice.
     if (swapped_first_invocation)
@@ -1294,7 +1337,7 @@ SwapOffer option_swap_offer(const CharacterSheet &sheet)
         for (const auto &g : sheet.grants)
             if (g.id.starts_with("spell:"))
                 cantrips.push_back({g.id, "class:warlock:pact_magic", 1, {}});
-        const auto all = invocation_options(4, cantrips, "");
+        const auto all = invocation_options(15, cantrips, "");
         for (const auto &id : held("invocation:", "class:warlock:invocations"))
             for (const auto &option : all.options)
                 if (option.id == id)

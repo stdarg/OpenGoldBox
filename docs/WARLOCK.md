@@ -1,6 +1,6 @@
 # Warlock
 
-Levels 1–4 of the SRD 5.2.1 Warlock (pp. 70–76). Charisma is the spellcasting
+Levels 1–10 of the SRD 5.2.1 Warlock (pp. 70–76). Charisma is the spellcasting
 ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 [Warlock Poison Spray](WARLOCK-POISON-SPRAY.md).
 
@@ -105,3 +105,51 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 - Verification: `opengold_warlock_tests` (the grants, the always-prepared
   spells, 7 Temporary Hit Points from dropping a weakling, and from an ally
   dropping one 10 feet away but not 15).
+
+## Levels 5–10
+
+The Warlock advances to level 10 for now; level 11 waits for Mystic Arcanum
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Pact Magic** (SRD 5.2.1 p. 71): two slots of level 3 from 5, level 4 from
+  7 and level 5 from 9, all back on a Short Rest; prepared spells 6, 7, 8, 9,
+  10 and 10 at levels 5–10; a fourth cantrip at 10. The Warlock's level-3
+  spells open at 5 (Counterspell, Dispel Magic, Fear, Hypnotic Pattern, Magic
+  Circle, Remove Curse, Vampiric Touch), its level-4 spells at 7 (Banishment,
+  Blight, Charm Monster, Dimension Door) and its level-5 spells at 9 (Hold
+  Monster, Mislead). The cut ones stay cut.
+- **Fiend Spells:** Fireball and Stinking Cloud are always prepared from 5,
+  Fire Shield and Wall of Fire from 7, Insect Plague from 9; Geas is cut.
+- **Eldritch Invocations:** two more at 5, one more at 7 and at 9 (five, six
+  and seven in all), chosen on the level-up's checkbox page; one held
+  invocation may be replaced on each level-up up to the cap. New ones:
+  - **Eldritch Smite** (5, Pact of the Blade): once on each of the Warlock's
+    turns, right after a pact weapon hit, **Eldritch Smite (a Pact Magic
+    slot)** spends a slot for 1d8 Force damage and 1d8 more per slot level
+    (dice doubled on a critical hit); a Huge or smaller creature falls Prone.
+  - **Thirsting Blade** (5, Pact of the Blade): Extra Attack when the Attack
+    action's first attack is with the pact weapon.
+  - **Lifedrinker** (9, Pact of the Blade): once on each of the Warlock's
+    turns, right after a pact weapon hit, **Lifedrinker (Necrotic)**,
+    **(Psychic)** or **(Radiant)** adds 1d6 of that type; while the Warlock is
+    wounded and has Hit Point Dice, the **… spend a Hit Point Die** entries
+    also roll one and heal its roll plus the Constitution modifier.
+  - Ascendant Step, Gaze of Two Minds, Gift of the Depths, Investment of the
+    Chain Master, Master of Myriad Forms, Whispers of the Grave and Visions of
+    Distant Realms stay out with what they need. Gift of the Protectors and One
+    with Shadows wait for decisions.
+- **Dark One's Own Luck** (Fiend 6): a failed saving throw (Concentration's
+  too) that 10 more could pass gains 1d10 without asking, as roll effects do,
+  shown with the save; as many times as the Charisma modifier (at least once)
+  per Long Rest. Ability checks in fights are left out.
+- **Contact Patron** (9) is cut with Contact Other Plane (DM-2).
+- **Fiendish Resilience** (Fiend 10): a level-up choice of any damage type but
+  Force, resisted from then on; after any rest the rest's training choices
+  offer to change it, as the Hunter's Prey's are.
+- **Ability Score Improvement** (8).
+- Verification: `opengold_warlock_levels_tests` (the campaign's stop at 10,
+  prepared counts, the fourth cantrip, seven invocations, the Fiend features'
+  grants, a level-10 round trip, the Fiend Spells, Eldritch Smite's Prone,
+  Lifedrinker, Thirsting Blade's second attack, Dark One's Own Luck on a
+  Concentration save, Fiendish Resilience after a Short Rest).

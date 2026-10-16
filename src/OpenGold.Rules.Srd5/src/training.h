@@ -24,10 +24,16 @@ rules::TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
         std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);
 // Metamagic: two options at Sorcerer level 2, two more at 10, none of `held`.
+// The Eldritch Invocations a Warlock gains at a level (SRD 5.2.1 p. 71).
+unsigned new_invocations(unsigned level);
+// The source of the invocations gained at a level from 2 on.
+std::string invocations_source(unsigned level);
 rules::TrainingChoiceGroup metamagic_options(unsigned level = 2,
         std::span<const rules::FeatureGrant> held = {});
 // The Draconic Sorcerer's Elemental Affinity (level 6): its damage type.
 rules::TrainingChoiceGroup elemental_affinity_options();
+// The Fiend Warlock's Fiendish Resilience (level 10): a type other than Force.
+rules::TrainingChoiceGroup fiendish_resilience_options();
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup land_options();
 rules::TrainingChoiceGroup hunters_prey_options();

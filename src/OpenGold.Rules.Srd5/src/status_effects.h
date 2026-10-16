@@ -443,9 +443,11 @@ enum class EffectKind : unsigned
     dragon_wings = 179,
     // Dragon Wings' free use is spent until a Long Rest.
     wings_used = 180,
+    // Dark One's Own Luck's uses since the last Long Rest, in `dc`.
+    luck_used = 181,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = wings_used
+    last = luck_used
 };
 
 // Magic Circle's creature types, by `dc`.

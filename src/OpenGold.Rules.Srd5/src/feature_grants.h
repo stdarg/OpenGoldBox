@@ -29,6 +29,8 @@ inline constexpr std::string_view defensive_tactics = "subclass:ranger:hunter:de
 inline constexpr std::string_view blessed_strikes = "class:cleric:blessed_strikes";
 // The Draconic Sorcerer's Elemental Affinity (level 6): its type's source.
 inline constexpr std::string_view elemental_affinity = "subclass:sorcerer:elemental_affinity";
+// The Fiend Warlock's Fiendish Resilience (level 10): its type's source.
+inline constexpr std::string_view fiendish_resilience = "subclass:warlock:fiendish_resilience";
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id);
 
 struct GrantEffects

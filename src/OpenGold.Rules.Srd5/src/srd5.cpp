@@ -460,7 +460,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 59;
+constexpr unsigned checkpoint_format = 60;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -931,6 +931,28 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::warlock, "mind_spike", 3},
     SpellAccessRow{CharacterClass::warlock, "mirror_image", 3},
     SpellAccessRow{CharacterClass::warlock, "misty_step", 3},
+    // Warlock level-3 spells, with the level-3 Pact Magic slots of Warlock 5;
+    // the Fiend's Fireball and Stinking Cloud are always prepared.
+    SpellAccessRow{CharacterClass::warlock, "counterspell", 5},
+    SpellAccessRow{CharacterClass::warlock, "dispel_magic", 5},
+    SpellAccessRow{CharacterClass::warlock, "fear", 5},
+    SpellAccessRow{CharacterClass::warlock, "fireball", 5},
+    SpellAccessRow{CharacterClass::warlock, "hypnotic_pattern", 5},
+    SpellAccessRow{CharacterClass::warlock, "magic_circle", 5},
+    SpellAccessRow{CharacterClass::warlock, "remove_curse", 5},
+    SpellAccessRow{CharacterClass::warlock, "stinking_cloud", 5},
+    SpellAccessRow{CharacterClass::warlock, "vampiric_touch", 5},
+    // Warlock level-4 spells at 7, with the Fiend's Fire Shield and Wall of Fire.
+    SpellAccessRow{CharacterClass::warlock, "banishment", 7},
+    SpellAccessRow{CharacterClass::warlock, "blight", 7},
+    SpellAccessRow{CharacterClass::warlock, "charm_monster", 7},
+    SpellAccessRow{CharacterClass::warlock, "dimension_door", 7},
+    SpellAccessRow{CharacterClass::warlock, "fire_shield", 7},
+    SpellAccessRow{CharacterClass::warlock, "wall_of_fire", 7},
+    // Warlock level-5 spells at 9, with the Fiend's Insect Plague.
+    SpellAccessRow{CharacterClass::warlock, "hold_monster", 9},
+    SpellAccessRow{CharacterClass::warlock, "insect_plague", 9},
+    SpellAccessRow{CharacterClass::warlock, "mislead", 9},
     SpellAccessRow{CharacterClass::warlock, "ray_of_enfeeblement", 3}};
 
 std::vector<std::string> allowed_spells(CharacterClass klass, unsigned level)
@@ -1104,6 +1126,10 @@ struct Definition
     // Incarnate; level 14: Dragon Wings.
     std::optional<detail::DamageType> elemental_affinity;
     bool sorcery_incarnate{}, dragon_wings{};
+    // Warlock invocations: Thirsting Blade, Eldritch Smite and Lifedrinker;
+    // the Fiend's Dark One's Own Luck uses (level 6).
+    bool thirsting_blade{}, eldritch_smite{}, lifedrinker{};
+    int dark_luck{};
     // Magic Initiate: the spell attack bonus (the feat's ability modifier plus
     // Proficiency Bonus) of each spell it teaches, and each feat's level-one
     // spell in feat order, cast once per Long Rest without a slot.
@@ -1326,6 +1352,8 @@ struct Actor
     bool prey_used{};
     EntityId prey_origin{};
     bool strike_used{}; // Divine Strike, once on each of its turns
+    // Eldritch Smite and Lifedrinker (Warlock), each once on each of its turns.
+    bool smite_used{}, drink_used{};
     // Dominated (Dominate Beast): it fights on its controller's side, not its
     // own. A controlled creature (dominated or raised) waits out the turn it
     // would get again in the round it came under control after it had acted.
@@ -1480,11 +1508,13 @@ constexpr std::array resource_descriptors
 // invocation or one swapped in.
 bool takes_lessons_skilled(const AdvancementChoice &choice)
 {
-    const auto picks = choice.training.find("class:warlock:invocations:2");
     return choice.option_swap.replacement == "lessons_skilled" ||
-           (picks != choice.training.end() &&
-            std::find(picks->second.begin(), picks->second.end(), "lessons_skilled") !=
-            picks->second.end());
+           std::any_of(choice.training.begin(), choice.training.end(), [](const auto & picks)
+    {
+        return picks.first.starts_with("class:warlock:invocations:") &&
+               std::find(picks.second.begin(), picks.second.end(), "lessons_skilled") !=
+               picks.second.end();
+    });
 }
 
 // The Hit Point maximum with Aid's and Heroes' Feast's increases and Harm's
@@ -1499,6 +1529,15 @@ int max_hp(const Actor &a)
 int lay_capacity(const Definition &d)
 {
     return d.lay_on_hands + d.sorcery_points + d.relentless_rage + d.natures_veil;
+}
+
+// The level of a Warlock's Pact Magic slots, all of one level.
+unsigned pact_level(const SpellSlots &slots)
+{
+    return static_cast<unsigned>(std::find_if(slots.begin() + 1, slots.end(), [](int count)
+    {
+        return count > 0;
+    }) - slots.begin());
 }
 
 // Font of Magic (SRD 5.2.1 p. 66): the Sorcery Points a slot of each level
@@ -2189,6 +2228,8 @@ character_definition(std::string_view bytes,
         klass == CharacterClass::sorcerer && level >= 2 ? static_cast<int>(level) : 0;
     d.pact_magic = klass == CharacterClass::warlock;
     d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
+    d.dark_luck = klass == CharacterClass::warlock && level >= 6
+                  ? std::max(1, ability_modifier(scores[Ability::charisma])) : 0;
     d.bardic_inspiration =
         klass == CharacterClass::bard ? std::max(1, ability_modifier(scores[Ability::charisma]))
         : 0;
@@ -2424,6 +2465,12 @@ character_definition(std::string_view bytes,
     d.eldritch_mind = invoked("eldritch_mind");
     d.fiendish_vigor = invoked("fiendish_vigor");
     d.pact_of_the_blade = invoked("pact_of_the_blade");
+    // Thirsting Blade: Extra Attack with the pact weapon.
+    d.thirsting_blade = invoked("thirsting_blade");
+    if (d.thirsting_blade)
+        d.extra_attacks = std::max(d.extra_attacks, 1);
+    d.eldritch_smite = invoked("eldritch_smite");
+    d.lifedrinker = invoked("lifedrinker");
     // Lessons of the First Ones: an Origin feat.
     d.savage |= invoked("lessons_savage_attacker");
     if (invoked("lessons_alert"))
@@ -2567,6 +2614,11 @@ character_definition(std::string_view bytes,
             d.divine_strike = level >= 14 ? 2 : 1;
         d.potent_spellcasting |= grant.id == "strikes:potent_spellcasting";
         d.multiattack_defense |= grant.id == "tactics:multiattack_defense";
+        // Fiendish Resilience: Resistance to its type.
+        if (grant.id.starts_with("resilience:"))
+            d.affinities.push_back({detail::AffinityKind::resistance,
+                                    detail::damage_type(grant.id.substr(11)),
+                                    "feature:fiendish_resilience"});
         // Elemental Affinity: Resistance to its type.
         if (grant.id.starts_with("affinity:"))
         {
@@ -3842,6 +3894,8 @@ class Session final : public CombatSession
     [[nodiscard]] bool globe_wards(const Actor &caster, Cell cell, unsigned level) const;
     // Contingency: the stored spell takes effect on its caster.
     void fire_contingency(Actor &a);
+    // Dark One's Own Luck (Fiend 6): 1d10 on a failed save it could still pass.
+    void dark_ones_luck(Actor &warlock, detail::SaveResult &result);
     // Delayed Blast Fireball: the bead bursts as its spell ends.
     void explode_bead(Actor &caster, const Zone &bead);
     // Prismatic Spray: the ray, or the two, that strike a creature in the cone.
@@ -8388,6 +8442,23 @@ std::vector<Command> Session::offered_commands() const
         add(id, "divine_strike_radiant", "Divine Strike (Radiant)", a.smite_target);
         add(id, "divine_strike_necrotic", "Divine Strike (Necrotic)", a.smite_target);
     }
+    // Eldritch Smite and Lifedrinker (Warlock invocations): once on each of
+    // its turns, right after a pact weapon hit.
+    if (a.smite_target && a.smite_melee && d.pact_of_the_blade &&
+            actor(a.smite_target).life.hp > 0)
+    {
+        if (d.eldritch_smite && !a.smite_used && a.slots[pact_level(d.slots)] > 0)
+            add(id, "eldritch_smite", "Eldritch Smite (a Pact Magic slot)", a.smite_target);
+        if (d.lifedrinker && !a.drink_used)
+            for (const std::string type : {"necrotic", "psychic", "radiant"})
+            {
+                const std::string name(detail::damage_name(detail::damage_type(type)));
+                add(id, "lifedrinker_" + type, "Lifedrinker (" + name + ")", a.smite_target);
+                if (a.hit_dice > 0 && a.life.hp < max_hp(a))
+                    add(id, "lifedrinker_" + type + "_heal",
+                        "Lifedrinker (" + name + ", spend a Hit Point Die)", a.smite_target);
+            }
+    }
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
@@ -9110,18 +9181,29 @@ void Session::damage(Actor &target, int amount, bool critical)
                          def(target).str_dex_disadvantage, target.dodge);
         modifiers.advantage |= detail::has_effect(target.effects, detail::EffectKind::extended) ||
                                def(target).eldritch_mind;
-        const auto result = target.concentration.damage(
-                                amount,
-                                def(target).saves[2] + aura_of_protection(target) +
-                                (rolls ? blessing_die(target) : 0),
-                                modifiers, target.life.hp == 0 || target.life.dead, rng_,
-                                target.effects.active);
+        const auto held = target.concentration.active();
+        auto result = target.concentration.damage(
+                          amount,
+                          def(target).saves[2] + aura_of_protection(target) +
+                          (rolls ? blessing_die(target) : 0),
+                          modifiers, target.life.hp == 0 || target.life.dead, rng_,
+                          target.effects.active);
         if (result.save)
             log_save(target, *result.save);
         if (result.inspiration)
         {
             detail::spend_inspiration(target.effects);
             log_inspiration(target, result.inspiration, result.save->success);
+        }
+        // Dark One's Own Luck may still keep the Concentration.
+        if (result.ended && result.save && !result.save->success)
+        {
+            dark_ones_luck(target, *result.save);
+            if (result.save->success)
+            {
+                (void)target.concentration.start(*held);
+                result.ended.reset();
+            }
         }
         if (result.ended)
             drop_concentration_effects(target);
@@ -15366,7 +15448,7 @@ bool Session::begin_turn()
         actor.spent_slot = false;
         actor.cleave_used = false;
         actor.colossus_used = actor.horde_used = actor.resistance_used = false;
-        actor.strike_used = false;
+        actor.strike_used = actor.smite_used = actor.drink_used = false;
         std::erase_if(actor.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::defended ||
@@ -15733,11 +15815,45 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         });
         log_save(target, result);
     }
+    if (!result.success)
+        dark_ones_luck(actor(target.source.id), result);
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
         if (const int die = inspiration_roll(target, dc - result.natural - result.bonus))
             result.success = result.natural + result.bonus + die >= dc;
     return result.success;
+}
+
+void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
+{
+    // Dark One's Own Luck (Fiend 6): 1d10 added to a failed save it could
+    // still pass, without asking, once a roll.
+    if (!def(warlock).dark_luck || !conscious(warlock) ||
+            result.natural + result.bonus + 10 < result.dc)
+        return;
+    const auto used = std::find_if(warlock.effects.active.begin(), warlock.effects.active.end(),
+                                   [](const auto & e)
+    {
+        return e.kind == detail::EffectKind::luck_used;
+    });
+    if (used == warlock.effects.active.end() && !detail::can_apply(warlock.effects))
+        return;
+    if (used == warlock.effects.active.end())
+        detail::apply_spell_benefit(warlock.effects, effect_source(warlock), warlock.source.name,
+                                    detail::EffectKind::luck_used, 1);
+    else if (used->dc >= def(warlock).dark_luck)
+        return;
+    else
+        ++used->dc;
+    const int die = roll(10);
+    result.bonus += die;
+    result.success = result.natural + result.bonus >= result.dc;
+    log(warlock.source.name + " adds " + std::to_string(die) + " to the save (Dark One's Own Luck).",
+    {
+        "{name} adds {die} to the save (Dark One's Own Luck).",
+        {{"name", warlock.source.name}, {"die", std::to_string(die)}}
+    });
+    log_save(warlock, result);
 }
 
 void Session::advance_turn_time()
@@ -17022,7 +17138,8 @@ void Session::dispatch(const Command &command)
     // A smite must follow the hit at once. Resolving that hit's own weapon
     // mastery choice keeps the chance open; any other command ends it.
     if (!is_smite(command.verb) && !command.verb.starts_with("effect_") &&
-            !command.verb.starts_with("divine_strike_"))
+            !command.verb.starts_with("divine_strike_") && command.verb != "eldritch_smite" &&
+            !command.verb.starts_with("lifedrinker_"))
         a.smite_target = 0;
     if (turns_to_attack(command.verb) && command.target)
     {
@@ -17473,6 +17590,53 @@ void Session::dispatch(const Command &command)
             {{"name", a.source.name}, {"target", target.source.name}}
         });
         sphere_burns(a, target);
+    }
+    else if (command.verb == "eldritch_smite")
+    {
+        // 1d8 Force and 1d8 more per slot level; a Huge or smaller creature
+        // falls Prone.
+        a.smite_used = true;
+        const auto level = pact_level(d.slots);
+        --a.slots[level];
+        auto &target = actor(command.target);
+        const int count = (1 + static_cast<int>(level)) * (a.smite_critical ? 2 : 1);
+        const int amount = resolved_damage(target, detail::DamageType::force, dice({count, 8, 0}));
+        log(target.source.name + " takes " + std::to_string(amount) + " Force damage from Eldritch Smite.",
+        {
+            "{name} takes {damage} Force damage from Eldritch Smite.",
+            {{"name", target.source.name}, {"damage", std::to_string(amount)}}
+        });
+        damage(target, amount, false);
+        if (!target.life.dead && def(target).size <= 4 && !target.effects.prone)
+        {
+            target.effects.prone = true;
+            log(target.source.name + " is knocked Prone.",
+            {"{name} is knocked Prone.", {{"name", target.source.name}}});
+        }
+    }
+    else if (command.verb.starts_with("lifedrinker_"))
+    {
+        // 1d6 more of the chosen type, and a Hit Point Die spent if chosen.
+        a.drink_used = true;
+        auto rest = std::string_view(command.verb).substr(std::string_view("lifedrinker_").size());
+        const bool heals = rest.ends_with("_heal");
+        if (heals)
+            rest.remove_suffix(std::string_view("_heal").size());
+        const auto type = detail::damage_type(rest);
+        const auto name = std::string(detail::damage_name(type));
+        auto &target = actor(command.target);
+        const int amount = resolved_damage(target, type, dice({a.smite_critical ? 2 : 1, 6, 0}));
+        log(target.source.name + " takes " + std::to_string(amount) + " " + name + " damage from Lifedrinker.",
+        {
+            "{name} takes {damage} {type} damage from Lifedrinker.",
+            {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}
+        });
+        damage(target, amount, false);
+        if (heals)
+        {
+            --a.hit_dice;
+            heal(a, std::max(1, roll(d.hit_die) + d.constitution));
+        }
     }
     else if (command.verb == "arcane_sword_strike")
     {
@@ -17979,8 +18143,10 @@ void Session::dispatch(const Command &command)
         {
             a.nick_origin = 0;
             (void)a.actions.spend(detail::find_spell(command.verb) != nullptr);
+            // Thirsting Blade's Extra Attack follows a pact weapon's attack.
             if (attacking)
-                a.actions.extra_attacks = static_cast<unsigned>(d.extra_attacks);
+                a.actions.extra_attacks = d.thirsting_blade && command.verb != "melee"
+                                          ? 0u : static_cast<unsigned>(d.extra_attacks);
         }
         if (command.verb == "dash")
         {
@@ -18138,7 +18304,7 @@ std::string Session::save() const
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
             << a.prey_used << ' ' << a.prey_origin << ' ' << a.turned << ' ' << a.skips_turn << ' '
-            << a.strike_used << ' '
+            << a.strike_used << ' ' << a.smite_used << ' ' << a.drink_used << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
             << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
@@ -18351,8 +18517,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     }
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
           actor.horde_used >> actor.horde_origin >> actor.prey_used >> actor.prey_origin >>
-          actor.turned >> actor.skips_turn >> actor.strike_used >>
-          actor.smite_melee >> actor.resistance_used >>
+          actor.turned >> actor.skips_turn >> actor.strike_used >> actor.smite_used >>
+          actor.drink_used >> actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
           actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
           actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
@@ -19551,6 +19717,9 @@ class Module final : public RulesModule
             result.push_back(std::move(*prey));
         if (auto tactics = subclass_rest_choice(sheet, detail::defensive_tactics_options()))
             result.push_back(std::move(*tactics));
+        // Fiendish Resilience's type changes after any rest too.
+        if (auto resilience = subclass_rest_choice(sheet, detail::fiendish_resilience_options()))
+            result.push_back(std::move(*resilience));
         if (kind == RestKind::long_rest)
             if (auto land = subclass_rest_choice(sheet, detail::land_options()))
                 result.push_back(std::move(*land));
@@ -19710,15 +19879,19 @@ class Module final : public RulesModule
             result.training = {detail::metamagic_options()};
         if (klass == CharacterClass::sorcerer && result.level == 6)
             result.training = {detail::elemental_affinity_options()};
+        if (klass == CharacterClass::warlock && result.level == 10)
+            result.training = {detail::fiendish_resilience_options()};
         if (klass == CharacterClass::sorcerer && result.level == 10)
             result.training = {detail::metamagic_options(10, sheet.grants)};
         if (klass == CharacterClass::bard && result.level == 3)
             result.training = {detail::lore_options(sheet.grants)};
         if (klass == CharacterClass::druid && result.level == 3)
             result.training = {detail::land_options()};
-        if (klass == CharacterClass::warlock && result.level == 2)
-            result.training = {detail::invocation_options(2, sheet.grants,
-                                                          "class:warlock:invocations:2")};
+        if (klass == CharacterClass::warlock && result.level >= 2 &&
+                detail::new_invocations(static_cast<unsigned>(result.level)))
+            result.training = {detail::invocation_options(
+                                   static_cast<unsigned>(result.level), sheet.grants,
+                                   detail::invocations_source(static_cast<unsigned>(result.level)))};
         if (klass == CharacterClass::barbarian && (result.level == 4 || result.level == 10))
             result.training = {
                 detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants)};
@@ -19761,6 +19934,23 @@ class Module final : public RulesModule
                 "A level 6 spell slot and Wizard spells: Chain Lightning, Circle of Death, Contingency, Create Undead, Disintegrate, Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability, Irresistible Dance, Magic Jar, Sunbeam, True Seeing and Wall of Ice.";
         if (klass == CharacterClass::wizard && result.level == 12)
             result.description = "A feat or ability points.";
+        if (klass == CharacterClass::warlock && result.level == 5)
+            result.description =
+                "Two more Eldritch Invocations; Eldritch Smite and Thirsting Blade are open to Pact of the Blade.\nLevel 3 Pact Magic slots and Warlock spells: Counterspell, Dispel Magic, Fear, Hypnotic Pattern, Magic Circle, Remove Curse and Vampiric Touch; Fiend Spells: Fireball and Stinking Cloud are always prepared.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::warlock && result.level == 6)
+            result.description =
+                "Dark One's Own Luck: a failed save you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest.";
+        if (klass == CharacterClass::warlock && result.level == 7)
+            result.description =
+                "One more Eldritch Invocation.\nLevel 4 Pact Magic slots and Warlock spells: Banishment, Blight, Charm Monster and Dimension Door; Fiend Spells: Fire Shield and Wall of Fire are always prepared.";
+        if (klass == CharacterClass::warlock && result.level == 8)
+            result.description = "A feat or ability points.";
+        if (klass == CharacterClass::warlock && result.level == 9)
+            result.description =
+                "One more Eldritch Invocation; Lifedrinker is open to Pact of the Blade.\nLevel 5 Pact Magic slots and Warlock spells: Hold Monster and Mislead; Fiend Spells: Insect Plague is always prepared.\nProficiency Bonus +4.";
+        if (klass == CharacterClass::warlock && result.level == 10)
+            result.description =
+                "Fiendish Resilience: Resistance to a damage type you choose other than Force, changed after any rest.\nA fourth cantrip.";
         if (klass == CharacterClass::sorcerer && result.level == 5)
             result.description =
                 "Sorcerous Restoration: after a Short Rest, regain Sorcery Points up to half your Sorcerer level, once per Long Rest.\nLevel 3 spell slots and Sorcerer spells: Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Protection from Energy, Sleet Storm, Stinking Cloud and Vampiric Touch; Draconic Spells: Fear is always prepared. Font of Magic creates level-3 slots.\nProficiency Bonus +3.";
@@ -20297,7 +20487,7 @@ class Module final : public RulesModule
         if (choice.feat.starts_with("magic_initiate_") &&
                 detail::gains_feat(klass, static_cast<unsigned>(next.level)))
             next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
-        const auto invocations = "class:warlock:invocations:2";
+        const auto invocations = detail::invocations_source(static_cast<unsigned>(next.level));
         if (const auto lessons = choice.training.find(invocations);
                 lessons != choice.training.end())
             for (const auto &id : lessons->second)
@@ -20371,7 +20561,8 @@ class Module final : public RulesModule
         if (takes_lessons_skilled(choice) && !choice.training.contains("invocation:lessons_skilled"))
             throw std::runtime_error("Choose exactly three Skilled proficiencies");
         // A swapped-in invocation cannot also be one of the level's new picks.
-        if (const auto picks = choice.training.find("class:warlock:invocations:2");
+        if (const auto picks = choice.training.find(
+                                   detail::invocations_source(static_cast<unsigned>(sheet.level + 1)));
                 picks != choice.training.end() && !choice.option_swap.replacement.empty() &&
                 std::find(picks->second.begin(), picks->second.end(),
                           choice.option_swap.replacement) != picks->second.end())
@@ -20410,7 +20601,8 @@ class Module final : public RulesModule
                     : id == "class:barbarian:primal_knowledge" ? "skill:" + value
                     : id.starts_with("class:sorcerer:metamagic") ? "metamagic:" + value
                     : id == detail::elemental_affinity ? "affinity:" + value
-                    : id == "class:warlock:invocations:2" ? "invocation:" + value
+                    : id == detail::fiendish_resilience ? "resilience:" + value
+                    : id.starts_with("class:warlock:invocations:") ? "invocation:" + value
                     : id == "invocation:lessons_skilled" ? value
                     : id == "subclass:bard:lore" ? "skill:" + value
                     : id == "subclass:druid:land" ? "land:" + value
@@ -20692,13 +20884,6 @@ class Module final : public RulesModule
         // Pact Magic's slots rise a level together (level 2 at Warlock level
         // 3); the slots already spent stay spent.
         const int spent_slots = slot_total(old.slots) - slot_total(actor.slots);
-        const auto pact_level = [](const SpellSlots &slots)
-        {
-            return std::find_if(slots.begin() + 1, slots.end(), [](int count)
-            {
-                return count > 0;
-            }) - slots.begin();
-        };
         if (actor.definition.pact_magic && pact_level(actor.definition.slots) != pact_level(old.slots))
         {
             const auto level = pact_level(actor.definition.slots);
@@ -20813,6 +20998,7 @@ class Module final : public RulesModule
                    e.kind == detail::EffectKind::relentless_used ||
                    e.kind == detail::EffectKind::overchanneled ||
                    e.kind == detail::EffectKind::wings_used ||
+                   e.kind == detail::EffectKind::luck_used ||
                    e.kind == detail::EffectKind::trait_uses ||
                    e.kind == detail::EffectKind::heroic_inspiration;
         });
@@ -22296,6 +22482,7 @@ class Module final : public RulesModule
     {
         return group == "subclass:ranger:hunter" ? "prey:"
                : group == detail::defensive_tactics ? "tactics:"
+               : group == detail::fiendish_resilience ? "resilience:"
                : "land:";
     }
 
@@ -22364,7 +22551,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.224", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.225", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
