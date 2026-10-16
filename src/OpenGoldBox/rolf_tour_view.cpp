@@ -163,6 +163,8 @@ void RolfTourView::prepare_view()
     no_fog_ = settings::flag("--no-fog");
     town_check_ = args.has("--town-check");
     checking_ = args.has("--tour-check") || town_check_;
+    rest_check_ = args.has("--rest-check");
+    mastery_rest_check_ = args.has("--mastery-rest-check");
     capture_ = args.has("--capture");
     if (campaign_ && args.has("--party-check"))
         town_check_ = checking_ = true;
@@ -635,12 +637,12 @@ void RolfTourView::advance_frame(double delta)
             required_node<Control>(*this, "TourVisuals").queue_redraw();
         }
     }
-    if (OS::get_singleton()->get_cmdline_user_args().has("--mastery-rest-check"))
+    if (mastery_rest_check_)
     {
         check_mastery_rest_controls();
         return;
     }
-    if (OS::get_singleton()->get_cmdline_user_args().has("--rest-check"))
+    if (rest_check_)
     {
         check_rest_controls();
         return;

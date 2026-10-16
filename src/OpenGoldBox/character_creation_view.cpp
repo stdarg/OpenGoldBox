@@ -797,21 +797,10 @@ void CharacterCreationView::draw_view()
             creator_ && creator_->appearance().icon_size == por::IconSize::large);
 }
 
-void CharacterCreationView::perform(const std::function<void()> &action)
+void CharacterCreationView::show_error(const std::exception &failure)
 {
-    if (!creator_ || fatal_)
-        return;
-    try
-    {
-        error_ = "";
-        action();
-        refresh();
-    }
-    catch (const std::exception &e)
-    {
-        error_ = i18n::text(e.what());
-        required_node<Label>(*this, "Status").set_text(error_);
-    }
+    error_ = i18n::text(failure.what());
+    required_node<Label>(*this, "Status").set_text(error_);
 }
 
 void CharacterCreationView::target_toggled(bool selected, int index)

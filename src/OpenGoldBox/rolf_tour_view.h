@@ -134,6 +134,8 @@ class RolfTourView : public godot::Control
     std::uint64_t displayed_ticket_{};
     std::uint64_t rendered_picture_revision_{};
     bool no_fog_{}, ready_{}, checking_{}, capture_{}, capture_pending_{};
+    // The rest checks' command-line flags, read once.
+    bool rest_check_{}, mastery_rest_check_{};
     bool town_check_{}, embedded_party_{};
     unsigned shop_check_stage_{};
     unsigned recovery_stage_{};

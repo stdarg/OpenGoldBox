@@ -8,13 +8,13 @@
 #include <godot_cpp/classes/image_texture.hpp>
 #include <exception>
 #include <optional>
-#include <functional>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 // The creation wizard, party panel, save/load and drag-and-drop stay in this
@@ -71,7 +71,26 @@ class CharacterCreationView : public godot::Control
     void refresh_portraits();
     void match_portrait_filters();
     void portrait_filter_selected(std::int64_t index);
-    void perform(const std::function<void()> &action);
+    // Runs a handler's change and refreshes, or shows its error. The
+    // handlers' lambdas run at once, so the callable is not type-erased
+    // (Effective Modern C++ Item 5).
+    template <class Action>
+    void perform(Action &&action)
+    {
+        if (!creator_ || fatal_)
+            return;
+        try
+        {
+            error_ = "";
+            std::forward<Action>(action)();
+            refresh();
+        }
+        catch (const std::exception &e)
+        {
+            show_error(e);
+        }
+    }
+    void show_error(const std::exception &failure);
     void next();
     void back();
     void restart();
