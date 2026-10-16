@@ -8,9 +8,10 @@
 namespace opengold::test
 {
 // A test double that changes a few rules derives from this and overrides only
-// those; every other operation goes to the wrapped module. RulesModule has no
-// default implementations, so the forwarding is spelled out here once
-// (Effective C++ Item 34).
+// those; every other operation goes to the wrapped module, the ones with a
+// default implementation in RulesModule too, so a double never falls back to
+// that default by omission (Effective C++ Item 34). A new virtual in
+// RulesModule gets its forwarding here.
 class ForwardingModule : public rules::RulesModule
 {
   public:
@@ -263,6 +264,42 @@ class ForwardingModule : public rules::RulesModule
                                RandomState &random_state) const override
     {
         rules_->use_party_camp_action(user, user_state, party, action, random_state);
+    }
+
+    unsigned camp_action_gold(const rules::CharacterSheet &target,
+                              std::string_view action) const override
+    {
+        return rules_->camp_action_gold(target, action);
+    }
+
+    unsigned camp_action_gold(const rules::CharacterSheet &target,
+                              const rules::VitalState &target_state,
+                              std::string_view action) const override
+    {
+        return rules_->camp_action_gold(target, target_state, action);
+    }
+
+    rules::VitalState simulacrum_state(const rules::CharacterSheet &original) const override
+    {
+        return rules_->simulacrum_state(original);
+    }
+
+    std::string reincarnation_species(RandomState &random_state) const override
+    {
+        return rules_->reincarnation_species(random_state);
+    }
+
+    rules::VitalState fitted_state(const rules::CharacterSheet &before,
+                                   const rules::VitalState &state,
+                                   const rules::CharacterSheet &after) const override
+    {
+        return rules_->fitted_state(before, state, after);
+    }
+
+    bool keeps_away(std::span<const rules::CampTarget> party,
+                    std::span<const std::string> definitions) const override
+    {
+        return rules_->keeps_away(party, definitions);
     }
 
     bool can_cast_exploration_spell(const rules::CharacterSheet &sheet,

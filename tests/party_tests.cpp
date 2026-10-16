@@ -454,7 +454,9 @@ void party_combat_appearance()
                     36u, 8u, 59u, 55u
                 })
             party.purchase(id, item(type, 0));
-        const auto gear = party.member(id).character.inventory().items();
+        // A copy: equipping may replace the inventory the items live in.
+        const auto items = party.member(id).character.inventory().items();
+        const std::vector<InventoryItem> gear(items.begin(), items.end());
         expect(0, "type_0"); // Carried weapons and shield have no visual effect.
         party.equip(id, gear[3].id);
         expect(0, "type_0");
@@ -543,7 +545,9 @@ void all_weapon_equipment()
                                               .original_type = 59});
     CampaignParty party(module());
     const auto id = party.add_pc(std::move(hero));
-    const auto inventory = party.member(id).character.inventory().items();
+    // A copy: equipping may replace the inventory the items live in.
+    const auto items = party.member(id).character.inventory().items();
+    const std::vector<InventoryItem> inventory(items.begin(), items.end());
     check(inventory.size() == 48,
           "Every reviewer weapon plus shield uses a real campaign inventory");
     const auto original = party.member(id).character.appearance();
@@ -2747,11 +2751,35 @@ void party_strength()
     check(por::party_strength(party) == 6, "Current hit points add with the other terms");
 }
 
+// A forwarding double answers as the module it wraps, for the virtuals
+// RulesModule gives a default body too (#238).
+void forwarding_defaults()
+{
+    const AlternateEquipmentRules wrapped;
+    const auto direct = module();
+    const auto sheet = character().sheet();
+    const VitalState vitals{sheet.hit_points, false, {}};
+    check(wrapped.camp_action_gold(sheet, "revivify") == direct->camp_action_gold(sheet, "revivify") &&
+          wrapped.camp_action_gold(sheet, vitals, "revivify") ==
+          direct->camp_action_gold(sheet, vitals, "revivify") &&
+          wrapped.camp_action_gold(sheet, "revivify") == 300,
+          "A forwarding double prices Revivify as the wrapped module does");
+    RandomState first{7}, second{7};
+    check(wrapped.reincarnation_species(first) == direct->reincarnation_species(second) &&
+          first.value == second.value, "A forwarding double rolls Reincarnate's species");
+    check(wrapped.fitted_state(sheet, vitals, sheet).resources ==
+          direct->fitted_state(sheet, vitals, sheet).resources,
+          "A forwarding double fits a new body");
+    check(!wrapped.keeps_away({}, {}) && !direct->keeps_away({}, {}),
+          "A forwarding double asks the wrapped module about camp wards");
+}
+
 int main()
 {
     try
     {
         party_strength();
+        forwarding_defaults();
         two_weapon_equipment();
         equipment_rule_boundary();
         combat_body_assignments();

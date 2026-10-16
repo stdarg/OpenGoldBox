@@ -391,9 +391,15 @@ void run()
                 check(bool(restored.rest(RestKind::short_rest)), "Style character Short Rest");
                 restored.finish_short_rest(restored.state().short_rest->ticket);
                 // A Hunter Ranger may change its Hunter's Prey.
+                // A copy: each kept choice erases its member from the rest,
+                // and the last one ends the rest.
                 if (restored.state().training_rest)
-                    for (const auto member : restored.state().training_rest->members)
-                        restored.keep_rest_training(restored.state().training_rest->ticket, member);
+                {
+                    const auto ticket = restored.state().training_rest->ticket;
+                    const auto members = restored.state().training_rest->members;
+                    for (const auto member : members)
+                        restored.keep_rest_training(ticket, member);
+                }
                 check(bool(restored.rest(RestKind::long_rest)), "Style character Long Rest");
             }
 
