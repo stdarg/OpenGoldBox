@@ -1259,6 +1259,8 @@ struct Definition
     // Witch Sight (invocation); Hurl Through Hell (Fiend 14); Mystic
     // Arcanum's spells (Warlock 11, 13, 15).
     bool witch_sight{}, hurl_through_hell{};
+    // Gift of the Protectors (invocation, LEVELS-5).
+    bool gift_of_protectors{};
     std::set<std::string, std::less<>> arcanum;
     // Magic Initiate: the spell attack bonus (the feat's ability modifier plus
     // Proficiency Bonus) of each spell it teaches, and each feat's level-one
@@ -2666,6 +2668,7 @@ character_definition(std::string_view bytes,
     d.eldritch_smite = invoked("eldritch_smite");
     d.lifedrinker = invoked("lifedrinker");
     d.witch_sight = invoked("witch_sight");
+    d.gift_of_protectors = invoked("gift_of_the_protectors");
     // Lessons of the First Ones: an Origin feat.
     d.savage |= invoked("lessons_savage_attacker");
     if (invoked("lessons_alert"))
@@ -4203,6 +4206,7 @@ class Session final : public CombatSession
     void end_wild_shape(Actor &a);
     // Animal Shapes' form ends, and its Temporary Hit Points with it.
     void end_animal_shape(Actor &a);
+    void protect(Actor &target);
     void change_speed(Actor &a, int old_speed);
     // Land's Aid: thorns in a 10-foot Sphere and flowers that heal one ally.
     void lands_aid(Actor &druid, Cell center);
@@ -9608,6 +9612,8 @@ void Session::damage(Actor &target, int amount, bool critical)
             {{"name", target.source.name}}
         });
     }
+    if (standing && target.life.hp == 0 && !target.life.dead)
+        protect(target);
     if (standing && target.life.hp == 0)
         bless_fiends(target);
     // Warding Bond: the caster takes the same damage; the bond ends when the
@@ -10278,6 +10284,27 @@ void Session::refresh_form(Actor &a)
     else
         a.form = shaped(a.definition,
                         detail::beast_forms.at(static_cast<std::size_t>(shape->dc - 1)));
+}
+
+// Gift of the Protectors: the whole party is written in the Warlock's book
+// (LEVELS-5), so the first member dropped to 0 Hit Points but not killed
+// outright drops to 1 instead, once per the Warlock's Long Rest.
+void Session::protect(Actor &target)
+{
+    const auto warlock = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return def(a).gift_of_protectors && a.source.side == target.source.side &&
+               !detail::has_effect(a.effects, detail::EffectKind::protectors_used) &&
+               detail::can_apply(a.effects);
+    });
+    if (warlock == actors_.end())
+        return;
+    // Not healing (Chill Touch cannot stop it); the dying clock is cleared.
+    (void)detail::heal_life(target.life, 1, max_hp(target), true);
+    detail::apply_spell_benefit(warlock->effects, effect_source(*warlock), warlock->source.name,
+                                detail::EffectKind::protectors_used, 0);
+    log(target.source.name + " drops to 1 Hit Point instead (Gift of the Protectors).",
+    {"{name} drops to 1 Hit Point instead (Gift of the Protectors).", {{"name", target.source.name}}});
 }
 
 void Session::end_animal_shape(Actor &a)
@@ -20837,7 +20864,7 @@ class Module final : public RulesModule
             result.description = "A feat or ability points.";
         if (klass == CharacterClass::warlock && result.level == 9)
             result.description =
-                "One more Eldritch Invocation; Lifedrinker is open to Pact of the Blade.\nLevel 5 Pact Magic slots and Warlock spells: Hold Monster and Mislead; Fiend Spells: Insect Plague is always prepared.\nProficiency Bonus +4.";
+                "One more Eldritch Invocation; Lifedrinker is open to Pact of the Blade, Gift of the Protectors to Pact of the Tome.\nLevel 5 Pact Magic slots and Warlock spells: Hold Monster and Mislead; Fiend Spells: Insect Plague is always prepared.\nProficiency Bonus +4.";
         if (klass == CharacterClass::warlock && result.level == 10)
             result.description =
                 "Fiendish Resilience: Resistance to a damage type you choose other than Force, changed after any rest.\nA fourth cantrip.";
@@ -21964,6 +21991,7 @@ class Module final : public RulesModule
         {
             return e.kind == detail::EffectKind::prayer_of_healing ||
                    e.kind == detail::EffectKind::relentless_used ||
+                   e.kind == detail::EffectKind::protectors_used ||
                    e.kind == detail::EffectKind::overchanneled ||
                    e.kind == detail::EffectKind::wings_used ||
                    e.kind == detail::EffectKind::luck_used ||
@@ -23530,7 +23558,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.231", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.232", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

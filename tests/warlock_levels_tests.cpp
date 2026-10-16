@@ -42,7 +42,8 @@ std::unique_ptr<RulesModule> dummy_rules()
     std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
                                "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
-                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature slayer 1 1000 20 30 30 10 12 30 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 CharacterDraft draft(std::string first)
@@ -275,6 +276,34 @@ void devouring_checks()
     check(!offered(*c, "melee", 98), "No fourth attack");
 }
 
+// Gift of the Protectors: the party is in the book; the first drop to 0 Hit
+// Points leaves 1 instead, once per Long Rest (LEVELS-5).
+void protectors_checks()
+{
+    const auto rules = dummy_rules();
+    const auto hero = warlock(9, "pact_of_the_tome", {{9, {"gift_of_the_protectors"}}});
+    check(granted(hero.sheet(), "invocation:gift_of_the_protectors"), "Gift of the Protectors at 9");
+    bool kept = false;
+    for (std::uint64_t seed = 1; seed < 40 && !kept; ++seed)
+    {
+        auto c = field(*rules, hero.sheet(), "slayer", seed);
+        to_turn(*c, 98);
+        check(submit(*c, "melee", 1) && (!c->snapshot().reaction_pending || submit(*c, "decline")),
+              "The slayer attacks");
+        if (!logged(*c, "Warlock drops to 1 Hit Point instead (Gift of the Protectors)."))
+            continue;
+        kept = unit(*c, 1).hit_points == 1;
+        check(kept, "The Warlock is left 1 Hit Point");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spent gift");
+        for (unsigned turns = 0; turns < 12 && unit(*c, 1).hit_points > 0; ++turns)
+            check(submit(*c, "melee", 1) || submit(*c, "end") || submit(*c, "decline"),
+                  "The slayer attacks again");
+        check(unit(*c, 1).hit_points == 0, "The gift works once per Long Rest");
+    }
+    check(kept, "A seed where the slayer drops the Warlock");
+}
+
 void luck_checks()
 {
     const auto rules = dummy_rules();
@@ -315,6 +344,7 @@ int main()
         fiend_spells_checks();
         blade_checks();
         luck_checks();
+        protectors_checks();
         resilience_checks();
         arcanum_checks();
         hurl_checks();

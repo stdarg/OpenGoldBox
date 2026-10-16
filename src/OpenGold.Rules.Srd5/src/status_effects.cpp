@@ -672,6 +672,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::feasted:
     case EffectKind::raised:
     case EffectKind::relentless_used:
+    case EffectKind::protectors_used:
     case EffectKind::overchanneled:
     case EffectKind::wings_used:
     case EffectKind::luck_used:

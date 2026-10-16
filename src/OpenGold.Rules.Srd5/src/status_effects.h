@@ -469,9 +469,12 @@ enum class EffectKind : unsigned
     // or a Bonus Action and one attack each turn, and a Wisdom save, `dc`,
     // to cast a spell; a Wisdom save at the end of each of its turns.
     time_slowed = 190,
+    // Gift of the Protectors has kept someone up; it returns with the
+    // Warlock's Long Rest.
+    protectors_used = 191,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = time_slowed
+    last = protectors_used
 };
 
 // Magic Circle's creature types, by `dc`.

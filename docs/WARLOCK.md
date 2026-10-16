@@ -139,10 +139,14 @@ The Warlock advances to level 15, the cap
     weapon.
   - **Witch Sight** (15): Truesight to 30 feet: Invisible creatures there are
     seen, and magical Darkness there hides nothing from the Warlock.
+  - **Gift of the Protectors** (9, Pact of the Tome): every party member
+    counts as written in the Book of Shadows, which is not modeled (TOME-1,
+    LEVELS-5). The first one dropped to 0 Hit Points but not killed outright
+    drops to 1 instead; then no one can until the Warlock's Long Rest.
   - Ascendant Step, Gaze of Two Minds, Gift of the Depths, Investment of the
     Chain Master, Master of Myriad Forms, Whispers of the Grave and Visions of
-    Distant Realms stay out with what they need. Gift of the Protectors and One
-    with Shadows wait for decisions.
+    Distant Realms stay out with what they need. One with Shadows is cut:
+    battle maps have no light levels (LEVELS-5).
 - **Dark One's Own Luck** (Fiend 6): a failed saving throw (Concentration's
   too) that 10 more could pass gains 1d10 without asking, as roll effects do,
   shown with the save; as many times as the Charisma modifier (at least once)

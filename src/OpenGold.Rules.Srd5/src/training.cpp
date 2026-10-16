@@ -640,7 +640,7 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         unsigned level;
         std::string_view prerequisite;
     };
-    static constexpr std::array<Invocation, 17> all{{
+    static constexpr std::array<Invocation, 18> all{{
         {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1},
         {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2},
         {"eldritch_mind", "Eldritch Mind", "Advantage on Constitution saves to keep Concentration.", 1},
@@ -656,6 +656,7 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         {"eldritch_smite", "Eldritch Smite", "Once per turn, when your pact weapon hits, spend a Pact Magic slot: 1d8 Force damage and 1d8 more per slot level, and a Huge or smaller creature is knocked Prone.", 5, "pact_of_the_blade"},
         {"thirsting_blade", "Thirsting Blade", "Attack twice with your pact weapon when you take the Attack action.", 5, "pact_of_the_blade"},
         {"lifedrinker", "Lifedrinker", "Once per turn, when your pact weapon hits, 1d6 more Necrotic, Psychic or Radiant damage; you may spend a Hit Point Die to regain Hit Points.", 9, "pact_of_the_blade"},
+        {"gift_of_the_protectors", "Gift of the Protectors", "Every party member is written in your book: the first one dropped to 0 Hit Points but not killed outright drops to 1 instead, once per Long Rest.", 9, "pact_of_the_tome"},
         {"devouring_blade", "Devouring Blade", "Thirsting Blade's Extra Attack becomes two: attack three times with your pact weapon.", 12, "thirsting_blade"},
         {"witch_sight", "Witch Sight", "Truesight to 30 feet: see Invisible creatures and through magical Darkness there.", 15, {}}}};
     const auto held = [&](const std::string & id, const std::string & feat)
