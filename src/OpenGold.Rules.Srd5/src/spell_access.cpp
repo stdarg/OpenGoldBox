@@ -13,19 +13,10 @@ namespace
 {
 constexpr std::string_view source = "class:wizard:spellcasting";
 
-// Class spell lists a row belongs to. A per-row property means a new spell
-// describes itself in one place.
-enum SpellList : unsigned
-{
-    wizard_list = 1,
-    cleric_list = 2,
-    paladin_list = 4,
-    ranger_list = 8,
-    druid_list = 16,
-    sorcerer_list = 32,
-    warlock_list = 64,
-    bard_list = 128
-};
+// Class spell lists a row belongs to, as bits of Spell::lists. A per-row
+// property means a new spell describes itself in one place.
+constexpr unsigned wizard_list = 1, cleric_list = 2, paladin_list = 4, ranger_list = 8,
+                   druid_list = 16, sorcerer_list = 32, warlock_list = 64, bard_list = 128;
 
 struct Spell
 {

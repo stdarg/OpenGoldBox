@@ -34,7 +34,7 @@ std::uint16_t word(std::span<const std::uint8_t> data, std::size_t p)
 }
 
 // Byte offsets are field identifiers in the sound data, not CPU registers.
-enum Field : unsigned
+enum class Field : unsigned
 {
     delay = 0,
     position = 2,
@@ -54,7 +54,13 @@ struct Voice
 {
     std::array<std::uint16_t, 24> fields{};
 
-    std::uint16_t &operator[](unsigned offset)
+    std::uint16_t &operator[](Field field)
+    {
+        return at_offset(static_cast<unsigned>(field));
+    }
+
+    // A field the sound data names by its byte offset.
+    std::uint16_t &at_offset(unsigned offset)
     {
         if (offset % 2 || offset >= 48)
             invalid("invalid voice field");
@@ -65,6 +71,7 @@ struct Voice
 void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, std::size_t source,
               std::size_t &return_position)
 {
+    using enum Field;
     auto p = static_cast<std::size_t>(voices[source][position]);
     auto selected = source;
     for (unsigned budget = 0; budget < 4096; ++budget)
@@ -75,7 +82,7 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
             const auto field = byte(data, p++);
             const auto value = word(data, p);
             p += 2;
-            auto &destination = voices[selected][field];
+            auto &destination = voices[selected].at_offset(field);
             if (op == 0xfe)
             {
                 if (destination == 0 || --destination != 0)
@@ -84,7 +91,7 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
             else
             {
                 destination = value;
-                if (field == delay)
+                if (field == static_cast<unsigned>(delay))
                 {
                     voices[source][position] =
                         voices[source][delay] ? static_cast<std::uint16_t>(p) : 0;
@@ -116,7 +123,7 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
                     {
                         4U, 6U, 8U, 10U, 12U, 16U, 18U, 22U, 24U, 26U, 28U, 30U, 32U, 34U, 36U
                     })
-                voices[selected][field] = 0;
+                voices[selected].at_offset(field) = 0;
         }
         else
         {
@@ -199,6 +206,7 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
 {
     if (data.size() > 65536)
         invalid("sound segment too large");
+    using enum Field;
     std::array<Voice, 4> voices{};
     for (std::size_t i = 0; i < voices.size(); ++i)
     {

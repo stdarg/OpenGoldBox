@@ -7,41 +7,16 @@ namespace opengold::por
 {
 namespace
 {
-// Original item type IDs used by the generator (ITEMS template indices).
-enum ItemType : unsigned
-{
-    javelin = 21,
-    quarrel = 28,
-    bastard_sword = 34,
-    broad_sword = 35,
-    long_sword = 36,
-    short_sword = 37,
-    two_handed_sword = 38,
-    heavy_crossbow = 45,
-    leather_armor = 50,
-    padded_armor = 51,
-    studded_leather = 52,
-    ring_mail = 53,
-    scale_mail = 54,
-    chain_mail = 55,
-    splint_mail = 56,
-    banded_mail = 57,
-    plate_mail = 58,
-    shield = 59,
-    magic_user_scroll = 61,
-    cleric_scroll = 62,
-    gauntlets = 63,
-    type_67 = 67,
-    potion = 71,
-    arrow = 73,
-    bracers = 77,
-    wand_a = 78,
-    wand_b = 79,
-    type_84 = 84,
-    type_89 = 89,
-    cloak = 92,
-    ring_of_protection = 93
-};
+// Original item type IDs used by the generator (ITEMS template indices),
+// compared with the type numbers it rolls.
+constexpr unsigned javelin = 21, quarrel = 28, bastard_sword = 34, broad_sword = 35,
+                   long_sword = 36, short_sword = 37, two_handed_sword = 38, heavy_crossbow = 45,
+                   leather_armor = 50, padded_armor = 51, studded_leather = 52, ring_mail = 53,
+                   scale_mail = 54, chain_mail = 55, splint_mail = 56, banded_mail = 57,
+                   plate_mail = 58, shield = 59, magic_user_scroll = 61, cleric_scroll = 62,
+                   gauntlets = 63, type_67 = 67, potion = 71, arrow = 73, bracers = 77,
+                   wand_a = 78, wand_b = 79, type_84 = 84, type_89 = 89, cloak = 92,
+                   ring_of_protection = 93;
 
 // The engine's 63-byte item record, before it is decoded.
 struct GeneratedItem

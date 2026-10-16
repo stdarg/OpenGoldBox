@@ -6,30 +6,37 @@ namespace opengold::por
 {
 namespace
 {
-enum Edge : unsigned
+enum class Edge : unsigned
 {
     open = 0,
     wall = 1,
     doorway = 3
 };
 
+// Both squares' sides of one edge: a wall on either side makes a wall, a
+// doorway on either a doorway (their bits 1 and 3).
+Edge combined(Edge first, Edge second)
+{
+    return static_cast<Edge>(static_cast<unsigned>(first) | static_cast<unsigned>(second));
+}
+
 constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 
 Edge side(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
     if (x < 0 || x >= 16 || y < 0 || y >= 16)
-        return y == static_cast<int>(party_y) && (direction == 1 || direction == 3) ? open : wall;
+        return y == static_cast<int>(party_y) && (direction == 1 || direction == 3) ? Edge::open
+               : Edge::wall;
     const auto &cell = map.at(x, y);
     if (!cell.walls[direction])
-        return open;
-    return cell.doors[direction] ? doorway : wall;
+        return Edge::open;
+    return cell.doors[direction] ? Edge::doorway : Edge::wall;
 }
 
 Edge edge(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
-    return static_cast<Edge>(
-               side(map, x, y, direction, party_y) |
-               side(map, x + dx[direction], y + dy[direction], (direction + 2) % 4, party_y));
+    return combined(side(map, x, y, direction, party_y),
+                    side(map, x + dx[direction], y + dy[direction], (direction + 2) % 4, party_y));
 }
 
 // Functional tile patterns observed with synthetic inputs; see combat-geometry.md.
@@ -45,7 +52,7 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
     for (int y = 0; y < 5; ++y)
         for (int x = (y < 2 ? 1 : 0); x < (y < 2 ? 7 : 6); ++x)
             put(x, y, 23);
-    if (west == wall)
+    if (west == Edge::wall)
     {
         put(1, 0, 1);
         put(1, 1, 2);
@@ -57,42 +64,42 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
             put(y + 1, y, 14);
         }
     }
-    else if (west == doorway)
+    else if (west == Edge::doorway)
     {
         put(1, 0, 14);
         put(1, 1, 21);
         put(1, 2, 9);
         put(5, 4, 1);
     }
-    if (north != open)
+    if (north != Edge::open)
     {
-        put(1, 0, west == open ? 16 : 19);
-        put(1, 1, west == open ? 17 : west == wall ? 2 : 21);
-        put(6, 0, east == open ? 18 : 10);
-        put(6, 1, east == open ? 24 : 15);
-        if (north == wall)
+        put(1, 0, west == Edge::open ? 16 : 19);
+        put(1, 1, west == Edge::open ? 17 : west == Edge::wall ? 2 : 21);
+        put(6, 0, east == Edge::open ? 18 : 10);
+        put(6, 1, east == Edge::open ? 24 : 15);
+        if (north == Edge::wall)
         {
             for (int x = 2; x < 6; ++x)
             {
                 put(x, 0, 6);
                 put(x, 1, 11);
             }
-            if (west == wall)
+            if (west == Edge::wall)
                 put(2, 1, 7);
         }
         else
         {
             put(2, 0, 18);
-            put(2, 1, west == wall ? 22 : 24);
+            put(2, 1, west == Edge::wall ? 22 : 24);
             put(5, 0, 16);
             put(5, 1, 17);
         }
     }
-    if (upper_west != open || left_north != open)
+    if (upper_west != Edge::open || left_north != Edge::open)
     {
-        if (west == open)
+        if (west == Edge::open)
         {
-            if (north != open)
+            if (north != Edge::open)
             {
                 put(1, 0, 6);
                 put(1, 1, 11);
@@ -100,22 +107,22 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
         }
         else
         {
-            put(1, 0, north == open ? 14 : 3);
-            put(1, 1, west == wall ? 4 : 8);
+            put(1, 0, north == Edge::open ? 14 : 3);
+            put(1, 1, west == Edge::wall ? 4 : 8);
         }
     }
-    if (north != open && east == open)
+    if (north != Edge::open && east == Edge::open)
     {
-        put(6, 0, right_north != open ? 6 : upper_east != open ? 20 : 18);
-        put(6, 1, right_north != open ? 11 : 24);
+        put(6, 0, right_north != Edge::open ? 6 : upper_east != Edge::open ? 20 : 18);
+        put(6, 1, right_north != Edge::open ? 11 : 24);
     }
-    else if (north == open && upper_east != open)
+    else if (north == Edge::open && upper_east != Edge::open)
     {
-        put(5, 0, upper_east == wall ? 5 : 23);
-        put(6, 0, upper_east == wall ? 4 : 2);
-        put(6, 1, east != open ? 5 : right_north != open ? 13 : 9);
-        if (east == open && right_north != open)
-            put(6, 0, upper_east == wall ? 12 : 25);
+        put(5, 0, upper_east == Edge::wall ? 5 : 23);
+        put(6, 0, upper_east == Edge::wall ? 4 : 2);
+        put(6, 1, east != Edge::open ? 5 : right_north != Edge::open ? 13 : 9);
+        if (east == Edge::open && right_north != Edge::open)
+            put(6, 0, upper_east == Edge::wall ? 12 : 25);
     }
     return tiles;
 }
@@ -151,7 +158,7 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
             const int gx = static_cast<int>(x) + column, gy = static_cast<int>(y) + row;
             for (unsigned direction = 0; direction < 4; ++direction)
                 result.walled[row + 2][column + 6][direction] =
-                    edge(map, gx, gy, direction, y) == wall;
+                    edge(map, gx, gy, direction, y) == Edge::wall;
             // A square open to the sky has ordinary plants (Plant Growth); the
             // original marks a roofed square with its event byte's high bit.
             const bool sky = gx >= 0 && gy >= 0 && gx < 16 && gy < 16 &&
