@@ -640,7 +640,7 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         unsigned level;
         std::string_view prerequisite;
     };
-    static constexpr std::array<Invocation, 15> all{{
+    static constexpr std::array<Invocation, 17> all{{
         {"armor_of_shadows", "Armor of Shadows", "Cast Mage Armor on yourself without a spell slot.", 1},
         {"devils_sight", "Devil's Sight", "See normally in magical and nonmagical Darkness.", 2},
         {"eldritch_mind", "Eldritch Mind", "Advantage on Constitution saves to keep Concentration.", 1},
@@ -655,7 +655,9 @@ TrainingChoiceGroup invocation_options(unsigned level, std::span<const FeatureGr
         {"pact_of_the_tome", "Pact of the Tome", "Three cantrips and two level 1 spells from any class's list, prepared as Warlock spells.", 1},
         {"eldritch_smite", "Eldritch Smite", "Once per turn, when your pact weapon hits, spend a Pact Magic slot: 1d8 Force damage and 1d8 more per slot level, and a Huge or smaller creature is knocked Prone.", 5, "pact_of_the_blade"},
         {"thirsting_blade", "Thirsting Blade", "Attack twice with your pact weapon when you take the Attack action.", 5, "pact_of_the_blade"},
-        {"lifedrinker", "Lifedrinker", "Once per turn, when your pact weapon hits, 1d6 more Necrotic, Psychic or Radiant damage; you may spend a Hit Point Die to regain Hit Points.", 9, "pact_of_the_blade"}}};
+        {"lifedrinker", "Lifedrinker", "Once per turn, when your pact weapon hits, 1d6 more Necrotic, Psychic or Radiant damage; you may spend a Hit Point Die to regain Hit Points.", 9, "pact_of_the_blade"},
+        {"devouring_blade", "Devouring Blade", "Thirsting Blade's Extra Attack becomes two: attack three times with your pact weapon.", 12, "thirsting_blade"},
+        {"witch_sight", "Witch Sight", "Truesight to 30 feet: see Invisible creatures and through magical Darkness there.", 15, {}}}};
     const auto held = [&](const std::string & id, const std::string & feat)
     {
         return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
@@ -816,6 +818,19 @@ TrainingChoiceGroup metamagic_options(unsigned level, std::span<const FeatureGra
     {
         return has_grant(held, "metamagic:" + option.id);
     });
+    return group;
+}
+
+// Mystic Arcanum: a level-6, 7 or 8 Warlock spell at Warlock level 11, 13 or
+// 15 (SRD 5.2.1 p. 72).
+TrainingChoiceGroup arcanum_options(unsigned level)
+{
+    TrainingChoiceGroup group{"class:warlock:arcanum:" + std::to_string(level), "Mystic Arcanum", 1,
+                              {}, TrainingChoiceControl::single_selection};
+    group.acquired_level = level;
+    for (const auto &spell : spell_table)
+        if (spell.level == (level + 1) / 2 && on_class_list(CharacterClass::warlock, spell.id))
+            group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
     return group;
 }
 

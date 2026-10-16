@@ -1,6 +1,6 @@
 # Warlock
 
-Levels 1–10 of the SRD 5.2.1 Warlock (pp. 70–76). Charisma is the spellcasting
+Levels 1–15 of the SRD 5.2.1 Warlock (pp. 70–76). Charisma is the spellcasting
 ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
 [Warlock Poison Spray](WARLOCK-POISON-SPRAY.md).
 
@@ -106,9 +106,9 @@ ability; the earlier cantrip work is in [Eldritch Blast](ELDRITCH-BLAST.md) and
   spells, 7 Temporary Hit Points from dropping a weakling, and from an ally
   dropping one 10 feet away but not 15).
 
-## Levels 5–10
+## Levels 5–15
 
-The Warlock advances to level 10 for now; level 11 waits for Mystic Arcanum
+The Warlock advances to level 15, the cap
 ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
@@ -121,8 +121,8 @@ The Warlock advances to level 10 for now; level 11 waits for Mystic Arcanum
   Monster, Mislead). The cut ones stay cut.
 - **Fiend Spells:** Fireball and Stinking Cloud are always prepared from 5,
   Fire Shield and Wall of Fire from 7, Insect Plague from 9; Geas is cut.
-- **Eldritch Invocations:** two more at 5, one more at 7 and at 9 (five, six
-  and seven in all), chosen on the level-up's checkbox page; one held
+- **Eldritch Invocations:** two more at 5, one more at 7, 9, 12 and 15 (five,
+  six, seven, eight and nine in all), chosen on the level-up's checkbox page; one held
   invocation may be replaced on each level-up up to the cap. New ones:
   - **Eldritch Smite** (5, Pact of the Blade): once on each of the Warlock's
     turns, right after a pact weapon hit, **Eldritch Smite (a Pact Magic
@@ -135,6 +135,10 @@ The Warlock advances to level 10 for now; level 11 waits for Mystic Arcanum
     **(Psychic)** or **(Radiant)** adds 1d6 of that type; while the Warlock is
     wounded and has Hit Point Dice, the **… spend a Hit Point Die** entries
     also roll one and heal its roll plus the Constitution modifier.
+  - **Devouring Blade** (12, Thirsting Blade): three attacks with the pact
+    weapon.
+  - **Witch Sight** (15): Truesight to 30 feet: Invisible creatures there are
+    seen, and magical Darkness there hides nothing from the Warlock.
   - Ascendant Step, Gaze of Two Minds, Gift of the Depths, Investment of the
     Chain Master, Master of Myriad Forms, Whispers of the Grave and Visions of
     Distant Realms stay out with what they need. Gift of the Protectors and One
@@ -147,9 +151,24 @@ The Warlock advances to level 10 for now; level 11 waits for Mystic Arcanum
 - **Fiendish Resilience** (Fiend 10): a level-up choice of any damage type but
   Force, resisted from then on; after any rest the rest's training choices
   offer to change it, as the Hunter's Prey's are.
-- **Ability Score Improvement** (8).
-- Verification: `opengold_warlock_levels_tests` (the campaign's stop at 10,
-  prepared counts, the fourth cantrip, seven invocations, the Fiend features'
-  grants, a level-10 round trip, the Fiend Spells, Eldritch Smite's Prone,
+- **Ability Score Improvements** (8, 12).
+- **Mystic Arcanum** (11, 13, 15): a level-up choice of one Warlock spell of
+  level 6, then 7, then 8 (Circle of Death, Create Undead, Eyebite or True
+  Seeing; Finger of Death or Forcecage; Befuddlement, Dominate Monster or
+  Power Word Stun), each offered as "<spell> (Mystic Arcanum)" and cast once
+  per Long Rest as a Magic action without a slot. A third Pact Magic slot at
+  11; prepared spells 11, 11, 12, 12 and 13 at levels 11–15.
+- **Hurl Through Hell** (Fiend 14): once on each of the Warlock's turns, right
+  after any attack roll of its hits (Eldritch Blast's too), **Hurl Through
+  Hell**: the creature makes a Charisma save against the Warlock's spell DC.
+  On a failure it takes 8d10 Psychic damage unless it is a Fiend, and is gone
+  until the end of the Warlock's next turn, Incapacitated; then it returns to
+  its square or the nearest free one. Once per Long Rest, then **Hurl Through
+  Hell (a Pact Magic slot)**.
+- Verification: `opengold_warlock_levels_tests` (the campaign to 15,
+  prepared counts, the fourth cantrip, nine invocations, the Fiend features'
+  and Mystic Arcanum's grants, a level-15 round trip, the Fiend Spells, Eldritch Smite's Prone,
   Lifedrinker, Thirsting Blade's second attack, Dark One's Own Luck on a
-  Concentration save, Fiendish Resilience after a Short Rest).
+  Concentration save, Fiendish Resilience after a Short Rest, a Mystic
+  Arcanum once per Long Rest, Hurl Through Hell and the return, Devouring
+  Blade's three attacks).

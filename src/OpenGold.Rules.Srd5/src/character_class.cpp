@@ -104,9 +104,8 @@ unsigned level_cap(CharacterClass character_class)
            character_class == CharacterClass::ranger ||
            character_class == CharacterClass::cleric ||
            character_class == CharacterClass::wizard ||
-           character_class == CharacterClass::sorcerer ? 15
-           // A Warlock stops at 10 until its Mystic Arcanum and Hurl Through Hell exist.
-           : character_class == CharacterClass::warlock ? 10 : 4;
+           character_class == CharacterClass::sorcerer ||
+           character_class == CharacterClass::warlock ? 15 : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)

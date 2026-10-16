@@ -139,6 +139,7 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::groped && kind != EffectKind::vitriol &&
             kind != EffectKind::wall_burned && kind != EffectKind::breathed &&
             kind != EffectKind::lifted && kind != EffectKind::hand_ready &&
+            kind != EffectKind::hurled &&
             kind != EffectKind::clouded && kind != EffectKind::rooted &&
             kind != EffectKind::jigging) ||
             !can_apply(effects) ||
@@ -456,6 +457,7 @@ bool incapacitated(const EffectState &effects)
            has_effect(effects, EffectKind::lethargic) ||
            has_effect(effects, EffectKind::entranced) ||
            has_effect(effects, EffectKind::banished) || has_effect(effects, EffectKind::mazed) ||
+           has_effect(effects, EffectKind::hurled) ||
            has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
            has_effect(effects, EffectKind::knocked_out);
@@ -578,6 +580,7 @@ int benefit_value_limit(EffectKind kind)
              kind == EffectKind::befuddled || kind == EffectKind::word_stunned ? 40
            : kind == EffectKind::indigo ? 4033
            : kind == EffectKind::overchanneled || kind == EffectKind::luck_used ? 20
+           : kind == EffectKind::arcanum_used ? 7
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4
@@ -664,6 +667,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::overchanneled:
     case EffectKind::wings_used:
     case EffectKind::luck_used:
+    case EffectKind::hurl_used:
+    case EffectKind::arcanum_used:
     case EffectKind::trait_uses:
     case EffectKind::heroic_inspiration:
         return 86400000; // until a Long Rest, at most a day
@@ -1026,6 +1031,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::groped || kind == EffectKind::vitriol ||
                            kind == EffectKind::wall_burned || kind == EffectKind::breathed ||
                            kind == EffectKind::lifted || kind == EffectKind::hand_ready ||
+                           kind == EffectKind::hurled ||
                            kind == EffectKind::clouded || kind == EffectKind::rooted ||
                            kind == EffectKind::jigging ||
                            kind == EffectKind::shocking_grasp ||
@@ -1106,7 +1112,8 @@ EffectState read_effects(std::istream &in)
                                               kind == EffectKind::vitriol ||
                                               kind == EffectKind::lifted ||
                                               kind == EffectKind::rooted ||
-                                              kind == EffectKind::jigging)
+                                              kind == EffectKind::jigging ||
+                                              kind == EffectKind::hurled)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

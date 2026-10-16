@@ -34,6 +34,8 @@ rules::TrainingChoiceGroup metamagic_options(unsigned level = 2,
 rules::TrainingChoiceGroup elemental_affinity_options();
 // The Fiend Warlock's Fiendish Resilience (level 10): a type other than Force.
 rules::TrainingChoiceGroup fiendish_resilience_options();
+// Mystic Arcanum (Warlock 11, 13 and 15): a Warlock spell of level 6, 7 or 8.
+rules::TrainingChoiceGroup arcanum_options(unsigned level);
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup land_options();
 rules::TrainingChoiceGroup hunters_prey_options();

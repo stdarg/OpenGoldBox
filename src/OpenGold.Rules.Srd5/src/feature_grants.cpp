@@ -1,5 +1,7 @@
 #include "feature_grants.h"
 #include "opengold/srd5.h"
+#include "spell_access.h"
+#include "spell_table.h"
 #include <algorithm>
 #include <iomanip>
 #include <istream>
@@ -240,6 +242,8 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
     }
     if (klass == CharacterClass::warlock && level == 6)
         add("feature:dark_ones_own_luck", "subclass:warlock:fiend");
+    if (klass == CharacterClass::warlock && level == 14)
+        add("feature:hurl_through_hell", "subclass:warlock:fiend");
     if (klass == CharacterClass::sorcerer)
     {
         if (level == 5)
@@ -496,6 +500,20 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                      grant.id == "affinity:poison"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id.starts_with("class:warlock:arcanum:"))
+        {
+            // Mystic Arcanum: a Warlock spell of level 6, 7 or 8, chosen at
+            // level 11, 13 or 15.
+            const auto *spell = find_spell(std::string_view(grant.id).substr(8));
+            require(klass == CharacterClass::warlock &&
+                    (grant.level == 11 || grant.level == 13 || grant.level == 15) &&
+                    grant.source_id == "class:warlock:arcanum:" + std::to_string(grant.level) &&
+                    grant.choices.empty() && grant.id.starts_with("arcanum:") && spell &&
+                    spell->id == std::string_view(grant.id).substr(8) &&
+                    spell->level == (grant.level + 1) / 2 &&
+                    on_class_list(CharacterClass::warlock, spell->id));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == fiendish_resilience)
         {
             // Fiendish Resilience: any type but Force, chosen at level ten.
@@ -590,6 +608,10 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({std::string(elemental_affinity), 0}));
     if (klass == CharacterClass::warlock && level >= 10)
         require(entitlements.contains({std::string(fiendish_resilience), 0}));
+    if (klass == CharacterClass::warlock)
+        for (const unsigned arcanum : {11u, 13u, 15u})
+            if (level >= arcanum)
+                require(entitlements.contains({"class:warlock:arcanum:" + std::to_string(arcanum), 0}));
     if (klass == CharacterClass::fighter && level >= 7)
         require(entitlements.contains({std::string(champion_style), 0}));
     require(required.empty() && advancement_count == feats_by(klass, level));

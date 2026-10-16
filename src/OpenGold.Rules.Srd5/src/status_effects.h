@@ -445,9 +445,17 @@ enum class EffectKind : unsigned
     wings_used = 180,
     // Dark One's Own Luck's uses since the last Long Rest, in `dc`.
     luck_used = 181,
+    // Hurl Through Hell (Fiend 14): gone to the Lower Planes, Incapacitated,
+    // until the end of the Warlock's next turn.
+    hurled = 182,
+    // Hurl Through Hell's free use is spent until a Long Rest.
+    hurl_used = 183,
+    // Mystic Arcanum's spells cast since the last Long Rest: `dc` has a bit
+    // for each, 1 for level 6, 2 for 7 and 4 for 8.
+    arcanum_used = 184,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = luck_used
+    last = arcanum_used
 };
 
 // Magic Circle's creature types, by `dc`.

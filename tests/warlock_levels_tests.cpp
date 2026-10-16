@@ -17,10 +17,10 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Fiend Warlock from level 5 to 10 (LEVELS-1, LEVELS-2): the Warlock's
+// A Fiend Warlock from level 5 to 15 (LEVELS-1, LEVELS-2): the Warlock's
 // level-3 to level-5 spells, the Fiend Spells, more invocations (Eldritch
-// Smite, Thirsting Blade, Lifedrinker), Dark One's Own Luck and Fiendish
-// Resilience.
+// Smite, Thirsting Blade, Lifedrinker, Devouring Blade, Witch Sight), Dark
+// One's Own Luck, Fiendish Resilience, Mystic Arcanum and Hurl Through Hell.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -67,7 +67,8 @@ CharacterDraft draft(std::string first)
 }
 
 // A Warlock of the level through the default level-ups, taking `picks`'
-// invocations at their levels instead.
+// invocations at their levels instead, and Circle of Death for its first
+// Mystic Arcanum.
 Character warlock(unsigned level, std::string first = "pact_of_the_blade",
                   std::map<unsigned, std::vector<std::string>> picks = {})
 {
@@ -80,6 +81,8 @@ Character warlock(unsigned level, std::string first = "pact_of_the_blade",
         auto choice = rules->default_advancement(hero.sheet());
         if (const auto chosen = picks.find(next); chosen != picks.end())
             choice.training["class:warlock:invocations:" + std::to_string(next)] = chosen->second;
+        if (next == 11)
+            choice.training["class:warlock:arcanum:11"] = {"circle_of_death"};
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
     return hero;
@@ -158,18 +161,25 @@ void progression_checks()
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     const auto sheet = party.member(id).character.sheet();
-    check(sheet.level == 10, "A Warlock stops at 10 for now");
+    check(sheet.level == 15, "A Warlock reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
-    {5, 6}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 10}
+    {5, 6}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 10}, {11, 11}, {12, 11}, {13, 12}, {14, 12},
+    {15, 13}
 })
     check(rules->spell_access(warlock(level).sheet()).prepared_choices == count,
-          "Prepared spells: 6 at 5 to 10 at 10");
+          "Prepared spells: 6 at 5 to 13 at 15");
     check(rules->spell_access(warlock(10).sheet()).cantrip_choices == 4, "A fourth cantrip at 10");
     check(std::count_if(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
     {
         return g.id.starts_with("invocation:");
-    }) == 7, "Seven invocations at 10");
+    }) == 9, "Nine invocations at 15");
+    for (const unsigned level : {11u, 13u, 15u})
+        check(std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+    {
+        return g.id.starts_with("arcanum:") && g.level == level;
+    }), "Mystic Arcanum at 11, 13 and 15");
+    check(granted(sheet, "feature:hurl_through_hell"), "Hurl Through Hell at 14");
     check(granted(sheet, "feature:dark_ones_own_luck") &&
           std::any_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
     {
@@ -180,7 +190,7 @@ void progression_checks()
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "warlock-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "warlock-levels") == bytes,
-          "A level-10 Warlock saves and reloads");
+          "A level-15 Warlock saves and reloads");
 }
 
 void fiend_spells_checks()
@@ -207,6 +217,60 @@ void blade_checks()
           "Lifedrinker adds Radiant damage");
     check(offered(*c, "melee", 98) && !offered(*c, "eldritch_smite", 98),
           "Thirsting Blade's second attack; Eldritch Smite once a turn");
+}
+
+void arcanum_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, warlock(11).sheet());
+    const auto commands = c->legal_commands();
+    const auto arcanum = std::find_if(commands.begin(), commands.end(), [](const auto & command)
+    {
+        return command.verb.ends_with("_arcanum");
+    });
+    check(arcanum != commands.end(), "Mystic Arcanum's spell is offered");
+    const auto verb = arcanum->verb;
+    check(c->submit(*arcanum), "Cast the Mystic Arcanum spell");
+    if (c->snapshot().spell_targeting || c->snapshot().area_targeting)
+        check(submit(*c, "area_cast") || submit(*c, "spell_cast"), "Finish the casting");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(!offered(*c, verb), "Once per Long Rest");
+}
+
+void hurl_checks()
+{
+    const auto rules = dummy_rules();
+    bool hurled = false;
+    for (std::uint64_t seed = 1; seed < 40 && !hurled; ++seed)
+    {
+        auto c = field(*rules, warlock(14).sheet(), "dummy", seed);
+        check(submit(*c, "melee", 98) && offered(*c, "hurl_through_hell", 98) &&
+              submit(*c, "hurl_through_hell", 98), "Hurl Through Hell follows a hit");
+        if (!logged(*c, "Foe is hurled through the Lower Planes."))
+            continue;
+        hurled = true;
+        check(logged(*c, "Psychic damage from Hurl Through Hell.") && unit(*c, 98).banished,
+              "The foe is gone and hurt");
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        check(submit(*c, "end") && logged(*c, "Foe returns from the Lower Planes."),
+              "It returns at the end of the Warlock's next turn");
+    }
+    check(hurled, "A seed where the foe fails its save");
+}
+
+void devouring_checks()
+{
+    const auto rules = dummy_rules();
+    const auto hero = warlock(15, "pact_of_the_blade",
+    {{5, {"eldritch_smite", "thirsting_blade"}}, {12, {"devouring_blade"}}, {15, {"witch_sight"}}});
+    check(granted(hero.sheet(), "invocation:devouring_blade") &&
+          granted(hero.sheet(), "invocation:witch_sight"), "Devouring Blade at 12, Witch Sight at 15");
+    auto c = field(*rules, hero.sheet());
+    check(submit(*c, "melee", 98) && submit(*c, "melee", 98) && submit(*c, "melee", 98),
+          "Devouring Blade: three attacks");
+    check(!offered(*c, "melee", 98), "No fourth attack");
 }
 
 void luck_checks()
@@ -250,6 +314,9 @@ int main()
         blade_checks();
         luck_checks();
         resilience_checks();
+        arcanum_checks();
+        hurl_checks();
+        devouring_checks();
     }
     catch (const std::exception &error)
     {

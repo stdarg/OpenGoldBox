@@ -99,6 +99,12 @@ String text(std::string_view source)
             source.ends_with(intervention))
         return format(N_("{spell} (Divine Intervention)"),
                       {{"spell", text(source.substr(0, source.size() - intervention.size()))}});
+    // "Eyebite (Mystic Arcanum)", a Warlock's once-a-day spell, is
+    // translated in two parts too.
+    constexpr std::string_view arcanum = " (Mystic Arcanum)";
+    if (translated == gs(source) && source.size() > arcanum.size() && source.ends_with(arcanum))
+        return format(N_("{spell} (Mystic Arcanum)"),
+                      {{"spell", text(source.substr(0, source.size() - arcanum.size()))}});
     // "Dimension Door with Ilsa", a spell that takes a companion, is
     // translated in two parts: the companion is a name.
     constexpr std::string_view companion = "Dimension Door with ";

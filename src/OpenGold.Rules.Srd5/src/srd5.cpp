@@ -460,7 +460,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 60;
+constexpr unsigned checkpoint_format = 61;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1130,6 +1130,10 @@ struct Definition
     // the Fiend's Dark One's Own Luck uses (level 6).
     bool thirsting_blade{}, eldritch_smite{}, lifedrinker{};
     int dark_luck{};
+    // Witch Sight (invocation); Hurl Through Hell (Fiend 14); Mystic
+    // Arcanum's spells (Warlock 11, 13, 15).
+    bool witch_sight{}, hurl_through_hell{};
+    std::set<std::string, std::less<>> arcanum;
     // Magic Initiate: the spell attack bonus (the feat's ability modifier plus
     // Proficiency Bonus) of each spell it teaches, and each feat's level-one
     // spell in feat order, cast once per Long Rest without a slot.
@@ -1352,8 +1356,9 @@ struct Actor
     bool prey_used{};
     EntityId prey_origin{};
     bool strike_used{}; // Divine Strike, once on each of its turns
-    // Eldritch Smite and Lifedrinker (Warlock), each once on each of its turns.
-    bool smite_used{}, drink_used{};
+    // Eldritch Smite, Lifedrinker and Hurl Through Hell (Warlock), each once
+    // on each of its turns.
+    bool smite_used{}, drink_used{}, hurl_used{};
     // Dominated (Dominate Beast): it fights on its controller's side, not its
     // own. A controlled creature (dominated or raised) waits out the turn it
     // would get again in the round it came under control after it had acted.
@@ -1788,6 +1793,15 @@ std::pair<std::string, std::string> cast_at(const detail::SpellDef &spell, unsig
     return {verb + "_" + slot, label + " (level " + slot + " slot)"};
 }
 
+// Whether a Mystic Arcanum spell of this level was cast since the last Long Rest.
+bool arcanum_spent(const Actor &a, unsigned level)
+{
+    return std::any_of(a.effects.active.begin(), a.effects.active.end(), [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::arcanum_used && (e.dc & (1 << (level - 6)));
+    });
+}
+
 // Pays for a leveled spell: with Magic Initiate's free cast, or from a slot of
 // the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
@@ -1801,6 +1815,22 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
     if (verb.ends_with(detail::intervention_suffix))
     {
         --a.arcane;
+        return;
+    }
+    // Mystic Arcanum: its spell's once-per-Long-Rest use.
+    if (verb.ends_with(detail::arcanum_suffix))
+    {
+        const int bit = 1 << (spell.level - 6);
+        const auto used = std::find_if(a.effects.active.begin(), a.effects.active.end(), [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::arcanum_used;
+        });
+        if (used != a.effects.active.end())
+            used->dc |= bit;
+        else
+            // Effects that last past the fight carry scope 1, as camp effects do.
+            detail::apply_spell_benefit(a.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        a.source.name, detail::EffectKind::arcanum_used, bit);
         return;
     }
     --a.slots[slot_level_of(verb, spell)];
@@ -1831,7 +1861,8 @@ bool absent(const Actor &a)
 {
     return detail::has_effect(a.effects, detail::EffectKind::banished) ||
            detail::has_effect(a.effects, detail::EffectKind::ethereal) ||
-           detail::has_effect(a.effects, detail::EffectKind::mazed);
+           detail::has_effect(a.effects, detail::EffectKind::mazed) ||
+           detail::has_effect(a.effects, detail::EffectKind::hurled);
 }
 
 // Fallen upward by Reverse Gravity: out of melee reach until it ends.
@@ -2230,6 +2261,7 @@ character_definition(std::string_view bytes,
     d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
     d.dark_luck = klass == CharacterClass::warlock && level >= 6
                   ? std::max(1, ability_modifier(scores[Ability::charisma])) : 0;
+    d.hurl_through_hell = klass == CharacterClass::warlock && level >= 14;
     d.bardic_inspiration =
         klass == CharacterClass::bard ? std::max(1, ability_modifier(scores[Ability::charisma]))
         : 0;
@@ -2469,8 +2501,12 @@ character_definition(std::string_view bytes,
     d.thirsting_blade = invoked("thirsting_blade");
     if (d.thirsting_blade)
         d.extra_attacks = std::max(d.extra_attacks, 1);
+    // Devouring Blade: three attacks.
+    if (invoked("devouring_blade"))
+        d.extra_attacks = std::max(d.extra_attacks, 2);
     d.eldritch_smite = invoked("eldritch_smite");
     d.lifedrinker = invoked("lifedrinker");
+    d.witch_sight = invoked("witch_sight");
     // Lessons of the First Ones: an Origin feat.
     d.savage |= invoked("lessons_savage_attacker");
     if (invoked("lessons_alert"))
@@ -2614,6 +2650,8 @@ character_definition(std::string_view bytes,
             d.divine_strike = level >= 14 ? 2 : 1;
         d.potent_spellcasting |= grant.id == "strikes:potent_spellcasting";
         d.multiattack_defense |= grant.id == "tactics:multiattack_defense";
+        if (grant.id.starts_with("arcanum:"))
+            d.arcanum.insert(grant.id.substr(8));
         // Fiendish Resilience: Resistance to its type.
         if (grant.id.starts_with("resilience:"))
             d.affinities.push_back({detail::AffinityKind::resistance,
@@ -3617,9 +3655,12 @@ class Session final : public CombatSession
     {
         // Faerie Fire, Starry Wisp and Shining Smite keep a creature from
         // being Invisible.
+        // Witch Sight: Truesight to 30 feet.
         return (invisible(target) || hidden(target)) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::see_invisibility) &&
                !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing) &&
+               !(viewer.definition.witch_sight &&
+                 distance(viewer.source.cell, target.source.cell) <= 30) &&
                !detail::has_effect(target.effects, detail::EffectKind::outlined) &&
                !detail::has_effect(target.effects, detail::EffectKind::lit) &&
                !detail::has_effect(target.effects, detail::EffectKind::shining);
@@ -5020,7 +5061,8 @@ bool Session::obscured(const Actor &viewer, Cell cell) const
                 zone.kind == ZoneKind::stench || zone.kind == ZoneKind::fire_wall ||
                 zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers ||
                 (zone.kind == ZoneKind::darkness && !def(viewer).devils_sight &&
-                 !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing))) &&
+                 !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing) &&
+                 !(def(viewer).witch_sight && distance(viewer.source.cell, cell) <= 30))) &&
                std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
     });
 }
@@ -5638,6 +5680,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::word_stunned, "Stunned (Power Word Stun)"},
                     std::pair{detail::EffectKind::overchannel, "Overchannel"},
                     std::pair{detail::EffectKind::dragon_wings, "Dragon Wings"},
+                    std::pair{detail::EffectKind::hurled, "Hurled through the Lower Planes"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -7239,8 +7282,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         const bool intervene = !bonus_pass && d.divine_intervention && a.arcane > 0 &&
                                spell.level && spell.level <= 5 &&
                                detail::on_class_list(CharacterClass::cleric, spell.id);
+        // Mystic Arcanum (Warlock 11, 13, 15): its spell once per Long Rest,
+        // as a Magic action without a slot.
+        const bool arcanum = !bonus_pass && d.arcanum.contains(spell.id) &&
+                             !arcanum_spent(a, spell.level);
         const bool usual = as_bonus == bonus_pass && detail::knows_spell(d.spells, spell.id);
-        if (!usual && !intervene)
+        if (!usual && !intervene && !arcanum)
             continue;
         switch (spell.target)
         {
@@ -7354,6 +7401,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             if (intervene)
                 offer(verb + std::string(detail::intervention_suffix),
                       label + " (Divine Intervention)");
+            if (arcanum)
+                offer(verb + std::string(detail::arcanum_suffix), label + " (Mystic Arcanum)");
         };
         if (spell.id == "chromatic_orb")
         {
@@ -8458,6 +8507,16 @@ std::vector<Command> Session::offered_commands() const
                     add(id, "lifedrinker_" + type + "_heal",
                         "Lifedrinker (" + name + ", spend a Hit Point Die)", a.smite_target);
             }
+    }
+    // Hurl Through Hell (Fiend 14): once on each of its turns, right after an
+    // attack roll hits; once per Long Rest, then for a Pact Magic slot.
+    if (d.hurl_through_hell && a.smite_target && !a.hurl_used && actor(a.smite_target).life.hp > 0 &&
+            !absent(actor(a.smite_target)))
+    {
+        if (!detail::has_effect(a.effects, detail::EffectKind::hurl_used))
+            add(id, "hurl_through_hell", "Hurl Through Hell", a.smite_target);
+        else if (a.slots[pact_level(d.slots)] > 0)
+            add(id, "hurl_through_hell_slot", "Hurl Through Hell (a Pact Magic slot)", a.smite_target);
     }
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
@@ -13918,12 +13977,13 @@ damage(target, amount, critical);
     }
     // A smite may follow a weapon hit or an Unarmed Strike on the attacker's own
     // turn; Divine and Searing Smite need it to be a Melee hit.
-    if (!spell && actors_[turn_].source.id == a.source.id)
+    // Hurl Through Hell follows any attack roll's hit, a spell's too.
+    if ((!spell || def(a).hurl_through_hell) && actors_[turn_].source.id == a.source.id)
     {
         auto &attacker = actor(a.source.id);
         attacker.smite_target = target.source.id;
         attacker.smite_critical = critical;
-        attacker.smite_melee = !ranged;
+        attacker.smite_melee = !ranged && !spell;
     }
     if (!spell)
     {
@@ -15448,7 +15508,7 @@ bool Session::begin_turn()
         actor.spent_slot = false;
         actor.cleave_used = false;
         actor.colossus_used = actor.horde_used = actor.resistance_used = false;
-        actor.strike_used = actor.smite_used = actor.drink_used = false;
+        actor.strike_used = actor.smite_used = actor.drink_used = actor.hurl_used = false;
         std::erase_if(actor.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::defended ||
@@ -15878,7 +15938,7 @@ void Session::advance_turn_time()
     std::vector<std::pair<EntityId, EntityId>> knitted;
     // Haste that ran its minute, blinkers back from the Ethereal Plane, and
     // Vitriolic Sphere's later acid.
-    std::vector<EntityId> hastened, returned, corroded;
+    std::vector<EntityId> hastened, returned, corroded, hurled;
     // Flesh to Stone held for its full minute: the stone lasts.
     std::vector<detail::Effect> stoned;
     std::vector<EntityId> stoned_targets;
@@ -15917,6 +15977,8 @@ void Session::advance_turn_time()
             hastened.push_back(event.target);
         if (event.removed && event.effect.kind == detail::EffectKind::ethereal)
             returned.push_back(event.target);
+        if (event.removed && event.effect.kind == detail::EffectKind::hurled)
+            hurled.push_back(event.target);
         if (event.removed && event.effect.kind == detail::EffectKind::vitriol)
             corroded.push_back(event.target);
         if (event.removed && event.effect.kind == detail::EffectKind::petrified && !event.effect.dc)
@@ -16005,6 +16067,14 @@ void Session::advance_turn_time()
         blinker.source.cell = nearest_open(blinker);
         log(blinker.source.name + " returns from the Ethereal Plane.",
         {"{name} returns from the Ethereal Plane.", {{"name", blinker.source.name}}});
+    }
+    // Hurl Through Hell's creature returns to its space or the nearest free one.
+    for (const auto id : hurled)
+    {
+        auto &target = actor(id);
+        target.source.cell = nearest_open(target);
+        log(target.source.name + " returns from the Lower Planes.",
+        {"{name} returns from the Lower Planes.", {{"name", target.source.name}}});
     }
     // Suppressed effects keep time too.
     for (auto &a : actors_)
@@ -17139,7 +17209,7 @@ void Session::dispatch(const Command &command)
     // mastery choice keeps the chance open; any other command ends it.
     if (!is_smite(command.verb) && !command.verb.starts_with("effect_") &&
             !command.verb.starts_with("divine_strike_") && command.verb != "eldritch_smite" &&
-            !command.verb.starts_with("lifedrinker_"))
+            !command.verb.starts_with("lifedrinker_") && !command.verb.starts_with("hurl_through_hell"))
         a.smite_target = 0;
     if (turns_to_attack(command.verb) && command.target)
     {
@@ -17590,6 +17660,41 @@ void Session::dispatch(const Command &command)
             {{"name", a.source.name}, {"target", target.source.name}}
         });
         sphere_burns(a, target);
+    }
+    else if (command.verb == "hurl_through_hell" || command.verb == "hurl_through_hell_slot")
+    {
+        // A Charisma save, or the creature is gone until the end of the
+        // Warlock's next turn, Incapacitated, and takes 8d10 Psychic unless a
+        // Fiend.
+        a.hurl_used = true;
+        if (command.verb == "hurl_through_hell")
+            detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::hurl_used, 0);
+        else
+            --a.slots[pact_level(d.slots)];
+        auto &target = actor(command.target);
+        if (saving_throw_succeeds(target, detail::Ability::charisma, spell_dc(a, "")))
+            return;
+        if (def(target).creature_type != "fiend")
+        {
+            const int amount = resolved_damage(target, detail::DamageType::psychic, dice({8, 10, 0}));
+            log(target.source.name + " takes " + std::to_string(amount) +
+                " Psychic damage from Hurl Through Hell.",
+            {
+                "{name} takes {damage} Psychic damage from Hurl Through Hell.",
+                {{"name", target.source.name}, {"damage", std::to_string(amount)}}
+            });
+            damage(target, amount, false);
+        }
+        if (target.life.dead || !detail::can_apply(target.effects))
+            return;
+        const auto index = index_of(a.source.id);
+        const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+        detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
+                               next_turn_ms(a) + slot, detail::EffectKind::hurled);
+        log(target.source.name + " is hurled through the Lower Planes.",
+        {"{name} is hurled through the Lower Planes.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
     }
     else if (command.verb == "eldritch_smite")
     {
@@ -18304,7 +18409,7 @@ std::string Session::save() const
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' '
             << a.prey_used << ' ' << a.prey_origin << ' ' << a.turned << ' ' << a.skips_turn << ' '
-            << a.strike_used << ' ' << a.smite_used << ' ' << a.drink_used << ' '
+            << a.strike_used << ' ' << a.smite_used << ' ' << a.drink_used << ' ' << a.hurl_used << ' '
             << a.smite_melee << ' ' << a.resistance_used << ' ' << a.regeneration_blocked << ' '
             << a.rises_on_round << ' ' << a.thrown_gear_left[0] << ' ' << a.thrown_gear_left[1]
             << ' ' << a.thrown_gear_left[2] << ' ' << a.burning << ' ' << a.oiled_until_round
@@ -18518,7 +18623,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     input >> actor.light_extra >> actor.nick_origin >> actor.cleave_used >> actor.colossus_used >>
           actor.horde_used >> actor.horde_origin >> actor.prey_used >> actor.prey_origin >>
           actor.turned >> actor.skips_turn >> actor.strike_used >> actor.smite_used >>
-          actor.drink_used >> actor.smite_melee >> actor.resistance_used >>
+          actor.drink_used >> actor.hurl_used >> actor.smite_melee >> actor.resistance_used >>
           actor.regeneration_blocked >> actor.rises_on_round >> actor.thrown_gear_left[0] >>
           actor.thrown_gear_left[1] >> actor.thrown_gear_left[2] >> actor.burning >>
           actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
@@ -19881,6 +19986,10 @@ class Module final : public RulesModule
             result.training = {detail::elemental_affinity_options()};
         if (klass == CharacterClass::warlock && result.level == 10)
             result.training = {detail::fiendish_resilience_options()};
+        // Mystic Arcanum beside the level's invocations.
+        if (klass == CharacterClass::warlock &&
+                (result.level == 11 || result.level == 13 || result.level == 15))
+            result.training.push_back(detail::arcanum_options(static_cast<unsigned>(result.level)));
         if (klass == CharacterClass::sorcerer && result.level == 10)
             result.training = {detail::metamagic_options(10, sheet.grants)};
         if (klass == CharacterClass::bard && result.level == 3)
@@ -19889,9 +19998,9 @@ class Module final : public RulesModule
             result.training = {detail::land_options()};
         if (klass == CharacterClass::warlock && result.level >= 2 &&
                 detail::new_invocations(static_cast<unsigned>(result.level)))
-            result.training = {detail::invocation_options(
-                                   static_cast<unsigned>(result.level), sheet.grants,
-                                   detail::invocations_source(static_cast<unsigned>(result.level)))};
+            result.training.push_back(detail::invocation_options(
+                                          static_cast<unsigned>(result.level), sheet.grants,
+                                          detail::invocations_source(static_cast<unsigned>(result.level))));
         if (klass == CharacterClass::barbarian && (result.level == 4 || result.level == 10))
             result.training = {
                 detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants)};
@@ -19951,6 +20060,21 @@ class Module final : public RulesModule
         if (klass == CharacterClass::warlock && result.level == 10)
             result.description =
                 "Fiendish Resilience: Resistance to a damage type you choose other than Force, changed after any rest.\nA fourth cantrip.";
+        if (klass == CharacterClass::warlock && result.level == 11)
+            result.description =
+                "Mystic Arcanum: choose a level 6 Warlock spell to cast once per Long Rest without a spell slot.\nA third Pact Magic slot.";
+        if (klass == CharacterClass::warlock && result.level == 12)
+            result.description =
+                "A feat or ability points.\nOne more Eldritch Invocation; Devouring Blade is open to Thirsting Blade.";
+        if (klass == CharacterClass::warlock && result.level == 13)
+            result.description =
+                "Mystic Arcanum: choose a level 7 Warlock spell to cast once per Long Rest without a spell slot.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::warlock && result.level == 14)
+            result.description =
+                "Hurl Through Hell: once per turn, after an attack roll hits, the creature makes a Charisma save or is gone until the end of your next turn, Incapacitated, taking 8d10 Psychic damage unless it is a Fiend. Once per Long Rest, or for a Pact Magic slot.";
+        if (klass == CharacterClass::warlock && result.level == 15)
+            result.description =
+                "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open.";
         if (klass == CharacterClass::sorcerer && result.level == 5)
             result.description =
                 "Sorcerous Restoration: after a Short Rest, regain Sorcery Points up to half your Sorcerer level, once per Long Rest.\nLevel 3 spell slots and Sorcerer spells: Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Protection from Energy, Sleet Storm, Stinking Cloud and Vampiric Touch; Draconic Spells: Fear is always prepared. Font of Magic creates level-3 slots.\nProficiency Bonus +3.";
@@ -20602,6 +20726,7 @@ class Module final : public RulesModule
                     : id.starts_with("class:sorcerer:metamagic") ? "metamagic:" + value
                     : id == detail::elemental_affinity ? "affinity:" + value
                     : id == detail::fiendish_resilience ? "resilience:" + value
+                    : id.starts_with("class:warlock:arcanum:") ? "arcanum:" + value
                     : id.starts_with("class:warlock:invocations:") ? "invocation:" + value
                     : id == "invocation:lessons_skilled" ? value
                     : id == "subclass:bard:lore" ? "skill:" + value
@@ -20999,6 +21124,8 @@ class Module final : public RulesModule
                    e.kind == detail::EffectKind::overchanneled ||
                    e.kind == detail::EffectKind::wings_used ||
                    e.kind == detail::EffectKind::luck_used ||
+                   e.kind == detail::EffectKind::hurl_used ||
+                   e.kind == detail::EffectKind::arcanum_used ||
                    e.kind == detail::EffectKind::trait_uses ||
                    e.kind == detail::EffectKind::heroic_inspiration;
         });
@@ -22551,7 +22678,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.225", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.226", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

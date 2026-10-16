@@ -2969,6 +2969,8 @@ inline constexpr std::array spell_table
 // "_intervention".
 inline constexpr std::string_view initiate_suffix = "_initiate";
 inline constexpr std::string_view intervention_suffix = "_intervention";
+// A Warlock's Mystic Arcanum: its spell cast once per Long Rest without a slot.
+inline constexpr std::string_view arcanum_suffix = "_arcanum";
 
 // The slot level a "_N" verb names, or 0.
 inline unsigned cast_slot_level(std::string_view verb)
@@ -2989,6 +2991,8 @@ inline std::string_view without_cast_suffix(std::string_view verb)
         verb.remove_suffix(initiate_suffix.size());
     else if (verb.ends_with(intervention_suffix))
         verb.remove_suffix(intervention_suffix.size());
+    else if (verb.ends_with(arcanum_suffix))
+        verb.remove_suffix(arcanum_suffix.size());
     return verb;
 }
 
