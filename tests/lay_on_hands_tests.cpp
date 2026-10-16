@@ -79,7 +79,6 @@ std::vector<EntityId> lay_on_hands_targets(const CombatSession &c)
 
 unsigned pool(const CombatSession &c)
 {
-
     for (const auto &resource : unit(c, 1).resources)
     {
         if (resource.id == "lay_on_hands")

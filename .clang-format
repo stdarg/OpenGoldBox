@@ -48,6 +48,12 @@ RemoveBracesLLVM: false
 # blank lines around those remain a matter for the author and review.
 SeparateDefinitionBlocks: Always
 MaxEmptyLinesToKeep: 1
+# No blank line just inside an opening brace. The other KeepEmptyLines fields
+# keep LLVM's values.
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: true
 SortIncludes: Never
 IncludeBlocks: Preserve
 # CODING_STYLE.md: "indivisible tokens and strings may exceed the limit". This

@@ -37,6 +37,10 @@ commits.
   introducing include-order problems.
 - Put a blank line before and after every function, class, struct, enum and
   namespace definition.
+- Put a blank line before and after every other block: an `if`/`else` chain, a
+  loop, a `switch`, a `try`/`catch` and a bare `{ }` scope. A block that comes
+  first or last in its enclosing block needs none on that side: no blank line
+  goes just inside a brace, and clang-format removes one there.
 
 For example:
 
@@ -64,8 +68,10 @@ bool attack_hits(int natural, int bonus, int ac) noexcept
   orchestration and transactions; the application injects the rules implementation.
 - Keep formatting changes separate from behavioral changes and refactoring.
 
-clang-format handles layout, and clang-tidy checks braces; neither checks
-architectural correctness or ownership, which stay a matter for review.
+clang-format handles layout, and clang-tidy checks braces. No tool puts blank
+lines around control-flow blocks (clang-format has no option for it, and
+neither adds nor removes them), so that rule is checked in review, as are
+architectural correctness and ownership.
 
 ## Tools
 
