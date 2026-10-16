@@ -13,11 +13,11 @@ This document records the agreed style and the tools that apply it:
 cannot apply safely, required braces. Both come from the same LLVM release;
 pin one release in editors and automated checks.
 
-Most of the existing tree does not yet match: in October 2026, 263 of 322
-project-owned C++ files differed from clang-format's output, and one-statement
-`if` and loop bodies without braces are common. New and changed code follows
-this style; bringing the rest in line is a separate, formatting-only change
-(see [Adoption](#adoption)).
+The whole project-owned tree follows this style: every tracked C++ file was
+formatted with clang-format 23.1.0 (5a7187c1) and every `if`, `else` and loop
+body braced with clang-tidy (5b5c199b), each in a commit of its own. Keep it
+that way: format every change, and keep large formatting passes in separate
+commits.
 
 ## Layout and readability
 
@@ -96,9 +96,8 @@ Upgrade deliberately, in a formatting-only change.
 
 ## Formatting
 
-Format only what a change touches. `git clang-format` reformats the lines that
-differ from a commit, so new work follows the style without reformatting
-untouched code:
+Format what a change touches. `git clang-format` reformats the lines that
+differ from a commit:
 
 ```
 git clang-format --diff HEAD     # preview the staged and unstaged changes
@@ -143,23 +142,28 @@ brace fixes on their own, separately from a formatting pass.
 Point the editor at the pinned clang-format binary and the repository's
 `.clang-format` rather than a bundled copy: in VS Code, set
 `C_Cpp.clang_format_path` (C/C++ extension) or `clangd.path`; CLion and Xcode
-plug-ins take the same binary. Format-on-save reformats the whole file, so
-enable it only for files already in the style, or format just the changed
-lines with `git clang-format`.
+plug-ins take the same binary. Since the tree is already in the style,
+format-on-save is safe.
 
-## Adoption
+## Whole-tree passes
 
-1. Pin the LLVM release and keep `.clang-format` and `.clang-tidy` at the
-   repository root (done).
-2. Format new and changed code with `git clang-format` (from now on).
-3. Bring the rest of the tree in line in a separate formatting-only commit over
-   an explicit list of project-owned files, excluding third-party and generated
-   files.
-4. Add the missing braces with `clang-tidy --fix` in another separate commit.
-5. After each of those commits, review the diff, run `git diff --check`,
-   rebuild, run the tests and the localization check.
-6. Then add an automated check (`clang-format --dry-run -Werror` and
-   clang-tidy) so the tree does not drift.
+A pass over every file, such as a clang-format upgrade, goes in a commit of its
+own over the tracked files (`git ls-files '*.cpp' '*.h'`). Review the diff, run
+`git diff --check`, rebuild the game, demo and dev-tool targets, and run the
+tests and the localization check.
+
+For a whole-tree clang-tidy fix, give it the compile commands of every target
+(the game and demo builds together cover them all). Do not let
+`run-clang-tidy -fix` fix headers in the same run as the source files: a
+header reached through two include paths (`archive_io.h` and
+`../src/OpenGold.Core/src/archive_io.h`) gets the same fix applied more than
+once, nesting braces. Fix the source files with `-header-filter='^$'`, then
+each header once, from one file that includes it, with a header filter naming
+only that header. Afterwards, check that comments heading an `else` branch did
+not move into the block before it.
+
+No automated check runs yet; adding `clang-format --dry-run -Werror` and
+clang-tidy to a build or CI step would keep the tree from drifting.
 
 ## References
 
