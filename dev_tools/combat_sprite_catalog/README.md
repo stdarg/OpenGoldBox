@@ -47,6 +47,20 @@ gear. A creature without a weapon setup has one
 independently created PNGs at
 `dev_tools/combat_sprite_catalog/art/<source-key>/<variant-id>/ready.png` and
 `action.png`. The JSON's `variants` entries contain these relative paths.
+
+### Replacement combat sprite art specification
+
+- Export each ready and action image as a **128 x 128 pixel transparent PNG** in
+  a **pixel art style**. This is the final game asset size; larger working images
+  may be used while creating the art.
+- Keep the character's scale and foot position consistent across ready/action
+  poses and every weapon set for that monster. Draw the equipped weapon and
+  shield for the selected set in both poses.
+- Review the exported images at normal combat zoom as well as in the catalog.
+  The inspected original tactical icons are 24 x 24 pixels; the game currently
+  fits visible sprite bounds to about 90% of a combat cell. Detail must remain
+  readable when the 128 x 128 image is displayed at that size.
+
 **Show new art when available** starts enabled; turn it off to inspect the
 original art. A missing or invalid PNG falls
 back to that monster's original pose, and the source label names the selected
