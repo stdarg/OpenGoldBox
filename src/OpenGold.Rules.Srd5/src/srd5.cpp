@@ -893,6 +893,47 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "spike_growth", 3},
     SpellAccessRow{CharacterClass::druid, "heat_metal", 3},
     SpellAccessRow{CharacterClass::bard, "heat_metal", 3},
+    // Bard level-3 spells, with the level-3 slot of Bard level 5.
+    SpellAccessRow{CharacterClass::bard, "bestow_curse", 5},
+    SpellAccessRow{CharacterClass::bard, "dispel_magic", 5},
+    SpellAccessRow{CharacterClass::bard, "fear", 5},
+    SpellAccessRow{CharacterClass::bard, "hypnotic_pattern", 5},
+    SpellAccessRow{CharacterClass::bard, "mass_healing_word", 5},
+    SpellAccessRow{CharacterClass::bard, "plant_growth", 5},
+    SpellAccessRow{CharacterClass::bard, "stinking_cloud", 5},
+    SpellAccessRow{CharacterClass::bard, "tiny_hut", 5},
+    // Bard level-4 spells, with the level-4 slot of Bard level 7.
+    SpellAccessRow{CharacterClass::bard, "charm_monster", 7},
+    SpellAccessRow{CharacterClass::bard, "confusion", 7},
+    SpellAccessRow{CharacterClass::bard, "dimension_door", 7},
+    SpellAccessRow{CharacterClass::bard, "freedom_of_movement", 7},
+    SpellAccessRow{CharacterClass::bard, "greater_invisibility", 7},
+    SpellAccessRow{CharacterClass::bard, "phantasmal_killer", 7},
+    SpellAccessRow{CharacterClass::bard, "polymorph", 7},
+    // Bard level-5 spells, with the level-5 slot of Bard level 9.
+    SpellAccessRow{CharacterClass::bard, "animate_objects", 9},
+    SpellAccessRow{CharacterClass::bard, "dominate_person", 9},
+    SpellAccessRow{CharacterClass::bard, "greater_restoration", 9},
+    SpellAccessRow{CharacterClass::bard, "hold_monster", 9},
+    SpellAccessRow{CharacterClass::bard, "mass_cure_wounds", 9},
+    SpellAccessRow{CharacterClass::bard, "mislead", 9},
+    SpellAccessRow{CharacterClass::bard, "raise_dead", 9},
+    // Bard level-6 spells, with the level-6 slot of Bard level 11.
+    SpellAccessRow{CharacterClass::bard, "eyebite", 11},
+    SpellAccessRow{CharacterClass::bard, "heroes_feast", 11},
+    SpellAccessRow{CharacterClass::bard, "irresistible_dance", 11},
+    SpellAccessRow{CharacterClass::bard, "true_seeing", 11},
+    // Bard level-7 spells, with the level-7 slot of Bard level 13.
+    SpellAccessRow{CharacterClass::bard, "arcane_sword", 13},
+    SpellAccessRow{CharacterClass::bard, "forcecage", 13},
+    SpellAccessRow{CharacterClass::bard, "prismatic_spray", 13},
+    SpellAccessRow{CharacterClass::bard, "regenerate", 13},
+    SpellAccessRow{CharacterClass::bard, "resurrection", 13},
+    // Bard level-8 spells, with the level-8 slot of Bard level 15.
+    SpellAccessRow{CharacterClass::bard, "befuddlement", 15},
+    SpellAccessRow{CharacterClass::bard, "dominate_monster", 15},
+    SpellAccessRow{CharacterClass::bard, "mind_blank", 15},
+    SpellAccessRow{CharacterClass::bard, "power_word_stun", 15},
     SpellAccessRow{CharacterClass::druid, "enlarge_reduce", 3},
     SpellAccessRow{CharacterClass::druid, "flaming_sphere", 3},
     SpellAccessRow{CharacterClass::druid, "gust_of_wind", 3},
@@ -910,6 +951,49 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "acid_splash", 3},
     SpellAccessRow{CharacterClass::druid, "ray_of_sickness", 3},
     SpellAccessRow{CharacterClass::druid, "web", 3},
+    // Druid level-3 spells, with the level-3 slot of Druid level 5.
+    SpellAccessRow{CharacterClass::druid, "conjure_animals", 5},
+    SpellAccessRow{CharacterClass::druid, "dispel_magic", 5},
+    SpellAccessRow{CharacterClass::druid, "plant_growth", 5},
+    SpellAccessRow{CharacterClass::druid, "protection_from_energy", 5},
+    SpellAccessRow{CharacterClass::druid, "revivify", 5},
+    SpellAccessRow{CharacterClass::druid, "sleet_storm", 5},
+    SpellAccessRow{CharacterClass::druid, "wind_wall", 5},
+    // Druid level-4 spells, with the level-4 slot of Druid level 7.
+    SpellAccessRow{CharacterClass::druid, "blight", 7},
+    SpellAccessRow{CharacterClass::druid, "charm_monster", 7},
+    SpellAccessRow{CharacterClass::druid, "confusion", 7},
+    SpellAccessRow{CharacterClass::druid, "conjure_minor_elementals", 7},
+    SpellAccessRow{CharacterClass::druid, "conjure_woodland_beings", 7},
+    SpellAccessRow{CharacterClass::druid, "dominate_beast", 7},
+    SpellAccessRow{CharacterClass::druid, "fire_shield", 7},
+    SpellAccessRow{CharacterClass::druid, "freedom_of_movement", 7},
+    SpellAccessRow{CharacterClass::druid, "ice_storm", 7},
+    SpellAccessRow{CharacterClass::druid, "polymorph", 7},
+    SpellAccessRow{CharacterClass::druid, "stoneskin", 7},
+    SpellAccessRow{CharacterClass::druid, "wall_of_fire", 7},
+    // Druid level-5 spells, with the level-5 slot of Druid level 9.
+    SpellAccessRow{CharacterClass::druid, "cone_of_cold", 9},
+    SpellAccessRow{CharacterClass::druid, "conjure_elemental", 9},
+    SpellAccessRow{CharacterClass::druid, "contagion", 9},
+    SpellAccessRow{CharacterClass::druid, "greater_restoration", 9},
+    SpellAccessRow{CharacterClass::druid, "insect_plague", 9},
+    SpellAccessRow{CharacterClass::druid, "mass_cure_wounds", 9},
+    SpellAccessRow{CharacterClass::druid, "wall_of_stone", 9},
+    // Druid level-6 spells, with the level-6 slot of Druid level 11.
+    SpellAccessRow{CharacterClass::druid, "flesh_to_stone", 11},
+    SpellAccessRow{CharacterClass::druid, "heal", 11},
+    SpellAccessRow{CharacterClass::druid, "heroes_feast", 11},
+    SpellAccessRow{CharacterClass::druid, "sunbeam", 11},
+    // Druid level-7 spells, with the level-7 slot of Druid level 13.
+    SpellAccessRow{CharacterClass::druid, "fire_storm", 13},
+    SpellAccessRow{CharacterClass::druid, "regenerate", 13},
+    SpellAccessRow{CharacterClass::druid, "reverse_gravity", 13},
+    // Druid level-8 spells, with the level-8 slot of Druid level 15.
+    SpellAccessRow{CharacterClass::druid, "befuddlement", 15},
+    SpellAccessRow{CharacterClass::druid, "earthquake", 15},
+    SpellAccessRow{CharacterClass::druid, "incendiary_cloud", 15},
+    SpellAccessRow{CharacterClass::druid, "sunburst", 15},
     // Fiend Spells come only from the Fiend Patron.
     SpellAccessRow{CharacterClass::warlock, "burning_hands", 3},
     SpellAccessRow{CharacterClass::warlock, "command", 3},
@@ -962,6 +1046,23 @@ std::vector<std::string> allowed_spells(CharacterClass klass, unsigned level)
         if (row.klass == klass && level >= row.min_level)
             result.emplace_back(row.spell);
     return result;
+}
+
+// A Bard's Magical Discoveries (Lore 6) and Magical Secrets (10): a Cleric,
+// Druid or Wizard spell of a level those classes cast at the Bard's level.
+bool bard_secret(CharacterClass klass, unsigned level, std::span<const FeatureGrant> grants,
+                 std::string_view id)
+{
+    const bool discovered = std::any_of(grants.begin(), grants.end(), [&](const auto & g)
+    {
+        return g.id == "discovery:" + std::string(id);
+    });
+    constexpr std::array lists{CharacterClass::cleric, CharacterClass::druid, CharacterClass::wizard};
+    return klass == CharacterClass::bard && (level >= 10 || discovered) &&
+           std::any_of(lists.begin(), lists.end(), [&](auto list)
+    {
+        return detail::knows_spell(allowed_spells(list, level), id);
+    });
 }
 
 using Dice = detail::DamageDice;
@@ -1156,6 +1257,10 @@ struct Definition
     // Actor::arcane, which no Bard has; Cutting Words from level 3.
     int bardic_inspiration{};
     bool cutting_words{};
+    // The Bardic Inspiration die's sides (d8 at Bard 5, d10 at 10, d12 at 15);
+    // Font of Inspiration (5), Countercharm (7) and Peerless Skill (Lore 14).
+    int bardic_die{6};
+    bool font_of_inspiration{}, countercharm{}, peerless_skill{};
     bool shillelagh_weapon{}; // the melee weapon is a Club or Quarterstaff
     // Druid: Wild Shape uses, kept in Actor::channel_divinity, which no Druid
     // has; Land's Aid spends them from level 3.
@@ -2266,6 +2371,11 @@ character_definition(std::string_view bytes,
         klass == CharacterClass::bard ? std::max(1, ability_modifier(scores[Ability::charisma]))
         : 0;
     d.cutting_words = klass == CharacterClass::bard && level >= 3;
+    d.bardic_die = klass != CharacterClass::bard ? 6 : level >= 15 ? 12 : level >= 10 ? 10
+                   : level >= 5 ? 8 : 6;
+    d.font_of_inspiration = klass == CharacterClass::bard && level >= 5;
+    d.countercharm = klass == CharacterClass::bard && level >= 7;
+    d.peerless_skill = klass == CharacterClass::bard && level >= 14;
     d.dark_ones_blessing =
         klass == CharacterClass::warlock && level >= 3
         ? std::max(1, ability_modifier(scores[Ability::charisma]) + static_cast<int>(level))
@@ -2471,7 +2581,8 @@ character_definition(std::string_view bytes,
     const auto allowed = allowed_spells(klass, level);
     const auto storable = [&](const std::string & id)
     {
-        return detail::knows_spell(allowed, id) || d.initiate_casting.contains(id);
+        return detail::knows_spell(allowed, id) || d.initiate_casting.contains(id) ||
+               bard_secret(klass, level, grants, id);
     };
     if (!std::all_of(stored_spells.begin(), stored_spells.end(), storable))
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
@@ -3937,6 +4048,14 @@ class Session final : public CombatSession
     void fire_contingency(Actor &a);
     // Dark One's Own Luck (Fiend 6): 1d10 on a failed save it could still pass.
     void dark_ones_luck(Actor &warlock, detail::SaveResult &result);
+    // A save against an effect that Charms or Frightens: Countercharm (Bard 7)
+    // rerolls a failure with Advantage.
+    bool charm_or_fear_save(const Actor &target, detail::Ability ability, int dc,
+                            bool advantage = false, bool disadvantage = false);
+    // Peerless Skill (Lore Bard 14): the Bardic Inspiration die added to the
+    // Bard's own failed check or attack roll it could fix; the use is spent
+    // only if it does.
+    int peerless_skill(Actor &bard, int shortfall);
     // Delayed Blast Fireball: the bead bursts as its spell ends.
     void explode_bead(Actor &caster, const Zone &bead);
     // Prismatic Spray: the ray, or the two, that strike a creature in the cone.
@@ -7212,9 +7331,14 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // Stun's; a Construct turns no flesh to stone.
         const bool construct = spell.rider == detail::Rider::flesh_to_stone &&
                                def(target).creature_type == "construct";
+        // Countercharm may give a save against a charm or a fright a second try.
+        const bool charm_or_fear = charms(spell) ||
+                                   detail::without_cast_suffix(verb) == "eyebite_panicked";
         if (verb == "enlarge" || spell.rider == detail::Rider::maze ||
                 spell.rider == detail::Rider::power_word_stun ||
-                (!construct && !saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell))))
+                (!construct && !(charm_or_fear
+                                 ? charm_or_fear_save(target, spell.save, dc, fought_advantage(spell))
+                                 : saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))))
             apply_rider(spell, verb, a, target, dc);
         else if (spell.rider == detail::Rider::eyebite && detail::can_apply(target.effects))
         {
@@ -8100,6 +8224,13 @@ std::vector<Command> Session::offered_commands() const
                             std::string(detail::damage_name(detail::damage_type(type))) + points);
             }
     }
+    // Font of Inspiration (Bard 5): a spell slot, no action, gives back a
+    // Bardic Inspiration use.
+    if (d.font_of_inspiration && a.arcane < arcane_capacity(d))
+        for (unsigned level = 1; level <= highest_slot_level; ++level)
+            if (a.slots[level] > 0)
+                add(id, "font_of_inspiration_" + std::to_string(level),
+                    "Font of Inspiration (a level-" + std::to_string(level) + " slot)");
     // Bardic Inspiration: a Bonus Action gives an ally within 60 feet the die.
     if (a.bonus && d.bardic_inspiration && a.arcane > 0)
         for (const auto &other : actors_)
@@ -11224,8 +11355,8 @@ void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
                 globe_wards(caster, other.source.cell, spell.level) ||
                 caged_apart(caster.source.cell, other.source.cell, false) ||
                 (pattern && detail::has_effect(other.effects, detail::EffectKind::mind_blank)) ||
-                saving_throw_succeeds(other, spell.save, dc, false,
-                                      heightened_against(other, caster, spell.id)))
+                charm_or_fear_save(other, spell.save, dc, false,
+                                   heightened_against(other, caster, spell.id)))
             continue;
         detail::apply_spell_benefit(other.effects, effect_source(caster), caster.source.name,
                                     pattern ? detail::EffectKind::entranced
@@ -12744,6 +12875,8 @@ void Session::escape_ensnaring(Actor &a)
     if (!escaped)
         escaped = inspiration_roll(a, vines.dc - natural - bonus) >= vines.dc - natural - bonus;
     if (!escaped)
+        escaped = peerless_skill(a, vines.dc - natural - bonus) > 0;
+    if (!escaped)
         return;
     // Ensnaring Strike ends, and with it the caster's Concentration; Entangle
     // only lets this creature go.
@@ -13421,6 +13554,8 @@ void Session::hide(Actor &a)
             total = *again + d.stealth;
     if (total < dc)
         total += inspiration_roll(a, dc - total);
+    if (total < dc)
+        total += peerless_skill(a, dc - total);
     if (total < dc)
     {
         log(a.source.name + " fails to hide.", {"{name} fails to hide.", {{"name", a.source.name}}});
@@ -14219,6 +14354,11 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         bonus += inspiration_roll(a, armor_class(target) - natural - bonus);
         hit = attack_hits(natural, bonus, armor_class(target));
+        if (!hit)
+        {
+            bonus += peerless_skill(actor(a.source.id), armor_class(target) - natural - bonus);
+            hit = attack_hits(natural, bonus, armor_class(target));
+        }
     }
     else if (hit && !automatic)
     {
@@ -15884,6 +16024,50 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     return result.success;
 }
 
+bool Session::charm_or_fear_save(const Actor &target, detail::Ability ability, int dc,
+                                 bool advantage, bool disadvantage)
+{
+    if (saving_throw_succeeds(target, ability, dc, advantage, disadvantage))
+        return true;
+    // A Bard within 30 feet, the creature itself included, spends its
+    // Reaction without asking, as roll effects are used.
+    for (auto &bard : actors_)
+        if (def(bard).countercharm && bard.source.side == target.source.side && conscious(bard) &&
+                bard.reaction && !detail::incapacitated(bard.effects) && !absent(bard) &&
+                distance(bard.source.cell, target.source.cell) <= 30)
+        {
+            bard.reaction = false;
+            log(bard.source.name + " uses Countercharm: " + target.source.name +
+                " rolls the save again with Advantage.",
+            {
+                "{name} uses Countercharm: {target} rolls the save again with Advantage.",
+                {{"name", bard.source.name}, {"target", target.source.name}}
+            });
+            return saving_throw_succeeds(target, ability, dc, true, disadvantage);
+        }
+    return false;
+}
+
+int Session::peerless_skill(Actor &bard, int shortfall)
+{
+    if (!def(bard).peerless_skill || bard.arcane < 1 || shortfall < 1 ||
+            shortfall > def(bard).bardic_die || !conscious(bard))
+        return 0;
+    const int die = roll(def(bard).bardic_die);
+    const bool fixed = die >= shortfall;
+    if (fixed)
+        --bard.arcane;
+    const auto amount = std::to_string(die);
+    log(bard.source.name + " adds " + amount + " with Peerless Skill" +
+        (fixed ? ", turning the roll into a success." : ", not enough; the use is kept."),
+    {
+        fixed ? "{name} adds {amount} with Peerless Skill, turning the roll into a success."
+        : "{name} adds {amount} with Peerless Skill, not enough; the use is kept.",
+        {{"name", bard.source.name}, {"amount", amount}}
+    });
+    return fixed ? die : 0;
+}
+
 void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
 {
     // Dark One's Own Luck (Fiend 6): 1d10 added to a failed save it could
@@ -16747,16 +16931,14 @@ Actor *Session::cutting_bard(const Actor &roller)
 
 int Session::cutting_words(const Actor &roller, int margin, CutRoll cut)
 {
-    // It is used without asking, and only when the d6 could turn the success
+    // It is used without asking, and only when the die could turn the success
     // into a failure.
-    if (margin >= 6)
-        return 0;
     auto *const bard = cutting_bard(roller);
-    if (!bard)
+    if (!bard || margin >= def(*bard).bardic_die)
         return 0;
     bard->reaction = false;
     --bard->arcane;
-    const int die = roll(6);
+    const int die = roll(def(*bard).bardic_die);
     const bool failed = die > margin;
     const auto amount = std::to_string(die);
     const bool attack = cut == CutRoll::attack;
@@ -16786,14 +16968,13 @@ int Session::cut_damage(const Actor &roller, const Actor &target, int amount,
         return detail::resolve_damage(parts, affinities(target)).total;
     };
     const int standing = target.life.hp + target.life.temporary_hp.amount;
-    if (target.life.hp <= 0 || taken(amount) < standing || taken(amount - 6) >= standing)
-        return 0;
     auto *const bard = cutting_bard(roller);
-    if (!bard || bard->source.side != target.source.side)
+    if (!bard || bard->source.side != target.source.side || target.life.hp <= 0 ||
+            taken(amount) < standing || taken(amount - def(*bard).bardic_die) >= standing)
         return 0;
     bard->reaction = false;
     --bard->arcane;
-    const int die = roll(6);
+    const int die = roll(def(*bard).bardic_die);
     const bool saved = taken(amount - die) < standing;
     const auto cut = std::to_string(die);
     log(bard->source.name + " uses Cutting Words: -" + cut + " damage" +
@@ -17532,13 +17713,20 @@ void Session::dispatch(const Command &command)
                      SpellAttack{.dice = {1, 8, 0}, .type = detail::DamageType::fire,
                                  .spell = "produce_flame"});
     }
+    else if (command.verb.starts_with("font_of_inspiration_"))
+    {
+        --a.slots[static_cast<unsigned>(command.verb.back() - '0')];
+        ++a.arcane;
+        log(a.source.name + " turns a spell slot into Bardic Inspiration.",
+        {"{name} turns a spell slot into Bardic Inspiration.", {{"name", a.source.name}}});
+    }
     else if (command.verb == "bardic_inspiration")
     {
         a.bonus = false;
         --a.arcane;
         auto &ally = actor(command.target);
         detail::apply_spell_benefit(ally.effects, effect_source(a), a.source.name,
-                                    detail::EffectKind::inspired, 6);
+                                    detail::EffectKind::inspired, d.bardic_die);
         log(a.source.name + " inspires " + ally.source.name + ".",
         {"{name} inspires {target}.", {{"name", a.source.name}, {"target", ally.source.name}}});
     }
@@ -19986,6 +20174,8 @@ class Module final : public RulesModule
             result.training = {detail::elemental_affinity_options()};
         if (klass == CharacterClass::warlock && result.level == 10)
             result.training = {detail::fiendish_resilience_options()};
+        if (klass == CharacterClass::bard && result.level == 6)
+            result.training = {detail::discovery_options(sheet.grants)};
         // Mystic Arcanum beside the level's invocations.
         if (klass == CharacterClass::warlock &&
                 (result.level == 11 || result.level == 13 || result.level == 15))
@@ -20060,6 +20250,35 @@ class Module final : public RulesModule
         if (klass == CharacterClass::warlock && result.level == 10)
             result.description =
                 "Fiendish Resilience: Resistance to a damage type you choose other than Force, changed after any rest.\nA fourth cantrip.";
+        if (klass == CharacterClass::bard && result.level == 5)
+            result.description =
+                "Font of Inspiration: Bardic Inspiration returns on a Short Rest, and a spell slot (no action) gives back a use. The Bardic Inspiration die is a d8.\nLevel 3 spell slots and Bard spells: Bestow Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant Growth, Stinking Cloud and Tiny Hut.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::bard && result.level == 6)
+            result.description =
+                "Magical Discoveries: two Cleric, Druid or Wizard spells, cantrips or of level 1 to 3, always prepared.";
+        if (klass == CharacterClass::bard && result.level == 7)
+            result.description =
+                "Countercharm: when you or a creature within 30 feet fails a save against being Charmed or Frightened, your Reaction rerolls it with Advantage.\nA level 4 spell slot and Bard spells: Charm Monster, Confusion, Dimension Door, Freedom of Movement, Greater Invisibility, Phantasmal Killer and Polymorph.";
+        if (klass == CharacterClass::bard && (result.level == 8 || result.level == 12))
+            result.description = "A feat or ability points.";
+        if (klass == CharacterClass::bard && result.level == 9)
+            result.description =
+                "Expertise in two more skills.\nA level 5 spell slot and Bard spells: Animate Objects, Dominate Person, Greater Restoration, Hold Monster, Mass Cure Wounds, Mislead and Raise Dead.\nProficiency Bonus +4.";
+        if (klass == CharacterClass::bard && result.level == 10)
+            result.description =
+                "Magical Secrets: your prepared spells may also come from the Cleric, Druid and Wizard lists.\nThe Bardic Inspiration die is a d10. A fourth cantrip.";
+        if (klass == CharacterClass::bard && result.level == 11)
+            result.description =
+                "A level 6 spell slot and Bard spells: Eyebite, Heroes' Feast, Irresistible Dance and True Seeing.";
+        if (klass == CharacterClass::bard && result.level == 13)
+            result.description =
+                "A level 7 spell slot and Bard spells: Arcane Sword, Forcecage, Prismatic Spray, Regenerate and Resurrection.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::bard && result.level == 14)
+            result.description =
+                "Peerless Skill: when your own ability check or attack roll fails, the Bardic Inspiration die is added when it could fix the roll, spending a use only if it does.";
+        if (klass == CharacterClass::bard && result.level == 15)
+            result.description =
+                "A level 8 spell slot and Bard spells: Befuddlement, Dominate Monster, Mind Blank and Power Word Stun.\nThe Bardic Inspiration die is a d12.";
         if (klass == CharacterClass::warlock && result.level == 11)
             result.description =
                 "Mystic Arcanum: choose a level 6 Warlock spell to cast once per Long Rest without a spell slot.\nA third Pact Magic slot.";
@@ -20320,13 +20539,13 @@ class Module final : public RulesModule
         if (klass == CharacterClass::paladin && result.level == 15)
             result.description =
                 "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot.";
-        if (klass == CharacterClass::druid)
+        if (klass == CharacterClass::druid && result.level <= 4)
             result.description = "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
-        if (klass == CharacterClass::bard)
+        if (klass == CharacterClass::bard && result.level <= 4)
             result.description = "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points.";
-        if (klass == CharacterClass::warlock)
+        if (klass == CharacterClass::warlock && result.level <= 4)
             result.description = "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points.";
-        if (klass == CharacterClass::sorcerer)
+        if (klass == CharacterClass::sorcerer && result.level <= 4)
             result.description = "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
         if (klass == CharacterClass::monk && result.level <= 4)
             result.description = "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
@@ -20727,6 +20946,7 @@ class Module final : public RulesModule
                     : id == detail::elemental_affinity ? "affinity:" + value
                     : id == detail::fiendish_resilience ? "resilience:" + value
                     : id.starts_with("class:warlock:arcanum:") ? "arcanum:" + value
+                    : id == "subclass:bard:discoveries" ? "discovery:" + value
                     : id.starts_with("class:warlock:invocations:") ? "invocation:" + value
                     : id == "invocation:lessons_skilled" ? value
                     : id == "subclass:bard:lore" ? "skill:" + value
@@ -21214,6 +21434,9 @@ class Module final : public RulesModule
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
         actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
+        // Font of Inspiration (Bard 5): Bardic Inspiration returns on a Short Rest.
+        if (d.font_of_inspiration)
+            actor.arcane = arcane_capacity(d);
         // Pact Magic slots all return on a Short Rest.
         if (d.pact_magic)
             actor.slots = d.slots;
@@ -22144,7 +22367,8 @@ class Module final : public RulesModule
         {
             if (!selected.insert(spell).second)
                 throw std::runtime_error("Duplicate prepared spell");
-            if (!detail::knows_spell(preparable, spell))
+            if (!detail::knows_spell(preparable, spell) &&
+                    !bard_secret(klass, static_cast<unsigned>(sheet.level), sheet.grants, spell))
                 throw std::runtime_error("Unsupported prepared spell");
             record(spell);
         }
@@ -22678,7 +22902,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.226", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.227", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

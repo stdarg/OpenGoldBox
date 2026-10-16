@@ -1,6 +1,6 @@
 # Bard
 
-Levels 1–4 of the SRD 5.2.1 Bard (pp. 31–35). Charisma is the spellcasting
+Levels 1–15 of the SRD 5.2.1 Bard (pp. 31–35). Charisma is the spellcasting
 ability.
 
 ## Spellcasting, Jack of All Trades and the College of Lore
@@ -33,8 +33,10 @@ ability.
   [Druid](DRUID.md#flame-blade-moonbeam-spike-growth-and-heat-metal).
 - **Jack of All Trades** (level 2): + 1 (half the Proficiency Bonus) to
   Initiative, as SRD-DECISIONS keeps it, unless Alert already adds the whole
-  bonus. The level-2 Expertise is not pursued (SCOPE-2); the level-9 pick
-  comes with levels 5–15 (LEVELS-1).
+  bonus.
+- **Expertise** (level 2): two skills the Bard is proficient in gain
+  Expertise, chosen at level-up (LEVELS-3 replaced SCOPE-2's skip). A saved
+  Bard already past 2 keeps loading and simply has none.
 - **College of Lore** (level 3): Bonus Proficiencies in three skills chosen at
   level-up, and Cutting Words (below).
 - Verification: `opengold_bard_tests` (each spell's save or attack and its
@@ -76,3 +78,48 @@ ability.
   Action, the die used only on a miss it could rescue, Cutting Words' Reaction
   and use, Cutting Words against a monster's Search and a lethal damage roll,
   the repeated-save and Concentration helpers).
+
+## Levels 5–15
+
+The Bard advances to level 15, the cap
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Spellcasting** (SRD 5.2.1 p. 31): a full caster's slots; prepared spells
+  9, 10, 11, 12, 14, 15, 16, 16, 17, 17 and 18 at levels 5–15; a fourth
+  cantrip at 10. The kept Bard spells open with their slots: at 5 Bestow
+  Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant
+  Growth, Stinking Cloud and Tiny Hut; at 7 Charm Monster, Confusion,
+  Dimension Door, Freedom of Movement, Greater Invisibility, Phantasmal Killer
+  and Polymorph; at 9 Animate Objects, Dominate Person, Greater Restoration,
+  Hold Monster, Mass Cure Wounds, Mislead and Raise Dead; at 11 Eyebite,
+  Heroes' Feast, Irresistible Dance and True Seeing; at 13 Arcane Sword,
+  Forcecage, Prismatic Spray, Regenerate and Resurrection; at 15
+  Befuddlement, Dominate Monster, Mind Blank and Power Word Stun. Slow waits
+  for its decision; Teleport for travel beyond New Phlan.
+- **Bardic Inspiration's die:** d8 from 5, d10 from 10, d12 from 15, for
+  Bardic Inspiration and Cutting Words alike.
+- **Font of Inspiration** (5): Bardic Inspiration's uses come back on a Short
+  Rest, and **Font of Inspiration (a level-N slot)**, no action, turns a spell
+  slot into one more use while some are spent.
+- **Magical Discoveries** (Lore 6): a level-up choice of two spells from the
+  Cleric, Druid and Wizard lists, cantrips or of level 1 to 3, always
+  prepared. Replacing one on a later level-up is not offered yet.
+- **Countercharm** (7): when the Bard or a creature of its side within 30
+  feet fails a save against a spell that Charms or Frightens (Charm Person,
+  Charm Monster, the Dominate spells, Hypnotic Pattern, Fear, Eyebite's
+  panic, Irresistible Dance, Magic Jar), the Bard's Reaction rerolls it with
+  Advantage, without asking, as roll effects are used.
+- **Expertise** (9): two more skills.
+- **Magical Secrets** (10): every spell chosen to prepare, then and on later
+  level-ups, may come from the Bard, Cleric, Druid or Wizard lists.
+- **Ability Score Improvements** at 8 and 12.
+- **Peerless Skill** (Lore 14): when the Bard's own attack roll or ability
+  check (an Athletics escape, hiding) fails by no more than its die, the die is
+  rolled and added without asking; the use is spent only if it turns the roll
+  into a success.
+- Verification: `opengold_bard_levels_tests` (the campaign to 15, prepared
+  counts, Expertise at 2 and 9, two Magical Discoveries, the features'
+  grants, level 5's description, a level-15 round trip, Bardic Inspiration at
+  each die, Font of Inspiration, Countercharm against a rival's Charm Person,
+  Magical Secrets' Fireball and Spirit Guardians).

@@ -581,6 +581,7 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::indigo ? 4033
            : kind == EffectKind::overchanneled || kind == EffectKind::luck_used ? 20
            : kind == EffectKind::arcanum_used ? 7
+           : kind == EffectKind::inspired ? 12
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4

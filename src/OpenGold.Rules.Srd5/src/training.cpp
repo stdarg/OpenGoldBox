@@ -821,6 +821,22 @@ TrainingChoiceGroup metamagic_options(unsigned level, std::span<const FeatureGra
     return group;
 }
 
+// Magical Discoveries: two Cleric, Druid or Wizard spells at Lore Bard level
+// six, a cantrip or one of a level the Bard has slots for (SRD 5.2.1 p. 35).
+TrainingChoiceGroup discovery_options(std::span<const FeatureGrant> grants)
+{
+    TrainingChoiceGroup group{"subclass:bard:discoveries", "Magical Discoveries", 2, {},
+                              TrainingChoiceControl::checkboxes};
+    group.acquired_level = 6;
+    for (const auto &spell : spell_table)
+        if (spell.level <= 3 && !has_grant(grants, "spell:" + std::string(spell.id)) &&
+                (on_class_list(CharacterClass::cleric, spell.id) ||
+                 on_class_list(CharacterClass::druid, spell.id) ||
+                 on_class_list(CharacterClass::wizard, spell.id)))
+            group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
+    return group;
+}
+
 // Mystic Arcanum: a level-6, 7 or 8 Warlock spell at Warlock level 11, 13 or
 // 15 (SRD 5.2.1 p. 72).
 TrainingChoiceGroup arcanum_options(unsigned level)

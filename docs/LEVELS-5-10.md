@@ -24,6 +24,7 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
 - Sorcerer to level 15: done ([Sorcerer](SORCERER.md#levels-515)); Slow waits
   for a decision.
 - Warlock to level 15: done ([Warlock](WARLOCK.md#levels-515)).
+- Bard to level 15: done ([Bard](BARD.md#levels-515)), with Expertise at 2.
 - Wizard to level 15: done ([Wizard](WIZARD.md#levels-515)), with Memorize
   Spell and summoned creatures (LEVELS-4); Slow waits for a decision and
   Teleport waits for travel beyond New Phlan.

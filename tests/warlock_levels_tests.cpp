@@ -185,6 +185,8 @@ void progression_checks()
     {
         return g.id.starts_with("resilience:") && g.level == 10;
     }), "Dark One's Own Luck at 6, Fiendish Resilience at 10");
+    check(rules->advancement_options(warlock(13).sheet()).description.find("Hurl Through Hell") != std::string::npos,
+          "The level's description names its feature");
     const auto bytes = encode_campaign(party, nullptr, "warlock-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),

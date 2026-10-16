@@ -244,6 +244,17 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         add("feature:dark_ones_own_luck", "subclass:warlock:fiend");
     if (klass == CharacterClass::warlock && level == 14)
         add("feature:hurl_through_hell", "subclass:warlock:fiend");
+    if (klass == CharacterClass::bard)
+    {
+        if (level == 5)
+            add("feature:font_of_inspiration", "class:bard");
+        if (level == 7)
+            add("feature:countercharm", "class:bard");
+        if (level == 10)
+            add("feature:magical_secrets", "class:bard");
+        if (level == 14)
+            add("feature:peerless_skill", "subclass:bard:lore");
+    }
     if (klass == CharacterClass::sorcerer)
     {
         if (level == 5)
@@ -514,6 +525,24 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                     on_class_list(CharacterClass::warlock, spell->id));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == "subclass:bard:discoveries")
+        {
+            // Magical Discoveries: two Cleric, Druid or Wizard spells, a cantrip
+            // or of level 1 to 3, chosen at level six.
+            const auto *spell = find_spell(std::string_view(grant.id).substr(10));
+            require(klass == CharacterClass::bard && grant.level == 6 && grant.choices.empty() &&
+                    grant.id.starts_with("discovery:") && spell &&
+                    spell->id == std::string_view(grant.id).substr(10) && spell->level <= 3 &&
+                    (on_class_list(CharacterClass::cleric, spell->id) ||
+                     on_class_list(CharacterClass::druid, spell->id) ||
+                     on_class_list(CharacterClass::wizard, spell->id)));
+            const auto index = static_cast<unsigned>(std::count_if(
+                                   entitlements.begin(), entitlements.end(), [&](const auto & held)
+            {
+                return held.first == grant.source_id;
+            }));
+            require(index < 2 && entitlements.emplace(grant.source_id, index).second);
+        }
         else if (grant.source_id == fiendish_resilience)
         {
             // Fiendish Resilience: any type but Force, chosen at level ten.
@@ -608,6 +637,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({std::string(elemental_affinity), 0}));
     if (klass == CharacterClass::warlock && level >= 10)
         require(entitlements.contains({std::string(fiendish_resilience), 0}));
+    if (klass == CharacterClass::bard && level >= 6)
+        require(entitlements.contains({"subclass:bard:discoveries", 1}));
     if (klass == CharacterClass::warlock)
         for (const unsigned arcanum : {11u, 13u, 15u})
             if (level >= arcanum)

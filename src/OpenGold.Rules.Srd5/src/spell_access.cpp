@@ -341,6 +341,14 @@ constexpr std::array prepared_casters{
         {4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18},
         {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8}, PreparedCaster::RestChange::any}};
 
+// The lists a caster prepares from: its own, and from Bard 10 (Magical
+// Secrets) the Cleric, Druid and Wizard lists too.
+unsigned prepared_list(const PreparedCaster &caster, unsigned level)
+{
+    return caster.list | (caster.klass == CharacterClass::bard && level >= 10
+                          ? cleric_list | druid_list | wizard_list : 0u);
+}
+
 // Spells a class always has prepared from a class level on. `land` names the
 // Circle of the Land type whose Circle Spells these are.
 struct AlwaysPrepared
@@ -755,7 +763,7 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
     for (const auto &id : prepared)
     {
         const auto &spell = find(id);
-        require((spell.lists & caster.list) && spell.level >= 1 &&
+        require((spell.lists & prepared_list(caster, level)) && spell.level >= 1 &&
                 spell.level <= caster.highest_slot[level - 1] && selected.insert(id).second);
         result.prepared.push_back(id);
     }
@@ -808,7 +816,7 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
                          (context == SpellChoiceContext::long_rest &&
                           caster.rest_change != PreparedCaster::RestChange::none);
     for (const auto &spell : spells)
-        if ((spell.lists & caster.list) && spell.level >= 1 &&
+        if ((spell.lists & prepared_list(caster, level)) && spell.level >= 1 &&
                 spell.level <= caster.highest_slot[level - 1] &&
                 std::find(access.always_prepared.begin(), access.always_prepared.end(),
                           spell.id) == access.always_prepared.end())
@@ -1381,6 +1389,10 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
             if (find(id).level && std::find(result.begin(), result.end(), id) == result.end())
                 result.emplace_back(id);
         }
+    // So are a Lore Bard's Magical Discoveries.
+    for (const auto &g : grants)
+        if (g.id.starts_with("discovery:"))
+            result.emplace_back(std::string_view(g.id).substr(10));
     // So is a lineage's, from level 3.
     for (const auto &lineage : lineage_spells(grants, level))
         if (!lineage.free_spell.empty() &&
@@ -1560,7 +1572,7 @@ SwapOffer spell_swap_offer(const CharacterSheet &sheet)
         return offer;
     for (const auto &spell : spells)
         if (spell.level >= 1 && spell.level <= caster->highest_slot[next - 1] &&
-                (spell.lists & caster->list) && !taken(spell.id))
+                (spell.lists & prepared_list(*caster, next)) && !taken(spell.id))
             offer.replacements.push_back({std::string(spell.id), std::string(spell.label), {}});
     return offer;
 }

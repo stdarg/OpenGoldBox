@@ -202,6 +202,8 @@ void progression_checks()
         auto c = field(*dummies, sorcerer(level).sheet());
         check(slots(*c, slot) >= 1 && slots(*c, slot + 1) == 0, "A new slot level every two levels");
     }
+    check(rules->advancement_options(sorcerer(4).sheet()).description.find("Sorcerous Restoration") != std::string::npos,
+          "The level's description names its feature");
     const auto bytes = encode_campaign(party, nullptr, "sorcerer-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
