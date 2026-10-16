@@ -202,6 +202,18 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"earthquake", "Earthquake", 8, 0, cleric_list | druid_list | sorcerer_list},
     Spell{"holy_aura", "Holy Aura", 8, 0, cleric_list},
     Spell{"sunburst", "Sunburst", 8, 0, cleric_list | druid_list | sorcerer_list | wizard_list},
+    Spell{"fireball", "Fireball", 3, 0, sorcerer_list | wizard_list},
+    Spell{"lightning_bolt", "Lightning Bolt", 3, 0, sorcerer_list | wizard_list},
+    Spell{"counterspell", "Counterspell", 3, 0, sorcerer_list | warlock_list | wizard_list},
+    Spell{"haste", "Haste", 3, 0, sorcerer_list | wizard_list},
+    Spell{"hypnotic_pattern", "Hypnotic Pattern", 3, 0,
+        bard_list | sorcerer_list | warlock_list | wizard_list},
+    Spell{"fear", "Fear", 3, 0, bard_list | sorcerer_list | warlock_list | wizard_list},
+    Spell{"sleet_storm", "Sleet Storm", 3, 0, druid_list | sorcerer_list | wizard_list},
+    Spell{"stinking_cloud", "Stinking Cloud", 3, 0, bard_list | sorcerer_list | wizard_list},
+    Spell{"vampiric_touch", "Vampiric Touch", 3, 0, sorcerer_list | warlock_list | wizard_list},
+    Spell{"blink", "Blink", 3, 0, sorcerer_list | wizard_list},
+    Spell{"tiny_hut", "Tiny Hut", 3, 0, bard_list | wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};
@@ -723,8 +735,10 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
         }
     }
     result.prepared_count = access.prepared_choices;
-    result.may_prepare = context != SpellChoiceContext::long_rest ||
-                         caster.rest_change != PreparedCaster::RestChange::none;
+    // Only a Wizard's Memorize Spell changes prepared spells on a Short Rest.
+    result.may_prepare = context == SpellChoiceContext::advancement ||
+                         (context == SpellChoiceContext::long_rest &&
+                          caster.rest_change != PreparedCaster::RestChange::none);
     for (const auto &spell : spells)
         if ((spell.lists & caster.list) && spell.level >= 1 &&
                 spell.level <= caster.highest_slot[level - 1] &&
@@ -1045,11 +1059,14 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
     require(level >= 1 && level <= level_cap(klass));
     require(std::find(grants.begin(), grants.end(),
                       FeatureGrant{"feature:spellcasting", "class:wizard", 1, {}}) != grants.end());
-    result.cantrip_choices = level == 4 ? 4 : 3;
+    // SRD 5.2.1 p. 77: cantrips and prepared spells by Wizard level.
+    constexpr std::array<unsigned, 15> prepared_by_level{4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16,
+                                                         16, 17, 18, 19};
+    result.cantrip_choices = level >= 10 ? 5 : level >= 4 ? 4 : 3;
     result.spellbook_choices = 6 + 2 * (level - 1);
-    result.prepared_choices = level + 3;
+    result.prepared_choices = prepared_by_level[level - 1];
     std::set<std::string> known;
-    std::array<unsigned, 5> books{}, cantrips{};
+    std::array<unsigned, 16> books{}, cantrips{};
     for (const auto &g : grants)
         if (class_spell_grant(g))
         {
@@ -1074,7 +1091,8 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
                 expected.choices.emplace("learned_at", replacement->second);
             }
             require(g == expected);
-            require(spell.level == 0 || spell.level <= (g.level >= 3 ? 2u : 1u));
+            // A spell of a level the Wizard had slots for: half its level, rounded up.
+            require(spell.level == 0 || spell.level <= (g.level + 1) / 2);
             auto &list = spell.level ? result.spellbook : result.cantrips;
             list.push_back({std::string(spell.id), std::string(spell.label), g.source_id, learned});
             if (spell.level)
@@ -1082,10 +1100,9 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
             else
                 ++cantrips[g.level];
         }
-    require(books[1] <= 6 && cantrips[1] <= 3 && cantrips[2] == 0 && cantrips[3] == 0 &&
-            cantrips[4] <= 1);
+    require(books[1] <= 6 && cantrips[1] <= 3);
     for (unsigned n = 2; n <= level; ++n)
-        require(books[n] <= 2);
+        require(books[n] <= 2 && cantrips[n] <= (n == 4 || n == 10 ? 1u : 0u));
     std::set<std::string> selected;
     for (const auto &id : prepared)
     {
@@ -1118,6 +1135,9 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
         return prepared_choice_options(*caster, sheet, context);
     if (klass != CharacterClass::wizard)
         return result;
+    // Memorize Spell: from Wizard 5, a Short Rest changes one prepared spell.
+    if (context == SpellChoiceContext::short_rest && sheet.level < 5)
+        return result;
     const auto access = spell_access(sheet.grants, klass, sheet.level, sheet.prepared_spells);
     auto known = [&](std::string_view id)
     {
@@ -1138,7 +1158,7 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
                 })
         {
             const unsigned capacity = cantrip ? (level == 1   ? 3
-                                                 : level == 4 ? 1
+                                                 : level == 4 || level == 10 ? 1
                                                  : 0)
                                       : (level == 1 ? 6 : 2);
             const auto used = static_cast<unsigned>(std::count_if(
@@ -1157,8 +1177,10 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
             group.count = capacity - used;
             group.acquired_level = level;
             for (const auto &spell : spells)
+                // A spell of a level the Wizard has slots for: half its level,
+                // rounded up.
                 if ((spell.level == 0) == cantrip && (spell.lists & wizard_list) &&
-                        spell.level <= (level >= 3 ? 2u : 1u) && !known(spell.id))
+                        spell.level <= (level + 1) / 2 && !known(spell.id))
                     group.options.push_back(
                 {std::string(spell.id), std::string(spell.label), {}});
             result.learning.push_back(std::move(group));
@@ -1240,8 +1262,9 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
         for (const auto &id : options.locked_prepared)
             require(std::find(choices.prepared->begin(), choices.prepared->end(), id) !=
                     choices.prepared->end());
-        if (caster && caster->rest_change == PreparedCaster::RestChange::one &&
-                context == SpellChoiceContext::long_rest)
+        if ((caster && caster->rest_change == PreparedCaster::RestChange::one &&
+                context == SpellChoiceContext::long_rest) ||
+                context == SpellChoiceContext::short_rest)
             require(std::count_if(sheet.prepared_spells.begin(), sheet.prepared_spells.end(),
                                   [&](const auto & id)
         {

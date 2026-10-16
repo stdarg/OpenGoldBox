@@ -131,7 +131,9 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::faith_tested && kind != EffectKind::pack_tested &&
             kind != EffectKind::beings_tested && kind != EffectKind::veiled &&
             kind != EffectKind::guarded && kind != EffectKind::swarmed &&
-            kind != EffectKind::bladed && kind != EffectKind::bathed) ||
+            kind != EffectKind::bladed && kind != EffectKind::bathed &&
+            kind != EffectKind::lethargic && kind != EffectKind::retching &&
+            kind != EffectKind::ethereal && kind != EffectKind::sleeted) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -199,7 +201,8 @@ int speed_penalty(const EffectState &effects)
 {
     // Repeated instances of one source do not stack, but these distinct
     // features each reduce Speed by 10 feet.
-    if (restrained(effects) || paralyzed(effects))
+    if (restrained(effects) || paralyzed(effects) || has_effect(effects, EffectKind::lethargic) ||
+            has_effect(effects, EffectKind::entranced))
         return 1000;
     // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
     const bool free = has_effect(effects, EffectKind::free_moving);
@@ -427,6 +430,8 @@ bool stunned(const EffectState &effects)
 bool incapacitated(const EffectState &effects)
 {
     return paralyzed(effects) || stunned(effects) ||
+           has_effect(effects, EffectKind::lethargic) ||
+           has_effect(effects, EffectKind::entranced) ||
            has_effect(effects, EffectKind::banished) ||
            has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
@@ -585,6 +590,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::worded:
     case EffectKind::regenerating:
         return 3600000; // 1 hour
+    case EffectKind::sheltered:
+        return 28800000; // 8 hours
     case EffectKind::aid:
     case EffectKind::mage_armor:
     case EffectKind::death_ward:
@@ -632,6 +639,11 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::animating:
     case EffectKind::dispel_evil:
     case EffectKind::knitting:
+    case EffectKind::hasted:
+    case EffectKind::entranced:
+    case EffectKind::terrified:
+    case EffectKind::vampiric:
+    case EffectKind::blinking:
         return 60000; // 1 minute
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
@@ -925,6 +937,8 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::beings_tested || kind == EffectKind::veiled ||
                            kind == EffectKind::guarded || kind == EffectKind::swarmed ||
                            kind == EffectKind::bladed || kind == EffectKind::bathed ||
+                           kind == EffectKind::lethargic || kind == EffectKind::retching ||
+                           kind == EffectKind::ethereal || kind == EffectKind::sleeted ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||
@@ -998,7 +1012,8 @@ EffectState read_effects(std::istream &in)
                                               kind == EffectKind::acid_arrow ||
                                               kind == EffectKind::raging ||
                                               kind == EffectKind::lit ||
-                                              kind == EffectKind::veiled)
+                                              kind == EffectKind::veiled ||
+                                              kind == EffectKind::lethargic)
                                              ? 2 * round_ms
                                              : round_ms))))
             throw std::runtime_error("Invalid active effect");

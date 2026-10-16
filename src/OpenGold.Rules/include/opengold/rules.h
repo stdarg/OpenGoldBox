@@ -130,7 +130,8 @@ struct TrainingChoiceGroup
 enum class SpellChoiceContext
 {
     advancement,
-    long_rest
+    long_rest,
+    short_rest // Memorize Spell (Wizard 5): one prepared spell changes
 };
 
 // Whether spell choices must settle every open choice, or may leave some for

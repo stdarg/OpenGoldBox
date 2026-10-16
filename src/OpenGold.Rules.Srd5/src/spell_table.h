@@ -159,7 +159,14 @@ enum class Rider : unsigned
     antimagic_field,
     earthquake,
     holy_aura,
-    sunburst
+    sunburst,
+    haste,
+    hypnotic_pattern,
+    fear,
+    sleet_storm,
+    stinking_cloud,
+    vampiric_touch,
+    blink
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -1823,6 +1830,153 @@ inline constexpr std::array spell_table
         .rider = Rider::sunburst,
         .radius = 60,
         .evocation = true},
+    // SRD 5.2.1 p. 131: a 20-foot-radius Sphere within 150 feet; Dexterity
+    // save, 8d6 Fire, half on a success; 1d6 more for each slot level above 3.
+    SpellDef{
+        .id = "fireball",
+        .label = "Fireball",
+        .level = 3,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::fire,
+        .dice = {8, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .radius = 20,
+        .evocation = true},
+    // SRD 5.2.1 p. 144: a 100-foot, 5-foot-wide Line from the caster;
+    // Dexterity save, 8d6 Lightning, half on a success; 1d6 more for each
+    // slot level above 3.
+    SpellDef{
+        .id = "lightning_bolt",
+        .label = "Lightning Bolt",
+        .level = 3,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 100,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::lightning,
+        .dice = {8, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .evocation = true,
+        .line = 100,
+        .narrow_line = true},
+    // SRD 5.2.1 p. 120: a Reaction to a creature casting a spell within 60
+    // feet; it makes a Constitution save or the spell fails, its slot kept.
+    SpellDef{
+        .id = "counterspell",
+        .label = "Counterspell",
+        .level = 3,
+        .pattern = SpellPattern::reaction,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .save = Ability::constitution},
+    // SRD 5.2.1 p. 139: a willing creature's Speed doubles, +2 AC, Advantage
+    // on Dexterity saves and a second, limited action each turn; when it ends,
+    // a turn of lethargy.
+    SpellDef{
+        .id = "haste",
+        .label = "Haste",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 30,
+        .requires_sight = true,
+        .requires_effect_capacity = true,
+        .rider = Rider::haste,
+        .concentration = true},
+    // SRD 5.2.1 p. 141: a 30-foot Cube within 120 feet; a Wisdom save or
+    // Charmed, Incapacitated and Speed 0 until damaged or shaken awake.
+    SpellDef{
+        .id = "hypnotic_pattern",
+        .label = "Hypnotic Pattern",
+        .level = 3,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::wisdom,
+        .rider = Rider::hypnotic_pattern,
+        .concentration = true,
+        .area = 30},
+    // SRD 5.2.1 p. 130: a 30-foot Cone; a Wisdom save or Frightened, fleeing
+    // the caster with the Dash action.
+    SpellDef{
+        .id = "fear",
+        .label = "Fear",
+        .level = 3,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 30,
+        .save = Ability::wisdom,
+        .rider = Rider::fear,
+        .concentration = true,
+        .cone = 30},
+    // SRD 5.2.1 p. 163: a 20-foot-radius Cylinder within 150 feet, Heavily
+    // Obscured and Difficult Terrain; entering it or starting a turn there
+    // calls for a Dexterity save against Prone and lost Concentration.
+    SpellDef{
+        .id = "sleet_storm",
+        .label = "Sleet Storm",
+        .level = 3,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 150,
+        .save = Ability::dexterity,
+        .rider = Rider::sleet_storm,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 165: a 20-foot-radius Sphere within 90 feet, Heavily
+    // Obscured; a creature starting its turn there makes a Constitution save
+    // or is Poisoned and takes no action or Bonus Action that turn.
+    SpellDef{
+        .id = "stinking_cloud",
+        .label = "Stinking Cloud",
+        .level = 3,
+        .pattern = SpellPattern::save_condition,
+        .target = SpellTarget::area,
+        .range = 90,
+        .save = Ability::constitution,
+        .rider = Rider::stinking_cloud,
+        .concentration = true,
+        .radius = 20},
+    // SRD 5.2.1 p. 171: a melee spell attack, 3d6 Necrotic, and the caster
+    // regains half; a Magic action repeats it while it lasts.
+    SpellDef{
+        .id = "vampiric_touch",
+        .label = "Vampiric Touch",
+        .level = 3,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 5,
+        .melee = true,
+        .damage = DamageType::necrotic,
+        .dice = {3, 6, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::vampiric_touch,
+        .concentration = true},
+    // SRD 5.2.1 p. 113: for a minute, a d6 at the end of each of the caster's
+    // turns; on 4-6 it vanishes to the Ethereal Plane until its next turn.
+    SpellDef{
+        .id = "blink",
+        .label = "Blink",
+        .level = 3,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::blink},
+    // SRD 5.2.1 p. 169: a dome around the party's camp for 8 hours; a rest
+    // inside it cannot be interrupted (LEVELS-1).
+    SpellDef{
+        .id = "tiny_hut",
+        .label = "Tiny Hut",
+        .level = 3,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::self,
+        .range = 5,
+        .instances = 8},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",

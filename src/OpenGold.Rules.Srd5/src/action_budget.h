@@ -8,6 +8,8 @@ namespace opengold::srd5::detail
 struct ActionBudget
 {
     bool normal{true}, surge{};
+    // Haste's action: one weapon attack, Dash, Disengage, Hide or Utilize.
+    bool haste{};
     // Extra Attack: the current Attack action's attacks after its first.
     // Spending another action ends that Attack action.
     unsigned extra_attacks{};

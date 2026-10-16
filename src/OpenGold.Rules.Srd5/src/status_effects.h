@@ -309,9 +309,31 @@ enum class EffectKind : unsigned
     // Improved Blessed Strikes (Cleric 14): a Cleric cantrip has just dealt
     // damage, so the caster may grant Temporary Hit Points this turn.
     vitality = 123,
+    // Haste: doubled Speed, +2 AC, Advantage on Dexterity saves and a limited
+    // second action each turn.
+    hasted = 124,
+    // Haste's end: Incapacitated with a Speed of 0 until the end of its next turn.
+    lethargic = 125,
+    // Hypnotic Pattern: Charmed, Incapacitated and Speed 0 until damaged or
+    // shaken awake.
+    entranced = 126,
+    // Fear: Frightened of the source, fleeing it with the Dash action.
+    terrified = 127,
+    // Stinking Cloud: Poisoned, with no action or Bonus Action, this turn.
+    retching = 128,
+    // Vampiric Touch, on its caster: a Magic action repeats the touch.
+    vampiric = 129,
+    // Blink, on its caster: a d6 at the end of each of its turns.
+    blinking = 130,
+    // Blink: on the Ethereal Plane until the start of its next turn.
+    ethereal = 131,
+    // Tiny Hut, in camp: a rest that cannot be interrupted.
+    sheltered = 132,
+    // Sleet Storm: the creature has saved against the sleet this turn.
+    sleeted = 133,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = vitality
+    last = sleeted
 };
 
 // Magic Circle's creature types, by `dc`.

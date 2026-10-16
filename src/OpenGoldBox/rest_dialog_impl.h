@@ -946,7 +946,8 @@ void RolfTourView::refresh_rest_spells()
     }
     presentation::required_node<Label>(*w,
                                        "Title").set_text(presentation::training_string(sheet.name) + " / " +
-                                               rest_text(N_("Long Rest")));
+                                               rest_text(campaign_->state().spells_after_short_rest
+                                                       ? N_("Short Rest") : N_("Long Rest")));
     presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), options.preparation,
                               rest_text);
     // Clerics replace cantrips on gaining a level, not at a Long Rest.

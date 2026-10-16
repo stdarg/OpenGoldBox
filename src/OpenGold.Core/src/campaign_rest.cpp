@@ -133,6 +133,7 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
             if (!state.spell_rest)
                 state.spell_rest =
                     ShortRestSession{ticket, state.time_minutes, state.subminute_milliseconds, {}};
+            state.spells_after_short_rest = false;
             state.spell_rest->members.push_back(id);
         }
         if (!rules_->rest_training_options(member.character.sheet(), RestKind::long_rest).empty())
@@ -205,9 +206,21 @@ rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id
 void CampaignParty::finish_short_rest(RestTicket ticket)
 {
     require_rest_ticket(ticket);
-    // Choices a Short Rest can change (the Hunter's Prey) are offered next.
+    // Choices a Short Rest can change (Memorize Spell's one prepared spell,
+    // then the Hunter's Prey) are offered next.
     auto session = std::move(*state_.short_rest);
     state_.short_rest.reset();
+    auto spells = session;
+    std::erase_if(spells.members, [&](MemberId id)
+    {
+        return !rules_->spell_choice_options(member(id).character.sheet(),
+                                             rules::SpellChoiceContext::short_rest).may_prepare;
+    });
+    if (!spells.members.empty())
+    {
+        state_.spell_rest = std::move(spells);
+        state_.spells_after_short_rest = true;
+    }
     std::erase_if(session.members, [&](MemberId id)
     {
         return rules_->rest_training_options(member(id).character.sheet(),

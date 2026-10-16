@@ -11,6 +11,91 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 2 | Scholar | Delivered earlier ([Scholar](SCHOLAR.md)) |
 | 3 | Wizard Subclass (Evoker) | Delivered (rules 0.6.93); Evocation Savant removed by the 2026-09-30 simplification |
 | 4 | Ability Score Improvement | Delivered earlier |
+| 5 | Memorize Spell, level-3 spells | Delivered (rules 0.6.217) |
+| 6 | Sculpt Spells (Evoker) | Delivered (rules 0.6.217; before, at level 3) |
+
+## Levels 5–15
+
+The Wizard advances to level 6 for now; level 7 waits for its level-4 spells
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Spellcasting** (SRD 5.2.1 p. 77): level-3 slots from 5 (two, three from
+  6); prepared spells 9 and 10; the spellbook gains two spells per level, of
+  any level the Wizard has slots for (half its level, rounded up); a fifth
+  cantrip at 10.
+- **Level-3 spells** (5): Animate Dead, Bestow Curse, Blink, Counterspell,
+  Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Magic
+  Circle, Protection from Energy, Remove Curse, Sleet Storm, Stinking Cloud,
+  Tiny Hut and Vampiric Touch (below; the shared ones work as for the
+  [Cleric](CLERIC.md#the-new-level-3-spells)). Slow waits for the decision on
+  how its spell failure becomes a save (LEVELS-1). Clairvoyance, Fly, Gaseous
+  Form, Glyph of Warding, Major Image, Nondetection, Phantom Steed, Sending,
+  Speak with Dead, Tongues and Water Breathing are cut.
+- **Memorize Spell** (5): when a Short Rest ends (after its Hit Dice), the
+  rest's spell window opens, titled Short Rest: the Wizard may change one
+  prepared spell for another in its spellbook. Campaign saves keep the
+  pending window (format 31).
+- **Arcane Recovery** restores any expended slots of levels 1 to 5 whose
+  levels add up to half the Wizard level, rounded up: at 5 and 6 one level-3
+  slot, or a level-2 and a level-1, and so on. The choices beyond the
+  original three read "Spell slots of levels 3" or "… of levels 2, 1".
+- **Sculpt Spells** moves to level 6, where the SRD puts it; it was given at
+  level 3 before. Potent Cantrip stays at 3.
+- Verification: `opengold_wizard_levels_tests` (the campaign's stop at 6,
+  prepared counts, level-3 spells in the level-5 spellbook choice, slots, a
+  campaign round trip, Memorize Spell's one change and the campaign's Short
+  Rest window, Arcane Recovery of a level-3 slot, each level-3 spell, Sculpt
+  Spells at 6 and not 5) and `opengold_wizard_spell_tests`.
+
+### The level-3 spells
+
+- **Fireball** (Action, 150 feet): a 20-foot-radius Sphere; Dexterity save,
+  8d6 Fire, half on a success; 1d6 more for each slot level above 3.
+- **Lightning Bolt** (Action): a 100-foot, 5-foot-wide Line from the Wizard;
+  Dexterity save, 8d6 Lightning, half on a success; 1d6 more per slot level.
+- **Counterspell** (Reaction, 60 feet): when a foe the Wizard can see within
+  60 feet casts a spell, the Wizard is asked (React/Decline, "Cast
+  Counterspell"); it spends a level-3 slot or higher and the Reaction, and
+  the caster makes a Constitution save against the Wizard's spell DC. On a
+  failure the spell dissipates: the caster's action or Bonus Action is spent,
+  its slot is not. Sunbeam's later Lines and Dragon's Breath are not castings.
+- **Haste** (Action, 30 feet, Concentration up to 1 minute): a willing ally
+  the Wizard can see doubles its Speed, gains +2 AC and Advantage on
+  Dexterity saves, and on each of its turns a second action for one weapon
+  attack, Dash, Disengage, Hide or taking off a shield. A Dash, Disengage or
+  Hide uses that action first; an attack uses it once the Action is spent,
+  so Extra Attack stays with the Action. When Haste ends, a wave of lethargy
+  leaves the creature Incapacitated with a Speed of 0 until the end of its
+  next turn.
+- **Hypnotic Pattern** (Action, 120 feet, Concentration up to 1 minute): a
+  30-foot Cube; each creature in it that can see makes a Wisdom save or is
+  Charmed, Incapacitated and at Speed 0 ("Charmed (Hypnotic Pattern)") until
+  it takes damage or anyone within 5 feet spends an action on **Shake
+  awake**.
+- **Fear** (Action, Concentration up to 1 minute): a 30-foot Cone; each
+  creature in it makes a Wisdom save or is Frightened ("Frightened (Fear)").
+  While it sees the Wizard it can only flee, as Command's Flee does: moves
+  away, then Dash. Out of the Wizard's sight at the end of its turn it saves
+  again to end it. Dropping what it holds is left out.
+- **Sleet Storm** (Action, 150 feet, Concentration up to 1 minute): a
+  20-foot-radius area, Heavily Obscured and Difficult Terrain. A creature
+  that enters it or starts its turn there makes a Dexterity save, once a
+  turn, or falls Prone and loses Concentration.
+- **Stinking Cloud** (Action, 90 feet, Concentration up to 1 minute): a
+  20-foot-radius Sphere, Heavily Obscured. A creature that starts its turn
+  in it makes a Constitution save or is Poisoned and takes no action or
+  Bonus Action that turn.
+- **Vampiric Touch** (Action, Concentration up to 1 minute): a melee spell
+  attack for 3d6 Necrotic (1d6 more per slot level above 3); the Wizard
+  regains half the damage dealt. On later turns **Vampiric Touch** (a Magic
+  action) touches again.
+- **Blink** (Action, 1 minute): at the end of each of the Wizard's turns, a
+  d6; on 4–6 it slips into the Ethereal Plane, out of reach of everything,
+  and returns at the start of its next turn to its square, or the nearest
+  free one.
+- **Tiny Hut** (camp, the whole party): for 8 hours no rest is interrupted
+  (LEVELS-1).
 
 ## Spells
 
@@ -65,13 +150,13 @@ baseline), and `tests/wizard_choices_view_tests.gd`.
 - **Potent Cantrip**: when a damaging cantrip misses, or its target succeeds on
   the save, the target still takes half the damage, without the cantrip's other
   effects.
-- **Sculpt Spells**: in an Evocation area spell (Burning Hands, Thunderwave,
-  Shatter) up to 1 + the spell's level allies the Evoker can see are spared:
-  they take no damage and no other effect. Adaptation: the allies are chosen
-  automatically.
+- **Sculpt Spells** (level 6): in an Evocation area spell (Burning Hands,
+  Thunderwave, Shatter, Fireball) up to 1 + the spell's level allies the
+  Evoker can see are spared: they take no damage and no other effect.
+  Adaptation: the allies are chosen automatically.
 - Verification: `opengold_wizard_spell_tests` (a missed Fire Bolt at levels one
   and three, a saved-against Acid Splash at levels one and three, an ally in
-  Burning Hands at levels one and three, and only two of three allies spared). The cantrip
+  Burning Hands at levels three and six, and only two of three allies spared). The cantrip
   tests' exact-damage checks no longer pin a level-three miss.
 
 ## Mage Armor, False Life and Expeditious Retreat

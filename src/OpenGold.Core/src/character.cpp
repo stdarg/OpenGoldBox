@@ -49,7 +49,7 @@ bool Character::advance(const rules::RulesModule &rules, rules::VitalState &stat
 }
 
 void Character::choose_spells(const rules::RulesModule &rules, const rules::SpellChoices &choices,
-                              std::uint64_t rest_session,
+                              std::uint64_t rest_session, rules::SpellChoiceContext context,
                               rules::ChoiceCompleteness completeness)
 {
     if (!rest_session)
@@ -62,8 +62,7 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     throw std::runtime_error("Spell choices already used for this rest");
     auto candidate = sheet_;
     auto history = spell_edits_;
-    rules.apply_spell_choices(candidate, choices, rules::SpellChoiceContext::long_rest,
-                              completeness);
+    rules.apply_spell_choices(candidate, choices, context, completeness);
     history.push_back({static_cast<unsigned>(sheet_.level), rest_session, choices});
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);

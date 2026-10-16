@@ -339,7 +339,7 @@ void persistence_and_advancement()
     members.push_back({99, "vanguard", "Enemy", Side::opposition, {5, 1}});
     auto combat = rules->create({{8, 8, std::vector<Terrain>(64)}, members}, 42);
     const auto checkpoint = combat->save();
-    check(checkpoint.starts_with("OGCOMBAT 57 ") &&
+    check(checkpoint.starts_with("OGCOMBAT 58 ") &&
           rules->restore(checkpoint)->save() == checkpoint,
           "Combat checkpoint stores remaining dice exactly");
     auto copy = rules->restore(checkpoint);
@@ -363,10 +363,10 @@ void persistence_and_advancement()
     for (unsigned i = 4; i < 6; ++i)
         if (rows[i].starts_with("1 "))
         {
-            // Published actor field 33 is Hit Dice, before clocks and feature pools.
+            // Published actor field 34 is Hit Dice, before clocks and feature pools.
             std::istringstream fields(rows[i]);
             std::string field;
-            for (unsigned n = 0; n < 33; ++n)
+            for (unsigned n = 0; n < 34; ++n)
                 fields >> std::quoted(field);
             fields >> std::ws;
             const auto begin = static_cast<std::size_t>(fields.tellg());

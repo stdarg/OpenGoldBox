@@ -130,6 +130,8 @@ struct PartyState
     training_rest; // Rule-owned training replacements after spell choices.
     // The training_rest follows a Short Rest, which changes fewer choices.
     bool training_after_short_rest{};
+    // The spell_rest follows a Short Rest: Memorize Spell changes one spell.
+    bool spells_after_short_rest{};
 };
 
 // One shared campaign value store. Sessions share this owner, never separate PCs.
@@ -204,6 +206,9 @@ class CampaignParty
     void advance(MemberId id, const rules::AdvancementChoice &choice);
     // Long Rest spell choices for a member offered them by the completed rest.
     [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id) const;
+    // The rest the pending spell choices follow: a Long Rest, or a Short Rest
+    // for Memorize Spell.
+    [[nodiscard]] rules::SpellChoiceContext rest_spell_context() const;
     [[nodiscard]] PartyMember preview_spell_choices(MemberId id, const rules::SpellChoices &) const;
     void choose_spells(MemberId id, const rules::SpellChoices &);
     void keep_rest_spells(MemberId id);

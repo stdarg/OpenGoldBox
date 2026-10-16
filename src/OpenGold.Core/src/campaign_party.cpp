@@ -775,8 +775,13 @@ void CampaignParty::advance(MemberId id, const rules::AdvancementChoice &choice)
 
 rules::SpellChoiceOptions CampaignParty::spell_choice_options(MemberId id) const
 {
-    return rules_->spell_choice_options(member(id).character.sheet(),
-                                        rules::SpellChoiceContext::long_rest);
+    return rules_->spell_choice_options(member(id).character.sheet(), rest_spell_context());
+}
+
+rules::SpellChoiceContext CampaignParty::rest_spell_context() const
+{
+    return state_.spells_after_short_rest ? rules::SpellChoiceContext::short_rest
+           : rules::SpellChoiceContext::long_rest;
 }
 
 PartyMember CampaignParty::preview_spell_choices(MemberId id,
@@ -791,7 +796,8 @@ PartyMember CampaignParty::preview_spell_choices(MemberId id,
             state_.spell_rest->members.end())
         throw std::runtime_error("No completed Long Rest spell choices");
     auto candidate = member(id);
-    candidate.character.choose_spells(*rules_, choices, state_.spell_rest->ticket.session);
+    candidate.character.choose_spells(*rules_, choices, state_.spell_rest->ticket.session,
+                                      rest_spell_context());
     rules_->validate_character_state(candidate.character.sheet(), candidate.vitals);
     return candidate;
 }
@@ -1177,8 +1183,12 @@ void CampaignParty::validate(const PartyState &state)
             if (!active.contains(id) || !members.insert(id).second)
                 throw std::runtime_error("Invalid spell-choice rest member");
             const auto &m = member_in(state, id);
-            if (!m.last_rest_minutes || *m.last_rest_minutes != rest.completed_minutes ||
-                    m.last_rest_subminute_milliseconds != rest.completed_subminute_milliseconds ||
+            // Only a Long Rest is recorded as the member's last rest.
+            const bool rested = state.spells_after_short_rest ||
+                                (m.last_rest_minutes && *m.last_rest_minutes == rest.completed_minutes &&
+                                 m.last_rest_subminute_milliseconds ==
+                                 rest.completed_subminute_milliseconds);
+            if (!rested ||
                     std::any_of(m.character.spell_edits().begin(), m.character.spell_edits().end(),
                                 [&](const auto & e)
         {
@@ -1267,7 +1277,8 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
         {
             const auto &m = member_in(state, id);
             const auto options = rules.spell_choice_options(m.character.sheet(),
-                rules::SpellChoiceContext::long_rest);
+                                 state.spells_after_short_rest ? rules::SpellChoiceContext::short_rest
+                                 : rules::SpellChoiceContext::long_rest);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest ||
                     (!options.may_prepare && !options.may_replace))
                 throw std::runtime_error("Invalid Long Rest spell eligibility");

@@ -73,7 +73,7 @@ void party_keeps_quick()
     party.set_quick(id);
     party.set_quick_magic(true);
     const auto saved = encode_campaign(party, nullptr, "quick");
-    check(saved.starts_with("OPENGOLD-CAMPAIGN 30\n"), "Campaign saves are format 30");
+    check(saved.starts_with("OPENGOLD-CAMPAIGN 31\n"), "Campaign saves are format 31");
     CampaignParty loaded(module());
     loaded.restore(decode_campaign(saved, *srd5::character_rules(), *module(), "quick", nullptr).party);
     check(loaded.member(id).quick && loaded.state().quick_magic,

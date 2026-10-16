@@ -21,9 +21,9 @@ of a campaign save; add completed characters to the party first.
 Until 1.0, every save kind has exactly one accepted format, and it always writes
 every field:
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 30` (`campaign_format` in
+- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 31` (`campaign_format` in
   `campaign_save.cpp`).
-- The internal training-combat checkpoint: `OGCOMBAT 57` (`checkpoint_format`
+- The internal training-combat checkpoint: `OGCOMBAT 58` (`checkpoint_format`
   in `srd5.cpp`).
 - Records embedded by the SRD module: character profile recipe `PC43` (an
   explicit spell ID list), vital state `SRD13`, effect state `FX8` and
@@ -31,7 +31,7 @@ every field:
 
 A save or checkpoint with an older format number, or one written under a
 different rules identity (module, version or content hash; currently
-`opengold.srd5` 0.6.216, `content.identity` in `srd5.cpp`), is rejected with
+`opengold.srd5` 0.6.217, `content.identity` in `srd5.cpp`), is rejected with
 the localized message "This save was made by an older pre-release version of
 OpenGoldBox and can't be loaded." A newer or unknown campaign number reports
 "Unsupported campaign save version". Nothing is migrated.

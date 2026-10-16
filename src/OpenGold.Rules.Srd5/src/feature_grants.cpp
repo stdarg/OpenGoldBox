@@ -227,6 +227,13 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 10)
             add("feature:divine_intervention", "class:cleric");
     }
+    if (klass == CharacterClass::wizard)
+    {
+        if (level == 5)
+            add("feature:memorize_spell", "class:wizard");
+        if (level == 6)
+            add("feature:sculpt_spells", "subclass:wizard:evoker");
+    }
     // Roving's Climb and Swim Speeds are cut (SCOPE-2); its Speed stays.
     if (klass == CharacterClass::ranger)
     {
@@ -329,7 +336,6 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
     {
         required.push_back({"subclass:evoker", "class:wizard", 3, {}});
         required.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
-        required.push_back({"feature:sculpt_spells", "subclass:wizard:evoker", 3, {}});
     }
     if (klass == CharacterClass::ranger && level >= 3)
     {

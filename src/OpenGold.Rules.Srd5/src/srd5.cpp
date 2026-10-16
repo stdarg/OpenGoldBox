@@ -204,7 +204,9 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::energy_ward || kind == detail::EffectKind::stoneskin ||
            kind == detail::EffectKind::dominated || kind == detail::EffectKind::cursed ||
            kind == detail::EffectKind::animating || kind == detail::EffectKind::dispel_evil ||
-           kind == detail::EffectKind::knitting;
+           kind == detail::EffectKind::knitting || kind == detail::EffectKind::hasted ||
+           kind == detail::EffectKind::entranced || kind == detail::EffectKind::terrified ||
+           kind == detail::EffectKind::vampiric;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -272,6 +274,12 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::hopeful:
     case Kind::energy_ward:
     case Kind::cursed:
+    case Kind::hasted:
+    case Kind::entranced:
+    case Kind::terrified:
+    case Kind::retching:
+    case Kind::vampiric:
+    case Kind::blinking:
         return 3u;
     case Kind::death_ward:
     case Kind::aura_of_life:
@@ -367,7 +375,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 57;
+constexpr unsigned checkpoint_format = 58;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -563,6 +571,24 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::wizard, "ray_of_frost", 1},
     SpellAccessRow{CharacterClass::wizard, "shocking_grasp", 1},
     SpellAccessRow{CharacterClass::wizard, "chill_touch", 1},
+    // Wizard level-3 spells, with the level-3 slots of Wizard level 5.
+    SpellAccessRow{CharacterClass::wizard, "animate_dead", 5},
+    SpellAccessRow{CharacterClass::wizard, "bestow_curse", 5},
+    SpellAccessRow{CharacterClass::wizard, "blink", 5},
+    SpellAccessRow{CharacterClass::wizard, "counterspell", 5},
+    SpellAccessRow{CharacterClass::wizard, "dispel_magic", 5},
+    SpellAccessRow{CharacterClass::wizard, "fear", 5},
+    SpellAccessRow{CharacterClass::wizard, "fireball", 5},
+    SpellAccessRow{CharacterClass::wizard, "haste", 5},
+    SpellAccessRow{CharacterClass::wizard, "hypnotic_pattern", 5},
+    SpellAccessRow{CharacterClass::wizard, "lightning_bolt", 5},
+    SpellAccessRow{CharacterClass::wizard, "magic_circle", 5},
+    SpellAccessRow{CharacterClass::wizard, "protection_from_energy", 5},
+    SpellAccessRow{CharacterClass::wizard, "remove_curse", 5},
+    SpellAccessRow{CharacterClass::wizard, "sleet_storm", 5},
+    SpellAccessRow{CharacterClass::wizard, "stinking_cloud", 5},
+    SpellAccessRow{CharacterClass::wizard, "tiny_hut", 5},
+    SpellAccessRow{CharacterClass::wizard, "vampiric_touch", 5},
     SpellAccessRow{CharacterClass::sorcerer, "fire_bolt", 1},
     SpellAccessRow{CharacterClass::sorcerer, "poison_spray", 1},
     SpellAccessRow{CharacterClass::sorcerer, "ray_of_frost", 1},
@@ -844,7 +870,8 @@ struct Definition
     // A Zombie's Undead Fortitude: a save to stay at 1 Hit Point.
     bool undead_fortitude{};
     bool life_domain{};   // Cleric level 3: Disciple of Life and Preserve Life
-    bool evoker{};        // Wizard level 3: Potent Cantrip and Sculpt Spells
+    bool evoker{};        // Wizard level 3: Potent Cantrip
+    bool sculptor{};      // Wizard level 6: Sculpt Spells
     int mage_armor_ac{};  // the AC Mage Armor gives; 0 while wearing armor
     bool sleepless{};     // an Elf: Sleep has no effect
     // Barbarian Rage: uses (kept in Actor::channel_divinity, which no Barbarian
@@ -1144,6 +1171,7 @@ int armor_class_of(const Actor &target)
             : base) +
            (detail::has_effect(target.effects, detail::EffectKind::shield_of_faith) ? 2 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
+           (detail::has_effect(target.effects, detail::EffectKind::hasted) ? 2 : 0) +
            (detail::has_effect(target.effects, detail::EffectKind::shield) ? 5 : 0);
 }
 
@@ -1538,20 +1566,70 @@ bool conscious(const Actor &a)
 // Banished to a demiplane: off the field until the spell ends.
 bool absent(const Actor &a)
 {
-    return detail::has_effect(a.effects, detail::EffectKind::banished);
+    return detail::has_effect(a.effects, detail::EffectKind::banished) ||
+           detail::has_effect(a.effects, detail::EffectKind::ethereal);
 }
 
+// One Arcane Recovery choice: how many slots of each level from 1 to 5 return.
 struct ArcaneAllocation
 {
-    std::string_view id, label;
-    unsigned first, second;
+    std::string id;
+    Message label;
+    std::array<unsigned, 5> slots{};
 };
 
-constexpr std::array arcane_allocations
+// The slot levels a choice restores, highest first: "3, 1, 1".
+std::string recovered_levels(const std::array<unsigned, 5> &slots)
 {
-    ArcaneAllocation{"arcane_recovery:1:0", "One level-one spell slot", 1, 0},
-    ArcaneAllocation{"arcane_recovery:2:0", "Two level-one spell slots", 2, 0},
-    ArcaneAllocation{"arcane_recovery:0:1", "One level-two spell slot", 0, 1}};
+    std::string levels;
+    for (unsigned level = 5; level >= 1; --level)
+        for (unsigned n = 0; n < slots[level - 1]; ++n)
+            levels += (levels.empty() ? "" : ", ") + std::to_string(level);
+    return levels;
+}
+
+// Arcane Recovery's choices: expended slots of levels 1 to 5 whose levels add
+// up to at most `budget`, half the Wizard level rounded up (SRD 5.2.1 p. 78).
+// The three small choices keep the names they had before level 5.
+std::vector<ArcaneAllocation> arcane_allocations(unsigned budget)
+{
+    std::vector<ArcaneAllocation> result;
+    std::array<unsigned, 5> slots{};
+    const auto add = [&]
+    {
+        std::string id = "arcane_recovery:" + std::to_string(slots[0]) + ":" +
+                         std::to_string(slots[1]);
+        unsigned last = 1;
+        for (unsigned level = 3; level <= 5; ++level)
+            if (slots[level - 1])
+                last = level - 1;
+        for (unsigned index = 2; index <= last; ++index)
+            id += ":" + std::to_string(slots[index]);
+        const auto levels = recovered_levels(slots);
+        Message label = levels == "1"     ? Message{"One level-one spell slot", {}}
+                        : levels == "1, 1" ? Message{"Two level-one spell slots", {}}
+                        : levels == "2"    ? Message{"One level-two spell slot", {}}
+                        : Message{"Spell slots of levels {levels}", {{"levels", levels}}};
+        result.push_back({std::move(id), std::move(label), slots});
+    };
+    const auto choose = [&](const auto & self, unsigned level, unsigned left) -> void
+    {
+        if (level == 0)
+        {
+            if (left < budget)
+                add();
+            return;
+        }
+        for (unsigned count = 0; count * level <= left; ++count)
+        {
+            slots[level - 1] = count;
+            self(self, level - 1, left - count * level);
+        }
+        slots[level - 1] = 0;
+    };
+    choose(choose, 5, budget);
+    return result;
+}
 
 // Whether an effect gives the named Lesser Restoration condition.
 bool gives_condition(detail::EffectKind kind, std::string_view condition)
@@ -1560,7 +1638,8 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
         return kind == detail::EffectKind::blindness || kind == detail::EffectKind::dazzled;
     if (condition == "paralyzed")
         return kind == detail::EffectKind::hold_person;
-    return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion;
+    return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
+           kind == detail::EffectKind::retching;
 }
 
 std::string condition_name(std::string_view condition)
@@ -1674,10 +1753,15 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
     // Signed comparisons: an actor holding more slots than its definition grants
     // (the room Font of Magic allows) has a negative spent count, which must
     // refuse the choice rather than wrap to a huge unsigned room.
+    unsigned total = 0;
+    for (unsigned level = 1; level <= 5; ++level)
+    {
+        total += level * choice.slots[level - 1];
+        if (std::cmp_greater(choice.slots[level - 1], d.slots[level] - actor.slots[level]))
+            return false;
+    }
     return conscious(actor) && d.arcane && actor.arcane > 0 &&
-           std::cmp_less_equal(choice.first + 2 * choice.second, (d.level + 1) / 2) &&
-           std::cmp_less_equal(choice.first, d.slots[1] - actor.slots[1]) &&
-           std::cmp_less_equal(choice.second, d.slots[2] - actor.slots[2]);
+           std::cmp_less_equal(total, (d.level + 1) / 2);
 }
 
 int movement_left(const Actor &a)
@@ -1687,8 +1771,10 @@ int movement_left(const Actor &a)
     // A resisted Stunning Strike halves the Speed.
     const int staggered = detail::has_effect(a.effects, detail::EffectKind::staggered)
                           ? a.definition.speed / 2 : 0;
+    // Haste doubles the Speed: each Dash's share as well.
+    const int hasted = detail::has_effect(a.effects, detail::EffectKind::hasted) ? a.definition.speed : 0;
     const int penalty =
-        std::min(a.definition.speed, detail::speed_penalty(a.effects) + staggered);
+        std::min(a.definition.speed, detail::speed_penalty(a.effects) + staggered) - hasted;
     return std::max(0, a.movement - penalty * (1 + a.dashes));
 }
 
@@ -1955,6 +2041,7 @@ character_definition(std::string_view bytes,
     d.divine_intervention = klass == CharacterClass::cleric && level >= 10 ? 1 : 0;
     d.life_domain = klass == CharacterClass::cleric && level >= 3;
     d.evoker = klass == CharacterClass::wizard && level >= 3;
+    d.sculptor = klass == CharacterClass::wizard && level >= 6;
     d.free_smite = klass == CharacterClass::paladin && level >= 2 ? 1 : 0;
     // Favored Enemy: 2 free Hunter's Marks, 3 from level 5, 4 from 9, 5 from 13.
     d.favored_enemy = klass != CharacterClass::ranger ? 0
@@ -2857,7 +2944,9 @@ class Session final : public CombatSession
         pillar,         // Conjure Celestial's pillar of light; cells.front() is its centre
         quake,          // Earthquake's tremor, Difficult Terrain
         holy,           // Holy Aura's 30-foot Emanation, around its caster
-        antimagic       // Antimagic Field's 10-foot Emanation, around its caster
+        antimagic,      // Antimagic Field's 10-foot Emanation, around its caster
+        sleet,          // Sleet Storm, Heavily Obscured and Difficult Terrain
+        stench          // Stinking Cloud, Heavily Obscured
     };
     struct Zone
     {
@@ -2887,7 +2976,8 @@ class Session final : public CombatSession
         boon,     // a Goliath's attack roll hit and dealt damage: Fire's Burn and so on
         endure,   // an attack is about to damage a Goliath: Stone's Endurance
         thunder,  // an attack damaged a Goliath: Storm's Thunder
-        retaliate // a creature within 5 feet damaged a Berserker: Retaliation
+        retaliate, // a creature within 5 feet damaged a Berserker: Retaliation
+        counter    // a foe within 60 feet is casting a spell: Counterspell
     };
     struct ReactionQuestion
     {
@@ -3398,6 +3488,24 @@ class Session final : public CombatSession
     // and the squares the cubes fill.
     void place_storm_cube(Cell cell);
     [[nodiscard]] std::vector<Cell> storm_cells(const std::vector<Cell> &cubes) const;
+    // Haste's end: Incapacitated with a Speed of 0 until the end of its next turn.
+    void tire(Actor &a);
+    // Hypnotic Pattern and Fear: each creature in the area that fails its
+    // Wisdom save is entranced or terrified while the caster concentrates.
+    void enchant_area(Actor &caster, const detail::SpellDef &spell, const std::vector<Cell> &cells);
+    // Sleet Storm: a creature entering the sleet or starting its turn there
+    // saves, once a turn, or falls Prone and loses Concentration.
+    void sleet_falls(const Zone &sleet, Actor &creature);
+    // Stinking Cloud: a creature starting its turn in the cloud saves or
+    // retches through the turn.
+    void choke(const Zone &cloud, Actor &creature);
+    // Counterspell: whether a creature may answer this casting, and whether
+    // one stops it.
+    [[nodiscard]] bool can_counter(const Actor &wizard, const Actor &caster) const;
+    [[nodiscard]] bool countered(Actor &caster);
+    // Vampiric Touch: the touch, at the casting and with each later Magic
+    // action, for 3d6 Necrotic and 1d6 more for each slot level above 3.
+    void vampiric_touch(Actor &caster, Actor &target, unsigned slot);
     // Improved Blessed Strikes (Cleric 14): after a Cleric cantrip damages a
     // creature, Temporary Hit Points of twice the Wisdom modifier.
     void ready_vitality(Actor &caster, const detail::SpellDef &spell, std::size_t damaged_before);
@@ -4392,7 +4500,8 @@ Battlefield Session::zoned_board() const
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
                 zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
                 zone.kind == ZoneKind::spikes || zone.kind == ZoneKind::swarm ||
-                zone.kind == ZoneKind::blades || zone.kind == ZoneKind::quake)
+                zone.kind == ZoneKind::blades || zone.kind == ZoneKind::quake ||
+                zone.kind == ZoneKind::sleet)
             for (const auto cell : zone.cells)
                 if (board.at(cell) == Terrain::open)
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
@@ -4450,7 +4559,8 @@ bool Session::obscured(const Actor &viewer, Cell cell) const
     // Fog Cloud hides from everyone; magical Darkness from all but Devil's Sight.
     return std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
     {
-        return (zone.kind == ZoneKind::fog ||
+        return (zone.kind == ZoneKind::fog || zone.kind == ZoneKind::sleet ||
+                zone.kind == ZoneKind::stench ||
                 (zone.kind == ZoneKind::darkness && !def(viewer).devils_sight &&
                  !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing))) &&
                std::find(zone.cells.begin(), zone.cells.end(), cell) != zone.cells.end();
@@ -4554,7 +4664,8 @@ Snapshot Session::snapshot() const
     }
     s.battlefield = zoned_board();
     for (const auto &zone : zones_)
-        if (zone.kind == ZoneKind::fog || zone.kind == ZoneKind::darkness)
+        if (zone.kind == ZoneKind::fog || zone.kind == ZoneKind::darkness ||
+                zone.kind == ZoneKind::sleet || zone.kind == ZoneKind::stench)
             s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::silence)
             s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
@@ -5017,6 +5128,14 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::feasted, "Heroes' Feast"},
                     std::pair{detail::EffectKind::true_seeing, "True Seeing"},
                     std::pair{detail::EffectKind::regenerating, "Regenerate"},
+                    std::pair{detail::EffectKind::hasted, "Haste"},
+                    std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
+                    std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
+                    std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
+                    std::pair{detail::EffectKind::retching, "Poisoned (Stinking Cloud)"},
+                    std::pair{detail::EffectKind::vampiric, "Vampiric Touch"},
+                    std::pair{detail::EffectKind::blinking, "Blink"},
+                    std::pair{detail::EffectKind::ethereal, "Ethereal"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -5479,7 +5598,30 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::conjure_celestial:
     case detail::Rider::earthquake:
     case detail::Rider::sunburst:
+    case detail::Rider::hypnotic_pattern:
+    case detail::Rider::fear:
+    case detail::Rider::sleet_storm:
+    case detail::Rider::stinking_cloud:
         return; // An aimed area, resolved by cast_area().
+    case detail::Rider::vampiric_touch:
+        return; // A touch resolved with its attack.
+    case detail::Rider::haste:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::hasted, 0);
+        log(target.source.name + " gains Haste.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Haste", true}}});
+        // The doubled Speed applies at once; the second action from its next turn.
+        return;
+    case detail::Rider::blink:
+        std::erase_if(target.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::blinking;
+        });
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::blinking, 0);
+        log(target.source.name + " gains Blink.",
+        {"{name} gains {spell}.", {{"name", target.source.name}, {"spell", "Blink", true}}});
+        return;
     case detail::Rider::divine_word:
         divine_word(a, dc);
         return;
@@ -5911,6 +6053,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const auto target_id = targets.front();
     const auto &d = def(a);
     const unsigned steps = upcast_steps(verb, spell);
+    // Counterspell: a stopped spell keeps its slot.
+    if (countered(a))
+        return;
     take_metamagic(a, spell);
     if (casting_with(Metamagic::heightened))
         heightened_target_ = target_id;
@@ -5982,6 +6127,16 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     }
     case detail::SpellPattern::spell_attack:
     {
+        // Vampiric Touch: the first touch, then a Magic action each turn.
+        if (spell.rider == detail::Rider::vampiric_touch)
+        {
+            const unsigned slot = slot_level_of(verb, spell);
+            begin_concentration(a, spell);
+            detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::vampiric, static_cast<int>(slot));
+            vampiric_touch(a, actor(target_id), slot);
+            return;
+        }
         // Eldritch Blast: a beam for each cantrip step, each its own attack, in
         // the order aimed; a beam whose creature has fallen turns to the
         // nearest foe in range, as a ray does (SPLIT-1).
@@ -6494,6 +6649,8 @@ std::vector<Command> Session::offered_commands() const
             add(who.source.id, "storms_thunder", "Storm's Thunder");
         else if (question.asked == Asked::retaliate)
             add(who.source.id, "retaliate", "Retaliation attack");
+        else if (question.asked == Asked::counter)
+            add(who.source.id, "counterspell", "Cast Counterspell");
         else
         {
             if (can_shield(who) && !question.critical)
@@ -6832,14 +6989,17 @@ std::vector<Command> Session::offered_commands() const
             detail::has_effect(a.effects, detail::EffectKind::webbed) ? "Escape the webs"
             : "Escape the vines",
             id);
-    // Sleep ends when someone within 5 feet spends an Action to shake the sleeper.
+    // Sleep ends when someone within 5 feet spends an Action to shake the
+    // sleeper; Hypnotic Pattern too, for anyone else.
     if (a.actions.available())
         for (const auto &other : actors_)
-            if (other.source.side == a.source.side && other.source.id != a.source.id &&
+            if (other.source.id != a.source.id &&
                     distance(a.source.cell, other.source.cell) <= 5 &&
-                    (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
-                     detail::has_effect(other.effects, detail::EffectKind::asleep) ||
-                     detail::has_effect(other.effects, detail::EffectKind::knocked_out)))
+                    ((other.source.side == a.source.side &&
+                      (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
+                       detail::has_effect(other.effects, detail::EffectKind::asleep) ||
+                       detail::has_effect(other.effects, detail::EffectKind::knocked_out))) ||
+                     detail::has_effect(other.effects, detail::EffectKind::entranced)))
                 add(id, "shake_awake", "Shake awake", other.source.id);
     // Martial Arts: an Unarmed Strike as a Bonus Action.
     if (a.bonus && d.martial_arts)
@@ -7042,6 +7202,12 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
                 if (pillar_reaches(zone, other))
                     add(id, "move_pillar", "Move the pillar of light", other.source.id);
+    // Vampiric Touch: a Magic action touches again while it lasts.
+    if (detail::has_effect(a.effects, detail::EffectKind::vampiric) && a.actions.available(true))
+        for (const auto &other : actors_)
+            if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                    !absent(other) && distance(a.source.cell, other.source.cell) <= d.reach)
+                add(id, "vampiric_touch_again", "Vampiric Touch", other.source.id);
     // Improved Blessed Strikes (Cleric 14): after a Cleric cantrip's damage,
     // Temporary Hit Points for the Cleric or a creature within 60 feet.
     if (detail::has_effect(a.effects, detail::EffectKind::vitality))
@@ -7458,6 +7624,22 @@ std::vector<Command> Session::offered_commands() const
                     offer_spells(commands, a, other, feet, scope, false);
         }
     }
+    else if (a.actions.haste)
+    {
+        // Haste's action: one weapon attack, Dash, Disengage, Hide or Utilize.
+        add(id, "dash", "Dash");
+        if (can_hide(a))
+            add(id, "hide", "Hide");
+        if (shield_blocks_bow(a))
+            add(id, "doff_shield", "Take off shield");
+        add(id, "disengage", "Disengage");
+        if (!a.actions.extra_attacks)
+            for (const auto &other : actors_)
+                if (!other.life.dead && other.source.side != a.source.side &&
+                        (other.life.hp > 0 || may_rise(other)) &&
+                        line_of_sight(a.source.cell, other.source.cell))
+                    offer_attacks(other, distance(a.source.cell, other.source.cell));
+    }
     for (const auto cell : movement_reach(id))
         add(id, "move", "Move", 0, cell);
     if (can_run_off(a))
@@ -7472,7 +7654,21 @@ std::vector<Command> Session::offered_commands() const
 
 void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
 {
+    // Fear: a creature that sees the caster it fears flees it, as Command's
+    // Flee does.
+    const auto feared = fears_in_sight(a);
+    const auto terror = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                     [&](const auto & e)
+    {
+        return e.kind == detail::EffectKind::terrified && e.source_scope == scope_ &&
+               std::any_of(feared.begin(), feared.end(), [&](const Actor * other)
+        {
+            return other->source.id == e.source_actor;
+        });
+    });
     const auto *command = detail::command_effect(a.effects);
+    if (!command && terror != a.effects.active.end())
+        command = &*terror;
     if (!command)
         return;
     const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -7482,7 +7678,8 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
     // With no caster left there is nothing to approach or flee.
     if (caster == actors_.end() || caster->life.dead)
         return;
-    const bool approach = command->dc == static_cast<int>(detail::CommandOption::approach);
+    const bool approach = command->kind == detail::EffectKind::command &&
+                          command->dc == static_cast<int>(detail::CommandOption::approach);
     const int start = distance(a.source.cell, caster->source.cell);
     // Approach ends the turn within 5 feet of the caster.
     const Command *best = nullptr;
@@ -7758,13 +7955,15 @@ void Session::damage(Actor &target, int amount, bool critical)
         end_wild_shape(target);
         end_incapacitated_effects(target);
     }
-    // Damage ends Turn Undead, Sleep, Charm Person and Abjure Foes on the creature.
-    // Adaptation: any damage ends the charm, not only the charmer's side's.
+    // Damage ends Turn Undead, Sleep, Charm Person, Abjure Foes and Hypnotic
+    // Pattern on the creature. Adaptation: any damage ends the charm, not
+    // only the charmer's side's.
     std::erase_if(target.effects.active, [](const auto & e)
     {
         return e.kind == detail::EffectKind::turned || e.kind == detail::EffectKind::drowsy ||
                e.kind == detail::EffectKind::asleep || e.kind == detail::EffectKind::charmed ||
-               e.kind == detail::EffectKind::knocked_out || e.kind == detail::EffectKind::abjured;
+               e.kind == detail::EffectKind::knocked_out || e.kind == detail::EffectKind::abjured ||
+               e.kind == detail::EffectKind::entranced;
     });
     // Hideous Laughter: damage calls for a new Wisdom save, with Advantage.
     for (std::size_t n = 0; n < target.effects.active.size() && target.life.hp > 0; ++n)
@@ -8079,7 +8278,7 @@ std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::Spell
     // Sculpt Spells: up to 1 + the spell's level allies the Evoker can see in
     // an Evocation area are spared, chosen automatically.
     std::vector<EntityId> spared;
-    if (!def(caster).evoker || !spell.evocation)
+    if (!def(caster).sculptor || !spell.evocation)
         return spared;
     for (const auto &other : actors_)
         if (spared.size() < 1 + slot_level && other.source.side == caster.source.side &&
@@ -9028,6 +9227,153 @@ std::vector<Cell> Session::storm_cells(const std::vector<Cell> &cubes) const
     return cells;
 }
 
+void Session::tire(Actor &a)
+{
+    if (a.life.dead || !detail::can_apply(a.effects))
+        return;
+    const auto index = index_of(a.source.id);
+    const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
+    detail::apply_poisoned(a.effects, effect_source(a), a.source.name, next_turn_ms(a) + slot,
+                           detail::EffectKind::lethargic);
+    a.actions.haste = false;
+    log("A wave of lethargy washes over " + a.source.name + ".",
+    {"A wave of lethargy washes over {name}.", {{"name", a.source.name}}});
+}
+
+void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
+                           const std::vector<Cell> &cells)
+{
+    // Hypnotic Pattern takes only creatures that can see it.
+    begin_concentration(caster, spell);
+    const bool pattern = spell.rider == detail::Rider::hypnotic_pattern;
+    const int dc = area_dc(caster, spell);
+    const auto careful = careful_allies(caster, cells);
+    for (auto &other : actors_)
+    {
+        if (other.life.dead || other.life.hp == 0 || other.source.id == caster.source.id ||
+                absent(other) || in_antimagic(other.source.cell) ||
+                std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
+                std::find(careful.begin(), careful.end(), other.source.id) != careful.end() ||
+                !detail::can_apply(other.effects) || (pattern && detail::blinded(other.effects)) ||
+                saving_throw_succeeds(other, spell.save, dc, false,
+                                      heightened_against(other, caster, spell.id)))
+            continue;
+        detail::apply_spell_benefit(other.effects, effect_source(caster), caster.source.name,
+                                    pattern ? detail::EffectKind::entranced
+                                    : detail::EffectKind::terrified, 0);
+        if (pattern)
+            log(other.source.name + " is entranced by the pattern.",
+            {"{name} is entranced by the pattern.", {{"name", other.source.name}}});
+        else
+            log(other.source.name + " is Frightened.",
+            {"{name} is Frightened.", {{"name", other.source.name}}});
+    }
+}
+
+void Session::sleet_falls(const Zone &sleet, Actor &creature)
+{
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == sleet.caster;
+    });
+    const bool falling = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::sleet && zone.caster == sleet.caster;
+    });
+    if (!falling || caster == actors_.end() || creature.life.dead || absent(creature) ||
+            in_antimagic(creature.source.cell) ||
+            detail::has_effect(creature.effects, detail::EffectKind::sleeted))
+        return;
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    if (detail::can_apply(creature.effects))
+        detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
+                               rest_of_turn, detail::EffectKind::sleeted);
+    if (saving_throw_succeeds(creature, detail::Ability::dexterity, sleet.save_dc, false,
+                              heightened_against(creature, *caster, "sleet_storm")))
+        return;
+    if (!creature.effects.prone)
+    {
+        creature.effects.prone = true;
+        log(creature.source.name + " slips and falls Prone.",
+        {"{name} slips and falls Prone.", {{"name", creature.source.name}}});
+    }
+    // Its caster too: the storm may end itself.
+    end_concentration(creature);
+}
+
+void Session::choke(const Zone &cloud, Actor &creature)
+{
+    const auto caster = std::find_if(actors_.begin(), actors_.end(), [&](const auto & a)
+    {
+        return a.source.id == cloud.caster;
+    });
+    if (caster == actors_.end() || creature.life.dead || creature.life.hp == 0 ||
+            absent(creature) || in_antimagic(creature.source.cell) ||
+            !detail::can_apply(creature.effects) ||
+            saving_throw_succeeds(creature, detail::Ability::constitution, cloud.save_dc, false,
+                                  heightened_against(creature, *caster, "stinking_cloud")))
+        return;
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
+                           rest_of_turn, detail::EffectKind::retching);
+    creature.actions = {false};
+    creature.bonus = false;
+    log(creature.source.name + " retches in the cloud and can take no action this turn.",
+    {"{name} retches in the cloud and can take no action this turn.", {{"name", creature.source.name}}});
+}
+
+bool Session::can_counter(const Actor &wizard, const Actor &caster) const
+{
+    // A level-3 slot or higher, one slot a turn, a Reaction, and the casting
+    // seen within 60 feet; no spell is cast in an Antimagic Field.
+    return wizard.source.side != caster.source.side && conscious(wizard) && wizard.reaction &&
+           !detail::incapacitated(wizard.effects) && lowest_slot(wizard, 3) &&
+           !wizard.spent_slot && detail::knows_spell(def(wizard).spells, "counterspell") &&
+           distance(wizard.source.cell, caster.source.cell) <= 60 && can_see(wizard, caster) &&
+           !in_antimagic(wizard.source.cell) && !absent(wizard);
+}
+
+bool Session::countered(Actor &caster)
+{
+    for (auto &wizard : actors_)
+    {
+        if (!can_counter(wizard, caster))
+            continue;
+        ask_reaction(wizard, Asked::counter);
+        if (answer_of(wizard.source.id, Asked::counter)->verb != "counterspell")
+            continue;
+        wizard.reaction = false;
+        const auto &counter = *detail::find_spell("counterspell");
+        pay_for_spell(wizard, cast_at(counter, lowest_slot(wizard, 3), "counterspell", "").first,
+                      counter);
+        log(wizard.source.name + " casts Counterspell.",
+        {"{name} casts {spell}.", {{"name", wizard.source.name}, {"spell", "Counterspell", true}}});
+        if (saving_throw_succeeds(caster, detail::Ability::constitution,
+                                  spell_dc(wizard, "counterspell")))
+            continue;
+        log(caster.source.name + "'s spell dissipates.",
+        {"{name}'s spell dissipates.", {{"name", caster.source.name}}});
+        return true;
+    }
+    return false;
+}
+
+void Session::vampiric_touch(Actor &caster, Actor &target, unsigned slot)
+{
+    const int before = target.life.hp + target.life.temporary_hp.amount;
+    const auto &spell = *detail::find_spell("vampiric_touch");
+    const bool struck = attack(caster, target, AttackRange::melee,
+                               SpellAttack{.dice = {spell.dice.count + static_cast<int>(slot - spell.level),
+                                                    spell.dice.sides, 0},
+                                           .type = spell.damage, .spell = spell.id});
+    const int dealt = before - (target.life.hp + target.life.temporary_hp.amount);
+    if (struck && dealt > 1)
+    {
+        log(caster.source.name + " siphons life.", {"{name} siphons life.", {{"name", caster.source.name}}});
+        heal(caster, dealt / 2);
+    }
+}
+
 void Session::ready_vitality(Actor &caster, const detail::SpellDef &spell,
                              std::size_t damaged_before)
 {
@@ -9134,7 +9480,8 @@ bool Session::otherworldly(const Actor &a) const
 bool Session::enchants(const detail::Effect &e)
 {
     return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::dominated ||
-           e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured;
+           e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
+           e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::entranced;
 }
 
 bool Session::otherworldly_source(const detail::Effect &e) const
@@ -9520,6 +9867,10 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         a.nick_origin = 0;
         (void)a.actions.spend(true);
     }
+    // Counterspell: a stopped spell keeps its slot. Sunbeam's later Lines and
+    // Dragon's Breath are not castings.
+    if (aimed.verb != "sunbeam_line" && spell.id != "dragons_breath_exhale" && countered(a))
+        return;
     if (spell.level && aimed.verb != "sunbeam_line")
         pay_for_spell(a, aimed.verb, spell);
     if (spell.id == "dragons_breath_exhale")
@@ -9677,6 +10028,23 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::overgrowth, std::move(grown),
                           std::numeric_limits<std::uint64_t>::max()});
         log("The plants grow thick and overgrown.", {"The plants grow thick and overgrown.", {}});
+        return;
+    }
+    if (spell.rider == detail::Rider::hypnotic_pattern || spell.rider == detail::Rider::fear)
+    {
+        enchant_area(a, spell, area_cells(spell, aimed.verb, a.source.cell, aimed.center));
+        return;
+    }
+    if (spell.rider == detail::Rider::sleet_storm || spell.rider == detail::Rider::stinking_cloud)
+    {
+        // The sleet and the cloud act on creatures that enter or start their
+        // turns there.
+        begin_concentration(a, spell);
+        Zone zone{a.source.id,
+                  spell.rider == detail::Rider::sleet_storm ? ZoneKind::sleet : ZoneKind::stench,
+                  area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+        zone.save_dc = area_dc(a, spell);
+        zones_.push_back(std::move(zone));
         return;
     }
     if (spell.rider == detail::Rider::conjure_celestial)
@@ -10198,8 +10566,8 @@ std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
     if (aura_of_courage(a) || detail::has_effect(a.effects, detail::EffectKind::feasted))
         return result;
     for (const auto &e : a.effects.active)
-        if ((e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured) &&
-                e.source_scope == scope_)
+        if ((e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
+                e.kind == detail::EffectKind::terrified) && e.source_scope == scope_)
             for (const auto &other : actors_)
                 if (other.source.id == e.source_actor && !other.life.dead &&
                         line_of_sight(a.source.cell, other.source.cell))
@@ -10891,6 +11259,13 @@ void Session::drop_concentration_effects(const Actor &caster)
             if (e.kind == detail::EffectKind::banished && e.source_actor == caster.source.id &&
                     e.source_scope == scope_)
                 banished.push_back(other.source.id);
+    // Haste's end brings its lethargy.
+    std::vector<EntityId> hastened;
+    for (const auto &other : actors_)
+        for (const auto &e : other.effects.active)
+            if (e.kind == detail::EffectKind::hasted && e.source_actor == caster.source.id &&
+                    e.source_scope == scope_)
+                hastened.push_back(other.source.id);
     // A curse from a level-5 slot is not held by Concentration.
     for (auto &other : actors_)
         for (auto *effects : {&other.effects.active, &other.suppressed})
@@ -10903,6 +11278,8 @@ void Session::drop_concentration_effects(const Actor &caster)
     {"{name} loses Concentration.", {{"name", caster.source.name}}});
     for (const auto id : banished)
         return_from_banishment(actor(id));
+    for (const auto id : hastened)
+        tire(actor(id));
     // An Antimagic Field that ended gives back what it held.
     suppress_spells();
 }
@@ -12628,6 +13005,14 @@ bool Session::begin_turn()
         log(a.source.name + " keeps casting Regenerate.",
         {"{name} keeps casting {spell}.", {{"name", a.source.name}, {"spell", "Regenerate", true}}});
     }
+    // Haste: the second, limited action.
+    a.actions.haste = detail::has_effect(a.effects, detail::EffectKind::hasted);
+    // Sleet Storm and Stinking Cloud act on a creature starting its turn in them.
+    for (const auto &zone : std::vector<Zone>(zones_))
+        if (zone.kind == ZoneKind::sleet && in_zone(zone, a.source.cell))
+            sleet_falls(zone, a);
+        else if (zone.kind == ZoneKind::stench && in_zone(zone, a.source.cell))
+            choke(zone, a);
 
     // Bestow Curse: a Wisdom save as its turn starts, or only the Dodge action.
     if (const auto *curse = curse_on(a, 7); curse && conscious(a))
@@ -12805,6 +13190,9 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     // Beacon of Hope: Advantage on Wisdom saves.
     modifiers.advantage |= ability == detail::Ability::wisdom &&
                            detail::has_effect(target.effects, detail::EffectKind::hopeful);
+    // Haste: Advantage on Dexterity saves.
+    modifiers.advantage |= ability == detail::Ability::dexterity &&
+                           detail::has_effect(target.effects, detail::EffectKind::hasted);
     // Danger Sense: Advantage on Dexterity saves unless Incapacitated.
     modifiers.advantage |= ability == detail::Ability::dexterity && def(target).danger_sense &&
                            !detail::incapacitated(target.effects);
@@ -12900,6 +13288,8 @@ void Session::advance_turn_time()
     std::vector<std::pair<EntityId, bool>> animated;
     // Regenerate cast for its full minute: the creature and its caster.
     std::vector<std::pair<EntityId, EntityId>> knitted;
+    // Haste that ran its minute, and blinkers back from the Ethereal Plane.
+    std::vector<EntityId> hastened, returned;
     for (auto &a : actors_)
     {
         auto saves = def(a).saves;
@@ -12931,6 +13321,10 @@ void Session::advance_turn_time()
             animated.push_back({event.target, event.effect.dc >= 10});
         if (event.removed && event.effect.kind == detail::EffectKind::knitting)
             knitted.push_back({event.target, event.effect.source_actor});
+        if (event.removed && event.effect.kind == detail::EffectKind::hasted)
+            hastened.push_back(event.target);
+        if (event.removed && event.effect.kind == detail::EffectKind::ethereal)
+            returned.push_back(event.target);
         if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                               event.effect.kind == detail::EffectKind::vex ||
                               event.effect.kind == detail::EffectKind::slow))
@@ -12981,6 +13375,15 @@ void Session::advance_turn_time()
     {
         finish_knitting(actor(id), caster);
         actor(caster).concentration.stop();
+    }
+    for (const auto id : hastened)
+        tire(actor(id));
+    for (const auto id : returned)
+    {
+        auto &blinker = actor(id);
+        blinker.source.cell = nearest_open(blinker);
+        log(blinker.source.name + " returns from the Ethereal Plane.",
+        {"{name} returns from the Ethereal Plane.", {{"name", blinker.source.name}}});
     }
     // Suppressed effects keep time too.
     for (auto &a : actors_)
@@ -13063,6 +13466,8 @@ void Session::restore_self(Actor &a)
     for (const auto &[kind, name] : {std::pair{detail::EffectKind::charmed, "Charmed"},
                                      std::pair{detail::EffectKind::frightened, "Frightened"},
                                      std::pair{detail::EffectKind::abjured, "Frightened"},
+                                     std::pair{detail::EffectKind::terrified, "Frightened"},
+                                     std::pair{detail::EffectKind::entranced, "Charmed"},
                                      std::pair{detail::EffectKind::poisoned, "Poisoned"}})
     {
         const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
@@ -13110,6 +13515,47 @@ void Session::end_turn()
             spirits_strike(zone, actors_[turn_]);
         else if (zone.kind == ZoneKind::pillar && in_zone(zone, actors_[turn_].source.cell))
             bathe(zone, actors_[turn_]);
+    // Fear: out of the caster's sight at the end of its turn, the creature
+    // saves to end it.
+    for (const auto &e : std::vector<detail::Effect>(actors_[turn_].effects.active))
+        if (e.kind == detail::EffectKind::terrified && e.source_scope == scope_ &&
+                std::none_of(actors_.begin(), actors_.end(), [&](const auto & other)
+    {
+        return other.source.id == e.source_actor && !other.life.dead &&
+               line_of_sight(actors_[turn_].source.cell, other.source.cell);
+        }) &&
+        saving_throw_succeeds(actors_[turn_], detail::Ability::wisdom,
+                              spell_dc(actor(e.source_actor), "fear")))
+        {
+            std::erase_if(actors_[turn_].effects.active, [&](const auto & other)
+            {
+                return other.id == e.id;
+            });
+            log(actors_[turn_].source.name + " is no longer Frightened.",
+            {"{name} is no longer Frightened.", {{"name", actors_[turn_].source.name}}});
+        }
+    // Blink: a d6 at the end of each of its caster's turns; on 4-6 it slips
+    // into the Ethereal Plane until its next turn.
+    if (auto &blinker = actors_[turn_];
+            detail::has_effect(blinker.effects, detail::EffectKind::blinking) && conscious(blinker) &&
+            detail::can_apply(blinker.effects))
+    {
+        const int rolled = roll(6);
+        if (rolled >= 4)
+        {
+            detail::apply_poisoned(blinker.effects, effect_source(blinker), blinker.source.name,
+                                   next_turn_ms(blinker), detail::EffectKind::ethereal);
+            log(blinker.source.name + " blinks into the Ethereal Plane (d6 " +
+                std::to_string(rolled) + ").",
+            {
+                "{name} blinks into the Ethereal Plane (d6 {roll}).",
+                {{"name", blinker.source.name}, {"roll", std::to_string(rolled)}}
+            });
+        }
+        else
+            log(blinker.source.name + " stays (Blink d6 " + std::to_string(rolled) + ").",
+            {"{name} stays (Blink d6 {roll}).", {{"name", blinker.source.name}, {"roll", std::to_string(rolled)}}});
+    }
     // Earthquake: the tremor again at the end of each of its caster's turns.
     for (const auto &zone : std::vector<Zone>(zones_))
         if (zone.kind == ZoneKind::quake && zone.caster == actors_[turn_].source.id)
@@ -13194,6 +13640,9 @@ void Session::progress_movement()
             if (zone.kind == ZoneKind::pillar && in_zone(zone, destination) &&
                     !in_zone(zone, departed))
                 bathe(zone, a);
+            if (zone.kind == ZoneKind::sleet && in_zone(zone, destination) &&
+                    !in_zone(zone, departed))
+                sleet_falls(zone, a);
             // The Emanation reaches a creature coming into it, and the
             // creatures its caster carries it onto.
             if (emanates(zone) && zone.caster != a.source.id &&
@@ -13322,6 +13771,7 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable,
     const bool askable =
         asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::boon ||
         asked == Asked::endure || asked == Asked::thunder || asked == Asked::retaliate ||
+        asked == Asked::counter ||
         (can_shield(target) && !critical) ||
         (asked == Asked::hit &&
          (can_deflect(target, deflectable) || can_dodge(target) || can_defend(target)));
@@ -14300,7 +14750,8 @@ void Session::dispatch(const Command &command)
             std::erase_if(a.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::charmed || e.kind == detail::EffectKind::turned ||
-                   e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured;
+                   e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
+                   e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::entranced;
         });
     }
     else if (command.verb == "intimidating_presence" ||
@@ -14327,7 +14778,8 @@ void Session::dispatch(const Command &command)
         std::erase_if(sleeper.effects.active, [](const auto & e)
         {
             return e.kind == detail::EffectKind::drowsy || e.kind == detail::EffectKind::asleep ||
-                   e.kind == detail::EffectKind::knocked_out;
+                   e.kind == detail::EffectKind::knocked_out ||
+                   e.kind == detail::EffectKind::entranced;
         });
         log(a.source.name + " shakes " + sleeper.source.name + " awake.",
         {
@@ -14427,6 +14879,18 @@ void Session::dispatch(const Command &command)
         move_spirit_pack(a, actor(command.target));
     else if (command.verb == "move_pillar")
         move_pillar(a, actor(command.target));
+    else if (command.verb == "vampiric_touch_again")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        const auto touch = std::find_if(a.effects.active.begin(), a.effects.active.end(),
+                                        [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::vampiric;
+        });
+        vampiric_touch(a, actor(command.target), static_cast<unsigned>(touch->dc));
+    }
+
     else if (command.verb == "potent_vitality")
         grant_vitality(a, actor(command.target));
     else if (command.verb == "superior_hunters_prey")
@@ -14687,7 +15151,19 @@ void Session::dispatch(const Command &command)
     {
         // Extra Attack: a later attack of the same Attack action spends nothing.
         const bool attacking = attack_action(command.verb);
-        if (!attacking || !a.actions.attack_again())
+        const bool later_attack = attacking && a.actions.attack_again();
+        // Haste's action takes a Dash, Disengage, Hide or Utilize first, and
+        // a single attack once the Action is spent.
+        const bool hasty = !later_attack && a.actions.haste &&
+                           (attacking ? !a.actions.available()
+                            : command.verb == "dash" || command.verb == "disengage" ||
+                            command.verb == "hide" || command.verb == "doff_shield");
+        if (hasty)
+        {
+            a.nick_origin = 0;
+            a.actions.haste = false;
+        }
+        else if (!later_attack)
         {
             a.nick_origin = 0;
             (void)a.actions.spend(detail::find_spell(command.verb) != nullptr);
@@ -14826,7 +15302,8 @@ std::string Session::save() const
         for (unsigned level = 1; level <= highest_slot_level; ++level)
             out << a.slots[level] << ' ';
         out << a.life.successes << ' ' << a.life.failures << ' '
-            << a.actions.normal << ' ' << a.bonus << ' ' << a.reaction << ' ' << a.dodge << ' '
+            << a.actions.normal << ' ' << a.actions.haste << ' ' << a.bonus << ' ' << a.reaction
+            << ' ' << a.dodge << ' '
             << a.disengaged << ' ' << a.life.stable << ' ' << a.life.dead << ' '
             << std::quoted(a.source.character_profile) << ' ' << a.spent_slot
             << ' ' << a.savage_used << ' ' << a.facing_left << ' ' << a.involuntary_overlap << ' '
@@ -15033,7 +15510,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
     for (unsigned level = 1; level <= highest_slot_level; ++level)
         input >> actor.slots[level];
     input >> actor.life.successes >> actor.life.failures >>
-          actor.actions.normal >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
+          actor.actions.normal >> actor.actions.haste >> actor.bonus >> actor.reaction >> actor.dodge >>
+          actor.disengaged >>
           actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >>
           actor.spent_slot >> actor.savage_used >> actor.facing_left >> actor.involuntary_overlap >>
           actor.hit_dice >> actor.life.recovery.death_save_in_ms >>
@@ -15964,7 +16442,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::antimagic) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::stench) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
                  kind != static_cast<unsigned>(ZoneKind::guardians) &&
@@ -16002,7 +16480,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
               command.actor >> command.target >> std::quoted(command.verb) >>
               command.destination.x >> command.destination.y >> command.item >> answers;
         if (!input || !known_actor(question.target) ||
-                asked > static_cast<unsigned>(Asked::retaliate) ||
+                asked > static_cast<unsigned>(Asked::counter) ||
                 !known_actor(command.actor) || (command.target && !known_actor(command.target)) ||
                 command.verb.empty() || answers > 3 * session->actors_.size())
             throw std::runtime_error("Invalid reaction prompt");
@@ -16013,7 +16491,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             unsigned kind{};
             input >> answer.target >> kind >> std::quoted(answer.verb);
             if (!input || !known_actor(answer.target) ||
-                    kind > static_cast<unsigned>(Asked::retaliate) ||
+                    kind > static_cast<unsigned>(Asked::counter) ||
                     (answer.verb != "shield" && answer.verb != "deflect" &&
                      answer.verb != "redirect" && answer.verb != "rebuke" &&
                      answer.verb != "giant_boon" && answer.verb != "stones_endurance" &&
@@ -16425,7 +16903,13 @@ class Module final : public RulesModule
                 "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead.";
         if (klass == CharacterClass::wizard && result.level == 3)
             result.description =
-                "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against; Sculpt Spells spares up to 1 + the spell's level allies in your Evocation areas.";
+                "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against.";
+        if (klass == CharacterClass::wizard && result.level == 5)
+            result.description =
+                "Level 3 spell slots and Wizard spells: Animate Dead, Bestow Curse, Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Magic Circle, Protection from Energy, Remove Curse, Sleet Storm, Stinking Cloud, Tiny Hut and Vampiric Touch.\nMemorize Spell: after a Short Rest, change one prepared spell for another in your spellbook.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::wizard && result.level == 6)
+            result.description =
+                "Sculpt Spells: up to 1 + the spell's level allies you can see in your Evocation areas are spared.";
         if (klass == CharacterClass::cleric && result.level == 5)
             result.description =
                 "Sear Undead: Turn Undead also deals Radiant damage, a d8 for each point of your Wisdom modifier, to each Undead that fails.\nLevel 3 spell slots and Cleric spells: Animate Dead, Beacon of Hope, Bestow Curse, Dispel Magic, Magic Circle, Protection from Energy, Remove Curse and Spirit Guardians; Life Domain: Mass Healing Word and Revivify are always prepared.\nProficiency Bonus +3.";
@@ -17146,7 +17630,6 @@ class Module final : public RulesModule
         {
             next.grants.push_back({"subclass:evoker", "class:wizard", 3, {}});
             next.grants.push_back({"feature:potent_cantrip", "subclass:wizard:evoker", 3, {}});
-            next.grants.push_back({"feature:sculpt_spells", "subclass:wizard:evoker", 3, {}});
         }
         if (klass == CharacterClass::ranger && next.level == 3)
         {
@@ -17480,9 +17963,9 @@ class Module final : public RulesModule
                 result.resources.push_back(resource_pool(descriptor, actor, d));
         add_initiate_pools(result.resources, actor, d);
         add_trait_pool(result.resources, actor, d);
-        for (const auto &choice : arcane_allocations)
+        for (const auto &choice : arcane_allocations(static_cast<unsigned>(d.level + 1) / 2))
             if (can_recover(actor, choice))
-                result.choices.push_back({std::string(choice.id), {std::string(choice.label), {}}});
+                result.choices.push_back({choice.id, choice.label});
         return result;
     }
 
@@ -17518,21 +18001,26 @@ class Module final : public RulesModule
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
-        const auto choice = std::find_if(arcane_allocations.begin(), arcane_allocations.end(),
-                                         [&](const auto & value)
+        const auto choices = arcane_allocations(static_cast<unsigned>(d.level + 1) / 2);
+        const auto choice = std::find_if(choices.begin(), choices.end(), [&](const auto & value)
         {
             return value.id == choice_id;
         });
-        if (choice == arcane_allocations.end() || !can_recover(actor, *choice))
+        if (choice == choices.end() || !can_recover(actor, *choice))
             throw std::runtime_error("This rest recovery choice is unavailable");
-        actor.slots[1] += static_cast<int>(choice->first);
-        actor.slots[2] += static_cast<int>(choice->second);
+        for (unsigned level = 1; level <= 5; ++level)
+            actor.slots[level] += static_cast<int>(choice->slots[level - 1]);
         --actor.arcane;
         auto next = vitals(actor);
-        Message result
+        const bool small = choice->slots[2] + choice->slots[3] + choice->slots[4] == 0;
+        Message result = small ? Message
         {
             "Arcane Recovery restored {first} level-one and {second} level-two spell slots.",
-            {{"first", std::to_string(choice->first)}, {"second", std::to_string(choice->second)}}};
+            {   {"first", std::to_string(choice->slots[0])},
+                {"second", std::to_string(choice->slots[1])}
+            }}
+        : Message{"Arcane Recovery restored spell slots of levels {levels}.",
+                  {{"levels", recovered_levels(choice->slots)}}};
         state = std::move(next);
         return result;
     }
@@ -17628,6 +18116,9 @@ class Module final : public RulesModule
             for (const auto &e : camp_actor(member.sheet, member.state).effects.active)
                 if (e.kind == detail::EffectKind::circle_ward)
                     warded.insert(detail::ward_types.at(static_cast<std::size_t>(e.dc)));
+                // Tiny Hut keeps every creature out.
+                else if (e.kind == detail::EffectKind::sheltered)
+                    return !definitions.empty();
         return !definitions.empty() &&
                std::all_of(definitions.begin(), definitions.end(), [&](const auto & key)
         {
@@ -17985,6 +18476,21 @@ class Module final : public RulesModule
         {
             // The campaign moves the party (LEVELS-3); the rules spend the slot.
             pay_for_spell(caster, action, spell);
+            user_state = vitals(caster);
+            return;
+        }
+        if (spell.id == "tiny_hut")
+        {
+            // Eight hours in which no rest is interrupted (LEVELS-1).
+            pay_for_spell(caster, action, spell);
+            std::erase_if(caster.effects.active, [](const auto & e)
+            {
+                return e.kind == detail::EffectKind::sheltered;
+            });
+            // Camp effects carry scope 1: there is no encounter to source them.
+            if (detail::can_apply(caster.effects))
+                detail::apply_spell_benefit(caster.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                            user.name, detail::EffectKind::sheltered, 0);
             user_state = vitals(caster);
             return;
         }
@@ -18830,7 +19336,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.216", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.217", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

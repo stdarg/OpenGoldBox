@@ -1,0 +1,543 @@
+#include "opengold/campaign_party.h"
+#include "opengold/campaign_save.h"
+#include "opengold/character.h"
+#include "opengold/srd5.h"
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+using namespace opengold;
+using namespace opengold::rules;
+
+// A Wizard (Evoker) at levels 5 and 6 (LEVELS-1): level-3 spells, Memorize
+// Spell, Arcane Recovery's larger choices and Sculpt Spells at 6.
+namespace
+{
+const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
+
+void check(bool ok, const std::string &message)
+{
+    if (!ok)
+        throw std::runtime_error(message);
+}
+
+std::unique_ptr<RulesModule> module()
+{
+    return srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
+}
+
+// An AC 1 dummy, a brute that always hits, and a Wizard foe's book.
+std::unique_ptr<RulesModule> dummy_rules()
+{
+    std::ifstream in(root / "data/rules/srd-5.2.1/combat.rules");
+    return srd5::parse_content(std::string{std::istreambuf_iterator<char>(in), {}} +
+                               "\ncreature dummy 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature brute 1 1000 20 30 30 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+}
+
+CharacterDraft draft(std::string name = "Wizard")
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "wizard";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = std::move(name);
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    d.rolls[3] = {{6, 6, 6, 1}, 3};
+    d.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
+    const std::vector<std::string> book{"magic_missile", "burning_hands", "shield", "mage_armor",
+                                        "false_life", "thunderwave"};
+    d.spells = SpellChoices{{{"spellbook:1", book}}, std::vector<std::string>{"magic_missile"}, {}, {}};
+    d.training = {{"class:wizard", {"medicine", "nature"}}};
+    return d;
+}
+
+// A Wizard of the level, advanced through the rules' default level-ups.
+Character wizard(unsigned level, std::string name = "Wizard")
+{
+    Character hero(*srd5::character_rules(), draft(std::move(name)), {});
+    VitalState life{hero.sheet().hit_points, false, {}};
+    const auto rules = module();
+    while (hero.sheet().level < static_cast<int>(level))
+        check(hero.advance(*rules, life, rules->default_advancement(hero.sheet())),
+              "An ordinary level-up");
+    return hero;
+}
+
+// The Wizard's sheet with `spells` written into its book in place of what it
+// learned at level 5 or later, and prepared in place of its first ones.
+CharacterSheet with_spells(const Character &hero, const std::vector<std::string> &spells)
+{
+    auto sheet = hero.sheet();
+    std::size_t next = 0;
+    for (const auto &spell : spells)
+    {
+        const auto known = std::find_if(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
+        {
+            return g.id == "spell:" + spell;
+        });
+        if (known == sheet.grants.end())
+        {
+            const auto learned = std::find_if(sheet.grants.begin(), sheet.grants.end(),
+                                              [&](const auto & g)
+            {
+                return g.id.starts_with("spell:") && g.level >= 5 &&
+                       g.source_id == "class:wizard:spellcasting" &&
+                       std::find(spells.begin(), spells.end(), g.id.substr(6)) == spells.end();
+            });
+            check(learned != sheet.grants.end(), "A level-5 spell to replace");
+            const auto old = learned->id.substr(6);
+            learned->id = "spell:" + spell;
+            std::erase(sheet.prepared_spells, old);
+        }
+        auto &prepared = sheet.prepared_spells;
+        if (std::find(prepared.begin(), prepared.end(), spell) == prepared.end())
+        {
+            if (next < prepared.size())
+                prepared[next] = spell;
+            else
+                prepared.push_back(spell);
+        }
+        ++next;
+    }
+    return sheet;
+}
+
+bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
+{
+    const auto commands = c.legal_commands();
+    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
+    {
+        return command.verb == verb && (!target || command.target == target);
+    });
+}
+
+bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == verb && (!target || command.target == target))
+            return c.submit(command);
+    return false;
+}
+
+bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
+{
+    for (const auto &command : c.legal_commands())
+        if (command.verb == verb && command.destination == cell)
+            return c.submit(command);
+    return false;
+}
+
+bool logged(const CombatSession &c, std::string_view text)
+{
+    const auto log = c.snapshot().log();
+    return std::any_of(log.begin(), log.end(), [&](const auto & line)
+    {
+        return line.find(text) != std::string::npos;
+    });
+}
+
+CombatantView unit(const CombatSession &c, EntityId id)
+{
+    for (const auto &a : c.snapshot().combatants)
+        if (a.id == id)
+            return a;
+    throw std::runtime_error("Missing combatant");
+}
+
+// Spell slots of a level left: from the third field of the saved vital state.
+unsigned slots(const CombatSession &c, unsigned level, EntityId id = 1)
+{
+    std::istringstream in(unit(c, id).persistent.resources);
+    std::string magic;
+    unsigned winds{}, count{};
+    in >> magic >> winds;
+    for (unsigned n = 1; n <= level; ++n)
+        in >> count;
+    return count;
+}
+
+void to_turn(CombatSession &c, EntityId id)
+{
+    for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
+        check(submit(c, "end") || submit(c, "decline"), "End a turn");
+    check(c.snapshot().actor == id, "Reach the turn");
+}
+
+// The Wizard (1) at (1, 2) and its creatures, on the Wizard's turn.
+std::unique_ptr<CombatSession> field(const RulesModule &rules, const CharacterSheet &sheet,
+                                     std::vector<Participant> others, std::uint64_t seed)
+{
+    const std::vector<std::string> gear{"quarterstaff"};
+    others.insert(others.begin(), {1, "campaign-character", "Wizard", Side::party, {1, 2},
+                                   rules.character_profile(sheet, gear).data
+                                  });
+    auto c = rules.create({{14, 7, std::vector<Terrain>(98)}, std::move(others)}, seed);
+    to_turn(*c, 1);
+    return c;
+}
+
+void progression_checks()
+{
+    const auto rules = module();
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
+    party.award_experience(165000, "levels-xp");
+    while (party.can_advance(id))
+        party.advance(id, party.default_advancement(id));
+    check(party.member(id).character.sheet().level == 6, "A Wizard stops at 6 for now");
+    check(rules->spell_access(wizard(5).sheet()).prepared_choices == 9 &&
+          rules->spell_access(wizard(6).sheet()).prepared_choices == 10,
+          "Prepared spells: 9 at 5, 10 at 6");
+    auto four = wizard(4).sheet();
+    four.level = 5;
+    const auto learning = rules->spell_choice_options(four, SpellChoiceContext::advancement).learning;
+    const auto book = std::find_if(learning.begin(), learning.end(), [](const auto & group)
+    {
+        return group.id == "spellbook:5";
+    });
+    check(book != learning.end() && book->count == 2 &&
+          std::any_of(book->options.begin(), book->options.end(), [](const auto & o)
+    {
+        return o.id == "fireball";
+    }), "Level 5 learns two spells, level-3 ones among them");
+    const auto dummies = dummy_rules();
+    auto c5 = field(*dummies, wizard(5).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    auto c6 = field(*dummies, wizard(6).sheet(), {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(slots(*c5, 3) == 2 && slots(*c6, 3) == 3, "Two level-3 slots at 5, three at 6");
+    const auto bytes = encode_campaign(party, nullptr, "wizard-levels");
+    CampaignParty next(module());
+    next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
+                                 "wizard-levels", nullptr).party);
+    check(encode_campaign(next, nullptr, "wizard-levels") == bytes, "A level-6 Wizard saves and reloads");
+}
+
+void memorize_spell_checks()
+{
+    const auto rules = module();
+    check(!rules->spell_choice_options(wizard(4).sheet(), SpellChoiceContext::short_rest).may_prepare,
+          "No Memorize Spell before 5");
+    const auto sheet = wizard(5).sheet();
+    const auto options = rules->spell_choice_options(sheet, SpellChoiceContext::short_rest);
+    check(options.may_prepare && !options.may_replace, "Memorize Spell prepares, never replaces");
+    std::vector<std::string> unprepared;
+    for (const auto &spell : rules->spell_access(sheet).spellbook)
+        if (std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), spell.id) ==
+                sheet.prepared_spells.end())
+            unprepared.push_back(spell.id);
+    check(unprepared.size() >= 2, "Two unprepared spells in the book");
+    auto one = sheet.prepared_spells, two = sheet.prepared_spells;
+    one[0] = unprepared[0];
+    two[0] = unprepared[0];
+    two[1] = unprepared[1];
+    auto swapped = sheet;
+    rules->apply_spell_choices(swapped, SpellChoices{{}, one, {}, {}}, SpellChoiceContext::short_rest,
+                               ChoiceCompleteness::complete);
+    check(swapped.prepared_spells == one, "One prepared spell changes on a Short Rest");
+    bool refused = false;
+    try
+    {
+        auto copy = sheet;
+        rules->apply_spell_choices(copy, SpellChoices{{}, two, {}, {}}, SpellChoiceContext::short_rest,
+                                   ChoiceCompleteness::complete);
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused, "Two changes on a Short Rest are refused");
+    // The campaign offers the change once the Short Rest's spending is done.
+    CampaignParty party(module());
+    const auto id = party.add_pc(wizard(5));
+    (void)party.rest(RestKind::short_rest);
+    check(party.state().short_rest.has_value(), "A Short Rest");
+    party.finish_short_rest(party.state().short_rest->ticket);
+    check(party.state().spell_rest && party.state().spells_after_short_rest &&
+          party.rest_spell_context() == SpellChoiceContext::short_rest,
+          "After a Short Rest the Wizard may change a prepared spell");
+    party.choose_spells(id, SpellChoices{{}, one, {}, {}});
+    check(!party.state().spell_rest &&
+          party.member(id).character.sheet().prepared_spells == one,
+          "Memorize Spell changes one prepared spell");
+    const auto bytes = encode_campaign(party, nullptr, "memorize");
+    CampaignParty next(module());
+    next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(), "memorize",
+                                 nullptr).party);
+    check(encode_campaign(next, nullptr, "memorize") == bytes, "The changed spell saves and reloads");
+}
+
+void arcane_recovery_checks()
+{
+    const auto rules = module();
+    const auto sheet = wizard(5).sheet();
+    // Both level-3 slots spent.
+    const auto dummies = dummy_rules();
+    auto c = field(*dummies, with_spells(wizard(5), {"fireball"}), {{98, "dummy", "Foe", Side::opposition, {8, 2}}}, 1);
+    check(submit(*c, "fireball") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+          submit(*c, "area_cast") && slots(*c, 3) == 1, "A level-3 slot is spent");
+    const auto state = unit(*c, 1).persistent;
+    const auto info = rules->recovery_info(sheet, state);
+    check(std::any_of(info.choices.begin(), info.choices.end(), [](const auto & choice)
+    {
+        return choice.id == "arcane_recovery:0:0:1";
+    }), "Arcane Recovery at 5 can restore a level-3 slot");
+}
+
+void fireball_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(5), {"fireball", "lightning_bolt"}),
+    {   {97, "dummy", "Near", Side::opposition, {6, 2}},
+        {98, "dummy", "Far", Side::opposition, {10, 2}}
+    }, 1);
+    check(submit(*c, "fireball") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "Near takes ") && logged(*c, "Far takes ") &&
+          logged(*c, " Fire damage."), "Fireball's 20-foot Sphere burns both foes");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(submit(*c, "lightning_bolt") && submit_cell(*c, "area_move", Cell{10, 2}) &&
+          submit(*c, "area_cast") && logged(*c, " Lightning damage."),
+          "Lightning Bolt's Line strikes along the row");
+}
+
+void counterspell_checks()
+{
+    const auto rules = dummy_rules();
+    bool stopped = false;
+    for (std::uint64_t seed = 1; seed < 40 && !stopped; ++seed)
+    {
+        const std::vector<std::string> gear{"quarterstaff"};
+        const auto mine = with_spells(wizard(5), {"counterspell"});
+        const auto theirs = wizard(5, "Rival").sheet();
+        auto c = rules->create({{14, 7, std::vector<Terrain>(98)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 2},
+                    rules->character_profile(mine, gear).data},
+                {98, "campaign-character", "Rival", Side::opposition, {6, 2},
+                    rules->character_profile(theirs, gear).data}
+            }},
+        seed);
+        to_turn(*c, 98);
+        check(submit(*c, "fire_bolt", 1), "The rival casts Fire Bolt");
+        if (!c->snapshot().reaction_pending)
+            continue;
+        check(offered(*c, "counterspell") && submit(*c, "counterspell"),
+              "The Wizard is asked about Counterspell");
+        check(logged(*c, "Wizard casts Counterspell.") && slots(*c, 3) == 1 &&
+              logged(*c, "Rival Constitution save:"), "Counterspell spends a level-3 slot");
+        stopped = logged(*c, "Rival's spell dissipates.");
+        if (stopped)
+            check(!logged(*c, "Rival -> Wizard") && !logged(*c, "Wizard takes "),
+                  "A stopped spell does nothing");
+    }
+    check(stopped, "A seed where the rival fails its save");
+}
+
+void haste_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(5), {"haste"}),
+    {{98, "dummy", "Foe", Side::opposition, {12, 2}}}, 1);
+    const auto ac = unit(*c, 1).armor_class;
+    check(submit(*c, "haste", 1) && logged(*c, "Wizard gains Haste.") &&
+          unit(*c, 1).armor_class == ac + 2, "Haste: +2 AC");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps Haste");
+    to_turn(*c, 98);
+    to_turn(*c, 1);
+    check(unit(*c, 1).movement_feet == 60, "Haste doubles the Speed");
+    check(submit(*c, "dash") && offered(*c, "dash") && offered(*c, "fire_bolt", 98),
+          "Haste's action Dashes and keeps the Action");
+    check(submit(*c, "dash") && !offered(*c, "dash") && !offered(*c, "fire_bolt", 98),
+          "The second Dash spends the Action");
+    for (unsigned turns = 0; turns < 40 && !logged(*c, "A wave of lethargy washes over Wizard."); ++turns)
+        check(submit(*c, "end"), "Pass the minute");
+    check(logged(*c, "A wave of lethargy washes over Wizard."), "Haste's end brings lethargy");
+}
+
+void hypnotic_pattern_checks()
+{
+    const auto rules = dummy_rules();
+    bool entranced = false;
+    for (std::uint64_t seed = 1; seed < 40 && !entranced; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"hypnotic_pattern"}),
+        {   {2, "dummy", "Ally", Side::party, {7, 1}},
+            {98, "dummy", "Foe", Side::opposition, {8, 2}}
+        }, seed);
+        check(submit(*c, "hypnotic_pattern") && submit_cell(*c, "area_move", Cell{10, 2}) &&
+              submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:"), "The pattern appears");
+        if (!logged(*c, "Foe is entranced by the pattern."))
+            continue;
+        entranced = true;
+        check(unit(*c, 98).status.find("Charmed") != std::string::npos, "Entranced: Charmed");
+        to_turn(*c, 98);
+        check(!offered(*c, "move") && !offered(*c, "melee"), "An entranced creature does nothing");
+        to_turn(*c, 2);
+        check(submit(*c, "shake_awake", 98) && logged(*c, "Ally shakes Foe awake.") &&
+              unit(*c, 98).status.find("Charmed") == std::string::npos, "An action shakes it awake");
+    }
+    check(entranced, "A seed where the foe fails its save");
+}
+
+void fear_checks()
+{
+    const auto rules = dummy_rules();
+    bool frightened = false;
+    for (std::uint64_t seed = 1; seed < 40 && !frightened; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"fear"}),
+        {{98, "dummy", "Foe", Side::opposition, {3, 2}}}, seed);
+        check(submit(*c, "fear") && submit_cell(*c, "area_move", Cell{3, 2}) &&
+              submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:"), "Fear's cone");
+        if (!logged(*c, "Foe is Frightened."))
+            continue;
+        frightened = true;
+        to_turn(*c, 98);
+        const auto commands = c->legal_commands();
+        check(commands.size() == 1 && (commands.front().verb == "move" || commands.front().verb == "dash"),
+              "A frightened creature only flees");
+    }
+    check(frightened, "A seed where the foe fails its save");
+}
+
+void cloud_checks()
+{
+    const auto rules = dummy_rules();
+    auto sleet = field(*rules, with_spells(wizard(5), {"sleet_storm"}),
+    {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, 1);
+    check(submit(*sleet, "sleet_storm") && submit_cell(*sleet, "area_move", Cell{9, 2}) &&
+          submit(*sleet, "area_cast") && sleet->snapshot().battlefield.at({9, 3}) == Terrain::difficult &&
+          !sleet->snapshot().obscured.empty(), "Sleet Storm: obscured, Difficult Terrain");
+    to_turn(*sleet, 98);
+    check(logged(*sleet, "Foe Dexterity save:"), "A turn starting in the sleet calls for a save");
+    const auto saved = sleet->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the sleet");
+    bool retched = false;
+    for (std::uint64_t seed = 1; seed < 40 && !retched; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"stinking_cloud"}),
+        {{98, "dummy", "Foe", Side::opposition, {9, 2}}}, seed);
+        check(submit(*c, "stinking_cloud") && submit_cell(*c, "area_move", Cell{9, 2}) &&
+              submit(*c, "area_cast"), "Stinking Cloud");
+        to_turn(*c, 98);
+        retched = logged(*c, "Foe retches in the cloud and can take no action this turn.");
+        if (retched)
+            check(!unit(*c, 98).action && !unit(*c, 98).bonus_action, "No action or Bonus Action");
+    }
+    check(retched, "A seed where the foe fails its save");
+}
+
+void vampiric_touch_checks()
+{
+    const auto rules = dummy_rules();
+    bool drained = false;
+    for (std::uint64_t seed = 1; seed < 40 && !drained; ++seed)
+    {
+        const std::vector<std::string> gear{"quarterstaff"};
+        const auto sheet = with_spells(wizard(5), {"vampiric_touch"});
+        auto c = rules->create({{14, 7, std::vector<Terrain>(98)},
+            {   {1, "campaign-character", "Wizard", Side::party, {1, 2},
+                    rules->character_profile(sheet, gear).data, VitalState{5, false, {}}},
+                {98, "dummy", "Foe", Side::opposition, {2, 2}}
+            }},
+        seed);
+        to_turn(*c, 1);
+        check(submit(*c, "vampiric_touch", 98), "Cast Vampiric Touch");
+        drained = logged(*c, "Wizard siphons life.") && unit(*c, 1).hit_points > 5;
+        to_turn(*c, 98);
+        to_turn(*c, 1);
+        check(offered(*c, "vampiric_touch_again", 98), "A Magic action touches again");
+    }
+    check(drained, "The touch heals the Wizard half the damage");
+}
+
+void blink_checks()
+{
+    const auto rules = dummy_rules();
+    bool vanished = false;
+    for (std::uint64_t seed = 1; seed < 40 && !vanished; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(5), {"blink"}),
+        {{98, "brute", "Foe", Side::opposition, {2, 2}}}, seed);
+        check(submit(*c, "blink", 1) && submit(*c, "end"), "Cast Blink and end the turn");
+        if (!logged(*c, "Wizard blinks into the Ethereal Plane"))
+            continue;
+        vanished = true;
+        check(!offered(*c, "melee", 1), "The Wizard is out of reach");
+        to_turn(*c, 1);
+        check(logged(*c, "Wizard returns from the Ethereal Plane."), "It returns on its turn");
+    }
+    check(vanished, "A seed where the d6 rolls 4 or more");
+}
+
+void tiny_hut_checks()
+{
+    const auto rules = module();
+    const auto caster = with_spells(wizard(5), {"tiny_hut"});
+    VitalState caster_state{caster.hit_points, false, {}};
+    const auto actions = rules->camp_actions(caster, caster_state);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "tiny_hut" && a.whole_party;
+    }), "Tiny Hut is a camp action for the party");
+    std::vector<CampTarget> party{{caster, caster_state}};
+    RandomState random{1};
+    const std::vector<std::string> wolves{"wolf"};
+    check(!rules->keeps_away(party, wolves), "Without the hut, a rest can be interrupted");
+    rules->use_party_camp_action(caster, caster_state, party, "tiny_hut", random);
+    check(rules->keeps_away(party, wolves), "Tiny Hut keeps every creature out");
+}
+
+void sculpt_checks()
+{
+    const auto rules = dummy_rules();
+    for (const unsigned level : {5u, 6u})
+    {
+        auto c = field(*rules, with_spells(wizard(level), {"fireball"}),
+        {   {2, "dummy", "Ally", Side::party, {8, 1}},
+            {98, "dummy", "Foe", Side::opposition, {8, 3}}
+        }, 1);
+        check(submit(*c, "fireball") && submit_cell(*c, "area_move", Cell{8, 2}) &&
+              submit(*c, "area_cast"), "Fireball over an ally");
+        check(logged(*c, "Ally is spared by Sculpt Spells.") == (level == 6),
+              "Sculpt Spells from level 6");
+    }
+}
+} // namespace
+
+int main()
+{
+    try
+    {
+        progression_checks();
+        memorize_spell_checks();
+        arcane_recovery_checks();
+        fireball_checks();
+        counterspell_checks();
+        haste_checks();
+        hypnotic_pattern_checks();
+        fear_checks();
+        cloud_checks();
+        vampiric_touch_checks();
+        blink_checks();
+        tiny_hut_checks();
+        sculpt_checks();
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+    std::cout << "Wizard level checks passed\n";
+}

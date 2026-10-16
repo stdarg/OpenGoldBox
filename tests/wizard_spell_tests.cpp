@@ -67,7 +67,7 @@ Character wizard(unsigned level, std::vector<std::string> spells, std::vector<st
     d.training = {{"class:wizard", {"medicine", "nature"}}};
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
-    party.award_experience(2700, "wizard-xp");
+    party.award_experience(14000, "wizard-xp");
     for (unsigned n = 1; n < level; ++n)
     {
         auto choice = party.default_advancement(id);
@@ -243,15 +243,15 @@ void potent_cantrip_checks()
 void sculpt_spells_checks()
 {
     auto module = rules();
-    for (const unsigned level : {1u, 3u})
+    for (const unsigned level : {3u, 6u})
     {
         auto c = battle(*module, wizard(level, {"magic_missile", "burning_hands"}), {3, 1}, {11, 5},
                         5, {2, 1});
         check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast"),
               "Burning Hands with an ally in the cone");
-        check(logged(*c, "Ally is spared by Sculpt Spells.") == (level == 3) &&
-              logged(*c, "Ally takes") == (level == 1) && logged(*c, "First takes"),
-              "From level three the Evoker spares its ally");
+        check(logged(*c, "Ally is spared by Sculpt Spells.") == (level == 6) &&
+              logged(*c, "Ally takes") == (level == 3) && logged(*c, "First takes"),
+              "From level six the Evoker spares its ally");
     }
 }
 // Ends the Wizard's turn and returns to it.
@@ -577,7 +577,7 @@ void sculpt_cap_checks()
 {
     auto module = rules();
     const auto profile =
-        module->character_profile(wizard(3, {"magic_missile", "burning_hands"}).sheet(),
+        module->character_profile(wizard(6, {"magic_missile", "burning_hands"}).sheet(),
                                   std::vector<std::string> {}).data;
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
         {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},

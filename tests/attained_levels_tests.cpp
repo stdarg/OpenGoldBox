@@ -271,7 +271,7 @@ int main()
         attained_levels("wizard", {
             {{"magic_missile"}, {"feature:arcane_recovery", "spell:magic_missile"}},
             {{"magic_missile"}, {"expertise:arcana"}},
-            {{"magic_missile"}, {"subclass:evoker", "feature:potent_cantrip", "feature:sculpt_spells"}},
+            {{"magic_missile"}, {"subclass:evoker", "feature:potent_cantrip"}},
             {{"magic_missile"}, {"feat:ability_score_improvement"}}
         });
         // The other classes start as ready-made Character Pool characters with
