@@ -31,7 +31,8 @@ std::unique_ptr<rules::RulesModule> module()
     // Read once; each fight's demo owns a module parsed from the text.
     static const std::string content = []
     {
-        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules",
+        std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
+                             "data/rules/srd-5.2.1/combat.rules",
                          std::ios::binary);
         return std::string{std::istreambuf_iterator<char>(in), {}};
     }();
@@ -125,7 +126,7 @@ unsigned original_xp(unsigned record)
            : record == 1 || record == 2 || record == 11 ? 50
            : record == 3 || record == 12                ? 100
            : record == 4 || record == 13                ? 75
-           : 150;
+                                                        : 150;
 }
 
 struct Group
@@ -198,9 +199,9 @@ struct Place
 // A Slums street, the Old Rope Guild and three set-encounter rooms; north of
 // Kuto's Well and Norris's hall.
 constexpr Place slums_street{ArcMap::slums, 14, 7}, slums_guild{ArcMap::slums, 6, 14},
-          hobgoblin_room{ArcMap::slums, 0, 2}, leaders_room{ArcMap::slums, 1, 5},
-          troll_room{ArcMap::slums, 0, 14}, kutos_plaza{ArcMap::kutos_plaza, 7, 4},
-          kutos_catacombs{ArcMap::kutos_catacombs, 10, 3};
+    hobgoblin_room{ArcMap::slums, 0, 2}, leaders_room{ArcMap::slums, 1, 5},
+    troll_room{ArcMap::slums, 0, 14}, kutos_plaza{ArcMap::kutos_plaza, 7, 4},
+    kutos_catacombs{ArcMap::kutos_catacombs, 10, 3};
 
 struct Step
 {
@@ -222,40 +223,115 @@ Fight troll_fight()
 // ogres); then Kuto's Well's plaza, the catacombs' arrow volleys and Norris the
 // Gray's band. Each fight has its script's morale.
 const std::vector<Step> arc{
-    {"street kobolds", slums_street, [](unsigned s) { return roaming(0, s, false); }},
+    {"street kobolds", slums_street,
+     [](unsigned s)
+     {
+         return roaming(0, s, false);
+     }},
     {"four orcs", slums_street,
-     [](unsigned) { return Fight{{{creature(13), 1}, {creature(4), 3}}, 99}; }},
-    {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
-    {"street orcs", slums_street, [](unsigned s) { return roaming(4, s, false); }},
-    {"guild kobolds", slums_guild, [](unsigned s) { return roaming(0, s, true); }},
-    {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
-    {"guild goblins", slums_guild, [](unsigned s) { return roaming(2, s, true); }},
-    {"street orcs", slums_street, [](unsigned s) { return roaming(4, s, false); }},
-    {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
-    {"street goblins", slums_street, [](unsigned s) { return roaming(2, s, false); }},
-    {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
-    {"guild orcs", slums_guild, [](unsigned s) { return roaming(4, s, true); }},
+     [](unsigned)
+     {
+         return Fight{{{creature(13), 1}, {creature(4), 3}}, 99};
+     }},
+    {"street goblins", slums_street,
+     [](unsigned s)
+     {
+         return roaming(2, s, false);
+     }},
+    {"street orcs", slums_street,
+     [](unsigned s)
+     {
+         return roaming(4, s, false);
+     }},
+    {"guild kobolds", slums_guild,
+     [](unsigned s)
+     {
+         return roaming(0, s, true);
+     }},
+    {"street goblins", slums_street,
+     [](unsigned s)
+     {
+         return roaming(2, s, false);
+     }},
+    {"guild goblins", slums_guild,
+     [](unsigned s)
+     {
+         return roaming(2, s, true);
+     }},
+    {"street orcs", slums_street,
+     [](unsigned s)
+     {
+         return roaming(4, s, false);
+     }},
+    {"guild orcs", slums_guild,
+     [](unsigned s)
+     {
+         return roaming(4, s, true);
+     }},
+    {"street goblins", slums_street,
+     [](unsigned s)
+     {
+         return roaming(2, s, false);
+     }},
+    {"guild orcs", slums_guild,
+     [](unsigned s)
+     {
+         return roaming(4, s, true);
+     }},
+    {"guild orcs", slums_guild,
+     [](unsigned s)
+     {
+         return roaming(4, s, true);
+     }},
     {"arguing hobgoblins", hobgoblin_room,
-     [](unsigned) { return Fight{{{creature(6), 5}}, 75}; }},
+     [](unsigned)
+     {
+         return Fight{{{creature(6), 5}}, 75};
+     }},
     {"monster leaders", leaders_room,
-     [](unsigned) {
+     [](unsigned)
+     {
          return Fight{{{creature(8), 1}, {creature(73), 2}, {creature(7), 2}}, 80};
      }},
     {"trolls and ogres", troll_room,
-     [](unsigned) { return troll_fight(); }},
-    {"plaza gnolls", kutos_plaza, [](unsigned s) { return kutos_roaming(73, s); }},
+     [](unsigned)
+     {
+         return troll_fight();
+     }},
+    {"plaza gnolls", kutos_plaza,
+     [](unsigned s)
+     {
+         return kutos_roaming(73, s);
+     }},
     {"sickly kobolds", kutos_plaza,
-     [](unsigned) { return Fight{{{creature(0), 2}, {creature(1), 4}}, 25}; }},
-    {"plaza kobolds", kutos_plaza, [](unsigned s) { return kutos_roaming(0, s); }},
+     [](unsigned)
+     {
+         return Fight{{{creature(0), 2}, {creature(1), 4}}, 25};
+     }},
+    {"plaza kobolds", kutos_plaza,
+     [](unsigned s)
+     {
+         return kutos_roaming(0, s);
+     }},
     {"well kobolds", kutos_plaza,
-     [](unsigned) { return Fight{{{creature(0), 6}, {creature(1), 3}}, 67}; }},
+     [](unsigned)
+     {
+         return Fight{{{creature(0), 6}, {creature(1), 3}}, 67};
+     }},
     {"lizardman patrol", kutos_plaza,
-     [](unsigned) { return Fight{{{creature(57), 1}, {creature(59), 4}}, 75}; }},
-    {"plaza lizardmen", kutos_plaza, [](unsigned s) { return kutos_roaming(57, s); }},
+     [](unsigned)
+     {
+         return Fight{{{creature(57), 1}, {creature(59), 4}}, 75};
+     }},
+    {"plaza lizardmen", kutos_plaza,
+     [](unsigned s)
+     {
+         return kutos_roaming(57, s);
+     }},
     {"catacomb volley", kutos_catacombs, nullptr, 4},
     {"dim archer", kutos_catacombs, nullptr, 1},
-    {"Norris's band", kutos_catacombs,
-     [](unsigned) {
+    {"Norris's band", kutos_catacombs, [](unsigned)
+     {
          return Fight{{{creature(32), 1}, {creature(57), 5}, {creature(1), 9}}, 70};
      }}};
 
@@ -268,14 +344,15 @@ struct PreferredSpells
     std::string_view class_id;
     std::array<std::string_view, 5> spells; // Unused places are empty.
 };
-constexpr std::array<PreferredSpells, 7> preferred_spells{{
-    {"cleric", {"spiritual_weapon", "healing_word", "cure_wounds", "guiding_bolt", "hold_person"}},
-    {"druid", {"moonbeam", "healing_word", "cure_wounds"}},
-    {"bard", {"healing_word", "dissonant_whispers", "cure_wounds", "hold_person"}},
-    {"sorcerer", {"magic_missile", "scorching_ray", "shield", "hold_person"}},
-    {"warlock", {"hex", "hold_person"}},
-    {"paladin", {"cure_wounds"}},
-    {"ranger", {"cure_wounds"}}}};
+
+constexpr std::array<PreferredSpells, 7> preferred_spells{
+    {{"cleric", {"spiritual_weapon", "healing_word", "cure_wounds", "guiding_bolt", "hold_person"}},
+     {"druid", {"moonbeam", "healing_word", "cure_wounds"}},
+     {"bard", {"healing_word", "dissonant_whispers", "cure_wounds", "hold_person"}},
+     {"sorcerer", {"magic_missile", "scorching_ray", "shield", "hold_person"}},
+     {"warlock", {"hex", "hold_person"}},
+     {"paladin", {"cure_wounds"}},
+     {"ranger", {"cure_wounds"}}}};
 
 // The default advancement, with the class's preferred spells swapped in for
 // the last unlocked defaults where the rules accept them.
@@ -285,16 +362,16 @@ rules::AdvancementChoice advancement(const CampaignParty &party, MemberId id)
     const auto &class_id = party.member(id).character.creation_data().character_class;
     const auto found = std::find_if(preferred_spells.begin(), preferred_spells.end(),
                                     [&](const PreferredSpells &p)
-    {
-        return p.class_id == class_id;
-    });
+                                    {
+                                        return p.class_id == class_id;
+                                    });
     if (found == preferred_spells.end())
         return choice;
     const auto &spells = found->spells;
     for (const auto spell : spells)
     {
         if (spell.empty() ||
-                std::find(choice.spells.begin(), choice.spells.end(), spell) != choice.spells.end())
+            std::find(choice.spells.begin(), choice.spells.end(), spell) != choice.spells.end())
             continue;
         for (auto slot = choice.spells.rbegin(); slot != choice.spells.rend(); ++slot)
         {
@@ -401,7 +478,7 @@ void short_rest(CampaignParty &party, RunResult &result)
         // Each spending refreshes the rest's ticket.
         for (const auto id : rest->members)
             if (party.member(id).vitals.hit_points < party.hit_point_maximum(id) &&
-                    party.recovery_info(id).hit_dice > 0)
+                party.recovery_info(id).hit_dice > 0)
                 (void)party.heal_with_hit_dice(party.state().short_rest->ticket, id);
         party.finish_short_rest(party.state().short_rest->ticket);
     }
@@ -416,8 +493,8 @@ void long_rest(CampaignParty &party, RunResult &result)
         if (info.denial == RestDenial::cooldown)
             wait = std::max(wait, info.wait_milliseconds);
     if (wait)
-        party.advance_time(std::chrono::milliseconds{
-            static_cast<std::chrono::milliseconds::rep>(wait)});
+        party.advance_time(
+            std::chrono::milliseconds{static_cast<std::chrono::milliseconds::rep>(wait)});
     if (party.rest(rules::RestKind::long_rest))
         ++result.long_rests;
     settle_rest_choices(party);
@@ -433,7 +510,7 @@ por::DungeonBattlefield battlefield(const ArcMaps &maps, Place place)
 {
     const auto &map = place.map == ArcMap::slums         ? maps.slums
                       : place.map == ArcMap::kutos_plaza ? maps.kutos_plaza
-                      : maps.kutos_catacombs;
+                                                         : maps.kutos_catacombs;
     return por::dungeon_battlefield(map, place.x, place.y);
 }
 
@@ -476,8 +553,8 @@ struct Loadout
     std::uint8_t oil, fire; // flasks per member, beyond the starting kit
 };
 
-constexpr std::array loadouts{Loadout{"kit", 0, 0}, Loadout{"oil", 2, 0},
-                              Loadout{"fire", 0, 2}, Loadout{"oil+fire", 2, 2}};
+constexpr std::array loadouts{Loadout{"kit", 0, 0}, Loadout{"oil", 2, 0}, Loadout{"fire", 0, 2},
+                              Loadout{"oil+fire", 2, 2}};
 constexpr std::array<unsigned, 5> arena_widths{1, 2, 4, 8, 16};
 
 // Gives a member flasks of Oil and Alchemist's Fire. The simulator does not
@@ -485,8 +562,7 @@ constexpr std::array<unsigned, 5> arena_widths{1, 2, 4, 8, 16};
 void carry_flasks(CampaignParty &party, MemberId id, std::uint8_t oil, std::uint8_t fire)
 {
     for (const auto &[type, count] : {std::pair{original_item::flask_of_oil, oil},
-                                      std::pair{authored_item::alchemists_fire, fire}
-                                     })
+                                      std::pair{authored_item::alchemists_fire, fire}})
         if (count)
         {
             por::Equipment flask;
@@ -529,7 +605,8 @@ void outfit(CampaignParty &party, MemberId id, const PartyPlan &plan, std::uint8
 }
 
 std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
-        const std::vector<Character> &members, const Loadout &loadout)
+                                                const std::vector<Character> &members,
+                                                const Loadout &loadout)
 {
     auto party = std::make_shared<CampaignParty>(module());
     for (const auto &member : members)
@@ -548,10 +625,12 @@ void add_enemies(CampaignEncounter &encounter, const Fight &fight)
     for (const auto &group : fight.groups)
         for (unsigned c = 0; c < group.count; ++c, ++next)
         {
-            encounter.enemies.push_back({next, group.kind.definition,
-                                         std::string(group.kind.definition) + " " +
-                                         std::to_string(next),
-                                         rules::Side::opposition, {}});
+            encounter.enemies.push_back(
+                {next,
+                 group.kind.definition,
+                 std::string(group.kind.definition) + " " + std::to_string(next),
+                 rules::Side::opposition,
+                 {}});
             encounter.enemies.back().intelligence = group.kind.intelligence;
         }
     encounter.morale = fight.morale;
@@ -611,9 +690,9 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
         levels.push_back(party->member(id).character.sheet().level);
     for (const auto &group : fight.groups)
         sizes.push_back({group.kind.fit_xp, group.count});
-    const auto counts = fit_encounter_to_budget(
-                            sizes, encounter_xp_budget(levels, default_encounter_challenge),
-                            static_cast<unsigned>(levels.size()));
+    const auto counts =
+        fit_encounter_to_budget(sizes, encounter_xp_budget(levels, default_encounter_challenge),
+                                static_cast<unsigned>(levels.size()));
     for (std::size_t g = 0; g < fight.groups.size(); ++g)
         fight.groups[g].count = counts[g];
     CombatDemo combat(module());
@@ -676,8 +755,8 @@ void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Characte
     }
 }
 
-RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
-               const ArcMaps &maps, std::uint64_t seed, Usage &usage)
+RunResult play(const PartyPlan &plan, const std::vector<Character> &members, const ArcMaps &maps,
+               std::uint64_t seed, Usage &usage)
 {
     auto party = std::make_shared<CampaignParty>(module());
     // The flasks as if bought at New Phlan's general store before setting out.
@@ -712,9 +791,9 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
                 levels.push_back(party->member(id).character.sheet().level);
             for (const auto &group : fight.groups)
                 sizes.push_back({group.kind.fit_xp, group.count});
-            const auto counts =
-                fit_encounter_to_budget(sizes, encounter_xp_budget(levels, default_encounter_challenge),
-                                        static_cast<unsigned>(levels.size()));
+            const auto counts = fit_encounter_to_budget(
+                sizes, encounter_xp_budget(levels, default_encounter_challenge),
+                static_cast<unsigned>(levels.size()));
             for (std::size_t g = 0; g < fight.groups.size(); ++g)
                 fight.groups[g].count = counts[g];
         }
@@ -735,7 +814,7 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
                     break;
                 const auto command = choose_demo_command(state, combat.combat().legal_commands());
                 if (command.actor < 1000 && command.verb != "move" && command.verb != "end" &&
-                        command.verb != "area_move")
+                    command.verb != "area_move")
                     for (const auto id : party->state().slots)
                         if (id && party->member(id).id == command.actor)
                             ++usage[{party->member(id).character.creation_data().character_class,
@@ -752,7 +831,7 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
                 {
                     const auto record = enemy_record(fight, unit.id);
                     if (const auto it = std::find(paying.begin(), paying.end(), record);
-                            it != paying.end())
+                        it != paying.end())
                         paying.erase(it);
                     ++result.escaped;
                 }
@@ -764,15 +843,15 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members,
             {
                 const auto fought = std::any_of(result_snapshot.combatants.begin(),
                                                 result_snapshot.combatants.end(),
-                                                [&](const auto & unit)
-                {
-                    return unit.id == enemy.id;
-                });
+                                                [&](const auto &unit)
+                                                {
+                                                    return unit.id == enemy.id;
+                                                });
                 if (fought)
                     continue;
                 const auto record = enemy_record(fight, enemy.id);
                 if (const auto it = std::find(paying.begin(), paying.end(), record);
-                        it != paying.end())
+                    it != paying.end())
                     paying.erase(it);
             }
         }
@@ -864,7 +943,7 @@ int main(int argc, char **argv)
         std::ofstream detail(out / "runs.csv"), summary(out / "summary.csv");
         std::ofstream usage_csv(out / "usage.csv");
         detail << "party,run,outcome,fights_won,lost_at,deaths,dead_classes,short_rests,"
-               "long_rests,levels,escaped,surrendered\n";
+                  "long_rests,levels,escaped,surrendered\n";
         summary << "party,runs,slums_pct,success_pct,flawless_pct,avg_fights_won,avg_deaths,"
                    "avg_level,avg_escaped,avg_surrendered\n";
         usage_csv << "party,class,command,count\n";
@@ -900,17 +979,17 @@ int main(int argc, char **argv)
                 for (const auto &klass : r.dead)
                     dead_list += (dead_list.empty() ? "" : " ") + klass;
                 detail << plan.name << ',' << run << ',' << r.outcome << ',' << r.fights_won << ','
-                       << r.lost_at << ',' << r.deaths << ',' << dead_list << ','
-                       << r.short_rests << ',' << r.long_rests << ',' << level_list << ','
-                       << r.escaped << ',' << r.surrendered << '\n';
+                       << r.lost_at << ',' << r.deaths << ',' << dead_list << ',' << r.short_rests
+                       << ',' << r.long_rests << ',' << level_list << ',' << r.escaped << ','
+                       << r.surrendered << '\n';
             }
             for (const auto &[key, count] : usage)
-                usage_csv << plan.name << ',' << key.first << ',' << key.second << ',' << count << '\n';
+                usage_csv << plan.name << ',' << key.first << ',' << key.second << ',' << count
+                          << '\n';
             const double success = 100.0 * complete / runs;
             const double slums_success = 100.0 * cleared / runs;
             summary << plan.name << ',' << runs << ',' << slums_success << ',' << success << ','
-                    << 100.0 * flawless / runs << ','
-                    << static_cast<double>(fights) / runs << ','
+                    << 100.0 * flawless / runs << ',' << static_cast<double>(fights) / runs << ','
                     << static_cast<double>(deaths) / runs << ','
                     << static_cast<double>(levels) / people << ','
                     << static_cast<double>(escaped) / runs << ','
@@ -918,8 +997,7 @@ int main(int argc, char **argv)
             std::printf("%-14s %5u %7.0f %8.0f %9.0f %10.1f %7.2f %9.2f %7.1f %11.1f\n",
                         plan.name.c_str(), runs, slums_success, success, 100.0 * flawless / runs,
                         static_cast<double>(fights) / runs, static_cast<double>(deaths) / runs,
-                        static_cast<double>(levels) / people,
-                        static_cast<double>(escaped) / runs,
+                        static_cast<double>(levels) / people, static_cast<double>(escaped) / runs,
                         static_cast<double>(surrendered) / runs);
             std::fflush(stdout);
         }

@@ -46,10 +46,10 @@ std::unique_ptr<RulesModule> rules(const std::string &extra = {})
                                extra);
 }
 
-
 // A Wizard of the given level whose book holds the named level-one spells (and
 // level-two ones from level three), all prepared.
-Character wizard(unsigned level, std::vector<std::string> spells, std::vector<std::string> second = {},
+Character wizard(unsigned level, std::vector<std::string> spells,
+                 std::vector<std::string> second = {},
                  std::vector<std::string> cantrips = {"fire_bolt", "ray_of_frost", "chill_touch"})
 {
     CharacterDraft d;
@@ -109,10 +109,11 @@ bool aim(CombatSession &c, Cell cell)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // Level-one and level-two slots, read from "SRD13 winds slots slots2 ...".
@@ -131,19 +132,18 @@ bool has(const std::vector<Cell> &cells, Cell cell)
 }
 
 // The Wizard (1) at (1,1), an ally (2) below it and enemies (98, 99) east of it.
-std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
-                                      Cell first, Cell second, std::uint64_t seed = 5,
-                                      Cell ally = {1, 2}, std::string enemy = "target",
+std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero, Cell first,
+                                      Cell second, std::uint64_t seed = 5, Cell ally = {1, 2},
+                                      std::string enemy = "target",
                                       std::vector<std::string> equipment = {})
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
-            {2, "target", "Ally", Side::party, ally},
-            {98, enemy, "First", Side::opposition, first},
-            {99, "target", "Second", Side::opposition, second}
-        }},
-    seed);
+                            {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+                             {2, "target", "Ally", Side::party, ally},
+                             {98, enemy, "First", Side::opposition, first},
+                             {99, "target", "Second", Side::opposition, second}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Wizard's turn");
     check(c->snapshot().actor == 1, "The Wizard acts");
@@ -157,10 +157,10 @@ void burning_hands_checks()
     check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}), "Aim Burning Hands east");
     const auto cone = c->snapshot().area_targeting->cells;
     check(cone.size() == 7 && has(cone, {2, 1}) && has(cone, {3, 1}) && has(cone, {4, 1}) &&
-          has(cone, {3, 0}) && has(cone, {3, 2}) && !has(cone, {1, 2}) && !has(cone, {2, 3}),
+              has(cone, {3, 0}) && has(cone, {3, 2}) && !has(cone, {1, 2}) && !has(cone, {2, 3}),
           "A 15-foot cone of seven squares spreads from the Wizard");
     check(submit(*c, "area_cast") && logged(*c, "First takes") && logged(*c, "Second takes") &&
-          !logged(*c, "Ally takes") && logged(*c, "First Dexterity save"),
+              !logged(*c, "Ally takes") && logged(*c, "First Dexterity save"),
           "Each creature in the cone saves against Fire damage");
 }
 
@@ -196,11 +196,10 @@ void thunderwave_wall_checks()
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
         auto c = module->create({{12, 6, walled},
-            {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
-                {98, "target", "First", Side::opposition, {2, 1}},
-                {99, "target", "Second", Side::opposition, {9, 4}}
-            }},
-        seed);
+                                 {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+                                  {98, "target", "First", Side::opposition, {2, 1}},
+                                  {99, "target", "Second", Side::opposition, {9, 4}}}},
+                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
             check(submit(*c, "end"), "Reach the Wizard's turn");
         check(submit(*c, "thunderwave") && aim(*c, Cell{2, 1}) && submit(*c, "area_cast"),
@@ -208,7 +207,7 @@ void thunderwave_wall_checks()
         if (!logged(*c, "First is pushed 5 feet."))
             continue;
         check(unit(*c, 98).cell == Cell{3, 1} &&
-              logged(*c, "First slams into an obstacle and takes "),
+                  logged(*c, "First slams into an obstacle and takes "),
               "Stopped 5 feet short by the wall, it takes 1d6 Bludgeoning");
         return;
     }
@@ -218,7 +217,8 @@ void thunderwave_wall_checks()
 void shatter_checks()
 {
     auto module = rules();
-    auto c = battle(*module, wizard(3, {"magic_missile"}, {"shatter", "blindness"}), {6, 2}, {11, 5});
+    auto c =
+        battle(*module, wizard(3, {"magic_missile"}, {"shatter", "blindness"}), {6, 2}, {11, 5});
     check(submit(*c, "shatter") && aim(*c, Cell{6, 2}), "Aim Shatter");
     check(c->snapshot().area_targeting->cells.size() == 25, "A 10-foot-radius sphere");
     const auto before = slots(*c);
@@ -227,6 +227,7 @@ void shatter_checks()
     check(slots(*c).second == before.second - 1 && slots(*c).first == before.first,
           "Shatter spends a level-two slot");
 }
+
 void potent_cantrip_checks()
 {
     auto module = rules();
@@ -250,10 +251,11 @@ void sculpt_spells_checks()
         check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast"),
               "Burning Hands with an ally in the cone");
         check(logged(*c, "Ally is spared by Sculpt Spells.") == (level == 6) &&
-              logged(*c, "Ally takes") == (level == 3) && logged(*c, "First takes"),
+                  logged(*c, "Ally takes") == (level == 3) && logged(*c, "First takes"),
               "From level six the Evoker spares its ally");
     }
 }
+
 // Ends the Wizard's turn and returns to it.
 void next_turn(CombatSession &c)
 {
@@ -289,21 +291,22 @@ void expeditious_retreat_checks()
     auto c = battle(*module, wizard(1, {"magic_missile", "expeditious_retreat"}), {6, 1}, {11, 5});
     const int feet = unit(*c, 1).movement_feet;
     check(submit(*c, "expeditious_retreat", 1) && unit(*c, 1).movement_feet == feet + 30 &&
-          unit(*c, 1).action,
+              unit(*c, 1).action,
           "Expeditious Retreat Dashes at once with the Bonus Action");
     next_turn(*c);
     check(submit(*c, "retreat_dash") && unit(*c, 1).movement_feet == feet + 30 &&
-          unit(*c, 1).action,
+              unit(*c, 1).action,
           "Later turns Dash as a Bonus Action");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The extra Dash survives a checkpoint");
 }
+
 void ray_of_sickness_checks()
 {
     auto module = rules();
     auto c = battle(*module, wizard(1, {"magic_missile", "ray_of_sickness"}), {2, 1}, {11, 5});
     check(submit(*c, "ray_of_sickness", 98) && logged(*c, "First is Poisoned.") &&
-          unit(*c, 98).conditions.size() == 1,
+              unit(*c, 98).conditions.size() == 1,
           "A hit Poisons the target");
     check(submit(*c, "end"), "End the Wizard's turn");
     while (c->snapshot().actor != 98)
@@ -317,7 +320,7 @@ void ice_knife_checks()
     auto module = rules();
     auto c = battle(*module, wizard(1, {"magic_missile", "ice_knife"}), {3, 1}, {4, 1});
     check(submit(*c, "ice_knife", 98) && logged(*c, "First Dexterity save") &&
-          logged(*c, "Second Dexterity save") && !logged(*c, "Ally Dexterity save"),
+              logged(*c, "Second Dexterity save") && !logged(*c, "Ally Dexterity save"),
           "The shard bursts on the target and the creatures beside it");
 }
 
@@ -333,29 +336,31 @@ void chromatic_orb_checks()
           "Chromatic Orb is offered once per damage type");
     const auto before = slots(*c);
     check(submit(*c, "chromatic_orb_fire", 98) && logged(*c, "Wizard -> First") &&
-          slots(*c).first == before.first - 1,
+              slots(*c).first == before.first - 1,
           "The orb is a spell attack from a level-one slot");
 }
 
 void acid_splash_checks()
 {
     auto module = rules();
-    auto c = battle(*module, wizard(1, {"magic_missile"}, {}, {"acid_splash", "fire_bolt", "ray_of_frost"}),
+    auto c = battle(*module,
+                    wizard(1, {"magic_missile"}, {}, {"acid_splash", "fire_bolt", "ray_of_frost"}),
                     {3, 1}, {4, 1});
     const auto before = slots(*c);
     check(submit(*c, "acid_splash") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast") &&
-          logged(*c, "First Dexterity save") && logged(*c, "Second Dexterity save") &&
-          slots(*c) == before,
+              logged(*c, "First Dexterity save") && logged(*c, "Second Dexterity save") &&
+              slots(*c) == before,
           "Acid Splash's sphere catches both creatures and spends no slot");
 }
 
 bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
 {
     const auto conditions = unit(c, id).conditions;
-    return std::any_of(conditions.begin(), conditions.end(), [&](const auto & condition)
-    {
-        return condition.source == label;
-    });
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [&](const auto &condition)
+                       {
+                           return condition.source == label;
+                       });
 }
 
 // Ends turns until the given creature acts.
@@ -379,12 +384,13 @@ void sleep_checks()
               "Sleep passes over the Wizard's allies");
         if (!logged(*c, "First grows drowsy."))
             continue;
-        check(has_condition(*c, 98, "Incapacitated (Sleep)"), "A failed save leaves it Incapacitated");
+        check(has_condition(*c, 98, "Incapacitated (Sleep)"),
+              "A failed save leaves it Incapacitated");
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved, "Drowsiness survives a checkpoint");
         reach(*c, 99);
         check(submit(*c, "shake_awake", 98) && !has_condition(*c, 98, "Incapacitated (Sleep)") &&
-              !has_condition(*c, 98, "Unconscious (Sleep)"),
+                  !has_condition(*c, 98, "Unconscious (Sleep)"),
               "A companion beside the sleeper shakes it awake");
         return;
     }
@@ -418,9 +424,10 @@ void color_spray_checks()
     auto module = rules();
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = battle(*module, wizard(1, {"magic_missile", "color_spray"}), {3, 1}, {11, 5}, seed);
+        auto c =
+            battle(*module, wizard(1, {"magic_missile", "color_spray"}), {3, 1}, {11, 5}, seed);
         check(submit(*c, "color_spray") && aim(*c, Cell{3, 1}) &&
-              c->snapshot().area_targeting->cells.size() == 7 && submit(*c, "area_cast"),
+                  c->snapshot().area_targeting->cells.size() == 7 && submit(*c, "area_cast"),
               "Color Spray fills a 15-foot cone");
         check(!logged(*c, "Ally Constitution save") && !logged(*c, "Second Constitution save"),
               "Only creatures in the cone are touched");
@@ -513,7 +520,7 @@ void web_checks()
                         seed);
         const auto before = slots(*c);
         check(submit(*c, "web") && aim(*c, Cell{6, 2}) && submit(*c, "area_cast") &&
-              slots(*c).second == before.second - 1,
+                  slots(*c).second == before.second - 1,
               "Web spends a level-two slot");
         check(difficult(*c, {5, 1}) && difficult(*c, {8, 4}) && !difficult(*c, {9, 2}),
               "Web fills a 20-foot cube");
@@ -525,11 +532,12 @@ void web_checks()
             continue;
         check(unit(*c, 99).cell == Cell{8, 2}, "A caught creature stops where it entered");
         const auto offered = c->legal_commands();
-        check(std::any_of(offered.begin(), offered.end(), [](const auto & command)
-        {
-            return command.verb == "escape" && command.label == "Escape the webs";
-        }),
-        "The webbed creature may try to break free");
+        check(std::any_of(offered.begin(), offered.end(),
+                          [](const auto &command)
+                          {
+                              return command.verb == "escape" && command.label == "Escape the webs";
+                          }),
+              "The webbed creature may try to break free");
     }
     check(caught_entering, "Some seed catches the entering creature");
 }
@@ -537,19 +545,21 @@ void web_checks()
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::count_if(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::count_if(log.begin(), log.end(),
+                         [&](const auto &line)
+                         {
+                             return line.find(text) != std::string::npos;
+                         });
 }
 
 // Potent Cantrip also covers a cantrip's saving throw: a creature that saves
@@ -560,11 +570,12 @@ void potent_save_checks()
                         "saves dodger 0 30 0 0 0 0\n");
     for (const unsigned level : {1u, 3u})
     {
-        auto c = battle(*module,
-                        wizard(level, {"magic_missile"}, {}, {"acid_splash", "fire_bolt", "ray_of_frost"}),
-                        {4, 1}, {11, 5}, 5, {1, 2}, "dodger");
+        auto c = battle(
+            *module,
+            wizard(level, {"magic_missile"}, {}, {"acid_splash", "fire_bolt", "ray_of_frost"}),
+            {4, 1}, {11, 5}, 5, {1, 2}, "dodger");
         check(submit(*c, "acid_splash") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
-              logged(*c, "First Dexterity save"),
+                  logged(*c, "First Dexterity save"),
               "Acid Splash calls for a Dexterity save the dodger makes");
         check(logged(*c, "First takes") == (level == 3),
               "From level three a saved-against cantrip still deals half damage");
@@ -577,16 +588,17 @@ void sculpt_cap_checks()
 {
     auto module = rules();
     const auto profile =
-        module->character_profile(wizard(6, {"magic_missile", "burning_hands"}).sheet(),
-                                  std::vector<std::string> {}).data;
+        module
+            ->character_profile(wizard(6, {"magic_missile", "burning_hands"}).sheet(),
+                                std::vector<std::string>{})
+            .data;
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
-            {2, "target", "Near", Side::party, {2, 1}},
-            {3, "target", "Upper", Side::party, {3, 0}},
-            {4, "target", "Lower", Side::party, {3, 2}},
-            {98, "target", "First", Side::opposition, {4, 1}}
-        }},
-    5);
+                             {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile},
+                              {2, "target", "Near", Side::party, {2, 1}},
+                              {3, "target", "Upper", Side::party, {3, 0}},
+                              {4, "target", "Lower", Side::party, {3, 2}},
+                              {98, "target", "First", Side::opposition, {4, 1}}}},
+                            5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Wizard's turn");
     check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast"),
@@ -595,7 +607,7 @@ void sculpt_cap_checks()
                        count_logged(*c, "Upper Dexterity save") +
                        count_logged(*c, "Lower Dexterity save");
     check(count_logged(*c, "is spared by Sculpt Spells.") == 2 && saves == 1 &&
-          logged(*c, "First Dexterity save"),
+              logged(*c, "First Dexterity save"),
           "Two allies are spared and the third saves");
 }
 
@@ -627,7 +639,7 @@ void shield_checks()
         const int ac = unit(*c, 1).armor_class;
         const auto before = slots(*c);
         check(submit(*c, "shield") && logged(*c, "Wizard casts Shield.") &&
-              unit(*c, 1).armor_class == ac + 5 && slots(*c).first == before.first - 1,
+                  unit(*c, 1).armor_class == ac + 5 && slots(*c).first == before.first - 1,
               "Shield spends the Reaction and a slot for +5 AC");
         check(count_logged(*c, "First -> Wizard") == 1 && c->snapshot().actor == 98,
               "The attack resolves once, against the shielded AC");
@@ -636,7 +648,7 @@ void shield_checks()
         auto c = shield_question(*module);
         const int hp = unit(*c, 1).hit_points;
         check(submit(*c, "decline") && !logged(*c, "casts Shield") &&
-              count_logged(*c, "First -> Wizard") == 1 && unit(*c, 1).hit_points < hp,
+                  count_logged(*c, "First -> Wizard") == 1 && unit(*c, 1).hit_points < hp,
               "Declining lets the hit land");
     }
 }
@@ -650,14 +662,18 @@ void split_target_checks()
     const auto hero = wizard(3, {"magic_missile"}, {"scorching_ray", "shatter"});
     const auto battle = [&]
     {
-        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Wizard", Side::party, {1, 1},
-                    module->character_profile(hero.sheet(), std::vector<std::string> {}).data},
-                {2, "target", "Ally", Side::party, {1, 3}},
-                {98, "target", "First", Side::opposition, {6, 1}},
-                {99, "target", "Second", Side::opposition, {6, 3}}
-            }},
-        5);
+        auto c = module->create(
+            {{12, 6, std::vector<Terrain>(72)},
+             {{1,
+               "campaign-character",
+               "Wizard",
+               Side::party,
+               {1, 1},
+               module->character_profile(hero.sheet(), std::vector<std::string>{}).data},
+              {2, "target", "Ally", Side::party, {1, 3}},
+              {98, "target", "First", Side::opposition, {6, 1}},
+              {99, "target", "Second", Side::opposition, {6, 3}}}},
+            5);
         reach(*c, 1);
         return c;
     };
@@ -682,29 +698,30 @@ void split_target_checks()
     auto c = battle();
     const auto before = slots(*c);
     check(click(*c, "magic_missile", 98) && c->snapshot().spell_targeting &&
-          c->snapshot().spell_targeting->chosen == std::vector<EntityId> {98} &&
-          c->snapshot().spell_targeting->maximum == 3 && slots(*c) == before &&
-          unit(*c, 1).action,
+              c->snapshot().spell_targeting->chosen == std::vector<EntityId>{98} &&
+              c->snapshot().spell_targeting->maximum == 3 && slots(*c) == before &&
+              unit(*c, 1).action,
           "The first click aims the first dart and spends nothing yet");
-    check(offered(*c, "magic_missile") == std::vector<EntityId> {98, 99} &&
-          offered(*c, "spell_cast").empty() && offered(*c, "spell_cancel").size() == 1,
+    check(offered(*c, "magic_missile") == std::vector<EntityId>{98, 99} &&
+              offered(*c, "spell_cast").empty() && offered(*c, "spell_cancel").size() == 1,
           "Only foes can be aimed at, and the spell waits for every dart");
-    check(module->restore(c->save())->save() == c->save(), "An unfinished aim survives a checkpoint");
+    check(module->restore(c->save())->save() == c->save(),
+          "An unfinished aim survives a checkpoint");
     check(click(*c, "spell_cancel", 0) && !c->snapshot().spell_targeting && slots(*c) == before &&
-          unit(*c, 1).action,
+              unit(*c, 1).action,
           "Cancel spends nothing");
 
     c = battle();
     check(click(*c, "magic_missile", 98) && click(*c, "magic_missile", 99) &&
-          c->snapshot().spell_targeting &&
-          c->snapshot().spell_targeting->chosen == std::vector<EntityId> {98, 99},
+              c->snapshot().spell_targeting &&
+              c->snapshot().spell_targeting->chosen == std::vector<EntityId>{98, 99},
           "A second dart can go to another foe");
     check(click(*c, "magic_missile", 98) && !c->snapshot().spell_targeting,
           "Clicking a foe again aims another dart at it, and the third dart casts");
     check(logged(*c, "Wizard casts Magic Missile at First for") &&
-          logged(*c, "Wizard casts Magic Missile at Second for") &&
-          unit(*c, 98).hit_points < 1000 && unit(*c, 99).hit_points < 1000 &&
-          slots(*c).first == before.first - 1 && !unit(*c, 1).action,
+              logged(*c, "Wizard casts Magic Missile at Second for") &&
+              unit(*c, 98).hit_points < 1000 && unit(*c, 99).hit_points < 1000 &&
+              slots(*c).first == before.first - 1 && !unit(*c, 1).action,
           "Each foe takes its darts as one hit, for one slot and the Action");
 
     c = battle();
@@ -716,10 +733,10 @@ void split_target_checks()
     c = battle();
     const auto rays = slots(*c);
     check(click(*c, "scorching_ray", 98) && click(*c, "scorching_ray", 99) &&
-          click(*c, "scorching_ray", 99) && !c->snapshot().spell_targeting,
+              click(*c, "scorching_ray", 99) && !c->snapshot().spell_targeting,
           "Three rays are aimed, then cast");
     check(count_logged(*c, "Wizard -> First") == 1 && count_logged(*c, "Wizard -> Second") == 2 &&
-          slots(*c).second == rays.second - 1,
+              slots(*c).second == rays.second - 1,
           "Each ray is its own attack at its own foe, for one level-two slot");
 }
 
@@ -731,14 +748,18 @@ void ray_retarget_checks()
     const auto hero = wizard(3, {"magic_missile"}, {"scorching_ray", "shatter"});
     const auto cast = [&](std::vector<EntityId> aims, std::uint64_t seed)
     {
-        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Wizard", Side::party, {1, 1},
-                    module->character_profile(hero.sheet(), std::vector<std::string> {}).data},
-                {97, "weakling", "Weakling", Side::opposition, {6, 1}},
-                {98, "target", "Near", Side::opposition, {3, 1}},
-                {99, "target", "Far", Side::opposition, {8, 3}}
-            }},
-        seed);
+        auto c = module->create(
+            {{12, 6, std::vector<Terrain>(72)},
+             {{1,
+               "campaign-character",
+               "Wizard",
+               Side::party,
+               {1, 1},
+               module->character_profile(hero.sheet(), std::vector<std::string>{}).data},
+              {97, "weakling", "Weakling", Side::opposition, {6, 1}},
+              {98, "target", "Near", Side::opposition, {3, 1}},
+              {99, "target", "Far", Side::opposition, {8, 3}}}},
+            seed);
         reach(*c, 1);
         for (const auto aim : aims)
             for (const auto &command : c->legal_commands())
@@ -753,27 +774,33 @@ void ray_retarget_checks()
     std::uint64_t seed = 1;
     for (; seed < 40; ++seed)
         if (unit(*cast({97, 97, 97}, seed), 97).hit_points <= 0 &&
-                count_logged(*cast({97, 97, 97}, seed), "Wizard -> Weakling") == 1)
+            count_logged(*cast({97, 97, 97}, seed), "Wizard -> Weakling") == 1)
             break;
     check(seed < 40, "Some seed's first ray drops the Weakling");
     auto c = cast({97, 97, 97}, seed);
-    check(count_logged(*c, "The ray turns to Near.") == 2 && count_logged(*c, "Wizard -> Near") == 2,
+    check(count_logged(*c, "The ray turns to Near.") == 2 &&
+              count_logged(*c, "Wizard -> Near") == 2,
           "With no other aimed foe, the rays turn to the nearest foe");
     c = cast({97, 97, 99}, seed);
-    check(count_logged(*c, "The ray turns to Far.") == 1 && count_logged(*c, "Wizard -> Far") == 2 &&
-          count_logged(*c, "Wizard -> Near") == 0,
+    check(count_logged(*c, "The ray turns to Far.") == 1 &&
+              count_logged(*c, "Wizard -> Far") == 2 && count_logged(*c, "Wizard -> Near") == 0,
           "A ray turns to the next aimed foe before a nearer one");
 
     // An enemy Wizard may aim its rays at a downed party member (SRD: still a
     // creature; each hit is a failed death save).
-    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
-    auto downed = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Fallen", Side::party, {1, 1}, profile,
-                VitalState{0, false, {}, {}}},
-            {2, "campaign-character", "Standing", Side::party, {1, 4}, profile},
-            {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile}
-        }},
-    5);
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
+    auto downed =
+        module->create({{12, 6, std::vector<Terrain>(72)},
+                        {{1,
+                          "campaign-character",
+                          "Fallen",
+                          Side::party,
+                          {1, 1},
+                          profile,
+                          VitalState{0, false, {}, {}}},
+                         {2, "campaign-character", "Standing", Side::party, {1, 4}, profile},
+                         {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile}}},
+                       5);
     reach(*downed, 98);
     bool offered = false;
     for (const auto &command : downed->legal_commands())
@@ -797,18 +824,18 @@ void shield_missile_checks()
     const auto foe = wizard(1, {"magic_missile"});
     const auto profile = [&](const Character &who)
     {
-        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+        return module->character_profile(who.sheet(), std::vector<std::string>{}).data;
     };
-    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}
-        }},
-    5);
+    auto c = module->create(
+        {{12, 6, std::vector<Terrain>(72)},
+         {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+          {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}}},
+        5);
     reach(*c, 98);
     check(submit(*c, "magic_missile", 1) && c->snapshot().actor == 1, "Magic Missile asks");
     const int hp = unit(*c, 1).hit_points;
     check(submit(*c, "shield") && logged(*c, "Wizard's Shield blocks Magic Missile.") &&
-          unit(*c, 1).hit_points == hp,
+              unit(*c, 1).hit_points == hp,
           "Shield stops Magic Missile");
 }
 
@@ -846,15 +873,16 @@ void shield_slot_per_turn_checks()
 void misty_step_checks()
 {
     auto module = rules();
-    auto c = battle(*module, wizard(3, {"magic_missile"}, {"misty_step", "shatter"}), {2, 1}, {11, 5});
+    auto c =
+        battle(*module, wizard(3, {"magic_missile"}, {"misty_step", "shatter"}), {2, 1}, {11, 5});
     const auto before = slots(*c);
     check(submit(*c, "misty_step") && !offered(*c, "area_cast") && !aim(*c, Cell{2, 1}) &&
-          !aim(*c, Cell{8, 1}),
+              !aim(*c, Cell{8, 1}),
           "Misty Step needs an unoccupied square within 30 feet");
     check(aim(*c, Cell{6, 1}) && submit(*c, "area_cast") && unit(*c, 1).cell == Cell{6, 1},
           "The Wizard teleports to the chosen square");
     check(!c->snapshot().reaction_pending && unit(*c, 1).action && !unit(*c, 1).bonus_action &&
-          slots(*c).second == before.second - 1,
+              slots(*c).second == before.second - 1,
           "A Bonus Action from a level-two slot, with no Opportunity Attack");
 }
 
@@ -875,7 +903,7 @@ void acid_arrow_checks()
         auto c = battle(*module, wizard(3, {"magic_missile"}, {"acid_arrow", "shatter"}), {4, 1},
                         {11, 5}, 5, {1, 2}, "armored");
         check(submit(*c, "acid_arrow", 98) && logged(*c, "misses") &&
-              logged(*c, "Acid damage from the splash."),
+                  logged(*c, "Acid damage from the splash."),
               "A miss splashes half the damage");
         reach(*c, 98);
         check(submit(*c, "end") && !logged(*c, "from Acid Arrow"), "A miss leaves no later burn");
@@ -885,10 +913,10 @@ void acid_arrow_checks()
 void mind_spike_checks()
 {
     auto module = rules();
-    auto c = battle(*module, wizard(3, {"magic_missile"}, {"mind_spike", "shatter"}), {8, 1},
-                    {11, 5});
+    auto c =
+        battle(*module, wizard(3, {"magic_missile"}, {"mind_spike", "shatter"}), {8, 1}, {11, 5});
     check(submit(*c, "mind_spike", 98) && logged(*c, "First Wisdom save") &&
-          logged(*c, "First takes"),
+              logged(*c, "First takes"),
           "Mind Spike deals Psychic damage, half on a successful save");
 }
 
@@ -906,7 +934,8 @@ void ray_of_enfeeblement_checks()
         {
             failed = true;
             const auto snapshot = c->save();
-            check(module->restore(snapshot)->save() == snapshot, "Enfeeblement survives a checkpoint");
+            check(module->restore(snapshot)->save() == snapshot,
+                  "Enfeeblement survives a checkpoint");
         }
         else
         {
@@ -926,14 +955,14 @@ void laughter_concentration_checks()
     auto module = rules();
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = battle(*module, wizard(1, {"magic_missile", "hideous_laughter"}), {4, 1}, {5, 1},
-                        seed);
+        auto c =
+            battle(*module, wizard(1, {"magic_missile", "hideous_laughter"}), {4, 1}, {5, 1}, seed);
         check(submit(*c, "hideous_laughter", 98), "Cast Hideous Laughter");
         if (!logged(*c, "First falls Prone, laughing."))
             continue;
         next_turn(*c);
         check(submit(*c, "hideous_laughter", 99) && logged(*c, "Wizard loses Concentration.") &&
-              !has_condition(*c, 98, "Prone and Incapacitated (laughing)"),
+                  !has_condition(*c, 98, "Prone and Incapacitated (laughing)"),
               "A new Concentration spell ends the laughter");
         return;
     }
@@ -948,15 +977,15 @@ void incapacitated_concentration_checks()
     const auto foe = wizard(1, {"magic_missile", "hideous_laughter"});
     const auto profile = [&](const Character &who)
     {
-        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+        return module->character_profile(who.sheet(), std::vector<std::string>{}).data;
     };
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
-                {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}
-            }},
-        seed);
+        auto c = module->create(
+            {{12, 6, std::vector<Terrain>(72)},
+             {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+              {98, "campaign-character", "Foe", Side::opposition, {6, 1}, profile(foe)}}},
+            seed);
         reach(*c, 1);
         check(submit(*c, "blur", 1) && has_condition(*c, 1, "Concentrating"), "Blur is cast");
         reach(*c, 98);
@@ -979,19 +1008,23 @@ void area_wall_checks()
     std::vector<Terrain> field(72);
     for (int y = 0; y < 6; ++y)
         field[static_cast<std::size_t>(y * 12 + 7)] = Terrain::obstacle;
-    auto c = module->create({{12, 6, field},
-        {   {1, "campaign-character", "Wizard", Side::party, {1, 1},
-                module->character_profile(hero.sheet(), std::vector<std::string> {}).data},
-            {98, "target", "First", Side::opposition, {6, 2}},
-            {99, "target", "Second", Side::opposition, {8, 2}}
-        }},
-    5);
+    auto c =
+        module->create({{12, 6, field},
+                        {{1,
+                          "campaign-character",
+                          "Wizard",
+                          Side::party,
+                          {1, 1},
+                          module->character_profile(hero.sheet(), std::vector<std::string>{}).data},
+                         {98, "target", "First", Side::opposition, {6, 2}},
+                         {99, "target", "Second", Side::opposition, {8, 2}}}},
+                       5);
     reach(*c, 1);
     check(submit(*c, "shatter") && !aim(*c, Cell{9, 2}) && aim(*c, Cell{6, 2}),
           "Shatter may be centered only where the Wizard has a clear line");
     const auto sphere = c->snapshot().area_targeting->cells;
     check(sphere.size() == 15 && has(sphere, {6, 2}) && !has(sphere, {7, 2}) &&
-          !has(sphere, {8, 2}),
+              !has(sphere, {8, 2}),
           "The wall cuts the sphere off");
     check(submit(*c, "area_cast") && logged(*c, "First takes") && !logged(*c, "Second takes"),
           "The creature behind the wall is untouched");
@@ -1015,7 +1048,7 @@ void mirror_image_checks()
         auto c = battle(*module, wizard(3, {"magic_missile"}, {"mirror_image", "shatter"}), {2, 1},
                         {11, 5}, seed);
         check(submit(*c, "mirror_image", 1) &&
-              has_condition(*c, 1, "Mirror Image ({count} duplicates)"),
+                  has_condition(*c, 1, "Mirror Image ({count} duplicates)"),
               "Mirror Image shows its duplicates");
         reach(*c, 98);
         const int hp = unit(*c, 1).hit_points;
@@ -1058,8 +1091,8 @@ void magic_weapon_checks()
 void invisibility_checks()
 {
     auto module = rules();
-    auto c = battle(*module, wizard(3, {"magic_missile"}, {"invisibility", "shatter"}), {2, 1},
-                    {11, 5});
+    auto c =
+        battle(*module, wizard(3, {"magic_missile"}, {"invisibility", "shatter"}), {2, 1}, {11, 5});
     check(submit(*c, "invisibility", 1) && has_condition(*c, 1, "Invisible"),
           "Invisibility makes the Wizard Invisible");
     reach(*c, 98);
@@ -1069,7 +1102,7 @@ void invisibility_checks()
     check(move_to(*c, Cell{1, 3}) && !c->snapshot().reaction_pending,
           "An unseen creature leaves reach without an Opportunity Attack");
     check(submit(*c, "fire_bolt", 98) && logged(*c, "(advantage)") &&
-          logged(*c, "Wizard is no longer Invisible.") && !has_condition(*c, 1, "Invisible"),
+              logged(*c, "Wizard is no longer Invisible.") && !has_condition(*c, 1, "Invisible"),
           "Its own attack has Advantage and ends the Invisibility");
 }
 
@@ -1080,13 +1113,13 @@ void see_invisibility_checks()
     const auto foe = wizard(3, {"magic_missile"}, {"invisibility", "shatter"});
     const auto profile = [&](const Character &who)
     {
-        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+        return module->character_profile(who.sheet(), std::vector<std::string>{}).data;
     };
-    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}
-        }},
-    5);
+    auto c = module->create(
+        {{12, 6, std::vector<Terrain>(72)},
+         {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+          {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}}},
+        5);
     reach(*c, 98);
     check(submit(*c, "invisibility", 98), "The foe turns Invisible");
     reach(*c, 1);
@@ -1108,13 +1141,13 @@ void invisible_caster_awaits_a_reaction()
     const auto foe = wizard(3, {"magic_missile"}, {"invisibility", "shatter"});
     const auto profile = [&](const Character &who)
     {
-        return module->character_profile(who.sheet(), std::vector<std::string> {}).data;
+        return module->character_profile(who.sheet(), std::vector<std::string>{}).data;
     };
-    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
-            {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}
-        }},
-    5);
+    auto c = module->create(
+        {{12, 6, std::vector<Terrain>(72)},
+         {{1, "campaign-character", "Wizard", Side::party, {1, 1}, profile(hero)},
+          {98, "campaign-character", "Foe", Side::opposition, {8, 1}, profile(foe)}}},
+        5);
     reach(*c, 98);
     check(submit(*c, "invisibility", 98), "The foe turns Invisible");
     reach(*c, 1);
@@ -1127,15 +1160,15 @@ void invisible_caster_awaits_a_reaction()
     check(submit(*c, "decline"), "The Wizard declines");
     const auto log = c->snapshot().log();
     check(std::count(log.begin(), log.end(), "Foe is no longer Invisible.") == 1 &&
-          !has_condition(*c, 98, "Invisible"),
+              !has_condition(*c, 98, "Invisible"),
           "The replayed spell ends the Invisibility once");
 }
 
 void darkness_checks()
 {
     auto module = rules();
-    auto c = battle(*module, wizard(3, {"magic_missile"}, {"darkness", "shatter"}), {8, 1},
-                    {11, 5});
+    auto c =
+        battle(*module, wizard(3, {"magic_missile"}, {"darkness", "shatter"}), {8, 1}, {11, 5});
     check(submit(*c, "darkness") && aim(*c, Cell{8, 1}) && submit(*c, "area_cast"),
           "Cast Darkness on the enemy");
     const auto obscured = c->snapshot().obscured;
@@ -1160,13 +1193,13 @@ void flaming_sphere_checks()
     check(spheres.size() == 1 && beside(spheres.front(), {4, 1}), "The sphere burns beside First");
     reach(*c, 98);
     check(submit(*c, "end") && logged(*c, "First takes") &&
-          logged(*c, "Fire damage from the Flaming Sphere."),
+              logged(*c, "Fire damage from the Flaming Sphere."),
           "A creature ending its turn beside the sphere is burned");
     reach(*c, 1);
     check(submit(*c, "roll_flaming_sphere", 99) &&
-          logged(*c, "Wizard rolls the Flaming Sphere into Second.") &&
-          logged(*c, "Second takes") && unit(*c, 1).action &&
-          beside(c->snapshot().flaming_spheres.front(), {9, 1}),
+              logged(*c, "Wizard rolls the Flaming Sphere into Second.") &&
+              logged(*c, "Second takes") && unit(*c, 1).action &&
+              beside(c->snapshot().flaming_spheres.front(), {9, 1}),
           "A Bonus Action rolls the sphere into another creature");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The sphere survives a checkpoint");
@@ -1192,8 +1225,8 @@ void knock_checks()
     const auto attempts = party.try_door(DoorMethod::knock, 15);
     // A level-three Wizard has two level-two slots; untouched vitals are empty.
     check(attempts.size() == 1 && attempts[0].member == id && attempts[0].roll.total >= 15 &&
-          second_level_slots(party.member(id).vitals) == 1 &&
-          party.member(plain).vitals.resources.empty(),
+              second_level_slots(party.member(id).vitals) == 1 &&
+              party.member(plain).vitals.resources.empty(),
           "Knock opens the lock with the caster's level-two slot");
     auto module = rules();
     auto c = battle(*module, wizard(3, {"magic_missile"}, {"knock", "shatter"}), {4, 1}, {11, 5});
@@ -1209,7 +1242,7 @@ void enlarge_reduce_checks()
         auto c = battle(*module, wizard(3, {"magic_missile"}, {"enlarge_reduce", "shatter"}),
                         {2, 1}, {11, 5}, seed);
         check(submit(*c, "enlarge", 2) && !logged(*c, "Ally Constitution save") &&
-              has_condition(*c, 2, "Enlarged"),
+                  has_condition(*c, 2, "Enlarged"),
               "A willing ally is enlarged without a save");
         reach(*c, 2);
         check(submit(*c, "melee", 98), "The enlarged ally attacks");
@@ -1221,7 +1254,7 @@ void enlarge_reduce_checks()
         auto c = battle(*module, wizard(3, {"magic_missile"}, {"enlarge_reduce", "shatter"}),
                         {2, 1}, {11, 5}, seed);
         check(!submit(*c, "enlarge", 98) && submit(*c, "reduce", 98) &&
-              logged(*c, "First Constitution save"),
+                  logged(*c, "First Constitution save"),
               "An enemy is offered only Reduce, and saves");
         if (!logged(*c, "First is reduced."))
             continue;
@@ -1240,7 +1273,8 @@ void true_strike_checks()
 {
     // The targets are immune to Radiant damage, so only the weapon's type hurts.
     auto module = rules("affinity target radiant-ward immunity radiant\n");
-    const auto hero = wizard(1, {"magic_missile"}, {}, {"true_strike", "fire_bolt", "ray_of_frost"});
+    const auto hero =
+        wizard(1, {"magic_missile"}, {}, {"true_strike", "fire_bolt", "ray_of_frost"});
     {
         auto c = battle(*module, hero, {2, 1}, {11, 5});
         check(!offered(*c, "true_strike"), "True Strike needs a weapon in hand");
@@ -1252,8 +1286,8 @@ void true_strike_checks()
         check(offered(*c, "true_strike") && offered(*c, "true_strike_radiant"),
               "True Strike is offered with either damage type");
         check(submit(*c, radiant ? "true_strike_radiant" : "true_strike", 98) &&
-              logged(*c, "Wizard casts True Strike.") && logged(*c, "Wizard -> First") &&
-              !unit(*c, 1).action,
+                  logged(*c, "Wizard casts True Strike.") && logged(*c, "Wizard -> First") &&
+                  !unit(*c, 1).action,
               "True Strike makes a weapon attack with the Action");
         if (!logged(*c, " hits for "))
             throw std::runtime_error("The True Strike test expects a hit on AC 1");
@@ -1274,13 +1308,13 @@ void dragons_breath_checks()
     check(labels.size() == 5 && labels.front() == "Dragon's Breath: Acid",
           "Dragon's Breath is offered once per damage type");
     check(submit(*c, "dragons_breath_fire", 2) && unit(*c, 1).action &&
-          logged(*c, "Ally gains Dragon's Breath."),
+              logged(*c, "Ally gains Dragon's Breath."),
           "The ally gains the breath with the Wizard's Bonus Action");
     reach(*c, 2);
     check(submit(*c, "dragons_breath_exhale_fire") && aim(*c, Cell{2, 1}) &&
-          submit(*c, "area_cast") && logged(*c, "Ally exhales Dragon's Breath.") &&
-          logged(*c, "First Dexterity save") && logged(*c, "Fire damage") &&
-          !unit(*c, 2).action,
+              submit(*c, "area_cast") && logged(*c, "Ally exhales Dragon's Breath.") &&
+              logged(*c, "First Dexterity save") && logged(*c, "Fire damage") &&
+              !unit(*c, 2).action,
           "The ally exhales a 15-foot cone of the chosen type with its Action");
 }
 
@@ -1290,8 +1324,8 @@ void charm_person_checks()
     bool charmed = false;
     for (std::uint64_t seed = 1; seed < 64 && !charmed; ++seed)
     {
-        auto c = battle(*module, wizard(1, {"magic_missile", "charm_person"}), {2, 1}, {11, 5},
-                        seed);
+        auto c =
+            battle(*module, wizard(1, {"magic_missile", "charm_person"}), {2, 1}, {11, 5}, seed);
         check(submit(*c, "charm_person", 98) && logged(*c, "First Wisdom save"),
               "Charm Person calls for a Wisdom save");
         charmed = logged(*c, "First is Charmed by Wizard.");
@@ -1300,11 +1334,13 @@ void charm_person_checks()
         check(has_condition(*c, 98, "Charmed"), "The creature is Charmed");
         reach(*c, 98);
         const auto commands = c->legal_commands();
-        check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
-        {
-            return command.target == 1;
-        }) && submit(*c, "melee", 2),
-        "A Charmed creature cannot target its charmer, but may attack others");
+        check(std::none_of(commands.begin(), commands.end(),
+                           [](const auto &command)
+                           {
+                               return command.target == 1;
+                           }) &&
+                  submit(*c, "melee", 2),
+              "A Charmed creature cannot target its charmer, but may attack others");
         reach(*c, 1);
         check(submit(*c, "magic_missile", 98) && !has_condition(*c, 98, "Charmed"),
               "Damage ends the charm");
@@ -1313,7 +1349,7 @@ void charm_person_checks()
 
     auto c = battle(*module, wizard(3, {"magic_missile", "charm_person"}), {2, 1}, {4, 1});
     check(submit(*c, "charm_person_2", 98) && submit(*c, "charm_person_2", 99) &&
-          logged(*c, "First Wisdom save") && logged(*c, "Second Wisdom save"),
+              logged(*c, "First Wisdom save") && logged(*c, "Second Wisdom save"),
           "A level-two slot charms two creatures");
 }
 
@@ -1327,10 +1363,10 @@ void gust_of_wind_checks()
         check(submit(*c, "gust_of_wind") && aim(*c, Cell{4, 1}), "Aim Gust of Wind east");
         const auto line = c->snapshot().area_targeting->cells;
         check(line.size() == 20 && has(line, {2, 1}) && has(line, {11, 1}) && !has(line, {1, 1}) &&
-              !has(line, {4, 3}),
+                  !has(line, {4, 3}),
               "A two-square-wide line runs 60 feet from the Wizard");
         check(submit(*c, "area_cast") && logged(*c, "First Strength save") &&
-              !logged(*c, "Second Strength save"),
+                  !logged(*c, "Second Strength save"),
               "Only creatures in the line save");
         if (!logged(*c, "First is pushed"))
             continue;

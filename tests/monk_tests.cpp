@@ -81,10 +81,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 std::vector<std::string> attack_lines(const CombatSession &c)
@@ -109,10 +110,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
-            {98, "target", "Enemy", Side::opposition, {2, 1}}
-        }},
-    seed);
+                            {{1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
+                             {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Monk's turn");
     check(c->snapshot().actor == 1, "The Monk acts");
@@ -126,7 +126,7 @@ void martial_arts_checks()
     check(submit(*c, "melee", 98) && submit(*c, "martial_arts", 98), "Strike, then strike again");
     const auto lines = attack_lines(*c);
     check(lines.size() == 2 && number_after(lines[0], " + ") == 6 &&
-          number_after(lines[1], " + ") == 6,
+              number_after(lines[1], " + ") == 6,
           "Unarmed Strikes use Dexterity: +2 Proficiency and +4");
     for (const auto &line : lines)
         if (line.find(" hits for ") != std::string::npos)
@@ -138,7 +138,7 @@ void martial_arts_checks()
 
     auto dagger = battle(*module, monk(), {"dagger"});
     check(submit(*dagger, "melee", 98) && number_after(attack_lines(*dagger)[0], " + ") == 6 &&
-          offered(*dagger, "martial_arts"),
+              offered(*dagger, "martial_arts"),
           "A Monk weapon also uses Dexterity, and the Bonus Unarmed Strike stays");
 
     auto armored = battle(*module, monk(), {"leather"});
@@ -178,8 +178,9 @@ void shield_checks()
     auto module = rules();
     auto bare = battle(*module, monk());
     auto shielded = battle(*module, monk(), {"shield"});
-    check(unit(*bare, 1).armor_class == 16 && unit(*shielded, 1).armor_class == 14,
-          "Unarmored Defense (10 + Dexterity + Wisdom) needs no Shield; an untrained one adds nothing");
+    check(
+        unit(*bare, 1).armor_class == 16 && unit(*shielded, 1).armor_class == 14,
+        "Unarmored Defense (10 + Dexterity + Wisdom) needs no Shield; an untrained one adds nothing");
     check(offered(*bare, "martial_arts") && !offered(*shielded, "martial_arts"),
           "A Shield takes away the Bonus Action Unarmed Strike");
     check(submit(*shielded, "melee", 98) && number_after(attack_lines(*shielded)[0], " + ") == 1,
@@ -189,10 +190,11 @@ void shield_checks()
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 unsigned focus_left(const CombatSession &c)
@@ -206,21 +208,23 @@ unsigned focus_left(const CombatSession &c)
 bool has_grant(const Character &hero, std::string_view id)
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 void advancement_checks()
 {
     const auto second = monk(2), third = monk(3), fourth = monk(4);
-    check(has_grant(second, "feature:monks_focus") && has_grant(second, "feature:unarmored_movement") &&
-          has_grant(second, "feature:uncanny_metabolism") &&
-          !has_grant(second, "feature:deflect_attacks"),
+    check(has_grant(second, "feature:monks_focus") &&
+              has_grant(second, "feature:unarmored_movement") &&
+              has_grant(second, "feature:uncanny_metabolism") &&
+              !has_grant(second, "feature:deflect_attacks"),
           "Level two brings Monk's Focus, Unarmored Movement and Uncanny Metabolism");
     check(has_grant(third, "feature:deflect_attacks") && has_grant(third, "subclass:open_hand") &&
-          has_grant(third, "feature:open_hand_technique") && fourth.sheet().level == 4,
+              has_grant(third, "feature:open_hand_technique") && fourth.sheet().level == 4,
           "Level three brings Deflect Attacks and the Open Hand; level four is reached");
     auto module = rules();
     auto c = battle(*module, fourth);
@@ -234,20 +238,20 @@ void focus_checks()
     {
         auto c = battle(*module, monk(2));
         check(submit(*c, "flurry_of_blows", 98) && logged(*c, "Monk uses Flurry of Blows.") &&
-              attack_lines(*c).size() == 2 && focus_left(*c) == 1 && unit(*c, 1).action,
+                  attack_lines(*c).size() == 2 && focus_left(*c) == 1 && unit(*c, 1).action,
               "Flurry of Blows: two Unarmed Strikes for a Focus Point and the Bonus Action");
     }
     {
         auto c = battle(*module, monk(2));
         const int feet = unit(*c, 1).movement_feet;
         check(submit(*c, "step_of_the_wind") && unit(*c, 1).movement_feet == 2 * feet &&
-              focus_left(*c) == 2,
+                  focus_left(*c) == 2,
               "Step of the Wind Dashes for free");
     }
     {
         auto c = battle(*module, monk(2));
         check(submit(*c, "patient_defense_focus") && focus_left(*c) == 1 &&
-              logged(*c, "Monk uses Patient Defense."),
+                  logged(*c, "Monk uses Patient Defense."),
               "Patient Defense with a Focus Point Disengages and Dodges");
         check(submit(*c, "end"), "End the Monk's turn");
         check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
@@ -258,24 +262,24 @@ void focus_checks()
 // The Monk (1), hurt, beside an enemy (98), before Initiative decisions.
 std::unique_ptr<CombatSession> hurt_battle(const RulesModule &module, const Character &hero)
 {
-    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string>{}).data;
     Participant monk{1, "campaign-character", "Monk", Side::party, {1, 1}, profile};
     monk.state = VitalState{hero.sheet().hit_points - 5};
     return module.create({{12, 6, std::vector<Terrain>(72)},
-        {monk, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
-    5);
+                          {monk, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                         5);
 }
 
 void metabolism_checks()
 {
     auto module = rules();
     auto c = hurt_battle(*module, monk(2));
-    check(c->snapshot().initiative_choices == std::vector<EntityId> {1} &&
-          offered(*c, "uncanny_metabolism") && offered(*c, "initiative_keep"),
+    check(c->snapshot().initiative_choices == std::vector<EntityId>{1} &&
+              offered(*c, "uncanny_metabolism") && offered(*c, "initiative_keep"),
           "A hurt Monk is offered Uncanny Metabolism at Initiative");
     const int hp = unit(*c, 1).hit_points;
     check(submit(*c, "uncanny_metabolism") && logged(*c, "Monk uses Uncanny Metabolism.") &&
-          unit(*c, 1).hit_points > hp && c->snapshot().initiative_choices.empty(),
+              unit(*c, 1).hit_points > hp && c->snapshot().initiative_choices.empty(),
           "Uncanny Metabolism restores Hit Points and starts the fight");
 }
 
@@ -290,7 +294,7 @@ std::unique_ptr<CombatSession> deflect_question(const RulesModule &module, std::
         if (!c->snapshot().reaction_pending)
             continue;
         check(c->snapshot().actor == 1 && offered(*c, "deflect") && offered(*c, "decline") &&
-              !offered(*c, "shield"),
+                  !offered(*c, "shield"),
               "A hit Monk is asked about Deflect Attacks");
         return c;
     }
@@ -307,20 +311,20 @@ void deflect_checks()
     const int hp = unit(*c, 1).hit_points;
     check(submit(*c, "deflect") && !unit(*c, 1).reaction, "Deflect Attacks spends the Reaction");
     // The target creature's blows are weak, so the deflection stops them all.
-    check(c->snapshot().reaction_pending && offered(*c, "redirect") &&
-          !logged(*c, "Enemy -> Monk"),
+    check(c->snapshot().reaction_pending && offered(*c, "redirect") && !logged(*c, "Enemy -> Monk"),
           "Fully deflected, the Monk is asked about redirecting it");
     const auto at_redirect = c->save();
     check(module->restore(at_redirect)->save() == at_redirect,
           "The redirect question survives a checkpoint");
     check(submit(*c, "redirect") && logged(*c, "Monk deflects") &&
-          logged(*c, "Monk redirects the attack at Enemy.") && logged(*c, "Enemy Dexterity save") &&
-          unit(*c, 1).hit_points == hp && focus_left(*c) == 2,
+              logged(*c, "Monk redirects the attack at Enemy.") &&
+              logged(*c, "Enemy Dexterity save") && unit(*c, 1).hit_points == hp &&
+              focus_left(*c) == 2,
           "Redirecting spends a Focus Point and forces a Dexterity save");
 
     auto declined = deflect_question(*module, ++seed);
     check(submit(*declined, "decline") && logged(*declined, "Enemy -> Monk") &&
-          !logged(*declined, "deflects"),
+              !logged(*declined, "deflects"),
           "Declining lets the hit land");
 }
 
@@ -331,7 +335,7 @@ void open_hand_checks()
     {
         auto c = battle(*module, monk(3), {}, seed);
         check(offered(*c, "flurry_addle") && offered(*c, "flurry_push") &&
-              submit(*c, "flurry_topple", 98),
+                  submit(*c, "flurry_topple", 98),
               "Open Hand Technique is chosen with the Flurry");
         if (!logged(*c, "Enemy is knocked Prone."))
             continue;
@@ -358,7 +362,7 @@ void focus_option_checks()
     {
         auto c = battle(*module, monk(2));
         check(submit(*c, "patient_defense") && focus_left(*c) == 2 &&
-              logged(*c, "Monk uses Patient Defense."),
+                  logged(*c, "Monk uses Patient Defense."),
               "The free Patient Defense spends no Focus Point");
         check(submit(*c, "end") && submit(*c, "melee", 1) && !logged(*c, "(disadvantage)"),
               "Without a Focus Point there is no Dodge");
@@ -367,7 +371,7 @@ void focus_option_checks()
         auto c = battle(*module, monk(2));
         const int feet = unit(*c, 1).movement_feet;
         check(submit(*c, "step_of_the_wind_focus") && focus_left(*c) == 1 &&
-              unit(*c, 1).movement_feet == 2 * feet,
+                  unit(*c, 1).movement_feet == 2 * feet,
               "Step of the Wind with a Focus Point Dashes");
         Command away;
         for (const auto &command : c->legal_commands())
@@ -384,8 +388,8 @@ void focus_option_checks()
         next_monk_turn(*c);
         const auto saved = c->save();
         check(!offered(*c, "flurry_of_blows") && !offered(*c, "patient_defense_focus") &&
-              !offered(*c, "step_of_the_wind_focus") && offered(*c, "patient_defense") &&
-              !submit(*c, "flurry_of_blows", 98) && c->save() == saved,
+                  !offered(*c, "step_of_the_wind_focus") && offered(*c, "patient_defense") &&
+                  !submit(*c, "flurry_of_blows", 98) && c->save() == saved,
               "With no Focus Point left only the free options are offered");
     }
 }
@@ -395,17 +399,19 @@ void movement_and_metabolism_checks()
 {
     auto module = rules();
     check(battle(*module, monk(4))->snapshot().combatants.front().movement_feet == 40 &&
-          unit(*battle(*module, monk(4), {"shield"}), 1).movement_feet == 30,
+              unit(*battle(*module, monk(4), {"shield"}), 1).movement_feet == 30,
           "A Shield takes away Unarmored Movement");
     auto c = hurt_battle(*module, monk(2));
     check(submit(*c, "uncanny_metabolism"), "Uncanny Metabolism is used");
     auto vitals = unit(*c, 1).persistent;
     vitals.hit_points -= 5;
-    const auto profile = module->character_profile(monk(2).sheet(), std::vector<std::string> {}).data;
+    const auto profile =
+        module->character_profile(monk(2).sheet(), std::vector<std::string>{}).data;
     Participant again{1, "campaign-character", "Monk", Side::party, {1, 1}, profile};
     again.state = vitals;
     auto later = module->create({{12, 6, std::vector<Terrain>(72)},
-        {again, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, 5);
+                                 {again, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                                5);
     check(!offered(*later, "uncanny_metabolism"),
           "Uncanny Metabolism is not offered again before a Long Rest");
 }
@@ -438,8 +444,8 @@ void open_hand_option_checks()
                 const auto plain_before = attack_lines(*plain).size();
                 // A provoked attack may first ask the Monk about Deflect Attacks.
                 check(submit(*plain, "flurry_of_blows", 98) && leave(*plain) &&
-                      (plain->snapshot().reaction_pending ||
-                       attack_lines(*plain).size() > plain_before + 2),
+                          (plain->snapshot().reaction_pending ||
+                           attack_lines(*plain).size() > plain_before + 2),
                       "Without Addle, leaving its reach provokes one");
                 addled = true;
             }

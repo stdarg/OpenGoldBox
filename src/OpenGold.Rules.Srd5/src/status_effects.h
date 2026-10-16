@@ -595,26 +595,26 @@ struct RepeatingSave
 
 // At a future boundary, effects expiring at that boundary no longer prevent healing.
 [[nodiscard]] bool healing_blocked(const EffectState &effects, std::uint64_t after_ms = 0) noexcept;
-void apply_chill_touch(EffectState &effects, EffectSource source,
-                       std::string name, unsigned duration_ms);
-void apply_guiding_bolt(EffectState &effects, EffectSource source,
-                        std::string name, unsigned duration_ms);
+void apply_chill_touch(EffectState &effects, EffectSource source, std::string name,
+                       unsigned duration_ms);
+void apply_guiding_bolt(EffectState &effects, EffectSource source, std::string name,
+                        unsigned duration_ms);
 // Poisoned or Color Spray's Blinded, lasting `duration_ms` (to the end of the
 // caster's next turn).
-void apply_poisoned(EffectState &effects, EffectSource source,
-                    std::string name, unsigned duration_ms, EffectKind kind = EffectKind::poisoned);
+void apply_poisoned(EffectState &effects, EffectSource source, std::string name,
+                    unsigned duration_ms, EffectKind kind = EffectKind::poisoned);
 [[nodiscard]] bool opportunity_blocked(const EffectState &effects) noexcept;
-void apply_shocking_grasp(EffectState &effects, EffectSource source,
-                          std::string name, unsigned duration_ms);
+void apply_shocking_grasp(EffectState &effects, EffectSource source, std::string name,
+                          unsigned duration_ms);
 // The net Speed reduction from effects; negative when Longstrider raises Speed,
 // and enough to bring any Speed to 0 while Restrained.
 [[nodiscard]] int speed_penalty(const EffectState &effects) noexcept;
 [[nodiscard]] bool slowed(const EffectState &effects) noexcept;
 [[nodiscard]] bool frosted(const EffectState &effects) noexcept;
-void apply_ray_of_frost(EffectState &effects, EffectSource source,
-                        std::string name, unsigned duration_ms);
-void apply_frosts_chill(EffectState &effects, EffectSource source,
-                        std::string name, unsigned duration_ms);
+void apply_ray_of_frost(EffectState &effects, EffectSource source, std::string name,
+                        unsigned duration_ms);
+void apply_frosts_chill(EffectState &effects, EffectSource source, std::string name,
+                        unsigned duration_ms);
 // Hamstring Blow: a newer blow replaces an older one, whoever struck it.
 void apply_hamstring(EffectState &effects, EffectSource source, std::string name,
                      unsigned duration_ms);
@@ -626,8 +626,8 @@ void apply_hamstring(EffectState &effects, EffectSource source, std::string name
 [[nodiscard]] bool studied_by(const EffectState &effects, EffectSource source) noexcept;
 // Brutal Strike's Staggering Blow or Sundering Blow, until the start of the
 // Barbarian's next turn, `duration_ms` from now.
-void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource source,
-                       std::string name, unsigned duration_ms);
+void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource source, std::string name,
+                       unsigned duration_ms);
 // Spends a Staggering Blow's Disadvantage on this saving throw, if one is left.
 [[nodiscard]] bool spend_staggering(EffectState &effects);
 // Spends a Sundering Blow's +5 on an attack roll by anyone but its Barbarian.
@@ -637,17 +637,16 @@ void apply_studied(EffectState &effects, EffectSource source, std::string name,
                    unsigned duration_ms);
 [[nodiscard]] bool has_attack_mastery(const EffectState &effects) noexcept;
 [[nodiscard]] bool can_apply_attack_mastery(const EffectState &, EffectKind, EffectSource source);
-void apply_attack_mastery(EffectState &, EffectKind, EffectSource source,
-                          std::string name, unsigned duration_ms);
+void apply_attack_mastery(EffectState &, EffectKind, EffectSource source, std::string name,
+                          unsigned duration_ms);
 void consume_attack_masteries(EffectState &attacker, EffectState &target, EffectSource source);
 [[nodiscard]] bool blinded(const EffectState &effects) noexcept;
 [[nodiscard]] bool can_apply(const EffectState &effects) noexcept;
-void apply_blindness(EffectState &effects, EffectSource source,
-                     std::string name, RepeatingSave save);
-void apply_ensnaring_strike(EffectState &, EffectSource source,
-                            std::string name, int dc);
-void apply_entangle(EffectState &, EffectSource source, std::string name,
-                    int dc, EffectKind kind = EffectKind::entangle);
+void apply_blindness(EffectState &effects, EffectSource source, std::string name,
+                     RepeatingSave save);
+void apply_ensnaring_strike(EffectState &, EffectSource source, std::string name, int dc);
+void apply_entangle(EffectState &, EffectSource source, std::string name, int dc,
+                    EffectKind kind = EffectKind::entangle);
 // Restrained: Speed 0, attacks against it have Advantage, its attacks and
 // Dexterity saves have Disadvantage.
 [[nodiscard]] bool restrained(const EffectState &effects) noexcept;
@@ -664,24 +663,23 @@ void apply_asleep(EffectState &effects, EffectSource source, std::string name);
 // Sleep's drowsiness, Hideous Laughter, Ray of Enfeeblement or Frightened.
 void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
                                std::string name, RepeatingSave save);
-void apply_hold_person(EffectState &effects, EffectSource source,
-                       std::string name, RepeatingSave save);
-void apply_sanctuary(EffectState &effects, EffectSource source,
-                     std::string name, int dc);
-void apply_searing_smite(EffectState &, EffectSource source,
-                         std::string name, int dc);
+void apply_hold_person(EffectState &effects, EffectSource source, std::string name,
+                       RepeatingSave save);
+void apply_sanctuary(EffectState &effects, EffectSource source, std::string name, int dc);
+void apply_searing_smite(EffectState &, EffectSource source, std::string name, int dc);
 // Applies a spell benefit that has no save. `value` is kind-specific.
-void apply_spell_benefit(EffectState &, EffectSource source,
-                         std::string name, EffectKind kind, int value);
+void apply_spell_benefit(EffectState &, EffectSource source, std::string name, EffectKind kind,
+                         int value);
 // Lasts until the end of the target's next turn, `duration_ms` from now.
-void apply_command(EffectState &, EffectSource source, std::string name,
-                   CommandOption option, unsigned duration_ms);
+void apply_command(EffectState &, EffectSource source, std::string name, CommandOption option,
+                   unsigned duration_ms);
 // The Command the target must obey, if any.
 [[nodiscard]] const Effect *command_effect(const EffectState &);
 bool has_effect(const EffectState &, EffectKind) noexcept;
 // Aid's increase to the Hit Point maximum; Aid does not stack with itself.
 [[nodiscard]] int hit_point_bonus(const EffectState &);
 [[nodiscard]] RollModifiers saving_modifiers(Ability ability, bool untrained_armor, bool dodge);
+
 // What decides an attack roll's Advantage and Disadvantage. Four flags in a row
 // are easy to pass in the wrong order, so callers name each one.
 struct AttackConditions
@@ -691,7 +689,9 @@ struct AttackConditions
     bool target_dodging{};
     bool other_disadvantage{};
 };
+
 [[nodiscard]] RollModifiers attack_modifiers(const AttackConditions &conditions);
+
 // All subjects share one chronological event queue. Advancing 12 seconds once
 // must consume exactly the same rolls as advancing 1 second twelve times.
 // Intelligence, Wisdom or Charisma: the saves Gnomish Cunning favors.
@@ -700,6 +700,7 @@ struct AttackConditions
     return ability == Ability::intelligence || ability == Ability::wisdom ||
            ability == Ability::charisma;
 }
+
 // A repeated save's modifiers for the subject, Gnomish Cunning included.
 [[nodiscard]] RollModifiers mental_save_modifiers(Ability ability, const EffectSubject &subject);
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,

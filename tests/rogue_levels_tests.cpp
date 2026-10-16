@@ -63,8 +63,6 @@ CharacterDraft draft(std::string klass, std::string race = "dwarf")
     return d;
 }
 
-
-
 // A Rogue of the level, advanced through the rules' ordinary level-ups.
 Character rogue(unsigned level, std::string race = "dwarf")
 {
@@ -83,10 +81,11 @@ Character rogue(unsigned level, std::string race = "dwarf")
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -110,10 +109,11 @@ std::unique_ptr<RulesModule> dummy_rules()
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -129,10 +129,10 @@ CombatantView unit(const CombatSession &c, EntityId id)
 std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &hero,
                                      std::uint64_t seed, bool ally = true)
 {
-    const auto profile = rules.character_profile(hero.sheet(), std::vector<std::string> {"dagger"}).data;
-    std::vector<Participant> setup{
-        {1, "campaign-character", "Rogue", Side::party, {1, 1}, profile},
-        {98, "dummy", "Dummy", Side::opposition, {2, 1}}};
+    const auto profile =
+        rules.character_profile(hero.sheet(), std::vector<std::string>{"dagger"}).data;
+    std::vector<Participant> setup{{1, "campaign-character", "Rogue", Side::party, {1, 1}, profile},
+                                   {98, "dummy", "Dummy", Side::opposition, {2, 1}}};
     if (ally)
         setup.push_back({2, "dull", "Ally", Side::party, {3, 1}});
     auto c = rules.create({{8, 3, std::vector<Terrain>(24)}, setup}, seed);
@@ -154,20 +154,26 @@ void progression_checks()
     }
     const auto ten = rogue(10);
     const auto &grants = ten.sheet().grants;
-    check(std::count_if(grants.begin(), grants.end(), [](const auto & g)
-    {
-        return g.source_id == "class:rogue:ability_score_improvement";
-    }) == 3, "Feats or ability points at levels 4, 8 and 10");
-    check(std::count_if(grants.begin(), grants.end(), [](const auto & g)
-    {
-        return g.source_id == "class:rogue:expertise:6" && g.id.starts_with("expertise:");
-    }) == 2, "Expertise in two more skills at level 6");
+    check(std::count_if(grants.begin(), grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.source_id == "class:rogue:ability_score_improvement";
+                        }) == 3,
+          "Feats or ability points at levels 4, 8 and 10");
+    check(std::count_if(grants.begin(), grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.source_id == "class:rogue:expertise:6" &&
+                                   g.id.starts_with("expertise:");
+                        }) == 2,
+          "Expertise in two more skills at level 6");
     CampaignParty party(module());
     party.add_pc(ten);
     const auto bytes = encode_campaign(party, nullptr, "rogue-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "rogue-levels", nullptr).party);
+                                 "rogue-levels", nullptr)
+                     .party);
     check(encode_campaign(next, nullptr, "rogue-levels") == bytes,
           "A level-10 Rogue saves and reloads exactly");
 
@@ -178,19 +184,19 @@ void progression_checks()
     const auto holds = [&](std::string_view id, int level)
     {
         return std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(),
-                           [&](const auto & g)
-        {
-            return g.id == id && g.level == level;
-        });
+                           [&](const auto &g)
+                           {
+                               return g.id == id && g.level == level;
+                           });
     };
     check(holds("feature:improved_cunning_strike", 11) && holds("feature:use_magic_device", 13) &&
-          holds("feature:devious_strikes", 14) && holds("feature:slippery_mind", 15),
+              holds("feature:devious_strikes", 14) && holds("feature:slippery_mind", 15),
           "The level 11-15 features arrive at their levels");
     unsigned proficient = 0;
     for (const auto ability : all_abilities)
         proficient += fifteen.sheet().save_proficiencies[ability] ? 1 : 0;
     check(proficient == 4 && fifteen.sheet().save_proficiencies[Ability::wisdom] &&
-          fifteen.sheet().save_proficiencies[Ability::charisma],
+              fifteen.sheet().save_proficiencies[Ability::charisma],
           "Slippery Mind: Wisdom and Charisma saves at level 15");
 }
 
@@ -223,15 +229,17 @@ void devious_checks()
         {
             auto c = fight(*rules, rogue(14), seed);
             check(offered(*c, verb) && offered(*c, "melee_trip+knock_out") &&
-                  !offered(*c, "melee_withdraw+knock_out+trip"), "Devious Strikes are offered");
+                      !offered(*c, "melee_withdraw+knock_out+trip"),
+                  "Devious Strikes are offered");
             check(submit(*c, verb, 98), "A Devious Strike");
             const auto conditions = unit(*c, 98).conditions;
             const auto shows = [&](std::string_view text)
             {
-                return std::any_of(conditions.begin(), conditions.end(), [&](const auto & m)
-                {
-                    return m.source == text;
-                });
+                return std::any_of(conditions.begin(), conditions.end(),
+                                   [&](const auto &m)
+                                   {
+                                       return m.source == text;
+                                   });
             };
             const auto saved = c->save();
             check(rules->restore(saved)->save() == saved, "A checkpoint keeps the effect");
@@ -276,8 +284,8 @@ void cunning_checks()
             else
             {
                 const auto free = c->snapshot().free_movement;
-                withdrew = logged(*c, "Rogue may withdraw 15 feet") && free &&
-                           free->remaining_feet == 15;
+                withdrew =
+                    logged(*c, "Rogue may withdraw 15 feet") && free && free->remaining_feet == 15;
                 const auto saved = c->save();
                 check(rules->restore(saved)->save() == saved, "A checkpoint keeps the withdrawal");
             }
@@ -295,13 +303,14 @@ void uncanny_dodge_checks()
     {
         auto c = fight(*rules, rogue(5), seed, false);
         check(submit(*c, "end"), "The Rogue waits");
-        for (unsigned steps = 0; steps < 4 && c->snapshot().actor == 98 &&
-                !offered(*c, "uncanny_dodge"); ++steps)
+        for (unsigned steps = 0;
+             steps < 4 && c->snapshot().actor == 98 && !offered(*c, "uncanny_dodge"); ++steps)
             check(c->submit(choose_demo_command(*c)), "The dummy attacks");
         if (!offered(*c, "uncanny_dodge"))
             continue;
         check(submit(*c, "uncanny_dodge") && logged(*c, "Rogue uses Uncanny Dodge") &&
-              !unit(*c, 1).reaction, "Uncanny Dodge halves the hit for the Reaction");
+                  !unit(*c, 1).reaction,
+              "Uncanny Dodge halves the hit for the Reaction");
         return;
     }
     throw std::runtime_error("No seed's dummy hits the Rogue");
@@ -317,11 +326,11 @@ void evasion_checks()
     const auto foe = rules->character_profile(rogue(7).sheet(), {}).data;
     for (std::uint64_t seed = 1; seed < 80; ++seed)
     {
-        auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Breather", Side::party, {1, 1}, profile},
-                {98, "campaign-character", "Evader", Side::opposition, {2, 1}, foe}
-            }},
-        seed);
+        auto c =
+            rules->create({{8, 3, std::vector<Terrain>(24)},
+                           {{1, "campaign-character", "Breather", Side::party, {1, 1}, profile},
+                            {98, "campaign-character", "Evader", Side::opposition, {2, 1}, foe}}},
+                          seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the breather's turn");
         if (c->snapshot().actor != 1 || !submit(*c, "breath_weapon_line"))
@@ -352,10 +361,9 @@ void reliable_checks()
     for (std::uint64_t seed = 1; seed < 80; ++seed)
     {
         auto c = rules->create({{12, 6, walled},
-            {   {1, "campaign-character", "Rogue", Side::party, {3, 1}, profile},
-                {98, "dull", "Foe", Side::opposition, {8, 1}}
-            }},
-        seed);
+                                {{1, "campaign-character", "Rogue", Side::party, {3, 1}, profile},
+                                 {98, "dull", "Foe", Side::opposition, {8, 1}}}},
+                               seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
         check(submit(*c, "cunning_hide"), "The Rogue hides");
@@ -371,11 +379,11 @@ void supreme_sneak_checks()
 {
     const auto rules = dummy_rules();
     const auto profile =
-        rules->character_profile(rogue(9).sheet(), std::vector<std::string> {"dagger"}).data;
+        rules->character_profile(rogue(9).sheet(), std::vector<std::string>{"dagger"}).data;
     std::vector<Terrain> walled(72);
     for (int y = 0; y <= 2; ++y)
         walled[y * 12 + 4] = Terrain::obstacle;
-    const auto step = [](CombatSession & c, Cell cell)
+    const auto step = [](CombatSession &c, Cell cell)
     {
         for (const auto &command : c.legal_commands())
             if (command.verb == "move" && command.destination == cell)
@@ -385,16 +393,15 @@ void supreme_sneak_checks()
     for (std::uint64_t seed = 1; seed < 120; ++seed)
     {
         auto c = rules->create({{12, 6, walled},
-            {   {1, "campaign-character", "Rogue", Side::party, {3, 1}, profile},
-                {98, "dull", "Foe", Side::opposition, {6, 1}}
-            }},
-        seed);
+                                {{1, "campaign-character", "Rogue", Side::party, {3, 1}, profile},
+                                 {98, "dull", "Foe", Side::opposition, {6, 1}}}},
+                               seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
         if (!submit(*c, "cunning_hide") || !unit(*c, 1).hidden)
             continue;
         if (!step(*c, {3, 2}) || !step(*c, {3, 3}) || !step(*c, {4, 3}) || !step(*c, {5, 2}) ||
-                !unit(*c, 1).hidden)
+            !unit(*c, 1).hidden)
             continue;
         check(offered(*c, "melee_stealth"), "A hidden Rogue is offered Stealth Attack");
         check(submit(*c, "melee_stealth", 98), "The Stealth Attack");

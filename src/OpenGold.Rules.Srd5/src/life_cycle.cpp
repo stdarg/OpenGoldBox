@@ -8,15 +8,15 @@ namespace opengold::srd5::detail
 void validate_temporary_hp(const rules::TemporaryHitPoints &pool)
 {
     if (pool.amount < 0 || (pool.amount == 0) != pool.source_id.empty() ||
-            pool.source_id.size() > 128 ||
-            std::any_of(pool.source_id.begin(), pool.source_id.end(),
-                        [](unsigned char c)
-{
-    return !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-             (c >= '0' && c <= '9') || c == ':' || c == '/' || c == '_' ||
-             c == '-' || c == '.');
-    }))
-    throw std::runtime_error("Invalid Temporary Hit Points");
+        pool.source_id.size() > 128 ||
+        std::any_of(pool.source_id.begin(), pool.source_id.end(),
+                    [](unsigned char c)
+                    {
+                        return !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                                 (c >= '0' && c <= '9') || c == ':' || c == '/' || c == '_' ||
+                                 c == '-' || c == '.');
+                    }))
+        throw std::runtime_error("Invalid Temporary Hit Points");
 }
 
 void grant_temporary_hp(LifeState &state, const rules::TemporaryHitPoints &offered,
@@ -49,19 +49,19 @@ void validate_recovery(const LifeState &state)
 {
     const auto &clock = state.recovery;
     if (clock.death_save_in_ms > death_turn_ms ||
-            clock.stable_recovery_in_ms > 4 * recovery_hour_ms ||
-            ((state.hp > 0 || state.dead) &&
-             (clock.death_save_in_ms || clock.stable_recovery_in_ms || clock.stable_recovery_due)) ||
-            (state.stable && clock.death_save_in_ms) ||
-            (!state.stable && (clock.stable_recovery_in_ms || clock.stable_recovery_due)) ||
-            (clock.stable_recovery_due && clock.stable_recovery_in_ms))
+        clock.stable_recovery_in_ms > 4 * recovery_hour_ms ||
+        ((state.hp > 0 || state.dead) &&
+         (clock.death_save_in_ms || clock.stable_recovery_in_ms || clock.stable_recovery_due)) ||
+        (state.stable && clock.death_save_in_ms) ||
+        (!state.stable && (clock.stable_recovery_in_ms || clock.stable_recovery_due)) ||
+        (clock.stable_recovery_due && clock.stable_recovery_in_ms))
         throw std::runtime_error("Invalid recovery clock");
 }
 
 void start_stable_recovery(LifeState &state, std::uint64_t &rng)
 {
     if (state.hp == 0 && !state.dead && state.stable && !state.recovery.stable_recovery_in_ms &&
-            !state.recovery.stable_recovery_due)
+        !state.recovery.stable_recovery_due)
         state.recovery.stable_recovery_in_ms =
             static_cast<unsigned>(roll_die(rng, 4)) * recovery_hour_ms;
 }
@@ -114,8 +114,7 @@ int death_save(LifeState &state, std::uint64_t &rng, bool can_heal, bool lucky, 
 
 namespace
 {
-void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp,
-                  DamageOptions options)
+void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp, DamageOptions options)
 {
     const bool was_zero = state.hp == 0;
     // A buffer prevents HP loss, not taking damage. At zero HP the original
@@ -155,7 +154,7 @@ void damage_life(LifeState &state, int amount, int maximum_hp, DamageOptions opt
 void set_life_hit_points(LifeState &state, int hp, int maximum_hp)
 {
     if (hp < 0 || hp > maximum_hp || maximum_hp < 1 || state.hp < 0 || state.hp > maximum_hp ||
-            (state.dead && hp))
+        (state.dead && hp))
         throw std::runtime_error("Invalid HP assignment");
     if (hp == state.hp)
         return;

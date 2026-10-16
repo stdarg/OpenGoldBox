@@ -22,10 +22,10 @@ std::string normalized(std::string s)
     }
     s.erase(std::remove_if(s.begin(), s.end(),
                            [](char c)
-    {
-        return c == '-' || c == '_' || c == ' ';
-    }),
-    s.end());
+                           {
+                               return c == '-' || c == '_' || c == ' ';
+                           }),
+            s.end());
     return s;
 }
 } // namespace
@@ -36,7 +36,7 @@ PortraitCatalog PortraitCatalog::load()
     Ref<JSON> json;
     json.instantiate();
     if (json->parse(FileAccess::get_file_as_string("res://bin/portraits/portraits.json")) != OK ||
-            json->get_data().get_type() != Variant::DICTIONARY)
+        json->get_data().get_type() != Variant::DICTIONARY)
         throw std::runtime_error("Cannot read portrait catalog. Run build-opengoldbox.cmd.");
     const Dictionary catalog = json->get_data();
     const Array keys = catalog.keys();
@@ -48,7 +48,7 @@ PortraitCatalog PortraitCatalog::load()
         const auto field = [&](const char *key)
         {
             if (!entry.has(key) || entry[key].get_type() != Variant::STRING ||
-                    String(entry[key]).is_empty())
+                String(entry[key]).is_empty())
                 throw std::runtime_error("Missing portrait metadata");
             return std::string(String(entry[key]).utf8().get_data());
         };
@@ -64,10 +64,10 @@ PortraitCatalog PortraitCatalog::load()
     if (result.portraits_.empty())
         throw std::runtime_error("Empty portrait catalog");
     std::sort(result.portraits_.begin(), result.portraits_.end(),
-              [](const auto & a, const auto & b)
-    {
-        return a.filename < b.filename;
-    });
+              [](const auto &a, const auto &b)
+              {
+                  return a.filename < b.filename;
+              });
     return result;
 }
 
@@ -95,12 +95,12 @@ std::string PortraitCatalog::recommended(const opengold::rules::CharacterDraft &
 }
 
 std::string PortraitCatalog::of_race_and_gender(const opengold::rules::CharacterDraft &draft,
-        std::uint32_t pick) const
+                                                std::uint32_t pick) const
 {
     std::vector<const Portrait *> matches;
     for (const auto &p : portraits_)
         if (normalized(p.race) == normalized(draft.race) &&
-                normalized(p.gender) == normalized(draft.gender))
+            normalized(p.gender) == normalized(draft.gender))
             matches.push_back(&p);
     if (matches.empty())
         return recommended(draft);
@@ -108,15 +108,15 @@ std::string PortraitCatalog::of_race_and_gender(const opengold::rules::Character
 }
 
 Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppearance &appearance,
-        const opengold::rules::CharacterDraft &draft)
+                                           const opengold::rules::CharacterDraft &draft)
 {
     auto filename = appearance.portrait;
     if (std::none_of(portraits_.begin(), portraits_.end(),
-                     [&](const auto & p)
-{
-    return p.filename == filename;
-}))
-    filename = recommended(draft);
+                     [&](const auto &p)
+                     {
+                         return p.filename == filename;
+                     }))
+        filename = recommended(draft);
     if (const auto found = textures_.find(filename); found != textures_.end())
         return found->second;
     Ref<Texture2D> texture =

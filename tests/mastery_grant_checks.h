@@ -11,14 +11,14 @@ Character chosen(std::string klass)
     {
         const auto groups = creation->training_options(d);
         const auto group = *std::find_if(groups.begin(), groups.end(),
-                                         [&](const auto & g)
-        {
-            return g.id == original.id;
-        });
+                                         [&](const auto &g)
+                                         {
+                                             return g.id == original.id;
+                                         });
         auto &selected = d.training[group.id];
         for (const auto &option : group.options)
             if (selected.size() < group.count &&
-                    std::find(selected.begin(), selected.end(), option.id) == selected.end())
+                std::find(selected.begin(), selected.end(), option.id) == selected.end())
                 selected.push_back(option.id);
     }
     return Character(*creation, d, {});
@@ -26,8 +26,7 @@ Character chosen(std::string klass)
 
 void run()
 {
-    const std::map<std::string, unsigned> expected
-    {
+    const std::map<std::string, unsigned> expected{
         {"barbarian", 2}, {"fighter", 3}, {"paladin", 2}, {"ranger", 2}, {"rogue", 2}};
     for (const auto &klass : srd5::character_rules()->choices(CreationField::character_class))
     {
@@ -45,10 +44,10 @@ void run()
                 (klass.id != "barbarian" || !item.ranged) &&
                 (klass.id != "rogue" || !item.martial || item.finesse || item.light);
             const bool offered = std::any_of(options.options.begin(), options.options.end(),
-                                             [&](const auto & o)
-            {
-                return o.id == item.key;
-            });
+                                             [&](const auto &o)
+                                             {
+                                                 return o.id == item.key;
+                                             });
             check(allowed == offered, "Every SRD weapon obeys the actual class restrictions");
             if (allowed)
                 ++kinds;
@@ -80,17 +79,17 @@ void run()
             bad.grants.push_back(g);
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(bad, {});
-            });
+                {
+                    (void)rules->character_profile(bad, {});
+                });
         }
         auto duplicate = grants;
         duplicate.push_back(*std::find_if(grants.begin(), grants.end(), mastery::is_mastery_grant));
         rejects(
             [&]
-        {
-            (void)mastery::mastery_choices(duplicate, character_class, 1);
-        });
+            {
+                (void)mastery::mastery_choices(duplicate, character_class, 1);
+            });
         std::vector<std::string> selected;
         for (const auto &g : grants)
             if (mastery::is_mastery_grant(g))
@@ -106,9 +105,9 @@ void run()
         if (klass.id == "fighter" || klass.id == "barbarian")
             rejects(
                 [&]
-        {
-            (void)mastery::replace_masteries(grants, character_class, 1, next);
-        });
+                {
+                    (void)mastery::replace_masteries(grants, character_class, 1, next);
+                });
         else
             check(mastery::replace_masteries(grants, character_class, 1, next) != grants,
                   "Paladin/Ranger/Rogue may replace both kinds");
@@ -116,23 +115,23 @@ void run()
         next[0] = next[1];
         rejects(
             [&]
-        {
-            (void)mastery::replace_masteries(grants, character_class, 1, next);
-        });
+            {
+                (void)mastery::replace_masteries(grants, character_class, 1, next);
+            });
         next = selected;
         next[0] = "wand";
         rejects(
             [&]
-        {
-            (void)mastery::replace_masteries(grants, character_class, 1, next);
-        });
+            {
+                (void)mastery::replace_masteries(grants, character_class, 1, next);
+            });
         const auto original = grants;
         std::erase_if(grants, mastery::is_mastery_grant);
         rejects(
             [&]
-        {
-            (void)mastery::replace_masteries(grants, character_class, 1, selected);
-        });
+            {
+                (void)mastery::replace_masteries(grants, character_class, 1, selected);
+            });
         if (klass.id == "barbarian")
             continue;
         CampaignParty p(module());
@@ -145,7 +144,7 @@ void run()
             p.advance(id, choice);
             const auto &sheet = p.member(id).character.sheet();
             check(sheet.training.masteries.size() ==
-                  options.count + (klass.id == "fighter" && level == 4 ? 1 : 0),
+                      options.count + (klass.id == "fighter" && level == 4 ? 1 : 0),
                   "Mastery count follows actual attained levels");
             for (const auto &g : old)
                 if (mastery::is_mastery_grant(g))
@@ -155,7 +154,7 @@ void run()
         CampaignParty copy(module());
         copy.restore(
             decode_campaign(saved_bytes, *srd5::character_rules(), *rules, "grant-fixture", nullptr)
-            .party);
+                .party);
         check(saved(copy) == saved_bytes,
               "Mastery choices and advancement round-trip exactly through campaign saves");
     }
@@ -177,9 +176,9 @@ void run()
     grants.push_back({"mastery:" + extra.options.front().id, extra.id, 4, {}});
     rejects(
         [&]
-    {
-        (void)mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 3);
-    });
+        {
+            (void)mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 3);
+        });
     const auto fourth = mastery::mastery_choices(grants, mastery::CharacterClass::fighter, 4);
     check(fourth.at(extra.id).size() == 1, "Fourth kind validates at4");
 }

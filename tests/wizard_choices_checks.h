@@ -4,9 +4,8 @@ void wizard_choices_checks()
     auto rules = module();
     auto creation_rules = srd5::character_rules();
     auto draft = hero().creation_data();
-    draft.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
-    draft.spells = SpellChoices
-    {
+    draft.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
+    draft.spells = SpellChoices{
         {{"spellbook:1", {"magic_missile"}}}, std::vector<std::string>{"magic_missile"}, {}, {}};
     draft.training = {{"class:wizard", {"medicine", "nature"}}};
     CampaignParty party(module());
@@ -16,12 +15,12 @@ void wizard_choices_checks()
     check(original.starts_with("OPENGOLD-CAMPAIGN 31\n"),
           "Explicit independent creation uses the current campaign format");
     SpellChoices bad;
-    bad.prepared = std::vector<std::string> {};
+    bad.prepared = std::vector<std::string>{};
     rejects(
         [&]
-    {
-        party.choose_spells(id, bad);
-    });
+        {
+            party.choose_spells(id, bad);
+        });
     check(saved(party) == original,
           "Spell choices without a completed Long Rest reject atomically");
     auto second = party.default_advancement(id);
@@ -29,20 +28,20 @@ void wizard_choices_checks()
     party.advance(id, second);
     (void)party.rest(RestKind::long_rest);
     check(party.state().spell_rest &&
-          party.state().spell_rest->members == std::vector<MemberId> {id},
+              party.state().spell_rest->members == std::vector<MemberId>{id},
           "Completed Long Rest grants a real choice window");
     const auto after_rest = saved(party);
     const auto vitals = party.member(id).vitals;
     rejects(
         [&]
-    {
-        party.advance_time(std::chrono::minutes(1));
-    });
+        {
+            party.advance_time(std::chrono::minutes(1));
+        });
     rejects(
         [&]
-    {
-        party.begin_combat();
-    });
+        {
+            party.begin_combat();
+        });
     check(saved(party) == after_rest, "Rest choices block time/combat without spending them");
     SpellChoices rest;
     // Every available book spell stays prepared; only the cantrip changes.
@@ -64,22 +63,22 @@ void wizard_choices_checks()
     const auto used = saved(party);
     rejects(
         [&]
-    {
-        party.choose_spells(id, rest);
-    });
+        {
+            party.choose_spells(id, rest);
+        });
     check(saved(party) == used, "Repeated rest choice is rejected atomically");
     const auto replaced = rules->spell_access(party.member(id).character.sheet());
     check(std::none_of(replaced.cantrips.begin(), replaced.cantrips.end(),
-                       [](const auto & s)
-    {
-        return s.id == "fire_bolt";
-    }) &&
-    std::any_of(replaced.cantrips.begin(), replaced.cantrips.end(),
-                [](const auto & s)
-    {
-        return s.id == "poison_spray" && s.acquired_level == 2;
-    }),
-    "Replacement preserves entitlement and records actual learning level");
+                       [](const auto &s)
+                       {
+                           return s.id == "fire_bolt";
+                       }) &&
+              std::any_of(replaced.cantrips.begin(), replaced.cantrips.end(),
+                          [](const auto &s)
+                          {
+                              return s.id == "poison_spray" && s.acquired_level == 2;
+                          }),
+          "Replacement preserves entitlement and records actual learning level");
     auto c = battle(*rules, party.member(id).character.sheet(), party.member(id).vitals);
     check(has(*c, "poison_spray") && !has(*c, "fire_bolt"), "Replacement reaches actual casting");
     check(rules->restore(c->save())->save() == c->save(), "PC34 replacement combat roundtrip");
@@ -88,35 +87,35 @@ void wizard_choices_checks()
     invalid.spells = {"scorching_ray", "blindness"};
     rejects(
         [&]
-    {
-        party.advance(id, invalid);
-    });
+        {
+            party.advance(id, invalid);
+        });
     check(saved(party) == used, "New level-up cannot replace existing preparation");
     invalid = third;
     invalid.spell_learning = TrainingChoices{};
     rejects(
         [&]
-    {
-        party.advance(id, invalid);
-    });
+        {
+            party.advance(id, invalid);
+        });
     check(saved(party) == used, "Preparation cannot learn missing book entries");
     invalid = third;
     invalid.spell_learning.reset();
     rejects(
         [&]
-    {
-        party.advance(id, invalid);
-    });
+        {
+            party.advance(id, invalid);
+        });
     check(saved(party) == used, "Wizard advancement requires independent spell learning choices");
     party.advance(id, third);
     party.advance(id, party.default_advancement(id));
     const auto fourth = rules->spell_access(party.member(id).character.sheet());
     // Two book spells per level: Magic Missile plus six more, all prepared.
     check(fourth.cantrips.size() == 4 && fourth.spellbook.size() == 7 &&
-          fourth.prepared.size() == 7,
+              fourth.prepared.size() == 7,
           "Level four adds one cantrip and retains known/prepared book spells");
     check(fourth.cantrip_choices == 4 && fourth.spellbook_choices == 12 &&
-          fourth.prepared_choices == 7,
+              fourth.prepared_choices == 7,
           "Incomplete catalog never reduces SRD entitlements");
     const auto bytes = saved(party);
     restored.restore(
@@ -132,17 +131,17 @@ void wizard_choices_checks()
     const auto canceled = saved(resting);
     rejects(
         [&]
-    {
-        resting.choose_spells(resting_id, rest);
-    });
+        {
+            resting.choose_spells(resting_id, rest);
+        });
     check(saved(resting) == canceled, "Replacement without a completed rest rejects atomically");
     auto forged = party.checkpoint();
     forged.next_rest_session = 1;
     rejects(
         [&]
-    {
-        restored.restore(forged);
-    });
+        {
+            restored.restore(forged);
+        });
 }
 
 // Writes the campaign tests/wizard_choices_view_tests.gd loads: one fresh
@@ -154,9 +153,8 @@ void write_wizard_ui_fixture()
     if (!directory || !*directory)
         return;
     auto draft = hero().creation_data();
-    draft.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost", "chill_touch"};
-    draft.spells = SpellChoices
-    {
+    draft.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
+    draft.spells = SpellChoices{
         {{"spellbook:1", {"magic_missile"}}}, std::vector<std::string>{"magic_missile"}, {}, {}};
     draft.training = {{"class:wizard", {"medicine", "nature"}}};
     CampaignParty party(module());

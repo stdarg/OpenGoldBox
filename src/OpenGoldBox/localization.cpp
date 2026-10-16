@@ -94,7 +94,7 @@ String text(std::string_view source)
     // Divine Intervention, is translated in two parts.
     constexpr std::string_view intervention = " (Divine Intervention)";
     if (translated == gs(source) && source.size() > intervention.size() &&
-            source.ends_with(intervention))
+        source.ends_with(intervention))
         return format(N_("{spell} (Divine Intervention)"),
                       {{"spell", text(source.substr(0, source.size() - intervention.size()))}});
     // "Eyebite (Mystic Arcanum)", a Warlock's once-a-day spell, is
@@ -112,16 +112,16 @@ String text(std::string_view source)
     // translated in two parts: the companion is a name.
     constexpr std::string_view companion = "Dimension Door with ";
     if (translated == gs(source) && source.starts_with(companion) &&
-            source.size() > companion.size() && !source.ends_with(" slot)"))
-        return format(N_("{spell} with {name}"),
-                      {{"spell", text("Dimension Door")},
-                       {"name", gs(source.substr(companion.size()))}});
+        source.size() > companion.size() && !source.ends_with(" slot)"))
+        return format(N_("{spell} with {name}"), {{"spell", text("Dimension Door")},
+                                                  {"name", gs(source.substr(companion.size()))}});
     // "Cure Wounds (level 3 slot)", a spell cast from a higher slot, is
     // translated in two parts when the whole has no entry of its own.
     constexpr std::string_view slot_prefix = " (level ", slot_suffix = " slot)";
     const auto at = source.rfind(slot_prefix);
-    if (translated != gs(source) || at == std::string_view::npos || !source.ends_with(slot_suffix) ||
-            source.size() != at + slot_prefix.size() + 1 + slot_suffix.size())
+    if (translated != gs(source) || at == std::string_view::npos ||
+        !source.ends_with(slot_suffix) ||
+        source.size() != at + slot_prefix.size() + 1 + slot_suffix.size())
         return translated;
     const char level = source[at + slot_prefix.size()];
     if (level < '2' || level > '9')
@@ -170,11 +170,14 @@ namespace
 // with the language's separator ("1.000" in Spanish).
 String grouped_number(const std::string &value)
 {
-    const bool grouped = value.size() > 4 && value.size() % 4 != 0 &&
-                         std::all_of(value.begin(), value.end(), [&](char c)
-    {
-        return std::isdigit(static_cast<unsigned char>(c)) || c == ',';
-    }) && [&]
+    const bool grouped =
+        value.size() > 4 && value.size() % 4 != 0 &&
+        std::all_of(value.begin(), value.end(),
+                    [&](char c)
+                    {
+                        return std::isdigit(static_cast<unsigned char>(c)) || c == ',';
+                    }) &&
+        [&]
     {
         for (std::size_t at = value.size() - 4;; at -= 4)
         {

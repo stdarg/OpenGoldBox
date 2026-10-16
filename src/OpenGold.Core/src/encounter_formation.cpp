@@ -35,13 +35,12 @@ using GridShape = std::array<Columns, grid_rows>;
 // The half of its own square at the back of a side facing north, east, south
 // or west, then the whole square.
 constexpr std::array<GridShape, 5> shapes{{
-        {{{1, 0}, {1, 0}, {1, 0}, {2, 9}, {3, 10}, {4, 10}}},
-        {{{0, 2}, {0, 3}, {1, 4}, {2, 5}, {3, 6}, {4, 7}}},
-        {{{0, 6}, {0, 7}, {1, 8}, {1, 0}, {1, 0}, {1, 0}}},
-        {{{3, 6}, {4, 7}, {5, 8}, {6, 9}, {7, 10}, {8, 10}}},
-        {{{0, 6}, {0, 7}, {1, 8}, {2, 9}, {3, 10}, {4, 10}}},
-    }
-};
+    {{{1, 0}, {1, 0}, {1, 0}, {2, 9}, {3, 10}, {4, 10}}},
+    {{{0, 2}, {0, 3}, {1, 4}, {2, 5}, {3, 6}, {4, 7}}},
+    {{{0, 6}, {0, 7}, {1, 8}, {1, 0}, {1, 0}, {1, 0}}},
+    {{{3, 6}, {4, 7}, {5, 8}, {6, 9}, {7, 10}, {8, 10}}},
+    {{{0, 6}, {0, 7}, {1, 8}, {2, 9}, {3, 10}, {4, 10}}},
+}};
 constexpr std::size_t whole_square = 4;
 
 // Where a side's front rank is centred: in its own square, by its facing, and
@@ -51,12 +50,11 @@ constexpr std::array<Cell, 4> spill_front{{{3, 0}, {8, 2}, {7, 5}, {2, 3}}};
 
 // The squares a crowded side spills into, in order: behind it, then beside it.
 constexpr std::array<std::array<MapDirection, 3>, 4> spill_order{{
-        {MapDirection::south, MapDirection::west, MapDirection::east},
-        {MapDirection::west, MapDirection::south, MapDirection::north},
-        {MapDirection::north, MapDirection::west, MapDirection::east},
-        {MapDirection::east, MapDirection::north, MapDirection::south},
-    }
-};
+    {MapDirection::south, MapDirection::west, MapDirection::east},
+    {MapDirection::west, MapDirection::south, MapDirection::north},
+    {MapDirection::north, MapDirection::west, MapDirection::east},
+    {MapDirection::east, MapDirection::north, MapDirection::south},
+}};
 
 // A rank after the first is at most this long, counting squares tried.
 constexpr int longest_rank = 12;
@@ -97,8 +95,8 @@ std::vector<Area> areas(const DungeonBattlefield &field, const Side &side)
         const Cell square{side.square.x + step_x(direction), side.square.y + step_y(direction)};
         const auto fills = reversed(direction);
         const bool behind = direction == reversed(side.facing);
-        result.push_back({square, fills, spill_front[index(fills)],
-                          behind ? whole_square : index(side.facing)});
+        result.push_back(
+            {square, fills, spill_front[index(fills)], behind ? whole_square : index(side.facing)});
     }
     return result;
 }
@@ -132,8 +130,8 @@ std::vector<Cell> slots(const DungeonBattlefield &field, const Side &side)
 {
     const auto spills = areas(field, side);
     const int first_rank = static_cast<int>((side.size + 1) / 2);
-    const bool facing_sideways = side.facing == MapDirection::east ||
-                                 side.facing == MapDirection::west;
+    const bool facing_sideways =
+        side.facing == MapDirection::east || side.facing == MapDirection::west;
     bool first = true;
     std::vector<Cell> result;
     for (const auto &area : spills)
@@ -181,7 +179,7 @@ std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Si
         auto &cell = result.emplace_back();
         for (const auto candidate : candidates)
             if (field.geometry.at(candidate) != rules::Terrain::obstacle &&
-                    !occupied.contains(candidate))
+                !occupied.contains(candidate))
             {
                 cell = candidate;
                 occupied.insert(candidate);
@@ -198,8 +196,8 @@ EncounterFormation encounter_formation(const DungeonBattlefield &field, MapDirec
 {
     const int ahead = static_cast<int>(distance);
     const Side party{{0, 0}, facing, party_size, true};
-    const Side enemies{{step_x(facing) * ahead, step_y(facing) * ahead}, reversed(facing),
-                       enemy_count, false};
+    const Side enemies{
+        {step_x(facing) * ahead, step_y(facing) * ahead}, reversed(facing), enemy_count, false};
     std::set<Cell> occupied;
     auto placed_party = place(field, party, occupied);
     return {std::move(placed_party), place(field, enemies, occupied)};

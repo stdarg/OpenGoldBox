@@ -139,16 +139,17 @@ struct CombatDemoOptions
     unsigned level{1};
     std::vector<std::string> enemies, gear;
 };
+
 [[nodiscard]] CombatDemoSetup make_combat_demo(std::unique_ptr<rules::RulesModule> rules,
-        const rules::CharacterRules &characters,
-        const std::filesystem::path &game_directory,
-        const CombatDemoOptions &options = {});
+                                               const rules::CharacterRules &characters,
+                                               const std::filesystem::path &game_directory,
+                                               const CombatDemoOptions &options = {});
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
 [[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
 // The same choice from a snapshot and the commands already read, so a caller
 // that has them does not build them again.
 [[nodiscard]] rules::Command choose_demo_command(const rules::Snapshot &state,
-        const std::vector<rules::Command> &offered);
+                                                 const std::vector<rules::Command> &offered);
 // The party's flee policy: a member fast enough to flee runs for the nearest
 // open edge of the field (Dashing when it must, whatever reactions it
 // provokes) and steps off it; everyone else acts as choose_demo_command does.

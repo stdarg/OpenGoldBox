@@ -10,23 +10,24 @@
 #include "guarded_handlers.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <godot_cpp/classes/popup_menu.hpp>
+
 void RolfTourView::setup_rest()
 {
     auto *spells = presentation::setup_spell_dialog(
-                       *this, "RestSpells", presentation::guarded(this, &RolfTourView::rest_spell_keep),
-                       presentation::guarded(this, &RolfTourView::rest_spell_apply), rest_text);
+        *this, "RestSpells", presentation::guarded(this, &RolfTourView::rest_spell_keep),
+        presentation::guarded(this, &RolfTourView::rest_spell_apply), rest_text);
     presentation::required_node<Button>(*spells, "Cancel").set_text(rest_text(N_("Keep current")));
-    presentation::required_node<OptionButton>(*spells, "Replace").connect(
-        "item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
-    presentation::required_node<OptionButton>(*spells, "With").connect(
-        "item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
+    presentation::required_node<OptionButton>(*spells, "Replace")
+        .connect("item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
+    presentation::required_node<OptionButton>(*spells, "With")
+        .connect("item_selected", presentation::guarded(this, &RolfTourView::rest_spell_replaced));
     spells->connect("window_input", presentation::guarded(this, &RolfTourView::rest_spell_input));
     auto *training = presentation::setup_training_replacement(
-                         *this, presentation::guarded(this, &RolfTourView::rest_training_keep),
-                         presentation::guarded(this, &RolfTourView::rest_training_apply), rest_text);
-    training->connect("window_input", presentation::guarded(this, &RolfTourView::rest_training_input));
-    auto *training_save =
-        presentation::dialog_control<Button>(*training, "Save");
+        *this, presentation::guarded(this, &RolfTourView::rest_training_keep),
+        presentation::guarded(this, &RolfTourView::rest_training_apply), rest_text);
+    training->connect("window_input",
+                      presentation::guarded(this, &RolfTourView::rest_training_input));
+    auto *training_save = presentation::dialog_control<Button>(*training, "Save");
     training_save->set_text(rest_text(N_("Save game")));
     training_save->connect("pressed", presentation::guarded(this, &RolfTourView::rest_save));
     auto owned = presentation::make_node<Window>();
@@ -59,16 +60,11 @@ void RolfTourView::setup_rest()
         b->connect("pressed", callback);
         return b;
     };
-    button("Start", N_("Start"),
-           presentation::guarded(this, &RolfTourView::rest_start));
-    button("Heal", N_("Heal with Hit Dice"),
-           presentation::guarded(this, &RolfTourView::rest_heal));
-    button("Save", N_("Save game"),
-           presentation::guarded(this, &RolfTourView::rest_save));
-    button("Finish", N_("Cancel"),
-           presentation::guarded(this, &RolfTourView::rest_finish));
-    auto *recovery_label =
-        presentation::dialog_control<Label>(*w, "RecoveryLabel");
+    button("Start", N_("Start"), presentation::guarded(this, &RolfTourView::rest_start));
+    button("Heal", N_("Heal with Hit Dice"), presentation::guarded(this, &RolfTourView::rest_heal));
+    button("Save", N_("Save game"), presentation::guarded(this, &RolfTourView::rest_save));
+    button("Finish", N_("Cancel"), presentation::guarded(this, &RolfTourView::rest_finish));
+    auto *recovery_label = presentation::dialog_control<Label>(*w, "RecoveryLabel");
     recovery_label->set_text(rest_text(N_("Arcane Recovery")));
     presentation::dialog_control<OptionButton>(*w, "RecoveryChoice");
     button("Recover", N_("Recover slots"),
@@ -78,7 +74,7 @@ void RolfTourView::setup_rest()
     auto *use_label = presentation::dialog_control<Label>(*w, "UseLabel");
     use_label->set_text(rest_text(N_("Cast / Use")));
     presentation::dialog_control<OptionButton>(*w, "UseAction")
-    ->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
+        ->connect("item_selected", presentation::guarded(this, &RolfTourView::rest_selected));
     presentation::dialog_control<OptionButton>(*w, "UseTarget");
     button("Use", N_("Use"), presentation::guarded(this, &RolfTourView::rest_use));
 }
@@ -97,8 +93,8 @@ void RolfTourView::camp()
 
 void RolfTourView::rest_selected(std::int64_t)
 {
-    auto *list = &presentation::required_node<ItemList>(presentation::required_node<Window>(*this,
-        "RestDialog"), "Members");
+    auto *list = &presentation::required_node<ItemList>(
+        presentation::required_node<Window>(*this, "RestDialog"), "Members");
     const auto selected = list->get_selected_items();
     if (!selected.is_empty())
         rest_member_ =
@@ -128,16 +124,16 @@ void RolfTourView::refresh_rest()
     if (spending)
         kind->select(0);
     const auto selected_kind = kind->get_selected_id() == 0 ? opengold::RestKind::short_rest
-                               : opengold::RestKind::long_rest;
+                                                            : opengold::RestKind::long_rest;
     const auto infos = campaign_->rest_info(selected_kind);
     auto *list = &presentation::required_node<ItemList>(*w, "Members");
     list->clear();
     if (!rest_member_ || std::none_of(infos.begin(), infos.end(),
-                                      [&](const auto & i)
-{
-    return i.id == rest_member_;
-}))
-    rest_member_ = infos.empty() ? 0 : infos.front().id;
+                                      [&](const auto &i)
+                                      {
+                                          return i.id == rest_member_;
+                                      }))
+        rest_member_ = infos.empty() ? 0 : infos.front().id;
     String details;
     bool eligible = false, healable = false;
     auto *recovery = &presentation::required_node<OptionButton>(*w, "RecoveryChoice");
@@ -150,8 +146,8 @@ void RolfTourView::refresh_rest()
         const auto &m = campaign_->member(info.id);
         const auto &r = info.recovery;
         const bool earned = spending && std::find(state.short_rest->members.begin(),
-            state.short_rest->members.end(),
-            info.id) != state.short_rest->members.end();
+                                                  state.short_rest->members.end(),
+                                                  info.id) != state.short_rest->members.end();
         const bool can_start = info.denial == opengold::RestDenial::none;
         eligible |= can_start;
         auto row = String::utf8(m.character.sheet().name.c_str()) + "   " + rest_text(N_("HP")) +
@@ -166,9 +162,10 @@ void RolfTourView::refresh_rest()
         list->select(index);
         details = String::utf8(m.character.sheet().name.c_str()) + "\n";
         if (spending)
-            details +=
-                rest_text(earned ? N_("Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain.")
-                          : N_("This member did not complete the rest."));
+            details += rest_text(
+                earned
+                    ? N_("Short Rest completed. Heal with Hit Dice spends dice until full HP or none remain.")
+                    : N_("This member did not complete the rest."));
         else if (can_start)
             details += rest_text(N_("Eligible to rest."));
         else if (info.denial == opengold::RestDenial::cooldown)
@@ -190,10 +187,10 @@ void RolfTourView::refresh_rest()
         healable = earned && r.can_rest && r.hit_dice > 0 &&
                    m.vitals.hit_points < campaign_->hit_point_maximum(info.id);
         recovery_visible = earned && std::any_of(r.resources.begin(), r.resources.end(),
-            [](const auto & pool)
-        {
-            return pool.id == "arcane_recovery";
-        });
+                                                 [](const auto &pool)
+                                                 {
+                                                     return pool.id == "arcane_recovery";
+                                                 });
         if (recovery_visible)
             for (const auto &choice : r.choices)
             {
@@ -216,15 +213,15 @@ void RolfTourView::refresh_rest()
     recovery->set_disabled(recovery->get_item_count() == 0);
     presentation::required_node<Button>(*w, "Recover").set_visible(recovery_visible);
     presentation::required_node<Button>(*w, "Recover")
-    .set_disabled(recovery->get_item_count() == 0);
+        .set_disabled(recovery->get_item_count() == 0);
     presentation::required_node<Button>(*w, "Start").set_visible(!spending);
     presentation::required_node<Button>(*w, "Start").set_disabled(!eligible);
     presentation::required_node<Button>(*w, "Heal").set_visible(spending);
     presentation::required_node<Button>(*w, "Heal").set_disabled(!healable);
-    presentation::required_node<Button>(*w, "Save").set_visible(embedded_party_
-            && session_->can_leave() && spending);
-    presentation::required_node<Button>(*w,
-                                        "Finish").set_text(rest_text(spending ? N_("Finish") : N_("Cancel")));
+    presentation::required_node<Button>(*w, "Save")
+        .set_visible(embedded_party_ && session_->can_leave() && spending);
+    presentation::required_node<Button>(*w, "Finish")
+        .set_text(rest_text(spending ? N_("Finish") : N_("Cancel")));
     if (spending && !w->is_visible() && !rest_save_open_ && is_visible_in_tree())
     {
         w->popup_centered();
@@ -239,8 +236,8 @@ void RolfTourView::rest_start()
         auto *w = &presentation::required_node<Window>(*this, "RestDialog");
         const auto kind =
             presentation::required_node<OptionButton>(*w, "Kind").get_selected_id() == 0
-            ? opengold::RestKind::short_rest
-            : opengold::RestKind::long_rest;
+                ? opengold::RestKind::short_rest
+                : opengold::RestKind::long_rest;
         w->hide();
         rest_result_ = String();
         if (session_)
@@ -266,13 +263,12 @@ void RolfTourView::rest_heal()
         // Every automatic roll is listed so the player sees how the HP came back.
         rest_result_ = String();
         for (const auto &roll : rolls)
-            rest_result_ += rest_text(N_("Roll:")) + " d" + String::num_int64(roll.die) + " " +
-                            String::num_int64(roll.roll) + " + (" +
-                            String::num_int64(roll.modifier) + ")   " +
-                            rest_text(N_("HP restored:")) + " " +
-                            String::num_int64(roll.healing) + ";   ";
-        rest_result_ += rest_text(N_("Hit Dice remaining:")) + " " +
-                        String::num_int64(rolls.back().remaining);
+            rest_result_ +=
+                rest_text(N_("Roll:")) + " d" + String::num_int64(roll.die) + " " +
+                String::num_int64(roll.roll) + " + (" + String::num_int64(roll.modifier) + ")   " +
+                rest_text(N_("HP restored:")) + " " + String::num_int64(roll.healing) + ";   ";
+        rest_result_ +=
+            rest_text(N_("Hit Dice remaining:")) + " " + String::num_int64(rolls.back().remaining);
         refresh_rest();
     }
     catch (const std::exception &e)
@@ -294,13 +290,13 @@ void RolfTourView::rest_recover()
             return;
         const String id = choice->get_selected_metadata();
         const auto result = campaign_->recover_rest_choice(campaign_->state().short_rest->ticket,
-            rest_member_, id.utf8().get_data());
+                                                           rest_member_, id.utf8().get_data());
         rest_result_ = rest_text(result.source);
         for (const auto &argument : result.arguments)
             rest_result_ =
                 rest_result_.replace(String::utf8(("{" + argument.name + "}").c_str()),
                                      argument.translate ? rest_text(argument.value)
-                                     : String::utf8(argument.value.c_str()));
+                                                        : String::utf8(argument.value.c_str()));
         refresh_rest();
     }
     catch (const std::exception &e)
@@ -318,15 +314,15 @@ bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> 
     auto *w = &presentation::required_node<Window>(*this, "RestDialog");
     auto *action = &presentation::required_node<OptionButton>(*w, "UseAction");
     auto *target = &presentation::required_node<OptionButton>(*w, "UseTarget");
-    const auto keep = [](OptionButton & options)
+    const auto keep = [](OptionButton &options)
     {
         return options.get_selected() >= 0 ? options.get_selected_metadata() : Variant();
     };
     const auto previous_action = keep(*action), previous_target = keep(*target);
     action->clear();
     target->clear();
-    const auto actions = spending || !rest_member_ ? std::vector<opengold::rules::CampAction> {}
-                         : campaign_->camp_actions(rest_member_);
+    const auto actions = spending || !rest_member_ ? std::vector<opengold::rules::CampAction>{}
+                                                   : campaign_->camp_actions(rest_member_);
     for (const auto &offered : actions)
     {
         const int index = action->get_item_count();
@@ -395,7 +391,8 @@ void RolfTourView::rest_use()
             if (!body.vitals.dead || patient == rest_member_)
                 throw std::runtime_error("Reincarnate needs a Humanoid dead up to ten days");
             if (campaign_->rule_module().camp_action_gold(body.character.sheet(), body.vitals,
-                    id.utf8().get_data()) > opengold::coins(campaign_->state().wealth, opengold::Coin::gold))
+                                                          id.utf8().get_data()) >
+                opengold::coins(campaign_->state().wealth, opengold::Coin::gold))
                 throw std::runtime_error("The party purse cannot pay the offering");
             presentation::required_node<Window>(*this, "RestDialog").hide();
             rest_result_ = String();
@@ -406,22 +403,24 @@ void RolfTourView::rest_use()
         // Simulacrum makes a copy of the chosen member, which joins the party.
         if (id.begins_with("simulacrum") && id != String("simulacrum_repair"))
         {
-            const auto original = String::utf8(campaign_->member(patient).character.sheet().name.c_str());
+            const auto original =
+                String::utf8(campaign_->member(patient).character.sheet().name.c_str());
             const auto name = i18n::formatted(N_("{name}'s simulacrum"), {{"name", original}});
             campaign_->create_simulacrum(rest_member_, patient, id.utf8().get_data(), name);
-            rest_result_ = i18n::format(N_("{name} joins the party."), {{"name", String::utf8(name.c_str())}});
+            rest_result_ =
+                i18n::format(N_("{name} joins the party."), {{"name", String::utf8(name.c_str())}});
             refresh_rest();
             return;
         }
         const int before = party_hp();
         const bool party = !target->is_visible();
         campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());
-        rest_result_ = action->get_item_text(action->get_selected()) +
-                       (party ? String() : ": " + target->get_item_text(target->get_selected())) +
-                       "   " +
-                       (id == "lay_on_hands_cure"
-                        ? rest_text(N_("No longer Poisoned."))
-                        : rest_text(N_("HP restored:")) + " " + String::num_int64(party_hp() - before));
+        rest_result_ =
+            action->get_item_text(action->get_selected()) +
+            (party ? String() : ": " + target->get_item_text(target->get_selected())) + "   " +
+            (id == "lay_on_hands_cure"
+                 ? rest_text(N_("No longer Poisoned."))
+                 : rest_text(N_("HP restored:")) + " " + String::num_int64(party_hp() - before));
         refresh_rest();
     }
     catch (const std::exception &e)
@@ -452,7 +451,7 @@ void RolfTourView::rest_finish()
 void RolfTourView::rest_save()
 {
     if (!embedded_party_ || !session_ || !session_->can_leave() || !campaign_ ||
-            campaign_->in_combat())
+        campaign_->in_combat())
         return;
     rest_save_open_ = true;
     presentation::required_node<Window>(*this, "RestDialog").hide();
@@ -494,27 +493,27 @@ void RolfTourView::check_rest_controls()
             auto draft = campaign_->member(id).character.creation_data();
             draft.name = "Fallen companion";
             const auto companion = campaign_->add_pc(
-                                       opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
             auto state = campaign_->checkpoint();
             state.roster.front().vitals.hit_points = 1;
             for (auto &m : state.roster)
                 if (m.id == companion)
-                    m.vitals = {0, true,
-                                presentation::srd_vitals(m.character,
-                    {.failures = 3, .hit_dice = 1}),
-                    "Dead"};
+                    m.vitals = {
+                        0, true,
+                        presentation::srd_vitals(m.character, {.failures = 3, .hit_dice = 1}),
+                        "Dead"};
             campaign_->restore(std::move(state));
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
                 bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
             bytes.insert(bytes.end(), {0, 0});
             auto p = std::make_shared<const opengold::por::EclProgram>(
-                         opengold::por::EclProgram::decode(bytes, "rest controls"));
+                opengold::por::EclProgram::decode(bytes, "rest controls"));
             auto resources = std::make_shared<opengold::por::PhlanResources>();
             resources->programs[0] = p;
             const opengold::Image placeholder{1, 1, 0, 0, {0, 0, 0, 255}};
             session_.emplace(opengold::por::GeoMap{}, p,
-                             std::array<opengold::Image, 3> {placeholder, placeholder, placeholder},
+                             std::array<opengold::Image, 3>{placeholder, placeholder, placeholder},
                              0x9914, opengold::por::WallArtSet{}, resources);
             session_->campaign_party(campaign_);
             session_->advance(1);
@@ -541,10 +540,7 @@ void RolfTourView::check_rest_controls()
             check(!presentation::required_node<Button>(*w, "Heal").is_disabled(),
                   "Wounded eligible character can heal with Hit Dice");
             presentation::required_node<Button>(*w, "Heal").grab_focus();
-            for (bool down :
-                    {
-                        true, false
-                    })
+            for (bool down : {true, false})
             {
                 Ref<InputEventKey> key;
                 key.instantiate();
@@ -553,12 +549,13 @@ void RolfTourView::check_rest_controls()
                 w->push_input(key, true);
             }
             const auto &healed = campaign_->member(rest_member_);
-            check(presentation::required_node<Label>(*w,
-                    "Result").get_text().contains(rest_text(N_("HP restored:"))) &&
-                  healed.vitals.hit_points > 1,
+            check(presentation::required_node<Label>(*w, "Result")
+                          .get_text()
+                          .contains(rest_text(N_("HP restored:"))) &&
+                      healed.vitals.hit_points > 1,
                   "One action shows each die's healing result");
             check(healed.vitals.hit_points == healed.character.sheet().hit_points ||
-                  campaign_->recovery_info(rest_member_).hit_dice == 0,
+                      campaign_->recovery_info(rest_member_).hit_dice == 0,
                   "Healing stops only at full HP or with no dice left");
             check(presentation::required_node<Button>(*w, "Heal").is_disabled(),
                   "Nothing is left to heal after one action");
@@ -611,7 +608,7 @@ void RolfTourView::check_rest_controls()
             for (auto &roll : draft.rolls)
                 roll = {{6, 5, 4, 1}, 3};
             rest_member_ = campaign_->add_pc(
-                               opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
             campaign_->award_experience(2700, "arcane-ui");
             for (unsigned n = 0; n < 2; ++n)
                 campaign_->advance(rest_member_, campaign_->default_advancement(rest_member_));
@@ -619,20 +616,19 @@ void RolfTourView::check_rest_controls()
             for (auto &member : state.roster)
                 if (member.id == rest_member_)
                     member.vitals.resources = presentation::srd_vitals(
-                                                  member.character,
-                    {.slots = 2, .slots2 = 1, .hit_dice = 3});
+                        member.character, {.slots = 2, .slots2 = 1, .hit_dice = 3});
             campaign_->restore(std::move(state));
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
                 bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
             bytes.insert(bytes.end(), {0, 0});
             auto program = std::make_shared<const opengold::por::EclProgram>(
-                               opengold::por::EclProgram::decode(bytes, "arcane UI camp"));
+                opengold::por::EclProgram::decode(bytes, "arcane UI camp"));
             auto resources = std::make_shared<opengold::por::PhlanResources>();
             resources->programs[0] = program;
             const opengold::Image pixel{1, 1, 0, 0, {0, 0, 0, 255}};
             session_.emplace(opengold::por::GeoMap{}, program,
-                             std::array<opengold::Image, 3> {pixel, pixel, pixel}, 0x9914,
+                             std::array<opengold::Image, 3>{pixel, pixel, pixel}, 0x9914,
                              opengold::por::WallArtSet{}, resources);
             session_->campaign_party(campaign_);
             session_->advance(1);
@@ -644,20 +640,21 @@ void RolfTourView::check_rest_controls()
                   "Arcane Recovery is unavailable before completing the rest");
             presentation::required_node<Button>(*w, "Start").emit_signal("pressed");
             check(w->is_visible() &&
-                  presentation::required_node<OptionButton>(*w, "RecoveryChoice")
-                  .get_item_count() == 3 &&
-                  !presentation::required_node<Button>(*w, "Recover").is_disabled(),
+                      presentation::required_node<OptionButton>(*w, "RecoveryChoice")
+                              .get_item_count() == 3 &&
+                      !presentation::required_node<Button>(*w, "Recover").is_disabled(),
                   "Completed Short Rest offers exactly the three legal Wizard allocations");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "arcane-ui");
             auto rules =
                 opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
             campaign_->restore(opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
-                    *rules, "arcane-ui", nullptr)
-                               .party);
+                                                         *rules, "arcane-ui", nullptr)
+                                   .party);
             refresh_rest();
-            check(presentation::required_node<OptionButton>(*w, "RecoveryChoice")
-                  .get_item_count() == 3,
-                  "Reload preserves unused recovery eligibility");
+            check(
+                presentation::required_node<OptionButton>(*w, "RecoveryChoice").get_item_count() ==
+                    3,
+                "Reload preserves unused recovery eligibility");
         }
         else if (rest_check_stage_ == 68)
         {
@@ -673,18 +670,16 @@ void RolfTourView::check_rest_controls()
                     check(pool.remaining == 1, "Declining recovery preserves its use");
             camp();
             presentation::required_node<Button>(*w, "Start").emit_signal("pressed");
-            check(presentation::required_node<OptionButton>(*w, "RecoveryChoice")
-                  .get_item_count() == 3,
-                  "A later Short Rest can use the preserved feature");
+            check(
+                presentation::required_node<OptionButton>(*w, "RecoveryChoice").get_item_count() ==
+                    3,
+                "A later Short Rest can use the preserved feature");
         }
         else if (rest_check_stage_ == 72)
         {
             auto *choices = &presentation::required_node<OptionButton>(*w, "RecoveryChoice");
             choices->grab_focus();
-            for (bool down :
-                    {
-                        true, false
-                    })
+            for (bool down : {true, false})
             {
                 Ref<InputEventKey> key;
                 key.instantiate();
@@ -699,14 +694,8 @@ void RolfTourView::check_rest_controls()
                 presentation::required_node<OptionButton>(*w, "RecoveryChoice").get_popup();
             check(popup->is_visible(), "Keyboard opens the recovery dropdown");
             popup->set_focused_item(0);
-            for (auto code :
-                    {
-                        Key::KEY_DOWN, Key::KEY_DOWN, Key::KEY_ENTER
-                    })
-                for (bool down :
-                        {
-                            true, false
-                        })
+            for (auto code : {Key::KEY_DOWN, Key::KEY_DOWN, Key::KEY_ENTER})
+                for (bool down : {true, false})
                 {
                     Ref<InputEventKey> key;
                     key.instantiate();
@@ -721,12 +710,9 @@ void RolfTourView::check_rest_controls()
             check(String(choices->get_selected_metadata()) == "arcane_recovery:0:1",
                   ("Keyboard selects a level-two slot; selected index " +
                    std::to_string(choices->get_selected()))
-                  .c_str());
+                      .c_str());
             presentation::required_node<Button>(*w, "Recover").grab_focus();
-            for (bool down :
-                    {
-                        true, false
-                    })
+            for (bool down : {true, false})
             {
                 Ref<InputEventKey> key;
                 key.instantiate();
@@ -746,15 +732,15 @@ void RolfTourView::check_rest_controls()
                     check(pool.remaining == 2, "Unselected slot pool is unchanged");
             }
             check(choices->is_disabled() &&
-                  presentation::required_node<Button>(*w, "Recover").is_disabled() &&
-                  !presentation::required_node<Label>(*w, "Result").get_text().is_empty(),
+                      presentation::required_node<Button>(*w, "Recover").is_disabled() &&
+                      !presentation::required_node<Label>(*w, "Result").get_text().is_empty(),
                   "Used recovery disables controls and displays the result");
             const auto saved = opengold::encode_campaign(*campaign_, nullptr, "arcane-ui");
             auto rules =
                 opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
             campaign_->restore(opengold::decode_campaign(saved, *opengold::srd5::character_rules(),
-                    *rules, "arcane-ui", nullptr)
-                               .party);
+                                                         *rules, "arcane-ui", nullptr)
+                                   .party);
             refresh_rest();
             presentation::required_node<Button>(*w, "Recover").emit_signal("pressed");
             check(opengold::encode_campaign(*campaign_, nullptr, "arcane-ui") == saved,
@@ -795,14 +781,14 @@ void RolfTourView::check_rest_controls()
             presentation::required_node<Button>(*w, "Start").emit_signal("pressed");
             auto *spell = &presentation::required_node<Window>(*this, "RestSpells");
             check(spell->is_visible() && campaign_->state().spell_rest &&
-                  campaign_->state().spell_rest->members.size() == 2,
+                      campaign_->state().spell_rest->members.size() == 2,
                   "Completed Long Rest presents each eligible Wizard");
             const auto bytes = opengold::encode_campaign(*campaign_, nullptr, "spell-rest-ui");
             auto rules =
                 opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data()));
             campaign_->restore(opengold::decode_campaign(bytes, *opengold::srd5::character_rules(),
-                    *rules, "spell-rest-ui", nullptr)
-                               .party);
+                                                         *rules, "spell-rest-ui", nullptr)
+                                   .party);
             refresh_rest();
             auto *replace = &presentation::required_node<OptionButton>(*spell, "Replace");
             replace->select(1);
@@ -824,10 +810,7 @@ void RolfTourView::check_rest_controls()
             const auto id = rest_spell_member_;
             const auto expected = campaign_->preview_spell_choices(id, rest_spell_choice_);
             presentation::required_node<Button>(*spell, "Apply").grab_focus();
-            for (bool down :
-                    {
-                        true, false
-                    })
+            for (bool down : {true, false})
             {
                 Ref<InputEventKey> key;
                 key.instantiate();
@@ -836,12 +819,12 @@ void RolfTourView::check_rest_controls()
                 spell->push_input(key, true);
             }
             check(campaign_->member(id).character.sheet().grants ==
-                  expected.character.sheet().grants &&
-                  campaign_->member(id).vitals == expected.vitals,
+                          expected.character.sheet().grants &&
+                      campaign_->member(id).vitals == expected.vitals,
                   "Keyboard commits only approved spell changes");
             check(campaign_->state().spell_rest &&
-                  campaign_->state().spell_rest->members.size() == 1 &&
-                  rest_spell_member_ != id && spell->is_visible(),
+                      campaign_->state().spell_rest->members.size() == 1 &&
+                      rest_spell_member_ != id && spell->is_visible(),
                   "Next Wizard receives a separate once-only choice");
         }
         else if (rest_check_stage_ == 104)
@@ -855,7 +838,7 @@ void RolfTourView::check_rest_controls()
             escape->set_pressed(true);
             spell->emit_signal("window_input", escape);
             check(!spell->is_visible() && !campaign_->state().spell_rest &&
-                  campaign_->member(id).character.sheet().grants == before,
+                      campaign_->member(id).character.sheet().grants == before,
                   "Escape keeps current spells and releases exploration after the last Wizard");
         }
         else if (rest_check_stage_ == 108)
@@ -865,25 +848,25 @@ void RolfTourView::check_rest_controls()
             draft.character_class = "cleric";
             draft.background = "sage";
             draft.training = {{"class:cleric", {"medicine", "persuasion"}},
-                {"class:cleric:divine_order", {"protector"}}
-            };
-            draft.cantrips = std::vector<std::string> {"sacred_flame"};
-            draft.spells = opengold::rules::SpellChoices
-            {
-                {}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds",
-                                             "shield_of_faith"
-                                            }, {}, {}};
+                              {"class:cleric:divine_order", {"protector"}}};
+            draft.cantrips = std::vector<std::string>{"sacred_flame"};
+            draft.spells = opengold::rules::SpellChoices{
+                {},
+                std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds",
+                                         "shield_of_faith"},
+                {},
+                {}};
             const auto id = campaign_->add_pc(
-                                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
+                opengold::Character(*opengold::srd5::character_rules(), draft, {}));
             camp();
             presentation::required_node<OptionButton>(*w, "Kind").select(1);
             presentation::required_node<OptionButton>(*w, "Kind").emit_signal("item_selected", 1);
             presentation::required_node<Button>(*w, "Start").emit_signal("pressed");
             auto *spell = &presentation::required_node<Window>(*this, "RestSpells");
             check(spell->is_visible() && rest_spell_member_ == id &&
-                  spell->get_title() == rest_text(N_("Prepared spells")) &&
-                  !presentation::required_node<Control>(*spell, "Replace").is_visible() &&
-                  !presentation::required_node<Button>(*spell, "Apply").is_disabled(),
+                      spell->get_title() == rest_text(N_("Prepared spells")) &&
+                      !presentation::required_node<Control>(*spell, "Replace").is_visible() &&
+                      !presentation::required_node<Button>(*spell, "Apply").is_disabled(),
                   "A Cleric's Long Rest window prepares from the class list without replacement");
             presentation::required_node<Button>(*spell, "Apply").emit_signal("pressed");
             check(!spell->is_visible() && !campaign_->state().spell_rest,
@@ -901,26 +884,28 @@ void RolfTourView::check_rest_controls()
             auto *action = &presentation::required_node<OptionButton>(*w, "UseAction");
             auto *target = &presentation::required_node<OptionButton>(*w, "UseTarget");
             check(action->is_visible() && action->get_item_count() >= 2 &&
-                  action->get_item_text(0) == rest_text(N_("Cure Wounds")) &&
-                  target->get_item_count() ==
-                  static_cast<int>(
-                      campaign_->rest_info(opengold::RestKind::long_rest).size()) &&
-                  !presentation::required_node<Control>(*w, "RecoveryLabel").is_visible(),
+                      action->get_item_text(0) == rest_text(N_("Cure Wounds")) &&
+                      target->get_item_count() ==
+                          static_cast<int>(
+                              campaign_->rest_info(opengold::RestKind::long_rest).size()) &&
+                      !presentation::required_node<Control>(*w, "RecoveryLabel").is_visible(),
                   "The Cleric's Cast / Use row offers its healing spells");
             for (int n = 0; n < target->get_item_count(); ++n)
-                if (static_cast<int64_t>(target->get_item_metadata(n)) == static_cast<int64_t>(patient))
+                if (static_cast<int64_t>(target->get_item_metadata(n)) ==
+                    static_cast<int64_t>(patient))
                     target->select(n);
             presentation::required_node<Button>(*w, "Use").emit_signal("pressed");
             check(campaign_->member(patient).vitals.hit_points > 1 &&
-                  presentation::required_node<Label>(*w, "Result").get_text().contains(
-                      rest_text(N_("HP restored:"))),
+                      presentation::required_node<Label>(*w, "Result")
+                          .get_text()
+                          .contains(rest_text(N_("HP restored:"))),
                   "Use casts Cure Wounds on the chosen member");
             rest_member_ = patient;
             refresh_rest();
             const auto &patient_class =
                 campaign_->member(patient).character.creation_data().character_class;
             check(patient_class == "cleric" || patient_class == "paladin" ||
-                  !presentation::required_node<Button>(*w, "Use").is_visible(),
+                      !presentation::required_node<Button>(*w, "Use").is_visible(),
                   "A member with nothing to use has no Cast / Use row");
             w->hide();
             UtilityFunctions::print(
@@ -928,7 +913,7 @@ void RolfTourView::check_rest_controls()
             get_tree()->quit();
         }
         if (rest_check_stage_ == 10 || rest_check_stage_ == 22 || rest_check_stage_ == 34 ||
-                rest_check_stage_ == 70 || rest_check_stage_ == 80 || rest_check_stage_ == 94)
+            rest_check_stage_ == 70 || rest_check_stage_ == 80 || rest_check_stage_ == 94)
         {
             for (const auto &arg : OS::get_singleton()->get_cmdline_user_args())
                 if (String(arg).begins_with("--rest-captures="))
@@ -938,8 +923,8 @@ void RolfTourView::check_rest_controls()
                         std::filesystem::path(directory.utf8().get_data()));
                     const auto image = get_viewport()->get_texture()->get_image();
                     check(image.is_valid() &&
-                          image->save_png(directory.path_join(
-                                              String::num_int64(rest_check_stage_) + ".png")) == OK,
+                              image->save_png(directory.path_join(
+                                  String::num_int64(rest_check_stage_) + ".png")) == OK,
                           "Rest screenshot saved");
                 }
         }
@@ -970,24 +955,19 @@ void RolfTourView::refresh_rest_spells()
         rest_spell_choice_ = {};
         rest_spell_choice_.prepared = sheet.prepared_spells;
     }
-    presentation::required_node<Label>(*w,
-                                       "Title").set_text(presentation::training_string(sheet.name) + " / " +
-                                               rest_text(campaign_->state().spells_after_short_rest
-                                                       ? N_("Short Rest") : N_("Long Rest")));
+    presentation::required_node<Label>(*w, "Title")
+        .set_text(presentation::training_string(sheet.name) + " / " +
+                  rest_text(campaign_->state().spells_after_short_rest ? N_("Short Rest")
+                                                                       : N_("Long Rest")));
     presentation::spell_known(*w, campaign_->rule_module().spell_access(sheet), options.preparation,
                               rest_text);
     // Clerics replace cantrips on gaining a level, not at a Long Rest.
-    for (const char *name :
-            {"ReplaceLabel", "WithLabel", "Replace", "With"
-            })
+    for (const char *name : {"ReplaceLabel", "WithLabel", "Replace", "With"})
         presentation::required_node<Control>(*w, name).set_visible(!options.replaceable.empty());
     presentation::refresh_spell_groups(
         presentation::required_node<VBoxContainer>(*w, "Choices/Rows"), options, rest_spell_choice_,
         presentation::guarded(this, &RolfTourView::rest_spell_toggled), rest_text);
-    for (bool replacing :
-            {
-                true, false
-            })
+    for (bool replacing : {true, false})
     {
         auto *dropdown =
             &presentation::required_node<OptionButton>(*w, replacing ? "Replace" : "With");
@@ -1089,7 +1069,7 @@ void RolfTourView::refresh_rest_training()
 {
     auto *w = &presentation::required_node<Window>(*this, "RestTraining");
     if (!campaign_ || campaign_->in_combat() || campaign_->state().spell_rest ||
-            !campaign_->state().training_rest)
+        !campaign_->state().training_rest)
     {
         w->hide();
         rest_training_member_ = 0;
@@ -1114,12 +1094,12 @@ void RolfTourView::refresh_rest_training()
     for (const auto &choice : options)
         labels += (labels.is_empty() ? String() : String(", ")) + rest_text(choice.group.label);
     w->set_title(labels);
-    presentation::required_node<Label>(*w, "Title").set_text(
-        presentation::training_string(sheet.name) + " / " + labels);
+    presentation::required_node<Label>(*w, "Title")
+        .set_text(presentation::training_string(sheet.name) + " / " + labels);
     presentation::refresh_training_replacement(
         *w, std::span<const opengold::rules::TrainingReplacementOptions>(options),
-        rest_training_choice_,
-        presentation::guarded(this, &RolfTourView::rest_training_toggled), rest_text);
+        rest_training_choice_, presentation::guarded(this, &RolfTourView::rest_training_toggled),
+        rest_text);
     try
     {
         (void)campaign_->preview_rest_training(rest.ticket, id, rest_training_choice_);
@@ -1133,7 +1113,7 @@ void RolfTourView::refresh_rest_training()
     }
     presentation::required_node<Button>(*w, "Save").set_visible(embedded_party_);
     presentation::required_node<Button>(*w, "Save")
-    .set_disabled(!session_ || !session_->can_leave());
+        .set_disabled(!session_ || !session_->can_leave());
     if (!w->is_visible() && !rest_save_open_ && is_visible_in_tree())
     {
         presentation::required_node<Window>(*this, "RestDialog").hide();
@@ -1146,9 +1126,9 @@ std::vector<opengold::rules::TrainingReplacementOptions>
 RolfTourView::rest_training_choices(opengold::MemberId id) const
 {
     return campaign_->rule_module().rest_training_options(
-               campaign_->member(id).character.sheet(),
-               campaign_->state().training_after_short_rest ? opengold::RestKind::short_rest
-               : opengold::RestKind::long_rest);
+        campaign_->member(id).character.sheet(), campaign_->state().training_after_short_rest
+                                                     ? opengold::RestKind::short_rest
+                                                     : opengold::RestKind::long_rest);
 }
 
 void RolfTourView::rest_training_toggled(bool selected, String option)
@@ -1160,19 +1140,21 @@ void RolfTourView::rest_training_toggled(bool selected, String option)
     {
         const auto &options = choice.group.options;
         if (choice.group.count != 1 || std::none_of(options.begin(), options.end(),
-                [&](const auto & o)
-    {
-        return o.id == id;
-    }))
-        continue;
+                                                    [&](const auto &o)
+                                                    {
+                                                        return o.id == id;
+                                                    }))
+            continue;
         if (selected)
-            std::erase_if(rest_training_choice_, [&](const auto & picked)
-        {
-            return std::any_of(options.begin(), options.end(), [&](const auto & o)
-            {
-                return o.id == picked;
-            });
-        });
+            std::erase_if(rest_training_choice_,
+                          [&](const auto &picked)
+                          {
+                              return std::any_of(options.begin(), options.end(),
+                                                 [&](const auto &o)
+                                                 {
+                                                     return o.id == picked;
+                                                 });
+                          });
         else
         {
             refresh_rest_training();
@@ -1182,7 +1164,7 @@ void RolfTourView::rest_training_toggled(bool selected, String option)
     if (selected)
     {
         if (std::find(rest_training_choice_.begin(), rest_training_choice_.end(), id) ==
-                rest_training_choice_.end())
+            rest_training_choice_.end())
             rest_training_choice_.push_back(id);
     }
     else
@@ -1202,7 +1184,7 @@ void RolfTourView::rest_training_apply()
     catch (const std::exception &e)
     {
         presentation::required_node<Label>(*this, "RestTraining/Error")
-        .set_text(rest_text(e.what()));
+            .set_text(rest_text(e.what()));
     }
 }
 
@@ -1218,7 +1200,7 @@ void RolfTourView::rest_training_keep()
     catch (const std::exception &e)
     {
         presentation::required_node<Label>(*this, "RestTraining/Error")
-        .set_text(rest_text(e.what()));
+            .set_text(rest_text(e.what()));
     }
 }
 

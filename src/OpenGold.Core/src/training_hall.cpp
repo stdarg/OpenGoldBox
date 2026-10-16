@@ -7,30 +7,26 @@ namespace opengold
 {
 namespace
 {
-constexpr std::array<std::pair<std::string_view, TrainingHall>, 12> class_halls{{
-        {"fighter", TrainingHall::fighters},
-        {"barbarian", TrainingHall::fighters},
-        {"paladin", TrainingHall::fighters},
-        {"ranger", TrainingHall::fighters},
-        {"cleric", TrainingHall::clerics},
-        {"druid", TrainingHall::clerics},
-        {"wizard", TrainingHall::magic_users},
-        {"sorcerer", TrainingHall::magic_users},
-        {"warlock", TrainingHall::magic_users},
-        {"rogue", TrainingHall::thieves},
-        {"bard", TrainingHall::thieves},
-        {"monk", TrainingHall::thieves}
-    }
-};
+constexpr std::array<std::pair<std::string_view, TrainingHall>, 12> class_halls{
+    {{"fighter", TrainingHall::fighters},
+     {"barbarian", TrainingHall::fighters},
+     {"paladin", TrainingHall::fighters},
+     {"ranger", TrainingHall::fighters},
+     {"cleric", TrainingHall::clerics},
+     {"druid", TrainingHall::clerics},
+     {"wizard", TrainingHall::magic_users},
+     {"sorcerer", TrainingHall::magic_users},
+     {"warlock", TrainingHall::magic_users},
+     {"rogue", TrainingHall::thieves},
+     {"bard", TrainingHall::thieves},
+     {"monk", TrainingHall::thieves}}};
 
 // The words the original hall script stores before "HERE. DO YOU WANT TO TRAIN?".
-constexpr std::array<std::pair<std::string_view, TrainingHall>, 4> script_halls{{
-        {"FIGHTERS ", TrainingHall::fighters},
-        {"CLERICS ", TrainingHall::clerics},
-        {"MAGIC USERS ", TrainingHall::magic_users},
-        {"THIEVES ", TrainingHall::thieves}
-    }
-};
+constexpr std::array<std::pair<std::string_view, TrainingHall>, 4> script_halls{
+    {{"FIGHTERS ", TrainingHall::fighters},
+     {"CLERICS ", TrainingHall::clerics},
+     {"MAGIC USERS ", TrainingHall::magic_users},
+     {"THIEVES ", TrainingHall::thieves}}};
 } // namespace
 
 std::optional<TrainingHall> training_hall_for_class(std::string_view class_id)

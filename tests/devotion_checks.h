@@ -27,7 +27,7 @@ void sacred_weapon_checks()
 
     auto c = battle(*module, hero);
     check(submit(*c, "sacred_weapon", 1) && logged(*c, "Paladin uses Sacred Weapon.") &&
-          unit(*c, 1).action,
+              unit(*c, 1).action,
           "Sacred Weapon spends a Channel Divinity use, not the Action");
     check(!submit(*c, "sacred_weapon", 1), "Sacred Weapon is not offered while it lasts");
     const auto saved = c->save();
@@ -50,17 +50,17 @@ void sacred_radiant_checks()
           "The Fiend resists the longsword's Slashing damage");
     auto own = battle(*module, hero, "fiend");
     check(submit(*own, "sacred_weapon", 1) && !submit(*own, "sacred_weapon_radiant", 1) &&
-          submit(*own, "melee", 99) && logged(*own, "Slashing damage"),
+              submit(*own, "melee", 99) && logged(*own, "Slashing damage"),
           "Sacred Weapon with the weapon's own damage stays Slashing, even against resistance");
     auto sacred = battle(*module, hero, "fiend");
     check(submit(*sacred, "sacred_weapon_radiant", 1) &&
-          logged(*sacred, "Paladin uses Sacred Weapon, dealing Radiant damage.") &&
-          !submit(*sacred, "sacred_weapon", 1),
+              logged(*sacred, "Paladin uses Sacred Weapon, dealing Radiant damage.") &&
+              !submit(*sacred, "sacred_weapon", 1),
           "Sacred Weapon (Radiant) is the other choice of the same use");
     const auto saved = sacred->save();
     auto restored = module->restore(saved);
     check(restored->save() == saved && submit(*restored, "melee", 99) &&
-          !logged(*restored, "Slashing damage") && unit(*restored, 99).hit_points < 1000,
+              !logged(*restored, "Slashing damage") && unit(*restored, 99).hit_points < 1000,
           "The Radiant choice survives a checkpoint and makes hits Radiant");
 }
 
@@ -69,13 +69,14 @@ void sacred_radiant_checks()
 void write_sacred_weapon_fixture()
 {
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
-    const auto profile = module->character_profile(level_three_paladin().sheet(),
-                         std::vector<std::string> {"longsword"}).data;
+    const auto profile = module
+                             ->character_profile(level_three_paladin().sheet(),
+                                                 std::vector<std::string>{"longsword"})
+                             .data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
-            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
-        }},
-    2);
+                             {{1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                              {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
+                            2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Paladin's turn");
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "bless-fixtures";

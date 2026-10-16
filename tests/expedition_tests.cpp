@@ -27,8 +27,8 @@ namespace
 // A Godot check runs this binary only for the save fixtures its environment
 // names; once each is written, the rest of the expedition need not run.
 constexpr std::array<const char *, 7> fixture_variables{
-    "OPENGOLD_SHOP_FIXTURE", "OPENGOLD_HALL_FIXTURE", "OPENGOLD_REST_CHOICE_FIXTURE",
-    "OPENGOLD_OHLO_FIXTURE", "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
+    "OPENGOLD_SHOP_FIXTURE",       "OPENGOLD_HALL_FIXTURE",   "OPENGOLD_REST_CHOICE_FIXTURE",
+    "OPENGOLD_OHLO_FIXTURE",       "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
     "OPENGOLD_KUTO_NORRIS_FIXTURE"};
 std::set<std::string, std::less<>> written_fixtures;
 
@@ -66,13 +66,14 @@ Character character(std::string name, std::uint64_t seed = 42,
     creator.name(std::move(name));
     std::array<unsigned, 6> best{0, 1, 2, 3, 4, 5};
     const auto &rolls = creator.draft().rolls;
-    std::stable_sort(best.begin(), best.end(), [&](unsigned a, unsigned b)
-    {
-        return rolls[a].total() > rolls[b].total();
-    });
+    std::stable_sort(best.begin(), best.end(),
+                     [&](unsigned a, unsigned b)
+                     {
+                         return rolls[a].total() > rolls[b].total();
+                     });
     using enum rules::Ability;
     constexpr std::array priority{strength, constitution, dexterity,
-                                  wisdom, charisma, intelligence};
+                                  wisdom,   charisma,     intelligence};
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(best[i], priority[i]);
     return Character(creator.rules(), creator.draft(), creator.appearance());
@@ -82,10 +83,10 @@ Character character(std::string name, std::uint64_t seed = 42,
 // has no Banded Mail, which becomes Splint. Magic armor stays unsupported.
 void armor_conversion_tests()
 {
-    const std::map<unsigned, std::string> armor{{50, "leather"},  {51, "padded"},
-        {52, "studded_leather"}, {53, "ring_mail"}, {54, "scale_mail"}, {55, "chain_mail"},
-        {56, "splint"}, {57, "splint"}, {58, "plate"}, {59, "shield"}
-    };
+    const std::map<unsigned, std::string> armor{
+        {50, "leather"},    {51, "padded"},     {52, "studded_leather"}, {53, "ring_mail"},
+        {54, "scale_mail"}, {55, "chain_mail"}, {56, "splint"},          {57, "splint"},
+        {58, "plate"},      {59, "shield"}};
     for (const auto &[type, key] : armor)
     {
         por::Equipment item;
@@ -124,8 +125,8 @@ void coin_purse_tests()
     --inn[4];
     const auto paid = settle_script_coins(gold_and_silver, inn);
     check(paid.purse == Purse{0, 96, 0, 135, 0, 3, 1} && paid.exchange &&
-          paid.exchange->owed == Coins{0, 0, 0, 0, 1} &&
-          paid.exchange->paid == Coins{0, 0, 0, 10, 0} && paid.exchange->change == Coins{},
+              paid.exchange->owed == Coins{0, 0, 0, 0, 1} &&
+              paid.exchange->paid == Coins{0, 0, 0, 10, 0} && paid.exchange->change == Coins{},
           "One platinum is paid with ten gold");
 
     const Purse platinum{0, 0, 0, 5, 1, 0, 0};
@@ -140,8 +141,8 @@ void coin_purse_tests()
     five_gold[3] -= 5;
     const auto broken = settle_script_coins(one_platinum, five_gold);
     check(broken.purse == Purse{0, 0, 0, 5, 0, 0, 0} && broken.exchange &&
-          broken.exchange->paid == Coins{0, 0, 0, 0, 1} &&
-          broken.exchange->change == Coins{0, 0, 0, 5, 0},
+              broken.exchange->paid == Coins{0, 0, 0, 0, 1} &&
+              broken.exchange->change == Coins{0, 0, 0, 5, 0},
           "A larger coin is broken and the change returned in gold");
 
     const Purse one_gold{0, 0, 0, 1, 0, 0, 0};
@@ -173,11 +174,12 @@ void coin_purse_tests()
 
     auto everything = view;
     std::fill(everything.begin(), everything.begin() + 5, 0);
-    check(throws([&]
-    {
-        (void)settle_script_coins(gold_and_silver, everything);
-    }),
-    "A script cannot take more than the purse is worth");
+    check(throws(
+              [&]
+              {
+                  (void)settle_script_coins(gold_and_silver, everything);
+              }),
+          "A script cannot take more than the purse is worth");
 }
 
 std::shared_ptr<const por::EclProgram> program(std::vector<std::uint8_t> body)
@@ -188,7 +190,7 @@ std::shared_ptr<const por::EclProgram> program(std::vector<std::uint8_t> body)
     bytes.push_back(0);
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const por::EclProgram>(
-               por::EclProgram::decode(bytes, "expedition payment"));
+        por::EclProgram::decode(bytes, "expedition payment"));
 }
 
 void settle_synthetic(por::RolfTourSession &town)
@@ -217,10 +219,10 @@ void script_payment_tests()
     check(party->state().wealth == Purse{0, 96, 0, 135, 0, 0, 0},
           "The payment is charged exactly once across both script reads");
     check(town.snapshot().payments.size() == 1 && town.snapshot().payments[0].payer == "Arden" &&
-          town.snapshot().payments[0].coins.paid == Coins{0, 0, 0, 10, 0},
+              town.snapshot().payments[0].coins.paid == Coins{0, 0, 0, 10, 0},
           "The exchange is reported for the payer");
     check(town.script_variable(por::EclAddress{0x6BC3}) == 14 &&
-          town.script_variable(por::EclAddress{0x6BC1}) == 144,
+              town.script_variable(por::EclAddress{0x6BC1}) == 144,
           "The script then sees the settled purse");
 
     auto reader = program({10, 0, 128, 0});
@@ -230,7 +232,7 @@ void script_payment_tests()
     reading.explore(por::ExplorationCommand::look);
     settle_synthetic(reading);
     check(party->state().wealth == Purse{0, 96, 0, 135, 0, 0, 0} &&
-          reading.snapshot().payments.empty(),
+              reading.snapshot().payments.empty(),
           "Events that only read coins never change the purse");
 }
 
@@ -265,10 +267,10 @@ Purse party_purse(const PartyState &state)
 unsigned claims_starting(const PartyState &state, std::string_view prefix)
 {
     return unsigned(std::count_if(state.claimed_rewards.begin(), state.claimed_rewards.end(),
-                                  [&](const auto & id)
-    {
-        return id.starts_with(prefix);
-    }));
+                                  [&](const auto &id)
+                                  {
+                                      return id.starts_with(prefix);
+                                  }));
 }
 
 constexpr std::string_view synthetic_treasure = "por:ECL3:0:treasure:";
@@ -304,25 +306,26 @@ void script_treasure_tests()
     check(!look(town) && town.script_diagnostics().size() == 1,
           "A failure after the award reports and rolls back the event");
     check(party_purse(party->checkpoint()) == party_purse(before) &&
-          party->state().claimed_rewards == before.claimed_rewards &&
-          town.script_variable(por::EclAddress{0x4A04}) == 0,
+              party->state().claimed_rewards == before.claimed_rewards &&
+              town.script_variable(por::EclAddress{0x4A04}) == 0,
           "The rollback restores purses, claims and the quest flag together");
 
     party->select(PartySlot{0});
     check(look(town), "The retried event completes");
     const auto paid = party->checkpoint();
     check(paid.wealth == Purse{0, 0, 0, 0, 150, 0, 1} &&
-          claims_starting(paid, synthetic_treasure) == 1 &&
-          town.script_variable(por::EclAddress{0x4A04}) == 255 && paid.roster[0].experience == 0,
+              claims_starting(paid, synthetic_treasure) == 1 &&
+              town.script_variable(por::EclAddress{0x4A04}) == 255 &&
+              paid.roster[0].experience == 0,
           "The party receives 150 pp and the jewelry once, with no XP");
     const auto &arden = paid.roster[0];
     check(arden.character.inventory().items().size() == 1 && arden.item_sources.size() == 1 &&
-          paid.roster[1].character.inventory().items().empty(),
+              paid.roster[1].character.inventory().items().empty(),
           "The one random item goes to the first living member");
     const auto &item = arden.character.inventory().items().front();
     const auto &source = arden.item_sources.at(item.id);
     check(item.original_type == source.stored.type && source.stored.stored_name.empty() &&
-          item.definition_id == equipment_conversion(source),
+              item.definition_id == equipment_conversion(source),
           "The generated item keeps its original record as provenance");
 
     // The same script stream generates the same item.
@@ -334,11 +337,11 @@ void script_treasure_tests()
     check(look(again), "The same treasure runs in a second campaign");
     const auto &twin_member = twin->state().roster[0];
     check(twin_member.item_sources.size() == 1 &&
-          twin_member.item_sources.begin()->second.stored.raw == source.stored.raw,
+              twin_member.item_sources.begin()->second.stored.raw == source.stored.raw,
           "Random treasure is deterministic from the saved script random state");
 
     check(look(town) && party_purse(party->checkpoint()) == party_purse(paid) &&
-          party->state().claimed_rewards == paid.claimed_rewards,
+              party->state().claimed_rewards == paid.claimed_rewards,
           "The completed flag keeps a revisit from paying again");
 
     // Were a script to reach the same TREASURE again, it is refused, not paid twice.
@@ -350,8 +353,8 @@ void script_treasure_tests()
     check(look(repeat), "The unguarded treasure pays once");
     const auto once = other->checkpoint();
     check(!look(repeat) && party_purse(other->checkpoint()) == party_purse(once) &&
-          other->state().claimed_rewards == once.claimed_rewards &&
-          repeat.script_diagnostics().back().find("already awarded") != std::string::npos,
+              other->state().claimed_rewards == once.claimed_rewards &&
+              repeat.script_diagnostics().back().find("already awarded") != std::string::npos,
           "A repeated award is an explicit, rolled-back failure");
 }
 
@@ -369,19 +372,18 @@ void random_treasure_tables()
     // Weapon table: d100 10 then d100 36 is a long sword; d20 15 makes it +2.
     const auto sword = por::random_treasure_items(1, scripted({10, 36, 15})).at(0);
     check(sword.type == 36 && sword.magic_bonus == 2 && sword.name_components[1] == 0xA3 &&
-          sword.name_components[2] == 36 && sword.weight == 60 && sword.value == 4000 &&
-          sword.revealed_components == 6,
+              sword.name_components[2] == 36 && sword.weight == 60 && sword.value == 4000 &&
+              sword.revealed_components == 6,
           "A generated +2 long sword has the original name, weight and value");
     // d100 95, d15 5 is a potion; d8 6 selects the first preset record.
     const auto potion = por::random_treasure_items(1, scripted({95, 5, 6})).at(0);
     check(potion.type == 71 && potion.magic_bonus == 1 && potion.value == 800 &&
-          potion.weight == 1 &&
-          potion.effect_codes == std::array<std::uint8_t, 3> {3, 0x63, 0},
+              potion.weight == 1 && potion.effect_codes == std::array<std::uint8_t, 3>{3, 0x63, 0},
           "A generated potion uses its original preset record");
     // d100 70 is a magic-user scroll of d3 = 2 spells: level 1 (d13 13) and level 5 (d4 4).
     const auto scroll = por::random_treasure_items(1, scripted({70, 2, 1, 13, 5, 4})).at(0);
     check(scroll.type == 61 && scroll.value == 1800 && scroll.name_components[1] == 0xD3 &&
-          scroll.effect_codes == std::array<std::uint8_t, 3> {21, 94, 0},
+              scroll.effect_codes == std::array<std::uint8_t, 3>{21, 94, 0},
           "A generated scroll records its original spell codes");
 }
 
@@ -399,9 +401,9 @@ void deferred_treasure_tests()
     settle_synthetic(town);
 
     check(look(town) && town.script_variable(por::EclAddress{0x4A04}) == 255 &&
-          party->state().wealth == Purse{0, 0, 0, 0, purse_limit - 100, 0, 0} &&
-          claims_starting(party->checkpoint(), synthetic_treasure) == 0 &&
-          town.snapshot().dialogue.find("Loot is retained") != std::string::npos,
+              party->state().wealth == Purse{0, 0, 0, 0, purse_limit - 100, 0, 0} &&
+              claims_starting(party->checkpoint(), synthetic_treasure) == 0 &&
+              town.snapshot().dialogue.find("Loot is retained") != std::string::npos,
           "A party purse without room defers the whole award and the quest still completes");
     check(look(town) && party->state().wealth == Purse{0, 0, 0, 0, purse_limit - 100, 0, 0},
           "The award stays pending while there is no room");
@@ -424,11 +426,11 @@ void deferred_treasure_tests()
         return reloaded->member(arden).character.inventory().items().size();
     };
     check(look(restored) && reloaded->state().wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
-          items() == 1 && reloaded->member(arden).item_sources.size() == 1 &&
-          claims_starting(reloaded->checkpoint(), synthetic_treasure) == 1,
+              items() == 1 && reloaded->member(arden).item_sources.size() == 1 &&
+              claims_starting(reloaded->checkpoint(), synthetic_treasure) == 1,
           "Once there is room the deferred treasure and its item are collected exactly once");
     check(look(restored) && reloaded->state().wealth == Purse{0, 0, 0, 0, 250, 0, 1} &&
-          items() == 1,
+              items() == 1,
           "Collected treasure is not collected again");
 }
 
@@ -479,7 +481,7 @@ void pick_lock_tests()
         const bool picked = try_door(town, "Pick", {"Bash", "Pick", "Exit"});
         const auto &checks = town.snapshot().door_checks;
         check(checks.size() == 1 && checks[0].member == "Sly" &&
-              checks[0].method == DoorMethod::pick && checks[0].difficulty == 15,
+                  checks[0].method == DoorMethod::pick && checks[0].difficulty == 15,
               "Only the Rogue tries, with one Dexterity (Sleight of Hand) check");
         if (picked)
         {
@@ -517,23 +519,23 @@ void locked_door_tests()
 
     const auto random = party->state().random_state;
     check(!try_door(town, "Exit") && town.snapshot().pose.x == 0 &&
-          party->state().random_state == random && town.map().at(0, 0).doors[1] == 2 &&
-          town.snapshot().door_checks.empty(),
+              party->state().random_state == random && town.map().at(0, 0).doors[1] == 2 &&
+              town.snapshot().door_checks.empty(),
           "Exit leaves the door locked and rolls nothing");
 
     unsigned tries = 0;
     while (!try_door(town, "Bash"))
     {
         const auto &checks = town.snapshot().door_checks;
-        check(checks.size() == 2 && !town.snapshot().door_opened &&
-              checks[0].member == "Arden" && checks[1].member == "Bryn" &&
-              checks[0].method == DoorMethod::bash && checks[0].difficulty == 15 &&
-              checks[0].total < 15 && town.map().at(0, 0).doors[1] == 2,
+        check(checks.size() == 2 && !town.snapshot().door_opened && checks[0].member == "Arden" &&
+                  checks[1].member == "Bryn" && checks[0].method == DoorMethod::bash &&
+                  checks[0].difficulty == 15 && checks[0].total < 15 &&
+                  town.map().at(0, 0).doors[1] == 2,
               "A failed Bash records every member's check and leaves the door locked");
         check(++tries < 40, "The party eventually forces the door");
     }
     check(town.snapshot().pose.x == 0 && town.map().at(0, 0).doors[1] == 2 &&
-          town.script_diagnostics().size() == 1,
+              town.script_diagnostics().size() == 1,
           "A failure beyond the door rolls back the move and relocks it");
 
     const auto passable = program({0});
@@ -545,7 +547,7 @@ void locked_door_tests()
         check(tries < 40, "The party eventually forces the door");
     const auto &opened = open.snapshot();
     check(opened.pose.x == 1 && open.map().at(0, 0).doors[1] == 1 && opened.door_opened &&
-          !opened.door_checks.empty() && opened.door_checks.back().total >= 15,
+              !opened.door_checks.empty() && opened.door_checks.back().total >= 15,
           "A successful Bash records its checks, unlocks the door and moves the party");
     open.explore(por::ExplorationCommand::turn_around);
     open.explore(por::ExplorationCommand::forward);
@@ -564,9 +566,7 @@ std::size_t peaceful(const por::TourSnapshot &s)
         return 0;
     if (s.choices.size() == 4 && s.choices[0] == "Fight")
         return 2;
-    for (const auto *safe :
-            {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"
-            })
+    for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"})
         for (std::size_t n = 0; n < s.choices.size(); ++n)
             if (s.choices[n] == safe)
                 return n;
@@ -584,6 +584,7 @@ struct FightStart
     unsigned distance{};
     std::map<rules::EntityId, rules::Cell> cells;
 };
+
 std::vector<FightStart> fights_started;
 
 // Squares the party sees ahead before a wall or door, at most two.
@@ -627,7 +628,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
             }
     }
     for (unsigned n = 0; n < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
-            ++n)
+         ++n)
         check(combat.submit(choose_demo_command(combat.combat())), "Combat accepts the command");
     const auto result = combat.combat().snapshot();
     check(result.outcome == rules::Outcome::victory, "The party wins its fight");
@@ -666,8 +667,7 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
     throw std::runtime_error("Event did not finish");
 }
 
-void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
-          unsigned facing)
+void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned facing)
 {
     while (index(town.snapshot().pose.facing) != facing)
     {
@@ -691,7 +691,7 @@ bool party_wounded(const CampaignParty &party)
         {
             const auto &member = party.member(id);
             if (!member.vitals.dead &&
-                    member.vitals.hit_points < member.character.sheet().hit_points)
+                member.vitals.hit_points < member.character.sheet().hit_points)
                 return true;
         }
     return false;
@@ -706,10 +706,11 @@ void recover(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
     {
         check(tries < 40, "The party recovers by camping");
         const auto info = party->rest_info(RestKind::long_rest);
-        const bool long_rest = std::any_of(info.begin(), info.end(), [](const auto & member)
-        {
-            return member.denial == RestDenial::none;
-        });
+        const bool long_rest = std::any_of(info.begin(), info.end(),
+                                           [](const auto &member)
+                                           {
+                                               return member.denial == RestDenial::none;
+                                           });
         check(town.camp(long_rest ? RestKind::long_rest : RestKind::short_rest), "Camp starts");
         settle(town, party);
         if (!party->state().short_rest)
@@ -790,7 +791,7 @@ void walk_to(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &p
         const unsigned facing = next % 16 > int(p.x)   ? 1
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
-                                : 0;
+                                                       : 0;
         step(town, party, facing, answer);
         if (camp_when_hurt)
             recover(town, party);
@@ -820,9 +821,7 @@ Expedition create_party(const std::filesystem::path &directory)
 {
     auto party = std::make_shared<CampaignParty>(module());
     std::uint64_t seed = 1;
-    for (const auto *name :
-            {"Arden", "Bryn", "Cora", "Darin", "Elin", "Fenn"
-            })
+    for (const auto *name : {"Arden", "Bryn", "Cora", "Darin", "Elin", "Fenn"})
     {
         (void)party->add_pc(character(name, seed++));
         party->add_coins(Coin::gold, 250);
@@ -843,10 +842,12 @@ void general_store_gear(const std::filesystem::path &directory)
     walk_to(town, party, 15, 8);
     face(town, party, 0);
     town.explore(por::ExplorationCommand::look);
-    settle(town, party, [](const por::TourSnapshot & s)
-    {
-        return s.dialogue.find("CAN I SHOW") != std::string::npos ? std::size_t{0} : peaceful(s);
-    });
+    settle(town, party,
+           [](const por::TourSnapshot &s)
+           {
+               return s.dialogue.find("CAN I SHOW") != std::string::npos ? std::size_t{0}
+                                                                         : peaceful(s);
+           });
     check(town.snapshot().phase == por::TourPhase::shopping, "The general store opens");
     check(party->selected() == party->leader(), "The leader deals with the shopkeeper");
     const auto &stock = town.shop_stock();
@@ -854,21 +855,23 @@ void general_store_gear(const std::filesystem::path &directory)
     for (const auto &item : stock)
         sold.insert(equipment_conversion(item));
     check(sold.contains("oil") && sold.contains("torch") && sold.contains("acid") &&
-          sold.contains("alchemists_fire"),
+              sold.contains("alchemists_fire"),
           "The general store sells Oil, Torches, Acid and Alchemist's Fire");
-    const auto acid = std::find_if(stock.begin(), stock.end(), [](const auto & item)
-    {
-        return equipment_conversion(item) == "acid";
-    });
-    check(acid->stored.value == 25 && town.buy(town.snapshot().continue_ticket,
-                                               std::size_t(acid - stock.begin())),
+    const auto acid = std::find_if(stock.begin(), stock.end(),
+                                   [](const auto &item)
+                                   {
+                                       return equipment_conversion(item) == "acid";
+                                   });
+    check(acid->stored.value == 25 &&
+              town.buy(town.snapshot().continue_ticket, std::size_t(acid - stock.begin())),
           "A vial of Acid costs 25 gp");
     const auto &items = party->member(party->selected()).character.inventory().items();
-    check(std::any_of(items.begin(), items.end(), [](const auto & item)
-    {
-        return item.definition_id == "acid";
-    }),
-    "The buyer carries the Acid");
+    check(std::any_of(items.begin(), items.end(),
+                      [](const auto &item)
+                      {
+                          return item.definition_id == "acid";
+                      }),
+          "The buyer carries the Acid");
 }
 
 void buy_and_equip(Expedition &trip)
@@ -876,27 +879,30 @@ void buy_and_equip(Expedition &trip)
     auto &[party, town] = trip;
     walk_to(town, party, 13, 8);
     town.explore(por::ExplorationCommand::look);
-    settle(town, party, [](const por::TourSnapshot & s)
-    {
-        return s.dialogue.find("SHOP") != std::string::npos ? std::size_t{0} : peaceful(s);
-    });
+    settle(town, party,
+           [](const por::TourSnapshot &s)
+           {
+               return s.dialogue.find("SHOP") != std::string::npos ? std::size_t{0} : peaceful(s);
+           });
     check(town.snapshot().phase == por::TourPhase::shopping, "The arms shop opens");
     const auto &stock = town.shop_stock();
-    check(std::none_of(stock.begin(), stock.end(), [](const auto & item)
-    {
-        return equipment_conversion(item).starts_with("por:unsupported:");
-    }),
-    "Every item the arms shop sells converts to SRD equipment");
+    check(std::none_of(stock.begin(), stock.end(),
+                       [](const auto &item)
+                       {
+                           return equipment_conversion(item).starts_with("por:unsupported:");
+                       }),
+          "Every item the arms shop sells converts to SRD equipment");
     for (unsigned slot = 0; slot < 6; ++slot)
     {
         party->select(PartySlot{slot});
         // Original long sword, chain mail and shield records.
         for (const unsigned type : {36u, 55u, 59u})
         {
-            const auto offered = std::find_if(stock.begin(), stock.end(), [&](const auto & item)
-            {
-                return item.stored.type == type;
-            });
+            const auto offered = std::find_if(stock.begin(), stock.end(),
+                                              [&](const auto &item)
+                                              {
+                                                  return item.stored.type == type;
+                                              });
             check(offered != stock.end(), "The arms shop stocks fighter gear");
             check(town.buy(town.snapshot().continue_ticket, std::size_t(offered - stock.begin())),
                   "The party buys its gear");
@@ -911,7 +917,7 @@ void buy_and_equip(Expedition &trip)
             for (const auto &item : party->member(id).character.inventory().items())
                 party->equip(id, item.id);
             check(party->member(id).equipped.size() == 3 &&
-                  party->state().wealth == Purse{0, 0, 0, 6 * (250 - 15 - 75 - 15), 0, 0, 0},
+                      party->state().wealth == Purse{0, 0, 0, 6 * (250 - 15 - 75 - 15), 0, 0, 0},
                   "The party pays in gold and each fighter equips sword, mail and shield");
         }
 }
@@ -939,14 +945,14 @@ void defeat_four_orcs(Expedition &trip)
     walk_to(town, party, 15, 4);
     step(town, party, 1);
     check(town.snapshot().area_id == 0 && town.snapshot().pose.x == 0 &&
-          town.snapshot().pose.y == 4,
+              town.snapshot().pose.y == 4,
           "The east edge of the Slums returns to New Phlan");
 }
 
 // Accepts the inn's quote ("YES") or declines it, and names the payer.
 Answer inn_answer(bool stay, std::string payer)
 {
-    return [stay, payer = std::move(payer)](const por::TourSnapshot & s)
+    return [stay, payer = std::move(payer)](const por::TourSnapshot &s)
     {
         for (std::size_t n = 0; n < s.choices.size(); ++n)
             if (s.choices[n] == (stay ? "YES" : "NO") || s.choices[n] == payer)
@@ -979,8 +985,8 @@ void rest_at_inn(Expedition &trip)
     const auto start = party_purse(*party);
     step(town, party, 2, inn_answer(false, ""));
     check(town.snapshot().dialogue == "THEN YOU MUST LEAVE." && party_purse(*party) == start &&
-          party->state().roster[0].vitals == before.roster[0].vitals &&
-          party->state().time_minutes - before.time_minutes < 1,
+              party->state().roster[0].vitals == before.roster[0].vitals &&
+              party->state().time_minutes - before.time_minutes < 1,
           "Declining the quote costs nothing and grants no rest");
     leave_inn();
 
@@ -991,8 +997,8 @@ void rest_at_inn(Expedition &trip)
     const auto unpaid = party_purse(*party);
     step(town, party, 2, inn_answer(true, "Cora"));
     check(town.snapshot().dialogue == "YOU DON'T HAVE ENOUGH PLATINUM." &&
-          party_purse(*party) == unpaid && town.snapshot().payments.empty() &&
-          party->state().time_minutes - before.time_minutes < 1,
+              party_purse(*party) == unpaid && town.snapshot().payments.empty() &&
+              party->state().time_minutes - before.time_minutes < 1,
           "An unaffordable stay is refused with the purse unchanged");
     leave_inn();
 
@@ -1005,14 +1011,15 @@ void rest_at_inn(Expedition &trip)
           "The party pays exactly ten gold for the platinum, once");
     const auto &payments = town.snapshot().payments;
     check(payments.size() == 1 && payments[0].payer == "Arden" &&
-          payments[0].coins.owed == Coins{0, 0, 0, 0, 1} &&
-          payments[0].coins.paid == Coins{0, 0, 0, 10, 0} && payments[0].coins.change == Coins{},
+              payments[0].coins.owed == Coins{0, 0, 0, 0, 1} &&
+              payments[0].coins.paid == Coins{0, 0, 0, 10, 0} &&
+              payments[0].coins.change == Coins{},
           "The exchange is reported to the player");
     check(party->state().time_minutes >= before.time_minutes + 480,
           "The long rest advances the clock eight hours");
     for (const auto &member : party->state().roster)
         check(member.vitals.hit_points == member.character.sheet().hit_points &&
-              member.last_rest_minutes,
+                  member.last_rest_minutes,
               "The long rest restores every fighter");
     leave_inn();
 }
@@ -1029,7 +1036,7 @@ void revisit_orcs(Expedition &trip)
     town.explore(por::ExplorationCommand::look);
     settle(town, party);
     check(town.script_variable(por::ecl_slums_orc_victory) == 255 && orc_rewards(*party) == 2 &&
-          party->state().claimed_rewards == before.claimed_rewards,
+              party->state().claimed_rewards == before.claimed_rewards,
           "The completed event does not fight or reward again");
     check(party->state().wealth == before.wealth, "Revisiting pays nothing");
     for (std::size_t n = 0; n < before.roster.size(); ++n)
@@ -1043,9 +1050,7 @@ constexpr std::string_view ohlo_reward = "por:ECL2:20:treasure:a390:v1";
 // the booth, GIVE the potion. Roaming groups are still fled from.
 std::size_t quest_answer(const por::TourSnapshot &s)
 {
-    for (const auto *wanted :
-            {"Bash", "TALK", "NICE", "ACCEPT THE COMMISSION", "SPEAK", "GIVE"
-            })
+    for (const auto *wanted : {"Bash", "TALK", "NICE", "ACCEPT THE COMMISSION", "SPEAK", "GIVE"})
         for (std::size_t n = 0; n < s.choices.size(); ++n)
             if (s.choices[n] == wanted)
                 return n;
@@ -1060,7 +1065,7 @@ PartyState enter_ohlo_room(Expedition &trip, std::uint16_t until_commission)
     walk_to(town, party, 14, 10, quest_answer, true);
     auto before = party->checkpoint();
     for (unsigned tries = 0; town.script_variable(por::EclAddress{0x4A04}) != until_commission;
-            ++tries)
+         ++tries)
     {
         check(tries < 40, "The party forces Ohlo's door");
         before = party->checkpoint();
@@ -1095,8 +1100,8 @@ void accept_commission(Expedition &trip)
 
     const auto accepting = enter_ohlo_room(trip, 250);
     check(town.script_variable(por::EclAddress{0x4A81}) == 0 &&
-          party_purse(*party) == party_purse(accepting) &&
-          party->state().claimed_rewards == accepting.claimed_rewards,
+              party_purse(*party) == party_purse(accepting) &&
+              party->state().claimed_rewards == accepting.claimed_rewards,
           "Accepting the commission sets its flag and pays nothing");
 }
 
@@ -1113,14 +1118,15 @@ void fetch_potion(Expedition &trip, const std::string &assets)
         town.advance(.5);
     check(town.snapshot().phase == por::TourPhase::awaiting_continue,
           "The booth's dialogue waits for an answer");
-    check(throws([&]
-    {
-        (void)encode_campaign(*party, &town, assets);
-    }),
-    "A save during the booth's dialogue is refused");
+    check(throws(
+              [&]
+              {
+                  (void)encode_campaign(*party, &town, assets);
+              }),
+          "A save during the booth's dialogue is refused");
     settle(town, party, quest_answer, "ohlo");
     check(town.script_variable(por::EclAddress{0x4A81}) == 250 &&
-          town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
+              town.snapshot().dialogue.find("RETURNS WITH A PACKAGE") != std::string::npos,
           "Speaking Ohlo's name at the booth obtains the potion");
     check(speaking_npc_portrait(town.snapshot()) == "NPCs/ohlos-potion-keeper.png",
           "The real rope-guild booth shows its own portrait");
@@ -1138,8 +1144,7 @@ void check_ohlo_reward(const PartyState &before, const PartyState &after)
     auto claims = before.claimed_rewards;
     claims.emplace_back(ohlo_reward);
     check(after.claimed_rewards == claims, "The hand-in claims only Ohlo's reward");
-    check(after.wealth[4] == before.wealth[4] + 150 &&
-          after.wealth[6] == before.wealth[6] + 1,
+    check(after.wealth[4] == before.wealth[4] + 150 && after.wealth[6] == before.wealth[6] + 1,
           "The party receives Ohlo's 150 pp and jewelry");
     const auto original_items = [](const PartyState &state)
     {
@@ -1197,7 +1202,7 @@ void revisit_ohlo(Expedition &trip)
     visit(14, 12, 1);
     // 0x4A04 is area-local (cleared on entering the Slums); 0x4A81 records completion.
     check(town.snapshot().pose.x == 15 && town.script_variable(por::EclAddress{0x4A81}) == 255 &&
-          ohlo_rewards(*party) == 1,
+              ohlo_rewards(*party) == 1,
           "Revisiting Ohlo and the booth keeps the quest complete without a second reward");
 }
 
@@ -1219,7 +1224,7 @@ void slums_camp_ambush(Expedition &trip)
     }
     walk_to(town, party, 14, 4);
     check(town.script_variable(por::EclAddress{0x6E82}) == 0 &&
-          town.script_variable(por::EclAddress{0x4ABB}) < 254,
+              town.script_variable(por::EclAddress{0x4ABB}) < 254,
           "The party stands on an uncleared Slums street without a special event");
     bool attacked = false;
     for (unsigned tries = 0; tries < 60; ++tries)
@@ -1227,7 +1232,7 @@ void slums_camp_ambush(Expedition &trip)
         const auto before = party->state().time_minutes;
         check(town.camp(RestKind::short_rest), "Camp starts");
         while (town.snapshot().phase == por::TourPhase::running ||
-                town.snapshot().phase == por::TourPhase::awaiting_continue)
+               town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
             const auto &s = town.snapshot();
             if (s.phase == por::TourPhase::running)
@@ -1236,7 +1241,7 @@ void slums_camp_ambush(Expedition &trip)
                 check(town.choose(s.continue_ticket, stand_and_fight(s)), "Answer accepted");
         }
         check(town.script_variable(por::ecl_rest_check_interval) == 24 &&
-              town.script_variable(por::ecl_rest_interruption_chance) == 24,
+                  town.script_variable(por::ecl_rest_interruption_chance) == 24,
               "The original pre-camp script sets the street's 24/24 profile");
         if (town.snapshot().phase == por::TourPhase::combat)
         {
@@ -1251,7 +1256,7 @@ void slums_camp_ambush(Expedition &trip)
             settle(town, party, stand_and_fight);
             const auto &text = town.snapshot().dialogue;
             check(text.ends_with("The rest was interrupted. Rest again to recover.") &&
-                  !party->state().short_rest,
+                      !party->state().short_rest,
                   "Victory returns to exploration with no rest benefits");
             attacked = true;
             continue;
@@ -1277,7 +1282,8 @@ std::filesystem::path revisit_result(const std::filesystem::path &save)
 }
 
 // Loads a saved campaign as the game does, which must re-encode to the same bytes.
-Expedition load_expedition(const std::filesystem::path &save, const std::filesystem::path &directory)
+Expedition load_expedition(const std::filesystem::path &save,
+                           const std::filesystem::path &directory)
 {
     const auto assets = campaign_asset_identity(directory);
     const auto bytes = read_campaign_file(save);
@@ -1329,7 +1335,7 @@ void resume_quest(std::string_view checkpoint, const std::filesystem::path &save
     auto trip = load_expedition(save, directory);
     const auto &town = trip.town;
     check(town.snapshot().area_id == 20 && town.script_variable(por::EclAddress{0x4A04}) == 250 &&
-          ohlo_rewards(*trip.party) == 0,
+              ohlo_rewards(*trip.party) == 0,
           "The Slums save keeps the accepted commission and no reward");
     if (checkpoint == "accepted")
     {
@@ -1353,8 +1359,8 @@ void verify_hand_in(const std::filesystem::path &at_door, const std::filesystem:
     const auto before = load_expedition(at_door, directory);
     const auto after = load_expedition(handed_in, directory);
     check(after.town.snapshot().area_id == 20 &&
-          after.town.script_variable(por::EclAddress{0x4A81}) == 255 &&
-          ohlo_rewards(*after.party) == 1,
+              after.town.script_variable(por::EclAddress{0x4A81}) == 255 &&
+              ohlo_rewards(*after.party) == 1,
           "The game's save holds the completed quest and one reward");
     check_ohlo_reward(before.party->checkpoint(), after.party->checkpoint());
 }
@@ -1410,7 +1416,7 @@ Answer catacomb_answer(std::string stand)
     return [stand = std::move(stand)](const por::TourSnapshot &s) -> std::size_t
     {
         if (s.dialogue.find("CLIMB DOWN") != std::string::npos ||
-                s.dialogue.find("DO YOU TAKE IT?") != std::string::npos)
+            s.dialogue.find("DO YOU TAKE IT?") != std::string::npos)
             return 0;
         for (std::size_t n = 0; n < s.choices.size(); ++n)
             if (s.choices[n] == stand)
@@ -1454,12 +1460,13 @@ void write_approach_fixture(const std::filesystem::path &from, unsigned x, unsig
         if (nx < 0 || ny < 0 || nx > 15 || ny > 15)
             continue;
         const auto &cell = trip.town.map().at(unsigned(nx), unsigned(ny));
-        if (cell.walls[facing] && cell.doors[facing] != 1 && !(bash_doors && cell.doors[facing] == 2))
+        if (cell.walls[facing] && cell.doors[facing] != 1 &&
+            !(bash_doors && cell.doors[facing] == 2))
             continue;
-                walk_to(trip.town, trip.party, unsigned(nx), unsigned(ny), answer, bash_doors, bash_doors);
+        walk_to(trip.town, trip.party, unsigned(nx), unsigned(ny), answer, bash_doors, bash_doors);
         face(trip.town, trip.party, facing);
-        write_campaign_file(fixture, encode_campaign(*trip.party, &trip.town,
-                            campaign_asset_identity(directory)));
+        write_campaign_file(
+            fixture, encode_campaign(*trip.party, &trip.town, campaign_asset_identity(directory)));
         return;
     }
     throw std::runtime_error("No open square beside the play-test target");
@@ -1475,7 +1482,8 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     if (const auto *fixture = std::getenv("OPENGOLD_KUTO_WELL_FIXTURE"))
     {
         const auto plaza = folder / "kutos-plaza.ogs";
-        write_campaign_file(plaza, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+        write_campaign_file(plaza,
+                            encode_campaign(*party, &town, campaign_asset_identity(directory)));
         write_approach_fixture(plaza, 7, 7, fixture, directory);
         written_fixtures.insert("OPENGOLD_KUTO_WELL_FIXTURE");
     }
@@ -1484,16 +1492,16 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     face(town, party, 2);
     town.explore(por::ExplorationCommand::forward);
     // Past the catacombs' description, the volley waits on its report.
-    for (unsigned n = 0; n < 200 && town.snapshot().dialogue.find("\nAn arrow ") == std::string::npos;
-            ++n)
+    for (unsigned n = 0;
+         n < 200 && town.snapshot().dialogue.find("\nAn arrow ") == std::string::npos; ++n)
         if (town.snapshot().phase == por::TourPhase::awaiting_continue)
             check(town.choose(town.snapshot().continue_ticket, 0), "The description continues");
         else
             town.advance(.5);
     const auto &volley = town.snapshot();
     check(volley.phase == por::TourPhase::awaiting_continue &&
-          volley.dialogue.find("VOLLEY OF ARROWS") != std::string::npos &&
-          volley.dialogue.find("\nAn arrow ") != std::string::npos,
+              volley.dialogue.find("VOLLEY OF ARROWS") != std::string::npos &&
+              volley.dialogue.find("\nAn arrow ") != std::string::npos,
           "An arrow volley reports each arrow's attack roll before the story continues");
     settle(town, party, catacomb_answer("FIGHT"));
     // No camping here: until Norris falls, his band interrupts every rest.
@@ -1512,11 +1520,11 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     // (ECL8:29 0x9D23-0x9D34): Norris stands right in front of the leader.
     const auto &norris = fights_started.back();
     check(norris.pose.facing == por::MapDirection::north && norris.distance == 0 &&
-          norris.cells.at(1000) == rules::Cell{27, 12} &&
-          norris.cells.at(lead) == rules::Cell{27, 13},
+              norris.cells.at(1000) == rules::Cell{27, 12} &&
+              norris.cells.at(lead) == rules::Cell{27, 13},
           "Norris's band starts the fight directly in front of the party");
     check(town.script_variable(por::EclAddress{0x4A24}) == 255 &&
-          party->member(lead).experience > experience,
+              party->member(lead).experience > experience,
           "The party defeats Norris the Gray's band and earns his XP");
     const auto coins = party_coins(*party);
     walk_to(town, party, 13, 1, catacomb_answer("FIGHT"), false, true);
@@ -1532,7 +1540,7 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     check(party_coins(*captive.party) > 0, "The party carries money before surrendering");
     walk_to(captive.town, captive.party, 10, 3, catacomb_answer("SURRENDER"));
     check(party_coins(*captive.party) == 0 && party_items(*captive.party) == items &&
-          captive.town.snapshot().area_id == 29,
+              captive.town.snapshot().area_id == 29,
           "Surrendering to Norris costs all money, keeps items and frees the party above");
 }
 
@@ -1604,10 +1612,11 @@ void slums_set_encounters(const std::filesystem::path &save, const std::filesyst
     const auto &enemies = trolls.pending_encounter().value().enemies;
     const auto has = [&](std::string_view definition)
     {
-        return std::any_of(enemies.begin(), enemies.end(), [&](const auto & e)
-        {
-            return e.definition == definition;
-        });
+        return std::any_of(enemies.begin(), enemies.end(),
+                           [&](const auto &e)
+                           {
+                               return e.definition == definition;
+                           });
     };
     check(has("troll") && has("ogre") && trolls.script_diagnostics().empty(),
           "The trolls and ogres and their treasure reach combat");
@@ -1630,7 +1639,8 @@ void write_strong_fixture(const std::filesystem::path &save, const std::filesyst
                 party.advance(id, party.default_advancement(id));
     auto strong = save;
     strong.replace_filename(save.stem().string() + "-strong.ogs");
-    write_campaign_file(strong, encode_campaign(party, &trip.town, campaign_asset_identity(directory)));
+    write_campaign_file(strong,
+                        encode_campaign(party, &trip.town, campaign_asset_identity(directory)));
 }
 
 void write_slums_fixtures(const std::filesystem::path &save, const std::filesystem::path &folder,
@@ -1680,7 +1690,7 @@ void face_longest_view(por::RolfTourSession &town, const std::shared_ptr<Campaig
     unsigned longest = 0;
     for (unsigned facing = 1; facing < 4; ++facing)
         if (open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{facing}}) >
-                open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{longest}}))
+            open_squares_ahead(town.map(), {pose.x, pose.y, por::MapDirection{longest}}))
             longest = facing;
     face(town, party, longest);
 }
@@ -1702,7 +1712,7 @@ std::vector<por::TourSnapshot> meet_camp_monsters(Expedition &trip, const Answer
     {
         check(town.camp(RestKind::short_rest), "Camp starts");
         while (town.snapshot().phase == por::TourPhase::running ||
-                town.snapshot().phase == por::TourPhase::awaiting_continue)
+               town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
             const auto &s = town.snapshot();
             if (s.phase == por::TourPhase::running)
@@ -1735,39 +1745,53 @@ void slums_encounter_menu(const std::filesystem::path &save, const std::filesyst
     for (const auto id : talkers.party->state().slots)
         if (id && (!charming ||
                    talkers.party->member(id).character.sheet().scores[rules::Ability::charisma] >
-                   talkers.party->member(charming).character.sheet()
-                   .scores[rules::Ability::charisma]))
+                       talkers.party->member(charming)
+                           .character.sheet()
+                           .scores[rules::Ability::charisma]))
             charming = id;
     talkers.party->make_leader(charming);
     // A copy: the camp and fight below may rebuild the roster.
     const auto name = talkers.party->member(charming).character.sheet().name;
     unsigned reaction_score = 0;
-    const auto menus = meet_camp_monsters(talkers, [&](const por::TourSnapshot & s) -> std::size_t
-    {
-        if (s.choices[0] != "HAUGHTY")
-            return 3; // Advance until Parley, then Abusive.
-        reaction_score = talkers.town.script_variable(por::EclAddress{0x6DCF});
-        return 4;
-    });
-    check(menus.front().choices == std::vector<std::string> {"Fight", "Wait", "Flee", "Advance"},
+    const auto menus = meet_camp_monsters(talkers,
+                                          [&](const por::TourSnapshot &s) -> std::size_t
+                                          {
+                                              if (s.choices[0] != "HAUGHTY")
+                                                  return 3; // Advance until Parley, then Abusive.
+                                              reaction_score = talkers.town.script_variable(
+                                                  por::EclAddress{0x6DCF});
+                                              return 4;
+                                          });
+    check(menus.front().choices == std::vector<std::string>{"Fight", "Wait", "Flee", "Advance"},
           "Distant monsters can be advanced on, not parleyed with");
-    const auto parley = std::find_if(menus.begin(), menus.end(), [](const auto & s)
-    {
-        return s.choices[0] == "HAUGHTY";
-    });
+    const auto parley = std::find_if(menus.begin(), menus.end(),
+                                     [](const auto &s)
+                                     {
+                                         return s.choices[0] == "HAUGHTY";
+                                     });
     check(parley != menus.end() && parley[-1].choices.back() == "Parley",
           "Adjacent monsters can be parleyed with");
     check(parley->dialogue.ends_with("\n" + name + " speaks for the party.") &&
-          reaction_score == 2u *
-              talkers.party->member(charming).character.sheet().scores[rules::Ability::charisma],
+              reaction_score == 2u * talkers.party->member(charming)
+                                         .character.sheet()
+                                         .scores[rules::Ability::charisma],
           "The leader speaks for the party with twice its Charisma");
 
     auto waiting = load_expedition(save, directory);
-    (void)meet_camp_monsters(waiting, [](const por::TourSnapshot &) -> std::size_t { return 1; });
-    check(waiting.town.snapshot().dialogue.find("The monsters go on their way.") != std::string::npos,
+    (void)meet_camp_monsters(waiting,
+                             [](const por::TourSnapshot &) -> std::size_t
+                             {
+                                 return 1;
+                             });
+    check(waiting.town.snapshot().dialogue.find("The monsters go on their way.") !=
+              std::string::npos,
           "Waiting monsters that leave say so");
     auto fleeing = load_expedition(save, directory);
-    (void)meet_camp_monsters(fleeing, [](const por::TourSnapshot &) -> std::size_t { return 2; });
+    (void)meet_camp_monsters(fleeing,
+                             [](const por::TourSnapshot &) -> std::size_t
+                             {
+                                 return 2;
+                             });
     check(fleeing.town.snapshot().dialogue.starts_with("You get away."),
           "A party that escapes says so");
 }
@@ -1804,7 +1828,7 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
     for (const auto id : party->state().slots)
         if (id && (!charming ||
                    party->member(id).character.sheet().scores[rules::Ability::charisma] >
-                   party->member(charming).character.sheet().scores[rules::Ability::charisma]))
+                       party->member(charming).character.sheet().scores[rules::Ability::charisma]))
             charming = id;
     party->make_leader(charming);
     if (town.snapshot().area_id == 0)
@@ -1823,10 +1847,11 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
     for (unsigned camps = 0; camps < 80; ++camps)
     {
         check(town.camp(RestKind::short_rest), "Camp starts");
-        for (unsigned n = 0; n < 2000 && (town.snapshot().phase == por::TourPhase::running ||
-                                          town.snapshot().phase == por::TourPhase::awaiting_continue ||
-                                          town.snapshot().phase == por::TourPhase::awaiting_input);
-                ++n)
+        for (unsigned n = 0;
+             n < 2000 && (town.snapshot().phase == por::TourPhase::running ||
+                          town.snapshot().phase == por::TourPhase::awaiting_continue ||
+                          town.snapshot().phase == por::TourPhase::awaiting_input);
+             ++n)
         {
             const auto &s = town.snapshot();
             if (s.phase == por::TourPhase::running)
@@ -1875,7 +1900,8 @@ std::optional<ParleyResult> parley_once(const std::filesystem::path &save,
 }
 
 ParleyResult parley(const std::filesystem::path &save, const std::filesystem::path &directory,
-                    std::string_view outcome, std::string_view option, std::string_view amount = "0")
+                    std::string_view outcome, std::string_view option,
+                    std::string_view amount = "0")
 {
     for (unsigned paces = 0; paces < 40; ++paces)
         if (auto result = parley_once(save, directory, paces, outcome, option, amount))
@@ -1885,36 +1911,38 @@ ParleyResult parley(const std::filesystem::path &save, const std::filesystem::pa
 
 bool said(const ParleyResult &result, std::string_view text)
 {
-    return std::any_of(result.said.begin(), result.said.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(result.said.begin(), result.said.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // A parley that goes well enough asks a toll or orders the party out; each
 // answer reaches the original script's outcome with real coins and moves.
-void slums_parley_outcomes(const std::filesystem::path &save, const std::filesystem::path &directory)
+void slums_parley_outcomes(const std::filesystem::path &save,
+                           const std::filesystem::path &directory)
 {
-    const auto fought = [](const ParleyResult & r)
+    const auto fought = [](const ParleyResult &r)
     {
         return r.trip.town.snapshot().phase == por::TourPhase::combat;
     };
-    const auto moved = [](const ParleyResult & r)
+    const auto moved = [](const ParleyResult &r)
     {
         const auto pose = r.trip.town.snapshot().pose;
         return pose.x != 14 || pose.y != 4;
     };
     auto cheap = parley(save, directory, "PAY", "PAY", "1");
-    check(said(cheap, "CHEAPSKATES") && fought(cheap) && party_gold(*cheap.trip.party) == cheap.gold_before,
+    check(said(cheap, "CHEAPSKATES") && fought(cheap) &&
+              party_gold(*cheap.trip.party) == cheap.gold_before,
           "Too small a toll starts a fight and costs nothing");
     auto paid = parley(save, directory, "PAY", "PAY", "500");
     check(said(paid, "PAW THROUGH YOUR COINS") && !fought(paid) && !moved(paid) &&
-          party_gold(*paid.trip.party) <= paid.gold_before / 2 + 6,
+              party_gold(*paid.trip.party) <= paid.gold_before / 2 + 6,
           "A large enough toll costs half the party's coins");
     auto surrendered = parley(save, directory, "PAY", "SURRENDER");
     check(said(surrendered, "ROB AND BLINDFOLD") && moved(surrendered) &&
-          party_gold(*surrendered.trip.party) == 0 &&
-          !said(surrendered, "You get away."),
+              party_gold(*surrendered.trip.party) == 0 && !said(surrendered, "You get away."),
           "Surrender costs every coin and sends the party elsewhere");
     auto ran = parley(save, directory, "PAY", "RUN");
     check(!fought(ran) && moved(ran) && said(ran, "You get away."),
@@ -1943,7 +1971,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     {
         check(town.camp(RestKind::short_rest), "Camp starts");
         while (town.snapshot().phase == por::TourPhase::running ||
-                town.snapshot().phase == por::TourPhase::awaiting_continue)
+               town.snapshot().phase == por::TourPhase::awaiting_continue)
         {
             const auto &s = town.snapshot();
             if (s.phase == por::TourPhase::running)
@@ -1967,7 +1995,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     for (int y = 0; y < board.height; ++y)
         for (int x = 0; x < board.width; ++x)
             if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
-                    board.at({x, y}) != rules::Terrain::obstacle)
+                board.at({x, y}) != rules::Terrain::obstacle)
                 edges.push_back({x, y});
     const auto to_edge = [&](rules::Cell from)
     {
@@ -1976,14 +2004,16 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
             best = std::min(best, std::max(std::abs(edge.x - from.x), std::abs(edge.y - from.y)));
         return best;
     };
-    for (unsigned n = 0; n < 6000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing; ++n)
+    for (unsigned n = 0; n < 6000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
+         ++n)
     {
         const auto s = combat.combat().snapshot();
         const auto offered = combat.combat().legal_commands();
-        const auto mover = std::find_if(s.combatants.begin(), s.combatants.end(), [&](const auto & u)
-        {
-            return u.id == s.actor;
-        });
+        const auto mover = std::find_if(s.combatants.begin(), s.combatants.end(),
+                                        [&](const auto &u)
+                                        {
+                                            return u.id == s.actor;
+                                        });
         std::optional<rules::Command> pick;
         if (mover != s.combatants.end() && mover->side == rules::Side::party && !s.reaction_pending)
         {
@@ -2010,20 +2040,22 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     check(result.outcome == rules::Outcome::fled, "The party flees the fight");
     check(town.resolve_combat(result), "Exploration accepts the flight");
     check(town.snapshot().phase != por::TourPhase::faulted &&
-          town.script_variable(por::ecl_combat_result) == 128,
+              town.script_variable(por::ecl_combat_result) == 128,
           "The original script hears that the party fled");
     bool someone_got_away = false;
     for (const auto &unit : result.combatants)
         if (unit.side == rules::Side::party)
         {
             const auto &member = party->member(unit.id);
-            const bool in_party = std::find(party->state().slots.begin(), party->state().slots.end(),
-                                            unit.id) != party->state().slots.end();
+            const bool in_party =
+                std::find(party->state().slots.begin(), party->state().slots.end(), unit.id) !=
+                party->state().slots.end();
             if (unit.fled)
             {
                 someone_got_away = true;
-                check(in_party && !member.vitals.dead && member.vitals.hit_points == unit.hit_points &&
-                      member.experience == experience,
+                check(in_party && !member.vitals.dead &&
+                          member.vitals.hit_points == unit.hit_points &&
+                          member.experience == experience,
                       "One who got away rejoins with its wounds and no experience for no kills");
             }
             else
@@ -2178,16 +2210,17 @@ void installed_first_expedition(const std::filesystem::path &executable,
     revisit_ohlo(trip);
     slums_camp_ambush(trip);
     check(read_campaign_file(revisit_result(save)) ==
-          encode_campaign(*trip.party, &trip.town, assets),
+              encode_campaign(*trip.party, &trip.town, assets),
           "Continuing after a reload, camp interruptions included, matches continuing without one");
     std::filesystem::remove_all(folder);
-    std::cout << "Installed first expedition: created, equipped, defeated the four orcs, "
-              "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
-              "it again from each Slums save, reloaded, revisited and camped in the Slums, fought its "
-              "hobgoblins and monster leaders, advanced on, parleyed with, paid, surrendered to, "
-              "waited for and fled from its street monsters, met its trolls, won fights in "
-              "Kuto's Well, "
-              "defeated Norris and surrendered to him from a save.\n";
+    std::cout
+        << "Installed first expedition: created, equipped, defeated the four orcs, "
+           "returned, paid the inn with change, rested, delivered Ohlo's potion, finished "
+           "it again from each Slums save, reloaded, revisited and camped in the Slums, fought its "
+           "hobgoblins and monster leaders, advanced on, parleyed with, paid, surrendered to, "
+           "waited for and fled from its street monsters, met its trolls, won fights in "
+           "Kuto's Well, "
+           "defeated Norris and surrendered to him from a save.\n";
 }
 
 } // namespace
@@ -2223,7 +2256,7 @@ int main(int argc, char **argv)
         if (directory && *directory)
             installed_first_expedition(std::filesystem::absolute(argv[0]), directory);
         std::cout << (requested_fixtures_written() ? "Expedition fixtures written.\n"
-                      : "Expedition tests passed.\n");
+                                                   : "Expedition tests passed.\n");
     }
     catch (const std::exception &e)
     {

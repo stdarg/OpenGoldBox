@@ -4,9 +4,8 @@ namespace warlock_poison
 Character selected(bool both = false)
 {
     auto d = draft();
-    d.cantrips = both ? std::vector<std::string> {"eldritch_blast", "poison_spray"}
-                 :
-                 std::vector<std::string> {"poison_spray"};
+    d.cantrips = both ? std::vector<std::string>{"eldritch_blast", "poison_spray"}
+                      : std::vector<std::string>{"poison_spray"};
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -16,24 +15,22 @@ void access()
     auto h = selected();
     auto available = rules->spell_access(h.sheet());
     check(available.cantrip_choices == 2 && available.cantrips.size() == 1 &&
-          available.cantrips[0].id == "poison_spray" &&
-          available.cantrips[0].source_id == "class:warlock:pact_magic" &&
-          available.cantrips[0].acquired_level == 1,
+              available.cantrips[0].id == "poison_spray" &&
+              available.cantrips[0].source_id == "class:warlock:pact_magic" &&
+              available.cantrips[0].acquired_level == 1,
           "Explicit Poison Spray uses real Warlock source");
     check(rules->spell_access(selected(true).sheet()).cantrips.size() == 2,
           "Two supported choices can complete starting cantrips");
     auto d = draft();
-    for (const auto &bad : std::vector<std::vector<std::string>>
-{
-    {"poison_spray", "poison_spray"}, {"eldritch_blast", "poison_spray", "fire_bolt"}
-})
+    for (const auto &bad : std::vector<std::vector<std::string>>{
+             {"poison_spray", "poison_spray"}, {"eldritch_blast", "poison_spray", "fire_bolt"}})
     {
         d.cantrips = bad;
         rejects(
             [&]
-        {
-            (void)srd5::character_rules()->evaluate(d, NameRequirement::required);
-        });
+            {
+                (void)srd5::character_rules()->evaluate(d, NameRequirement::required);
+            });
     }
     auto bad = h.sheet();
     for (auto &g : bad.grants)
@@ -41,22 +38,21 @@ void access()
             g.source_id = "class:wizard:spellcasting";
     rejects(
         [&]
-    {
-        (void)rules->character_profile(bad, {});
-    });
+        {
+            (void)rules->character_profile(bad, {});
+        });
     auto profile = rules->character_profile(h.sheet(), {}).data;
     check(profile.starts_with("PC43 1 ") && profile.find(" poison_spray ") != profile.npos,
           "Warlock profile lists the chosen cantrip");
     profile.replace(0, 4, "PC26");
     rejects(
         [&]
-    {
-        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
-                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
-            }},
-        13);
-    });
+        {
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+                                 {{1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                                  {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
+                                13);
+        });
     auto unselected = battle(*custom(), hero());
     check(!has(*unselected, "poison_spray"),
           "Having a class entitlement never silently grants an unselected cantrip");
@@ -64,13 +60,8 @@ void access()
 
 void rolls()
 {
-    for (unsigned seed :
-            {
-                0u, 3u, 13u, 40u
-            })
-        for (const std::string defense :
-                {"", "resistance", "vulnerability", "immunity"
-                })
+    for (unsigned seed : {0u, 3u, 13u, 40u})
+        for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
         {
             auto rules =
                 custom(defense.empty() ? "" : "affinity target test " + defense + " poison\n");
@@ -85,23 +76,23 @@ void rolls()
             const int raw = seed == 0    ? 13
                             : seed == 3  ? 12
                             : seed == 13 ? 8
-                            : 0,
-                            expected = defense == "immunity"        ? 0
-                                       : defense == "resistance"    ? raw / 2
-                                       : defense == "vulnerability" ? raw * 2
-                                       : raw;
+                                         : 0,
+                      expected = defense == "immunity"        ? 0
+                                 : defense == "resistance"    ? raw / 2
+                                 : defense == "vulnerability" ? raw * 2
+                                                              : raw;
             check(unit(*c, 2).hit_points == 1000 - expected,
                   "d12 Poison hit/miss/critical and typed defenses");
             check(arg(attack(*c), "bonus") == "6",
                   "Charisma 18 plus proficiency, not Intelligence 15");
             check(rng(*c) == random + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
-                    : seed == 40 ? 1u
-                    : 2u),
+                                                               : seed == 40 ? 1u
+                                                                            : 2u),
                   "No extra save, damage modifier or random draw");
             const auto after = unit(*c);
             check(!after.action && after.bonus_action && after.reaction &&
-                  after.movement_feet == before.movement_feet &&
-                  after.persistent == before.persistent,
+                      after.movement_feet == before.movement_feet &&
+                      after.persistent == before.persistent,
                   "Cantrip spends only its Magic action");
             const auto saved = c->save();
             check(!c->submit(ticket) && c->save() == saved, "Spent Action rejects atomically");
@@ -111,10 +102,7 @@ void rolls()
 void eligibility()
 {
     auto rules = custom();
-    for (int feet :
-            {
-                30, 35
-            })
+    for (int feet : {30, 35})
     {
         auto c = battle(*rules, selected(), 13, {1 + feet / 5, 1});
         check(has(*c, "poison_spray", 2) == (feet == 30), "Real Warlock range boundary");
@@ -126,38 +114,33 @@ void eligibility()
         }
     }
     // Full hands block nothing (CLASS-11); untrained armor does.
-    for (const auto &gear : std::vector<std::vector<std::string>>
-{
-    {"quarterstaff", "shield"}, {"wand", "shield"}
-})
-    check(has(*battle(*rules, selected(), 13, {3, 1}, gear), "poison_spray"),
-          "Full hands do not block the Warlock grant");
+    for (const auto &gear :
+         std::vector<std::vector<std::string>>{{"quarterstaff", "shield"}, {"wand", "shield"}})
+        check(has(*battle(*rules, selected(), 13, {3, 1}, gear), "poison_spray"),
+              "Full hands do not block the Warlock grant");
     {
         auto c = battle(*rules, selected(), 13, {3, 1}, {"plate"});
         const auto before = c->save();
         check(!has(*c, "poison_spray") &&
-              !c->submit({c->snapshot().revision, 1, 2, "poison_spray"}) && c->save() == before,
+                  !c->submit({c->snapshot().revision, 1, 2, "poison_spray"}) && c->save() == before,
               "Untrained armor checks apply to Warlock grant");
     }
     auto c = battle(*rules, selected(), 13, {2, 1});
     check(c->submit(command(*c, "poison_spray", 2)) && unit(*c, 2).hit_points == 996 &&
-          arg(attack(*c), "disadvantage") == " (disadvantage)",
+              arg(attack(*c), "disadvantage") == " (disadvantage)",
           "Adjacent hostile gives ranged spell Disadvantage");
 }
 
 void campaign()
 {
     auto rules = module();
-    for (bool npc :
-            {
-                false, true
-            })
+    for (bool npc : {false, true})
     {
         CampaignParty party(module());
         auto h = selected(true);
         h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
         const auto id = npc ? party.recruit("fixture:warlock-poison", std::move(h))
-                        : party.add_pc(std::move(h));
+                            : party.add_pc(std::move(h));
         party.equip(id, 1);
         auto state = party.checkpoint();
         state.roster[0].vitals.hit_points -= 2;
@@ -178,15 +161,12 @@ void campaign()
         CampaignParty restored(module());
         restored.restore(
             decode_campaign(saved, *srd5::character_rules(), *rules, "warlock-poison", nullptr)
-            .party);
+                .party);
         check(encode_campaign(restored, nullptr, "warlock-poison") == saved &&
-              restored.member(id).character.creation_data().cantrips ==
-              party.member(id).character.creation_data().cantrips,
+                  restored.member(id).character.creation_data().cantrips ==
+                      party.member(id).character.creation_data().cantrips,
               "Exact campaign reconstruction retains explicit choices");
-        for (auto kind :
-                {
-                    RestKind::short_rest, RestKind::long_rest
-                })
+        for (auto kind : {RestKind::short_rest, RestKind::long_rest})
         {
             check(bool(restored.rest(kind)), "Camp/inn rest");
             if (restored.state().short_rest)
@@ -195,9 +175,9 @@ void campaign()
             CampaignParty again(module());
             again.restore(
                 decode_campaign(saved, *srd5::character_rules(), *rules, "warlock-poison", nullptr)
-                .party);
+                    .party);
             check(encode_campaign(again, nullptr, "warlock-poison") == saved &&
-                  rules->spell_access(again.member(id).character.sheet()).cantrips.size() == 2,
+                      rules->spell_access(again.member(id).character.sheet()).cantrips.size() == 2,
                   "Rest save/reload preserves both learned cantrips");
         }
     }
@@ -208,18 +188,15 @@ void fixtures()
     auto rules = module();
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "eldritch-fixtures";
     auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-        {   {
-                1,
-                "campaign-character",
-                "Warlock",
-                Side::party,
-                {1, 1},
-                rules->character_profile(selected(true).sheet(), {}).data
-            },
-            {2, "vanguard", "Ally", Side::party, {3, 1}},
-            {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
-        }},
-    2);
+                            {{1,
+                              "campaign-character",
+                              "Warlock",
+                              Side::party,
+                              {1, 1},
+                              rules->character_profile(selected(true).sheet(), {}).data},
+                             {2, "vanguard", "Ally", Side::party, {3, 1}},
+                             {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
+                           2);
     write(path / "both.save", c->save());
 }
 

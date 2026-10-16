@@ -38,12 +38,12 @@ inline constexpr unsigned hall_level_limit = 15;
 enum class TrainingDenial
 {
     none,
-    other_hall,      // The member's class trains at another hall.
-    not_active,      // Only active, living members train.
-    highest_level,   // There is no next level to train toward.
+    other_hall,       // The member's class trains at another hall.
+    not_active,       // Only active, living members train.
+    highest_level,    // There is no next level to train toward.
     ready_to_advance, // Enough experience already: advance first.
-    already_trained, // One of this service per level.
-    gold             // The party's gold cannot pay the fee.
+    already_trained,  // One of this service per level.
+    gold              // The party's gold cannot pay the fee.
 };
 
 // One member's experience session: its fee, the experience it grants and

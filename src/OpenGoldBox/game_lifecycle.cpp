@@ -18,10 +18,11 @@ void GameLifecycle::_bind_methods()
 
 void GameLifecycle::_ready()
 {
-    presentation::run_guarded(*this, [&]
-    {
-        start_lifecycle();
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  start_lifecycle();
+                              });
 }
 
 void GameLifecycle::start_lifecycle()
@@ -30,8 +31,8 @@ void GameLifecycle::start_lifecycle()
     set_process_mode(PROCESS_MODE_ALWAYS);
     auto *tree = get_tree(); // borrowed; SceneTree owns this autoload
     tree->set_auto_accept_quit(false);
-    tree->get_root()->connect("close_requested", presentation::guarded(this,
-            &GameLifecycle::request_quit));
+    tree->get_root()->connect("close_requested",
+                              presentation::guarded(this, &GameLifecycle::request_quit));
     watch_window(tree->get_root());
     tree->connect("node_added", presentation::guarded(this, &GameLifecycle::watch_window));
 }
@@ -48,10 +49,11 @@ void GameLifecycle::watch_window(Node *node)
 
 void GameLifecycle::_input(const Ref<InputEvent> &event)
 {
-    presentation::run_guarded(*this, [&]
-    {
-        respond_to_input(event);
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  respond_to_input(event);
+                              });
 }
 
 void GameLifecycle::respond_to_input(const Ref<InputEvent> &event)

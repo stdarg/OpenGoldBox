@@ -8,7 +8,7 @@ namespace opengold
 // Curated level-one drafts evaluated by the selected creation rules. Art is
 // resolved from the user's loaded catalog; no original images are distributed.
 [[nodiscard]] std::vector<Character> character_pool(const rules::CharacterRules &,
-        const por::CharacterArt &);
+                                                    const por::CharacterArt &);
 
 // Gives a member its class's kit for free: a held melee weapon, the armor and
 // shield the class is trained with, a bow or crossbow with 20 arrows or bolts

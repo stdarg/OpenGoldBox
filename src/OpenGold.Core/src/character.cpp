@@ -30,8 +30,8 @@ void Character::rename(std::string name)
     sheet_.name = std::move(name);
 }
 
-Character Character::recreated(const rules::CharacterRules &creation, const rules::RulesModule &rules,
-                               rules::CharacterDraft draft) const
+Character Character::recreated(const rules::CharacterRules &creation,
+                               const rules::RulesModule &rules, rules::CharacterDraft draft) const
 {
     Character result(creation, std::move(draft), appearance_);
     result.replay(rules, advancements_, spell_edits_, training_edits_, hall_training_);
@@ -52,7 +52,8 @@ void Character::replay(const rules::RulesModule &rules,
         for (const auto &edit : spell_edits)
             if (edit.level == level)
                 choose_spells(rules, edit.choices, edit.rest_session,
-                              rules::SpellChoiceContext::long_rest, rules::ChoiceCompleteness::partial);
+                              rules::SpellChoiceContext::long_rest,
+                              rules::ChoiceCompleteness::partial);
         for (const auto &edit : training_edits)
             if (edit.level == level)
                 replace_rest_training(rules, edit.selections, edit.rest_session);
@@ -102,11 +103,11 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
     if (!rest_session)
         throw std::runtime_error("Spell choices require a completed Long Rest");
     if (std::any_of(spell_edits_.begin(), spell_edits_.end(),
-                    [&](const auto & edit)
-{
-    return edit.rest_session >= rest_session;
-}))
-    throw std::runtime_error("Spell choices already used for this rest");
+                    [&](const auto &edit)
+                    {
+                        return edit.rest_session >= rest_session;
+                    }))
+        throw std::runtime_error("Spell choices already used for this rest");
     auto candidate = sheet_;
     auto history = spell_edits_;
     rules.apply_spell_choices(candidate, choices, context, completeness);
@@ -121,16 +122,16 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
                                       std::uint64_t session)
 {
     if (!session || std::any_of(training_edits_.begin(), training_edits_.end(),
-                                [&](const auto & edit)
-{
-    return edit.rest_session >= session;
-}))
-    throw std::runtime_error("Training choices already used for this rest");
+                                [&](const auto &edit)
+                                {
+                                    return edit.rest_session >= session;
+                                }))
+        throw std::runtime_error("Training choices already used for this rest");
     auto candidate = sheet_;
     auto history = training_edits_;
     (void)rules.replace_rest_training(candidate, selections);
-    history.push_back({static_cast<unsigned>(sheet_.level), session,
-                       {selections.begin(), selections.end()}});
+    history.push_back(
+        {static_cast<unsigned>(sheet_.level), session, {selections.begin(), selections.end()}});
     (void)rules.character_profile(candidate, {});
     sheet_ = std::move(candidate);
     training_edits_ = std::move(history);

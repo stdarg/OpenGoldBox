@@ -22,13 +22,13 @@ class WallArtCatalog : public godot::Control
     [[nodiscard]] godot::Ref<godot::Image> image_at(int index) const;
     [[nodiscard]] godot::Array maps() const;
     [[nodiscard]] godot::Dictionary map_cell(int map_index, int profile_index, int x, int y,
-                                              int view) const;
-    [[nodiscard]] godot::Ref<godot::Image> map_view(int map_index, int profile_index, int x,
-                                                    int y, int facing) const;
+                                             int view) const;
+    [[nodiscard]] godot::Ref<godot::Image> map_view(int map_index, int profile_index, int x, int y,
+                                                    int facing) const;
     [[nodiscard]] godot::Dictionary map_pick(int map_index, int profile_index, int x, int y,
                                              int facing, int pixel_x, int pixel_y) const;
-    [[nodiscard]] godot::Array map_visible_pieces(int map_index, int profile_index, int x,
-                                                  int y, int facing) const;
+    [[nodiscard]] godot::Array map_visible_pieces(int map_index, int profile_index, int x, int y,
+                                                  int facing) const;
 
   protected:
     static void _bind_methods();
@@ -42,6 +42,7 @@ class WallArtCatalog : public godot::Control
         unsigned view{};
         opengold::Image image;
     };
+
     struct Profile
     {
         std::string label;
@@ -49,6 +50,7 @@ class WallArtCatalog : public godot::Control
         std::vector<std::array<int, 10>> appearance_entries;
         opengold::por::WallArtSet art;
     };
+
     struct MapEntry
     {
         std::string archive;
@@ -57,6 +59,7 @@ class WallArtCatalog : public godot::Control
         opengold::por::GeoMap geometry;
         std::vector<Profile> profiles;
     };
+
     std::vector<Entry> entries_;
     std::vector<MapEntry> maps_;
 };

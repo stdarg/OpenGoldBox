@@ -116,8 +116,8 @@ struct PartyState
     std::array<MemberId, 8> slots{};
     MemberId next_id{1};
     PartySlot selected_slot{};
-    MemberId leader{}; // Speaks for the party and buys in shops; 0 means the first member.
-    Purse wealth{}; // All the party's money; no member carries coins of their own.
+    MemberId leader{};  // Speaks for the party and buys in shops; 0 means the first member.
+    Purse wealth{};     // All the party's money; no member carries coins of their own.
     bool quick_magic{}; // Members on Quick may cast spells.
     std::uint64_t time_minutes{};
     RandomState random_state{42};
@@ -128,7 +128,7 @@ struct PartyState
     std::optional<ShortRestSession> short_rest;
     std::optional<ShortRestSession> spell_rest; // Completed-rest choices, consumed once per member.
     std::optional<ShortRestSession>
-    training_rest; // Rule-owned training replacements after spell choices.
+        training_rest; // Rule-owned training replacements after spell choices.
     // The training_rest follows a Short Rest, which changes fewer choices.
     bool training_after_short_rest{};
     // The spell_rest follows a Short Rest: Memorize Spell changes one spell.
@@ -193,7 +193,7 @@ class CampaignParty
     void rejoin(MemberId id);
     void remove(MemberId id);
     [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,
-            std::uint64_t item) const;
+                                                                        std::uint64_t item) const;
     void equip(MemberId id, std::uint64_t item,
                rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
     void unequip(MemberId id, std::uint64_t item);
@@ -221,7 +221,7 @@ class CampaignParty
     advancement_options(MemberId id, const rules::AdvancementChoice &choice = {}) const;
     [[nodiscard]] rules::AdvancementChoice default_advancement(MemberId id) const;
     [[nodiscard]] PartyMember preview_advancement(MemberId id,
-            const rules::AdvancementChoice &choice) const;
+                                                  const rules::AdvancementChoice &choice) const;
     void advance(MemberId id, const rules::AdvancementChoice &choice);
     // Long Rest spell choices for a member offered them by the completed rest.
     [[nodiscard]] rules::SpellChoiceOptions spell_choice_options(MemberId id) const;
@@ -232,7 +232,7 @@ class CampaignParty
     void choose_spells(MemberId id, const rules::SpellChoices &);
     void keep_rest_spells(MemberId id);
     [[nodiscard]] PartyMember preview_rest_training(RestTicket, MemberId,
-            std::span<const std::string>) const;
+                                                    std::span<const std::string>) const;
     void replace_rest_training(RestTicket, MemberId, std::span<const std::string>);
     void keep_rest_training(RestTicket, MemberId);
     // Atomic original loot delivery. A full party purse leaves it unclaimed.
@@ -245,9 +245,9 @@ class CampaignParty
     [[nodiscard]] std::optional<RestResult> rest(RestKind kind);
     // Spends Hit Dice one at a time until the member is at full HP or out of dice.
     [[nodiscard]] std::vector<rules::HitDieResult> heal_with_hit_dice(RestTicket ticket,
-            MemberId id);
+                                                                      MemberId id);
     [[nodiscard]] rules::Message recover_rest_choice(RestTicket ticket, MemberId id,
-            std::string_view choice);
+                                                     std::string_view choice);
     void finish_short_rest(RestTicket ticket);
     void temple_heal(MemberId target);
     // An attack from outside combat, such as an arrow trap, on a random active
@@ -274,13 +274,13 @@ class CampaignParty
 
     [[nodiscard]] rules::CharacterProfile profile(MemberId id) const;
     [[nodiscard]] rules::AbilityCheckModifier ability_check(MemberId id, rules::Ability ability,
-            std::string_view skill = {}) const;
+                                                            std::string_view skill = {}) const;
     [[nodiscard]] rules::RecoveryInfo recovery_info(MemberId id) const;
     // Applies the script's HP and coin changes. The script sees the party purse
     // as the slot's money, and coins are seen and settled as script_coins()
     // describes; the result reports any change the purse made.
     [[nodiscard]] std::optional<CoinExchange> read_character(PartySlot slot,
-            const por::EclMachine &vm);
+                                                             const por::EclMachine &vm);
 
     [[nodiscard]] PartyState checkpoint() const
     {
@@ -331,6 +331,7 @@ class CampaignParty
     std::vector<std::pair<MemberId, int>> combat_checked_;
     void elapse(PartyState &state, std::chrono::milliseconds elapsed,
                 std::span<const MemberId> in_combat = {}) const;
+
     // Time passing, worked out without touching the party (everything that
     // can throw), then applied with moves only, so a caller need not copy the
     // whole party to stay atomic.
@@ -341,6 +342,7 @@ class CampaignParty
         std::uint64_t time_minutes{};
         unsigned subminute_milliseconds{};
     };
+
     [[nodiscard]] Elapsed elapsed(const PartyState &state, std::chrono::milliseconds elapsed,
                                   std::span<const MemberId> in_combat = {}) const;
     static void apply(PartyState &state, Elapsed &&elapsed) noexcept;

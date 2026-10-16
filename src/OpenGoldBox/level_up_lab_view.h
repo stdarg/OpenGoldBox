@@ -20,7 +20,9 @@ class LevelUpLabView : public godot::Control
     void report_failure(const std::exception &failure);
 
   protected:
-    static void _bind_methods() {}
+    static void _bind_methods()
+    {
+    }
 
   private:
     void prepare_view();

@@ -34,7 +34,7 @@ class CombatView : public godot::Control
     [[nodiscard]] godot::Array enemy_cells() const;
     [[nodiscard]] bool sprite_facing_left(std::int64_t id) const;
     [[nodiscard]] godot::Ref<godot::Texture2D> sprite_texture(opengold::rules::EntityId id,
-            opengold::por::IconPose pose) const;
+                                                              opengold::por::IconPose pose) const;
 
     [[nodiscard]] bool attack_pose_active(std::int64_t id) const
     {
@@ -59,9 +59,8 @@ class CombatView : public godot::Control
 
     [[nodiscard]] bool can_leave() const
     {
-        return !defeated() &&
-               (!demo_ || !demo_->has_combat() ||
-                demo_.snapshot().outcome != opengold::rules::Outcome::ongoing);
+        return !defeated() && (!demo_ || !demo_->has_combat() ||
+                               demo_.snapshot().outcome != opengold::rules::Outcome::ongoing);
     }
 
     void campaign_encounter(opengold::CampaignEncounter encounter)
@@ -121,6 +120,7 @@ class CombatView : public godot::Control
         godot::Ref<godot::ImageTexture> skull;
         std::vector<opengold::CombatArt> campaign;
     };
+
     [[nodiscard]] ArtSet build_art() const;
 
     std::map<opengold::rules::EntityId, SpriteArt> art_;

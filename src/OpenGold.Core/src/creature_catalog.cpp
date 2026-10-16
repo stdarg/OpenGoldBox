@@ -16,8 +16,8 @@ std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 {
     if (!std::filesystem::exists(path))
         throw CatalogError("Cannot open " + path.string());
-    return detail::read_archive_bytes<CatalogError>(path,
-        "Asset exceeds size limit: " + path.string(), "Cannot open " + path.string(),
+    return detail::read_archive_bytes<CatalogError>(
+        path, "Asset exceeds size limit: " + path.string(), "Cannot open " + path.string(),
         "Cannot read " + path.string());
 }
 
@@ -140,8 +140,7 @@ std::string_view item_type_name(std::uint8_t type)
                                           "Splint armor",
                                           "Banded armor",
                                           "Plate armor",
-                                          "Shield"
-                                         };
+                                          "Shield"};
     return type < std::size(names) ? names[type] : std::string_view{};
 }
 } // namespace
@@ -257,7 +256,7 @@ AbilityModifiers ability_modifiers(const CharacterRecord &c)
         const int hp = a.constitution == 3    ? -2
                        : a.constitution <= 6  ? -1
                        : a.constitution <= 14 ? 0
-                       : a.constitution - 14;
+                                              : a.constitution - 14;
         for (std::size_t cls = 0; cls < 8; ++cls)
             result.constitution_hp_per_hit_die_by_class[cls] =
                 cls >= 2 && cls <= 4 ? hp : std::min(hp, 2);
@@ -302,7 +301,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
             if (!files.emplace(name, entry.path()).second)
                 throw CatalogError("Ambiguous asset filename: " + name);
         }
-        const auto required = [&](const std::string & name) -> const std::filesystem::path &
+        const auto required = [&](const std::string &name) -> const std::filesystem::path &
         {
             const auto file = files.find(name);
             if (file == files.end())
@@ -378,8 +377,8 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
                     }
                 }
                 if (!creature.abilities.strength_to_hit ||
-                        !creature.abilities.dexterity_ac_adjustment ||
-                        !creature.abilities.constitution_hp_per_hit_die_by_class[0])
+                    !creature.abilities.dexterity_ac_adjustment ||
+                    !creature.abilities.constitution_hp_per_hit_die_by_class[0])
                     creature.interpretation_notes.emplace_back(
                         "An ability score is outside the supported reference modifier tables.");
                 catalog.creatures_.emplace(creature.id, std::move(creature));

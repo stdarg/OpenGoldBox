@@ -63,10 +63,10 @@ bool offers(const CombatSession &s, std::string_view verb)
 {
     const auto commands = s.legal_commands();
     return std::any_of(commands.begin(), commands.end(),
-                       [&](const auto & c)
-    {
-        return c.verb == verb;
-    });
+                       [&](const auto &c)
+                       {
+                           return c.verb == verb;
+                       });
 }
 
 void turn(CombatSession &s, EntityId id)
@@ -91,15 +91,13 @@ void codec()
     check(out.str() == "FX8 1 0 1", "Canonical posture codec");
     std::istringstream in(out.str());
     check(fx::read_effects(in) == state, "Posture round trips");
-    for (const auto bad :
-            {"FX8 1 0 2", "FX8 1 0 -1", "FX8 1 0", "FX7 1 0 0 1"
-            })
+    for (const auto bad : {"FX8 1 0 2", "FX8 1 0 -1", "FX8 1 0", "FX7 1 0 0 1"})
         rejects(
             [&]
-    {
-        std::istringstream input(bad);
-        (void)fx::read_effects(input);
-    });
+            {
+                std::istringstream input(bad);
+                (void)fx::read_effects(input);
+            });
 }
 
 void rest_ambush()
@@ -131,7 +129,7 @@ void rest_ambush()
     check(unit(*s, sleeper).action, "A woken character keeps its Action");
     check(s->submit(command(*s, "stand_up")), "A woken character can stand up");
     check(!unit(*s, sleeper).prone && unit(*s, sleeper).action &&
-          unit(*s, sleeper).movement_feet == movement - 15,
+              unit(*s, sleeper).movement_feet == movement - 15,
           "Standing costs half Speed without an Action");
     const auto stood = s->save();
     check(rules->restore(stood)->save() == stood, "Standing continuation round trips");
@@ -147,10 +145,15 @@ void downed_keeps_gear()
     for (unsigned seed = 1; seed < 100 && !witnessed; ++seed)
     {
         auto hit = rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "bandit", "Attacker", Side::opposition, {2, 2}},
-                {2, "campaign-character", "Wounded", Side::party, {3, 2}, armed.data, VitalState{1}}
-            }},
-        seed);
+                                  {{1, "bandit", "Attacker", Side::opposition, {2, 2}},
+                                   {2,
+                                    "campaign-character",
+                                    "Wounded",
+                                    Side::party,
+                                    {3, 2},
+                                    armed.data,
+                                    VitalState{1}}}},
+                                 seed);
         if (hit->snapshot().actor != 1)
             continue;
         check(hit->submit(command(*hit, "melee", 2)), "Damage fixture attack");
@@ -160,11 +163,11 @@ void downed_keeps_gear()
         witnessed = true;
         const auto items = hit->snapshot().held_items;
         check(std::all_of(items.begin(), items.end(),
-                          [](const auto & item)
-        {
-            return item.holder == 2;
-        }),
-        "A character at zero HP keeps its weapon and shield");
+                          [](const auto &item)
+                          {
+                              return item.holder == 2;
+                          }),
+              "A character at zero HP keeps its weapon and shield");
         check(fallen.prone && fallen.armor_class == armed.armor_class,
               "The downed character lies Prone and its shield still counts");
         check(!offers(*hit, "pick_up"), "There is nothing to pick up");
@@ -188,15 +191,15 @@ void bandaged_at_victory()
     bool witnessed = false;
     for (unsigned seed = 1; seed < 200 && !witnessed; ++seed)
     {
-        auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Victor", Side::party, {2, 2}, profile},
-                {2, "campaign-character", "Fallen", Side::party, {1, 1}, profile, dying()},
-                {3, "bandit", "Enemy", Side::opposition, {3, 2}, {}, VitalState{1}}
-            }},
-        seed);
+        auto c = rules->create(
+            {{8, 8, std::vector<Terrain>(64)},
+             {{1, "campaign-character", "Victor", Side::party, {2, 2}, profile},
+              {2, "campaign-character", "Fallen", Side::party, {1, 1}, profile, dying()},
+              {3, "bandit", "Enemy", Side::opposition, {3, 2}, {}, VitalState{1}}}},
+            seed);
         for (unsigned n = 0; n < 20 && c->snapshot().outcome == Outcome::ongoing; ++n)
-            check(c->submit(command(*c, c->snapshot().actor == 1 && offers(*c, "melee")
-                                    ? "melee" : "end")),
+            check(c->submit(command(*c, c->snapshot().actor == 1 && offers(*c, "melee") ? "melee"
+                                                                                        : "end")),
                   "Victory fixture command");
         if (c->snapshot().outcome != Outcome::victory)
             continue;
@@ -208,12 +211,14 @@ void bandaged_at_victory()
         witnessed = true;
         const auto fallen = unit(*c, 2);
         check(!fallen.dead && fallen.hit_points == 0 &&
-              fallen.persistent.description.find("Stable") != std::string::npos,
+                  fallen.persistent.description.find("Stable") != std::string::npos,
               "A character still dying at victory is bandaged and Stable");
-        check(std::none_of(victory, log.end(), [](const auto & line)
-        {
-            return line.starts_with("Fallen death save: ");
-        }), "No death save is rolled after victory");
+        check(std::none_of(victory, log.end(),
+                           [](const auto &line)
+                           {
+                               return line.starts_with("Fallen death save: ");
+                           }),
+              "No death save is rolled after victory");
         check(std::count(log.begin(), log.end(), "Victory.") == 1, "Victory is announced once");
         check(!fallen.prone && !unit(*c, 1).prone, "Prone does not outlast combat");
         check(rules->restore(c->save())->save() == c->save(), "Resolved victory round trips");
@@ -237,8 +242,7 @@ void campaign_death_saves()
         std::array<fx::RecoverySubject, 1> combatants{{{{1, effects, {}}, combat_life}}};
         std::uint64_t combat_rng = seed;
         fx::elapse_recovery(combatants, 1, combat_rng, fx::RecoveryMode::combat);
-        check(combat_life.hp == 0 && !combat_life.stable && !combat_life.dead &&
-              combat_rng == seed,
+        check(combat_life.hp == 0 && !combat_life.stable && !combat_life.dead && combat_rng == seed,
               "Combat keeps its turn-entry death saves");
     }
 }
@@ -251,7 +255,7 @@ void movement()
     check(grid.step_cost({2, 2}, {2, 3}) == 10 && grid.step_cost({2, 2}, {3, 2}) == 15,
           "Crawling and difficult terrain add independent movement costs");
     check(grid.reachable(14).cost_to({3, 2}) == std::nullopt &&
-          grid.reachable(15).cost_to({3, 2}) == 15,
+              grid.reachable(15).cost_to({3, 2}) == 15,
           "Crawling reach uses exact weighted path cost");
 }
 } // namespace

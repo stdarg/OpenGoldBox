@@ -61,7 +61,8 @@ Character pool_character(std::string_view klass, unsigned level)
         if (preset.creation_data().character_class == klass)
         {
             CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
-            const auto id = party.add_pc(Character(*srd5::character_rules(), preset.creation_data(), {}));
+            const auto id =
+                party.add_pc(Character(*srd5::character_rules(), preset.creation_data(), {}));
             party.award_experience(level == 2 ? 300 : 0, "hide-xp");
             if (level == 2)
                 party.advance(id, party.default_advancement(id));
@@ -89,10 +90,11 @@ std::vector<Terrain> walled()
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -114,24 +116,29 @@ bool move_to(CombatSession &c, Cell cell)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &hero,
                                      std::string_view foe, Cell foe_cell, std::uint64_t seed)
 {
-    auto c = rules.create({{12, 6, walled()},
-        {   {1, "campaign-character", "Rogue", Side::party, {3, 1},
-                rules.character_profile(hero.sheet(), std::vector<std::string> {"dagger"}).data},
-            {98, std::string(foe), "Foe", Side::opposition, foe_cell}
-        }},
-    seed);
+    auto c = rules.create(
+        {{12, 6, walled()},
+         {{1,
+           "campaign-character",
+           "Rogue",
+           Side::party,
+           {3, 1},
+           rules.character_profile(hero.sheet(), std::vector<std::string>{"dagger"}).data},
+          {98, std::string(foe), "Foe", Side::opposition, foe_cell}}},
+        seed);
     // The Rogue's Alert offers an initiative swap first; it keeps its place.
-    for (unsigned turns = 0; turns < 6 && (c->snapshot().actor != 1 || offered(*c, "initiative_keep"));
-            ++turns)
+    for (unsigned turns = 0;
+         turns < 6 && (c->snapshot().actor != 1 || offered(*c, "initiative_keep")); ++turns)
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
     return c;
 }
@@ -146,7 +153,7 @@ CombatantView unit(const CombatSession &c, EntityId id)
 
 // A seed whose first Stealth check hides the Rogue with the Cunning Action.
 std::unique_ptr<CombatSession> hidden_rogue(const RulesModule &rules, const Character &hero,
-        std::string_view foe, Cell foe_cell)
+                                            std::string_view foe, Cell foe_cell)
 {
     for (std::uint64_t seed = 1; seed < 60; ++seed)
     {
@@ -172,20 +179,22 @@ void hiding_checks()
           "Behind the wall the Rogue may hide with its Action or a Bonus Action");
     c = hidden_rogue(*rules, hero, "target", {8, 1});
     check(logged(*c, "Rogue Stealth check: d20 ") && logged(*c, "Rogue is hidden (Stealth ") &&
-          unit(*c, 1).action && !unit(*c, 1).bonus_action,
+              unit(*c, 1).action && !unit(*c, 1).bonus_action,
           "The Stealth check hides the Rogue; its Action is left");
     const auto conditions = unit(*c, 1).conditions;
-    check(std::any_of(conditions.begin(), conditions.end(), [](const auto & m)
-    {
-        return m.source == "Hidden";
-    }), "The Rogue shows as Hidden");
+    check(std::any_of(conditions.begin(), conditions.end(),
+                      [](const auto &m)
+                      {
+                          return m.source == "Hidden";
+                      }),
+          "The Rogue shows as Hidden");
     check(!offered(*c, "hide") && !offered(*c, "cunning_hide"), "A hidden Rogue cannot hide again");
     const auto saved = c->save();
     const auto restored = rules->restore(saved);
     check(restored->save() == saved && unit(*restored, 1).hidden,
           "A checkpoint keeps the Rogue hidden");
     check(!unit(*c, 1).persistent.resources.empty() &&
-          unit(*c, 1).persistent.resources.find(" 71 ") == std::string::npos,
+              unit(*c, 1).persistent.resources.find(" 71 ") == std::string::npos,
           "Hiding does not outlast the fight");
 }
 
@@ -202,13 +211,13 @@ void finding_checks()
           "The keen enemy's Passive Perception finds the Rogue in view");
 
     c = hidden_rogue(*rules, hero, "dull", {6, 1});
-    check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
-          unit(*c, 1).hidden && !logged(*c, "finds Rogue"),
+    check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) && unit(*c, 1).hidden &&
+              !logged(*c, "finds Rogue"),
           "The dull enemy does not notice the Rogue in view");
     check(move_to(*c, {4, 3}) && move_to(*c, {5, 2}) && unit(*c, 1).hidden,
           "The Rogue walks up unseen");
     check(submit(*c, "melee", 98) && logged(*c, "(advantage)") &&
-          logged(*c, "Rogue is no longer hidden.") && !unit(*c, 1).hidden,
+              logged(*c, "Rogue is no longer hidden.") && !unit(*c, 1).hidden,
           "The attack has Advantage, and the roll ends hiding");
 }
 
@@ -225,7 +234,8 @@ void search_checks()
         if (!submit(*c, "cunning_hide") || !unit(*c, 1).hidden)
             continue;
         check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
-              submit(*c, "end"), "The Rogue steps into view and ends its turn");
+                  submit(*c, "end"),
+              "The Rogue steps into view and ends its turn");
         check(c->snapshot().actor == 98, "The monster's turn");
         const auto choice = choose_demo_command(*c);
         check(choice.verb == "search", "With no enemy in sight the monster searches");
@@ -255,9 +265,11 @@ void spell_checks()
         if (!unit(*c, 1).hidden)
             continue;
         check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
-              unit(*c, 1).hidden, "The Cleric steps into view, still hidden");
+                  unit(*c, 1).hidden,
+              "The Cleric steps into view, still hidden");
         check(submit(*c, "resistance_fire", 1) && logged(*c, "Rogue is no longer hidden.") &&
-              !unit(*c, 1).hidden, "Resistance, with no attack roll, ends hiding");
+                  !unit(*c, 1).hidden,
+              "Resistance, with no attack roll, ends hiding");
         return;
     }
     throw std::runtime_error("No seed keeps the Cleric hidden");

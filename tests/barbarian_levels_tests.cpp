@@ -64,7 +64,6 @@ CharacterDraft draft(std::string klass)
     return d;
 }
 
-
 // A Barbarian of the level, advanced through the rules' ordinary level-ups.
 Character barbarian(unsigned level)
 {
@@ -79,10 +78,11 @@ Character barbarian(unsigned level)
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -105,10 +105,11 @@ std::unique_ptr<RulesModule> dummy_rules()
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // A fight between the Barbarian and a dummy beside it, at the Barbarian's turn.
@@ -118,11 +119,11 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
                                     std::string kind = "dummy")
 {
     const auto profile = rules.character_profile(hero.sheet(), {}).data;
-    auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Berserker", Side::party, {1, 1}, profile, state},
-            {98, std::move(kind), "Dummy", Side::opposition, foe}
-        }},
-    seed);
+    auto c =
+        rules.create({{8, 3, std::vector<Terrain>(24)},
+                      {{1, "campaign-character", "Berserker", Side::party, {1, 1}, profile, state},
+                       {98, std::move(kind), "Dummy", Side::opposition, foe}}},
+                     seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Barbarian's turn");
     return c;
@@ -166,19 +167,19 @@ void progression_checks()
     const auto holds = [&](std::string_view id, int level)
     {
         return std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(),
-                           [&](const auto & g)
-        {
-            return g.id == id && g.level == level;
-        });
+                           [&](const auto &g)
+                           {
+                               return g.id == id && g.level == level;
+                           });
     };
     check(holds("feature:relentless_rage", 11) && holds("feature:improved_brutal_strike", 13) &&
-          holds("feature:intimidating_presence", 14) && holds("feature:persistent_rage", 15),
+              holds("feature:intimidating_presence", 14) && holds("feature:persistent_rage", 15),
           "The level 11-15 features arrive at their levels");
     unsigned found = 0;
     for (const auto &pool : rules->recovery_info(fifteen.sheet(), {}).resources)
         if ((pool.id == "relentless_rage" && pool.capacity == 5) ||
-                (pool.id == "intimidating_presence" && pool.capacity == 1) ||
-                (pool.id == "persistent_rage" && pool.capacity == 1))
+            (pool.id == "intimidating_presence" && pool.capacity == 1) ||
+            (pool.id == "persistent_rage" && pool.capacity == 1))
             ++found;
     check(found == 3, "Relentless Rage, Intimidating Presence and Persistent Rage are resources");
 }
@@ -231,7 +232,8 @@ void pounce_checks()
     auto c = duel(*rules, barbarian(7), 3, {6, 1});
     const auto before = unit(*c, 1).movement_feet;
     check(submit(*c, "rage") && logged(*c, "may move 20 feet as part of entering the Rage") &&
-          unit(*c, 1).movement_feet == before + 20, "Rage adds 20 feet of Instinctive Pounce");
+              unit(*c, 1).movement_feet == before + 20,
+          "Rage adds 20 feet of Instinctive Pounce");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the pounce");
     check(submit(*c, "dodge") && unit(*c, 1).movement_feet == before,
@@ -267,7 +269,8 @@ void brutal_checks()
             check(rules->restore(saved)->save() == saved, "A checkpoint keeps the follow-up move");
             for (const auto &command : c->legal_commands())
                 if (command.verb == "move")
-                    check(command.destination.x > 1, "The follow-up move only closes on the target");
+                    check(command.destination.x > 1,
+                          "The follow-up move only closes on the target");
         }
     check(hamstrung && forceful, "Both blows land on some seed");
 }
@@ -278,21 +281,25 @@ void improved_brutal_checks()
     const auto rules = dummy_rules();
     auto early = duel(*rules, barbarian(12));
     check(submit(*early, "reckless", 98) && offered(*early, "brutal_hamstring") &&
-          !offered(*early, "brutal_staggering"), "Not before level 13");
+              !offered(*early, "brutal_staggering"),
+          "Not before level 13");
     bool staggered = false;
     for (std::uint64_t seed = 1; seed < 40 && !staggered; ++seed)
     {
         auto c = duel(*rules, barbarian(13), seed);
         check(submit(*c, "reckless", 98) && offered(*c, "brutal_sundering") &&
-              submit(*c, "brutal_staggering", 98), "A Staggering Blow");
+                  submit(*c, "brutal_staggering", 98),
+              "A Staggering Blow");
         if (!logged(*c, "Dummy staggers (Staggering Blow)."))
             continue;
         staggered = true;
         const auto conditions = unit(*c, 98).conditions;
-        check(std::any_of(conditions.begin(), conditions.end(), [](const auto & m)
-        {
-            return m.source == "Staggered (Staggering Blow)";
-        }), "The dummy shows the blow");
+        check(std::any_of(conditions.begin(), conditions.end(),
+                          [](const auto &m)
+                          {
+                              return m.source == "Staggered (Staggering Blow)";
+                          }),
+              "The dummy shows the blow");
         const auto checkpoint = c->save();
         check(rules->restore(checkpoint)->save() == checkpoint, "A checkpoint keeps the blow");
     }
@@ -303,12 +310,12 @@ void improved_brutal_checks()
     const auto berserker = rules->character_profile(barbarian(13).sheet(), {}).data;
     for (std::uint64_t seed = 1; seed < 80; ++seed)
     {
-        auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Berserker", Side::party, {1, 1}, berserker},
-                {2, "campaign-character", "Ally", Side::party, {3, 1}, ally},
-                {98, "dummy", "Dummy", Side::opposition, {2, 1}}
-            }},
-        seed);
+        auto c =
+            rules->create({{8, 3, std::vector<Terrain>(24)},
+                           {{1, "campaign-character", "Berserker", Side::party, {1, 1}, berserker},
+                            {2, "campaign-character", "Ally", Side::party, {3, 1}, ally},
+                            {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
+                          seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Barbarian's turn");
         check(submit(*c, "reckless", 98) && submit(*c, "brutal_sundering", 98), "A Sundering Blow");
@@ -338,7 +345,8 @@ void intimidating_checks()
     {
         auto c = duel(*rules, barbarian(14), seed, {4, 1});
         check(submit(*c, "intimidating_presence") &&
-              logged(*c, "Berserker uses Intimidating Presence."), "Intimidating Presence");
+                  logged(*c, "Berserker uses Intimidating Presence."),
+              "Intimidating Presence");
         if (!logged(*c, "Dummy is Frightened."))
             continue;
         check(!offered(*c, "intimidating_presence"), "One use, and the Bonus Action is spent");
@@ -363,13 +371,13 @@ void persistent_checks()
     check(submit(*first, "rage") && !offered(*first, "extend_rage"), "Rage");
     const auto spent = unit(*first, 1).persistent;
     const auto profile = rules->character_profile(barbarian(15).sheet(), {}).data;
-    auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Berserker", Side::party, {1, 1}, profile, spent},
-            {98, "dummy", "Dummy", Side::opposition, {2, 1}}
-        }},
-    3);
+    auto c =
+        rules->create({{8, 3, std::vector<Terrain>(24)},
+                       {{1, "campaign-character", "Berserker", Side::party, {1, 1}, profile, spent},
+                        {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
+                      3);
     check(submit(*c, "persistent_rage") &&
-          logged(*c, "Berserker regains every Rage use (Persistent Rage)."),
+              logged(*c, "Berserker regains every Rage use (Persistent Rage)."),
           "Persistent Rage is offered at Initiative");
     bool full = false;
     for (const auto &pool : unit(*c, 1).resources)
@@ -387,13 +395,13 @@ void retaliation_checks()
     {
         auto c = duel(*rules, barbarian(10), seed);
         check(submit(*c, "end"), "The Barbarian waits");
-        for (unsigned steps = 0; steps < 6 && c->snapshot().actor == 98 && !offered(*c, "retaliate");
-                ++steps)
+        for (unsigned steps = 0;
+             steps < 6 && c->snapshot().actor == 98 && !offered(*c, "retaliate"); ++steps)
             check(c->submit(choose_demo_command(*c)), "The dummy acts");
         if (!offered(*c, "retaliate"))
             continue;
         check(submit(*c, "retaliate") && logged(*c, "Berserker retaliates.") &&
-              logged(*c, "Berserker -> Dummy: d20") && !unit(*c, 1).reaction,
+                  logged(*c, "Berserker -> Dummy: d20") && !unit(*c, 1).reaction,
               "Retaliation's melee attack spends the Reaction");
         return;
     }

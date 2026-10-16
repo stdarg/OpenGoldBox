@@ -51,13 +51,15 @@ CharacterSheet cleric(unsigned level)
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"sacred_flame"};
-    d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds"}, {}, {}};
+    d.cantrips = std::vector<std::string>{"sacred_flame"};
+    d.spells = SpellChoices{
+        {}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds"}, {}, {}};
     Character c(*srd5::character_rules(), d, {});
     auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     VitalState state{c.sheet().hit_points, false, {}};
     for (unsigned n = 1; n < level; ++n)
-        check(c.advance(*rules, state, rules->default_advancement(c.sheet())), "Advance the Cleric");
+        check(c.advance(*rules, state, rules->default_advancement(c.sheet())),
+              "Advance the Cleric");
     return c.sheet();
 }
 
@@ -85,11 +87,11 @@ void write_ui_fixture()
     auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     const std::vector<std::string> gear{"quarterstaff"};
     const auto profile = rules->character_profile(cleric(1), gear);
-    auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Inflict Cleric", Side::party, {1, 1}, profile.data},
-            {99, "vanguard", "Enemy", Side::opposition, {2, 1}}
-        }},
-    2);
+    auto c = rules->create(
+        {{12, 9, std::vector<Terrain>(108)},
+         {{1, "campaign-character", "Inflict Cleric", Side::party, {1, 1}, profile.data},
+          {99, "vanguard", "Enemy", Side::opposition, {2, 1}}}},
+        2);
     std::ofstream out(path / "adjacent.save", std::ios::binary);
     out << c->save();
     check(bool(out), "Write the UI fixture");
@@ -101,10 +103,9 @@ int damage(const RulesModule &rules, const CharacterSheet &sheet, std::string_vi
 {
     const auto profile = rules.character_profile(sheet, {});
     auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Cleric", Side::party, {1, 1}, profile.data},
-            {3, "target", "Enemy", Side::opposition, {enemy_column, 1}}
-        }},
-    13);
+                           {{1, "campaign-character", "Cleric", Side::party, {1, 1}, profile.data},
+                            {3, "target", "Enemy", Side::opposition, {enemy_column, 1}}}},
+                          13);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
     {
         const auto end = find(*c, "end", 0);

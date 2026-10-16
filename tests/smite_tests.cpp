@@ -115,10 +115,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
 {
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
     auto c = rules.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
-            {99, "target", "Target", Side::opposition, {2, 1}}
-        }},
-    seed);
+                           {{1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
+                            {99, "target", "Target", Side::opposition, {2, 1}}}},
+                          seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Paladin's turn");
     check(c->snapshot().actor == 1, "The Paladin acts");
@@ -139,7 +138,8 @@ void window_checks()
     const auto hero = paladin();
     auto c = battle(*rules, hero);
     hit(*c);
-    check(smites(*c) == std::vector<std::string> {"divine_smite", "divine_smite_free", "searing_smite"},
+    check(smites(*c) ==
+              std::vector<std::string>{"divine_smite", "divine_smite_free", "searing_smite"},
           "Divine Smite, Paladin's Smite and a prepared Searing Smite follow the hit");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved && smites(*rules->restore(saved)) == smites(*c),
@@ -179,10 +179,11 @@ void divine_smite_checks()
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // A smite after a critical hit doubles its dice, as part of the attack's
@@ -216,10 +217,7 @@ void critical_smite_checks()
 
 void searing_smite_checks()
 {
-    for (const int constitution :
-            {
-                -10, 30
-            })
+    for (const int constitution : {-10, 30})
     {
         auto rules = rules_for("humanoid", constitution);
         auto c = battle(*rules, paladin());
@@ -231,28 +229,31 @@ void searing_smite_checks()
         check(submit(*c, "end"), "End the Paladin's turn");
         // The target's turn began: it burned, then saved.
         const auto log = c->snapshot().log();
-        check(std::any_of(log.begin(), log.end(), [](const auto & line)
-        {
-            return line.starts_with("Target burns for ");
-        }),
-        "The target burns at the start of its turn");
+        check(std::any_of(log.begin(), log.end(),
+                          [](const auto &line)
+                          {
+                              return line.starts_with("Target burns for ");
+                          }),
+              "The target burns at the start of its turn");
         check(rules->restore(c->save())->save() == c->save(),
               "The burning effect survives a checkpoint");
         while (c->snapshot().actor != 1)
             check(submit(*c, "end"), "Return to the Paladin");
         const auto so_far = c->snapshot().log();
-        const auto burned_again = std::count_if(so_far.begin(), so_far.end(), [](const auto & line)
-        {
-            return line.starts_with("Target burns for ");
-        });
+        const auto burned_again = std::count_if(so_far.begin(), so_far.end(),
+                                                [](const auto &line)
+                                                {
+                                                    return line.starts_with("Target burns for ");
+                                                });
         check(burned_again == 1, "One burn per target turn so far");
         while (c->snapshot().actor != 99)
             check(submit(*c, "end"), "Reach the target's next turn");
         const auto later = c->snapshot().log();
-        const auto burns = std::count_if(later.begin(), later.end(), [](const auto & line)
-        {
-            return line.starts_with("Target burns for ");
-        });
+        const auto burns = std::count_if(later.begin(), later.end(),
+                                         [](const auto &line)
+                                         {
+                                             return line.starts_with("Target burns for ");
+                                         });
         check(burns == (constitution > 0 ? 1 : 2),
               "A successful Constitution save ends the burning; a failed one continues it");
     }
@@ -263,14 +264,14 @@ void searing_smite_checks()
 void write_ui_fixture()
 {
     auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
-    const auto profile = rules->character_profile(paladin().sheet(), std::vector<std::string> {"longsword"}).data;
+    const auto profile =
+        rules->character_profile(paladin().sheet(), std::vector<std::string>{"longsword"}).data;
     for (std::uint64_t seed = 1; seed <= 64; ++seed)
     {
         auto c = rules->create({{8, 4, std::vector<Terrain>(32)},
-            {   {1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
-                {99, "vanguard", "Target", Side::opposition, {2, 1}}
-            }},
-        seed);
+                                {{1, "campaign-character", "Smiter", Side::party, {1, 1}, profile},
+                                 {99, "vanguard", "Target", Side::opposition, {2, 1}}}},
+                               seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "end"), "Reach the Paladin's turn");
         if (c->snapshot().actor != 1 || !submit(*c, "melee", 99) || smites(*c).empty())
@@ -293,14 +294,14 @@ void campaign_checks()
     const auto free_smite = [&]
     {
         for (const auto &pool :
-                rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
-                .resources)
+             rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
+                 .resources)
             if (pool.id == "paladins_smite")
                 return pool;
         throw std::runtime_error("Missing Paladin's Smite");
     };
     check(free_smite().capacity == 1 && free_smite().remaining == 1 &&
-          !free_smite().short_rest_recovery,
+              !free_smite().short_rest_recovery,
           "Paladin's Smite has one free use, restored only by a Long Rest");
 }
 } // namespace

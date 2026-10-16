@@ -15,29 +15,29 @@ struct ClassName
 };
 
 // The one place a class's ID and label are spelt.
-constexpr std::array<ClassName, 12> class_names{{
-        {CharacterClass::barbarian, "barbarian", "Barbarian"},
-        {CharacterClass::bard, "bard", "Bard"},
-        {CharacterClass::cleric, "cleric", "Cleric"},
-        {CharacterClass::druid, "druid", "Druid"},
-        {CharacterClass::fighter, "fighter", "Fighter"},
-        {CharacterClass::monk, "monk", "Monk"},
-        {CharacterClass::paladin, "paladin", "Paladin"},
-        {CharacterClass::ranger, "ranger", "Ranger"},
-        {CharacterClass::rogue, "rogue", "Rogue"},
-        {CharacterClass::sorcerer, "sorcerer", "Sorcerer"},
-        {CharacterClass::warlock, "warlock", "Warlock"},
-        {CharacterClass::wizard, "wizard", "Wizard"}
-    }};
+constexpr std::array<ClassName, 12> class_names{
+    {{CharacterClass::barbarian, "barbarian", "Barbarian"},
+     {CharacterClass::bard, "bard", "Bard"},
+     {CharacterClass::cleric, "cleric", "Cleric"},
+     {CharacterClass::druid, "druid", "Druid"},
+     {CharacterClass::fighter, "fighter", "Fighter"},
+     {CharacterClass::monk, "monk", "Monk"},
+     {CharacterClass::paladin, "paladin", "Paladin"},
+     {CharacterClass::ranger, "ranger", "Ranger"},
+     {CharacterClass::rogue, "rogue", "Rogue"},
+     {CharacterClass::sorcerer, "sorcerer", "Sorcerer"},
+     {CharacterClass::warlock, "warlock", "Warlock"},
+     {CharacterClass::wizard, "wizard", "Wizard"}}};
 
 // Rows are indexed by CharacterClass, so each must sit at its class's position.
-static_assert([]
-{
-    for (std::size_t row = 0; row < class_names.size(); ++row)
-        if (static_cast<std::size_t>(class_names[row].character_class) != row)
-            return false;
-    return true;
-}());
+static_assert(
+    []
+    {
+        for (std::size_t row = 0; row < class_names.size(); ++row)
+            if (static_cast<std::size_t>(class_names[row].character_class) != row)
+                return false;
+        return true;
+    }());
 
 const ClassName &names_of(CharacterClass character_class)
 {
@@ -58,10 +58,10 @@ std::string_view class_label(CharacterClass character_class)
 std::optional<CharacterClass> class_from_label(std::string_view label)
 {
     const auto found = std::find_if(class_names.begin(), class_names.end(),
-                                    [&](const ClassName & names)
-    {
-        return names.label == label;
-    });
+                                    [&](const ClassName &names)
+                                    {
+                                        return names.label == label;
+                                    });
     if (found == class_names.end())
         return std::nullopt;
     return found->character_class;
@@ -70,10 +70,10 @@ std::optional<CharacterClass> class_from_label(std::string_view label)
 CharacterClass class_from_id(std::string_view id)
 {
     const auto found = std::find_if(class_names.begin(), class_names.end(),
-                                    [&](const ClassName & names)
-    {
-        return names.id == id;
-    });
+                                    [&](const ClassName &names)
+                                    {
+                                        return names.id == id;
+                                    });
     if (found == class_names.end())
         throw std::runtime_error("Unknown class");
     return found->character_class;
@@ -97,17 +97,19 @@ CharacterClass class_of(const rules::CharacterSheet &sheet)
 unsigned level_cap(CharacterClass character_class)
 {
     return character_class == CharacterClass::fighter ||
-           character_class == CharacterClass::barbarian ||
-           character_class == CharacterClass::monk ||
-           character_class == CharacterClass::rogue ||
-           character_class == CharacterClass::paladin ||
-           character_class == CharacterClass::ranger ||
-           character_class == CharacterClass::cleric ||
-           character_class == CharacterClass::wizard ||
-           character_class == CharacterClass::sorcerer ||
-           character_class == CharacterClass::warlock ||
-           character_class == CharacterClass::bard ||
-           character_class == CharacterClass::druid ? 15 : 4;
+                   character_class == CharacterClass::barbarian ||
+                   character_class == CharacterClass::monk ||
+                   character_class == CharacterClass::rogue ||
+                   character_class == CharacterClass::paladin ||
+                   character_class == CharacterClass::ranger ||
+                   character_class == CharacterClass::cleric ||
+                   character_class == CharacterClass::wizard ||
+                   character_class == CharacterClass::sorcerer ||
+                   character_class == CharacterClass::warlock ||
+                   character_class == CharacterClass::bard ||
+                   character_class == CharacterClass::druid
+               ? 15
+               : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)

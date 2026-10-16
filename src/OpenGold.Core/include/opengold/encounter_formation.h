@@ -20,7 +20,8 @@ struct EncounterFormation
 // `facing`. A group that does not fit its square spills behind it, then
 // beside it, never around the other side.
 [[nodiscard]] EncounterFormation encounter_formation(const DungeonBattlefield &field,
-        MapDirection facing, unsigned distance,
-        std::size_t party_size, std::size_t enemy_count);
+                                                     MapDirection facing, unsigned distance,
+                                                     std::size_t party_size,
+                                                     std::size_t enemy_count);
 } // namespace opengold::por
 #endif

@@ -48,9 +48,8 @@ Character hero(std::string klass = "fighter", unsigned level = 2, bool trained =
         r = {{6, 5, 4, 1}, 3};
     if (trained)
         d.training = {{"class:fighter:fighting_style", {"archery"}},
-            {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
-            {"class:fighter", {"perception", "history"}}
-        };
+                      {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
+                      {"class:fighter", {"perception", "history"}}};
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned i = 1; i < level; ++i)
@@ -71,11 +70,8 @@ void golden_life()
         bool dead;
     };
 
-    for (const auto &c :
-            {
-                Case{10, 5, 7, 8, 0, false}, Case{10, 10, 3, 10, 7, false},
-                Case{5, 7, 17, 0, 0, false}, Case{5, 7, 22, 0, 0, true}
-            })
+    for (const auto &c : {Case{10, 5, 7, 8, 0, false}, Case{10, 10, 3, 10, 7, false},
+                          Case{5, 7, 17, 0, 0, false}, Case{5, 7, 22, 0, 0, true}})
     {
         life::LifeState s{c.hp};
         s.temporary_hp = {c.temp, "spell:false_life"};
@@ -92,7 +88,7 @@ void golden_life()
     life::damage_life(s, 1, 10);
     check(
         s.hp == 0 && s.temporary_hp.amount == 19 && !s.stable && s.failures == 1 &&
-        s.recovery.death_save_in_ms == 6000,
+            s.recovery.death_save_in_ms == 6000,
         "Taking damage at zero HP still ends Stable and causes a failure even when the buffer absorbs it");
     s = stable;
     life::damage_life(s, 1, 10, {.critical = true});
@@ -127,12 +123,14 @@ void rule_operations()
 {
     auto rules = module();
     const auto c = hero();
-    VitalState state{4, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+    VitalState state{4, false,
+                     "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
     rules->grant_temporary_hit_points(state, c.sheet(), {8, "spell:false_life"},
                                       TemporaryHpChoice::use_new);
-    check(state.resources ==
-          "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 0 FX8 1 0 0",
-          "Vital state independently records dice, clocks and sourced buffer");
+    check(
+        state.resources ==
+            "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 8 \"spell:false_life\" 0 1 0 0 0 0 0 FX8 1 0 0",
+        "Vital state independently records dice, clocks and sourced buffer");
     RandomState rng{42};
     const auto die = rules->spend_hit_die(state, c.sheet(), rng);
     check(die.roll == 4 && die.healing == 6 && state.hit_points == 10 && pool(c, state).amount == 8,
@@ -145,16 +143,13 @@ void rule_operations()
     rules->temple_heal(state, c.sheet(), rng);
     check(state.hit_points > 1 && pool(c, state).amount == 8,
           "Temple healing neither spends nor restores Temporary HP");
-    auto participants = std::vector<Participant> {{
-            1,
-            "campaign-character",
-            "Patient",
-            Side::party,
-            {0, 0},
-            rules->character_profile(c.sheet(), {}).data,
-            state
-        }
-    };
+    auto participants = std::vector<Participant>{{1,
+                                                  "campaign-character",
+                                                  "Patient",
+                                                  Side::party,
+                                                  {0, 0},
+                                                  rules->character_profile(c.sheet(), {}).data,
+                                                  state}};
     const auto before = state;
     rules->elapse(participants, std::chrono::milliseconds(24ULL * 60 * 60 * 1000), rng);
     check(*participants[0].state == before,
@@ -162,7 +157,8 @@ void rule_operations()
     rules->recover(state, c.sheet());
     check(state.hit_points == c.sheet().hit_points && pool(c, state).amount == 0,
           "An eligible completed Long Rest clears the pool");
-    VitalState stable{0, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
+    VitalState stable{0, false,
+                      "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1000 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
     rules->grant_temporary_hit_points(stable, c.sheet(), {7, "feature:ward"},
                                       TemporaryHpChoice::use_new);
     participants[0].state = stable;
@@ -172,7 +168,7 @@ void rule_operations()
           "Vital state preserves the countdown and buffer before natural recovery");
     rules->elapse(participants, std::chrono::milliseconds(1), rng);
     check(participants[0].state->hit_points == 1 && pool(c, *participants[0].state).amount == 7 &&
-          rng == prior_rng,
+              rng == prior_rng,
           "Natural recovery preserves the pool and does not reroll a saved deadline");
     for (const auto &klass : srd5::character_rules()->choices(CreationField::character_class))
     {
@@ -183,49 +179,48 @@ void rule_operations()
         check(pool(character, vitals).amount == 3,
               "Shared Temporary HP works for every class without granting a class feature");
     }
-    for (const auto &bad : std::vector<TemporaryHitPoints> {{-1, "source"},
-    {1, ""},
-    {0, "source"},
-    {0, ""},
-    {1, "bad source"},
-    {1, std::string(129, 'a')}
-    })
+    for (const auto &bad : std::vector<TemporaryHitPoints>{{-1, "source"},
+                                                           {1, ""},
+                                                           {0, "source"},
+                                                           {0, ""},
+                                                           {1, "bad source"},
+                                                           {1, std::string(129, 'a')}})
     {
         const auto unchanged = state;
         rejects(
             [&]
-        {
-            rules->grant_temporary_hit_points(state, c.sheet(), bad,
-            TemporaryHpChoice::use_new);
-        });
+            {
+                rules->grant_temporary_hit_points(state, c.sheet(), bad,
+                                                  TemporaryHpChoice::use_new);
+            });
         check(state == unchanged, "Invalid grant is atomic");
     }
     rejects(
         [&]
-    {
-        rules->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
-        TemporaryHpChoice::keep_current);
-    });
+        {
+            rules->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
+                                              TemporaryHpChoice::keep_current);
+        });
     rules->grant_temporary_hit_points(state, c.sheet(), {8, "source"}, TemporaryHpChoice::use_new);
     const auto original = state;
     rejects(
         [&]
-    {
-        rules->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
-        static_cast<TemporaryHpChoice>(99));
-    });
+        {
+            rules->grant_temporary_hit_points(state, c.sheet(), {1, "source"},
+                                              static_cast<TemporaryHpChoice>(99));
+        });
     check(state == original, "Unknown replacement choice cannot mutate state");
-    for (const auto &bad : std::vector<std::string> {"-1 \"source\"", "1 \"\"", "0 \"source\"",
-            "1 \"bad source\"", "2147483648 \"source\""
-                                                    })
+    for (const auto &bad : std::vector<std::string>{"-1 \"source\"", "1 \"\"", "0 \"source\"",
+                                                    "1 \"bad source\"", "2147483648 \"source\""})
     {
         auto broken = state;
-        broken.resources = "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 " + bad + " 0 1 0 0 0 0 0 FX8 1 0 0";
+        broken.resources =
+            "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 " + bad + " 0 1 0 0 0 0 0 FX8 1 0 0";
         rejects(
             [&]
-        {
-            rules->validate_character_state(c.sheet(), broken);
-        });
+            {
+                rules->validate_character_state(c.sheet(), broken);
+            });
     }
 }
 
@@ -248,24 +243,21 @@ Command command(const CombatSession &combat, std::string_view verb, EntityId tar
 void actual_combat()
 {
     auto rules = srd5::parse_content(
-                     content() +
-                     "creature toxin 10 500 0 30 30 1 4 3 30 1 4 3 80 320 0 4 30 3 5\ndamage_types toxin poison poison\n");
+        content() +
+        "creature toxin 10 500 0 30 30 1 4 3 30 1 4 3 80 320 0 4 30 3 5\ndamage_types toxin poison poison\n");
     const auto c = hero();
     VitalState state{c.sheet().hit_points};
     rules->grant_temporary_hit_points(state, c.sheet(), {1, "spell:fixture"},
                                       TemporaryHpChoice::use_new);
     Encounter encounter{{8, 8, std::vector<Terrain>(64)},
-        {   {
-                1,
-                "campaign-character",
-                "Dwarf",
-                Side::party,
-                {2, 2},
-                rules->character_profile(c.sheet(), {}).data,
-                state
-            },
-            {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}
-        }};
+                        {{1,
+                          "campaign-character",
+                          "Dwarf",
+                          Side::party,
+                          {2, 2},
+                          rules->character_profile(c.sheet(), {}).data,
+                          state},
+                         {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}}};
     auto combat = rules->create(encounter, 42);
     while (combat->snapshot().actor != 2)
         check(combat->submit(command(*combat, "end")), "Wait for attacker");
@@ -284,8 +276,8 @@ void actual_combat()
                     resisted = std::stoi(a.value);
             }
     check(raw >= 4 && resisted == raw / 2 &&
-          unit(*combat, 1).hit_points == c.sheet().hit_points - (resisted - 1) &&
-          unit(*combat, 1).temporary_hp.amount == 0,
+              unit(*combat, 1).hit_points == c.sheet().hit_points - (resisted - 1) &&
+              unit(*combat, 1).temporary_hp.amount == 0,
           "Real Poison attack applies Dwarf resistance before absorbing Temporary HP");
     const auto saved = combat->save();
     check(!combat->submit(attack) && combat->save() == saved,
@@ -297,9 +289,9 @@ void actual_combat()
     corrupt.replace(at, 9, " -1 \"x\" 0 0");
     rejects(
         [&]
-    {
-        (void)rules->restore(corrupt);
-    });
+        {
+            (void)rules->restore(corrupt);
+        });
     check(combat->save() == saved, "Rejected restore leaves the original session intact");
 }
 
@@ -328,7 +320,7 @@ void campaign()
     {
         member.vitals.hit_points = 1;
         rules->grant_temporary_hit_points(member.vitals, member.character.sheet(),
-        {8, "spell:fixture"}, TemporaryHpChoice::use_new);
+                                          {8, "spell:fixture"}, TemporaryHpChoice::use_new);
     }
     party.restore(std::move(state));
     const auto bytes = saved(party);
@@ -343,18 +335,15 @@ void campaign()
     check(bool(short_rest), "Short Rest completes");
     (void)party.heal_with_hit_dice(*short_rest->spending, active);
     party.finish_short_rest(party.state().short_rest->ticket);
-    for (auto id :
-            {
-                active, reserve, npc
-            })
+    for (auto id : {active, reserve, npc})
         check(pool(party.member(id).character, party.member(id).vitals).amount == 8,
               "Short Rest time and spending retain all pools");
     const auto rest = party.rest(RestKind::long_rest);
-    check(rest && rest->members == std::vector<MemberId> {active, npc},
+    check(rest && rest->members == std::vector<MemberId>{active, npc},
           "Only active eligible members finish the Long Rest");
     check(pool(party.member(active).character, party.member(active).vitals).amount == 0 &&
-          pool(party.member(npc).character, party.member(npc).vitals).amount == 0 &&
-          pool(party.member(reserve).character, party.member(reserve).vitals).amount == 8,
+              pool(party.member(npc).character, party.member(npc).vitals).amount == 0 &&
+              pool(party.member(reserve).character, party.member(reserve).vitals).amount == 8,
           "Long Rest expiry is individual and never applies to a reserve");
     copy = loaded(saved(party));
     check(saved(copy) == saved(party), "Pool expiry remains canonical after reload");
@@ -362,9 +351,9 @@ void campaign()
     {
         rejects(
             [&]
-        {
-            copy.begin_combat();
-        });
+            {
+                copy.begin_combat();
+            });
         while (copy.state().training_rest)
             copy.keep_rest_training(copy.state().training_rest->ticket,
                                     copy.state().training_rest->members.front());

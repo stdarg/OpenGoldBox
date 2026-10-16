@@ -46,18 +46,18 @@ std::unique_ptr<rules::RulesModule> module()
 // Abilities from best roll to worst.
 using AbilityPriority = std::array<rules::Ability, 6>;
 
-constexpr AbilityPriority fighter_priority{
-    rules::Ability::strength, rules::Ability::constitution, rules::Ability::dexterity,
-    rules::Ability::wisdom, rules::Ability::charisma, rules::Ability::intelligence};
-constexpr AbilityPriority cleric_priority{
-    rules::Ability::wisdom, rules::Ability::constitution, rules::Ability::strength,
-    rules::Ability::dexterity, rules::Ability::charisma, rules::Ability::intelligence};
-constexpr AbilityPriority rogue_priority{
-    rules::Ability::dexterity, rules::Ability::constitution, rules::Ability::wisdom,
-    rules::Ability::strength, rules::Ability::charisma, rules::Ability::intelligence};
-constexpr AbilityPriority wizard_priority{
-    rules::Ability::intelligence, rules::Ability::dexterity, rules::Ability::constitution,
-    rules::Ability::wisdom, rules::Ability::charisma, rules::Ability::strength};
+constexpr AbilityPriority fighter_priority{rules::Ability::strength,  rules::Ability::constitution,
+                                           rules::Ability::dexterity, rules::Ability::wisdom,
+                                           rules::Ability::charisma,  rules::Ability::intelligence};
+constexpr AbilityPriority cleric_priority{rules::Ability::wisdom,   rules::Ability::constitution,
+                                          rules::Ability::strength, rules::Ability::dexterity,
+                                          rules::Ability::charisma, rules::Ability::intelligence};
+constexpr AbilityPriority rogue_priority{rules::Ability::dexterity, rules::Ability::constitution,
+                                         rules::Ability::wisdom,    rules::Ability::strength,
+                                         rules::Ability::charisma,  rules::Ability::intelligence};
+constexpr AbilityPriority wizard_priority{rules::Ability::intelligence, rules::Ability::dexterity,
+                                          rules::Ability::constitution, rules::Ability::wisdom,
+                                          rules::Ability::charisma,     rules::Ability::strength};
 
 struct Member
 {
@@ -81,10 +81,18 @@ const std::vector<Member> &composition(bool mixed)
     static const std::vector<Member> party{
         {"Arden", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
         {"Bryn", "fighter", fighter_priority, {"longsword", "chain_mail", "shield"}},
-        {"Cora", "cleric", cleric_priority, {"mace", "scale_mail", "shield"},
-            {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
-        {"Darin", "cleric", cleric_priority, {"mace", "scale_mail", "shield"},
-            {"sacred_flame"}, {"cure_wounds", "healing_word", "inflict_wounds"}},
+        {"Cora",
+         "cleric",
+         cleric_priority,
+         {"mace", "scale_mail", "shield"},
+         {"sacred_flame"},
+         {"cure_wounds", "healing_word", "inflict_wounds"}},
+        {"Darin",
+         "cleric",
+         cleric_priority,
+         {"mace", "scale_mail", "shield"},
+         {"sacred_flame"},
+         {"cure_wounds", "healing_word", "inflict_wounds"}},
         {"Elin", "rogue", rogue_priority, {"shortsword", "leather"}},
         {"Fenn", "wizard", wizard_priority, {"quarterstaff"}}};
     return mixed ? party : fighters;
@@ -100,10 +108,11 @@ Character create(const Member &member, std::uint64_t seed)
     creator.name(member.name);
     std::array<unsigned, 6> best{0, 1, 2, 3, 4, 5};
     const auto &rolls = creator.draft().rolls;
-    std::stable_sort(best.begin(), best.end(), [&](unsigned a, unsigned b)
-    {
-        return rolls[a].total() > rolls[b].total();
-    });
+    std::stable_sort(best.begin(), best.end(),
+                     [&](unsigned a, unsigned b)
+                     {
+                         return rolls[a].total() > rolls[b].total();
+                     });
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(best[i], member.priority[i]);
     for (const auto *spell : member.cantrips)
@@ -208,8 +217,8 @@ struct Place
     unsigned x{}, y{};
 };
 
-Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoMap &map,
-           Place cell, unsigned seeds)
+Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoMap &map, Place cell,
+           unsigned seeds)
 {
     Tally tally;
     for (unsigned seed = 1; seed <= seeds; ++seed)
@@ -221,9 +230,11 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         rules::EntityId next = 1000;
         for (const auto &group : groups)
             for (unsigned n = 0; n < group.count; ++n, ++next)
-                fight.enemies.push_back(
-                {next, group.definition, group.definition + " " + std::to_string(next),
-                 rules::Side::opposition, {}});
+                fight.enemies.push_back({next,
+                                         group.definition,
+                                         group.definition + " " + std::to_string(next),
+                                         rules::Side::opposition,
+                                         {}});
         CombatDemo combat(module());
         combat.campaign_party(party);
         combat.encounter(fight, seed);
@@ -294,9 +305,8 @@ int main(int argc, char **argv)
                             std::printf("%5u %-8s %-8s %-8s %9u %8u  %-36s %4.0f %7.2f %4.2f "
                                         "%8.0f\n",
                                         level, mixed ? "mixed" : "fighters",
-                                        rope_guild ? "guild" : "street",
-                                        definition(record) + 6, challenge, strength, mix.c_str(),
-                                        100.0 * t.wins / t.fights,
+                                        rope_guild ? "guild" : "street", definition(record) + 6,
+                                        challenge, strength, mix.c_str(), 100.0 * t.wins / t.fights,
                                         static_cast<double>(t.deaths) / t.fights,
                                         static_cast<double>(t.down) / t.fights,
                                         100.0 * t.hp_left / t.fights);

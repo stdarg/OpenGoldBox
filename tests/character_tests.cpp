@@ -24,8 +24,7 @@ using opengold::test::rejects;
 // A roll and an ability are different kinds of number, so passing them in the
 // wrong order must not compile (Effective C++ Item 18).
 template <class Roll, class Target>
-concept AssignsRoll = requires(CharacterCreator &creator, Roll roll, Target target)
-{
+concept AssignsRoll = requires (CharacterCreator &creator, Roll roll, Target target) {
     creator.assign_roll(roll, target);
 };
 static_assert(AssignsRoll<unsigned, rules::Ability>);
@@ -34,9 +33,8 @@ static_assert(!AssignsRoll<unsigned, unsigned>);
 // Ability arrays are reached by naming the Ability, so a bare position such as
 // scores[2], which silently meant Constitution, no longer compiles.
 template <class Index>
-concept IndexesAbilities = requires(rules::CharacterSheet sheet, rules::CharacterDraft draft,
-                                    rules::AdvancementChoice choice, Index index)
-{
+concept IndexesAbilities = requires (rules::CharacterSheet sheet, rules::CharacterDraft draft,
+                                     rules::AdvancementChoice choice, Index index) {
     sheet.scores[index];
     sheet.save_proficiencies[index];
     draft.assignment[index];
@@ -45,8 +43,7 @@ concept IndexesAbilities = requires(rules::CharacterSheet sheet, rules::Characte
 static_assert(IndexesAbilities<rules::Ability>);
 static_assert(!IndexesAbilities<unsigned> && !IndexesAbilities<int>);
 template <class Ability>
-concept SwapsScores = requires(CharacterCreator &creator, Ability first, Ability second)
-{
+concept SwapsScores = requires (CharacterCreator &creator, Ability first, Ability second) {
     creator.swap_scores(first, second);
 };
 static_assert(SwapsScores<rules::Ability> && !SwapsScores<unsigned>);
@@ -57,7 +54,7 @@ void creation_tests()
     auto module = srd5::character_rules();
     check(module->identity().version == "5.2.1", "Creator identifies its rules edition");
     check(module->choices(CreationField::race).size() == 9 &&
-          module->choices(CreationField::character_class).size() == 12,
+              module->choices(CreationField::character_class).size() == 12,
           "SRD species and all twelve classes available");
     RandomState seed{123}, again{123};
     check(module->roll(seed) == module->roll(again) && seed == again,
@@ -69,7 +66,7 @@ void creation_tests()
             check(roll.total() >= 3 && roll.total() <= 18, "4d6 result remains in range");
             totals.insert(roll.total());
             check(roll.dice[roll.discarded] ==
-                  *std::min_element(roll.dice.begin(), roll.dice.end()),
+                      *std::min_element(roll.dice.begin(), roll.dice.end()),
                   "Lowest die is discarded");
         }
     check(totals.size() == 16, "The roller can produce every score, including low results");
@@ -78,10 +75,10 @@ void creation_tests()
     example.discarded = 0;
     rejects(
         [&]
-    {
-        (void)example.total();
-    },
-    "Cannot discard a higher die");
+        {
+            (void)example.total();
+        },
+        "Cannot discard a higher die");
     CharacterDraft d;
     d.race = "human";
     d.gender = "female";
@@ -91,14 +88,13 @@ void creation_tests()
     d.name = "Mira";
     d.rolled = true;
     // Deliberately distinct base scores: STR 12, DEX 9, CON 14, INT 3, WIS 15, CHA 18.
-    const std::array<std::array<int, 4>, 6> dice
-    {
+    const std::array<std::array<int, 4>, 6> dice{
         {{4, 4, 4, 1}, {3, 3, 3, 1}, {5, 5, 4, 1}, {1, 1, 1, 1}, {5, 5, 5, 1}, {6, 6, 6, 1}}};
     for (unsigned i = 0; i < 6; ++i)
         d.rolls[i] = {dice[i], 3};
     auto s = module->evaluate(d, NameRequirement::required);
     check(s.scores[Ability::strength] == 14 && s.scores[Ability::dexterity] == 10 &&
-          s.scores[Ability::constitution] == 14 && s.hit_points == 12,
+              s.scores[Ability::constitution] == 14 && s.hit_points == 12,
           "Fighter has maximum d10 plus Constitution");
     check(s.modifiers[Ability::intelligence] == -4, "Odd negative ability modifiers round down");
     check(srd5::minimum_save_roll(15, srd5::ability_modifier(20)) == 10,
@@ -108,11 +104,11 @@ void creation_tests()
           "Natural 20 does not automatically save");
     check(srd5::minimum_save_roll(5, 4) == 1 && srd5::minimum_save_roll(5, 8) == 1,
           "Natural 1 can save when its total meets DC");
-    check(s.saving_throws == AbilityArray<int> {4, 0, 4, -4, 2, 4},
+    check(s.saving_throws == AbilityArray<int>{4, 0, 4, -4, 2, 4},
           "Fighter saves include proficiency only for Strength and Constitution");
     d.character_class = "wizard";
     const auto wizard = module->evaluate(d, NameRequirement::required);
-    check(wizard.saving_throws == AbilityArray<int> {2, 0, 2, -2, 4, 4},
+    check(wizard.saving_throws == AbilityArray<int>{2, 0, 2, -2, 4, 4},
           "Wizard saves retain negative modifiers and add Intelligence/Wisdom proficiency");
     d.character_class = "fighter";
     const std::array<int, 12> hp{14, 10, 10, 10, 12, 10, 12, 12, 10, 8, 10, 8};
@@ -125,7 +121,8 @@ void creation_tests()
     }
     d.character_class = "fighter";
     d.race = "dwarf";
-    check(module->evaluate(d, NameRequirement::required).hit_points == 13, "Dwarven Toughness adds one HP");
+    check(module->evaluate(d, NameRequirement::required).hit_points == 13,
+          "Dwarven Toughness adds one HP");
     for (const auto &bg : module->choices(CreationField::background))
     {
         d.background = bg.id;
@@ -142,9 +139,9 @@ void creation_tests()
                 check(evaluated.scores[ability] <= 20, "Background bonuses cap at twenty");
             }
             check(evaluated.ability_adjustments.size() == 1 &&
-                  evaluated.ability_adjustments[0].source_id == "background:" + bg.id &&
-                  evaluated.ability_adjustments[0].level == 1 &&
-                  evaluated.ability_adjustments[0].bonuses == adjustments[n].bonuses,
+                      evaluated.ability_adjustments[0].source_id == "background:" + bg.id &&
+                      evaluated.ability_adjustments[0].level == 1 &&
+                      evaluated.ability_adjustments[0].bonuses == adjustments[n].bonuses,
                   "Every background allocation retains its original source and level");
             check(bonus == 3, "Background grants exactly three points");
         }
@@ -152,22 +149,22 @@ void creation_tests()
     d.background = "soldier";
     d.adjustment = 0;
     check(rules::class_eligible(*module, d, "fighter") &&
-          rules::class_eligible(*module, d, "paladin"),
+              rules::class_eligible(*module, d, "paladin"),
           "Bonuses count toward primary prerequisites");
     check(!rules::class_eligible(*module, d, "monk") &&
-          !rules::class_eligible(*module, d, "wizard"),
+              !rules::class_eligible(*module, d, "wizard"),
           "Both Monk primaries and Wizard Intelligence required");
     d.target_classes = {"fighter", "monk", "wizard"};
     check(rules::unmet_targets(*module, d) ==
-          AbilityArray<bool> {false, true, false, true, false, false},
+              AbilityArray<bool>{false, true, false, true, false, false},
           "Warnings flag only failing abilities of unmet targets");
     std::swap(d.assignment[Ability::strength], d.assignment[Ability::dexterity]);
     check(rules::class_eligible(*module, d, "fighter") &&
-          !rules::unmet_targets(*module, d)[Ability::strength],
+              !rules::unmet_targets(*module, d)[Ability::strength],
           "Qualified Dexterity satisfies Fighter without a Strength warning");
     std::swap(d.assignment[Ability::strength], d.assignment[Ability::dexterity]);
     d.target_classes.clear();
-    check(rules::unmet_targets(*module, d) == AbilityArray<bool> {},
+    check(rules::unmet_targets(*module, d) == AbilityArray<bool>{},
           "Removing targets clears warnings");
     for (const auto &option : classes)
     {
@@ -197,66 +194,66 @@ void creation_tests()
     d.assignment[Ability::strength] = 1;
     rejects(
         [&]
-    {
-        (void)module->evaluate(d, NameRequirement::required);
-    },
-    "Duplicate roll assignments rejected");
+        {
+            (void)module->evaluate(d, NameRequirement::required);
+        },
+        "Duplicate roll assignments rejected");
     d.assignment[Ability::strength] = 0;
     d.name = "  ";
     rejects(
         [&]
-    {
-        (void)module->evaluate(d, NameRequirement::required);
-    },
-    "Blank names rejected");
+        {
+            (void)module->evaluate(d, NameRequirement::required);
+        },
+        "Blank names rejected");
     d.name = "Mira";
     d.character_class = "invented";
     rejects(
         [&]
-    {
-        (void)module->evaluate(d, NameRequirement::required);
-    },
-    "Unknown class rejected");
+        {
+            (void)module->evaluate(d, NameRequirement::required);
+        },
+        "Unknown class rejected");
     // A misspelt class ID used to match none of the rules' class checks and so
     // quietly offered nothing; now every rule that reads the class rejects it.
     d.character_class = "clerik";
     rejects(
         [&]
-    {
-        (void)module->cantrip_options(d);
-    },
-    "Cantrip options reject an unknown class");
+        {
+            (void)module->cantrip_options(d);
+        },
+        "Cantrip options reject an unknown class");
     rejects(
         [&]
-    {
-        (void)module->spell_choice_options(d);
-    },
-    "Spell choice options reject an unknown class");
+        {
+            (void)module->spell_choice_options(d);
+        },
+        "Spell choice options reject an unknown class");
     rejects(
         [&]
-    {
-        (void)module->preset_ability_priority("clerik", 0);
-    },
-    "Preset ability priority rejects an unknown class");
+        {
+            (void)module->preset_ability_priority("clerik", 0);
+        },
+        "Preset ability priority rejects an unknown class");
     d.character_class.clear();
     check(module->cantrip_options(d).options.empty() &&
-          module->spell_choice_options(d).learning.empty(),
+              module->spell_choice_options(d).learning.empty(),
           "A draft with no class yet is offered no spells");
     d.character_class = "invented";
     CharacterCreator creator(srd5::character_rules(), 42);
     rejects(
         [&]
-    {
-        (void)creator.create_character();
-    },
-    "Incomplete drafts cannot become characters");
+        {
+            (void)creator.create_character();
+        },
+        "Incomplete drafts cannot become characters");
     creator.select(CreationField::gender, "male");
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "The name is required on the first page");
+        {
+            creator.next();
+        },
+        "The name is required on the first page");
     creator.name("  Mira Stoneward  ");
     creator.next();
     check(creator.step() == CreationStep::alignment, "Name, race and gender advance to Alignment");
@@ -267,26 +264,26 @@ void creation_tests()
         creator.next();
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "Cannot advance without rolling");
+        {
+            creator.next();
+        },
+        "Cannot advance without rolling");
     check(creator.step() == CreationStep::attributes, "Invalid transition leaves step unchanged");
     creator.roll();
     const auto original = creator.draft().rolls;
     check(!creator.scores_assigned() &&
-          std::all_of(creator.draft().assignment.begin(), creator.draft().assignment.end(),
-                      [](auto n)
-    {
-        return n == 6;
-    }),
-    "Rolls start unassigned");
+              std::all_of(creator.draft().assignment.begin(), creator.draft().assignment.end(),
+                          [](auto n)
+                          {
+                              return n == 6;
+                          }),
+          "Rolls start unassigned");
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "Cannot continue with empty ability boxes");
+        {
+            creator.next();
+        },
+        "Cannot continue with empty ability boxes");
     creator.assign_roll(0, Ability::intelligence);
     creator.select(CreationField::background, "acolyte");
     const auto intelligence = [&]
@@ -300,45 +297,45 @@ void creation_tests()
           "Background changes recalculate partial scores");
     creator.select_adjustment(1);
     check(intelligence() == original[0].total() &&
-          !creator.rules().ability_score(creator.draft(), Ability::strength),
+              !creator.rules().ability_score(creator.draft(), Ability::strength),
           "Bonus changes update assigned scores and leave empty abilities empty");
     check(creator.draft().rolls == original, "Bonus changes preserve original dice");
     creator.select(CreationField::background, "acolyte");
     creator.assign_roll(1, Ability::dexterity);
     creator.assign_roll(0, Ability::dexterity);
     check(creator.draft().assignment[Ability::dexterity] == 0 &&
-          creator.draft().assignment[Ability::intelligence] == 1,
+              creator.draft().assignment[Ability::intelligence] == 1,
           "Assigned results swap when dropped on another ability");
     creator.assign_roll(2, Ability::dexterity);
     check(std::find(creator.draft().assignment.begin(), creator.draft().assignment.end(), 0) ==
-          creator.draft().assignment.end(),
+              creator.draft().assignment.end(),
           "A displaced result returns to unassigned rolls");
     rejects(
         [&]
-    {
-        creator.assign_roll(6, Ability::strength);
-    },
-    "Invalid dice assignment rejected");
+        {
+            creator.assign_roll(6, Ability::strength);
+        },
+        "Invalid dice assignment rejected");
     rejects(
         [&]
-    {
-        creator.assign_roll(0, static_cast<Ability>(6));
-    },
-    "An ability converted from an out-of-range box index is rejected");
+        {
+            creator.assign_roll(0, static_cast<Ability>(6));
+        },
+        "An ability converted from an out-of-range box index is rejected");
     for (unsigned i = 0; i < 6; ++i)
         creator.assign_roll(i, static_cast<Ability>(i));
     check(creator.scores_assigned(), "All six assignments permit review");
     creator.swap_scores(Ability::strength, Ability::constitution);
     check(creator.sheet().base[Ability::strength] == original[2].total() &&
-          creator.draft().rolls == original,
+              creator.draft().rolls == original,
           "Swaps preserve dice provenance");
     const auto assignment = creator.draft().assignment;
     rejects(
         [&]
-    {
-        creator.swap_scores(Ability::strength, static_cast<Ability>(6));
-    },
-    "Invalid swap rejected");
+        {
+            creator.swap_scores(Ability::strength, static_cast<Ability>(6));
+        },
+        "Invalid swap rejected");
     check(creator.draft().assignment == assignment, "Rejected swap is atomic");
     creator.roll();
     check(creator.draft().rolls != original && creator.draft().assignment[Ability::strength] == 6,
@@ -352,10 +349,10 @@ void creation_tests()
     creator.target_class("monk", false);
     rejects(
         [&]
-    {
-        creator.target_class("invented", true);
-    },
-    "Unknown targets rejected");
+        {
+            creator.target_class("invented", true);
+        },
+        "Unknown targets rejected");
     creator.next();
     check(creator.step() == CreationStep::character_class, "Attributes advance to Class");
     bool selected = false;
@@ -372,10 +369,10 @@ void creation_tests()
         else
             rejects(
                 [&]
-        {
-            creator.select(CreationField::character_class, option.id);
-        },
-        "Unqualified starting classes cannot be selected");
+                {
+                    creator.select(CreationField::character_class, option.id);
+                },
+                "Unqualified starting classes cannot be selected");
     }
     check(selected, "Fixture has a qualified class");
     creator.next();
@@ -383,54 +380,48 @@ void creation_tests()
           "Class advances to Training regardless of future target eligibility");
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "Required training blocks Name");
+        {
+            creator.next();
+        },
+        "Required training blocks Name");
     creator.training_choice({.group = "class:cleric", .option = "medicine", .selected = true});
     creator.training_choice({.group = "class:cleric", .option = "persuasion", .selected = true});
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "A Cleric chooses a Divine Order");
-    creator.training_choice({.group = "class:cleric:divine_order",
-                             .option = "protector",
-                             .selected = true});
+        {
+            creator.next();
+        },
+        "A Cleric chooses a Divine Order");
+    creator.training_choice(
+        {.group = "class:cleric:divine_order", .option = "protector", .selected = true});
     creator.next();
     check(creator.draft().character_class == "cleric" &&
-          creator.step() == CreationStep::spell_choices,
+              creator.step() == CreationStep::spell_choices,
           "Completed Cleric training advances to Spell Choices");
     creator.cantrip_choice("sacred_flame", true);
     creator.cantrip_choice("spare_the_dying", true);
     creator.cantrip_choice("resistance", true);
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "A Cleric prepares the available spells");
-    for (const auto *spell :
-            {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"
-            })
+        {
+            creator.next();
+        },
+        "A Cleric prepares the available spells");
+    for (const auto *spell : {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"})
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
     rejects(
         [&]
-    {
-        creator.next();
-    },
-    "An Acolyte chooses Magic Initiate's spells and ability");
-    creator.spell_choice({.group = "feat:magic_initiate_cleric:ability",
-                          .option = "wisdom",
-                          .selected = true});
+        {
+            creator.next();
+        },
+        "An Acolyte chooses Magic Initiate's spells and ability");
+    creator.spell_choice(
+        {.group = "feat:magic_initiate_cleric:ability", .option = "wisdom", .selected = true});
     // Guidance is the one Cleric cantrip the class choices left; the second stays pending.
-    creator.spell_choice({.group = "feat:magic_initiate_cleric:cantrips",
-                          .option = "guidance",
-                          .selected = true});
-    creator.spell_choice({.group = "feat:magic_initiate_cleric:spell",
-                          .option = "bless",
-                          .selected = true});
+    creator.spell_choice(
+        {.group = "feat:magic_initiate_cleric:cantrips", .option = "guidance", .selected = true});
+    creator.spell_choice(
+        {.group = "feat:magic_initiate_cleric:spell", .option = "bless", .selected = true});
     creator.next();
     check(creator.step() == CreationStep::combat_icon,
           "Spell Choices advances to combat appearance");
@@ -446,13 +437,13 @@ void creation_tests()
     check(creator.step() == CreationStep::sheet && creator.sheet().name == "Mira Stoneward",
           "Completed sheet retains trimmed name");
     auto finished = creator.create_character();
-    check(finished.creation_data().target_classes == std::vector<std::string> {"wizard"},
+    check(finished.creation_data().target_classes == std::vector<std::string>{"wizard"},
           "Future targets persist without adding class levels");
     auto revised = appearance;
     revised.portrait_body = 2;
     creator.appearance(revised);
     check(creator.step() == CreationStep::sheet &&
-          creator.create_character().appearance() == revised,
+              creator.create_character().appearance() == revised,
           "Portrait can change while reviewing a completed sheet");
     creator.appearance(appearance);
     const auto retained = creator.draft();
@@ -465,16 +456,16 @@ void creation_tests()
     unknown_body.combat_body = 35;
     rejects(
         [&]
-    {
-        (void)Character(creator.rules(), retained, unknown_body);
-    },
-    "A character is never built with an invalid appearance");
+        {
+            (void)Character(creator.rules(), retained, unknown_body);
+        },
+        "A character is never built with an invalid appearance");
     rejects(
         [&]
-    {
-        creator.roll();
-    },
-    "Completed sheet cannot be silently rerolled");
+        {
+            creator.roll();
+        },
+        "Completed sheet cannot be silently rerolled");
     creator.back();
     creator.next();
     check(creator.appearance() == appearance, "Review retains both appearance banks");
@@ -491,58 +482,57 @@ void creation_tests()
           "HP recalculates after earlier edits");
     creator.restart();
     check(!creator.draft().rolled && creator.draft().name.empty() &&
-          creator.step() == CreationStep::race,
+              creator.step() == CreationStep::race,
           "Restart clears the single character");
     const auto &data = finished.creation_data();
     const auto &saved = finished.sheet();
     check(data.race == retained.race && data.gender == retained.gender &&
-          data.character_class == retained.character_class &&
-          data.alignment == retained.alignment && data.background == retained.background &&
-          data.name == retained.name && data.rolls == retained.rolls &&
-          data.assignment == retained.assignment && data.adjustment == retained.adjustment &&
-          data.rolled,
+              data.character_class == retained.character_class &&
+              data.alignment == retained.alignment && data.background == retained.background &&
+              data.name == retained.name && data.rolls == retained.rolls &&
+              data.assignment == retained.assignment && data.adjustment == retained.adjustment &&
+              data.rolled,
           "Character retains all creation choices and dice after creator edits/restart");
     check(saved.identity.version == "5.2.1" && saved.name == sheet.name &&
-          saved.race == sheet.race && saved.gender == sheet.gender &&
-          saved.character_class == sheet.character_class &&
-          saved.alignment == sheet.alignment && saved.background == sheet.background &&
-          saved.base == sheet.base && saved.bonuses == sheet.bonuses &&
-          saved.scores == sheet.scores && saved.modifiers == sheet.modifiers &&
-          saved.hit_die == sheet.hit_die && saved.hit_points == sheet.hit_points &&
-          saved.hp_explanation == sheet.hp_explanation && saved.level == 1,
+              saved.race == sheet.race && saved.gender == sheet.gender &&
+              saved.character_class == sheet.character_class &&
+              saved.alignment == sheet.alignment && saved.background == sheet.background &&
+              saved.base == sheet.base && saved.bonuses == sheet.bonuses &&
+              saved.scores == sheet.scores && saved.modifiers == sheet.modifiers &&
+              saved.hit_die == sheet.hit_die && saved.hit_points == sheet.hit_points &&
+              saved.hp_explanation == sheet.hp_explanation && saved.level == 1,
           "Character retains rules identity and evaluated sheet values");
-    const auto sword = finished.add_item({.definition_id = "test:longsword",
-                                                 .name = "Longsword"});
+    const auto sword = finished.add_item({.definition_id = "test:longsword", .name = "Longsword"});
     auto copy = finished;
     copy.remove_item(sword);
     auto recolored = appearance;
     recolored.colors[0][0] = 2;
     copy.appearance(recolored);
     check(!finished.inventory().empty() && finished.appearance() == appearance &&
-          copy.inventory().empty(),
+              copy.inventory().empty(),
           "Copies independently own inventory and appearance");
     recolored.colors[1][3] = 16;
     rejects(
         [&]
-    {
-        copy.appearance(recolored);
-    },
-    "Character rejects invalid appearance colors");
+        {
+            copy.appearance(recolored);
+        },
+        "Character rejects invalid appearance colors");
     check(copy.appearance().colors[1][3] == appearance.colors[1][3],
           "Rejected appearance changes are atomic");
     // The temporary module is destroyed at this statement's end.
     Character detached(*srd5::character_rules(), retained, appearance);
     check(detached.sheet().hit_points == saved.hit_points &&
-          detached.creation_data().rolls == data.rolls,
+              detached.creation_data().rolls == data.rolls,
           "Character does not borrow its rules module");
     auto invalid = retained;
     invalid.name = "";
     rejects(
         [&]
-    {
-        Character rejected(*srd5::character_rules(), invalid, appearance);
-    },
-    "Direct character construction validates creation data");
+        {
+            Character rejected(*srd5::character_rules(), invalid, appearance);
+        },
+        "Direct character construction validates creation data");
 }
 
 // Pool of Radiance gives each new character 30 to 180 gp to buy its equipment;
@@ -582,51 +572,49 @@ void inventory_tests()
     check(inventory.empty() && !inventory.find(1), "New inventory is empty");
     rejects(
         [&]
-    {
-        inventory.add({.definition_id = "", .name = "Arrows"});
-    },
-    "Items require a stable definition key");
+        {
+            inventory.add({.definition_id = "", .name = "Arrows"});
+        },
+        "Items require a stable definition key");
     rejects(
         [&]
-    {
-        inventory.add({.definition_id = "test:arrow", .name = "  "});
-    },
-    "Items require a display name");
+        {
+            inventory.add({.definition_id = "test:arrow", .name = "  "});
+        },
+        "Items require a display name");
     rejects(
         [&]
-    {
-        inventory.add({.definition_id = "test:arrow", .name = "Arrows", .quantity = 0});
-    },
-    "Empty stacks rejected");
-    const auto first = inventory.add({.definition_id = "test:arrow",
-                                      .name = "Arrows",
-                                      .quantity = 20}),
-               second = inventory.add({.definition_id = "test:arrow",
-                                       .name = "Arrows",
-                                       .quantity = 5});
+        {
+            inventory.add({.definition_id = "test:arrow", .name = "Arrows", .quantity = 0});
+        },
+        "Empty stacks rejected");
+    const auto first =
+                   inventory.add({.definition_id = "test:arrow", .name = "Arrows", .quantity = 20}),
+               second =
+                   inventory.add({.definition_id = "test:arrow", .name = "Arrows", .quantity = 5});
     check(first != second && inventory.items().size() == 2 &&
-          inventory.find(first)->get().definition_id == "test:arrow",
+              inventory.find(first)->get().definition_id == "test:arrow",
           "Separate stacks have stable IDs");
     const auto before =
         std::vector<InventoryItem>(inventory.items().begin(), inventory.items().end());
     rejects(
         [&]
-    {
-        inventory.remove(first, 21);
-    },
-    "Cannot remove more than a stack holds");
+        {
+            inventory.remove(first, 21);
+        },
+        "Cannot remove more than a stack holds");
     rejects(
         [&]
-    {
-        inventory.remove(first, 0);
-    },
-    "Zero removals rejected");
+        {
+            inventory.remove(first, 0);
+        },
+        "Zero removals rejected");
     rejects(
         [&]
-    {
-        inventory.remove(999);
-    },
-    "Unknown items rejected");
+        {
+            inventory.remove(999);
+        },
+        "Unknown items rejected");
     check(std::equal(before.begin(), before.end(), inventory.items().begin(),
                      inventory.items().end()),
           "Rejected inventory operations leave all stacks intact");
@@ -670,7 +658,7 @@ void additional_portrait_tests()
         {
             const auto p = (y * 88 + x) * 4;
             check(panel.rgba[p] == 31 + x && panel.rgba[p + 1] == 61 + y &&
-                  panel.rgba[p + 2] == 173 && panel.rgba[p + 3] == 255,
+                      panel.rgba[p + 2] == 173 && panel.rgba[p + 3] == 255,
                   "Nearest sampling preserves approved colors and removes the bottom gap");
         }
     Image translucent;
@@ -678,28 +666,28 @@ void additional_portrait_tests()
     translucent.rgba = {240, 160, 80, 128};
     const auto opaque = prepare_portrait_head(translucent, 256);
     check(opaque.rgba[0] == 120 && opaque.rgba[1] == 80 && opaque.rgba[2] == 40 &&
-          opaque.rgba[3] == 255,
+              opaque.rgba[3] == 255,
           "Alpha composites onto the portrait's black background");
     rejects(
         [&]
-    {
-        (void)prepare_portrait_head(Image{}, 256);
-    },
-    "Empty portrait sources rejected");
+        {
+            (void)prepare_portrait_head(Image{}, 256);
+        },
+        "Empty portrait sources rejected");
     translucent.rgba = {0, 0, 0, 255};
     rejects(
         [&]
-    {
-        (void)prepare_portrait_head(translucent, 256);
-    },
-    "Blank portrait sources rejected");
+        {
+            (void)prepare_portrait_head(translucent, 256);
+        },
+        "Blank portrait sources rejected");
     source.rgba.pop_back();
     rejects(
         [&]
-    {
-        (void)prepare_portrait_head(source, 256);
-    },
-    "Truncated portrait pixels rejected");
+        {
+            (void)prepare_portrait_head(source, 256);
+        },
+        "Truncated portrait pixels rejected");
     CharacterArt art;
     art.set_original_head(1, PortraitPart{"original", panel});
     Image body;
@@ -729,41 +717,41 @@ void additional_portrait_tests()
               "Additional heads retain readable selection labels");
     }
     check(!matching_portrait_head("human", "female") &&
-          !matching_portrait_head("goliath", "nonbinary"),
+              !matching_portrait_head("goliath", "nonbinary"),
           "No unsupported portrait recommendation is invented");
     rejects(
         [&]
-    {
-        (void)prepare_portrait_head(translucent, 266);
-    },
-    "Unknown head fitting profiles rejected");
+        {
+            (void)prepare_portrait_head(translucent, 266);
+        },
+        "Unknown head fitting profiles rejected");
     rejects(
         [&]
-    {
-        art.add_portrait_head(1, panel);
-    },
-    "Additional artwork cannot replace an original archive ID");
+        {
+            art.add_portrait_head(1, panel);
+        },
+        "Additional artwork cannot replace an original archive ID");
     rejects(
         [&]
-    {
-        art.add_portrait_head(256, panel);
-    },
-    "Duplicate new head IDs rejected");
+        {
+            art.add_portrait_head(256, panel);
+        },
+        "Duplicate new head IDs rejected");
     CharacterArt unloaded;
     rejects(
         [&]
-    {
-        unloaded.add_portrait_head(256, body);
-    },
-    "Additional head must be 88 by 40");
+        {
+            unloaded.add_portrait_head(256, body);
+        },
+        "Additional head must be 88 by 40");
     CharacterAppearance invalid;
     invalid.portrait_head = 266;
     rejects(
         [&]
-    {
-        validate_character_appearance(invalid);
-    },
-    "Unregistered extended head IDs rejected");
+        {
+            validate_character_appearance(invalid);
+        },
+        "Unregistered extended head IDs rejected");
     CharacterAppearance original_appearance;
     const auto unchanged = art.portrait(original_appearance);
     check(std::equal(panel.rgba.begin(), panel.rgba.end(), unchanged.rgba.begin()),
@@ -771,10 +759,7 @@ void additional_portrait_tests()
     // Independent join geometry: male/female openings, including an off-center
     // narrow neck and unrelated collar pixels on the same scanline.
     for (const auto &head : additions)
-        for (const auto opening :
-                {
-                    std::pair{36u, 56u}, std::pair{37u, 55u}, std::pair{36u, 52u}
-                })
+        for (const auto opening : {std::pair{36u, 56u}, std::pair{37u, 55u}, std::pair{36u, 52u}})
         {
             Image neck;
             neck.width = 88;
@@ -814,7 +799,7 @@ void additional_portrait_tests()
             {
                 check(
                     (image.rgba[(39 * 88 + x) * 4] == 80) ==
-                    (x >= opening.first && x < opening.second),
+                        (x >= opening.first && x < opening.second),
                     "Every new head meets the selected body's full neck opening with no overhang");
                 if (image.rgba[(20 * 88 + x) * 4] == 211)
                     ++face_pixels;
@@ -831,10 +816,7 @@ void additional_portrait_tests()
     for (unsigned y = 0; y < 40; ++y)
         for (unsigned x = 0; x < 88; ++x)
             rounded.rgba[(y * 88 + x) * 4] = y;
-    for (const auto id :
-            {
-                258u, 260u, 262u, 264u
-            })
+    for (const auto id : {258u, 260u, 262u, 264u})
         check(
             prepare_portrait_head(rounded, id).rgba[39 * 88 * 4] == 39,
             "Revised male heads retain the full neck below the chin instead of cropping it into the armor");
@@ -852,10 +834,10 @@ void art_tests()
     raw.pop_back();
     rejects(
         [&]
-    {
-        (void)decode_character_icon(raw);
-    },
-    "Reject truncated components");
+        {
+            (void)decode_character_icon(raw);
+        },
+        "Reject truncated components");
     IndexedIcon head{24, 10, std::vector<std::uint8_t>(240)};
     CharacterAppearance a;
     const std::array<unsigned, 6> masks{7, 1, 4, 6, 2, 3};
@@ -886,20 +868,17 @@ void art_tests()
     a.colors[1][5] = 16;
     rejects(
         [&]
-    {
-        (void)compose_character_icon(head, body, a);
-    },
-    "Reject invalid colors");
+        {
+            (void)compose_character_icon(head, body, a);
+        },
+        "Reject invalid colors");
     if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
     {
         const auto art = CharacterArt::load(directory);
         a = CharacterAppearance{};
         check(art.portrait(a).rgba.size() == 88 * 88 * 4,
               "Original portrait parts join into a sheet image");
-        for (bool tall :
-                {
-                    false, true
-                })
+        for (bool tall : {false, true})
         {
             a.icon_size = tall ? IconSize::regular : IconSize::small;
             a.combat_body = 0;
@@ -915,10 +894,7 @@ void art_tests()
             a.combat_body = 4;
             a.combat_head = 2;
             usage = art.color_usage(a);
-            for (bool action :
-                    {
-                        false, true
-                    })
+            for (bool action : {false, true})
             {
                 const auto bank = (tall ? 64u : 0u) + (action ? 128u : 0u);
                 auto source = art.combat_bodies().at(bank + 4).pixels;
@@ -949,15 +925,12 @@ void art_tests()
                               "Visible region counts match the composed original art");
                         check(
                             usage.contains(color_bank, part) ==
-                            (part != 2 || color_bank != 0 || !tall),
+                                (part != 2 || color_bank != 0 || !tall),
                             "The tall helmet covers hair; other armed test sprite regions remain visible");
                     }
             }
         }
-        for (unsigned bank :
-                {
-                    0u, 64u, 128u, 192u
-                })
+        for (unsigned bank : {0u, 64u, 128u, 192u})
         {
             const auto &original = art.combat_bodies().at(bank + 21).pixels;
             const auto &derived = art.combat_bodies().at(bank + 32).pixels;
@@ -973,10 +946,7 @@ void art_tests()
                 }
             check(removed > 0, "Derived shield body removes wand in each size and pose");
         }
-        for (bool tall :
-                {
-                    false, true
-                })
+        for (bool tall : {false, true})
             for (unsigned h = 0; h < 14; ++h)
                 for (unsigned b = 0; b < 35; ++b)
                 {
@@ -984,7 +954,7 @@ void art_tests()
                     a.combat_head = h;
                     a.combat_body = b;
                     check(art.icon(a, IconPose::ready).rgba.size() == 576 * 4 &&
-                          art.icon(a, IconPose::action).rgba.size() == 576 * 4,
+                              art.icon(a, IconPose::action).rgba.size() == 576 * 4,
                           "Every original head/body combination has both poses");
                 }
         std::cout << "Original character art: " << art.heads().size() << " portrait heads, "
@@ -992,6 +962,7 @@ void art_tests()
                   << " bodies; 14 combat heads, 35 bodies, both sizes and poses\n";
     }
 }
+
 using rules::Ability;
 using rules::CreationField;
 
@@ -1057,89 +1028,81 @@ Character create_ordinarily(std::string_view klass, Ability best,
 bool holds(const Character &hero, std::string_view grant)
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == grant;
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == grant;
+                       });
 }
 
 // A Bard, a Druid, a Cleric and a Warlock made through the ordinary creator
 // receive every grant a level-one character of their class is owed.
 void ordinary_creation_tests()
 {
-    const auto bard = create_ordinarily("bard", Ability::charisma,
-    {
-        {.group = "class:bard", .option = "performance", .selected = true},
-        {.group = "class:bard", .option = "persuasion", .selected = true},
-        {.group = "class:bard", .option = "history", .selected = true}
-    },
-    {"vicious_mockery", "starry_wisp"},
-    {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"});
+    const auto bard =
+        create_ordinarily("bard", Ability::charisma,
+                          {{.group = "class:bard", .option = "performance", .selected = true},
+                           {.group = "class:bard", .option = "persuasion", .selected = true},
+                           {.group = "class:bard", .option = "history", .selected = true}},
+                          {"vicious_mockery", "starry_wisp"},
+                          {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"});
     check(holds(bard, "feature:bardic_inspiration") && holds(bard, "feature:spellcasting") &&
-          holds(bard, "skill:performance") && holds(bard, "skill:persuasion") &&
-          holds(bard, "skill:history") && holds(bard, "spell:vicious_mockery") &&
-          bard.sheet().prepared_spells.size() == 4 && bard.sheet().training.complete,
+              holds(bard, "skill:performance") && holds(bard, "skill:persuasion") &&
+              holds(bard, "skill:history") && holds(bard, "spell:vicious_mockery") &&
+              bard.sheet().prepared_spells.size() == 4 && bard.sheet().training.complete,
           "An ordinary Bard has Bardic Inspiration, three skills, two cantrips and four spells");
 
-    const auto druid = create_ordinarily("druid", Ability::wisdom,
-    {
-        {.group = "class:druid", .option = "nature", .selected = true},
-        {.group = "class:druid", .option = "medicine", .selected = true},
-        {.group = "class:druid:primal_order", .option = "warden", .selected = true}
-    },
-    {"produce_flame", "shillelagh"},
-    {"cure_wounds", "entangle", "faerie_fire", "thunderwave"});
+    const auto druid = create_ordinarily(
+        "druid", Ability::wisdom,
+        {{.group = "class:druid", .option = "nature", .selected = true},
+         {.group = "class:druid", .option = "medicine", .selected = true},
+         {.group = "class:druid:primal_order", .option = "warden", .selected = true}},
+        {"produce_flame", "shillelagh"}, {"cure_wounds", "entangle", "faerie_fire", "thunderwave"});
     check(holds(druid, "feature:spellcasting") && holds(druid, "order:warden") &&
-          holds(druid, "skill:nature") && holds(druid, "skill:medicine") &&
-          holds(druid, "spell:produce_flame") && druid.sheet().prepared_spells.size() == 4 &&
-          druid.sheet().training.complete,
+              holds(druid, "skill:nature") && holds(druid, "skill:medicine") &&
+              holds(druid, "spell:produce_flame") && druid.sheet().prepared_spells.size() == 4 &&
+              druid.sheet().training.complete,
           "An ordinary Druid has its Primal Order, two skills, two cantrips and four spells");
 
-    const auto cleric = create_ordinarily("cleric", Ability::wisdom,
-    {
-        {.group = "class:cleric", .option = "medicine", .selected = true},
-        {.group = "class:cleric", .option = "persuasion", .selected = true},
-        {.group = "class:cleric:divine_order", .option = "protector", .selected = true}
-    },
-    {"sacred_flame", "spare_the_dying", "resistance"},
-    {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"});
+    const auto cleric = create_ordinarily(
+        "cleric", Ability::wisdom,
+        {{.group = "class:cleric", .option = "medicine", .selected = true},
+         {.group = "class:cleric", .option = "persuasion", .selected = true},
+         {.group = "class:cleric:divine_order", .option = "protector", .selected = true}},
+        {"sacred_flame", "spare_the_dying", "resistance"},
+        {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"});
     check(holds(cleric, "feature:spellcasting") && holds(cleric, "order:protector") &&
-          holds(cleric, "skill:medicine") && holds(cleric, "skill:persuasion") &&
-          holds(cleric, "spell:sacred_flame") && holds(cleric, "spell:resistance") &&
-          cleric.sheet().prepared_spells.size() == 4 && cleric.sheet().training.complete,
+              holds(cleric, "skill:medicine") && holds(cleric, "skill:persuasion") &&
+              holds(cleric, "spell:sacred_flame") && holds(cleric, "spell:resistance") &&
+              cleric.sheet().prepared_spells.size() == 4 && cleric.sheet().training.complete,
           "An ordinary Cleric has its Divine Order, two skills, three cantrips and four spells");
 
     // An Acolyte Cleric knows three of the game's four Cleric cantrips, so its
     // Magic Initiate learns the one left (INITIATE-1).
-    const auto acolyte = create_ordinarily("cleric", Ability::wisdom,
-    {
-        {.group = "class:cleric", .option = "medicine", .selected = true},
-        {.group = "class:cleric", .option = "persuasion", .selected = true},
-        {.group = "class:cleric:divine_order", .option = "protector", .selected = true}
-    },
-    {"sacred_flame", "spare_the_dying", "resistance"},
-    {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"}, "acolyte",
-    {
-        {.group = "feat:magic_initiate_cleric:ability", .option = "wisdom", .selected = true},
-        {.group = "feat:magic_initiate_cleric:cantrips", .option = "guidance", .selected = true},
-        {.group = "feat:magic_initiate_cleric:spell", .option = "bless", .selected = true}
-    });
+    const auto acolyte = create_ordinarily(
+        "cleric", Ability::wisdom,
+        {{.group = "class:cleric", .option = "medicine", .selected = true},
+         {.group = "class:cleric", .option = "persuasion", .selected = true},
+         {.group = "class:cleric:divine_order", .option = "protector", .selected = true}},
+        {"sacred_flame", "spare_the_dying", "resistance"},
+        {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"}, "acolyte",
+        {{.group = "feat:magic_initiate_cleric:ability", .option = "wisdom", .selected = true},
+         {.group = "feat:magic_initiate_cleric:cantrips", .option = "guidance", .selected = true},
+         {.group = "feat:magic_initiate_cleric:spell", .option = "bless", .selected = true}});
     check(holds(acolyte, "spell:guidance") && holds(acolyte, "spell:bless") &&
-          acolyte.sheet().training.complete,
+              acolyte.sheet().training.complete,
           "An Acolyte Cleric finishes creation with one Magic Initiate cantrip");
 
-    const auto warlock = create_ordinarily("warlock", Ability::charisma,
-    {
-        {.group = "class:warlock", .option = "history", .selected = true},
-        {.group = "class:warlock", .option = "investigation", .selected = true},
-        {.group = "class:warlock:invocations", .option = "armor_of_shadows", .selected = true}
-    },
-    {"eldritch_blast", "chill_touch"},
-    {"hex", "hellish_rebuke"});
+    const auto warlock = create_ordinarily(
+        "warlock", Ability::charisma,
+        {{.group = "class:warlock", .option = "history", .selected = true},
+         {.group = "class:warlock", .option = "investigation", .selected = true},
+         {.group = "class:warlock:invocations", .option = "armor_of_shadows", .selected = true}},
+        {"eldritch_blast", "chill_touch"}, {"hex", "hellish_rebuke"});
     check(holds(warlock, "feature:pact_magic") && holds(warlock, "invocation:armor_of_shadows") &&
-          holds(warlock, "skill:arcana") && holds(warlock, "skill:deception") &&
-          holds(warlock, "spell:eldritch_blast") && holds(warlock, "spell:chill_touch") &&
-          warlock.sheet().prepared_spells.size() == 2 && warlock.sheet().training.complete,
+              holds(warlock, "skill:arcana") && holds(warlock, "skill:deception") &&
+              holds(warlock, "spell:eldritch_blast") && holds(warlock, "spell:chill_touch") &&
+              warlock.sheet().prepared_spells.size() == 2 && warlock.sheet().training.complete,
           "An ordinary Warlock has an invocation, two skills, two cantrips and two spells");
 }
 

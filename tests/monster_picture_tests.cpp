@@ -36,12 +36,13 @@ void frames_follow_the_original_timer()
 // it; reading frames through it would use a destroyed session's data.
 void view_never_reads_through_the_session_pointer()
 {
-    const auto path = std::filesystem::path(OPENGOLD_SOURCE_DIR) / "src/OpenGoldBox/rolf_tour_view.cpp";
+    const auto path =
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "src/OpenGoldBox/rolf_tour_view.cpp";
     std::ifstream in(path);
     const std::string text{std::istreambuf_iterator<char>(in), {}};
     check(!text.empty(), "The exploration view's source is found");
-    for (const char *read : {"*shown_monster_picture_", "shown_monster_picture_->",
-                             "shown_monster_picture_)["})
+    for (const char *read :
+         {"*shown_monster_picture_", "shown_monster_picture_->", "shown_monster_picture_)["})
         check(text.find(read) == std::string::npos,
               std::string("rolf_tour_view.cpp reads the close-up through the session: ") + read);
 }

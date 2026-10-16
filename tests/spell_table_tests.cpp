@@ -55,8 +55,8 @@ auto module()
 auto custom()
 {
     return srd5::parse_content(
-               read(root / "data/rules/srd-5.2.1/combat.rules") +
-               "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nsaves target 0 0 0 0 0 0\n");
+        read(root / "data/rules/srd-5.2.1/combat.rules") +
+        "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nsaves target 0 0 0 0 0 0\n");
 }
 
 Character hero(std::string klass, unsigned level, std::vector<std::string> cantrips)
@@ -110,14 +110,14 @@ std::vector<Caster> casters()
     add("warlock-1", hero("warlock", 1, {"eldritch_blast", "poison_spray"}).sheet());
     add("sorcerer-1",
         hero("sorcerer", 1, {"fire_bolt", "poison_spray", "ray_of_frost", "shocking_grasp"})
-        .sheet());
+            .sheet());
     // Gear variants: a weapon and shield block nothing (CLASS-11); untrained
     // armor suppresses every spell offer.
     add("wizard-4+shield",
-    hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
-    {"quarterstaff", "shield"});
+        hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
+        {"quarterstaff", "shield"});
     add("wizard-4+plate", hero("wizard", 4, {"shocking_grasp", "chill_touch", "fire_bolt"}).sheet(),
-    {"plate"});
+        {"plate"});
     return result;
 }
 
@@ -148,19 +148,15 @@ std::string snapshot()
     for (const auto &caster : casters())
     {
         const auto profile = rules->character_profile(caster.sheet, caster.gear);
-        for (int feet :
-                {
-                    5, 30, 60, 120, 125
-                })
+        for (int feet : {5, 30, 60, 120, 125})
         {
             const int column = 1 + feet / 5;
-            auto c =
-            rules->create({{28, 4, std::vector<Terrain>(28 * 4)},
-                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-                    {2, "target", "Ally", Side::party, {column, 1}, {}, VitalState{3, false, {}}},
-                    {3, "target", "Enemy", Side::opposition, {column, 2}}
-                }},
-            13);
+            auto c = rules->create(
+                {{28, 4, std::vector<Terrain>(28 * 4)},
+                 {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                  {2, "target", "Ally", Side::party, {column, 1}, {}, VitalState{3, false, {}}},
+                  {3, "target", "Enemy", Side::opposition, {column, 2}}}},
+                13);
             // Seed 13 does not always start the caster; advance to their turn.
             for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             {
@@ -205,9 +201,11 @@ void table()
                            spell.pattern == SpellPattern::reaction;
         check(saves || spell.save == Ability::strength, "Only save patterns carry a save ability");
         check(spell.instances == 1 || spell.pattern == SpellPattern::auto_damage ||
-              spell.pattern == SpellPattern::repeat_attack || spell.pattern == SpellPattern::buff ||
-              spell.pattern == SpellPattern::save_condition || spell.pattern == SpellPattern::camp ||
-              spell.pattern == SpellPattern::heal || spell.id == std::string_view("chain_lightning"),
+                  spell.pattern == SpellPattern::repeat_attack ||
+                  spell.pattern == SpellPattern::buff ||
+                  spell.pattern == SpellPattern::save_condition ||
+                  spell.pattern == SpellPattern::camp || spell.pattern == SpellPattern::heal ||
+                  spell.id == std::string_view("chain_lightning"),
               "Only multi-instance patterns repeat or choose several creatures");
         // Thunderwave's push rides on a failed save against its damage.
         const bool riders = spell.pattern == SpellPattern::spell_attack ||
@@ -220,7 +218,7 @@ void table()
               "A save-condition spell applies a rider");
         // Heal restores a fixed 70 instead.
         check(spell.pattern != SpellPattern::heal || spell.add_casting_modifier ||
-              spell.id == std::string_view("heal"),
+                  spell.id == std::string_view("heal"),
               "Healing adds the caster's spellcasting modifier");
     }
     // Deliberately not an exact row count: that would make adding a spell an
@@ -232,11 +230,9 @@ void table()
           "Non-spell verbs are not rows");
     // Every id the access catalog knows must exist in the table, so the two
     // cannot drift apart.
-    for (const auto *id :
-            {"chill_touch", "shocking_grasp", "eldritch_blast", "ray_of_frost",
-             "sacred_flame", "fire_bolt", "poison_spray", "cure_wounds",
-             "healing_word", "magic_missile", "scorching_ray", "blindness"
-            })
+    for (const auto *id : {"chill_touch", "shocking_grasp", "eldritch_blast", "ray_of_frost",
+                           "sacred_flame", "fire_bolt", "poison_spray", "cure_wounds",
+                           "healing_word", "magic_missile", "scorching_ray", "blindness"})
         check(find_spell(id) != nullptr, "Access catalog ids are all table rows");
 }
 
@@ -256,10 +252,12 @@ struct Probe
     unsigned level;
 };
 
-constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 15}, {"cleric", 1},
-    {"cleric", 4}, {"cleric", 15}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
-    {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}, {"druid", 15}
-};
+constexpr Probe probes[]{{"wizard", 1},  {"wizard", 4},  {"wizard", 15},  {"cleric", 1},
+                         {"cleric", 4},  {"cleric", 15}, {"warlock", 1},  {"sorcerer", 1},
+                         {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
+                         {"ranger", 1},  {"ranger", 4},  {"ranger", 12},  {"ranger", 15},
+                         {"bard", 1},    {"bard", 4},    {"druid", 1},    {"druid", 4},
+                         {"druid", 15}};
 
 // The widest legitimate caster for a class and level: every cantrip its own
 // entitlement offers, plus every levelled row the profile writer accepts.
@@ -316,12 +314,12 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const CharacterS
 {
     const auto profile = rules.character_profile(sheet, gear);
     const int column = 1 + feet / 5;
-    auto c = rules.create({{34, 4, std::vector<Terrain>(34 * 4)},
-        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-            {2, "target", "Ally", Side::party, {column, 1}, {}, VitalState{3, false, {}}},
-            {3, "target", "Enemy", Side::opposition, {column, 2}}
-        }},
-    13);
+    auto c = rules.create(
+        {{34, 4, std::vector<Terrain>(34 * 4)},
+         {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+          {2, "target", "Ally", Side::party, {column, 1}, {}, VitalState{3, false, {}}},
+          {3, "target", "Enemy", Side::opposition, {column, 2}}}},
+        13);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
     {
         const auto end = find(*c, "end", 0);
@@ -335,9 +333,9 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
                    bool &covered)
 {
     const EntityId target =
-        row.target == SpellTarget::self ? 1
+        row.target == SpellTarget::self                                                ? 1
         : (row.target == SpellTarget::wounded_ally || row.target == SpellTarget::ally) ? 2
-        : 3;
+                                                                                       : 3;
     auto at_range = battle(rules, sheet, row.range);
     const auto offer = find(*at_range, row.id, target);
     if (!offer)
@@ -353,7 +351,7 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
         check(!find(*beyond, row.id, target), "A spell is not offered past its range");
         const auto untouched = beyond->save();
         check(!beyond->submit({beyond->snapshot().revision, 1, target, std::string(row.id)}) &&
-              beyond->save() == untouched,
+                  beyond->save() == untouched,
               "Out-of-range casting is rejected atomically");
     }
 
@@ -394,12 +392,11 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     // Zombie, not conditions (a saved-against Whispers still deals half
     // damage, as a saved-against Harm or Befuddlement does).
     if (row.rider != Rider::none && row.rider != Rider::spiritual_weapon &&
-            row.rider != Rider::arcane_sword &&
-            row.rider != Rider::ice_knife && row.rider != Rider::dissonant_whispers &&
-            row.rider != Rider::harm && row.rider != Rider::vampiric_touch &&
-            row.rider != Rider::disintegrate && row.rider != Rider::finger_of_death &&
-            row.rider != Rider::befuddlement &&
-            after_target.hit_points < before_target.hit_points)
+        row.rider != Rider::arcane_sword && row.rider != Rider::ice_knife &&
+        row.rider != Rider::dissonant_whispers && row.rider != Rider::harm &&
+        row.rider != Rider::vampiric_touch && row.rider != Rider::disintegrate &&
+        row.rider != Rider::finger_of_death && row.rider != Rider::befuddlement &&
+        after_target.hit_points < before_target.hit_points)
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");
 
@@ -416,7 +413,7 @@ CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, con
 {
     auto &prepared = sheet.prepared_spells;
     if (!row.level || prepared.empty() ||
-            std::find(prepared.begin(), prepared.end(), row.id) != prepared.end())
+        std::find(prepared.begin(), prepared.end(), row.id) != prepared.end())
         return sheet;
     auto trial = sheet;
     // A Wizard prepares from its book, so a book entry changes with it: the
@@ -424,15 +421,16 @@ CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, con
     auto book = trial.grants.end();
     for (auto grant = trial.grants.begin(); grant != trial.grants.end(); ++grant)
         if (grant->choices.contains("access") && grant->choices.at("access") == "spellbook" &&
-                (book == trial.grants.end() || grant->level > book->level))
+            (book == trial.grants.end() || grant->level > book->level))
             book = grant;
     auto replaced = trial.prepared_spells.end() - 1;
     if (book != trial.grants.end())
     {
         const auto old = book->id.substr(6);
         book->id = "spell:" + std::string(row.id);
-        if (const auto found = std::find(trial.prepared_spells.begin(), trial.prepared_spells.end(), old);
-                found != trial.prepared_spells.end())
+        if (const auto found =
+                std::find(trial.prepared_spells.begin(), trial.prepared_spells.end(), old);
+            found != trial.prepared_spells.end())
             replaced = found;
     }
     else
@@ -461,10 +459,10 @@ void behaviour()
     {
         // Smites are offered by the caster's own melee hit, not by range, a
         // spell on several creatures begins a choice, Command, Resistance,
-        // Guidance, Chromatic Orb, Protection from Energy, Bestow Curse and Contagion are offered once per option, camp spells only outside combat, area spells are aimed,
-        // Lesser Restoration needs a Blinded creature, Spare the Dying a dying one,
-        // Revivify a dead one, Animate Dead a corpse
-        // Mage Armor an unarmored character, Shillelagh a Club or
+        // Guidance, Chromatic Orb, Protection from Energy, Bestow Curse and Contagion are offered
+        // once per option, camp spells only outside combat, area spells are aimed, Lesser
+        // Restoration needs a Blinded creature, Spare the Dying a dying one, Revivify a dead one,
+        // Animate Dead a corpse Mage Armor an unarmored character, Shillelagh a Club or
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
         // Remove Curse and Greater Restoration, which need a cursed or charmed
@@ -474,28 +472,27 @@ void behaviour()
         // Polymorph and Conjure Minor Elementals are offered once per shield,
         // form and type.
         if (row.pattern == SpellPattern::smite ||
-                ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
-                  row.pattern == SpellPattern::heal) && row.instances > 1) ||
-                row.target == SpellTarget::dying_ally || row.target == SpellTarget::dead_ally ||
-                row.rider == Rider::command || row.rider == Rider::resistance ||
-                row.rider == Rider::guidance ||
-                row.rider == Rider::enlarge_reduce ||
-                row.id == std::string_view("chromatic_orb") ||
-                row.id == std::string_view("sorcerous_burst") ||
-                row.pattern == SpellPattern::camp || row.pattern == SpellPattern::reaction ||
-                row.pattern == SpellPattern::exploration ||
-                row.pattern == SpellPattern::weapon_strike ||
-                row.rider == Rider::dragons_breath || row.id == std::string_view("dragons_breath_exhale") ||
-                row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
-                row.rider == Rider::dominate_person || row.rider == Rider::telekinesis ||
-                row.id == std::string_view("chain_lightning") || row.rider == Rider::eyebite ||
-                row.rider == Rider::bestow_curse || row.target == SpellTarget::corpse ||
-                row.rider == Rider::contagion || row.rider == Rider::greater_restoration ||
-                row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
-                row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
-                row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
-                row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
-                row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals)
+            ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
+              row.pattern == SpellPattern::heal) &&
+             row.instances > 1) ||
+            row.target == SpellTarget::dying_ally || row.target == SpellTarget::dead_ally ||
+            row.rider == Rider::command || row.rider == Rider::resistance ||
+            row.rider == Rider::guidance || row.rider == Rider::enlarge_reduce ||
+            row.id == std::string_view("chromatic_orb") ||
+            row.id == std::string_view("sorcerous_burst") || row.pattern == SpellPattern::camp ||
+            row.pattern == SpellPattern::reaction || row.pattern == SpellPattern::exploration ||
+            row.pattern == SpellPattern::weapon_strike || row.rider == Rider::dragons_breath ||
+            row.id == std::string_view("dragons_breath_exhale") ||
+            row.rider == Rider::protection_from_energy || row.rider == Rider::dominate_beast ||
+            row.rider == Rider::dominate_person || row.rider == Rider::telekinesis ||
+            row.id == std::string_view("chain_lightning") || row.rider == Rider::eyebite ||
+            row.rider == Rider::bestow_curse || row.target == SpellTarget::corpse ||
+            row.rider == Rider::contagion || row.rider == Rider::greater_restoration ||
+            row.target == SpellTarget::area || row.rider == Rider::lesser_restoration ||
+            row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
+            row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
+            row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
+            row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)
@@ -515,15 +512,14 @@ void behaviour()
 void profile_tags()
 {
     auto rules = custom();
-    const auto loads = [&](const std::string & profile)
+    const auto loads = [&](const std::string &profile)
     {
         try
         {
             (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
-                    {2, "target", "Target", Side::opposition, {3, 1}}
-                }},
-            13);
+                                 {{1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                                  {2, "target", "Target", Side::opposition, {3, 1}}}},
+                                13);
             return true;
         }
         catch (const std::exception &)
@@ -551,7 +547,7 @@ void profile_tags()
     }
     std::getline(split, rest);
     check(tag == "PC43" && count > 0, "A Wizard profile stores spells as an explicit list");
-    const auto rebuild = [&](const std::string & new_tag, const std::string & spell_field)
+    const auto rebuild = [&](const std::string &new_tag, const std::string &spell_field)
     {
         return new_tag + " " + level + " " + features + " " + spell_field + rest;
     };
@@ -559,9 +555,7 @@ void profile_tags()
 
     // Unrecognised tags: earlier profile tags, non-numeric, and not a PC tag at
     // all. An unknown tag must never read as "has everything".
-    for (const auto &bad :
-            {"PC00", "PC35", "PC42", "PC44", "PC99", "PCxx", "XX35", "PC-1"
-            })
+    for (const auto &bad : {"PC00", "PC35", "PC42", "PC44", "PC99", "PCxx", "XX35", "PC-1"})
         check(!loads(rebuild(bad, listed)),
               ("Profile tag " + std::string(bad) + " must be rejected").c_str());
 

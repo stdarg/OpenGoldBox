@@ -78,10 +78,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool logged(const CombatSession &c, std::string_view prefix)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(prefix) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(prefix) != std::string::npos;
+                       });
 }
 
 // The Paladin (1) with an ally (2) beside it and an enemy (99) adjacent.
@@ -89,14 +90,13 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::string enemy = "target")
 {
     const auto profile =
-        module.character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
+        module.character_profile(hero.sheet(), std::vector<std::string>{"longsword"}).data;
     const auto ally = module.character_profile(paladin({}).sheet(), {}).data;
     auto c = module.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
-            {2, "campaign-character", "Ally", Side::party, {1, 2}, ally},
-            {99, std::move(enemy), "Enemy", Side::opposition, {2, 1}}
-        }},
-    5);
+                            {{1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                             {2, "campaign-character", "Ally", Side::party, {1, 2}, ally},
+                             {99, std::move(enemy), "Enemy", Side::opposition, {2, 1}}}},
+                           5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Paladin's turn");
     check(c->snapshot().actor == 1, "The Paladin acts");
@@ -169,7 +169,8 @@ bool warded_attack_disadvantaged(std::string enemy)
 {
     auto module = rules();
     auto c = battle(*module, paladin({"protection_from_evil_and_good"}), std::move(enemy));
-    check(submit(*c, "protection_from_evil_and_good", 1), "Protection from Evil and Good on the Paladin");
+    check(submit(*c, "protection_from_evil_and_good", 1),
+          "Protection from Evil and Good on the Paladin");
     check(!unit(*c, 1).action, "Protection from Evil and Good takes the Action");
     while (c->snapshot().actor != 99)
         check(submit(*c, "end"), "Reach the enemy");
@@ -179,7 +180,8 @@ bool warded_attack_disadvantaged(std::string enemy)
 
 void protection_from_evil_and_good_checks()
 {
-    check(warded_attack_disadvantaged("fiend"), "A Fiend attacks the warded Paladin with Disadvantage");
+    check(warded_attack_disadvantaged("fiend"),
+          "A Fiend attacks the warded Paladin with Disadvantage");
     check(!warded_attack_disadvantaged("target"), "A Humanoid attacks the warded Paladin normally");
 }
 
@@ -188,7 +190,8 @@ int logged_bonus(const CombatSession &c)
 {
     const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
-        if (const auto at = line->find(" + "); at != std::string::npos && line->find(" vs AC ") != std::string::npos)
+        if (const auto at = line->find(" + ");
+            at != std::string::npos && line->find(" vs AC ") != std::string::npos)
             return std::stoi(line->substr(at + 3));
     throw std::runtime_error("No attack in the log");
 }
@@ -200,25 +203,25 @@ void bless_checks()
     const auto before = unit(*c, 1);
     check(submit(*c, "bless", 2), "Bless begins with a first creature");
     auto targeting = c->snapshot().spell_targeting;
-    check(targeting && targeting->chosen == std::vector<EntityId> {2} && targeting->maximum == 3 &&
-          unit(*c, 1).action,
+    check(targeting && targeting->chosen == std::vector<EntityId>{2} && targeting->maximum == 3 &&
+              unit(*c, 1).action,
           "Choosing a creature starts the choice and spends nothing");
     for (const auto &command : c->legal_commands())
         check(command.verb == "bless" || command.verb == "spell_cast" ||
-              command.verb == "spell_cancel",
+                  command.verb == "spell_cancel",
               "Only the choice is open while choosing");
     const auto choosing = c->save();
     check(module->restore(choosing)->save() == choosing, "The open choice survives a checkpoint");
     check(submit(*c, "bless", 2) && c->snapshot().spell_targeting->chosen.empty(),
           "Choosing a chosen creature again removes it");
-    check(submit(*c, "spell_cancel") && !c->snapshot().spell_targeting &&
-          unit(*c, 1).action && unit(*c, 1).persistent.resources == before.persistent.resources,
+    check(submit(*c, "spell_cancel") && !c->snapshot().spell_targeting && unit(*c, 1).action &&
+              unit(*c, 1).persistent.resources == before.persistent.resources,
           "Cancel spends nothing");
 
     check(submit(*c, "bless", 1) && submit(*c, "bless", 2) && submit(*c, "bless", 99),
           "Three creatures are chosen");
     check(!c->snapshot().spell_targeting && !unit(*c, 1).action &&
-          logged(*c, "Paladin casts Bless."),
+              logged(*c, "Paladin casts Bless."),
           "The third creature casts the spell");
 
     auto early = battle(*module, paladin({"bless", "cure_wounds"}));
@@ -241,15 +244,16 @@ void bless_checks()
 void write_ui_fixture()
 {
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
-    const auto profile =
-        module->character_profile(paladin({"bless", "cure_wounds"}).sheet(), std::vector<std::string> {"longsword"}).data;
+    const auto profile = module
+                             ->character_profile(paladin({"bless", "cure_wounds"}).sheet(),
+                                                 std::vector<std::string>{"longsword"})
+                             .data;
     const auto ally = module->character_profile(paladin({}).sheet(), {}).data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
-            {2, "campaign-character", "Ally", Side::party, {2, 1}, ally},
-            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
-        }},
-    2);
+                             {{1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                              {2, "campaign-character", "Ally", Side::party, {2, 1}, ally},
+                              {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
+                            2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Paladin's turn");
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "bless-fixtures";

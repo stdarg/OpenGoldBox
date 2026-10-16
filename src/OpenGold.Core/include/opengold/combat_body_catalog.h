@@ -42,9 +42,9 @@ class CombatBodyCatalog
     using BodyAssignments = std::array<std::set<std::string>, 35>;
 
     [[nodiscard]] static CombatBodyCatalog load(const std::filesystem::path &assignments,
-            const std::filesystem::path &options_file);
+                                                const std::filesystem::path &options_file);
     [[nodiscard]] CombatBodySelection choose(std::span<const CombatEquipment> equipped,
-            unsigned fallback) const;
+                                             unsigned fallback) const;
 
     // The data is private so it keeps what load() checked: every assigned or
     // deleted combination names a look option, and no body keeps a deleted
@@ -86,6 +86,6 @@ struct ResolvedCombatAppearance
 // Saved anatomy remains unchanged. The selection supplies wielding arms and
 // equipment layers only; encounter creatures do not use this API.
 [[nodiscard]] ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
-        const CombatBodyCatalog &catalog);
+                                                                 const CombatBodyCatalog &catalog);
 } // namespace opengold::por
 #endif

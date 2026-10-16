@@ -11,8 +11,7 @@ CampaignParty party(std::string weapon = "dagger", bool style = false, bool nega
     {
         draft.training["class:" + klass + ":weapon_mastery"].push_back("club");
         draft.training["class:fighter:fighting_style"] = {style ? "two_weapon_fighting"
-                                                          : "defense"
-                                                         };
+                                                                : "defense"};
     }
     if (negative)
         for (auto &roll : draft.rolls)
@@ -51,24 +50,16 @@ void round_trip(const RulesModule &r, CombatSession &c)
 void grants_and_budgets()
 {
     unsigned hits = 0, criticals = 0;
-    for (const auto weapon :
-            {"dagger", "light_hammer", "sickle", "scimitar"
-            })
-        for (bool style :
-                {
-                    false, true
-                })
-            for (bool negative :
-                    {
-                        false, true
-                    })
+    for (const auto weapon : {"dagger", "light_hammer", "sickle", "scimitar"})
+        for (bool style : {false, true})
+            for (bool negative : {false, true})
                 for (unsigned seed = 1; seed <= 48; ++seed)
                 {
                     auto p = party(weapon, style, negative, seed % 2);
                     auto c = battle(p, seed);
                     check(
                         c->save().starts_with("OGCOMBAT 61 ") && unit(*c, 1).nick_mastery &&
-                        !offers(*c, "nick_melee"),
+                            !offers(*c, "nick_melee"),
                         "Chosen Nick creates explicit shared budget, not an attack before qualification");
                     act(*c, "melee", 99);
                     settle(*c);
@@ -89,7 +80,7 @@ void grants_and_budgets()
                         const int count = arg(nick, "hit") == "CRITICAL" ? 2 : 1;
                         const int damage = std::stoi(arg(nick, "damage"));
                         check(damage >= std::max(0, count + modifier) &&
-                              damage <= std::max(0, count * sides + modifier),
+                                  damage <= std::max(0, count * sides + modifier),
                               "Nick shares Light damage modifier and Two-Weapon Fighting");
                         ++hits;
                         if (count == 2)
@@ -101,7 +92,7 @@ void grants_and_budgets()
                     settle(*copy);
                     check(c->save() == copy->save(), "Nick hit continuation exact");
                     check(unit(*c, 1).bonus_action && !unit(*c, 1).action &&
-                          !offers(*c, "light_melee") && !offers(*c, "nick_melee"),
+                              !offers(*c, "light_melee") && !offers(*c, "nick_melee"),
                           "Nick leaves Bonus Action and uses the shared extra attack");
                     const auto before = c->save();
                     check(!c->submit(extra) && c->save() == before, "Stale Nick ticket is atomic");
@@ -116,15 +107,9 @@ void grants_and_budgets()
                     settle(*c);
                     check(offers(*c, "nick_melee"), "Fresh turn resets shared extra attack budget");
                 }
-    check(hits > 0 && criticals > 0,
-          "Matrix actually exercises ordinary and critical Nick damage");
-    for (const auto klass :
-            {"fighter", "rogue", "paladin", "ranger", "barbarian"
-            })
-        for (bool npc :
-                {
-                    false, true
-                })
+    check(hits > 0 && criticals > 0, "Matrix actually exercises ordinary and critical Nick damage");
+    for (const auto klass : {"fighter", "rogue", "paladin", "ranger", "barbarian"})
+        for (bool npc : {false, true})
         {
             auto p = party("dagger", false, false, npc, klass);
             auto c = battle(p);
@@ -213,15 +198,17 @@ void pending_interactions()
               "The first eligible hit applies Sneak Attack automatically");
         act(*c, "nick_melee", 99);
         const auto log = c->snapshot().log();
-        check(std::count_if(log.begin(), log.end(), [](const auto & line)
-        {
-            return line.find("adds Sneak Attack") != std::string::npos;
-        }) == 1, "Sneak Attack applies only once per turn");
+        check(std::count_if(log.begin(), log.end(),
+                            [](const auto &line)
+                            {
+                                return line.find("adds Sneak Attack") != std::string::npos;
+                            }) == 1,
+              "Sneak Attack applies only once per turn");
         auto copy = p.rule_module().restore(c->save());
         check(copy->save() == c->save() &&
-              !fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}) &&
-              !unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
-              !offers(*c, "light_melee"),
+                  !fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}) &&
+                  !unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
+                  !offers(*c, "light_melee"),
               "Nick consumes Vex and keeps the shared spent allowance and Steady Aim");
         checked = true;
     }
@@ -243,7 +230,7 @@ void pending_interactions()
         act(*c, "end");
         act(*copy, "end");
         check(c->save() == copy->save() && unit(*c, 1).bonus_action && !offers(*c, "nick_melee") &&
-              !offers(*c, "light_melee"),
+                  !offers(*c, "light_melee"),
               "Champion continuation keeps Bonus Action and spent Nick allowance");
         checked = true;
     }
@@ -252,9 +239,7 @@ void pending_interactions()
 
 void throwing_and_provenance()
 {
-    for (const auto weapon :
-            {"dagger", "light_hammer"
-            })
+    for (const auto weapon : {"dagger", "light_hammer"})
     {
         auto p = party(weapon);
         auto c = battle(p);
@@ -271,11 +256,11 @@ void throwing_and_provenance()
               "Thrown Nick keeps the shared budget continuation");
         const auto items = c->snapshot().held_items;
         check(std::any_of(items.begin(), items.end(),
-                          [&](const auto & item)
-        {
-            return item.id == extra.item && item.holder == 1;
-        }),
-        "Thrown Nick weapon stays with the thrower");
+                          [&](const auto &item)
+                          {
+                              return item.id == extra.item && item.holder == 1;
+                          }),
+              "Thrown Nick weapon stays with the thrower");
     }
     auto p = party();
     auto h = p.member(1).character;
@@ -324,9 +309,9 @@ void forged_budgets()
                 p.rule_module().identity().version.size(), "0.6.56");
     rejects(
         [&]
-    {
-        (void)p.rule_module().restore(bad);
-    });
+        {
+            (void)p.rule_module().restore(bad);
+        });
     std::size_t row = 0;
     for (unsigned i = 0; i < 4; ++i)
         row = bytes.find('\n', row) + 1;
@@ -343,16 +328,16 @@ void forged_budgets()
     bad.replace(budget + 1, origin - budget - 1, "3");
     rejects(
         [&]
-    {
-        (void)p.rule_module().restore(bad);
-    });
+        {
+            (void)p.rule_module().restore(bad);
+        });
     bad = bytes;
     bad.replace(origin + 1, cleave - origin - 1, "9");
     rejects(
         [&]
-    {
-        (void)p.rule_module().restore(bad);
-    });
+        {
+            (void)p.rule_module().restore(bad);
+        });
 }
 
 void ui_fixtures()
@@ -363,7 +348,7 @@ void ui_fixtures()
     auto r = module();
     const auto path = std::filesystem::path(output);
     std::filesystem::create_directories(path);
-    const auto write = [&](const char *name, const CombatSession & c)
+    const auto write = [&](const char *name, const CombatSession &c)
     {
         std::ofstream out(path / (std::string(name) + ".save"), std::ios::binary);
         out << c.save();

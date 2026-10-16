@@ -4,9 +4,7 @@ namespace light_attack_baseline
 CampaignParty party()
 {
     CampaignParty p(rogue_attack_checks::rules_module());
-    for (const auto *klass :
-            {"fighter", "paladin", "ranger"
-            })
+    for (const auto *klass : {"fighter", "paladin", "ranger"})
     {
         auto h = style_route_checks::starter(klass);
         h.add_item({.definition_id = "greatsword", .name = "Greatsword"});
@@ -14,15 +12,12 @@ CampaignParty party()
         h.add_item({.definition_id = "hand_crossbow", .name = "Hand Crossbow"});
         h.add_item({.definition_id = "shield", .name = "Shield"});
         const auto id = std::string_view(klass) == "fighter"
-                        ? p.add_pc(std::move(h))
-                        : p.recruit(std::string("baseline:") + klass, std::move(h));
+                            ? p.add_pc(std::move(h))
+                            : p.recruit(std::string("baseline:") + klass, std::move(h));
         p.equip(id, 1);
     }
     p.award_experience(2700, "light-baseline");
-    for (const auto id :
-            {
-                1u, 2u, 3u
-            })
+    for (const auto id : {1u, 2u, 3u})
         for (unsigned level = 2; level <= 4; ++level)
         {
             auto choice = p.default_advancement(id);
@@ -61,10 +56,7 @@ void verify_hands_ui(const std::filesystem::path &path)
     auto baseline = party();
     CampaignParty p(module());
     p.restore(baseline.checkpoint());
-    for (auto id :
-            {
-                1u, 2u
-            })
+    for (auto id : {1u, 2u})
     {
         p.equip(id, 2, EquipmentOperation::equip_main);
         p.equip(id, 2, EquipmentOperation::equip_other);
@@ -74,7 +66,7 @@ void verify_hands_ui(const std::filesystem::path &path)
     CampaignParty actual(module());
     actual.restore(
         decode_campaign(read_campaign_file(path), *srd5::character_rules(), *rules, assets, nullptr)
-        .party);
+            .party);
     auto expected = p.checkpoint();
     expected.selected_slot = actual.state().selected_slot;
     p.restore(std::move(expected));

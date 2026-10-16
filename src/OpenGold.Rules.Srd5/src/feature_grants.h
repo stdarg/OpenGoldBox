@@ -18,7 +18,7 @@ std::string background_id(std::string_view label);
 // The Origin feat a background gives ("feat:alert"), or empty.
 std::string background_feat(std::string_view background);
 std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
-        std::string_view background);
+                                                 std::string_view background);
 rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                       const rules::AdvancementChoice &choice);
 std::vector<rules::AdvancementOption> fighting_styles();
@@ -42,7 +42,7 @@ bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
 struct GrantEffects
 {
     unsigned
-    feats{}; // Internal combat mask: Defense, Savage Attacker, Archery, Great Weapon Fighting.
+        feats{}; // Internal combat mask: Defense, Savage Attacker, Archery, Great Weapon Fighting.
     rules::AbilityArray<int> abilities{};
 };
 

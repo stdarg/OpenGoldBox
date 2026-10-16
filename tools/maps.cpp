@@ -59,8 +59,8 @@ int main(int argc, char **argv)
                 std::cout << ',';
             first = false;
             // Archive names are restricted to GEO + digits + .DAX by the loader.
-            std::cout << "{\"archive\":\"" << id.archive << "\",\"id\":"
-                      << static_cast<unsigned>(id.record)
+            std::cout << "{\"archive\":\"" << id.archive
+                      << "\",\"id\":" << static_cast<unsigned>(id.record)
                       << ",\"bytes\":" << map.raw.size() << ",\"cells\":[";
             for (std::size_t i = 0; i < map.cells.size(); ++i)
             {

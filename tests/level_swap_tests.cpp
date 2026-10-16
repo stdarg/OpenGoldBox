@@ -102,8 +102,8 @@ struct Party
         if (result.spell_learning)
         {
             const auto &rules = party->rule_module();
-            const auto offered = rules.spell_choice_options(rules.spell_choice_sheet(sheet(), result),
-                                 SpellChoiceContext::advancement);
+            const auto offered = rules.spell_choice_options(
+                rules.spell_choice_sheet(sheet(), result), SpellChoiceContext::advancement);
             for (const auto &group : offered.learning)
             {
                 auto &fill = (*result.spell_learning)[group.id];
@@ -116,7 +116,7 @@ struct Party
             result.spells = offered.locked_prepared;
             for (const auto &o : offered.preparation)
                 if (result.spells.size() < offered.prepared_count && o.id != replaced_spell &&
-                        std::find(result.spells.begin(), result.spells.end(), o.id) ==
+                    std::find(result.spells.begin(), result.spells.end(), o.id) ==
                         result.spells.end())
                     result.spells.push_back(o.id);
         }
@@ -133,17 +133,19 @@ struct Party
         const auto bytes = encode_campaign(*party, nullptr, "level-swaps");
         CampaignParty next(module());
         next.restore(decode_campaign(bytes, *srd5::character_rules(), party->rule_module(),
-                                     "level-swaps", nullptr).party);
+                                     "level-swaps", nullptr)
+                         .party);
         check(encode_campaign(next, nullptr, "level-swaps") == bytes, "The swaps replay exactly");
     }
 };
 
 bool has(const CharacterSheet &sheet, std::string_view id)
 {
-    return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 bool prepared(const CharacterSheet &sheet, std::string_view id)
@@ -166,7 +168,7 @@ void sorcerer_checks()
     Party p("sorcerer");
     auto options = p.options();
     check(options.cantrip_swap.label == "Cantrip" && options.spell_swap.label == "Spell" &&
-          options.option_swap.replaceable.empty(),
+              options.option_swap.replaceable.empty(),
           "At level two a Sorcerer may swap a cantrip and a spell; no Metamagic yet");
     const auto cantrip = first(options.cantrip_swap);
     const auto spell = first(options.spell_swap);
@@ -184,7 +186,7 @@ void sorcerer_checks()
           "A cantrip from another list is refused atomically");
     p.advance(p.choice(cantrip, spell, {}));
     check(has(p.sheet(), "spell:" + cantrip.replacement) &&
-          !has(p.sheet(), "spell:" + cantrip.replaced),
+              !has(p.sheet(), "spell:" + cantrip.replaced),
           "The cantrip is replaced");
     check(prepared(p.sheet(), spell.replacement) && !prepared(p.sheet(), spell.replaced),
           "The spell is replaced");
@@ -194,7 +196,7 @@ void sorcerer_checks()
     const auto metamagic = first(options.option_swap);
     p.advance(p.choice({}, {}, metamagic));
     check(has(p.sheet(), "metamagic:" + metamagic.replacement) &&
-          !has(p.sheet(), "metamagic:" + metamagic.replaced),
+              !has(p.sheet(), "metamagic:" + metamagic.replaced),
           "The Metamagic option is replaced");
     p.roundtrip();
 }
@@ -206,19 +208,19 @@ void warlock_checks()
     Party p("warlock");
     auto options = p.options();
     check(options.option_swap.label == "Eldritch Invocation" &&
-          options.option_swap.replaceable.size() == 1,
+              options.option_swap.replaceable.size() == 1,
           "At level two the Warlock's one invocation may be swapped");
     const auto old = options.option_swap.replaceable.front().id;
     const auto agonizing = std::any_of(options.option_swap.replacements.begin(),
                                        options.option_swap.replacements.end(),
-                                       [](const auto & o)
-    {
-        return o.id == "agonizing_blast:eldritch_blast";
-    });
+                                       [](const auto &o)
+                                       {
+                                           return o.id == "agonizing_blast:eldritch_blast";
+                                       });
     check(agonizing, "A level-two invocation is offered for the level-1 one");
     p.advance(p.choice({}, {}, {old, "agonizing_blast:eldritch_blast"}));
     check(has(p.sheet(), "invocation:agonizing_blast:eldritch_blast") &&
-          !has(p.sheet(), "invocation:" + old),
+              !has(p.sheet(), "invocation:" + old),
           "The level-1 invocation becomes Agonizing Blast");
     p.roundtrip();
 
@@ -226,19 +228,22 @@ void warlock_checks()
     const auto swapped = options.option_swap.replaceable.back().id;
     p.advance(p.choice({}, {}, {swapped, "pact_of_the_tome"}));
     const auto &sheet = p.sheet();
-    const auto tome = std::count_if(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.source_id == "invocation:pact_of_the_tome";
-    });
+    const auto tome = std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                                    [](const auto &g)
+                                    {
+                                        return g.source_id == "invocation:pact_of_the_tome";
+                                    });
     check(has(sheet, "invocation:pact_of_the_tome") && tome == 5,
           "Pact of the Tome taken at level three brings its five spells");
     p.roundtrip();
 
     p.advance(p.choice({}, {}, {"pact_of_the_tome", "eldritch_mind"}));
-    check(std::none_of(p.sheet().grants.begin(), p.sheet().grants.end(), [](const auto & g)
-    {
-        return g.source_id == "invocation:pact_of_the_tome";
-    }), "Giving up Pact of the Tome gives up its spells");
+    check(std::none_of(p.sheet().grants.begin(), p.sheet().grants.end(),
+                       [](const auto &g)
+                       {
+                           return g.source_id == "invocation:pact_of_the_tome";
+                       }),
+          "Giving up Pact of the Tome gives up its spells");
     p.roundtrip();
 }
 
@@ -272,7 +277,7 @@ void bard_checks()
     const auto spell = first(options.spell_swap);
     p.advance(p.choice(cantrip, spell, {}));
     check(has(p.sheet(), "spell:" + cantrip.replacement) &&
-          !has(p.sheet(), "spell:" + cantrip.replaced),
+              !has(p.sheet(), "spell:" + cantrip.replaced),
           "The Bard's cantrip is replaced");
     check(prepared(p.sheet(), spell.replacement) && !prepared(p.sheet(), spell.replaced),
           "The Bard's spell is replaced");
@@ -289,12 +294,12 @@ void warrior_cantrip_checks(std::string_view klass, std::string_view style)
     p.advance(p.filled(std::move(second)));
     const auto options = p.options();
     check(options.cantrip_swap.replaceable.size() == 2 &&
-          !options.cantrip_swap.replacements.empty(),
+              !options.cantrip_swap.replacements.empty(),
           std::string(style) + " offers both cantrips for replacement");
     const auto cantrip = first(options.cantrip_swap);
     p.advance(p.choice(cantrip, {}, {}));
     check(has(p.sheet(), "spell:" + cantrip.replacement) &&
-          !has(p.sheet(), "spell:" + cantrip.replaced),
+              !has(p.sheet(), "spell:" + cantrip.replaced),
           std::string(style) + "'s cantrip is replaced");
     p.roundtrip();
 }

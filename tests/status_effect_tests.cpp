@@ -27,8 +27,7 @@ using opengold::test::rejects;
 // integers of the same kind side by side, so they travel in named structs:
 // passed loose, in either order, they must not compile (Effective C++ Item 18).
 template <class... Arguments>
-concept AppliesBlindness = requires(fx::EffectState &effects, Arguments... arguments)
-{
+concept AppliesBlindness = requires (fx::EffectState &effects, Arguments... arguments) {
     fx::apply_blindness(effects, arguments...);
 };
 static_assert(AppliesBlindness<fx::EffectSource, std::string, fx::RepeatingSave>);
@@ -38,8 +37,7 @@ static_assert(!AppliesBlindness<EntityId, std::uint64_t, std::string, unsigned, 
 // Command's option is a CommandOption, so its stored number cannot be passed
 // where the duration goes, or the other way round.
 template <class Option, class Duration>
-concept AppliesCommand = requires(fx::EffectState &effects, Option option, Duration duration)
-{
+concept AppliesCommand = requires (fx::EffectState &effects, Option option, Duration duration) {
     fx::apply_command(effects, fx::EffectSource{}, "Caster", option, duration);
 };
 static_assert(AppliesCommand<fx::CommandOption, unsigned>);
@@ -64,10 +62,10 @@ bool offers(const CombatSession &s, std::string_view verb)
 {
     const auto cs = s.legal_commands();
     return std::any_of(cs.begin(), cs.end(),
-                       [&](const auto & c)
-    {
-        return c.verb == verb;
-    });
+                       [&](const auto &c)
+                       {
+                           return c.verb == verb;
+                       });
 }
 
 CombatantView unit(const CombatSession &s, EntityId id)
@@ -110,10 +108,9 @@ fx::EffectState blind(int dc = 38, unsigned remaining = 60000)
 Encounter encounter()
 {
     return {{12, 9, std::vector<Terrain>(108)},
-        {   {1, "blindness-adept", "Caster", Side::party, {2, 4}},
-            {2, "bandit", "Target", Side::opposition, {3, 4}}
-        },
-        123};
+            {{1, "blindness-adept", "Caster", Side::party, {2, 4}},
+             {2, "bandit", "Target", Side::opposition, {3, 4}}},
+            123};
 }
 
 Character character(std::string klass, std::string name)
@@ -141,10 +138,8 @@ void saving_throws()
         seen[result.natural - 1] = true;
         check(result.success == (result.natural + 3 >= 14), "Save total meets DC exactly");
         for (auto ability :
-                {
-                    fx::Ability::strength, fx::Ability::dexterity, fx::Ability::constitution,
-                    fx::Ability::intelligence, fx::Ability::wisdom, fx::Ability::charisma
-                })
+             {fx::Ability::strength, fx::Ability::dexterity, fx::Ability::constitution,
+              fx::Ability::intelligence, fx::Ability::wisdom, fx::Ability::charisma})
         {
             rng = seed;
             const auto same = fx::saving_throw(ability, 3, 14, {}, rng);
@@ -161,41 +156,29 @@ void saving_throws()
         check(fx::d20({true, true}, cancelled) == roll && cancelled == normal,
               "Cancellation consumes only one roll");
         check(fx::d20({true, false}, advantage) >= roll &&
-              fx::d20({false, true}, disadvantage) <= roll,
+                  fx::d20({false, true}, disadvantage) <= roll,
               "Advantage chooses high, disadvantage low");
     }
     check(std::all_of(seen.begin(), seen.end(),
                       [](bool b)
-    {
-        return b;
-    }),
-    "Every natural save result exercised");
+                      {
+                          return b;
+                      }),
+          "Every natural save result exercised");
     check(fx::saving_modifiers(fx::Ability::dexterity, true, true).mode() == 0,
           "Dodge and untrained armor cancel for Dex saves");
     check(fx::saving_modifiers(fx::Ability::strength, true, true).mode() == -1,
           "Dodge does not improve Strength saves");
-    for (bool a :
-            {
-                false, true
-            })
-        for (bool t :
+    for (bool a : {false, true})
+        for (bool t : {false, true})
+            for (bool dodge : {false, true})
+                for (bool other : {false, true})
                 {
-                    false, true
-                })
-            for (bool dodge :
-                    {
-                        false, true
-                    })
-                for (bool other :
-                        {
-                            false, true
-                        })
-                {
-                    const auto actual = fx::attack_modifiers(fx::AttackConditions{
-                        .attacker_blind = a,
-                        .target_blind = t,
-                        .target_dodging = dodge,
-                        .other_disadvantage = other});
+                    const auto actual =
+                        fx::attack_modifiers(fx::AttackConditions{.attacker_blind = a,
+                                                                  .target_blind = t,
+                                                                  .target_dodging = dodge,
+                                                                  .other_disadvantage = other});
                     check(actual.mode() == int(t) - int(a || (dodge && !t) || other),
                           "Complete attack modifier truth table");
                 }
@@ -215,15 +198,15 @@ void lifecycle()
     std::array<fx::EffectSubject, 1> subjects_a{{{1, one, saves}}}, subjects_b{{{1, many, saves}}};
     fx::elapse_effects(subjects_a, 19000, a,
                        [&](const auto &)
-    {
-        ++events_a;
-    });
+                       {
+                           ++events_a;
+                       });
     for (unsigned i = 0; i < 19; ++i)
         fx::elapse_effects(subjects_b, 1000, b,
                            [&](const auto &)
-    {
-        ++events_b;
-    });
+                           {
+                               ++events_b;
+                           });
     check(one == many && a == b && events_a == events_b,
           "Time chunking preserves effects, recovery rolls and notifications");
     check(one.active.size() == 1 && fx::blinded(one),
@@ -240,7 +223,7 @@ void lifecycle()
     // Globally order simultaneous saves by entity ID, including outside combat.
     auto low = blind(13), high = blind(13), low2 = low, high2 = high;
     std::array<fx::EffectSubject, 2> order1{{{2, high, {}}, {1, low, {}}}},
-    order2{{{1, low2, {}}, {2, high2, {}}}};
+        order2{{{1, low2, {}}, {2, high2, {}}}};
     a = b = 42;
     fx::elapse_effects(order1, 6000, a);
     fx::elapse_effects(order2, 6000, b);
@@ -262,30 +245,28 @@ void codec()
     std::istringstream input(output.str());
     check(fx::read_effects(input) == original, "All effect fields round trip");
     for (const auto *bad :
-            {"FX1 2 0", "FX8 0 0 0", "FX8 -1 0 0", "FX8 2 129 0",
-             "FX8 2 1 1 99 77 99 \"Caster\" 13 60000 6000 0",
-             "FX8 2 1 1 1 0 99 \"Caster\" 13 60000 6000 0",
-             "FX8 2 1 1 1 77 99 \"Caster\" 13 0 6000 0",
-             "FX8 2 1 1 1 77 99 \"Caster\" 13 60001 6000 0",
-             "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 0 0",
-             "FX8 2 1 2 1 77 99 \"Caster\" 13 60000 6000 0"
-            })
+         {"FX1 2 0", "FX8 0 0 0", "FX8 -1 0 0", "FX8 2 129 0",
+          "FX8 2 1 1 99 77 99 \"Caster\" 13 60000 6000 0",
+          "FX8 2 1 1 1 0 99 \"Caster\" 13 60000 6000 0", "FX8 2 1 1 1 77 99 \"Caster\" 13 0 6000 0",
+          "FX8 2 1 1 1 77 99 \"Caster\" 13 60001 6000 0",
+          "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 0 0",
+          "FX8 2 1 2 1 77 99 \"Caster\" 13 60000 6000 0"})
         rejects(
             [&]
-    {
-        std::istringstream in(bad);
-        (void)fx::read_effects(in);
-    });
+            {
+                std::istringstream in(bad);
+                (void)fx::read_effects(in);
+            });
     for (std::size_t n = 0; n < output.str().size() - 1; ++n)
     {
         // Only require failure where truncation removes a whole required field.
         if (output.str()[n] == ' ')
             rejects(
                 [&]
-        {
-            std::istringstream in(output.str().substr(0, n));
-            (void)fx::read_effects(in);
-        });
+                {
+                    std::istringstream in(output.str().substr(0, n));
+                    (void)fx::read_effects(in);
+                });
     }
 }
 
@@ -306,10 +287,10 @@ void combat()
     const auto target = unit(*s, 2);
     const auto effect = effects(target.persistent);
     check(effect.active.size() == 1 && effect.active[0].source_scope == 123 &&
-          effect.active[0].source_actor == 1 && effect.active[0].dc == 13,
+              effect.active[0].source_actor == 1 && effect.active[0].dc == 13,
           "Application retains scoped source and original DC");
     check(target.conditions.size() == 1 &&
-          unit(*s, 1).persistent.resources.starts_with("SRD13 0 2 1 0 0 0 0 0 0 0 "),
+              unit(*s, 1).persistent.resources.starts_with("SRD13 0 2 1 0 0 0 0 0 0 0 "),
           "Status appears and exactly one second-level slot is spent");
     check(!offers(*s, "blindness") && !offers(*s, "magic_missile"),
           "Action and one-slot-per-turn limits enforced");
@@ -321,9 +302,9 @@ void combat()
     corrupt.replace(fx_position, 3, "FX9");
     rejects(
         [&]
-    {
-        (void)rules->restore(corrupt);
-    });
+        {
+            (void)rules->restore(corrupt);
+        });
     for (unsigned i = 0; i < 24; ++i)
     {
         const auto end = command(*s, "end");
@@ -342,11 +323,11 @@ void combat()
     s->submit(command(*s, "fire_bolt", 2));
     const auto logs = s->snapshot().log();
     check(std::any_of(logs.begin(), logs.end(),
-                      [](const auto & l)
-    {
-        return l.find("(disadvantage)") != std::string::npos;
-    }),
-    "Blind attacker has disadvantage");
+                      [](const auto &l)
+                      {
+                          return l.find("(disadvantage)") != std::string::npos;
+                      }),
+          "Blind attacker has disadvantage");
     e = encounter();
     baseline = rules->create(e, 3);
     e.participants[1].state = with_effects(unit(*baseline, 2).persistent, blind());
@@ -362,17 +343,17 @@ void combat()
     s->submit(command(*s, "melee"));
     const auto advantage_log = s->snapshot().log();
     check(std::any_of(advantage_log.begin(), advantage_log.end(),
-                      [](const auto & l)
-    {
-        return l.find("(advantage)") != std::string::npos;
-    }),
-    "Attacks against blinded targets gain advantage");
+                      [](const auto &l)
+                      {
+                          return l.find("(advantage)") != std::string::npos;
+                      }),
+          "Attacks against blinded targets gain advantage");
     // First save succeeds with this independent seed, still spending the spell.
     e = encounter();
     s = rules->create(e, 42);
     s->submit(command(*s, "blindness"));
     check(unit(*s, 2).conditions.empty() &&
-          unit(*s, 1).persistent.resources.starts_with("SRD13 0 2 1 0 0 0 0 0 0 0 "),
+              unit(*s, 1).persistent.resources.starts_with("SRD13 0 2 1 0 0 0 0 0 0 0 "),
           "Initial successful save prevents condition but spends slot");
     // Non-divisor actor counts must still telescope to exactly six seconds.
     e = encounter();
@@ -385,9 +366,7 @@ void combat()
           "Seven initiative slots still equal six seconds");
     // Class-trained saves reach combat for both created characters and recruited
     // NPCs, with the same resolution path used for curated monster profiles.
-    for (const auto *klass :
-            {"fighter", "wizard", "cleric"
-            })
+    for (const auto *klass : {"fighter", "wizard", "cleric"})
     {
         auto person = character(klass, klass);
         const auto profile = rules->character_profile(person.sheet(), {});
@@ -398,13 +377,14 @@ void combat()
         s->submit(command(*s, "blindness"));
         const auto log = s->snapshot().log();
         const auto expected = " + " +
-            std::to_string(person.sheet().saving_throws[Ability::constitution]) + " vs DC 13";
+                              std::to_string(person.sheet().saving_throws[Ability::constitution]) +
+                              " vs DC 13";
         check(std::any_of(log.begin(), log.end(),
-                          [&](const auto & line)
-        {
-            return line.find(expected) != std::string::npos;
-        }),
-        "Character Constitution proficiency is used by actual combat saves");
+                          [&](const auto &line)
+                          {
+                              return line.find(expected) != std::string::npos;
+                          }),
+              "Character Constitution proficiency is used by actual combat saves");
     }
 }
 
@@ -417,10 +397,7 @@ void campaign()
     const auto reserve = party.add_pc(character("fighter", "Reserve"));
     party.remove(reserve);
     party.award_experience(900, "condition-test");
-    for (auto id :
-            {
-                pc, npc
-            })
+    for (auto id : {pc, npc})
         for (unsigned level = 2; level <= 3; ++level)
         {
             auto choice = party.default_advancement(id);
@@ -463,7 +440,7 @@ void campaign()
     party.advance_time(std::chrono::milliseconds(59999));
     restored.advance_time(std::chrono::milliseconds(59999));
     check(encode_campaign(party, nullptr, "conditions") ==
-          encode_campaign(restored, nullptr, "conditions"),
+              encode_campaign(restored, nullptr, "conditions"),
           "Exploration recovery continues deterministically");
     for (const auto &m : party.state().roster)
         check(effects(m.vitals).active.empty(),
@@ -473,7 +450,7 @@ void campaign()
     actors = restored.participants();
     actors.push_back({999, "bandit", "Enemy", Side::opposition, {10, 0}});
     session = rules->create(
-    {{12, 9, std::vector<Terrain>(108)}, actors, restored.state().next_combat_scope}, 3);
+        {{12, 9, std::vector<Terrain>(108)}, actors, restored.state().next_combat_scope}, 3);
     check(effects(unit(*session, pc).persistent).active[0].source_scope == 77,
           "Original source identity survives a new encounter");
     restored.begin_combat();
@@ -486,7 +463,7 @@ void campaign()
     const auto once = restored.checkpoint();
     restored.apply_combat(session->snapshot());
     check(restored.state().time_minutes == once.time_minutes &&
-          restored.state().subminute_milliseconds == once.subminute_milliseconds,
+              restored.state().subminute_milliseconds == once.subminute_milliseconds,
           "Repeated synchronization cannot advance time twice");
     check(restored.state().subminute_milliseconds == 7234,
           "Campaign time includes exactly one combat round");
@@ -499,10 +476,12 @@ void campaign()
     for (const auto &m : restored.state().roster)
     {
         const auto lasting = effects(m.vitals);
-        check(std::all_of(lasting.active.begin(), lasting.active.end(), [](const auto & e)
-        {
-            return e.kind == fx::EffectKind::heroic_inspiration;
-        }), "Rest advances lasting effects for entire roster");
+        check(std::all_of(lasting.active.begin(), lasting.active.end(),
+                          [](const auto &e)
+                          {
+                              return e.kind == fx::EffectKind::heroic_inspiration;
+                          }),
+              "Rest advances lasting effects for entire roster");
     }
     const auto rest_save = encode_campaign(restored, nullptr, "conditions");
     CampaignParty rested_copy(module());

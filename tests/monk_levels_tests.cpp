@@ -64,8 +64,6 @@ CharacterDraft draft(std::string klass)
     return d;
 }
 
-
-
 // A Monk of the level, advanced through the rules' ordinary level-ups.
 Character monk(unsigned level)
 {
@@ -80,10 +78,11 @@ Character monk(unsigned level)
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -105,10 +104,11 @@ std::unique_ptr<RulesModule> dummy_rules(std::string extra = {})
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -125,13 +125,12 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
 {
     const auto profile = rules.character_profile(hero.sheet(), {}).data;
     auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile, state},
-            {98, std::move(kind), "Dummy", Side::opposition, {2, 1}}
-        }},
-    seed);
+                           {{1, "campaign-character", "Monk", Side::party, {1, 1}, profile, state},
+                            {98, std::move(kind), "Dummy", Side::opposition, {2, 1}}}},
+                          seed);
     // Uncanny Metabolism is offered as Initiative is rolled; it is kept for later.
-    for (unsigned turns = 0; (c->snapshot().actor != 1 || offered(*c, "initiative_keep")) &&
-            turns < 6; ++turns)
+    for (unsigned turns = 0;
+         (c->snapshot().actor != 1 || offered(*c, "initiative_keep")) && turns < 6; ++turns)
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Monk's turn");
     return c;
 }
@@ -143,12 +142,13 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 15, "In the campaign a Monk reaches the hall's level 15");
+    check(party.member(id).character.sheet().level == 15,
+          "In the campaign a Monk reaches the hall's level 15");
     const auto rules = module();
     check(rules->character_profile(monk(5).sheet(), {}).movement_feet == 40 &&
-          rules->character_profile(monk(6).sheet(), {}).movement_feet == 45 &&
-          rules->character_profile(monk(10).sheet(), {}).movement_feet == 50 &&
-          rules->character_profile(monk(14).sheet(), {}).movement_feet == 55,
+              rules->character_profile(monk(6).sheet(), {}).movement_feet == 45 &&
+              rules->character_profile(monk(10).sheet(), {}).movement_feet == 50 &&
+              rules->character_profile(monk(14).sheet(), {}).movement_feet == 55,
           "Unarmored Movement +10 feet, then +15 from 6, +20 from 10 and +25 from 14");
     const auto fifteen = monk(15);
     check(fifteen.sheet().level == 15 && !rules->advancement_options(fifteen.sheet()).level,
@@ -156,14 +156,14 @@ void progression_checks()
     const auto holds = [&](std::string_view grant, int level)
     {
         return std::any_of(fifteen.sheet().grants.begin(), fifteen.sheet().grants.end(),
-                           [&](const auto & g)
-        {
-            return g.id == grant && g.level == level;
-        });
+                           [&](const auto &g)
+                           {
+                               return g.id == grant && g.level == level;
+                           });
     };
     check(holds("feature:heightened_focus", 10) && holds("feature:self_restoration", 10) &&
-          holds("feature:fleet_step", 11) && holds("feature:deflect_energy", 13) &&
-          holds("feature:disciplined_survivor", 14) && holds("feature:perfect_focus", 15),
+              holds("feature:fleet_step", 11) && holds("feature:deflect_energy", 13) &&
+              holds("feature:disciplined_survivor", 14) && holds("feature:perfect_focus", 15),
           "The level 10-15 features arrive at their levels");
     const auto proficient = [](const Character &hero)
     {
@@ -177,8 +177,10 @@ void progression_checks()
     const auto bytes = encode_campaign(party, nullptr, "monk-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "monk-levels", nullptr).party);
-    check(encode_campaign(next, nullptr, "monk-levels") == bytes, "A level-15 Monk saves and reloads");
+                                 "monk-levels", nullptr)
+                     .party);
+    check(encode_campaign(next, nullptr, "monk-levels") == bytes,
+          "A level-15 Monk saves and reloads");
 }
 
 // Extra Attack with the d8 Martial Arts die, and Stunning Strike.
@@ -250,10 +252,11 @@ void heightened_focus_checks()
         auto c = duel(*rules, monk(level), 1);
         check(submit(*c, "flurry_of_blows", 98), "A Flurry of Blows");
         const auto log = c->snapshot().log();
-        const auto strikes = std::count_if(log.begin(), log.end(), [](const auto & line)
-        {
-            return line.starts_with("Monk -> Dummy: d20");
-        });
+        const auto strikes = std::count_if(log.begin(), log.end(),
+                                           [](const auto &line)
+                                           {
+                                               return line.starts_with("Monk -> Dummy: d20");
+                                           });
         check(strikes == (level == 10 ? 3 : 2), "Three strikes from level 10");
     }
     auto c = duel(*rules, monk(10), 1);
@@ -286,8 +289,8 @@ void deflect_energy_checks()
     {
         auto c = duel(*rules, monk(level), 1, {}, "brute");
         check(submit(*c, "end"), "The Monk waits");
-        for (unsigned steps = 0; steps < 6 && c->snapshot().actor == 98 &&
-                !c->snapshot().reaction_pending; ++steps)
+        for (unsigned steps = 0;
+             steps < 6 && c->snapshot().actor == 98 && !c->snapshot().reaction_pending; ++steps)
             check(c->submit(choose_demo_command(*c)), "The brute acts");
         check(offered(*c, "deflect") == (level == 13), "Deflect Attacks against Fire from 13");
     }
@@ -329,11 +332,10 @@ void carry_checks()
         const auto profile = rules->character_profile(monk(level).sheet(), {}).data;
         const auto ally = rules->character_profile(monk(5).sheet(), {}).data;
         auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
-                {2, "campaign-character", "Ally", Side::party, {0, 1}, ally},
-                {98, "dummy", "Dummy", Side::opposition, {7, 2}}
-            }},
-        2);
+                                {{1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
+                                 {2, "campaign-character", "Ally", Side::party, {0, 1}, ally},
+                                 {98, "dummy", "Dummy", Side::opposition, {7, 2}}}},
+                               2);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Monk's turn");
         return c;
@@ -341,7 +343,8 @@ void carry_checks()
     check(!offered(*start(9), "step_of_the_wind_carry"), "Not before level 10");
     auto c = start(10);
     check(submit(*c, "step_of_the_wind_carry", 2) &&
-          logged(*c, "Monk carries Ally (Step of the Wind)."), "Step of the Wind carries the ally");
+              logged(*c, "Monk carries Ally (Step of the Wind)."),
+          "Step of the Wind carries the ally");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the carried ally");
     bool moved = false;
@@ -350,7 +353,7 @@ void carry_checks()
             moved = c->submit(command);
     const auto monk_cell = unit(*c, 1).cell, ally_cell = unit(*c, 2).cell;
     check(moved && monk_cell == Cell{4, 1} && ally_cell.x == 3 &&
-          std::abs(ally_cell.y - monk_cell.y) <= 1,
+              std::abs(ally_cell.y - monk_cell.y) <= 1,
           "The ally follows into the square behind the Monk");
 }
 
@@ -363,17 +366,17 @@ void disciplined_survivor_checks()
     for (std::uint64_t seed = 1; seed < 400; ++seed)
     {
         auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
-                {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}
-            }},
-        seed);
+                                {{1, "campaign-character", "Monk", Side::party, {1, 1}, profile},
+                                 {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}}},
+                               seed);
         for (unsigned turns = 0; turns < 8 && !logged(*c, "Disciplined Survivor"); ++turns)
             if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
                 check(submit(*c, "initiative_keep") || submit(*c, "decline") || submit(*c, "end"),
                       "The Monk waits");
             else
                 check(c->submit(choose_demo_command(*c)), "The adept acts");
-        if (logged(*c, "Monk spends 1 Focus Point and rolls the save again (Disciplined Survivor)."))
+        if (logged(*c,
+                   "Monk spends 1 Focus Point and rolls the save again (Disciplined Survivor)."))
             return;
     }
     throw std::runtime_error("No seed's Blindness save calls for Disciplined Survivor");
@@ -386,7 +389,7 @@ void wholeness_checks()
     auto c = duel(*rules, monk(6), 1, VitalState{5, false, {}, {}});
 
     check(submit(*c, "wholeness_of_body") && logged(*c, "Monk uses Wholeness of Body.") &&
-          unit(*c, 1).hit_points > 5 && !unit(*c, 1).bonus_action,
+              unit(*c, 1).hit_points > 5 && !unit(*c, 1).bonus_action,
           "Wholeness of Body heals for a Bonus Action");
 }
 } // namespace

@@ -26,7 +26,7 @@ Edge side(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
     if (x < 0 || x >= 16 || y < 0 || y >= 16)
         return y == static_cast<int>(party_y) && (direction == 1 || direction == 3) ? Edge::open
-               : Edge::wall;
+                                                                                    : Edge::wall;
     const auto &cell = map.at(x, y);
     if (!cell.walls[direction])
         return Edge::open;
@@ -151,7 +151,7 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
     if (x >= 16 || y >= 16)
         throw std::out_of_range("Dungeon battlefield requires a valid exploration position");
     DungeonBattlefield result{{50, 25, std::vector<rules::Terrain>(1250), std::vector<bool>(1250)},
-        std::vector<std::uint8_t>(1250, 22)};
+                              std::vector<std::uint8_t>(1250, 22)};
     for (int row = -2; row <= 2; ++row)
         for (int column = -6; column <= 6; ++column)
         {
@@ -161,8 +161,9 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
                     edge(map, gx, gy, direction, y) == Edge::wall;
             // A square open to the sky has ordinary plants (Plant Growth); the
             // original marks a roofed square with its event byte's high bit.
-            const bool sky = gx >= 0 && gy >= 0 && gx < 16 && gy < 16 &&
-                             !map.at(static_cast<unsigned>(gx), static_cast<unsigned>(gy)).event_high_bit();
+            const bool sky =
+                gx >= 0 && gy >= 0 && gx < 16 && gy < 16 &&
+                !map.at(static_cast<unsigned>(gx), static_cast<unsigned>(gy)).event_high_bit();
             const auto stamp = cell_tiles(edge(map, gx, gy, 3, y), edge(map, gx, gy, 0, y),
                                           edge(map, gx, gy, 1, y), edge(map, gx, gy - 1, 3, y),
                                           edge(map, gx - 1, gy, 0, y), edge(map, gx, gy - 1, 1, y),

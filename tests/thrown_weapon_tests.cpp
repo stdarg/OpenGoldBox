@@ -12,7 +12,7 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 constexpr std::array weapons{"dagger", "handaxe", "javelin", "light_hammer",
-    "spear",  "dart",    "trident"};
+                             "spear",  "dart",    "trident"};
 
 void check(bool ok, const char *message)
 {
@@ -61,8 +61,7 @@ CampaignParty thrown_party()
     auto character = hero();
     for (const auto weapon : weapons)
         character.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
-    const auto shield = character.add_item({.definition_id = "shield",
-                                                   .name = "Baseline shield"});
+    const auto shield = character.add_item({.definition_id = "shield", .name = "Baseline shield"});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, 3); // Javelin in the ordered inventory above.
     party.equip(id, shield);
@@ -87,21 +86,18 @@ void physical_inventory()
             for (const auto weapon : weapons)
             {
                 if (level > 1 && std::string_view(klass) != "fighter" &&
-                        std::string_view(klass) != "cleric" && std::string_view(klass) != "wizard" &&
-                        std::string_view(klass) != "rogue")
+                    std::string_view(klass) != "cleric" && std::string_view(klass) != "wizard" &&
+                    std::string_view(klass) != "rogue")
                     continue;
                 CampaignParty party(module());
                 auto draft = hero().creation_data();
                 draft.character_class = klass;
                 draft.background = "sage";
                 Character pc(*srd5::character_rules(), draft, {});
-                const auto held = pc.add_item({.definition_id = "longsword",
-                                                      .name = "Held sword"});
-                const auto stack = pc.add_item({.definition_id = weapon,
-                                                       .name = "Carried weapon",
-                                                       .quantity = 3});
-                const auto shield = pc.add_item({.definition_id = "shield",
-                                                        .name = "Held shield"});
+                const auto held = pc.add_item({.definition_id = "longsword", .name = "Held sword"});
+                const auto stack =
+                    pc.add_item({.definition_id = weapon, .name = "Carried weapon", .quantity = 3});
+                const auto shield = pc.add_item({.definition_id = "shield", .name = "Held shield"});
                 const auto id = party.add_pc(std::move(pc));
                 party.equip(id, held);
                 party.equip(id, shield);
@@ -131,13 +127,13 @@ void physical_inventory()
                 const auto snapshot = combat->snapshot();
                 const auto &view =
                     *std::find_if(snapshot.combatants.begin(), snapshot.combatants.end(),
-                                  [&](const auto & a)
-                {
-                    return a.id == id;
-                });
+                                  [&](const auto &a)
+                                  {
+                                      return a.id == id;
+                                  });
                 check(view.thrown_weapons.size() == 1 &&
-                      view.thrown_weapons.front().label.source ==
-                      combat->snapshot().held_items.at(offered.item - 1).label.source,
+                          view.thrown_weapons.front().label.source ==
+                              combat->snapshot().held_items.at(offered.item - 1).label.source,
                       "The Thrown dropdown names the weapon, with no count or stowing");
                 check(combat->submit(offered), "Every class can throw carried weapon");
                 check(!combat->submit(offered), "Stale command cannot throw twice");
@@ -150,14 +146,14 @@ void physical_inventory()
                 check(thrown.holder == id && thrown.inventory_id == stack && thrown.stowed,
                       "Like ammunition, the thrown weapon stays carried by its thrower");
                 check(party.member(id).character.inventory().find(stack)->get().quantity == 3 &&
-                      party.member(id).equipped == std::vector<std::uint64_t>({held, shield}),
+                          party.member(id).equipped == std::vector<std::uint64_t>({held, shield}),
                       "Throwing spends no inventory and changes no held equipment");
                 party.end_combat();
                 const auto bytes = encode_campaign(party, nullptr, "physical");
                 CampaignParty loaded(module());
                 loaded.restore(
                     decode_campaign(bytes, *srd5::character_rules(), *rules, "physical", nullptr)
-                    .party);
+                        .party);
                 check(encode_campaign(loaded, nullptr, "physical") == bytes,
                       "Post-combat equipment and quantities survive campaign save");
             }
@@ -200,10 +196,10 @@ void critical_stack()
                 const auto snapshot = combat->snapshot();
                 const auto item =
                     std::find_if(snapshot.held_items.begin(), snapshot.held_items.end(),
-                                 [&](const auto & i)
-                {
-                    return i.id == command.item;
-                });
+                                 [&](const auto &i)
+                                 {
+                                     return i.id == command.item;
+                                 });
                 if (item->inventory_id == 3)
                 {
                     throw_again = command;
@@ -228,9 +224,8 @@ void large_stack()
     CampaignParty party(module());
     Character pc(*srd5::character_rules(), draft, {});
     const auto sword = pc.add_item({.definition_id = "longsword", .name = "Keep in hand"});
-    const auto stack = pc.add_item({.definition_id = "javelin",
-                                           .name = "Large stack",
-                                           .quantity = 1000000});
+    const auto stack =
+        pc.add_item({.definition_id = "javelin", .name = "Large stack", .quantity = 1000000});
     const auto first = party.add_pc(std::move(pc));
     party.equip(first, sword);
     auto actors = party.participants();
@@ -246,9 +241,9 @@ void large_stack()
     act(*combat, "throw", 99);
     settle(*combat);
     party.apply_combat(combat->snapshot());
-    check(party.member(first).equipped == std::vector<std::uint64_t> {sword} &&
-          party.member(first).character.inventory().find(stack)->get().quantity == 1000000 &&
-          combat->snapshot().held_items.size() == 2,
+    check(party.member(first).equipped == std::vector<std::uint64_t>{sword} &&
+              party.member(first).character.inventory().find(stack)->get().quantity == 1000000 &&
+              combat->snapshot().held_items.size() == 2,
           "Throwing from a stack neither splits it nor changes the held weapon");
     party.end_combat();
     const auto saved = encode_campaign(party, nullptr, "transfer");

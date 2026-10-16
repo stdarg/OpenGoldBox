@@ -148,8 +148,7 @@ Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipme
             const auto color = wielding.pixels[p];
             const bool arm_outline = color == 8 && y < waist && (x < 8 || x > 14) &&
                                      !gray_equipment(equipment_body, action, tall, x, y);
-            if (limb(color) || arm_outline ||
-                    equipment(color, equipment_body, action, tall, x, y))
+            if (limb(color) || arm_outline || equipment(color, equipment_body, action, tall, x, y))
                 composed.pixels[p] = color;
         }
     return compose_character_icon(combat_heads_.at(offset + a.combat_head), composed, a);

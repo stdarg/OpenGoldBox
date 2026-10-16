@@ -55,8 +55,7 @@ Character barbarian(unsigned level = 1)
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.training = {{"class:barbarian", {"nature", "perception"}},
-        {"class:barbarian:weapon_mastery", {"greataxe", "handaxe"}}
-    };
+                  {"class:barbarian:weapon_mastery", {"greataxe", "handaxe"}}};
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "barbarian-xp");
@@ -84,28 +83,31 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 bool raging(const CombatSession &c)
 {
     const auto conditions = unit(c, 1).conditions;
-    return std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
-    {
-        return condition.source == "Raging";
-    });
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [](const auto &condition)
+                       {
+                           return condition.source == "Raging";
+                       });
 }
 
 unsigned rages_left(const CombatSession &c)
@@ -123,10 +125,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(hero.sheet(), equipment).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Barbarian", Side::party, {1, 1}, profile},
-            {98, "target", "Enemy", Side::opposition, {2, 1}}
-        }},
-    seed);
+                            {{1, "campaign-character", "Barbarian", Side::party, {1, 1}, profile},
+                             {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Barbarian's turn");
     check(c->snapshot().actor == 1, "The Barbarian acts");
@@ -146,7 +147,7 @@ void rage_checks()
     auto module = rules();
     auto c = battle(*module, barbarian());
     check(rages_left(*c) == 2 && submit(*c, "rage") && logged(*c, "Barbarian enters a Rage.") &&
-          raging(*c) && rages_left(*c) == 1 && unit(*c, 1).action && !unit(*c, 1).bonus_action,
+              raging(*c) && rages_left(*c) == 1 && unit(*c, 1).action && !unit(*c, 1).bonus_action,
           "Rage is a Bonus Action that spends one of two uses");
     check(submit(*c, "melee", 98) && logged(*c, "Rage adds 2 damage."),
           "A Strength-based weapon hit adds the Rage Damage");
@@ -155,11 +156,11 @@ void rage_checks()
     reach(*c, 98);
     check(submit(*c, "melee", 1), "The enemy attacks");
     check(!logged(*c, "Enemy -> Barbarian") || !logged(*c, "hits") ||
-          logged(*c, "Barbarian: Bludgeoning damage"),
+              logged(*c, "Barbarian: Bludgeoning damage"),
           "Rage resists the enemy's Bludgeoning, Piercing or Slashing damage");
     reach(*c, 1);
     check(raging(*c) && offered(*c, "extend_rage") && submit(*c, "melee", 98) &&
-          !offered(*c, "extend_rage"),
+              !offered(*c, "extend_rage"),
           "An attack roll extends the Rage, and so would a Bonus Action");
     reach(*c, 1);
     check(raging(*c), "The extended Rage lasts through the next turn");
@@ -171,14 +172,20 @@ void rage_checks()
 std::unique_ptr<CombatSession> entangled(const RulesModule &module)
 {
     const auto hero = barbarian();
-    Participant barbarian_entry{1, "campaign-character", "Barbarian", Side::party, {1, 1},
-                                module.character_profile(hero.sheet(), std::vector<std::string> {"greataxe"}).data,
-                                VitalState{hero.sheet().hit_points, false,
-                                           "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 2 "
-                                           "0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}};
+    Participant barbarian_entry{
+        1,
+        "campaign-character",
+        "Barbarian",
+        Side::party,
+        {1, 1},
+        module.character_profile(hero.sheet(), std::vector<std::string>{"greataxe"}).data,
+        VitalState{hero.sheet().hit_points, false,
+                   "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 2 "
+                   "0 FX8 2 1 1 19 77 99 \"Druid\" 15 60000 0 0"}};
     barbarian_entry.inventory = {{0, "acid", 3, -1}};
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {barbarian_entry, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, 5);
+                            {barbarian_entry, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                           5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Barbarian's turn");
     return c;
@@ -190,11 +197,11 @@ void rage_escape_checks()
     auto module = rules();
     auto plain = entangled(*module);
     check(submit(*plain, "escape") && logged(*plain, "Barbarian Athletics check: d20") &&
-          !logged(*plain, "(advantage)"),
+              !logged(*plain, "(advantage)"),
           "Without Rage the escape check is a plain roll");
     auto raging_hero = entangled(*module);
     check(submit(*raging_hero, "rage") && submit(*raging_hero, "escape") &&
-          logged(*raging_hero, "(advantage) + "),
+              logged(*raging_hero, "(advantage) + "),
           "A raging Barbarian's escape check has Advantage");
 }
 
@@ -221,33 +228,37 @@ void heavy_armor_checks()
 bool has_grant(const Character &hero, std::string_view id, std::string_view source = {})
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == id && (source.empty() || g.source_id == source);
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id && (source.empty() || g.source_id == source);
+                       });
 }
 
 void advancement_checks()
 {
     const auto second = barbarian(2), third = barbarian(3), fourth = barbarian(4);
     check(second.sheet().level == 2 && has_grant(second, "feature:danger_sense") &&
-          has_grant(second, "feature:reckless_attack") && !has_grant(second, "subclass:berserker"),
+              has_grant(second, "feature:reckless_attack") &&
+              !has_grant(second, "subclass:berserker"),
           "Level two brings Danger Sense and Reckless Attack");
     const auto &skills = third.sheet().grants;
     check(has_grant(third, "subclass:berserker") && has_grant(third, "feature:frenzy") &&
-          has_grant(third, "feature:primal_knowledge") &&
-          std::count_if(skills.begin(), skills.end(), [](const auto & g)
-    {
-        return g.source_id == "class:barbarian:primal_knowledge" && g.id.starts_with("skill:");
-    }) == 1,
-    "Level three brings the Berserker, Frenzy and a Primal Knowledge skill");
+              has_grant(third, "feature:primal_knowledge") &&
+              std::count_if(skills.begin(), skills.end(),
+                            [](const auto &g)
+                            {
+                                return g.source_id == "class:barbarian:primal_knowledge" &&
+                                       g.id.starts_with("skill:");
+                            }) == 1,
+          "Level three brings the Berserker, Frenzy and a Primal Knowledge skill");
     const auto &masteries = fourth.sheet().grants;
-    check(fourth.sheet().level == 4 &&
-          std::count_if(masteries.begin(), masteries.end(), [](const auto & g)
-    {
-        return g.id.starts_with("mastery:");
-    }) == 3,
-    "Level four brings a third Weapon Mastery");
+    check(fourth.sheet().level == 4 && std::count_if(masteries.begin(), masteries.end(),
+                                                     [](const auto &g)
+                                                     {
+                                                         return g.id.starts_with("mastery:");
+                                                     }) == 3,
+          "Level four brings a third Weapon Mastery");
     auto module = rules();
     auto c = battle(*module, third);
     check(rages_left(*c) == 3, "A level-three Barbarian has three Rages");
@@ -258,19 +269,20 @@ void reckless_checks()
     auto module = rules();
     auto c = battle(*module, barbarian(2));
     check(offered(*c, "reckless") && submit(*c, "reckless", 98) &&
-          logged(*c, "Barbarian attacks recklessly.") && logged(*c, "(advantage)") &&
-          !unit(*c, 1).action,
+              logged(*c, "Barbarian attacks recklessly.") && logged(*c, "(advantage)") &&
+              !unit(*c, 1).action,
           "A Reckless attack is the Attack action's attack, with Advantage");
     reach(*c, 98);
     const auto before = c->snapshot().log().size();
     check(submit(*c, "melee", 1), "The enemy attacks");
     const auto log = c->snapshot().log();
-    check(std::any_of(log.begin() + std::ptrdiff_t(before), log.end(), [](const auto & line)
-    {
-        return line.find("Enemy -> Barbarian") != std::string::npos &&
-               line.find("(advantage)") != std::string::npos;
-    }),
-    "Attacks against a reckless Barbarian have Advantage");
+    check(std::any_of(log.begin() + std::ptrdiff_t(before), log.end(),
+                      [](const auto &line)
+                      {
+                          return line.find("Enemy -> Barbarian") != std::string::npos &&
+                                 line.find("(advantage)") != std::string::npos;
+                      }),
+          "Attacks against a reckless Barbarian have Advantage");
 }
 
 // Reckless lasts until the start of the Barbarian's next turn and survives a
@@ -282,12 +294,14 @@ void reckless_duration_checks()
     const auto reckless = [&]
     {
         const auto conditions = unit(*c, 1).conditions;
-        return std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
-        {
-            return condition.source == "Reckless";
-        });
+        return std::any_of(conditions.begin(), conditions.end(),
+                           [](const auto &condition)
+                           {
+                               return condition.source == "Reckless";
+                           });
     };
-    check(submit(*c, "reckless", 98) && reckless(), "Attacking recklessly makes the Barbarian Reckless");
+    check(submit(*c, "reckless", 98) && reckless(),
+          "Attacking recklessly makes the Barbarian Reckless");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "Reckless survives a checkpoint");
     reach(*c, 98);
@@ -312,14 +326,22 @@ int danger_save(const RulesModule &module, const Character &hero, std::uint64_t 
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.cantrips = {"sacred_flame"};
-    d.spells = SpellChoices{{}, std::vector<std::string> {"cure_wounds"}, {}, {}};
+    d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
     const Character foe(*srd5::character_rules(), d, {});
-    Encounter e{{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Barbarian", Side::party, {1, 1},
-                module.character_profile(hero.sheet(), std::vector<std::string> {"greataxe"}).data},
-            {98, "campaign-character", "Foe", Side::opposition, {6, 1},
-             module.character_profile(foe.sheet(), {}).data}
-        }};
+    Encounter e{
+        {12, 6, std::vector<Terrain>(72)},
+        {{1,
+          "campaign-character",
+          "Barbarian",
+          Side::party,
+          {1, 1},
+          module.character_profile(hero.sheet(), std::vector<std::string>{"greataxe"}).data},
+         {98,
+          "campaign-character",
+          "Foe",
+          Side::opposition,
+          {6, 1},
+          module.character_profile(foe.sheet(), {}).data}}};
     if (incapacitated)
     {
         auto vitals = unit(*module.create(e, seed), 1).persistent;
@@ -384,14 +406,15 @@ void primal_knowledge_checks()
             refused = true;
         }
         check(refused && party.member(id).character.sheet().level == 2 &&
-              party.member(id).character.sheet().grants == before.grants,
+                  party.member(id).character.sheet().grants == before.grants,
               "A held, foreign or unknown Primal Knowledge skill is refused");
     }
     auto choice = party.default_advancement(id);
     choice.training["class:barbarian:primal_knowledge"] = {"survival"};
     party.advance(id, choice);
-    check(has_grant(party.member(id).character, "skill:survival", "class:barbarian:primal_knowledge"),
-          "Survival is learned through Primal Knowledge");
+    check(
+        has_grant(party.member(id).character, "skill:survival", "class:barbarian:primal_knowledge"),
+        "Survival is learned through Primal Knowledge");
 }
 
 void frenzy_checks()

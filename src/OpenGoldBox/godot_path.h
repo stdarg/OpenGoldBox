@@ -20,7 +20,7 @@ namespace presentation
 {
     const godot::CharString utf8 = text.utf8();
     return path_from_utf8(
-               std::string_view(utf8.get_data(), static_cast<std::size_t>(utf8.length())));
+        std::string_view(utf8.get_data(), static_cast<std::size_t>(utf8.length())));
 }
 } // namespace presentation
 

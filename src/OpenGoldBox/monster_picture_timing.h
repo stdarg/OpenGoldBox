@@ -12,7 +12,7 @@ namespace presentation
 // frames are passed over, so records like the orc alternate between two held
 // poses.
 [[nodiscard]] inline std::size_t monster_frame_at(std::span<const std::uint32_t> delays,
-        double seconds)
+                                                  double seconds)
 {
     constexpr double tick_seconds = 1.0 / 18.2;
     std::uint64_t total_ticks = 0;

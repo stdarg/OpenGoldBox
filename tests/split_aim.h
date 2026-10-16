@@ -13,8 +13,8 @@ inline bool finish_aiming(opengold::rules::CombatSession &c)
         const auto &targeting = state.spell_targeting;
         // A Shield prompt pauses the cast until the target answers.
         if (state.reaction_pending || !targeting || targeting->chosen.empty() ||
-                !(targeting->verb.starts_with("magic_missile") ||
-                  targeting->verb.starts_with("scorching_ray")))
+            !(targeting->verb.starts_with("magic_missile") ||
+              targeting->verb.starts_with("scorching_ray")))
             return true;
         const auto target = targeting->chosen.back();
         bool aimed = false;
@@ -33,8 +33,7 @@ inline bool finish_aiming(opengold::rules::CombatSession &c)
 }
 
 // Submits a command and, for a split spell, aims the rest at the same creature.
-inline bool submit_aimed(opengold::rules::CombatSession &c,
-                         const opengold::rules::Command &command)
+inline bool submit_aimed(opengold::rules::CombatSession &c, const opengold::rules::Command &command)
 {
     return c.submit(command) && finish_aiming(c);
 }

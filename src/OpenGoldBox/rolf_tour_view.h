@@ -74,6 +74,7 @@ class RolfTourView : public godot::Control
     void restore_campaign(std::shared_ptr<opengold::CampaignParty> party,
                           opengold::por::RolfTourSession session);
     void request_save(bool saving);
+
     // The party check's save-and-reload hook; only that check sets one.
     void enable_save_check(std::function<void(const std::string &)> check)
     {

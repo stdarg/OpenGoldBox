@@ -5,32 +5,24 @@ Encounter corridor()
     Battlefield board{6, 3, std::vector<Terrain>(18, Terrain::obstacle)};
     for (int x = 0; x < 6; ++x)
         board.terrain[6 + x] = Terrain::open;
-    return
-    {
-        board,
-        {   {1, "vanguard", "Mover", Side::party, {0, 1}},
-            {   2, "bandit", "Unconscious enemy", Side::opposition, {2, 1}, {},
-                VitalState{0, false, creature_resources(0, 0, 0, true)}
-            },
-            {3, "bandit", "Guard", Side::opposition, {5, 1}}
-        }};
+    return {board,
+            {{1, "vanguard", "Mover", Side::party, {0, 1}},
+             {2,
+              "bandit",
+              "Unconscious enemy",
+              Side::opposition,
+              {2, 1},
+              {},
+              VitalState{0, false, creature_resources(0, 0, 0, true)}},
+             {3, "bandit", "Guard", Side::opposition, {5, 1}}}};
 }
 
 void run()
 {
     auto module = srd5::load(pack());
-    for (bool reverse :
-            {
-                false, true
-            })
-        for (bool difficult :
-                {
-                    false, true
-                })
-            for (bool allied :
-                    {
-                        false, true
-                    })
+    for (bool reverse : {false, true})
+        for (bool difficult : {false, true})
+            for (bool allied : {false, true})
             {
                 auto e = corridor();
                 if (reverse)
@@ -50,7 +42,7 @@ void run()
                 check(!session->snapshot().reaction_pending && unit(*session, 1).cell == Cell{3, 1},
                       "Incapacitated occupant never offers an opportunity attack");
                 check(unit(*session, 1).movement_feet ==
-                      before.movement_feet - (allied && !difficult ? 15 : 20),
+                          before.movement_feet - (allied && !difficult ? 15 : 20),
                       "Unconscious enemy space is Difficult Terrain once; allies use ground cost");
                 check(unit(*session, 1).action && unit(*session, 1).bonus_action,
                       "Transit spends no action budgets");
@@ -62,15 +54,14 @@ void run()
                 {
                     const auto saved = session->save();
                     check(!session->submit({session->snapshot().revision, 1, 0, "move", {3, 1}}) &&
-                          saved == session->save(),
+                              saved == session->save(),
                           "Awake enemy blocks route atomically");
                 }
             }
     // Actual damage changes a block into traversable space without removing the creature.
     auto e = corridor();
     for (auto &participant : e.participants)
-        participant.side =
-            participant.side == Side::party ? Side::opposition : Side::party;
+        participant.side = participant.side == Side::party ? Side::opposition : Side::party;
     e.participants[0].cell = {1, 1};
     e.participants[1].state = VitalState{1};
     bool downed = false;
@@ -83,7 +74,7 @@ void run()
         if (unit(*session, 2).hit_points || unit(*session, 2).dead)
             continue;
         check(session->submit(command(*session, "move", {3, 1})) &&
-              unit(*session, 1).cell == Cell{3, 1},
+                  unit(*session, 1).cell == Cell{3, 1},
               "Actual knockout opens enemy transit");
         downed = true;
     }
@@ -94,25 +85,23 @@ void run()
     e.participants[2].cell = {1, 0};
     e.participants.push_back({4, "healer", "Friendly healer", Side::party, {0, 0}});
     e.participants.push_back({5, "bandit", "Upper guard", Side::opposition, {2, 0}});
-    for (const auto response :
-            {"decline", "opportunity"
-            })
+    for (const auto response : {"decline", "opportunity"})
     {
         auto session = hero_first(*module, e);
         check(session->submit(command(*session, "move", {4, 1})), "Start crossing");
         check(session->snapshot().reaction_pending && unit(*session, 1).cell == Cell{2, 1} &&
-              unit(*session, 1).movement_feet == 15,
+                  unit(*session, 1).movement_feet == 15,
               "Reaction pauses on enemy square after paying its ten-foot cost");
         auto copy = module->restore(session->save());
         const auto reaction = command(*session, response);
         check(session->submit(reaction) && copy->submit(reaction) &&
-              session->save() == copy->save(),
+                  session->save() == copy->save(),
               "Suspended crossing resumes identically");
         while (session->snapshot().reaction_pending)
         {
             auto decline = command(*session, "decline");
             check(session->submit(decline) && copy->submit(decline) &&
-                  session->save() == copy->save(),
+                      session->save() == copy->save(),
                   "Later route reaction preserves continuation");
         }
         check(unit(*session, 1).cell == Cell{4, 1} && unit(*session, 1).movement_feet == 5,
@@ -130,11 +119,11 @@ void run()
         if (unit(*session, 1).hit_points || unit(*session, 1).dead)
             continue;
         check(unit(*session, 1).cell == unit(*session, 2).cell &&
-              !session->snapshot().reaction_pending,
+                  !session->snapshot().reaction_pending,
               "Knockout preserves involuntary enemy overlap");
         auto waiting = module->restore(session->save());
         for (unsigned turns = 0;
-                turns < 24 && !unit(*waiting, 1).dead && unit(*waiting, 1).hit_points == 0; ++turns)
+             turns < 24 && !unit(*waiting, 1).dead && unit(*waiting, 1).hit_points == 0; ++turns)
         {
             check(waiting->submit(command(*waiting, "end")),
                   "Advance death saves during enemy overlap");

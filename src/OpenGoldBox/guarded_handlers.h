@@ -16,10 +16,8 @@ namespace presentation
 // report_failure is a compile error rather than silently skipped (Effective
 // C++ Item 41).
 template <class View>
-concept ReportsFailures = requires(View &view, const std::exception &failure)
-{
-    view.report_failure(failure);
-};
+concept ReportsFailures =
+    requires (View &view, const std::exception &failure) { view.report_failure(failure); };
 
 // Logs a failed handler and passes it to the view. Instantiated once per
 // view rather than once per handler, since it depends on nothing else
@@ -82,10 +80,11 @@ class GuardedMethodPointer final : public godot::CallableCustomMethodPointerBase
     void call(const godot::Variant **arguments, int count, godot::Variant &result,
               GDExtensionCallError &error) const override
     {
-        run_guarded(*data_.instance, [&]
-        {
-            invoke(arguments, count, result, error);
-        });
+        run_guarded(*data_.instance,
+                    [&]
+                    {
+                        invoke(arguments, count, result, error);
+                    });
     }
 
   private:
@@ -108,6 +107,7 @@ class GuardedMethodPointer final : public godot::CallableCustomMethodPointerBase
         T *instance;
         R (T::*method)(P...);
     } data_;
+
     static_assert(sizeof(Data) % 4 == 0);
 };
 

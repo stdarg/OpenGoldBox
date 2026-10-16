@@ -90,13 +90,13 @@ void crowded_band_spills_behind_then_beside()
     fill_enemy_half(walled_behind, false);
     wall(walled_behind, MapDirection::north);
     check(encounter_formation(walled_behind, MapDirection::north, 0, 1, 1).enemies ==
-          cells({{21, 10}}),
+              cells({{21, 10}}),
           "With a wall behind it, the band spills into the square to the west");
 
     // ...then to the east.
     wall(walled_behind, MapDirection::west);
     check(encounter_formation(walled_behind, MapDirection::north, 0, 1, 1).enemies ==
-          cells({{31, 12}}),
+              cells({{31, 12}}),
           "With walls behind and to the west, the band spills to the east");
 
     // Walled in on three sides, the original finds no room for it.
@@ -111,7 +111,7 @@ void full_squares_and_walls()
     const auto band = encounter_formation(open_field(), MapDirection::north, 0, 1, 25);
     for (std::size_t n = 0; n < 23; ++n)
         check(band.enemies[n] && band.enemies[n]->y >= 10 && band.enemies[n]->y <= 12 &&
-              band.enemies[n]->x >= 22 && band.enemies[n]->x <= 30,
+                  band.enemies[n]->x >= 22 && band.enemies[n]->x <= 30,
               "The first 23 monsters fill their own half-square");
     check(band.enemies[23] == Cell{21, 10} && band.enemies[24] == Cell{23, 9},
           "Further monsters stand in the square behind");
@@ -121,7 +121,7 @@ void full_squares_and_walls()
     auto rubble = open_field();
     rubble.geometry.terrain[12 * 50 + 27] = Terrain::obstacle;
     check(encounter_formation(rubble, MapDirection::north, 0, 1, 3).enemies ==
-          cells({{26, 12}, {26, 11}, {25, 11}}),
+              cells({{26, 12}, {26, 11}, {25, 11}}),
           "An obstacle in the front rank is skipped");
 }
 } // namespace

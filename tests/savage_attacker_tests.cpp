@@ -85,33 +85,31 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
     std::vector<std::string> equipment;
     if (!gear.empty())
         equipment.push_back(gear);
-    return rules.create({{8, 8, std::vector<Terrain>(64)},
-        {   {
-                1,
-                "campaign-character",
-                "Hero",
-                Side::party,
-                {1, 1},
-                rules.character_profile(h.sheet(), equipment).data
-            },
-            {99, "target", "Target", Side::opposition, ranged ? Cell{4, 1} : Cell{2, 1}}
-        }},
-    seed);
+    return rules.create(
+        {{8, 8, std::vector<Terrain>(64)},
+         {{1,
+           "campaign-character",
+           "Hero",
+           Side::party,
+           {1, 1},
+           rules.character_profile(h.sheet(), equipment).data},
+          {99, "target", "Target", Side::opposition, ranged ? Cell{4, 1} : Cell{2, 1}}}},
+        seed);
 }
 
 void roundtrip(const RulesModule &r, const CombatSession &c)
 {
-    check(r.restore(c.save())->save() == c.save(),
-          "Checkpoint, RNG and costs round trip exactly");
+    check(r.restore(c.save())->save() == c.save(), "Checkpoint, RNG and costs round trip exactly");
 }
 
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 bool rerolled(const CombatSession &c)
@@ -128,7 +126,7 @@ void automatic_higher_roll()
         ++count;
         const auto h = hero(klass.id);
         check(h.sheet().modifiers[Ability::strength] == 3 &&
-              h.sheet().modifiers[Ability::dexterity] == 3,
+                  h.sheet().modifiers[Ability::dexterity] == 3,
               "Independent Soldier ability oracle");
         auto c = battle(*rules, h);
         const auto before = unit(*c);
@@ -137,25 +135,30 @@ void automatic_higher_roll()
         check(logged(*c, "Hero rerolls weapon damage (Savage Attacker): 9 and 10, keeps 10."),
               "Seed 13 rolls 2+4 then 3+4 weapon dice plus 3 once; the log shows both");
         check(unit(*c, 99).hit_points == 990 && !unit(*c).action &&
-              unit(*c).reaction == before.reaction &&
-              unit(*c).bonus_action == before.bonus_action &&
-              unit(*c).movement_feet == before.movement_feet,
+                  unit(*c).reaction == before.reaction &&
+                  unit(*c).bonus_action == before.bonus_action &&
+                  unit(*c).movement_feet == before.movement_feet,
               "The higher roll applies at once and the hit spends only the Action");
         check(rng(*c) == random + 5 * 0x9e3779b97f4a7c15ULL &&
-              c->snapshot().elapsed_milliseconds == 0,
+                  c->snapshot().elapsed_milliseconds == 0,
               "Attack roll, both weapon dice sets and nothing else consume RNG");
         const auto &message = c->snapshot().log_messages();
-        check(std::any_of(message.begin(), message.end(), [](const auto & m)
-        {
-            return m.source ==
-                   "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}.";
-        }), "The reroll is a localizable log message");
+        check(
+            std::any_of(
+                message.begin(), message.end(),
+                [](const auto &m)
+                {
+                    return m.source ==
+                           "{name} rerolls weapon damage (Savage Attacker): {first} and {second}, keeps {kept}.";
+                }),
+            "The reroll is a localizable log message");
         roundtrip(*rules, *c);
         auto ranged = battle(*rules, h, "longbow", 0, true);
         act(*ranged, "ranged");
-        check(logged(*ranged, "Hero rerolls weapon damage (Savage Attacker): 12 and 8, keeps 12.") &&
-              unit(*ranged, 99).hit_points == 988,
-              "Critical dice double in both sets, modifier once; the lower reroll is ignored");
+        check(
+            logged(*ranged, "Hero rerolls weapon damage (Savage Attacker): 12 and 8, keeps 12.") &&
+                unit(*ranged, 99).hit_points == 988,
+            "Critical dice double in both sets, modifier once; the lower reroll is ignored");
     }
     check(count == 12, "All twelve classes receive the Soldier feat automatically");
 }
@@ -164,9 +167,7 @@ void exceptions_and_turns()
 {
     auto rules = module();
     const auto h = hero();
-    for (const auto &gear :
-            {"", "blowgun"
-            })
+    for (const auto &gear : {"", "blowgun"})
     {
         auto c = battle(*rules, h, gear, 13, true);
         act(*c, *gear ? "ranged" : "end");
@@ -185,7 +186,7 @@ void exceptions_and_turns()
     const auto before = rng(*c);
     act(*c, "melee");
     check(!rerolled(*c) && unit(*c, 99).hit_points == 1000 &&
-          rng(*c) == before + 0x9e3779b97f4a7c15ULL,
+              rng(*c) == before + 0x9e3779b97f4a7c15ULL,
           "Miss uses only its attack roll and never uses the feat");
     c = battle(*rules, hero("wizard"), "greatsword", 13, true);
     act(*c, "fire_bolt");
@@ -205,11 +206,13 @@ void exceptions_and_turns()
           "Enemy movement triggers next-turn reaction");
     act(*c, "opportunity");
     const auto log = c->snapshot().log();
-    check(std::any_of(log.begin() + first_turn, log.end(), [](const auto & line)
-    {
-        return line.find("(Savage Attacker)") != std::string::npos;
-    }) && !unit(*c).reaction && !unit(*c).action,
-    "Feat refreshes each turn, including enemy turns, without refreshing Action");
+    check(std::any_of(log.begin() + first_turn, log.end(),
+                      [](const auto &line)
+                      {
+                          return line.find("(Savage Attacker)") != std::string::npos;
+                      }) &&
+              !unit(*c).reaction && !unit(*c).action,
+          "Feat refreshes each turn, including enemy turns, without refreshing Action");
     roundtrip(*rules, *c);
     check(!c->snapshot().reaction_pending && unit(*c, 99).cell == Cell{3, 1} && !unit(*c).reaction,
           "Damage resolves at once and movement resumes, Reaction remains spent");
@@ -220,23 +223,20 @@ void lethal_and_queues()
     auto rules = module();
     const auto h = hero();
     const auto profile =
-        rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
-    for (bool lethal :
-            {
-                false, true
-            })
+        rules->character_profile(h.sheet(), std::array<std::string, 1>{"greatsword"}).data;
+    for (bool lethal : {false, true})
     {
-        auto c = rules->create(
-        {
-            {8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "First", Side::party, {1, 1}, profile},
-                {2, "campaign-character", "Second", Side::party, {2, 0}, profile},
-                {
-                    99, "target", "Target", Side::opposition, {2, 1}, "",
-                    VitalState{lethal ? 1 : 1000, false, {}}
-                }
-            }},
-        13);
+        auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
+                                {{1, "campaign-character", "First", Side::party, {1, 1}, profile},
+                                 {2, "campaign-character", "Second", Side::party, {2, 0}, profile},
+                                 {99,
+                                  "target",
+                                  "Target",
+                                  Side::opposition,
+                                  {2, 1},
+                                  "",
+                                  VitalState{lethal ? 1 : 1000, false, {}}}}},
+                               13);
         while (c->snapshot().actor != 99)
             act(*c, "end");
         bool moved = false;
@@ -253,7 +253,7 @@ void lethal_and_queues()
         if (lethal)
         {
             check(c->snapshot().outcome == Outcome::victory && !c->snapshot().reaction_pending &&
-                  unit(*c, 99).cell == Cell{2, 1},
+                      unit(*c, 99).cell == Cell{2, 1},
                   "Lethal damage cancels movement and later reactions");
             continue;
         }
@@ -271,33 +271,30 @@ void defenses()
     auto rules = module(true, "affinity target ward resistance slashing\n");
     const auto h = hero();
     const auto profile =
-        rules->character_profile(h.sheet(), std::array<std::string, 1> {"greatsword"}).data;
-    auto c =
-    rules->create({{8, 8, std::vector<Terrain>(64)},
-        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile},
-            {
-                99,
-                "target",
-                "Target",
-                Side::opposition,
-                {2, 1},
-                "",
-                VitalState{1000, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 0 0 0 FX8 1 0 0"}
-            }
-        }},
-    13);
+        rules->character_profile(h.sheet(), std::array<std::string, 1>{"greatsword"}).data;
+    auto c = rules->create(
+        {{8, 8, std::vector<Terrain>(64)},
+         {{1, "campaign-character", "Hero", Side::party, {1, 1}, profile},
+          {99,
+           "target",
+           "Target",
+           Side::opposition,
+           {2, 1},
+           "",
+           VitalState{
+               1000, false,
+               "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 \"ward\" 0 0 0 0 0 0 0 FX8 1 0 0"}}}},
+        13);
     act(*c, "melee");
     check(logged(*c, "9 and 10, keeps 10.") && unit(*c, 99).hit_points == 998 &&
-          unit(*c, 99).temporary_hp.amount == 0,
+              unit(*c, 99).temporary_hp.amount == 0,
           "Kept 10 halves to 5 after resistance, then 3 Temporary HP absorb part of it");
 }
 
 void grants_and_campaign()
 {
     auto rules = module();
-    for (const auto &klass :
-            {"fighter", "cleric", "wizard"
-            })
+    for (const auto &klass : {"fighter", "cleric", "wizard"})
     {
         CampaignParty party(module());
         const auto id = party.add_pc(hero(klass, "sage"));
@@ -317,22 +314,22 @@ void grants_and_campaign()
                                  4,
                                  {}};
         check(std::find(sheet.grants.begin(), sheet.grants.end(), grant) != sheet.grants.end() &&
-              sheet.grants == preview.character.sheet().grants,
+                  sheet.grants == preview.character.sheet().grants,
               "Selected feat retains real entitlement and acquisition level");
         auto broken = sheet;
         broken.grants.push_back(grant);
         rejects(
             [&]
-        {
-            (void)rules->character_profile(broken, {});
-        });
+            {
+                (void)rules->character_profile(broken, {});
+            });
         broken = sheet;
         broken.grants.back().source_id = "background:soldier";
         rejects(
             [&]
-        {
-            (void)rules->character_profile(broken, {});
-        });
+            {
+                (void)rules->character_profile(broken, {});
+            });
         const auto bytes = encode_campaign(party, nullptr, "savage");
         CampaignParty copy(module());
         copy.restore(

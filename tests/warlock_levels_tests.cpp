@@ -60,8 +60,7 @@ CharacterDraft draft(std::string first)
         r = {{6, 5, 4, 1}, 3};
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:warlock", {"investigation", "deception"}},
-        {"class:warlock:invocations", {std::move(first)}}
-    };
+                  {"class:warlock:invocations", {std::move(first)}}};
     d.cantrips = {"eldritch_blast", "chill_touch"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"hex", "hellish_rebuke"}, {}, {}};
     return d;
@@ -92,10 +91,11 @@ Character warlock(unsigned level, std::string first = "pact_of_the_blade",
 bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb && (!target || command.target == target);
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && (!target || command.target == target);
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -109,10 +109,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -136,62 +137,81 @@ std::unique_ptr<CombatSession> field(const RulesModule &rules, const CharacterSh
 {
     const std::vector<std::string> gear{"longsword"};
     auto c = rules.create({{14, 7, std::vector<Terrain>(98)},
-        {   {1, "campaign-character", "Warlock", Side::party, {1, 2},
-                rules.character_profile(sheet, gear).data},
-            {98, std::move(foe), "Foe", Side::opposition, {2, 2}}
-        }},
-    seed);
+                           {{1,
+                             "campaign-character",
+                             "Warlock",
+                             Side::party,
+                             {1, 2},
+                             rules.character_profile(sheet, gear).data},
+                            {98, std::move(foe), "Foe", Side::opposition, {2, 2}}}},
+                          seed);
     to_turn(*c, 1);
     return c;
 }
 
 bool granted(const CharacterSheet &sheet, std::string_view id)
 {
-    return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 void progression_checks()
 {
     const auto rules = module();
     CampaignParty party(module());
-    const auto id = party.add_pc(Character(*srd5::character_rules(), draft("pact_of_the_blade"), {}));
+    const auto id =
+        party.add_pc(Character(*srd5::character_rules(), draft("pact_of_the_blade"), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     const auto sheet = party.member(id).character.sheet();
     check(sheet.level == 15, "A Warlock reaches 15");
-    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
-{
-    {5, 6}, {6, 7}, {7, 8}, {8, 9}, {9, 10}, {10, 10}, {11, 11}, {12, 11}, {13, 12}, {14, 12},
-    {15, 13}
-})
-    check(rules->spell_access(warlock(level).sheet()).prepared_choices == count,
-          "Prepared spells: 6 at 5 to 13 at 15");
+    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{5, 6},
+                                                                                 {6, 7},
+                                                                                 {7, 8},
+                                                                                 {8, 9},
+                                                                                 {9, 10},
+                                                                                 {10, 10},
+                                                                                 {11, 11},
+                                                                                 {12, 11},
+                                                                                 {13, 12},
+                                                                                 {14, 12},
+                                                                                 {15, 13}})
+        check(rules->spell_access(warlock(level).sheet()).prepared_choices == count,
+              "Prepared spells: 6 at 5 to 13 at 15");
     check(rules->spell_access(warlock(10).sheet()).cantrip_choices == 4, "A fourth cantrip at 10");
-    check(std::count_if(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id.starts_with("invocation:");
-    }) == 9, "Nine invocations at 15");
+    check(std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.id.starts_with("invocation:");
+                        }) == 9,
+          "Nine invocations at 15");
     for (const unsigned level : {11u, 13u, 15u})
-        check(std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
-    {
-        return g.id.starts_with("arcanum:") && g.level == level;
-    }), "Mystic Arcanum at 11, 13 and 15");
+        check(std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                          [&](const auto &g)
+                          {
+                              return g.id.starts_with("arcanum:") && g.level == level;
+                          }),
+              "Mystic Arcanum at 11, 13 and 15");
     check(granted(sheet, "feature:hurl_through_hell"), "Hurl Through Hell at 14");
     check(granted(sheet, "feature:dark_ones_own_luck") &&
-          std::any_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id.starts_with("resilience:") && g.level == 10;
-    }), "Dark One's Own Luck at 6, Fiendish Resilience at 10");
-    check(rules->advancement_options(warlock(13).sheet()).description.find("Hurl Through Hell") != std::string::npos,
+              std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.id.starts_with("resilience:") && g.level == 10;
+                          }),
+          "Dark One's Own Luck at 6, Fiendish Resilience at 10");
+    check(rules->advancement_options(warlock(13).sheet()).description.find("Hurl Through Hell") !=
+              std::string::npos,
           "The level's description names its feature");
     const auto bytes = encode_campaign(party, nullptr, "warlock-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "warlock-levels", nullptr).party);
+                                 "warlock-levels", nullptr)
+                     .party);
     check(encode_campaign(next, nullptr, "warlock-levels") == bytes,
           "A level-15 Warlock saves and reloads");
 }
@@ -199,7 +219,8 @@ void progression_checks()
 void fiend_spells_checks()
 {
     const auto rules = dummy_rules();
-    check(offered(*field(*rules, warlock(5).sheet()), "fireball"), "Fireball is always prepared at 5");
+    check(offered(*field(*rules, warlock(5).sheet()), "fireball"),
+          "Fireball is always prepared at 5");
     check(offered(*field(*rules, warlock(7).sheet()), "fire_shield_warm"),
           "Fire Shield is always prepared at 7");
     check(offered(*field(*rules, warlock(9).sheet()), "insect_plague"),
@@ -210,12 +231,14 @@ void blade_checks()
 {
     const auto rules = dummy_rules();
     const auto hero = warlock(9, "pact_of_the_blade",
-    {{5, {"eldritch_smite", "thirsting_blade"}}, {9, {"lifedrinker"}}});
+                              {{5, {"eldritch_smite", "thirsting_blade"}}, {9, {"lifedrinker"}}});
     auto c = field(*rules, hero.sheet());
     check(submit(*c, "melee", 98) && offered(*c, "eldritch_smite", 98) &&
-          offered(*c, "lifedrinker_radiant", 98), "Eldritch Smite and Lifedrinker follow a pact weapon hit");
+              offered(*c, "lifedrinker_radiant", 98),
+          "Eldritch Smite and Lifedrinker follow a pact weapon hit");
     check(submit(*c, "eldritch_smite", 98) && logged(*c, "Force damage from Eldritch Smite.") &&
-          logged(*c, "Foe is knocked Prone."), "Eldritch Smite spends a slot and knocks the foe Prone");
+              logged(*c, "Foe is knocked Prone."),
+          "Eldritch Smite spends a slot and knocks the foe Prone");
     check(submit(*c, "lifedrinker_radiant", 98) && logged(*c, "Radiant damage from Lifedrinker."),
           "Lifedrinker adds Radiant damage");
     check(offered(*c, "melee", 98) && !offered(*c, "eldritch_smite", 98),
@@ -227,10 +250,11 @@ void arcanum_checks()
     const auto rules = dummy_rules();
     auto c = field(*rules, warlock(11).sheet());
     const auto commands = c->legal_commands();
-    const auto arcanum = std::find_if(commands.begin(), commands.end(), [](const auto & command)
-    {
-        return command.verb.ends_with("_arcanum");
-    });
+    const auto arcanum = std::find_if(commands.begin(), commands.end(),
+                                      [](const auto &command)
+                                      {
+                                          return command.verb.ends_with("_arcanum");
+                                      });
     check(arcanum != commands.end(), "Mystic Arcanum's spell is offered");
     const auto verb = arcanum->verb;
     check(c->submit(*arcanum), "Cast the Mystic Arcanum spell");
@@ -249,7 +273,8 @@ void hurl_checks()
     {
         auto c = field(*rules, warlock(14).sheet(), "dummy", seed);
         check(submit(*c, "melee", 98) && offered(*c, "hurl_through_hell", 98) &&
-              submit(*c, "hurl_through_hell", 98), "Hurl Through Hell follows a hit");
+                  submit(*c, "hurl_through_hell", 98),
+              "Hurl Through Hell follows a hit");
         if (!logged(*c, "Foe is hurled through the Lower Planes."))
             continue;
         hurled = true;
@@ -267,9 +292,12 @@ void devouring_checks()
 {
     const auto rules = dummy_rules();
     const auto hero = warlock(15, "pact_of_the_blade",
-    {{5, {"eldritch_smite", "thirsting_blade"}}, {12, {"devouring_blade"}}, {15, {"witch_sight"}}});
+                              {{5, {"eldritch_smite", "thirsting_blade"}},
+                               {12, {"devouring_blade"}},
+                               {15, {"witch_sight"}}});
     check(granted(hero.sheet(), "invocation:devouring_blade") &&
-          granted(hero.sheet(), "invocation:witch_sight"), "Devouring Blade at 12, Witch Sight at 15");
+              granted(hero.sheet(), "invocation:witch_sight"),
+          "Devouring Blade at 12, Witch Sight at 15");
     auto c = field(*rules, hero.sheet());
     check(submit(*c, "melee", 98) && submit(*c, "melee", 98) && submit(*c, "melee", 98),
           "Devouring Blade: three attacks");
@@ -282,7 +310,8 @@ void protectors_checks()
 {
     const auto rules = dummy_rules();
     const auto hero = warlock(9, "pact_of_the_tome", {{9, {"gift_of_the_protectors"}}});
-    check(granted(hero.sheet(), "invocation:gift_of_the_protectors"), "Gift of the Protectors at 9");
+    check(granted(hero.sheet(), "invocation:gift_of_the_protectors"),
+          "Gift of the Protectors at 9");
     bool kept = false;
     for (std::uint64_t seed = 1; seed < 40 && !kept; ++seed)
     {
@@ -326,10 +355,12 @@ void resilience_checks()
     const auto rules = module();
     auto sheet = warlock(10).sheet();
     const auto offers = rules->rest_training_options(sheet, RestKind::short_rest);
-    check(std::any_of(offers.begin(), offers.end(), [](const auto & offer)
-    {
-        return offer.group.id == "subclass:warlock:fiendish_resilience";
-    }), "Fiendish Resilience changes after a Short Rest");
+    check(std::any_of(offers.begin(), offers.end(),
+                      [](const auto &offer)
+                      {
+                          return offer.group.id == "subclass:warlock:fiendish_resilience";
+                      }),
+          "Fiendish Resilience changes after a Short Rest");
     const std::vector<std::string> fire{"fire"};
     (void)rules->replace_rest_training(sheet, fire);
     check(granted(sheet, "resilience:fire"), "Fiendish Resilience now resists Fire");

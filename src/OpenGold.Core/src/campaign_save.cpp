@@ -60,14 +60,17 @@ template <bool Reading> struct SaveCodec
     template <class T> using Visited = std::conditional_t<reading, T &, const T &>;
     std::stringstream stream;
     const rules::CharacterRules *creation{};
-    const rules::RulesModule *module {};
+    const rules::RulesModule *module{};
 
-    explicit SaveCodec(std::string_view bytes) requires reading : stream(std::string(bytes))
+    explicit SaveCodec(std::string_view bytes)
+        requires reading
+        : stream(std::string(bytes))
     {
         stream.imbue(std::locale::classic());
     }
 
-    SaveCodec() requires(!reading)
+    SaveCodec()
+        requires (!reading)
     {
         stream.imbue(std::locale::classic());
     }
@@ -78,12 +81,12 @@ template <bool Reading> struct SaveCodec
     }
 
     template <class T>
-    requires std::is_integral_v<T>
+        requires std::is_integral_v<T>
     void field(T &value)
     {
         if constexpr (reading)
         {
-            if constexpr(std::is_signed_v<T>)
+            if constexpr (std::is_signed_v<T>)
             {
                 std::int64_t n{};
                 stream >> n;
@@ -96,18 +99,18 @@ template <bool Reading> struct SaveCodec
                 std::string token;
                 stream >> token;
                 require(!token.empty() &&
-                        token.find_first_not_of("0123456789") == std::string::npos,
+                            token.find_first_not_of("0123456789") == std::string::npos,
                         "Invalid save integer");
                 std::uint64_t n{};
                 const auto end = token.data() + token.size();
                 const auto [stop, error] = std::from_chars(token.data(), end, n);
                 require(stop == end && error == std::errc{} &&
-                        n <= static_cast<std::uint64_t>(std::numeric_limits<T>::max()),
+                            n <= static_cast<std::uint64_t>(std::numeric_limits<T>::max()),
                         "Save integer out of range");
                 value = static_cast<T>(n);
             }
         }
-        else if constexpr(std::is_signed_v<T>)
+        else if constexpr (std::is_signed_v<T>)
             stream << static_cast<std::int64_t>(value) << ' ';
         else
             stream << static_cast<std::uint64_t>(value) << ' ';
@@ -124,7 +127,7 @@ template <bool Reading> struct SaveCodec
     }
 
     template <class Array>
-    requires is_fixed_array<std::remove_const_t<Array>>
+        requires is_fixed_array<std::remove_const_t<Array>>
     void field(Array &values)
     {
         for (auto &v : values)
@@ -132,7 +135,7 @@ template <bool Reading> struct SaveCodec
     }
 
     template <class Vector>
-    requires is_std_vector<std::remove_const_t<Vector>>
+        requires is_std_vector<std::remove_const_t<Vector>>
     void field(Vector &values)
     {
         std::uint64_t count = values.size();
@@ -154,7 +157,7 @@ template <bool Reading> struct SaveCodec
     }
 
     template <class Map>
-    requires is_std_map<std::remove_const_t<Map>>
+        requires is_std_map<std::remove_const_t<Map>>
     void field(Map &values)
     {
         std::uint64_t count = values.size();
@@ -177,7 +180,7 @@ template <bool Reading> struct SaveCodec
     }
 
     template <class Optional>
-    requires is_std_optional<std::remove_const_t<Optional>>
+        requires is_std_optional<std::remove_const_t<Optional>>
     void field(Optional &value)
     {
         bool present = value.has_value();
@@ -278,7 +281,7 @@ template <bool Reading> struct SaveCodec
             require(v.next_id_ != 0, "Invalid next inventory ID");
             for (const auto &i : v.items_)
                 require(i.id && i.id < v.next_id_ && ids.insert(i.id).second && i.quantity &&
-                        !i.definition_id.empty() && !i.name.empty(),
+                            !i.definition_id.empty() && !i.name.empty(),
                         "Invalid inventory entry");
         }
     }
@@ -382,8 +385,8 @@ template <bool Reading> struct SaveCodec
                 for (const auto &edit : training)
                 {
                     require(edit.level >= prior_level &&
-                            edit.level <= static_cast<unsigned>(level) &&
-                            edit.rest_session > prior_session,
+                                edit.level <= static_cast<unsigned>(level) &&
+                                edit.rest_session > prior_session,
                             "Invalid training replacement history");
                     prior_level = edit.level;
                     prior_session = edit.rest_session;
@@ -392,7 +395,7 @@ template <bool Reading> struct SaveCodec
                 for (const auto &trained : hall)
                 {
                     require(trained.level > hall_level &&
-                            trained.level <= static_cast<unsigned>(level),
+                                trained.level <= static_cast<unsigned>(level),
                             "Invalid training hall history");
                     hall_level = trained.level;
                 }
@@ -437,10 +440,10 @@ template <bool Reading> struct SaveCodec
             for (const auto &[id, offset] : rest_offsets)
             {
                 auto member = std::find_if(v.roster.begin(), v.roster.end(),
-                                           [&](const auto & m)
-                {
-                    return m.id == id;
-                });
+                                           [&](const auto &m)
+                                           {
+                                               return m.id == id;
+                                           });
                 require(member != v.roster.end() && member->last_rest_minutes && offset < 60000,
                         "Invalid rest time offset");
                 member->last_rest_subminute_milliseconds = offset;
@@ -450,8 +453,7 @@ template <bool Reading> struct SaveCodec
     // A script's variables, written as a map's entries are (the count, then
     // each address and value in address order) from the machine's sorted
     // table.
-    template <class Table>
-    void variable_table(Table &table)
+    template <class Table> void variable_table(Table &table)
     {
         std::uint64_t count = table.size();
         field(count);
@@ -466,10 +468,12 @@ template <bool Reading> struct SaveCodec
                 table.emplace_back(address, value);
             }
             std::sort(table.begin(), table.end());
-            require(std::adjacent_find(table.begin(), table.end(), [](const auto & a, const auto & b)
-            {
-                return a.first == b.first;
-            }) == table.end(), "Duplicate save map key");
+            require(std::adjacent_find(table.begin(), table.end(),
+                                       [](const auto &a, const auto &b)
+                                       {
+                                           return a.first == b.first;
+                                       }) == table.end(),
+                    "Duplicate save map key");
         }
         else
             for (const auto &[address, value] : table)
@@ -532,12 +536,12 @@ template <bool Reading> struct SaveCodec
             require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
                     "Unsupported saved district");
             require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
-                                             [&](const auto & d)
-            {
-                return d.second->script == v.current_script_;
-            })
-            : v.town_->districts.at(area)->script == v.current_script_,
-            "Saved district and script disagree");
+                                             [&](const auto &d)
+                                             {
+                                                 return d.second->script == v.current_script_;
+                                             })
+                              : v.town_->districts.at(area)->script == v.current_script_,
+                    "Saved district and script disagree");
             v.current_area_ = 0;
             v.snapshot_.area_id = 0;
             if (v.town_->map)
@@ -550,7 +554,7 @@ template <bool Reading> struct SaveCodec
             for (const auto &[id, cells] : explored)
             {
                 require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
-                        cells.find_first_not_of("01") == std::string::npos,
+                            cells.find_first_not_of("01") == std::string::npos,
                         "Invalid saved district exploration");
                 v.visited_areas_[id] = std::bitset<256>(cells);
             }
@@ -560,12 +564,13 @@ template <bool Reading> struct SaveCodec
         unsigned sanctuary_script = sanctuary ? v.sanctuary_->script : 0,
                  sanctuary_x = sanctuary ? v.sanctuary_->pose.x : 0,
                  sanctuary_y = sanctuary ? v.sanctuary_->pose.y : 0,
-                 sanctuary_facing = sanctuary ? static_cast<unsigned>(por::index(v.sanctuary_->pose.facing)) : 0;
+                 sanctuary_facing =
+                     sanctuary ? static_cast<unsigned>(por::index(v.sanctuary_->pose.facing)) : 0;
         fields(sanctuary, sanctuary_script, sanctuary_x, sanctuary_y, sanctuary_facing);
         if constexpr (reading)
         {
-            require(!sanctuary || (v.town_->programs.contains(sanctuary_script) && sanctuary_x < 16 &&
-                                   sanctuary_y < 16 && sanctuary_facing < 4),
+            require(!sanctuary || (v.town_->programs.contains(sanctuary_script) &&
+                                   sanctuary_x < 16 && sanctuary_y < 16 && sanctuary_facing < 4),
                     "Invalid saved sanctuary");
             v.sanctuary_.reset();
             if (sanctuary)
@@ -606,10 +611,10 @@ template <bool Reading> struct SaveCodec
                 if constexpr (reading)
                 {
                     require(!reward.empty() && reward.size() <= 160 && !items &&
-                            generated.size() <= 127,
+                                generated.size() <= 127,
                             "Invalid pending script treasure");
                     v.pending_loot_.push_back(
-                    {wealth, std::move(generated), std::move(reward), {}, false});
+                        {wealth, std::move(generated), std::move(reward), {}, false});
                 }
             }
             else if constexpr (reading)
@@ -623,13 +628,10 @@ template <bool Reading> struct SaveCodec
         if constexpr (reading)
         {
             require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                    v.selected_character_.index < 8 && v.rest_checks_ < 24,
+                        v.selected_character_.index < 8 && v.rest_checks_ < 24,
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
-            for (const std::uint8_t op :
-                    {
-                        12, 13, 14, 45, 49, 58
-                    })
+            for (const std::uint8_t op : {12, 13, 14, 45, 49, 58})
                 v.machine_.enable_host(op);
             v.configure_town();
         }
@@ -670,7 +672,7 @@ template <bool Reading> struct SaveCodec
             for (const auto &[id, cells] : known)
             {
                 require((id == 0 || v.town_->districts.contains(id)) && cells.size() == 256 &&
-                        cells.find_first_not_of("01") == std::string::npos,
+                            cells.find_first_not_of("01") == std::string::npos,
                         "Invalid saved map knowledge");
                 v.seen_areas_[id] = std::bitset<256>(cells);
             }
@@ -703,7 +705,7 @@ template <bool Reading> struct SaveCodec
             v.temple_targets_.clear();
             v.hall_visit_.reset();
             v.menu_request_ = v.delayed_request_ = v.who_request_ = v.temple_request_ =
-            v.shop_request_ = v.damage_request_ = 0;
+                v.shop_request_ = v.damage_request_ = 0;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
             v.event_stage_ = por::RolfTourSession::EventStage::none;
@@ -721,12 +723,11 @@ namespace
 // Saving must encode the caller's state in place rather than a copy of it.
 template <class Codec>
 concept encodes_const_campaign =
-    requires(Codec &codec, const PartyState &party, const por::RolfTourSession &town)
-{
-    codec.field(party);
-    codec.rest(party);
-    codec.town(town);
-};
+    requires (Codec &codec, const PartyState &party, const por::RolfTourSession &town) {
+        codec.field(party);
+        codec.rest(party);
+        codec.town(town);
+    };
 
 static_assert(encodes_const_campaign<SaveWriter>);
 static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit const state");
@@ -758,7 +759,7 @@ namespace
 unsigned saved_format(std::string_view digits)
 {
     require(!digits.empty() && digits.size() <= 9 &&
-            digits.find_first_not_of("0123456789") == std::string_view::npos,
+                digits.find_first_not_of("0123456789") == std::string_view::npos,
             "Unsupported campaign save version");
     unsigned format{};
     (void)std::from_chars(digits.data(), digits.data() + digits.size(), format);
@@ -772,7 +773,7 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
     {
         const auto item = member.character.inventory().find(id);
         require(item.has_value() && item->get().definition_id == equipment_conversion(source) &&
-                item->get().original_type == source.stored.type,
+                    item->get().original_type == source.stored.type,
                 "Saved item provenance mismatch");
     }
     for (const auto &item : member.character.inventory().items())
@@ -797,9 +798,9 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     std::function<por::RolfTourSession()> make_town;
     if (town_template)
         make_town = [town_template]
-    {
-        return town_template->detached_copy();
-    };
+        {
+            return town_template->detached_copy();
+        };
     return decode_campaign(bytes, creation, module, assets, make_town);
 }
 
@@ -811,16 +812,15 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     const auto header_end = bytes.find('\n');
     require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
             "Unsupported campaign save version");
-    const auto version = saved_format(
-                             bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
+    const auto version =
+        saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
     if (version < campaign_format)
         throw std::runtime_error(rules::older_save_message);
     require(version == campaign_format, "Unsupported campaign save version");
     const auto end = bytes.find('\n', header_end + 1);
     require(end != bytes.npos, "Truncated campaign save");
     const auto body = bytes.substr(end + 1);
-    require(bytes.substr(header_end + 1, end - header_end - 1) ==
-            std::to_string(fingerprint(body)),
+    require(bytes.substr(header_end + 1, end - header_end - 1) == std::to_string(fingerprint(body)),
             "Campaign save checksum mismatch");
     SaveReader in(body);
     in.creation = &creation;

@@ -52,10 +52,11 @@ std::string decoded(std::string_view stem)
 
 void SaveSlots::_ready()
 {
-    presentation::run_guarded(*this, [&]
-    {
-        prepare_dialog();
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  prepare_dialog();
+                              });
 }
 
 void SaveSlots::prepare_dialog()
@@ -73,20 +74,20 @@ void SaveSlots::prepare_dialog()
     required_node<LineEdit>(*this, "Name").set_placeholder(i18n::text(N_("Save name")));
     required_node<LineEdit>(*this, "Name").set_max_length(60);
     required_node<ItemList>(*this, "Slots")
-    .set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-    required_node<ItemList>(*this, "Slots").connect("item_selected", presentation::guarded(this,
-            &SaveSlots::select));
-    required_node<LineEdit>(*this, "Name").connect("text_changed", presentation::guarded(this,
-            &SaveSlots::changed));
-    required_node<Button>(*this, "Action").connect("pressed", presentation::guarded(this,
-            &SaveSlots::act));
+        .set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
+    required_node<ItemList>(*this, "Slots")
+        .connect("item_selected", presentation::guarded(this, &SaveSlots::select));
+    required_node<LineEdit>(*this, "Name")
+        .connect("text_changed", presentation::guarded(this, &SaveSlots::changed));
+    required_node<Button>(*this, "Action")
+        .connect("pressed", presentation::guarded(this, &SaveSlots::act));
     required_node<Button>(*this, "Cancel").set_text(i18n::text(N_("Cancel")));
-    required_node<Button>(*this, "Cancel").connect("pressed", presentation::guarded(this,
-            &SaveSlots::close));
+    required_node<Button>(*this, "Cancel")
+        .connect("pressed", presentation::guarded(this, &SaveSlots::close));
     connect("close_requested", presentation::guarded(this, &SaveSlots::close));
     hide();
     directory_ = presentation::path_from_godot(
-                     ProjectSettings::get_singleton()->globalize_path("user://saves"));
+        ProjectSettings::get_singleton()->globalize_path("user://saves"));
 }
 
 void SaveSlots::connect_host(FileAction save, FileAction load)
@@ -116,17 +117,19 @@ void SaveSlots::open(bool saving)
     confirmed_ = false;
     pending_.clear();
     paths_.clear();
-    set_title(i18n::text(character_saves_
-                         ? (saving ? N_("Save character") : N_("Load character"))
-                         : (saving ? N_("Save game") : N_("Load game"))));
-    required_node<Label>(*this, "Help").set_text(
-        i18n::text(character_saves_
-                   ? (saving ? N_("Select a character save to overwrite, or enter a new name.")
-                      : N_("Select a character save. Previous versions are available for recovery."))
-                   : (saving ? N_("Select a save to overwrite, or enter a new name.")
-                      : N_("Select a save. Previous versions are available for recovery."))));
-    required_node<LineEdit>(*this, "Name").set_placeholder(
-        i18n::text(character_saves_ ? N_("Character save name") : N_("Save name")));
+    set_title(i18n::text(character_saves_ ? (saving ? N_("Save character") : N_("Load character"))
+                                          : (saving ? N_("Save game") : N_("Load game"))));
+    required_node<Label>(*this, "Help")
+        .set_text(i18n::text(
+            character_saves_
+                ? (saving
+                       ? N_("Select a character save to overwrite, or enter a new name.")
+                       : N_("Select a character save. Previous versions are available for recovery."))
+                : (saving ? N_("Select a save to overwrite, or enter a new name.")
+                          : N_("Select a save. Previous versions are available for recovery."))));
+    required_node<LineEdit>(*this, "Name")
+        .set_placeholder(
+            i18n::text(character_saves_ ? N_("Character save name") : N_("Save name")));
     auto *list = &required_node<ItemList>(*this, "Slots");
     list->clear();
     try
@@ -185,8 +188,8 @@ void SaveSlots::select(std::int64_t index)
     if (index < 0 || static_cast<std::size_t>(index) >= paths_.size())
         return;
     if (saving_)
-        required_node<LineEdit>(*this, "Name").set_text(
-            String::utf8(decoded(paths_[index].stem().string()).c_str()));
+        required_node<LineEdit>(*this, "Name")
+            .set_text(String::utf8(decoded(paths_[index].stem().string()).c_str()));
 }
 
 void SaveSlots::act()
@@ -213,13 +216,14 @@ void SaveSlots::act()
         {
             confirmed_ = true;
             pending_ = path;
-            required_node<Label>(*this, "Status").set_text(i18n::text(
-                        saving_ ? N_("Overwrite this save? Its previous version will be retained.")
-                        : character_saves_
+            required_node<Label>(*this, "Status")
+                .set_text(i18n::text(
+                    saving_ ? N_("Overwrite this save? Its previous version will be retained.")
+                    : character_saves_
                         ? N_("Load this character? Any unsaved demo progress will be discarded.")
                         : N_("Load this save? Any unsaved campaign progress will be discarded.")));
-            required_node<Button>(*this, "Action").set_text(
-                i18n::text(saving_ ? N_("Overwrite") : N_("Confirm load")));
+            required_node<Button>(*this, "Action")
+                .set_text(i18n::text(saving_ ? N_("Overwrite") : N_("Confirm load")));
             return;
         }
         if (saving_)
@@ -233,7 +237,7 @@ void SaveSlots::act()
         confirmed_ = false;
         required_node<Label>(*this, "Status").set_text(i18n::text(e.what()));
         required_node<Button>(*this, "Action")
-        .set_text(i18n::text(saving_ ? N_("Save") : N_("Load")));
+            .set_text(i18n::text(saving_ ? N_("Save") : N_("Load")));
     }
 }
 

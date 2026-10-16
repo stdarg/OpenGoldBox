@@ -85,10 +85,20 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
     const auto ally_profile = rules.character_profile(ally.sheet(), {}).data;
     std::vector<Participant> setup{
         {1, "campaign-character", "Paladin", Side::party, {1, 1}, paladin_profile},
-        {2, "campaign-character", "Ally", Side::party, {2, 1}, ally_profile,
-            VitalState{ally_hp, false, {}}},
-        {3, "campaign-character", "Distant", Side::party, {1, 3}, ally_profile,
-            VitalState{1, false, {}}},
+        {2,
+         "campaign-character",
+         "Ally",
+         Side::party,
+         {2, 1},
+         ally_profile,
+         VitalState{ally_hp, false, {}}},
+        {3,
+         "campaign-character",
+         "Distant",
+         Side::party,
+         {1, 3},
+         ally_profile,
+         VitalState{1, false, {}}},
         {99, "vanguard", "Enemy", Side::opposition, {10, 6}}};
     if (paladin_state)
         setup[0].state = *paladin_state;
@@ -119,16 +129,18 @@ void combat_checks()
 
     auto c = battle(*rules, paladin, ally, 2);
     check(pool(*c) == 5, "A level-one Paladin's pool holds five Hit Points");
-    check(lay_on_hands_targets(*c) == std::vector<EntityId> {2},
-          "Only a wounded ally within 5 feet is offered; the unhurt Paladin and the distant ally are not");
+    check(
+        lay_on_hands_targets(*c) == std::vector<EntityId>{2},
+        "Only a wounded ally within 5 feet is offered; the unhurt Paladin and the distant ally are not");
     const auto before = c->save();
     auto copy = rules->restore(before);
     check(copy->save() == before, "The pool survives a combat checkpoint");
     const auto offered = c->legal_commands();
-    const auto bonus = std::find_if(offered.begin(), offered.end(), [](const auto & command)
-    {
-        return command.verb == "lay_on_hands";
-    });
+    const auto bonus = std::find_if(offered.begin(), offered.end(),
+                                    [](const auto &command)
+                                    {
+                                        return command.verb == "lay_on_hands";
+                                    });
     check(bonus != offered.end() && c->submit(*bonus), "Lay On Hands resolves");
     const int healed = std::min(5, ally_max - 2);
     check(unit(*c, 2).hit_points == 2 + healed && pool(*c) == unsigned(5 - healed),
@@ -138,7 +150,7 @@ void combat_checks()
     check(lay_on_hands_targets(*c).empty(), "One Bonus Action per turn");
 
     auto dying = battle(*rules, paladin, ally, 0);
-    check(lay_on_hands_targets(*dying) == std::vector<EntityId> {2},
+    check(lay_on_hands_targets(*dying) == std::vector<EntityId>{2},
           "An ally at 0 Hit Points can be healed");
     const auto dying_offers = dying->legal_commands();
     for (const auto &command : dying_offers)
@@ -170,8 +182,9 @@ void campaign_checks()
     const auto id = party.add_pc(created("paladin", "Paladin"));
     const auto pool_of = [&]
     {
-        for (const auto &resource : rules->recovery_info(party.member(id).character.sheet(),
-                party.member(id).vitals).resources)
+        for (const auto &resource :
+             rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
+                 .resources)
             if (resource.id == "lay_on_hands")
                 return resource;
         throw std::runtime_error("Missing Lay On Hands pool");
@@ -208,38 +221,43 @@ void cure_checks()
     std::ostringstream out;
     fx::write_effects(out, effects);
     vitals.resources.replace(at, std::string::npos, out.str());
-    const auto poisoned = [](const CombatSession & c, EntityId id)
+    const auto poisoned = [](const CombatSession &c, EntityId id)
     {
         const auto conditions = unit(c, id).conditions;
-        return std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
-        {
-            return condition.source.find("Poisoned") != std::string::npos;
-        });
+        return std::any_of(conditions.begin(), conditions.end(),
+                           [](const auto &condition)
+                           {
+                               return condition.source.find("Poisoned") != std::string::npos;
+                           });
     };
 
     auto c = battle(*rules, paladin, ally, vitals.hit_points, nullptr, &vitals);
     check(poisoned(*c, 2), "The ally starts Poisoned");
     const auto offered = c->legal_commands();
-    const auto cure = std::find_if(offered.begin(), offered.end(), [](const auto & command)
-    {
-        return command.verb == "lay_on_hands_cure";
-    });
-    check(cure != offered.end() && cure->target == 2 && std::none_of(offered.begin(), offered.end(),
-            [](const auto & command)
-    {
-        return command.verb == "lay_on_hands" && command.target == 2;
-    }),
-    "An unhurt Poisoned ally is offered the cure, not healing");
+    const auto cure = std::find_if(offered.begin(), offered.end(),
+                                   [](const auto &command)
+                                   {
+                                       return command.verb == "lay_on_hands_cure";
+                                   });
+    check(cure != offered.end() && cure->target == 2 &&
+              std::none_of(offered.begin(), offered.end(),
+                           [](const auto &command)
+                           {
+                               return command.verb == "lay_on_hands" && command.target == 2;
+                           }),
+          "An unhurt Poisoned ally is offered the cure, not healing");
     check(c->submit(*cure) && !poisoned(*c, 2) && pool(*c) == 0 && !unit(*c, 1).bonus_action,
           "The cure ends Poisoned for 5 points and the Bonus Action");
     check(module()->restore(c->save())->save() == c->save(), "The cure survives a checkpoint");
 
     auto plain = battle(*rules, paladin, ally, ally.sheet().hit_points);
     const auto none = plain->legal_commands();
-    check(std::none_of(none.begin(), none.end(), [](const auto & command)
-    {
-        return command.verb == "lay_on_hands_cure";
-    }), "Nobody Poisoned, no cure");
+    check(std::none_of(none.begin(), none.end(),
+                       [](const auto &command)
+                       {
+                           return command.verb == "lay_on_hands_cure";
+                       }),
+          "Nobody Poisoned, no cure");
 }
 
 int main()

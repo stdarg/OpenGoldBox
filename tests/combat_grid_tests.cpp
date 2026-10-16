@@ -24,8 +24,8 @@ int reference_step(const Battlefield &board, const std::vector<int> &occupants, 
     if (std::abs(from.x - to.x) > 1 || std::abs(from.y - to.y) > 1)
         return -1;
     if (from.x != to.x && from.y != to.y &&
-            (board.at({from.x, to.y}) == Terrain::obstacle ||
-             board.at({to.x, from.y}) == Terrain::obstacle))
+        (board.at({from.x, to.y}) == Terrain::obstacle ||
+         board.at({to.x, from.y}) == Terrain::obstacle))
         return -1;
     const int occupant = occupants[to.y * board.width + to.x];
     if (occupant == 2)
@@ -46,8 +46,8 @@ std::vector<int> reference_costs(const Battlefield &board, const std::vector<int
             for (int to = 0; to < count; ++to)
             {
                 const int edge =
-                reference_step(board, occupants, {from % board.width, from / board.width},
-                {to % board.width, to / board.width});
+                    reference_step(board, occupants, {from % board.width, from / board.width},
+                                   {to % board.width, to / board.width});
                 if (edge >= 0)
                     costs[to] = std::min(costs[to], costs[from] + edge);
             }
@@ -62,13 +62,10 @@ void compare_routes(const Battlefield &board, const std::vector<int> &occupants,
     for (int i = 0; i < static_cast<int>(occupants.size()); ++i)
         if (occupants[i])
             actors.push_back(
-        {{i % board.width, i / board.width}, occupants[i] >= 2, occupants[i] == 3});
+                {{i % board.width, i / board.width}, occupants[i] >= 2, occupants[i] == 3});
     const MovementGrid grid(board, origin, actors);
     const auto expected = reference_costs(board, occupants, origin);
-    for (const int budget :
-            {
-                0, 5, 9, 10, 15, 20, 30, std::numeric_limits<int>::max()
-            })
+    for (const int budget : {0, 5, 9, 10, 15, 20, 30, std::numeric_limits<int>::max()})
     {
         const auto reachable = grid.reachable(budget);
         for (int i = 0; i < static_cast<int>(occupants.size()); ++i)
@@ -144,9 +141,9 @@ void exhaustive_movement()
 bool touches_wall(Cell from, Cell to, Cell wall)
 {
     long double first = 0, last = 1;
-    const int starts[] {2 * from.x + 1, 2 * from.y + 1};
-    const int deltas[] {2 * (to.x - from.x), 2 * (to.y - from.y)};
-    const int lows[] {2 * wall.x, 2 * wall.y};
+    const int starts[]{2 * from.x + 1, 2 * from.y + 1};
+    const int deltas[]{2 * (to.x - from.x), 2 * (to.y - from.y)};
+    const int lows[]{2 * wall.x, 2 * wall.y};
     for (int axis = 0; axis < 2; ++axis)
     {
         if (deltas[axis] == 0)
@@ -178,7 +175,7 @@ void exhaustive_sight()
                 bool clear = true;
                 for (int wall = 0; wall < 9; ++wall)
                     if (board.terrain[wall] == Terrain::obstacle &&
-                            touches_wall(from, to, {wall % 3, wall / 3}))
+                        touches_wall(from, to, {wall % 3, wall / 3}))
                         clear = false;
                 check(has_line_of_sight(board, from, to) == clear,
                       "Sight disagrees with segment/rectangle oracle");
@@ -196,8 +193,8 @@ void allied_transit()
         corridor.terrain[x] = Terrain::open;
     const std::vector<Occupant> allies{{{1, 0}, false}, {{2, 0}, false}};
     MovementGrid grid(corridor, {0, 0}, allies);
-    check(grid.reachable(15).path_to({3, 0}) == std::vector<Cell> {{1, 0}, {2, 0}, {3, 0}},
-    "A corridor route crosses successive allies at normal movement cost");
+    check(grid.reachable(15).path_to({3, 0}) == std::vector<Cell>{{1, 0}, {2, 0}, {3, 0}},
+          "A corridor route crosses successive allies at normal movement cost");
     check(grid.reachable(15).cost_to({3, 0}) == 15 && !grid.reachable(10).cost_to({3, 0}),
           "Only a fully affordable route to a free stopping point is offered");
     check(!grid.reachable(30).cost_to({1, 0}) && !grid.reachable(30).cost_to({2, 0}),
@@ -234,8 +231,8 @@ void boundaries_and_ties()
     Battlefield board{3, 3, std::vector<Terrain>(9)};
     board.terrain[4] = Terrain::obstacle;
     MovementGrid grid(board, {0, 1}, {});
-    check(grid.reachable(20).path_to({2, 1}) == std::vector<Cell> {{0, 0}, {1, 0}, {2, 0}, {2, 1}},
-    "Equal-cost detours must keep their row-major tie order");
+    check(grid.reachable(20).path_to({2, 1}) == std::vector<Cell>{{0, 0}, {1, 0}, {2, 0}, {2, 1}},
+          "Equal-cost detours must keep their row-major tie order");
     check(!grid.can_stop_at({-1, 0}) && !grid.can_stop_at({3, 0}),
           "Outside destinations are rejected");
     check(!grid.reachable(20).cost_to({3, 0}), "Outside path query is rejected");
@@ -245,42 +242,42 @@ void boundaries_and_ties()
           "Outside sight endpoint rejected");
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)grid.reachable(-1);
-    });
+        {
+            (void)grid.reachable(-1);
+        });
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)MovementGrid(board, {1, 1}, {});
-    });
+        {
+            (void)MovementGrid(board, {1, 1}, {});
+        });
     auto invalid = board;
     invalid.terrain.pop_back();
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)MovementGrid(invalid, {0, 0}, {});
-    });
+        {
+            (void)MovementGrid(invalid, {0, 0}, {});
+        });
     invalid = board;
     invalid.width = std::numeric_limits<int>::max();
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)MovementGrid(invalid, {0, 0}, {});
-    });
+        {
+            (void)MovementGrid(invalid, {0, 0}, {});
+        });
     invalid = board;
     invalid.terrain[0] = static_cast<Terrain>(4);
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)MovementGrid(invalid, {0, 0}, {});
-    });
+        {
+            (void)MovementGrid(invalid, {0, 0}, {});
+        });
     invalid = board;
     invalid.plants.assign(2, true);
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)MovementGrid(invalid, {0, 0}, {});
-    });
+        {
+            (void)MovementGrid(invalid, {0, 0}, {});
+        });
 
     // Plant Growth's Overgrowth: 4 feet of movement for each foot.
     auto overgrown = board;
@@ -295,8 +292,8 @@ void boundaries_and_ties()
           "Allied space retains difficult terrain cost without an occupancy surcharge");
     check(!grid.can_stop_at({1, 1}), "Ally cannot be a destination");
     const std::vector<Occupant> surrounded{{{0, 0}, false}, {{1, 0}, false}, {{2, 0}, false},
-        {{0, 1}, false}, {{2, 1}, false}, {{0, 2}, false},
-        {{1, 2}, false}, {{2, 2}, false}};
+                                           {{0, 1}, false}, {{2, 1}, false}, {{0, 2}, false},
+                                           {{1, 2}, false}, {{2, 2}, false}};
     const MovementGrid trapped(Battlefield{3, 3, std::vector<Terrain>(9)}, {1, 1}, surrounded);
     for (int y = 0; y < 3; ++y)
         for (int x = 0; x < 3; ++x)
@@ -320,7 +317,7 @@ int main()
         exhaustive_movement();
         exhaustive_sight();
         std::cout
-                << "Combat grid: 9,686 exhaustive movement layouts and 41,472 sight cases passed.\n";
+            << "Combat grid: 9,686 exhaustive movement layouts and 41,472 sight cases passed.\n";
     }
     catch (const std::exception &error)
     {

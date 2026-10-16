@@ -53,21 +53,19 @@ Character hero(std::string klass)
         // keeps the default preparation of its book.
         if (klass == "cleric")
             choice.spells = {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith",
-                             "bless"
-                            };
+                             "bless"};
         if (level == 3)
         {
             for (const auto *spell : {"blindness", "scorching_ray"})
-                if (klass == "wizard" &&
-                        std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+                if (klass == "wizard" && std::find(choice.spells.begin(), choice.spells.end(),
+                                                   spell) == choice.spells.end())
                     choice.spells.push_back(spell);
             if (klass == "cleric")
                 choice.spells.push_back("blindness");
             // The Life Domain keeps Bless and Cure Wounds prepared from level three.
             if (klass == "cleric")
-                choice.spells = {"healing_word", "inflict_wounds", "shield_of_faith", "blindness",
-                                 "command", "protection_from_evil_and_good"
-                                };
+                choice.spells = {"healing_word", "inflict_wounds", "shield_of_faith",
+                                 "blindness",    "command",        "protection_from_evil_and_good"};
         }
         check(c.advance(*rules, vital, choice),
               "Level-three caster prepared through real advancement");
@@ -103,18 +101,15 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
 {
     const auto p = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{8, 8, std::vector<Terrain>(64)},
-        {   {
-                1,
-                "campaign-character",
-                "Caster",
-                Side::party,
-                {1, 1},
-                p.data,
-                VitalState{h.sheet().hit_points - 10, false, {}}
-            },
-            {99, "vanguard", "Enemy", Side::opposition, {3, 1}}
-        }},
-    2);
+                           {{1,
+                             "campaign-character",
+                             "Caster",
+                             Side::party,
+                             {1, 1},
+                             p.data,
+                             VitalState{h.sheet().hit_points - 10, false, {}}},
+                            {99, "vanguard", "Enemy", Side::opposition, {3, 1}}}},
+                          2);
     if (c->snapshot().actor != 1)
         check(c->submit(command(*c, "end")),
               "Reach the caster turn after armor initiative penalty");
@@ -137,29 +132,25 @@ unsigned slots(const CombatantView &actor, unsigned level)
 void expectations()
 {
     auto rules = module();
-    for (const auto &klass :
-            {"cleric", "wizard"
-            })
+    for (const auto &klass : {"cleric", "wizard"})
     {
         const auto h = hero(klass);
         const bool wizard = std::string_view(klass) == "wizard";
         const std::vector<std::string> spells =
-            wizard ? std::vector<std::string> {"fire_bolt", "magic_missile", "magic_missile_2",
-                                               "scorching_ray", "blindness"
-                                              }
-            :
-            std::vector<std::string> {"cure_wounds", "cure_wounds_2", "healing_word", "blindness"};
-        for (const auto &gear : std::vector<std::vector<std::string>> {{},
-        {"shield"},
-        {"mace"},
-        {"wand"},
-        {"greatsword"},
-        {"longbow"},
-        {"quarterstaff"},
-        {"mace", "shield"},
-        {"wand", "shield"},
-        {"quarterstaff", "shield"}
-    })
+            wizard ? std::vector<std::string>{"fire_bolt", "magic_missile", "magic_missile_2",
+                                              "scorching_ray", "blindness"}
+                   : std::vector<std::string>{"cure_wounds", "cure_wounds_2", "healing_word",
+                                              "blindness"};
+        for (const auto &gear : std::vector<std::vector<std::string>>{{},
+                                                                      {"shield"},
+                                                                      {"mace"},
+                                                                      {"wand"},
+                                                                      {"greatsword"},
+                                                                      {"longbow"},
+                                                                      {"quarterstaff"},
+                                                                      {"mace", "shield"},
+                                                                      {"wand", "shield"},
+                                                                      {"quarterstaff", "shield"}})
         {
             const auto p = rules->character_profile(h.sheet(), gear);
             check(p.spell_modifiers.find("Somatic") == std::string::npos,
@@ -174,16 +165,13 @@ void expectations()
                 check(submit_aimed(*cast, command(*cast, verb)), "The spell resolves normally");
                 check(unit(*cast).armor_class == before.armor_class,
                       "Casting keeps the shield's AC");
-                const unsigned spent = verb == "fire_bolt"                               ? 0
-                                       : verb.ends_with("_2") || verb == "scorching_ray" ||
-                                       verb == "blindness" ? 2
-                                       : 1;
-                for (unsigned level :
-                        {
-                            1u, 2u
-                        })
+                const unsigned spent =
+                    verb == "fire_bolt"                                                      ? 0
+                    : verb.ends_with("_2") || verb == "scorching_ray" || verb == "blindness" ? 2
+                                                                                             : 1;
+                for (unsigned level : {1u, 2u})
                     check(slots(unit(*cast), level) ==
-                          slots(before, level) - (spent == level ? 1 : 0),
+                              slots(before, level) - (spent == level ? 1 : 0),
                           "Casting spends exactly its chosen slot; a cantrip spends none");
                 check(rules->restore(cast->save())->save() == cast->save(),
                       "Resolved cast round trips exactly");
@@ -225,10 +213,7 @@ auto campaign_battle(const RulesModule &rules, const CampaignParty &p)
 void campaign()
 {
     auto rules = module();
-    for (bool npc :
-            {
-                false, true
-            })
+    for (bool npc : {false, true})
     {
         auto p = party(npc);
         const auto bytes = encode_campaign(p, nullptr, "components");
@@ -248,13 +233,8 @@ void ui_fixtures()
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "component-fixtures";
     std::filesystem::create_directories(path);
     auto rules = module();
-    for (const auto &klass :
-            {"cleric", "wizard"
-            })
-        for (bool shield :
-                {
-                    false, true
-                })
+    for (const auto &klass : {"cleric", "wizard"})
+        for (bool shield : {false, true})
         {
             const auto h = hero(klass);
             std::vector<std::string> gear{"quarterstaff"};

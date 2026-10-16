@@ -12,7 +12,7 @@ inline constexpr unsigned default_encounter_challenge = 33;
 // SRD 5.2.1 p. 202: the sum of each character's Moderate XP budget, scaled by the
 // challenge percentage.
 [[nodiscard]] unsigned encounter_xp_budget(std::span<const unsigned> character_levels,
-        unsigned challenge);
+                                           unsigned challenge);
 
 struct EncounterGroup
 {
@@ -23,6 +23,7 @@ struct EncounterGroup
 // XP fits the budget and its size is at most max_creatures, keeping at least one
 // of each group. Never grows a group.
 [[nodiscard]] std::vector<unsigned> fit_encounter_to_budget(std::span<const EncounterGroup> groups,
-        unsigned budget, unsigned max_creatures);
+                                                            unsigned budget,
+                                                            unsigned max_creatures);
 } // namespace opengold
 #endif

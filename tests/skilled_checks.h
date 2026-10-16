@@ -9,7 +9,7 @@ CampaignParty ready(const char *klass, const char *background)
     auto d = draft(klass, background);
     d.name = std::string("Skilled ") + klass;
     if (std::string_view(klass) == "wizard")
-        d.cantrips = std::vector<std::string> {"fire_bolt", "ray_of_frost"};
+        d.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost"};
     choose_first_options(d);
     const auto id = p.add_pc(hero(d));
     p.award_experience(2700, "skilled-acceptance");
@@ -31,10 +31,10 @@ AdvancementChoice pick(const CampaignParty &p, std::vector<std::string> ids)
 const FeatureGrant *grant(const CharacterSheet &sheet, std::string_view id)
 {
     const auto found = std::find_if(sheet.grants.begin(), sheet.grants.end(),
-                                    [&](const auto & g)
-    {
-        return g.id == id;
-    });
+                                    [&](const auto &g)
+                                    {
+                                        return g.id == id;
+                                    });
     return found == sheet.grants.end() ? nullptr : &*found;
 }
 
@@ -49,23 +49,23 @@ void options_and_grants()
     const auto sheet = p.member(1).character.sheet();
     const auto offered = p.advancement_options(1);
     const auto feat = std::find_if(offered.feats.begin(), offered.feats.end(),
-                                   [](const auto & f)
-    {
-        return f.id == "skilled";
-    });
+                                   [](const auto &f)
+                                   {
+                                       return f.id == "skilled";
+                                   });
     check(feat != offered.feats.end() && feat->available, "Skilled is offered at level four");
     check(std::none_of(offered.training.begin(), offered.training.end(),
-                       [](const auto & g)
-    {
-        return g.id == "feat:skilled";
-    }),
-    "No Skilled page before Skilled is selected");
+                       [](const auto &g)
+                       {
+                           return g.id == "feat:skilled";
+                       }),
+          "No Skilled page before Skilled is selected");
     const auto with = p.advancement_options(1, pick(p, {}));
     const auto group = std::find_if(with.training.begin(), with.training.end(),
-                                    [](const auto & g)
-    {
-        return g.id == "feat:skilled";
-    });
+                                    [](const auto &g)
+                                    {
+                                        return g.id == "feat:skilled";
+                                    });
     check(group != with.training.end() && group->count == 3,
           "Selecting Skilled opens a page of three");
     check(group->acquired_level == 4, "Skilled proficiencies are acquired at level four");
@@ -82,18 +82,17 @@ void options_and_grants()
     const auto next = p.member(1).character.sheet();
     check(next.level == 4, "Skilled advancement completes");
     // The Human also has Versatile's Skilled, from its species.
-    const auto level_four = std::find_if(next.grants.begin(), next.grants.end(), [](const auto & g)
-    {
-        return g.id == "feat:skilled" && g.level == 4;
-    });
+    const auto level_four = std::find_if(next.grants.begin(), next.grants.end(),
+                                         [](const auto &g)
+                                         {
+                                             return g.id == "feat:skilled" && g.level == 4;
+                                         });
     const auto *feat_grant = level_four == next.grants.end() ? nullptr : &*level_four;
     check(feat_grant && feat_grant->level == 4 &&
-          feat_grant->source_id == "class:fighter:ability_score_improvement" &&
-          feat_grant->choices.empty(),
+              feat_grant->source_id == "class:fighter:ability_score_improvement" &&
+              feat_grant->choices.empty(),
           "Skilled records its entitlement as provenance and stores no sub-choices");
-    for (const auto *id :
-            {"skill:survival", "skill:nature", "skill:medicine"
-            })
+    for (const auto *id : {"skill:survival", "skill:nature", "skill:medicine"})
     {
         const auto *g = grant(next, id);
         check(g && g->source_id == "feat:skilled" && g->level == 4,
@@ -116,10 +115,11 @@ void check_effects()
     const auto stealth_before = probe(before, Ability::dexterity, "stealth");
     const auto stealth_after = probe(after, Ability::dexterity, "stealth");
     check(stealth_after.total == stealth_before.total &&
-          stealth_after.expertise == stealth_before.expertise,
+              stealth_after.expertise == stealth_before.expertise,
           "Existing proficiencies and Expertise are unchanged");
     check(probe(after, Ability::intelligence, "nature").sources.size() == 1 &&
-          probe(after, Ability::intelligence, "nature").sources.front().source_id == "feat:skilled",
+              probe(after, Ability::intelligence, "nature").sources.front().source_id ==
+                  "feat:skilled",
           "The new proficiency reports Skilled as its only source");
 }
 
@@ -127,47 +127,57 @@ void rejections()
 {
     auto p = ready("fighter", "criminal");
     // Duplicate, short, long, unknown, unprefixed, and already-known picks.
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"skill:survival", "skill:survival", "skill:nature"}));
-    });
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"skill:survival", "skill:nature"}));
-    });
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:religion", "skill:medicine"}));
-    });
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:not_a_skill"}));
-    });
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"arcana", "nature", "medicine"}));
-    });
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"skill:stealth", "skill:nature", "skill:survival"}));
-    });
-    rejects([&]
-    {
-        p.advance(1, pick(p, {"tool:thieves_tools", "skill:nature", "skill:survival"}));
-    });
+    rejects(
+        [&]
+        {
+            p.advance(1, pick(p, {"skill:survival", "skill:survival", "skill:nature"}));
+        });
+    rejects(
+        [&]
+        {
+            p.advance(1, pick(p, {"skill:survival", "skill:nature"}));
+        });
+    rejects(
+        [&]
+        {
+            p.advance(
+                1, pick(p, {"skill:survival", "skill:nature", "skill:religion", "skill:medicine"}));
+        });
+    rejects(
+        [&]
+        {
+            p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:not_a_skill"}));
+        });
+    rejects(
+        [&]
+        {
+            p.advance(1, pick(p, {"arcana", "nature", "medicine"}));
+        });
+    rejects(
+        [&]
+        {
+            p.advance(1, pick(p, {"skill:stealth", "skill:nature", "skill:survival"}));
+        });
+    rejects(
+        [&]
+        {
+            p.advance(1, pick(p, {"tool:thieves_tools", "skill:nature", "skill:survival"}));
+        });
     auto bare = p.default_advancement(1);
     bare.feat = "skilled";
     bare.abilities = {};
-    rejects([&]
-    {
-        p.advance(1, bare);
-    });
+    rejects(
+        [&]
+        {
+            p.advance(1, bare);
+        });
     auto paid = pick(p, {"skill:survival", "skill:nature", "skill:medicine"});
     paid.abilities[Ability::strength] = 2;
-    rejects([&]
-    {
-        p.advance(1, paid);
-    });
+    rejects(
+        [&]
+        {
+            p.advance(1, paid);
+        });
     check(p.member(1).character.sheet().level == 3,
           "Every rejected Skilled choice leaves the character untouched");
     p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:medicine"}));
@@ -186,33 +196,31 @@ void persistence()
     CampaignParty reloaded(module());
     reloaded.restore(decode_campaign(saved, *srd5::character_rules(), p.rule_module(),
                                      "skilled-persist", nullptr)
-                     .party);
+                         .party);
     check(encode_campaign(reloaded, nullptr, "skilled-persist") == saved,
           "A Skilled campaign reload is canonical");
     const auto back = reloaded.member(1).character.sheet();
     check(back.grants == sheet.grants, "Reload preserves every Skilled grant and its provenance");
     check(probe(back, Ability::dexterity, "stealth").proficiency ==
-          probe(sheet, Ability::dexterity, "stealth").proficiency &&
-          probe(back, Ability::wisdom, "perception").proficiency > 0,
+                  probe(sheet, Ability::dexterity, "stealth").proficiency &&
+              probe(back, Ability::wisdom, "perception").proficiency > 0,
           "Skilled check effects survive a reload");
 }
 
 void run()
 {
-    for (const auto &[name, test] : std::initializer_list<std::pair<const char *, void (*)()>>
-{
-    {"options_and_grants", options_and_grants},
-    {"check_effects", check_effects},
-    {"rejections", rejections},
-    {"persistence", persistence}
-})
-    try
-    {
-        test();
-    }
-    catch (const std::exception &e)
-    {
-        throw std::runtime_error(std::string("Skilled/") + name + ": " + e.what());
-    }
+    for (const auto &[name, test] : std::initializer_list<std::pair<const char *, void (*)()>>{
+             {"options_and_grants", options_and_grants},
+             {"check_effects", check_effects},
+             {"rejections", rejections},
+             {"persistence", persistence}})
+        try
+        {
+            test();
+        }
+        catch (const std::exception &e)
+        {
+            throw std::runtime_error(std::string("Skilled/") + name + ": " + e.what());
+        }
 }
 } // namespace skilled_checks

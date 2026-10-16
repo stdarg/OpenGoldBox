@@ -13,11 +13,12 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
     const auto group = creator.cantrip_options();
     static const std::vector<std::string> none;
     const auto &picked = creator.draft().cantrips ? *creator.draft().cantrips : none;
-    required_node<Label>(*rows, "Count").set_text(tr(group.label) + " (" +
-            String::num_uint64(picked.size()) + " / " +
-            String::num_uint64(group.count) + ")");
-    required_node<Label>(*rows, "Pending").set_text(tr(N_(
-                "Unfilled cantrip choices remain pending. More choices will become available as spell support expands.")));
+    required_node<Label>(*rows, "Count")
+        .set_text(tr(group.label) + " (" + String::num_uint64(picked.size()) + " / " +
+                  String::num_uint64(group.count) + ")");
+    required_node<Label>(*rows, "Pending")
+        .set_text(tr(N_(
+            "Unfilled cantrip choices remain pending. More choices will become available as spell support expands.")));
     // A Paladin prepares spells without learning cantrips.
     required_node<Label>(*rows, "Count").set_visible(group.count > 0);
     required_node<Label>(*rows, "Pending").set_visible(picked.size() < group.count);
@@ -26,11 +27,11 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
         {
             const auto id = check->get_name();
             if (std::none_of(group.options.begin(), group.options.end(),
-                             [&](const auto & option)
-        {
-            return training_string(option.id) == id;
-            }))
-            check->hide();
+                             [&](const auto &option)
+                             {
+                                 return training_string(option.id) == id;
+                             }))
+                check->hide();
         }
     for (const auto &option : group.options)
     {
@@ -38,8 +39,8 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
         auto *check = Object::cast_to<CheckBox>(rows->get_node_or_null(name));
         if (!check)
         {
-            auto owned = instantiate_control<CheckBox>(
-                "res://scenes/control_templates/cantrip_choice.tscn");
+            auto owned =
+                instantiate_control<CheckBox>("res://scenes/control_templates/cantrip_choice.tscn");
             owned->set_name(name);
             check = attach_child(*rows, std::move(owned));
             check->connect("toggled", toggled.bind(name));

@@ -11,8 +11,7 @@ CharacterDraft paladin_draft(std::vector<std::string> prepared)
 
 unsigned slot_capacity(const RulesModule &rules, const PartyMember &member)
 {
-    for (const auto &pool :
-            rules.recovery_info(member.character.sheet(), member.vitals).resources)
+    for (const auto &pool : rules.recovery_info(member.character.sheet(), member.vitals).resources)
         if (pool.id == "spell_slot:1")
             return pool.capacity;
     return 0;
@@ -28,25 +27,29 @@ void blessed_warrior_checks()
     party.award_experience(300, "blessed-warrior-xp");
     const auto &sheet = party.member(id).character.sheet();
     const auto styles = rules->advancement_options(sheet).fighting_styles;
-    check(std::any_of(styles.begin(), styles.end(), [](const auto & s)
-    {
-        return s.id == "blessed_warrior" && s.available;
-    }),
-    "A level-one Paladin may choose Blessed Warrior");
+    check(std::any_of(styles.begin(), styles.end(),
+                      [](const auto &s)
+                      {
+                          return s.id == "blessed_warrior" && s.available;
+                      }),
+          "A level-one Paladin may choose Blessed Warrior");
 
     auto choice = party.default_advancement(id);
     choice.fighting_style = "blessed_warrior";
     const auto next = rules->spell_choice_sheet(sheet, choice);
     const auto options = rules->spell_choice_options(next, SpellChoiceContext::advancement);
     check(options.learning.size() == 1 && options.learning.front().id == "cantrips:2" &&
-          options.learning.front().count == 2 &&
-          option_ids(options.learning.front().options) ==
-          std::vector<std::string> {"guidance", "resistance", "sacred_flame", "spare_the_dying"},
+              options.learning.front().count == 2 &&
+              option_ids(options.learning.front().options) ==
+                  std::vector<std::string>{"guidance", "resistance", "sacred_flame",
+                                           "spare_the_dying"},
           "Blessed Warrior learns two Cleric cantrips at level two");
     auto defense = choice;
     defense.fighting_style = "defense";
-    check(rules->spell_choice_options(rules->spell_choice_sheet(sheet, defense),
-                                      SpellChoiceContext::advancement).learning.empty(),
+    check(rules
+              ->spell_choice_options(rules->spell_choice_sheet(sheet, defense),
+                                     SpellChoiceContext::advancement)
+              .learning.empty(),
           "A Fighting Style feat brings no cantrips");
 
     auto wizard_cantrip = choice;
@@ -54,9 +57,9 @@ void blessed_warrior_checks()
     const auto before = saved(party);
     rejects(
         [&]
-    {
-        party.advance(id, wizard_cantrip);
-    });
+        {
+            party.advance(id, wizard_cantrip);
+        });
     check(saved(party) == before, "Blessed Warrior learns only Cleric cantrips");
 
     (*choice.spell_learning)["cantrips:2"] = {"sacred_flame", "spare_the_dying"};
@@ -64,29 +67,30 @@ void blessed_warrior_checks()
     const auto &warrior = party.member(id).character.sheet();
     const auto access = rules->spell_access(warrior);
     check(access.cantrip_choices == 2 && access.cantrips.size() == 2 &&
-          access.cantrips.front().id == "sacred_flame",
+              access.cantrips.front().id == "sacred_flame",
           "The Paladin knows Sacred Flame and Spare the Dying");
     const auto profile = rules->character_profile(warrior, {}).data;
     auto fight = rules->create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
-            {99, "bandit", "Enemy", Side::opposition, {4, 1}}
-        }},
-    5);
+                                {{1, "campaign-character", "Paladin", Side::party, {1, 1}, profile},
+                                 {99, "bandit", "Enemy", Side::opposition, {4, 1}}}},
+                               5);
     bool offered = false;
     for (unsigned turns = 0; turns < 4 && !offered; ++turns)
     {
         const auto commands = fight->legal_commands();
-        offered = std::any_of(commands.begin(), commands.end(), [](const auto & c)
-        {
-            return c.actor == 1 && c.verb == "sacred_flame" && c.target == 99;
-        });
+        offered = std::any_of(commands.begin(), commands.end(),
+                              [](const auto &c)
+                              {
+                                  return c.actor == 1 && c.verb == "sacred_flame" && c.target == 99;
+                              });
         if (!offered)
             fight->submit(commands.front());
     }
     check(offered, "The Blessed Warrior casts Sacred Flame in combat");
     const auto bytes = saved(party);
     CampaignParty restored(module());
-    restored.restore(decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
+    restored.restore(
+        decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
     check(saved(restored) == bytes, "A Blessed Warrior round-trips");
 }
 
@@ -105,39 +109,41 @@ void devotion_checks()
     auto creation_rules = srd5::character_rules();
     CampaignParty party(module());
     const auto id = party.add_pc(
-                        Character(*creation_rules, paladin_draft({"cure_wounds", "shield_of_faith"}), {}));
+        Character(*creation_rules, paladin_draft({"cure_wounds", "shield_of_faith"}), {}));
     party.award_experience(900, "devotion-xp");
     party.advance(id, party.default_advancement(id));
     check(!pool(rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals),
                 "channel_divinity"),
           "Channel Divinity waits for level three");
     auto third = party.default_advancement(id);
-    check(std::find(third.spells.begin(), third.spells.end(), "shield_of_faith") == third.spells.end(),
+    check(std::find(third.spells.begin(), third.spells.end(), "shield_of_faith") ==
+              third.spells.end(),
           "Shield of Faith, prepared earlier, frees its place at level three");
     auto doubled = third;
     doubled.spells.back() = "shield_of_faith";
     const auto before = saved(party);
     rejects(
         [&]
-    {
-        party.advance(id, doubled);
-    });
+        {
+            party.advance(id, doubled);
+        });
     check(saved(party) == before, "An always prepared spell cannot also be prepared");
     party.advance(id, third);
     const auto &sheet = party.member(id).character.sheet();
     const auto access = rules->spell_access(sheet);
     check(access.prepared.size() == 4 &&
-          std::find(access.prepared.begin(), access.prepared.end(), "shield_of_faith") ==
-          access.prepared.end() &&
-          std::any_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id == "subclass:devotion";
-    }),
-    "Level three takes the Oath of Devotion and prepares four other spells");
+              std::find(access.prepared.begin(), access.prepared.end(), "shield_of_faith") ==
+                  access.prepared.end() &&
+              std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.id == "subclass:devotion";
+                          }),
+          "Level three takes the Oath of Devotion and prepares four other spells");
     const auto recovery = rules->recovery_info(sheet, party.member(id).vitals);
     const auto *channel = pool(recovery, "channel_divinity");
     check(channel && channel->capacity == 2 && channel->remaining == 2 &&
-          channel->short_rest_recovery == 1,
+              channel->short_rest_recovery == 1,
           "Channel Divinity has two uses and regains one on a Short Rest");
 }
 
@@ -151,33 +157,35 @@ void paladin_choices_checks()
     const Character paladin(*creation_rules, draft, {});
     const auto access = rules->spell_access(paladin.sheet());
     check(access.cantrip_choices == 0 && access.prepared_choices == 2 &&
-          access.prepared == std::vector<std::string> {"cure_wounds"},
+              access.prepared == std::vector<std::string>{"cure_wounds"},
           "A level-one Paladin prepares two spells and knows no cantrips");
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 2 &&
-          option_ids(options.preparation) ==
-          std::vector<std::string> {"bless", "command", "cure_wounds", "divine_favor", "divine_smite", "heroism",
-                                    "protection_from_evil_and_good", "searing_smite", "shield_of_faith"
-                                   },
-    "Creation prepares from the implemented Paladin list");
+              option_ids(options.preparation) ==
+                  std::vector<std::string>{
+                      "bless", "command", "cure_wounds", "divine_favor", "divine_smite", "heroism",
+                      "protection_from_evil_and_good", "searing_smite", "shield_of_faith"},
+          "Creation prepares from the implemented Paladin list");
     check(rules->character_profile(paladin.sheet(), {}).data.starts_with("PC43 1 0 1 cure_wounds "),
           "The profile records the prepared spell");
-    for (const auto &bad : std::vector<std::vector<std::string>>
-{
-    {"healing_word"}, {"magic_missile"}, {"cure_wounds", "cure_wounds"},
-        {"cure_wounds", "divine_smite", "searing_smite"}, {"healing_word", "cure_wounds"}
-    })
-    rejects(
-        [&]
-    {
-        (void)creation_rules->evaluate(paladin_draft(bad), NameRequirement::required);
-    });
+    for (const auto &bad :
+         std::vector<std::vector<std::string>>{{"healing_word"},
+                                               {"magic_missile"},
+                                               {"cure_wounds", "cure_wounds"},
+                                               {"cure_wounds", "divine_smite", "searing_smite"},
+                                               {"healing_word", "cure_wounds"}})
+        rejects(
+            [&]
+            {
+                (void)creation_rules->evaluate(paladin_draft(bad), NameRequirement::required);
+            });
     const auto messages = rules->character_profile(paladin.sheet(), {}).spell_messages;
-    check(std::any_of(messages.begin(), messages.end(), [&](const auto & m)
-    {
-        return m.source.starts_with("Paladin spellcasting: Charisma score");
-    }),
-    "Paladin spellcasting uses Charisma");
+    check(std::any_of(messages.begin(), messages.end(),
+                      [&](const auto &m)
+                      {
+                          return m.source.starts_with("Paladin spellcasting: Charisma score");
+                      }),
+          "Paladin spellcasting uses Charisma");
 
     CharacterCreator creator(srd5::character_rules(), 1);
     creator.roll();
@@ -201,42 +209,44 @@ void paladin_choices_checks()
         const auto &sheet = party.member(id).character.sheet();
         const auto access = rules->spell_access(sheet);
         check(slot_capacity(*rules, party.member(id)) == slots[level - 1] &&
-              access.prepared_choices == level + 1,
+                  access.prepared_choices == level + 1,
               "Paladin slots and prepared spells follow the class table");
         // Paladin's Smite: Divine Smite is always prepared and not counted; the
         // Oath of Devotion adds its spells at level three.
-        const auto always = level >= 3 ? std::vector<std::string> {"divine_smite",
-                            "protection_from_evil_and_good", "shield_of_faith"
-                                                                  }
-                            : std::vector<std::string> {"divine_smite"};
+        const auto always =
+            level >= 3 ? std::vector<std::string>{"divine_smite", "protection_from_evil_and_good",
+                                                  "shield_of_faith"}
+                       : std::vector<std::string>{"divine_smite"};
         check(access.always_prepared == always &&
-              std::find(access.prepared.begin(), access.prepared.end(), "divine_smite") ==
-              access.prepared.end() &&
-              rules->character_profile(sheet, {}).data.find(" divine_smite ") != std::string::npos,
+                  std::find(access.prepared.begin(), access.prepared.end(), "divine_smite") ==
+                      access.prepared.end() &&
+                  rules->character_profile(sheet, {}).data.find(" divine_smite ") !=
+                      std::string::npos,
               "Divine Smite is always prepared from level two");
     }
     const auto bytes = saved(party);
     CampaignParty restored(module());
-    restored.restore(decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
+    restored.restore(
+        decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
     check(saved(restored) == bytes, "A level-four Paladin round-trips");
 
     // After a Long Rest a Paladin replaces one prepared spell, not more.
     CampaignParty resting(module());
-    const auto rester =
-        resting.add_pc(Character(*creation_rules, paladin_draft({"cure_wounds", "searing_smite"}), {}));
+    const auto rester = resting.add_pc(
+        Character(*creation_rules, paladin_draft({"cure_wounds", "searing_smite"}), {}));
     (void)resting.rest(RestKind::long_rest);
     check(resting.state().spell_rest.has_value(), "The Paladin's Long Rest opens the spell window");
     const auto before_rest = saved(resting);
     SpellChoices two;
-    two.prepared = std::vector<std::string> {"heroism", "divine_favor"};
+    two.prepared = std::vector<std::string>{"heroism", "divine_favor"};
     rejects(
         [&]
-    {
-        resting.choose_spells(rester, two);
-    });
+        {
+            resting.choose_spells(rester, two);
+        });
     check(saved(resting) == before_rest, "Replacing two prepared spells is refused");
     SpellChoices one;
-    one.prepared = std::vector<std::string> {"cure_wounds", "heroism"};
+    one.prepared = std::vector<std::string>{"cure_wounds", "heroism"};
     resting.choose_spells(rester, one);
     check(resting.member(rester).character.sheet().prepared_spells == *one.prepared,
           "Replacing one prepared spell is allowed");

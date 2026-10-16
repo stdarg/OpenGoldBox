@@ -7,6 +7,7 @@
 namespace opengold::srd5::detail
 {
 rules::TrainingChoiceGroup scholar_options(std::span<const rules::FeatureGrant> grants);
+
 // Expertise a class gains at a level (Bard 2 and 9, Rogue 6, Ranger 9): two
 // skills it is proficient in, without Expertise from another source.
 struct ExpertisePick
@@ -15,11 +16,13 @@ struct ExpertisePick
     unsigned level;
     std::string_view source, label;
 };
+
 inline constexpr std::array expertise_picks{
     ExpertisePick{CharacterClass::rogue, 6, "class:rogue:expertise:6", "Rogue Expertise"},
     ExpertisePick{CharacterClass::ranger, 9, "class:ranger:expertise:9", "Ranger Expertise"},
     ExpertisePick{CharacterClass::bard, 2, "class:bard:expertise:2", "Bard Expertise"},
     ExpertisePick{CharacterClass::bard, 9, "class:bard:expertise:9", "Bard Expertise"}};
+
 // The pick whose grants come from `source`, or none.
 inline constexpr const ExpertisePick *expertise_pick(std::string_view source)
 {
@@ -28,8 +31,9 @@ inline constexpr const ExpertisePick *expertise_pick(std::string_view source)
             return &pick;
     return nullptr;
 }
+
 rules::TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
-        std::span<const rules::FeatureGrant> grants);
+                                             std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);
 // Metamagic: two options at Sorcerer level 2, two more at 10, none of `held`.
 // The Eldritch Invocations a Warlock gains at a level (SRD 5.2.1 p. 71).
@@ -37,7 +41,7 @@ unsigned new_invocations(unsigned level);
 // The source of the invocations gained at a level from 2 on.
 std::string invocations_source(unsigned level);
 rules::TrainingChoiceGroup metamagic_options(unsigned level = 2,
-        std::span<const rules::FeatureGrant> held = {});
+                                             std::span<const rules::FeatureGrant> held = {});
 // The Draconic Sorcerer's Elemental Affinity (level 6): its damage type.
 rules::TrainingChoiceGroup elemental_affinity_options();
 // The Fiend Warlock's Fiendish Resilience (level 10): a type other than Force.
@@ -55,11 +59,12 @@ rules::TrainingChoiceGroup blessed_strikes_options();
 // The Druid's Elemental Fury (level 7): Potent Spellcasting or Primal Strike.
 rules::TrainingChoiceGroup elemental_fury_options();
 rules::TrainingChoiceGroup invocation_options(unsigned level,
-        std::span<const rules::FeatureGrant> grants, std::string_view source);
+                                              std::span<const rules::FeatureGrant> grants,
+                                              std::string_view source);
 rules::TrainingChoiceGroup skilled_options(std::span<const rules::FeatureGrant> grants);
 // Lessons of the First Ones' Skilled, taken at `level`: three skills.
 rules::TrainingChoiceGroup lessons_skilled_options(std::span<const rules::FeatureGrant> grants,
-        unsigned level);
+                                                   unsigned level);
 // Gaining a level lets a Warlock replace one invocation with another it
 // qualifies for, and a Sorcerer one Metamagic option (SRD 5.2.1). Offered for
 // the sheet before the level is gained.
@@ -72,13 +77,13 @@ constexpr std::string_view hall_training = "training_hall";
 // What a hall teaches a member of `classes`: proficiency in a skill on any of
 // their lists the character lacks, or Expertise in a skill it is proficient in.
 rules::TrainingChoiceGroup hall_training_options(std::span<const rules::FeatureGrant> grants,
-        std::span<const CharacterClass> classes);
+                                                 std::span<const CharacterClass> classes);
 std::vector<rules::TrainingChoiceGroup> training_options(const rules::CharacterDraft &draft);
 // `race` is a species id ("elf") or label ("Elf"): it decides the species'
 // own choices, such as the Elf's lineage.
-std::vector<rules::FeatureGrant>
-training_grants(CharacterClass klass, std::string_view race, std::string_view background,
-                const rules::TrainingChoices &choices);
+std::vector<rules::FeatureGrant> training_grants(CharacterClass klass, std::string_view race,
+                                                 std::string_view background,
+                                                 const rules::TrainingChoices &choices);
 bool is_training_grant(const rules::FeatureGrant &grant);
 std::vector<rules::FeatureGrant> without_training(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoices training_choices(std::span<const rules::FeatureGrant> grants,
@@ -89,8 +94,9 @@ rules::TrainingProfile training_profile(std::span<const rules::FeatureGrant> gra
                                         std::string_view background, unsigned level,
                                         const rules::AbilityArray<int> &scores);
 rules::AbilityCheckModifier ability_check(std::span<const rules::FeatureGrant> grants,
-        CharacterClass klass, std::string_view race, std::string_view background,
-        unsigned level, const rules::AbilityArray<int> &scores,
-        rules::Ability ability, std::string_view skill);
+                                          CharacterClass klass, std::string_view race,
+                                          std::string_view background, unsigned level,
+                                          const rules::AbilityArray<int> &scores,
+                                          rules::Ability ability, std::string_view skill);
 } // namespace opengold::srd5::detail
 #endif

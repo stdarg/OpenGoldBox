@@ -46,11 +46,10 @@ Character cleric(std::string name = "Cleric")
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"sacred_flame", "spare_the_dying", "resistance"};
+    d.cantrips = std::vector<std::string>{"sacred_flame", "spare_the_dying", "resistance"};
     d.spells = rules::SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
-        {"class:cleric:divine_order", {"protector"}}
-    };
+                  {"class:cleric:divine_order", {"protector"}}};
     Character hero(*srd5::character_rules(), d, {});
     rules::VitalState life{hero.sheet().hit_points, false, {}};
     const auto rules = module();
@@ -63,7 +62,7 @@ Character cleric(std::string name = "Cleric")
             spells.push_back("word_of_recall");
             for (const auto &spell : choice.spells)
                 if (spells.size() < choice.spells.size() &&
-                        std::find(spells.begin(), spells.end(), spell) == spells.end())
+                    std::find(spells.begin(), spells.end(), spell) == spells.end())
                     spells.push_back(spell);
             choice.spells = spells;
         }
@@ -84,10 +83,10 @@ void settle(RolfTourSession &town, bool *temple = nullptr)
         {
             // The temple's service menu: leave it with Cancel.
             const bool service = std::any_of(s.choices.begin(), s.choices.end(),
-                                              [](const auto & c)
-            {
-                return c == "Cancel";
-            });
+                                             [](const auto &c)
+                                             {
+                                                 return c == "Cancel";
+                                             });
             if (temple && service)
                 *temple = true;
             // At a temple, ask for its service: "DO YOU SEEK HEALING?" YES.
@@ -133,7 +132,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
                 const auto &b = town.map().at(x, y);
                 const unsigned reverse = (d + 2) % 4;
                 if (a.doors[d] > 1 || b.doors[reverse] > 1 || (a.walls[d] && !a.doors[d]) ||
-                        (b.walls[reverse] && !b.doors[reverse]))
+                    (b.walls[reverse] && !b.doors[reverse]))
                     continue;
                 const int next = y * 16 + x;
                 if (previous[static_cast<std::size_t>(next)] >= 0 || refused.contains({cell, next}))
@@ -150,7 +149,7 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
         const unsigned facing = next % 16 > int(p.x)   ? 1
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
-                                : 0;
+                                                       : 0;
         const bool forward = index(p.facing) == facing;
         town.explore(forward ? ExplorationCommand::forward : ExplorationCommand::turn_right);
         settle(town, temple);
@@ -184,9 +183,8 @@ void recall_checks(const char *directory)
     // The temple's door: a square by its landmark wall, (11, 2)'s south side,
     // where the service opens.
     unsigned temple_x = 16, temple_y = 16;
-    for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 5>{{
-                {11, 2}, {11, 3}, {10, 2}, {12, 2}, {11, 1}
-            }})
+    for (const auto &[x, y] : std::array<std::pair<unsigned, unsigned>, 5>{
+             {{11, 2}, {11, 3}, {10, 2}, {12, 2}, {11, 1}}})
     {
         bool temple = false;
         if (temple_x == 16 && walk_to(town, x, y, &temple) && temple)
@@ -208,7 +206,6 @@ void recall_checks(const char *directory)
     settle(town);
     check(town.snapshot().pose.x == temple_x && town.snapshot().pose.y == temple_y,
           "Word of Recall brings the party back to its sanctuary");
-
 }
 } // namespace
 

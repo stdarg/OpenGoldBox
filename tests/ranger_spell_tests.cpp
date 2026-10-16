@@ -83,10 +83,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // Level-one slots, read from the vital record "SRD13 winds slots ...".
@@ -113,13 +114,12 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::string weapon = "longsword")
 {
     const auto profile =
-        module.character_profile(hero.sheet(), std::vector<std::string> {std::move(weapon)}).data;
+        module.character_profile(hero.sheet(), std::vector<std::string>{std::move(weapon)}).data;
     auto c = module.create({{8, 4, std::vector<Terrain>(32)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
-            {98, "weakling", "Weakling", Side::opposition, {2, 1}},
-            {99, std::move(sturdy), "Target", Side::opposition, {2, 2}}
-        }},
-    seed);
+                            {{1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+                             {98, "weakling", "Weakling", Side::opposition, {2, 1}},
+                             {99, std::move(sturdy), "Target", Side::opposition, {2, 2}}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     check(c->snapshot().actor == 1, "The Ranger acts");
@@ -140,9 +140,8 @@ void favored_enemy_checks()
     auto c = battle(*module, ranger({"cure_wounds"}));
     check(remaining(*c, "favored_enemy") == 2 && slots(*c) == 2,
           "Favored Enemy: two free casts beside two slots");
-    check(submit(*c, "hunters_mark_free", 99) && !unit(*c, 1).bonus_action &&
-          unit(*c, 1).action && remaining(*c, "favored_enemy") == 1 &&
-          slots(*c) == 2,
+    check(submit(*c, "hunters_mark_free", 99) && !unit(*c, 1).bonus_action && unit(*c, 1).action &&
+              remaining(*c, "favored_enemy") == 1 && slots(*c) == 2,
           "A free Hunter's Mark is a Bonus Action that spends no slot");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The mark survives a checkpoint");
@@ -156,10 +155,12 @@ void move_mark_checks()
 {
     auto module = rules();
     auto moved = battle(*module, ranger({"cure_wounds"}));
-    check(submit(*moved, "hunters_mark_free", 98) && submit(*moved, "melee", 98), "Drop the quarry");
+    check(submit(*moved, "hunters_mark_free", 98) && submit(*moved, "melee", 98),
+          "Drop the quarry");
     next_turn(*moved);
-    check(submit(*moved, "hunters_mark_move", 99) && logged(*moved, "Ranger moves Hunter's Mark to Target.") &&
-          remaining(*moved, "favored_enemy") == 1,
+    check(submit(*moved, "hunters_mark_move", 99) &&
+              logged(*moved, "Ranger moves Hunter's Mark to Target.") &&
+              remaining(*moved, "favored_enemy") == 1,
           "A dropped quarry's mark moves for a Bonus Action without a new cast");
     check(submit(*moved, "melee", 99) && logged(*moved, "Target takes"),
           "The new quarry is marked");
@@ -169,8 +170,7 @@ void slot_cast_checks()
 {
     auto module = rules();
     auto c = battle(*module, ranger({"cure_wounds"}));
-    check(submit(*c, "hunters_mark", 99) && slots(*c) == 1 &&
-          remaining(*c, "favored_enemy") == 2,
+    check(submit(*c, "hunters_mark", 99) && slots(*c) == 1 && remaining(*c, "favored_enemy") == 2,
           "Hunter's Mark from a slot keeps the free casts");
 }
 
@@ -180,11 +180,12 @@ void longstrider_checks()
     auto c = battle(*module, ranger({"cure_wounds", "longstrider"}));
     const int before = unit(*c, 1).movement_feet;
     check(submit(*c, "longstrider", 1) && !unit(*c, 1).action &&
-          unit(*c, 1).movement_feet == before + 10,
+              unit(*c, 1).movement_feet == before + 10,
           "Longstrider adds 10 feet of Speed at once");
     next_turn(*c);
     check(unit(*c, 1).movement_feet == before + 10, "Longstrider lasts into later turns");
 }
+
 // A level-three Hunter with the chosen Hunter's Prey option.
 Character hunter(std::string prey, std::vector<std::string> masteries = {})
 {
@@ -203,13 +204,14 @@ Character hunter(std::string prey, std::vector<std::string> masteries = {})
 void write_ui_fixture()
 {
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
-    const auto profile = module->character_profile(ranger({"cure_wounds", "longstrider"}).sheet(),
-                         std::vector<std::string> {"longsword"}).data;
+    const auto profile = module
+                             ->character_profile(ranger({"cure_wounds", "longstrider"}).sheet(),
+                                                 std::vector<std::string>{"longsword"})
+                             .data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
-            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
-        }},
-    2);
+                             {{1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+                              {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
+                            2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "ranger-fixtures";
@@ -219,14 +221,16 @@ void write_ui_fixture()
     check(bool(out), "Write the UI fixture");
 
     // A Horde Breaker beside two adjacent vanguards.
-    const auto hunter_profile = module->character_profile(hunter("horde_breaker").sheet(),
-                                std::vector<std::string> {"longsword"}).data;
-    auto h = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, hunter_profile},
-            {98, "vanguard", "First", Side::opposition, {2, 1}},
-            {99, "vanguard", "Second", Side::opposition, {2, 2}}
-        }},
-    2);
+    const auto hunter_profile = module
+                                    ->character_profile(hunter("horde_breaker").sheet(),
+                                                        std::vector<std::string>{"longsword"})
+                                    .data;
+    auto h =
+        module->create({{12, 9, std::vector<Terrain>(108)},
+                        {{1, "campaign-character", "Ranger", Side::party, {1, 1}, hunter_profile},
+                         {98, "vanguard", "First", Side::opposition, {2, 1}},
+                         {99, "vanguard", "Second", Side::opposition, {2, 2}}}},
+                       2);
     for (unsigned turns = 0; h->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*h, "end"), "Reach the Hunter's turn");
     std::ofstream hunter_out(path / "hunter.save", std::ios::binary);
@@ -235,24 +239,27 @@ void write_ui_fixture()
 
     // A Ranger with Ensnaring Strike prepared, just after a hit on a vanguard.
     const auto ensnaring_profile =
-        module->character_profile(ranger({"cure_wounds", "ensnaring_strike"}).sheet(),
-                                  std::vector<std::string> {"longsword"}).data;
+        module
+            ->character_profile(ranger({"cure_wounds", "ensnaring_strike"}).sheet(),
+                                std::vector<std::string>{"longsword"})
+            .data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto e = module->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, ensnaring_profile},
-                {99, "vanguard", "Target", Side::opposition, {2, 1}}
-            }},
-        seed);
+        auto e = module->create(
+            {{12, 9, std::vector<Terrain>(108)},
+             {{1, "campaign-character", "Ranger", Side::party, {1, 1}, ensnaring_profile},
+              {99, "vanguard", "Target", Side::opposition, {2, 1}}}},
+            seed);
         for (unsigned turns = 0; e->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*e, "end"), "Reach the Ranger's turn");
         const auto offered = [&]
         {
             const auto commands = e->legal_commands();
-            return std::any_of(commands.begin(), commands.end(), [](const auto & c)
-            {
-                return c.verb == "ensnaring_strike";
-            });
+            return std::any_of(commands.begin(), commands.end(),
+                               [](const auto &c)
+                               {
+                                   return c.verb == "ensnaring_strike";
+                               });
         };
         if (!submit(*e, "melee", 99) || !offered())
             continue;
@@ -269,14 +276,15 @@ void write_ui_fixture()
 void write_entangle_fixture()
 {
     auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
-    const auto profile = module->character_profile(ranger({"cure_wounds", "entangle"}).sheet(),
-                         std::vector<std::string> {"longsword"}).data;
+    const auto profile = module
+                             ->character_profile(ranger({"cure_wounds", "entangle"}).sheet(),
+                                                 std::vector<std::string>{"longsword"})
+                             .data;
     auto c = module->create({{12, 9, std::vector<Terrain>(108)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
-            {98, "vanguard", "First", Side::opposition, {6, 1}},
-            {99, "vanguard", "Second", Side::opposition, {6, 2}}
-        }},
-    2);
+                             {{1, "campaign-character", "Ranger", Side::party, {1, 1}, profile},
+                              {98, "vanguard", "First", Side::opposition, {6, 1}},
+                              {99, "vanguard", "Second", Side::opposition, {6, 2}}}},
+                            2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "ranger-fixtures";
@@ -284,6 +292,7 @@ void write_entangle_fixture()
     out << c->save();
     check(bool(out), "Write the Entangle UI fixture");
 }
+
 void hunters_prey_option_checks()
 {
     auto module = rules();
@@ -293,7 +302,7 @@ void hunters_prey_option_checks()
     party.advance(id, party.default_advancement(id));
     const auto options = module->advancement_options(party.member(id).character.sheet());
     check(options.training.size() == 1 && options.training.front().id == "subclass:ranger:hunter" &&
-          options.training.front().options.size() == 2,
+              options.training.front().options.size() == 2,
           "Level three chooses Hunter's Prey");
     auto bad = party.default_advancement(id);
     bad.training["subclass:ranger:hunter"] = {"giant_killer"};
@@ -328,7 +337,8 @@ void horde_breaker_checks()
     check(!submit(*c, "horde_breaker", 98), "Horde Breaker follows a weapon attack");
     check(submit(*c, "melee", 99), "Attack the sturdy target");
     const auto saved = c->save();
-    check(module->restore(saved)->save() == saved, "Horde Breaker's turn state survives a checkpoint");
+    check(module->restore(saved)->save() == saved,
+          "Horde Breaker's turn state survives a checkpoint");
     check(!submit(*c, "horde_breaker", 99), "Horde Breaker needs a different creature");
     check(submit(*c, "horde_breaker", 98) && logged(*c, "Ranger uses Horde Breaker."),
           "Horde Breaker attacks the creature beside the first target");
@@ -340,12 +350,13 @@ void hunters_lore_checks()
     auto module = rules();
     auto c = battle(*module, hunter("colossus_slayer"), "brute");
     check(submit(*c, "hunters_mark_free", 99) &&
-          logged(*c, "Hunter's Lore: Target has Resistance to Slashing."),
+              logged(*c, "Hunter's Lore: Target has Resistance to Slashing."),
           "Hunter's Lore reveals the quarry's Resistance");
     auto plain = battle(*module, ranger({"cure_wounds"}), "brute");
     check(submit(*plain, "hunters_mark_free", 99) && !logged(*plain, "Hunter's Lore"),
           "Hunter's Lore needs the Hunter");
 }
+
 // A battle in which the Ranger's Ensnaring Strike has Restrained the target
 // (99): the first seed whose Strength save fails.
 std::unique_ptr<CombatSession> ensnared(const RulesModule &module)
@@ -354,7 +365,7 @@ std::unique_ptr<CombatSession> ensnared(const RulesModule &module)
     {
         auto c = battle(module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed);
         if (submit(*c, "melee", 99) && submit(*c, "ensnaring_strike", 99) &&
-                logged(*c, "Target is Restrained."))
+            logged(*c, "Target is Restrained."))
             return c;
     }
     throw std::runtime_error("No seed fails the Strength save");
@@ -363,10 +374,11 @@ std::unique_ptr<CombatSession> ensnared(const RulesModule &module)
 bool restrained(const CombatSession &c, EntityId id)
 {
     const auto conditions = unit(c, id).conditions;
-    return std::any_of(conditions.begin(), conditions.end(), [](const auto & m)
-    {
-        return m.source == "Restrained";
-    });
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [](const auto &m)
+                       {
+                           return m.source == "Restrained";
+                       });
 }
 
 void ensnaring_strike_checks()
@@ -383,7 +395,7 @@ void ensnaring_strike_checks()
     while (c->snapshot().actor != 99)
         check(submit(*c, "end"), "Reach the Restrained creature");
     check(logged(*c, "Target takes") && logged(*c, "Piercing damage from the vines") &&
-          unit(*c, 99).movement_feet == 0,
+              unit(*c, 99).movement_feet == 0,
           "The vines deal Piercing damage at the start of its turn and hold it in place");
     check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
           "A Restrained creature attacks with Disadvantage");
@@ -416,8 +428,8 @@ void ranged_smite_window_checks()
     // A longbow hit opens Ensnaring Strike; the target stands 10 feet away.
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
-        auto c = battle(*module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed,
-                        "longbow");
+        auto c =
+            battle(*module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed, "longbow");
         check(submit(*c, "ranged", 99), "The Ranger shoots");
         if (!logged(*c, "hits") && !logged(*c, "CRITICAL"))
             continue;
@@ -426,6 +438,7 @@ void ranged_smite_window_checks()
     }
     throw std::runtime_error("No seed hits with the longbow");
 }
+
 bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
 {
     for (const auto &command : c.legal_commands())
@@ -439,23 +452,25 @@ void entangle_aiming_checks()
     auto module = rules();
     auto c = battle(*module, ranger({"cure_wounds", "entangle"}));
     const auto offers = c->legal_commands();
-    const auto start = std::find_if(offers.begin(), offers.end(), [](const auto & command)
-    {
-        return command.verb == "entangle";
-    });
+    const auto start = std::find_if(offers.begin(), offers.end(),
+                                    [](const auto &command)
+                                    {
+                                        return command.verb == "entangle";
+                                    });
     check(start != offers.end() && start->aims_area && !start->target,
           "Entangle is offered once, to be aimed");
     check(c->submit(*start), "Choosing Entangle starts aiming");
     auto aim = c->snapshot().area_targeting;
     check(aim && aim->verb == "entangle" && aim->center == Cell{2, 1} && aim->cells.size() == 16 &&
-          unit(*c, 1).action && slots(*c) == 2,
+              unit(*c, 1).action && slots(*c) == 2,
           "The preview starts on the nearest enemy, a 20-foot square, nothing spent");
     const auto aiming = c->save();
     check(module->restore(aiming)->save() == aiming, "Aiming survives a checkpoint");
-    check(submit_cell(*c, "area_move", Cell{5, 2}) && c->snapshot().area_targeting->center == Cell{5, 2},
+    check(submit_cell(*c, "area_move", Cell{5, 2}) &&
+              c->snapshot().area_targeting->center == Cell{5, 2},
           "Moving the preview recentres the square");
     check(submit(*c, "spell_cancel") && !c->snapshot().area_targeting && unit(*c, 1).action &&
-          slots(*c) == 2,
+              slots(*c) == 2,
           "Cancelling spends nothing");
 }
 
@@ -468,7 +483,7 @@ std::unique_ptr<CombatSession> entangled(const RulesModule &module, std::size_t 
         auto c = battle(module, ranger({"cure_wounds", "entangle"}), "target", seed);
         reach_before = c->movement_reach(1).size();
         check(submit(*c, "entangle") && submit_cell(*c, "area_move", Cell{2, 1}) &&
-              submit(*c, "area_cast"),
+                  submit(*c, "area_cast"),
               "Aim and cast Entangle");
         if (restrained(*c, 98) || restrained(*c, 99))
             return c;
@@ -482,16 +497,16 @@ void entangle_checks()
     std::size_t reach_before{};
     auto c = entangled(*module, reach_before);
     check(logged(*c, "Ranger casts Entangle.") && !unit(*c, 1).action && slots(*c) == 1 &&
-          !restrained(*c, 1),
+              !restrained(*c, 1),
           "Entangle spends the Action and a slot and spares its caster");
     check(c->movement_reach(1).size() < reach_before &&
-          c->snapshot().battlefield.at(Cell{2, 1}) == Terrain::difficult,
+              c->snapshot().battlefield.at(Cell{2, 1}) == Terrain::difficult,
           "The square is Difficult Terrain, shown on the battlefield");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The plants survive a checkpoint");
     // A new Concentration spell ends Entangle: the plants and the Restraint go.
     check(submit(*c, "hunters_mark_free", 99) && !restrained(*c, 98) && !restrained(*c, 99) &&
-          c->movement_reach(1).size() == reach_before,
+              c->movement_reach(1).size() == reach_before,
           "Losing Concentration removes the plants");
 }
 
@@ -503,7 +518,7 @@ void fog_cloud_checks()
     check(submit(*c, "hunters_mark_free", 99), "In clear air the Ranger can mark the target");
     c = module->restore(clear);
     check(submit(*c, "fog_cloud") && submit_cell(*c, "area_move", Cell{6, 2}) &&
-          submit(*c, "area_cast") && logged(*c, "Ranger casts Fog Cloud.") && slots(*c) == 1,
+              submit(*c, "area_cast") && logged(*c, "Ranger casts Fog Cloud.") && slots(*c) == 1,
           "Fog Cloud is aimed and cast");
     const auto obscured = c->snapshot().obscured;
     const auto inside = [&](Cell cell)
@@ -531,31 +546,35 @@ void hunters_prey_rest_checks()
     const auto prey = [&]
     {
         const auto &grants = party.member(id).character.sheet().grants;
-        return std::find_if(grants.begin(), grants.end(), [](const auto & g)
-        {
-            return g.id.starts_with("prey:");
-        })->id;
+        return std::find_if(grants.begin(), grants.end(),
+                            [](const auto &g)
+                            {
+                                return g.id.starts_with("prey:");
+                            })
+            ->id;
     };
     const auto roundtrip = [&]
     {
         const auto bytes = encode_campaign(party, nullptr, "prey-rest");
         CampaignParty next(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
-        next.restore(decode_campaign(bytes, *srd5::character_rules(), *rules, "prey-rest",
-                                     nullptr).party);
-        check(encode_campaign(next, nullptr, "prey-rest") == bytes, "The rest edits replay exactly");
+        next.restore(
+            decode_campaign(bytes, *srd5::character_rules(), *rules, "prey-rest", nullptr).party);
+        check(encode_campaign(next, nullptr, "prey-rest") == bytes,
+              "The rest edits replay exactly");
     };
     check(bool(party.rest(RestKind::short_rest)), "A Short Rest");
     party.finish_short_rest(party.state().short_rest->ticket);
-    const auto offered = rules->rest_training_options(party.member(id).character.sheet(),
-                         RestKind::short_rest);
+    const auto offered =
+        rules->rest_training_options(party.member(id).character.sheet(), RestKind::short_rest);
     check(party.state().training_rest && party.state().training_after_short_rest &&
-          offered.size() == 1 && offered.front().group.id == "subclass:ranger:hunter" &&
-          offered.front().selected == std::vector<std::string> {"colossus_slayer"},
+              offered.size() == 1 && offered.front().group.id == "subclass:ranger:hunter" &&
+              offered.front().selected == std::vector<std::string>{"colossus_slayer"},
           "After a Short Rest the Hunter's Prey alone may change");
     roundtrip(); // with the Short Rest's choice still open
     const auto ticket = party.state().training_rest->ticket;
-    const auto mastery = rules->rest_training_options(party.member(id).character.sheet(),
-                         RestKind::long_rest).front();
+    const auto mastery =
+        rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest)
+            .front();
     bool refused = false;
     try
     {
@@ -567,8 +586,9 @@ void hunters_prey_rest_checks()
     {
         refused = true;
     }
-    check(refused && prey() == "prey:colossus_slayer", "A Short Rest does not touch Weapon Mastery");
-    party.replace_rest_training(ticket, id, std::vector<std::string> {"horde_breaker"});
+    check(refused && prey() == "prey:colossus_slayer",
+          "A Short Rest does not touch Weapon Mastery");
+    party.replace_rest_training(ticket, id, std::vector<std::string>{"horde_breaker"});
     check(prey() == "prey:horde_breaker" && !party.state().training_rest,
           "The Short Rest changes the Hunter's Prey");
     roundtrip();
@@ -577,16 +597,17 @@ void hunters_prey_rest_checks()
     check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
     if (party.state().spell_rest)
         party.keep_rest_spells(id);
-    const auto both = rules->rest_training_options(party.member(id).character.sheet(),
-                      RestKind::long_rest);
+    const auto both =
+        rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest);
     check(both.size() == 2 && both[0].group.id == "weapon_mastery" &&
-          both[1].group.id == "subclass:ranger:hunter",
+              both[1].group.id == "subclass:ranger:hunter",
           "After a Long Rest Weapon Mastery and the Hunter's Prey may change");
     party.replace_rest_training(party.state().training_rest->ticket, id,
-                                std::vector<std::string> {"colossus_slayer"});
+                                std::vector<std::string>{"colossus_slayer"});
     check(prey() == "prey:colossus_slayer" &&
-          rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest)
-          .front().selected == both.front().selected,
+              rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest)
+                      .front()
+                      .selected == both.front().selected,
           "A choice the edit leaves out keeps its picks");
     roundtrip();
 }

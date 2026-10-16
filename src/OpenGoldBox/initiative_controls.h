@@ -53,7 +53,7 @@ void setup_initiative(godot::Node &root, Text text, const godot::Callable &swap,
 inline bool initiative_command(godot::Node &root, const opengold::rules::Command &command)
 {
     if (command.verb != "initiative_keep" && command.verb != "initiative_swap" &&
-            command.verb != "uncanny_metabolism" && command.verb != "persistent_rage")
+        command.verb != "uncanny_metabolism" && command.verb != "persistent_rage")
         return true;
     const auto owner =
         required_node<godot::OptionButton>(root, "InitiativeChoice/Resolve").get_selected_id();
@@ -86,12 +86,11 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     const auto label = [&](unsigned id)
     {
         const auto a = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                    [&](const auto & c)
-        {
-            return c.id == id;
-        });
-        return render(opengold::rules::Message
-        {
+                                    [&](const auto &c)
+                                    {
+                                        return c.id == id;
+                                    });
+        return render(opengold::rules::Message{
             N_("{name}: Initiative {total}"),
             {{"name", a->name}, {"total", std::to_string(a->initiative)}}});
     };
@@ -128,10 +127,11 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     const bool swaps = allies->get_item_count() > 1;
     const auto offered = [&](std::string_view verb)
     {
-        return std::any_of(commands.begin(), commands.end(), [&](const auto & c)
-        {
-            return c.verb == verb && c.actor == static_cast<unsigned>(owner);
-        });
+        return std::any_of(commands.begin(), commands.end(),
+                           [&](const auto &c)
+                           {
+                               return c.verb == verb && c.actor == static_cast<unsigned>(owner);
+                           });
     };
     const bool persistent = offered("persistent_rage");
     for (const char *name : {"AllyLabel", "Ally", "Swap"})
@@ -139,12 +139,17 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     auto &feature = required_node<Button>(*w, "Metabolism");
     feature.set_visible(persistent || offered("uncanny_metabolism"));
     feature.set_text(persistent ? text(N_("Persistent Rage")) : text(N_("Uncanny Metabolism")));
-    required_node<Label>(*w, "Text").set_text(
-        label(owner) + "\n\n" +
-        (swaps ? text(N_("Swap these Initiative totals, or keep your Initiative. No turn has started yet."))
-         : persistent
-         ? text(N_("Use Persistent Rage to regain every Rage use (once per Long Rest), or keep going. No turn has started yet."))
-         : text(N_("Use Uncanny Metabolism to regain all Focus Points and 1d6 + your Monk level Hit Points (once per Long Rest), or keep going. No turn has started yet."))));
+    required_node<Label>(*w, "Text")
+        .set_text(
+            label(owner) + "\n\n" +
+            (swaps
+                 ? text(N_(
+                       "Swap these Initiative totals, or keep your Initiative. No turn has started yet."))
+             : persistent
+                 ? text(N_(
+                       "Use Persistent Rage to regain every Rage use (once per Long Rest), or keep going. No turn has started yet."))
+                 : text(N_(
+                       "Use Uncanny Metabolism to regain all Focus Points and 1d6 + your Monk level Hit Points (once per Long Rest), or keep going. No turn has started yet."))));
     required_node<Button>(*w, "Swap").set_disabled(selected == 0);
     if (!w->is_visible())
     {

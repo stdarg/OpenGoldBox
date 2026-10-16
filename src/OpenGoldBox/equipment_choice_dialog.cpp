@@ -22,7 +22,7 @@ String equipment_message(const opengold::rules::Message &message)
     for (const auto &argument : message.arguments)
         text = text.replace(String::utf8(("{" + argument.name + "}").c_str()),
                             argument.translate ? i18n::text(argument.value)
-                            : String::utf8(argument.value.c_str()));
+                                               : String::utf8(argument.value.c_str()));
     return text;
 }
 } // namespace
@@ -42,7 +42,7 @@ presentation::NodeOwner<EquipmentChoiceDialog> EquipmentChoiceDialog::create()
 }
 
 void EquipmentChoiceDialog::connect_host(CampaignAccess campaign, std::function<void()> closed,
-        std::function<void()> equipped, FailureReport report)
+                                         std::function<void()> equipped, FailureReport report)
 {
     if (!campaign || !closed || !equipped || !report)
         throw std::logic_error("Equipment choice needs a campaign, two follow-ups and a report");
@@ -82,8 +82,9 @@ void EquipmentChoiceDialog::open(opengold::MemberId member, std::uint64_t item,
     member_ = member;
     item_ = item;
     choices_ = std::move(choices);
-    required_node<Label>(*this, "Item").set_text(
-        i18n::text(campaign_().member(member).character.inventory().find(item)->get().name));
+    required_node<Label>(*this, "Item")
+        .set_text(
+            i18n::text(campaign_().member(member).character.inventory().find(item)->get().name));
     auto *hand = &required_node<OptionButton>(*this, "Hand");
     hand->clear();
     int first = -1;
@@ -107,15 +108,15 @@ void EquipmentChoiceDialog::choice_selected(std::int64_t index)
         return;
     const auto &choice = choices_[index];
     required_node<Label>(*this, "Explanation").set_text(equipment_message(choice.explanation));
-    required_node<Button>(*this, "Equip").set_disabled(!choice.available ||
-            campaign_().in_combat());
+    required_node<Button>(*this, "Equip")
+        .set_disabled(!choice.available || campaign_().in_combat());
 }
 
 void EquipmentChoiceDialog::apply()
 {
     const auto selected = required_node<OptionButton>(*this, "Hand").get_selected();
     if (selected < 0 || static_cast<std::size_t>(selected) >= choices_.size() ||
-            !choices_[selected].available)
+        !choices_[selected].available)
         return;
     try
     {
@@ -142,7 +143,7 @@ void EquipmentChoiceDialog::window_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() &&
-            key->get_keycode() == Key::KEY_ESCAPE)
+        key->get_keycode() == Key::KEY_ESCAPE)
     {
         close();
         set_input_as_handled();

@@ -92,7 +92,7 @@ int combat_zoom_percent()
     const Variant fallback =
         ProjectSettings::get_singleton()->get_setting("opengold/combat_zoom", 100);
     return fallback.get_type() == Variant::INT ? std::clamp(static_cast<int>(fallback), 10, 1000)
-           : 100;
+                                               : 100;
 }
 
 unsigned encounter_challenge()
@@ -105,8 +105,7 @@ unsigned encounter_challenge()
         const Variant value = config->get_value("combat", "encounter_challenge", fallback);
         if (value.get_type() == Variant::INT)
             return static_cast<unsigned>(std::clamp(
-                                             static_cast<int>(value), 0,
-                                             static_cast<int>(opengold::max_encounter_challenge)));
+                static_cast<int>(value), 0, static_cast<int>(opengold::max_encounter_challenge)));
     }
     return opengold::default_encounter_challenge;
 }
@@ -165,7 +164,7 @@ Validation validate_game_path(const String &directory)
     Ref<JSON> json;
     json.instantiate();
     if (json->parse(FileAccess::get_file_as_string("res://config/por-pc13-md5.json")) != OK ||
-            json->get_data().get_type() != Variant::DICTIONARY)
+        json->get_data().get_type() != Variant::DICTIONARY)
     {
         result.error = "Cannot read the bundled game-file checksum manifest.";
         return result;

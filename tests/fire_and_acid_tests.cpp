@@ -47,17 +47,18 @@ void conversions()
 {
     const auto module = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     check(equipment_conversion(item(original_item::flask_of_oil)) == "oil" &&
-          equipment_conversion(item(authored_item::torch)) == "torch" &&
-          equipment_conversion(item(authored_item::acid)) == "acid" &&
-          equipment_conversion(item(authored_item::alchemists_fire)) == "alchemists_fire",
+              equipment_conversion(item(authored_item::torch)) == "torch" &&
+              equipment_conversion(item(authored_item::acid)) == "acid" &&
+              equipment_conversion(item(authored_item::alchemists_fire)) == "alchemists_fire",
           "Oil, Torch, Acid and Alchemist's Fire convert to SRD gear");
     const auto torch = module->equipment_info("torch");
-    check(torch.slot == EquipmentSlot::weapon && torch.hands == 1, "A Torch is wielded in one hand");
+    check(torch.slot == EquipmentSlot::weapon && torch.hands == 1,
+          "A Torch is wielded in one hand");
     for (const auto *gear : {"oil", "acid", "alchemists_fire"})
         check(module->equipment_info(gear).slot == EquipmentSlot::carried,
               std::string(gear) + " is carried gear");
     check(item(authored_item::torch).label() == "Torch" &&
-          item(authored_item::alchemists_fire).label() == "Alchemist's Fire",
+              item(authored_item::alchemists_fire).label() == "Alchemist's Fire",
           "The added gear has readable names");
 }
 
@@ -79,10 +80,11 @@ CharacterSheet fighter()
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::count_if(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::count_if(log.begin(), log.end(),
+                         [&](const auto &line)
+                         {
+                             return line.find(text) != std::string::npos;
+                         });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId target = 0)
@@ -97,8 +99,8 @@ bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId ta
 // while its side fights on.
 void torch_stops_regeneration()
 {
-    const auto module = srd5::parse_content(
-                            read(root / "data/rules/srd-5.2.1/combat.rules") +
+    const auto module =
+        srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                             "\ncreature weak-troll 1 1 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
                             "regeneration weak-troll 15\n"
                             "creature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
@@ -107,12 +109,12 @@ void torch_stops_regeneration()
     bool burned = false;
     for (std::uint64_t seed = 1; seed < 20 && !burned; ++seed)
     {
-        auto c = module->create({{10, 4, std::vector<Terrain>(40)},
-            {   {1, "campaign-character", "Torchbearer", Side::party, {2, 1}, profile.data},
-                {2, "weak-troll", "Troll", Side::opposition, {1, 1}},
-                {3, "target", "Guard", Side::opposition, {9, 3}}
-            }},
-        seed);
+        auto c = module->create(
+            {{10, 4, std::vector<Terrain>(40)},
+             {{1, "campaign-character", "Torchbearer", Side::party, {2, 1}, profile.data},
+              {2, "weak-troll", "Troll", Side::opposition, {1, 1}},
+              {3, "target", "Guard", Side::opposition, {9, 3}}}},
+            seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             (void)submit(*c, "end", c->snapshot().actor);
         if (c->snapshot().actor != 1 || !submit(*c, "melee", 1, 2))
@@ -121,10 +123,10 @@ void torch_stops_regeneration()
         {
             const auto s = c->snapshot();
             return *std::find_if(s.combatants.begin(), s.combatants.end(),
-                                 [](const auto & u)
-            {
-                return u.id == 2;
-            });
+                                 [](const auto &u)
+                                 {
+                                     return u.id == 2;
+                                 });
         };
         if (troll().hit_points != 0)
             continue;
@@ -138,6 +140,7 @@ void torch_stops_regeneration()
     }
     check(burned, "The Torch hits the troll");
 }
+
 // Shipped rules plus a weak troll, a sturdy guard and a target that always
 // fails Dexterity saves.
 std::string arena_rules()
@@ -218,10 +221,12 @@ Arena arena(const std::vector<std::uint8_t> &gear,
 bool offered(const CombatSession &c, std::string_view verb, EntityId actor, EntityId target)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb && command.actor == actor && command.target == target;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && command.actor == actor &&
+                                  command.target == target;
+                       });
 }
 
 bool use(CombatDemo &demo, std::string_view verb, EntityId actor, EntityId target = 0)
@@ -245,19 +250,21 @@ void turn_of(CombatDemo &demo, EntityId id)
 CombatantView unit(const CombatDemo &demo, EntityId id)
 {
     const auto s = demo.combat().snapshot();
-    return *std::find_if(s.combatants.begin(), s.combatants.end(), [&](const auto & u)
-    {
-        return u.id == id;
-    });
+    return *std::find_if(s.combatants.begin(), s.combatants.end(),
+                         [&](const auto &u)
+                         {
+                             return u.id == id;
+                         });
 }
 
 std::size_t logged(const CombatDemo &demo, std::string_view text)
 {
     const auto log = demo.combat().snapshot().log();
-    return std::count_if(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::count_if(log.begin(), log.end(),
+                         [&](const auto &line)
+                         {
+                             return line.find(text) != std::string::npos;
+                         });
 }
 
 // A sword-wielder draws a carried Torch to strike, and its Fire keeps a felled
@@ -270,7 +277,7 @@ void torch_drawn_against_troll()
         const auto fighter = EntityId(a.fighter);
         turn_of(*a.demo, fighter);
         check(offered(a.demo->combat(), "torch", fighter, 1000) &&
-              offered(a.demo->combat(), "melee", fighter, 1000),
+                  offered(a.demo->combat(), "melee", fighter, 1000),
               "A sword-wielder carrying a Torch can strike with either");
         check(use(*a.demo, "torch", fighter, 1000), "The fighter strikes with the Torch");
         if (unit(*a.demo, 1000).hit_points != 0)
@@ -291,19 +298,19 @@ void acid_used_up()
     const auto fighter = EntityId(a.fighter);
     turn_of(*a.demo, fighter);
     check(offered(a.demo->combat(), "throw_acid", fighter, 1000) &&
-          !offered(a.demo->combat(), "throw_acid", fighter, 1001),
+              !offered(a.demo->combat(), "throw_acid", fighter, 1001),
           "Acid can be thrown at a creature within 20 feet, not beyond");
     check(use(*a.demo, "throw_acid", fighter, 1000) && logged(*a.demo, "throws Acid") == 1 &&
-          unit(*a.demo, 1000).hit_points < 1000,
+              unit(*a.demo, 1000).hit_points < 1000,
           "A failed save against Acid takes Acid damage");
-    check(!offered(a.demo->combat(), "throw_acid", fighter, 1000),
-          "The only vial is used up");
+    check(!offered(a.demo->combat(), "throw_acid", fighter, 1000), "The only vial is used up");
     const auto &items = a.party->member(a.fighter).character.inventory().items();
-    check(std::none_of(items.begin(), items.end(), [](const auto & i)
-    {
-        return i.definition_id == "acid";
-    }),
-    "The thrown vial leaves the campaign inventory");
+    check(std::none_of(items.begin(), items.end(),
+                       [](const auto &i)
+                       {
+                           return i.definition_id == "acid";
+                       }),
+          "The thrown vial leaves the campaign inventory");
 }
 
 // Alchemist's Fire sets a creature burning: it burns at the start of its turn
@@ -314,11 +321,10 @@ void alchemists_fire_burns()
     const auto fighter = EntityId(a.fighter);
     turn_of(*a.demo, fighter);
     check(use(*a.demo, "throw_alchemists_fire", fighter, 1000) &&
-          logged(*a.demo, "starts burning") == 1,
+              logged(*a.demo, "starts burning") == 1,
           "Alchemist's Fire sets the creature burning");
     turn_of(*a.demo, 1000);
-    check(logged(*a.demo, "burns for") == 1 &&
-          offered(a.demo->combat(), "extinguish", 1000, 0),
+    check(logged(*a.demo, "burns for") == 1 && offered(a.demo->combat(), "extinguish", 1000, 0),
           "A burning creature takes Fire damage on its turn and can put the fire out");
     check(use(*a.demo, "extinguish", 1000) && unit(*a.demo, 1000).prone,
           "Putting the fire out leaves the creature Prone");
@@ -329,8 +335,8 @@ void oil_then_torch()
 {
     for (std::uint64_t seed = 1; seed < 30; ++seed)
     {
-        auto a = arena({original_item::flask_of_oil, authored_item::torch}, {{"clumsy", {3, 2}}},
-                       seed);
+        auto a =
+            arena({original_item::flask_of_oil, authored_item::torch}, {{"clumsy", {3, 2}}}, seed);
         const auto fighter = EntityId(a.fighter);
         turn_of(*a.demo, fighter);
         check(use(*a.demo, "throw_oil", fighter, 1000) && logged(*a.demo, "covered in oil") == 1,
@@ -342,12 +348,13 @@ void oil_then_torch()
         if (unit(*a.demo, 1000).hit_points == before)
             continue;
         check(before - unit(*a.demo, 1000).hit_points == 6 &&
-              logged(*a.demo, "burns for 5 more damage") == 1,
+                  logged(*a.demo, "burns for 5 more damage") == 1,
               "Fire on an oiled creature deals 5 more damage");
         return;
     }
     check(false, "The Torch hits the oiled creature");
 }
+
 // A carried longbow and arrows: drawn to shoot an enemy out of melee reach.
 // A shield-bearer first takes off its shield (an action), which costs its AC.
 void bows_drawn()
@@ -357,7 +364,7 @@ void bows_drawn()
     const auto archer = EntityId(free_hand.fighter);
     turn_of(*free_hand.demo, archer);
     check(offered(free_hand.demo->combat(), "shoot", archer, 1000) &&
-          !offered(free_hand.demo->combat(), "melee", archer, 1000),
+              !offered(free_hand.demo->combat(), "melee", archer, 1000),
           "A carried longbow is drawn to shoot an enemy out of reach");
     check(use(*free_hand.demo, "shoot", archer, 1000) && logged(*free_hand.demo, "Torchbearer ->"),
           "The arrow is shot");
@@ -367,11 +374,11 @@ void bows_drawn()
     turn_of(*shielded.demo, fighter);
     const auto armored = unit(*shielded.demo, fighter).armor_class;
     check(!offered(shielded.demo->combat(), "shoot", fighter, 1000) &&
-          offered(shielded.demo->combat(), "doff_shield", fighter, 0),
+              offered(shielded.demo->combat(), "doff_shield", fighter, 0),
           "A shield-bearer must take off its shield to draw a two-handed bow");
     check(use(*shielded.demo, "doff_shield", fighter) &&
-          unit(*shielded.demo, fighter).armor_class == armored - 2 &&
-          !offered(shielded.demo->combat(), "doff_shield", fighter, 0),
+              unit(*shielded.demo, fighter).armor_class == armored - 2 &&
+              !offered(shielded.demo->combat(), "doff_shield", fighter, 0),
           "Taking off the shield costs its AC");
     const auto checkpoint = shielded.demo->combat().save();
     check(srd5::parse_content(arena_rules())->restore(checkpoint)->save() == checkpoint,
@@ -379,9 +386,10 @@ void bows_drawn()
     check(use(*shielded.demo, "end", fighter), "The fighter ends its turn");
     turn_of(*shielded.demo, fighter);
     check(offered(shielded.demo->combat(), "shoot", fighter, 1000) &&
-          unit(*shielded.demo, fighter).armor_class == armored - 2,
+              unit(*shielded.demo, fighter).armor_class == armored - 2,
           "Without its shield the fighter can shoot, and the shield stays off");
 }
+
 // A troll set Burning while down cannot regenerate and dies cleanly on its turn,
 // and the combat AI throws Alchemist's Fire at a standing troll that is not
 // burning yet.
@@ -389,9 +397,8 @@ void burning_troll()
 {
     for (std::uint64_t seed = 1; seed < 30; ++seed)
     {
-        auto a = arena({authored_item::alchemists_fire}, {{"weak-troll", {4, 2}},
-            {"target", {10, 4}}
-        }, seed);
+        auto a = arena({authored_item::alchemists_fire},
+                       {{"weak-troll", {4, 2}}, {"target", {10, 4}}}, seed);
         const auto fighter = EntityId(a.fighter);
         turn_of(*a.demo, fighter);
         check(choose_demo_command(a.demo->combat()).verb == "throw_alchemists_fire",
@@ -407,6 +414,7 @@ void burning_troll()
     }
     check(false, "Alchemist's Fire sets the troll burning");
 }
+
 // Beside a standing troll, the combat AI strikes with its Torch: the Fire stops
 // regeneration worth more than a sword's damage.
 void torch_tactic()
@@ -420,26 +428,29 @@ void torch_tactic()
     check(choose_demo_command(a.demo->combat()).verb == "torch",
           "The AI strikes a standing troll with its Torch");
 }
+
 // A Wild Shape form cannot wield equipment: a Druid turned Wolf draws no
 // carried Torch or bow and throws no flask (SRD 5.2.1).
 void wild_shape_draws_nothing()
 {
     constexpr std::uint8_t shortbow = 42, arrows = 73;
     auto a = arena({authored_item::torch, shortbow, arrows, authored_item::alchemists_fire},
-    {{"target", {3, 2}}, {"clumsy", {6, 4}}}, 2, true, torchbearer("druid"), 2);
+                   {{"target", {3, 2}}, {"clumsy", {6, 4}}}, 2, true, torchbearer("druid"), 2);
     const auto druid = EntityId(a.fighter);
     turn_of(*a.demo, druid);
     check(offered(a.demo->combat(), "torch", druid, 1000) &&
-          offered(a.demo->combat(), "throw_alchemists_fire", druid, 1001),
+              offered(a.demo->combat(), "throw_alchemists_fire", druid, 1001),
           "A Druid carrying gear can use it");
     check(use(*a.demo, "wild_shape_wolf", druid), "The Druid turns into a Wolf");
     const auto commands = a.demo->combat().legal_commands();
-    check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
-    {
-        return command.verb == "torch" || command.verb == "shoot" ||
-               command.verb.starts_with("throw");
-    }) && offered(a.demo->combat(), "melee", druid, 1000),
-    "A Wolf bites but draws no Torch or bow and throws no flask");
+    check(std::none_of(commands.begin(), commands.end(),
+                       [](const auto &command)
+                       {
+                           return command.verb == "torch" || command.verb == "shoot" ||
+                                  command.verb.starts_with("throw");
+                       }) &&
+              offered(a.demo->combat(), "melee", druid, 1000),
+          "A Wolf bites but draws no Torch or bow and throws no flask");
 }
 
 // Against a troll whose Regeneration nothing has stopped, the combat AI casts
@@ -451,7 +462,7 @@ void fire_bolt_tactic()
     const auto wizard = EntityId(a.fighter);
     turn_of(*a.demo, wizard);
     check(offered(a.demo->combat(), "magic_missile", wizard, 1000) &&
-          offered(a.demo->combat(), "fire_bolt", wizard, 1000),
+              offered(a.demo->combat(), "fire_bolt", wizard, 1000),
           "The wizard can cast Magic Missile or Fire Bolt at the troll");
     check(choose_demo_command(a.demo->combat()).verb == "fire_bolt",
           "The AI casts Fire Bolt at a troll whose Regeneration is not stopped");
@@ -462,14 +473,14 @@ void fire_bolt_tactic()
 void carried_gear_survives_checkpoint()
 {
     constexpr std::uint8_t longbow = 41, arrows = 73;
-    auto a = arena({authored_item::torch, longbow, arrows}, {{"target", {3, 2}}, {"clumsy", {9, 4}}},
-                   2);
+    auto a =
+        arena({authored_item::torch, longbow, arrows}, {{"target", {3, 2}}, {"clumsy", {9, 4}}}, 2);
     const auto fighter = EntityId(a.fighter);
     turn_of(*a.demo, fighter);
     const auto checkpoint = a.demo->combat().save();
     const auto restored = srd5::parse_content(arena_rules())->restore(checkpoint);
     check(restored->save() == checkpoint && offered(*restored, "torch", fighter, 1000) &&
-          offered(*restored, "shoot", fighter, 1001),
+              offered(*restored, "shoot", fighter, 1001),
           "A restored combat still offers the carried Torch and bow");
 }
 } // namespace

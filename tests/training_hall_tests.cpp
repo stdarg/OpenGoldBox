@@ -46,12 +46,13 @@ Character fighter()
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.training = {{"class:fighter", {"acrobatics", "history"}},
-        {"class:fighter:fighting_style", {"defense"}}
-    };
+                  {"class:fighter:fighting_style", {"defense"}}};
     d.spells = SpellChoices{{{"feat:magic_initiate_cleric:ability", {"wisdom"}},
-            {"feat:magic_initiate_cleric:cantrips", {"sacred_flame", "guidance"}},
-            {"feat:magic_initiate_cleric:spell", {"guiding_bolt"}}
-        }, {}, {}, {}};
+                             {"feat:magic_initiate_cleric:cantrips", {"sacred_flame", "guidance"}},
+                             {"feat:magic_initiate_cleric:spell", {"guiding_bolt"}}},
+                            {},
+                            {},
+                            {}};
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -90,31 +91,33 @@ const SkillTraining &skill(const CampaignParty &party, MemberId id, std::string_
 
 bool offers(const TrainingChoiceGroup &group, std::string_view id)
 {
-    return std::any_of(group.options.begin(), group.options.end(), [&](const auto & option)
-    {
-        return option.id == id;
-    });
+    return std::any_of(group.options.begin(), group.options.end(),
+                       [&](const auto &option)
+                       {
+                           return option.id == id;
+                       });
 }
 
 void halls_and_fees()
 {
     check(training_hall_for_class("barbarian") == TrainingHall::fighters &&
-          training_hall_for_class("druid") == TrainingHall::clerics &&
-          training_hall_for_class("warlock") == TrainingHall::magic_users &&
-          training_hall_for_class("monk") == TrainingHall::thieves &&
-          !training_hall_for_class("Fighter"),
+              training_hall_for_class("druid") == TrainingHall::clerics &&
+              training_hall_for_class("warlock") == TrainingHall::magic_users &&
+              training_hall_for_class("monk") == TrainingHall::thieves &&
+              !training_hall_for_class("Fighter"),
           "Each class trains at its AD&D group's hall, by class ID");
-    check(hall_classes(TrainingHall::clerics) == std::vector<std::string_view> {"cleric", "druid"},
+    check(hall_classes(TrainingHall::clerics) == std::vector<std::string_view>{"cleric", "druid"},
           "The Clerics' hall trains Clerics and Druids");
     check(training_hall_named("MAGIC USERS ") == TrainingHall::magic_users &&
-          training_hall_named("THIEVES ") == TrainingHall::thieves && !training_hall_named("BARDS "),
+              training_hall_named("THIEVES ") == TrainingHall::thieves &&
+              !training_hall_named("BARDS "),
           "The original script names its hall");
     static_assert(hall_level_limit == 15, "The hall trains every class to level 15 (LEVELS-2)");
     check(experience_session_fee(1) == 1000 && experience_session_fee(3) == 4000 &&
-          experience_session_fee(8) == 128000,
+              experience_session_fee(8) == 128000,
           "A session costs 1,000 gp at level 1 and doubles at each level");
     check(skill_training_fee("skill:stealth") == 250 &&
-          skill_training_fee("expertise:stealth") == 500,
+              skill_training_fee("expertise:stealth") == 500,
           "Proficiency costs 250 gp and Expertise 500 gp");
 }
 
@@ -128,27 +131,31 @@ void experience_sessions()
           "A level-one session grants half of the 300 experience to level 2 for 1,000 gp");
     check(party.experience_offer(id, TrainingHall::thieves).denial == TrainingDenial::other_hall,
           "Another hall turns the Fighter away");
-    rejects([&]
-    {
-        party.buy_experience(id, TrainingHall::thieves);
-    }, "Another hall cannot sell the Fighter experience");
+    rejects(
+        [&]
+        {
+            party.buy_experience(id, TrainingHall::thieves);
+        },
+        "Another hall cannot sell the Fighter experience");
     party.buy_experience(id, TrainingHall::fighters);
     check(party.member(id).experience == 150 && party.state().wealth[3] == 500,
           "The session grants its experience and the party pays");
     check(party.experience_offer(id, TrainingHall::fighters).denial ==
-          TrainingDenial::already_trained,
+              TrainingDenial::already_trained,
           "One session per level");
-    rejects([&]
-    {
-        party.buy_experience(id, TrainingHall::fighters);
-    }, "A second session at the same level is refused");
+    rejects(
+        [&]
+        {
+            party.buy_experience(id, TrainingHall::fighters);
+        },
+        "A second session at the same level is refused");
     check(party.member(id).experience == 150 && party.state().wealth[3] == 500,
           "A refused session changes nothing");
     check(!party.can_advance(id), "Gold alone does not gain a level");
 
     party.award_experience(150, "test:earned");
     check(party.experience_offer(id, TrainingHall::fighters).denial ==
-          TrainingDenial::ready_to_advance,
+              TrainingDenial::ready_to_advance,
           "A member with enough experience advances first");
     party.advance(id, party.default_advancement(id));
     offer = party.experience_offer(id, TrainingHall::fighters);
@@ -164,13 +171,13 @@ void experience_sessions()
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     check(party.experience_offer(id, TrainingHall::fighters).denial ==
-          TrainingDenial::highest_level,
+              TrainingDenial::highest_level,
           "There is no session past the highest level");
 
     const auto reserve = party.add_pc(fighter());
     party.remove(reserve);
     check(party.experience_offer(reserve, TrainingHall::fighters).denial ==
-          TrainingDenial::not_active,
+              TrainingDenial::not_active,
           "Only active members train");
 }
 
@@ -180,13 +187,13 @@ void skill_lessons()
     const auto id = party.add_pc(fighter());
     const auto lessons = party.skill_lessons(id, TrainingHall::fighters);
     check(offers(lessons, "skill:stealth") && offers(lessons, "skill:medicine") &&
-          offers(lessons, "skill:nature"),
+              offers(lessons, "skill:nature"),
           "The Fighters' hall teaches the Ranger, Paladin and Barbarian skills too");
     check(!offers(lessons, "skill:arcana") && !offers(lessons, "skill:deception") &&
-          !offers(lessons, "skill:acrobatics"),
+              !offers(lessons, "skill:acrobatics"),
           "It teaches neither other halls' skills nor one already held");
     check(offers(lessons, "expertise:acrobatics") && offers(lessons, "expertise:religion") &&
-          !offers(lessons, "expertise:stealth"),
+              !offers(lessons, "expertise:stealth"),
           "Expertise is taught only in a skill the character is proficient in");
     check(offers(party.skill_lessons(id, TrainingHall::thieves), "skill:arcana"),
           "The Thieves' hall teaches the Bard's whole list");
@@ -194,51 +201,61 @@ void skill_lessons()
           "An empty purse pays for no lesson");
 
     party.set_wealth({0, 0, 0, 400, 0, 0, 0});
-    rejects([&]
-    {
-        party.train_skill(id, TrainingHall::thieves, "skill:arcana");
-    }, "A Fighter does not train at the Thieves' hall");
-    rejects([&]
-    {
-        party.train_skill(id, TrainingHall::fighters, "skill:arcana");
-    }, "The Fighters' hall does not teach Arcana");
+    rejects(
+        [&]
+        {
+            party.train_skill(id, TrainingHall::thieves, "skill:arcana");
+        },
+        "A Fighter does not train at the Thieves' hall");
+    rejects(
+        [&]
+        {
+            party.train_skill(id, TrainingHall::fighters, "skill:arcana");
+        },
+        "The Fighters' hall does not teach Arcana");
     const auto bonus = skill(party, id, "stealth").bonus;
     party.train_skill(id, TrainingHall::fighters, "skill:stealth");
     check(skill(party, id, "stealth").proficient &&
-          skill(party, id, "stealth").bonus == bonus + 2 && party.state().wealth[3] == 150,
+              skill(party, id, "stealth").bonus == bonus + 2 && party.state().wealth[3] == 150,
           "A lesson makes the Fighter proficient in Stealth for 250 gp");
     const auto &grants = party.member(id).character.sheet().grants;
     check(std::count(grants.begin(), grants.end(),
                      FeatureGrant{"skill:stealth", "training_hall", 1, {}}) == 1,
           "The hall is the proficiency's recorded source");
     check(party.skill_training_denial(id, TrainingHall::fighters) ==
-          TrainingDenial::already_trained,
+              TrainingDenial::already_trained,
           "One lesson per level");
-    rejects([&]
-    {
-        party.train_skill(id, TrainingHall::fighters, "skill:medicine");
-    }, "A second lesson at the same level is refused");
+    rejects(
+        [&]
+        {
+            party.train_skill(id, TrainingHall::fighters, "skill:medicine");
+        },
+        "A second lesson at the same level is refused");
     check(party.state().wealth[3] == 150, "A refused lesson costs nothing");
 
     party.award_experience(300, "test:level");
     party.advance(id, party.default_advancement(id));
-    rejects([&]
-    {
-        party.train_skill(id, TrainingHall::fighters, "expertise:stealth");
-    }, "Expertise costs 500 gp, more than the party has");
+    rejects(
+        [&]
+        {
+            party.train_skill(id, TrainingHall::fighters, "expertise:stealth");
+        },
+        "Expertise costs 500 gp, more than the party has");
     party.set_wealth({0, 0, 0, 500, 0, 0, 0});
     party.train_skill(id, TrainingHall::fighters, "expertise:stealth");
-    check(skill(party, id, "stealth").expertise &&
-          skill(party, id, "stealth").bonus == bonus + 4 && party.state().wealth[3] == 0,
+    check(skill(party, id, "stealth").expertise && skill(party, id, "stealth").bonus == bonus + 4 &&
+              party.state().wealth[3] == 0,
           "Expertise doubles the proficiency bonus");
     check(!offers(party.skill_lessons(id, TrainingHall::fighters), "expertise:stealth"),
           "Expertise is not taught twice");
 
     auto sheet = party.member(id).character.sheet();
-    rejects([&]
-    {
-        party.rule_module().train_at_hall(sheet, "skill:medicine");
-    }, "The rules allow one hall lesson per level");
+    rejects(
+        [&]
+        {
+            party.rule_module().train_at_hall(sheet, "skill:medicine");
+        },
+        "The rules allow one hall lesson per level");
 }
 
 // A Wizard's level-2 Scholar does not offer Expertise the hall already taught.
@@ -251,10 +268,10 @@ void scholar_after_hall()
     party.award_experience(300, "test:level");
     const auto options = party.advancement_options(id);
     const auto scholar = std::find_if(options.training.begin(), options.training.end(),
-                                      [](const auto & group)
-    {
-        return group.id == "class:wizard:scholar";
-    });
+                                      [](const auto &group)
+                                      {
+                                          return group.id == "class:wizard:scholar";
+                                      });
     check(scholar != options.training.end() && !offers(*scholar, "arcana"),
           "Scholar leaves out the Expertise the hall taught");
 }
@@ -276,12 +293,12 @@ void saved_training()
     restored.restore(std::move(loaded.party));
     const auto &member = restored.member(id);
     check(member.character.sheet().grants == party.member(id).character.sheet().grants &&
-          member.character.hall_training() == party.member(id).character.hall_training() &&
-          member.hall_experience_level == 1 && restored.state().wealth[3] == 3250,
+              member.character.hall_training() == party.member(id).character.hall_training() &&
+              member.hall_experience_level == 1 && restored.state().wealth[3] == 3250,
           "Lessons, the session's level and the party's gold survive a reload");
     check(restored.experience_offer(id, TrainingHall::fighters).denial == TrainingDenial::none &&
-          restored.skill_training_denial(id, TrainingHall::fighters) ==
-          TrainingDenial::already_trained,
+              restored.skill_training_denial(id, TrainingHall::fighters) ==
+                  TrainingDenial::already_trained,
           "After a reload the level-2 session is still for sale and the lesson is not");
     check(encode_campaign(restored, nullptr, "hall") == saved, "A reloaded party saves the same");
 }

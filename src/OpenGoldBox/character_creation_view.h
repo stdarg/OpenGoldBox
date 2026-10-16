@@ -54,8 +54,8 @@ class CharacterCreationView : public godot::Control
     int selected_score_{-1}, color_bank_{}, color_part_{};
     unsigned check_stage_{}, check_frames_{}, check_head_{}, check_default_{};
     unsigned drag_check_stage_{}, modal_check_stage_{};
-    bool ready_{}, refreshing_{}, checking_{}, portrait_check_{}, capture_{}, fatal_{}, portrait_chosen_{},
-         on_portrait_page_{};
+    bool ready_{}, refreshing_{}, checking_{}, portrait_check_{}, capture_{}, fatal_{},
+        portrait_chosen_{}, on_portrait_page_{};
     void layout();
     void refresh();
     void refresh_art();
@@ -71,11 +71,11 @@ class CharacterCreationView : public godot::Control
     void refresh_portraits();
     void match_portrait_filters();
     void portrait_filter_selected(std::int64_t index);
+
     // Runs a handler's change and refreshes, or shows its error. The
     // handlers' lambdas run at once, so the callable is not type-erased
     // (Effective Modern C++ Item 5).
-    template <class Action>
-    void perform(Action &&action)
+    template <class Action> void perform(Action &&action)
     {
         if (!creator_ || fatal_)
             return;
@@ -90,6 +90,7 @@ class CharacterCreationView : public godot::Control
             show_error(e);
         }
     }
+
     void show_error(const std::exception &failure);
     void next();
     void back();
@@ -137,6 +138,7 @@ class CharacterCreationView : public godot::Control
     // Offers a choice of hands when the item has one; false when it has none.
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
     void setup_party();
+
     // Reincarnate from camp (LEVELS-5): the creation pages for a dead
     // member's new body, then back to the town.
     struct Reincarnation
@@ -144,6 +146,7 @@ class CharacterCreationView : public godot::Control
         opengold::MemberId caster{}, target{};
         std::string action;
     };
+
     std::optional<Reincarnation> reincarnation_;
     void open_reincarnation(std::int64_t caster, std::int64_t target, godot::String action);
     void begin_reincarnation(Reincarnation spell, const std::string &species);

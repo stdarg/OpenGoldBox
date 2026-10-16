@@ -59,8 +59,11 @@ CharacterDraft draft()
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
-    d.spells = SpellChoices{{}, std::vector<std::string>{"dissonant_whispers", "faerie_fire",
-                                                          "healing_word", "charm_person"}, {}, {}};
+    d.spells = SpellChoices{{},
+                            std::vector<std::string>{"dissonant_whispers", "faerie_fire",
+                                                     "healing_word", "charm_person"},
+                            {},
+                            {}};
     return d;
 }
 
@@ -75,7 +78,7 @@ Character bard(unsigned level, const std::string &spell = {})
     {
         auto choice = rules->default_advancement(hero.sheet());
         if (!spell.empty() && hero.sheet().level + 1 == static_cast<int>(level) &&
-                std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+            std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
             choice.spells.back() = spell;
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
@@ -85,10 +88,11 @@ Character bard(unsigned level, const std::string &spell = {})
 bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb && (!target || command.target == target);
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && (!target || command.target == target);
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -102,10 +106,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 void to_turn(CombatSession &c, EntityId id)
@@ -120,22 +125,31 @@ std::unique_ptr<CombatSession> field(const RulesModule &rules, const CharacterSh
 {
     const std::vector<std::string> gear{"dagger"};
     auto c = rules.create({{14, 7, std::vector<Terrain>(98)},
-        {   {1, "campaign-character", "Bard", Side::party, {1, 2}, rules.character_profile(sheet, gear).data},
-            {2, "campaign-character", "Ally", Side::party, {1, 3},
-                rules.character_profile(bard(1).sheet(), gear).data},
-            {98, "dummy", "Foe", Side::opposition, {6, 2}}
-        }},
-    1);
+                           {{1,
+                             "campaign-character",
+                             "Bard",
+                             Side::party,
+                             {1, 2},
+                             rules.character_profile(sheet, gear).data},
+                            {2,
+                             "campaign-character",
+                             "Ally",
+                             Side::party,
+                             {1, 3},
+                             rules.character_profile(bard(1).sheet(), gear).data},
+                            {98, "dummy", "Foe", Side::opposition, {6, 2}}}},
+                          1);
     to_turn(*c, 1);
     return c;
 }
 
 bool granted(const CharacterSheet &sheet, std::string_view prefix, unsigned level)
 {
-    return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
-    {
-        return g.id.starts_with(prefix) && g.level == level;
-    });
+    return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id.starts_with(prefix) && g.level == level;
+                       });
 }
 
 void progression_checks()
@@ -148,39 +162,50 @@ void progression_checks()
         party.advance(id, party.default_advancement(id));
     const auto sheet = party.member(id).character.sheet();
     check(sheet.level == 15, "A Bard reaches 15");
-    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
-{
-    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}, {11, 16}, {12, 16}, {13, 17}, {14, 17},
-    {15, 18}
-})
-    check(rules->spell_access(bard(level).sheet()).prepared_choices == count,
-          "Prepared spells: 9 at 5 to 18 at 15");
+    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{5, 9},
+                                                                                 {6, 10},
+                                                                                 {7, 11},
+                                                                                 {8, 12},
+                                                                                 {9, 14},
+                                                                                 {10, 15},
+                                                                                 {11, 16},
+                                                                                 {12, 16},
+                                                                                 {13, 17},
+                                                                                 {14, 17},
+                                                                                 {15, 18}})
+        check(rules->spell_access(bard(level).sheet()).prepared_choices == count,
+              "Prepared spells: 9 at 5 to 18 at 15");
     check(granted(sheet, "expertise:", 2) && granted(sheet, "expertise:", 9),
           "Expertise at 2 and 9");
-    check(std::count_if(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id.starts_with("discovery:") && g.level == 6;
-    }) == 2, "Two Magical Discoveries at 6");
-    check(granted(sheet, "feature:font_of_inspiration", 5) && granted(sheet, "feature:countercharm", 7) &&
-          granted(sheet, "feature:magical_secrets", 10) && granted(sheet, "feature:peerless_skill", 14),
+    check(std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.id.starts_with("discovery:") && g.level == 6;
+                        }) == 2,
+          "Two Magical Discoveries at 6");
+    check(granted(sheet, "feature:font_of_inspiration", 5) &&
+              granted(sheet, "feature:countercharm", 7) &&
+              granted(sheet, "feature:magical_secrets", 10) &&
+              granted(sheet, "feature:peerless_skill", 14),
           "Font of Inspiration, Countercharm, Magical Secrets and Peerless Skill");
     auto four = bard(4).sheet();
-    check(rules->advancement_options(four).description.find("Font of Inspiration") != std::string::npos,
+    check(rules->advancement_options(four).description.find("Font of Inspiration") !=
+              std::string::npos,
           "Level 5's description names its features");
     const auto bytes = encode_campaign(party, nullptr, "bard-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "bard-levels", nullptr).party);
-    check(encode_campaign(next, nullptr, "bard-levels") == bytes, "A level-15 Bard saves and reloads");
+                                 "bard-levels", nullptr)
+                     .party);
+    check(encode_campaign(next, nullptr, "bard-levels") == bytes,
+          "A level-15 Bard saves and reloads");
 }
 
 void inspiration_checks()
 {
     const auto rules = dummy_rules();
-    for (const auto &[level, sides] : std::vector<std::pair<unsigned, int>>
-{
-    {4, 6}, {5, 8}, {10, 10}, {15, 12}
-})
+    for (const auto &[level, sides] :
+         std::vector<std::pair<unsigned, int>>{{4, 6}, {5, 8}, {10, 10}, {15, 12}})
     {
         auto c = field(*rules, bard(level).sheet());
         check(submit(*c, "bardic_inspiration", 2), "Bardic Inspiration");
@@ -190,8 +215,9 @@ void inspiration_checks()
     // Font of Inspiration: a spell slot gives back a use.
     auto c = field(*rules, bard(5).sheet());
     check(submit(*c, "bardic_inspiration", 2) && offered(*c, "font_of_inspiration_1") &&
-          submit(*c, "font_of_inspiration_1") &&
-          logged(*c, "Bard turns a spell slot into Bardic Inspiration."), "Font of Inspiration");
+              submit(*c, "font_of_inspiration_1") &&
+              logged(*c, "Bard turns a spell slot into Bardic Inspiration."),
+          "Font of Inspiration");
     VitalState spent = c->snapshot().combatants.front().persistent;
     const auto sheet = bard(5).sheet();
     module()->recover_short_rest(spent, sheet);
@@ -205,14 +231,25 @@ void countercharm_checks()
     for (std::uint64_t seed = 1; seed < 80 && !countered; ++seed)
     {
         auto c = rules->create({{14, 7, std::vector<Terrain>(98)},
-            {   {1, "campaign-character", "Bard", Side::party, {1, 2},
-                    rules->character_profile(bard(7).sheet(), gear).data},
-                {2, "campaign-character", "Ally", Side::party, {1, 3},
-                    rules->character_profile(bard(1).sheet(), gear).data},
-                {98, "campaign-character", "Rival", Side::opposition, {4, 3},
-                    rules->character_profile(bard(1).sheet(), gear).data}
-            }},
-        seed);
+                                {{1,
+                                  "campaign-character",
+                                  "Bard",
+                                  Side::party,
+                                  {1, 2},
+                                  rules->character_profile(bard(7).sheet(), gear).data},
+                                 {2,
+                                  "campaign-character",
+                                  "Ally",
+                                  Side::party,
+                                  {1, 3},
+                                  rules->character_profile(bard(1).sheet(), gear).data},
+                                 {98,
+                                  "campaign-character",
+                                  "Rival",
+                                  Side::opposition,
+                                  {4, 3},
+                                  rules->character_profile(bard(1).sheet(), gear).data}}},
+                               seed);
         to_turn(*c, 98);
         check(submit(*c, "charm_person", 2), "The rival charms the ally");
         countered = logged(*c, "Bard uses Countercharm: Ally rolls the save again with Advantage.");
@@ -224,18 +261,24 @@ void secrets_checks()
 {
     const auto rules = module();
     const auto ten = bard(10).sheet();
-    const auto options = rules->spell_choice_options(ten, SpellChoiceContext::advancement).preparation;
-    check(std::any_of(options.begin(), options.end(), [](const auto & o)
-    {
-        return o.id == "fireball";
-    }) && std::any_of(options.begin(), options.end(), [](const auto & o)
-    {
-        return o.id == "spirit_guardians";
-    }), "Magical Secrets opens the Wizard's and Cleric's spells");
+    const auto options =
+        rules->spell_choice_options(ten, SpellChoiceContext::advancement).preparation;
+    check(std::any_of(options.begin(), options.end(),
+                      [](const auto &o)
+                      {
+                          return o.id == "fireball";
+                      }) &&
+              std::any_of(options.begin(), options.end(),
+                          [](const auto &o)
+                          {
+                              return o.id == "spirit_guardians";
+                          }),
+          "Magical Secrets opens the Wizard's and Cleric's spells");
     const auto dummies = dummy_rules();
     auto fireball = field(*dummies, bard(10, "fireball").sheet());
     check(offered(*fireball, "fireball"), "A Bard of 10 casts Fireball");
 }
+
 // Reincarnate (LEVELS-5): an Elf's Keen Senses skill goes with its body, but
 // one the Bard built Expertise on stays.
 void reincarnation_checks()
@@ -253,8 +296,9 @@ void reincarnation_checks()
     check(hero.advance(*rules, life, choice), "Expertise in Perception at 2");
     const auto body = reincarnation_draft(hero, "dwarf");
     check(body.training.contains("species:dwarf:kept") &&
-          body.training.at("species:dwarf:kept") == std::vector<std::string> {"perception"} &&
-          !body.training.contains("species:elf:keen_senses"), "The new body keeps Perception");
+              body.training.at("species:dwarf:kept") == std::vector<std::string>{"perception"} &&
+              !body.training.contains("species:elf:keen_senses"),
+          "The new body keeps Perception");
     auto bare = body;
     bare.training.erase("species:dwarf:kept");
     bool refused = false;
@@ -269,10 +313,12 @@ void reincarnation_checks()
     check(refused, "Without it, the Expertise would stand on nothing");
     const auto dwarf = hero.recreated(*srd5::character_rules(), *rules, body);
     check(granted(dwarf.sheet(), "skill:", 1) && dwarf.sheet().level == 2 &&
-          std::any_of(dwarf.sheet().grants.begin(), dwarf.sheet().grants.end(), [](const auto & g)
-    {
-        return g.id == "expertise:perception";
-    }), "Its Expertise stands on the kept skill");
+              std::any_of(dwarf.sheet().grants.begin(), dwarf.sheet().grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.id == "expertise:perception";
+                          }),
+          "Its Expertise stands on the kept skill");
 }
 } // namespace
 

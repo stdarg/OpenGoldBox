@@ -23,9 +23,9 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     for (int row = 0; row < 88; ++row)
     {
         const std::array<std::uint8_t, 4> color =
-            row < 44 ? (interior ? std::array<std::uint8_t, 4> {85, 85, 85, 255}
-                        : std::array<std::uint8_t, 4> {85, 255, 255, 255})
-            : std::array<std::uint8_t, 4> {170, 85, 0, 255};
+            row < 44 ? (interior ? std::array<std::uint8_t, 4>{85, 85, 85, 255}
+                                 : std::array<std::uint8_t, 4>{85, 255, 255, 255})
+                     : std::array<std::uint8_t, 4>{170, 85, 0, 255};
         for (int column = 0; column < 88; ++column)
             std::copy(color.begin(), color.end(), result.rgba.begin() + (row * 88 + column) * 4);
     }
@@ -44,7 +44,7 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         const int depth = row < 56 ? 2 : row < 72 ? 1 : 0;
         const double width = row < 56   ? 16 + (row - 48 + .5)
                              : row < 72 ? 24 + 2 * (row - 56 + .5)
-                             : 56 + 2 * (row - 72 + .5);
+                                        : 56 + 2 * (row - 72 + .5);
         for (int column = 0; column < 88; ++column)
         {
             const int lateral = static_cast<int>(std::floor((column + .5 - 44) / width + .5));
@@ -68,11 +68,10 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
     const auto wall = [&](int depth, int lateral, MapDirection side) -> WallSample
     {
         const int cell = cell_at(depth, lateral);
-        return cell < 0 ? WallSample{} :
-            WallSample{map.cells[cell].walls[index(side)], cell};
+        return cell < 0 ? WallSample{} : WallSample{map.cells[cell].walls[index(side)], cell};
     };
-    const auto draw = [&](WallSample sample, MapDirection face, WallView perspective,
-                          int left, int top)
+    const auto draw =
+        [&](WallSample sample, MapDirection face, WallView perspective, int left, int top)
     {
         if (!sample)
             return;
@@ -107,11 +106,11 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
         const auto front = wall(2, lateral, facing);
         draw(front, facing, WallView::far_front, 40 + lateral * 16, 32);
         if (lateral <= 0 && lateral > -3 &&
-                (wall(2, lateral, left_side) || wall(2, lateral - 1, facing)))
+            (wall(2, lateral, left_side) || wall(2, lateral - 1, facing)))
             draw(front, facing, WallView::far_extension, 32 + lateral * 16, 32);
         if (lateral > 0 && (front || wall(2, lateral - 1, right_side)))
-            draw(wall(2, lateral - 1, facing), facing, WallView::far_extension,
-                 32 + lateral * 16, 32);
+            draw(wall(2, lateral - 1, facing), facing, WallView::far_extension, 32 + lateral * 16,
+                 32);
     }
     for (int lateral = -2; lateral <= 2; ++lateral)
     {
@@ -123,20 +122,18 @@ ExplorationView render_exploration_view(const GeoMap &map, const WallArtSet &art
                  48 + lateral * 16 + (lateral > 0 ? 8 : 0), 24);
     }
     for (int lateral = -2; lateral <= 2; ++lateral)
-        draw(wall(1, lateral, facing), facing, WallView::middle_front,
-             32 + lateral * 24, 24);
+        draw(wall(1, lateral, facing), facing, WallView::middle_front, 32 + lateral * 24, 24);
     for (int lateral = -1; lateral <= 1; ++lateral)
     {
         if (lateral <= 0)
-            draw(wall(1, lateral, left_side), left_side, WallView::middle_left,
-                 16 + lateral * 24, 8);
+            draw(wall(1, lateral, left_side), left_side, WallView::middle_left, 16 + lateral * 24,
+                 8);
         if (lateral >= 0)
             draw(wall(1, lateral, right_side), right_side, WallView::middle_right,
                  56 + lateral * 24, 8);
     }
     for (int lateral = -1; lateral <= 1; ++lateral)
-        draw(wall(0, lateral, facing), facing, WallView::near_front,
-             16 + lateral * 56, 8);
+        draw(wall(0, lateral, facing), facing, WallView::near_front, 16 + lateral * 56, 8);
     draw(wall(0, 0, left_side), left_side, WallView::near_left, 0, 0);
     draw(wall(0, 0, right_side), right_side, WallView::near_right, 72, 0);
     view.visible.set(y * 16 + x);

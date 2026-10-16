@@ -59,7 +59,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
     {
         // "wild_shape_giant_lizard" reads "Wild Shape: Giant Lizard" when no use
         // is left to offer it.
-        const auto wild_shape_label = [](const std::string & verb)
+        const auto wild_shape_label = [](const std::string &verb)
         {
             std::string form = verb.substr(11);
             for (std::size_t i = 0; i < form.size(); ++i)
@@ -71,8 +71,8 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         };
         // Metamagic and Wild Shape labels carry their option, cost or form, so
         // they come from the offered command.
-        const auto offered_label = [&](const std::string & verb,
-                                       const std::string & fallback) -> std::string
+        const auto offered_label = [&](const std::string &verb,
+                                       const std::string &fallback) -> std::string
         {
             for (const auto &c : offered)
                 if (c.actor == actor->id && c.verb == verb)
@@ -135,23 +135,21 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
     }
     auto *choices = &required_node<godot::OptionButton>(root, "CunningAction");
     const bool changed = choices->is_visible() != !options.empty();
-    for (const char *name :
-            {"CunningActionLabel", "CunningAction", "UseCunningAction"
-            })
+    for (const char *name : {"CunningActionLabel", "CunningAction", "UseCunningAction"})
         required_node<godot::Control>(root, name).set_visible(!options.empty());
     required_node<godot::Label>(root, "CunningActionLabel").set_text(text("Bonus Action"));
     required_node<godot::Button>(root, "UseCunningAction").set_text(text("Use Bonus Action"));
     const godot::String previous =
         choices->get_selected() >= 0
-        ? godot::String(choices->get_item_metadata(choices->get_selected()))
-        : godot::String();
+            ? godot::String(choices->get_item_metadata(choices->get_selected()))
+            : godot::String();
     choices->clear();
     bool any = false;
     int previous_index = -1;
     for (const auto &option : options)
     {
         const auto key = godot::String::utf8(
-                             (option.verb + (option.item ? "#" + std::to_string(option.item) : "")).c_str());
+            (option.verb + (option.item ? "#" + std::to_string(option.item) : "")).c_str());
         const int index = choices->get_item_count();
         const auto label = render(option.label);
         choices->add_item(label);
@@ -176,7 +174,7 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
     const auto selected = choices->get_selected();
     choices->set_tooltip_text(selected >= 0 ? choices->get_item_text(selected) : godot::String());
     required_node<godot::Button>(root, "UseCunningAction")
-    .set_disabled(!player || selected < 0 || !options[selected].available);
+        .set_disabled(!player || selected < 0 || !options[selected].available);
     return changed;
 }
 } // namespace presentation

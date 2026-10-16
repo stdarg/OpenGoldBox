@@ -3,6 +3,7 @@
 
 // Included in both native combat views; only presents rules-provided commands.
 #include "godot_nodes.h"
+
 void CombatView::begin_nick()
 {
     if (presentation::required_node<Button>(*this, "Nick").is_disabled())
@@ -15,8 +16,8 @@ void CombatView::nick_selected(std::int64_t index)
 {
     auto *choices = &presentation::required_node<OptionButton>(*this, "NickAttack/Choices");
     presentation::required_node<Button>(*this, "NickAttack/Target")
-    .set_disabled(index < 0 || index >= choices->get_item_count() ||
-                  choices->is_item_disabled(static_cast<std::int32_t>(index)));
+        .set_disabled(index < 0 || index >= choices->get_item_count() ||
+                      choices->is_item_disabled(static_cast<std::int32_t>(index)));
 }
 
 void CombatView::cancel_nick()

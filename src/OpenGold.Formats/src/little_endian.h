@@ -10,13 +10,13 @@
 namespace opengold::format
 {
 [[nodiscard]] inline std::uint16_t read_u16(std::span<const std::uint8_t> bytes,
-        std::size_t offset) noexcept
+                                            std::size_t offset) noexcept
 {
     return static_cast<std::uint16_t>(bytes[offset] | (bytes[offset + 1] << 8));
 }
 
 [[nodiscard]] inline std::uint32_t read_u32(std::span<const std::uint8_t> bytes,
-        std::size_t offset) noexcept
+                                            std::size_t offset) noexcept
 {
     return read_u16(bytes, offset) |
            (static_cast<std::uint32_t>(read_u16(bytes, offset + 2)) << 16);

@@ -65,7 +65,7 @@ Purse script_coins(const Purse &purse)
     const auto total = coin_value(purse);
     for (std::size_t coin = 0; coin < copper_value.size(); ++coin)
         view[coin] = static_cast<std::uint32_t>(
-                         std::min<std::uint64_t>(script_coin_limit, total / copper_value[coin]));
+            std::min<std::uint64_t>(script_coin_limit, total / copper_value[coin]));
     for (const auto valuable : {Coin::gems, Coin::jewelry})
         coins(view, valuable) = std::min(coins(purse, valuable), script_coin_limit);
     return view;

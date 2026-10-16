@@ -18,7 +18,7 @@ rules::SpellAccess spell_access(std::span<const rules::FeatureGrant>, CharacterC
 // Existing advancement selections learn any newly selected book spell and
 // retain every earlier entry. Copying and preparation controls are separate.
 rules::SpellChoiceOptions spell_choice_options(const rules::CharacterSheet &,
-        rules::SpellChoiceContext);
+                                               rules::SpellChoiceContext);
 void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
                          rules::SpellChoiceContext, rules::ChoiceCompleteness);
 // Known and prepared spells as ids. Ids rather than a packed mask because an
@@ -29,7 +29,7 @@ std::vector<std::string> known_cantrip_ids(const rules::SpellAccess &);
 // The Circle Spells of a land a Druid of the level has (Circle of the Land).
 std::vector<std::string> circle_spells(unsigned level, std::string_view land);
 std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned level,
-        std::span<const rules::FeatureGrant> grants);
+                                                std::span<const rules::FeatureGrant> grants);
 // Wizards prepare from a spellbook; Clerics and Paladins from their class list.
 bool prepares_spells(CharacterClass klass);
 // Whether a spell is on a class's spell list in the game.
@@ -41,7 +41,7 @@ struct InitiateSpells
 {
     std::string feat;
     rules::Ability ability{rules::Ability::intelligence}; // until one is chosen
-    std::vector<std::string> spells;                       // its cantrips and level-one spell
+    std::vector<std::string> spells;                      // its cantrips and level-one spell
     std::string free_spell; // the level-one spell, cast once per Long Rest without a slot
 };
 

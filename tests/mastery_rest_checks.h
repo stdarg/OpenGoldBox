@@ -42,8 +42,8 @@ void script_reads_after_rest(CampaignParty &party, MemberId id)
     for (int entry = 0; entry < 5; ++entry)
         record.insert(record.end(), {1, 1, 0x14, 0x99});
     record.push_back(0); // An EXIT body; the machine only supplies variables here.
-    por::EclMachine vm(std::make_shared<const por::EclProgram>(
-                           por::EclProgram::decode(record, "inn-read")));
+    por::EclMachine vm(
+        std::make_shared<const por::EclProgram>(por::EclProgram::decode(record, "inn-read")));
     vm.bind_variable(por::ecl_character_hit_points,
                      static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
     for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
@@ -58,7 +58,7 @@ void run()
     ui_fixture();
     auto rules = module();
     auto creation = srd5::character_rules();
-    auto roundtrip = [&](const CampaignParty & party)
+    auto roundtrip = [&](const CampaignParty &party)
     {
         CampaignParty next(module());
         const auto bytes = saved(party);
@@ -67,13 +67,8 @@ void run()
               "Pending/rest-edited training retains canonical campaign continuation");
         return next;
     };
-    for (const auto klass :
-            {"fighter", "barbarian", "rogue", "paladin", "ranger"
-            })
-        for (bool npc :
-                {
-                    false, true
-                })
+    for (const auto klass : {"fighter", "barbarian", "rogue", "paladin", "ranger"})
+        for (bool npc : {false, true})
         {
             CampaignParty party(module());
             auto h = mastery_grant_checks::chosen(klass);
@@ -82,9 +77,9 @@ void run()
             check(!party.state().training_rest, "Creation does not invent a rest entitlement");
             rejects(
                 [&]
-            {
-                party.keep_rest_training({1, 1}, id);
-            });
+                {
+                    party.keep_rest_training({1, 1}, id);
+                });
             const auto short_rest = party.rest(RestKind::short_rest);
             check(bool(short_rest) && !party.state().training_rest,
                   "Short Rest never permits replacement");
@@ -94,14 +89,16 @@ void run()
             if (party.state().spell_rest)
                 party.keep_rest_spells(id);
             check(party.state().training_rest &&
-                  party.state().training_rest->members == std::vector<MemberId> {id},
+                      party.state().training_rest->members == std::vector<MemberId>{id},
                   "Only qualified completed rest grants one per-member replacement");
             if (!npc)
                 script_reads_after_rest(party, id);
             party = roundtrip(party);
             const auto ticket = party.state().training_rest->ticket;
-            const auto options = rules->rest_training_options(party.member(id).character.sheet(),
-                                RestKind::long_rest).front();
+            const auto options =
+                rules
+                    ->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest)
+                    .front();
             auto selected = options.selected;
             for (const auto &o : options.group.options)
                 if (std::find(selected.begin(), selected.end(), o.id) == selected.end())
@@ -113,39 +110,39 @@ void run()
             const auto member = party.member(id);
             rejects(
                 [&]
-            {
-                party.advance_time(std::chrono::minutes(1));
-            });
+                {
+                    party.advance_time(std::chrono::minutes(1));
+                });
             rejects(
                 [&]
-            {
-                party.begin_combat();
-            });
+                {
+                    party.begin_combat();
+                });
             rejects(
                 [&]
-            {
-                party.remove(id);
-            });
+                {
+                    party.remove(id);
+                });
             rejects(
                 [&]
-            {
-                party.replace_rest_training({ticket.session, ticket.revision + 1}, id,
-                selected);
-            });
+                {
+                    party.replace_rest_training({ticket.session, ticket.revision + 1}, id,
+                                                selected);
+                });
             auto bad = selected;
             bad[1] = bad[0];
             rejects(
                 [&]
-            {
-                party.replace_rest_training(ticket, id, bad);
-            });
+                {
+                    party.replace_rest_training(ticket, id, bad);
+                });
             bad = selected;
             bad[0] = "wand";
             rejects(
                 [&]
-            {
-                party.replace_rest_training(ticket, id, bad);
-            });
+                {
+                    party.replace_rest_training(ticket, id, bad);
+                });
             check(saved(party) == before,
                   "Blocked exploration and rejected replacements are atomic");
             const auto preview = party.preview_rest_training(ticket, id, selected);
@@ -153,21 +150,21 @@ void run()
             party.replace_rest_training(ticket, id, selected);
             const auto &after = party.member(id);
             check(!party.state().training_rest &&
-                  after.character.sheet().grants == preview.character.sheet().grants,
+                      after.character.sheet().grants == preview.character.sheet().grants,
                   "Apply consumes this member's entitlement and matches preview");
             check(after.vitals == member.vitals && after.equipped == member.equipped &&
-                  after.character.inventory().items().size() ==
-                  member.character.inventory().items().size() &&
-                  after.character.advancements() == member.character.advancements(),
+                      after.character.inventory().items().size() ==
+                          member.character.inventory().items().size() &&
+                      after.character.advancements() == member.character.advancements(),
                   "Replacing training preserves health, resources, equipment and advancement");
             check(after.character.training_edits().size() == 1 &&
-                  after.character.training_edits().front().rest_session == ticket.session,
+                      after.character.training_edits().front().rest_session == ticket.session,
                   "Replacement retains exact rest provenance");
             rejects(
                 [&]
-            {
-                party.replace_rest_training(ticket, id, selected);
-            });
+                {
+                    party.replace_rest_training(ticket, id, selected);
+                });
             party = roundtrip(party);
             check(saved(party).starts_with("OPENGOLD-CAMPAIGN 31\n"),
                   "Actual training history uses the current campaign format");
@@ -179,7 +176,7 @@ void run()
             const auto keep_before = party.member(id).character.sheet().grants;
             party.keep_rest_training(party.state().training_rest->ticket, id);
             check(party.member(id).character.sheet().grants == keep_before &&
-                  !party.state().training_rest,
+                      !party.state().training_rest,
                   "Keep retains exact grants and consumes the window");
             party = roundtrip(party);
             check(party.member(id).character.training_edits().size() == 2,
@@ -194,7 +191,7 @@ void run()
     check(bool(p.rest(RestKind::long_rest)) && p.state().training_rest,
           "Mastery replacement does not require unrelated training to be complete");
     p.replace_rest_training(p.state().training_rest->ticket, id,
-                            std::vector<std::string> {"greatsword", "longsword", "shortbow"});
+                            std::vector<std::string>{"greatsword", "longsword", "shortbow"});
     p.award_experience(2700, "rest-mastery-levels");
     for (unsigned level = 2; level <= 4; ++level)
         p.advance(id, p.default_advancement(id));
@@ -203,8 +200,8 @@ void run()
           "Rest edit replays before later Fighter entitlement");
     p.advance_time(std::chrono::minutes(24 * 60));
     check(bool(p.rest(RestKind::long_rest)), "Level4 qualified rest starts");
-    const auto options = rules->rest_training_options(p.member(id).character.sheet(),
-                                RestKind::long_rest).front();
+    const auto options =
+        rules->rest_training_options(p.member(id).character.sheet(), RestKind::long_rest).front();
     check(options.group.count == 4 && options.replacement_limit == 1,
           "Fourth-kind capacity retains Fighter one-replacement limit");
     auto selected = options.selected;
@@ -227,7 +224,9 @@ void run()
     auto state = excluded.checkpoint();
     for (auto &m : state.roster)
         if (m.id == dead)
-            m.vitals = {0, true, "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0", "Dead"};
+            m.vitals = {0, true,
+                        "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
+                        "Dead"};
     excluded.restore(std::move(state));
     check(bool(excluded.rest(RestKind::long_rest)) && !excluded.state().training_rest,
           "Unqualified/dead/reserve/pending-training members do not gain replacement windows");

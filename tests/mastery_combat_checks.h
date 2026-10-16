@@ -76,12 +76,11 @@ auto rules(bool immune = false)
 Encounter encounter(const RulesModule &rules, const Character &hero, std::string key,
                     bool ranged = false)
 {
-    const auto profile = rules.character_profile(hero.sheet(), std::array<std::string, 1> {key});
+    const auto profile = rules.character_profile(hero.sheet(), std::array<std::string, 1>{key});
     return {{12, 8, std::vector<Terrain>(96)},
-        {   {1, "campaign-character", "Master", Side::party, {1, 1}, profile.data},
-            {99, "mastery_target", "Target", Side::opposition, {ranged ? 3 : 2, 1}}
-        },
-        777};
+            {{1, "campaign-character", "Master", Side::party, {1, 1}, profile.data},
+             {99, "mastery_target", "Target", Side::opposition, {ranged ? 3 : 2, 1}}},
+            777};
 }
 
 void codec_and_lifecycle()
@@ -95,7 +94,7 @@ void codec_and_lifecycle()
     fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 7, .actor = 3}, "Other actor",
                              9000);
     check(fx::sapped(attacker) && fx::vexed_by(target, {.scope = 7, .actor = 1}) &&
-          !fx::vexed_by(target, {.scope = 9, .actor = 1}),
+              !fx::vexed_by(target, {.scope = 9, .actor = 1}),
           "Source and scope distinguish Vex");
     const auto next = target.next_id;
     fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 7, .actor = 1}, "Master", 8000);
@@ -111,23 +110,22 @@ void codec_and_lifecycle()
     old.replace(0, 3, "FX6");
     rejects(
         [&]
-    {
-        std::istringstream bytes(old);
-        (void)fx::read_effects(bytes);
-    });
+        {
+            std::istringstream bytes(old);
+            (void)fx::read_effects(bytes);
+        });
     for (auto bad :
-            {"FX8 2 1 1 5 7 2 \"Source\" 0 6001 0 0",
-             "FX8 2 1 1 6 7 2 \"Source\" 0 12001 0 0", "FX8 2 1 1 6 0 2 \"Source\" 0 9000 0 0"
-            })
+         {"FX8 2 1 1 5 7 2 \"Source\" 0 6001 0 0", "FX8 2 1 1 6 7 2 \"Source\" 0 12001 0 0",
+          "FX8 2 1 1 6 0 2 \"Source\" 0 9000 0 0"})
         rejects(
             [&]
-    {
-        std::istringstream bytes(bad);
-        (void)fx::read_effects(bytes);
-    });
+            {
+                std::istringstream bytes(bad);
+                (void)fx::read_effects(bytes);
+            });
     fx::consume_attack_masteries(attacker, target, {.scope = 7, .actor = 1});
     check(!fx::sapped(attacker) && !fx::vexed_by(target, {.scope = 7, .actor = 1}) &&
-          target.active.size() == 2,
+              target.active.size() == 2,
           "One roll consumes all Sap and only matching Vex");
     std::uint64_t rng = 19;
     const auto before = rng;
@@ -141,7 +139,7 @@ void codec_and_lifecycle()
         fx::apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = i + 1}, "Source",
                                  6000);
     check(!fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 999}) &&
-          fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 1}),
+              fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 1}),
           "Full store permits same-source refresh only");
     fx::apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 1}, "Source", 5000);
     check(full.active.size() == fx::effect_limit, "Refresh does not overflow");
@@ -149,29 +147,20 @@ void codec_and_lifecycle()
 
 void weapon_matrix()
 {
-    for (bool immune :
-            {
-                false, true
-            })
+    for (bool immune : {false, true})
     {
         auto r = rules(immune);
         for (const auto &weapon : fx::weapons)
         {
             // Firearms cannot be mastered.
             if ((weapon.mastery != fx::Mastery::sap && weapon.mastery != fx::Mastery::vex) ||
-                    weapon.key == "pistol")
+                weapon.key == "pistol")
                 continue;
-            for (bool ranged :
-                    {
-                        false, true
-                    })
+            for (bool ranged : {false, true})
             {
                 if ((!ranged && weapon.ranged) || (ranged && !weapon.ranged && !weapon.thrown))
                     continue;
-                for (unsigned seed :
-                        {
-                            11u, 72u, 89u
-                        })
+                for (unsigned seed : {11u, 72u, 89u})
                 {
                     auto e = encounter(*r, hero(std::string(weapon.key)), std::string(weapon.key),
                                        ranged);
@@ -193,10 +182,10 @@ void weapon_matrix()
                     if (expected)
                     {
                         check(effects.active.size() == 1 && effects.active[0].source_scope == 777 &&
-                              effects.active[0].source_actor == 1,
+                                  effects.active[0].source_actor == 1,
                               "Weapon attack retains source");
                         check(effects.active[0].remaining_ms ==
-                              (weapon.mastery == fx::Mastery::sap ? 6000u : 9000u),
+                                  (weapon.mastery == fx::Mastery::sap ? 6000u : 9000u),
                               "Source's next start/end determines lifetime");
                     }
                     check(r->restore(c->save())->save() == c->save(),
@@ -220,9 +209,7 @@ void weapon_matrix()
 void timing_and_rolls()
 {
     auto r = rules();
-    for (const auto key :
-            {"mace", "rapier"
-            })
+    for (const auto key : {"mace", "rapier"})
     {
         auto e = encounter(*r, hero(key), key);
         auto c = r->create(e, 89);
@@ -250,13 +237,8 @@ void timing_and_rolls()
     check(arg(result(*c), "disadvantage") == " (disadvantage)" && !fx::sapped(state(*c, 99)),
           "Target's first attack consumes Sap");
     // Opposing sources cancel even on a pending damage decision.
-    for (bool sap :
-            {
-                false, true
-            })
-        for (const auto background :
-                {"sage", "soldier"
-                })
+    for (bool sap : {false, true})
+        for (const auto background : {"sage", "soldier"})
         {
             e = encounter(*r, hero("rapier", "fighter", background), "rapier");
             auto base = r->create(e, 89);
@@ -285,13 +267,12 @@ void timing_and_rolls()
         }
     // Attack spells consume existing Sap/Vex but never apply the held weapon's property.
     auto draft = character("wizard", "Caster").creation_data();
-    draft.cantrips = std::vector<std::string> {"fire_bolt"};
+    draft.cantrips = std::vector<std::string>{"fire_bolt"};
     Character wizard(*srd5::character_rules(), draft, {});
     e = encounter(*r, wizard, "dagger", true);
     auto base = r->create(e, 89);
     fx::EffectState own, target;
-    fx::apply_attack_mastery(own, fx::EffectKind::sap, {.scope = 777, .actor = 99}, "Target",
-                             6000);
+    fx::apply_attack_mastery(own, fx::EffectKind::sap, {.scope = 777, .actor = 99}, "Target", 6000);
     fx::apply_attack_mastery(target, fx::EffectKind::vex, {.scope = 777, .actor = 1}, "Caster",
                              9000);
     inject(e.participants[0], unit(*base, 1).persistent, own);
@@ -300,20 +281,14 @@ void timing_and_rolls()
     turn(*c, 1);
     act(*c, "fire_bolt");
     check(arg(result(*c), "disadvantage").empty() && !fx::has_attack_mastery(state(*c, 1)) &&
-          !fx::has_attack_mastery(state(*c, 99)),
+              !fx::has_attack_mastery(state(*c, 99)),
           "Spell attack consumes both effects and adds none");
 }
 
 void physical_attacks_and_reactions()
 {
-    for (bool npc :
-            {
-                false, true
-            })
-        for (bool thrown :
-                {
-                    false, true
-                })
+    for (bool npc : {false, true})
+        for (bool thrown : {false, true})
         {
             CampaignParty party(rules());
             auto h = hero("handaxe");
@@ -327,8 +302,8 @@ void physical_attacks_and_reactions()
             auto actors = party.participants();
             actors.front().cell = {1, 1};
             actors.push_back({99, "mastery_target", "Target", Side::opposition, {2, 1}});
-            auto c = party.rule_module().create(
-            {{12, 8, std::vector<Terrain>(96)}, actors, 777}, 89);
+            auto c =
+                party.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, 89);
             turn(*c, id);
             act(*c, "melee", 99);
             check(fx::vexed_by(state(*c, 99), {.scope = 777, .actor = id}),
@@ -347,9 +322,7 @@ void physical_attacks_and_reactions()
                   "Action Surge uses the freshly applied Vex");
         }
     auto r = rules();
-    for (const auto key :
-            {"mace", "rapier"
-            })
+    for (const auto key : {"mace", "rapier"})
     {
         auto e = encounter(*r, hero(key, "fighter", "soldier"), key);
         auto c = r->create(e, 89);
@@ -369,7 +342,7 @@ void physical_attacks_and_reactions()
               "Reaction damage choice and interrupted movement resume exactly");
         check(fx::has_attack_mastery(state(*c, 99)), "Reaction applies selected mastery");
         check(state(*c, 99).active.front().remaining_ms ==
-              (std::string_view(key) == "mace" ? 3000u : 6000u),
+                  (std::string_view(key) == "mace" ? 3000u : 6000u),
               "Reaction expires relative to source turn rather than enemy turn");
         check(!unit(*c, 1).reaction, "Mastery does not refund Reaction");
     }
@@ -378,13 +351,8 @@ void physical_attacks_and_reactions()
 void capacity_and_identity()
 {
     auto r = rules();
-    for (bool matching :
-            {
-                false, true
-            })
-        for (const auto key :
-                {"mace", "rapier"
-                })
+    for (bool matching : {false, true})
+        for (const auto key : {"mace", "rapier"})
         {
             auto e = encounter(*r, hero(key), key);
             auto base = r->create(e, 89);
@@ -397,8 +365,8 @@ void capacity_and_identity()
                                               .actor = i == 0 && matching ? 1 : 500 + i};
                 fx::apply_attack_mastery(full,
                                          i == 0 && std::string_view(key) == "rapier"
-                                         ? fx::EffectKind::vex
-                                         : fx::EffectKind::sap,
+                                             ? fx::EffectKind::vex
+                                             : fx::EffectKind::sap,
                                          source, "Source", 6000);
             }
             inject(e.participants[1], unit(*base, 99).persistent, full);
@@ -429,9 +397,9 @@ void capacity_and_identity()
     old.replace(position, r->identity().version.size(), "0.6.55");
     rejects(
         [&]
-    {
-        (void)r->restore(old);
-    });
+        {
+            (void)r->restore(old);
+        });
     // Campaign vitals may carry mastery effects between encounters.
     const auto campaign_state = with_effects(unit(*base, 1).persistent, effect);
     r->validate_character_state(character("fighter", "No grant").sheet(), campaign_state);
@@ -445,9 +413,7 @@ void ui_fixtures()
     auto r = module();
     const auto path = std::filesystem::path(output);
     std::filesystem::create_directories(path);
-    for (const auto key :
-            {"mace", "rapier"
-            })
+    for (const auto key : {"mace", "rapier"})
     {
         auto e = encounter(*r, hero(key), key);
         e.participants[1].definition = "vanguard";
@@ -460,9 +426,7 @@ void ui_fixtures()
             act(*c, "melee", 99);
             if (!fx::has_attack_mastery(state(*c, 99)))
                 continue;
-            for (const auto suffix :
-                    {"-before", "-after"
-                    })
+            for (const auto suffix : {"-before", "-after"})
             {
                 std::ofstream out(path / (std::string(key) + suffix + ".save"), std::ios::binary);
                 out << (std::string_view(suffix) == "-before" ? before : c->save());
@@ -477,9 +441,7 @@ void ui_fixtures()
 void pending_interactions()
 {
     auto r = rules();
-    for (const auto klass :
-            {"fighter", "rogue"
-            })
+    for (const auto klass : {"fighter", "rogue"})
     {
         CampaignParty p(rules());
         const auto id = p.add_pc(hero("rapier", klass, "soldier"));

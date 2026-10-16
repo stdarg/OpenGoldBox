@@ -93,7 +93,7 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
     if (!fixed)
         text = "\n\n[theme_title]" + tr(N_("Training")) + "[/theme_title]\n" +
                tr(profile.complete ? N_("Supported training choices complete")
-                  : N_("Training choices pending")) +
+                                   : N_("Training choices pending")) +
                "\n";
     for (const auto &s : profile.skills)
     {
@@ -124,21 +124,28 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 inline const char *mastery_effect(std::string_view mastery)
 {
     if (mastery == "Cleave")
-        return N_("After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn.");
+        return N_(
+            "After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn.");
     if (mastery == "Graze")
         return N_("A miss still deals damage equal to the ability modifier used for the attack.");
     if (mastery == "Nick")
-        return N_("The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn.");
+        return N_(
+            "The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn.");
     if (mastery == "Push")
-        return N_("On a hit, push a Large or smaller creature up to 10 feet straight away from you.");
+        return N_(
+            "On a hit, push a Large or smaller creature up to 10 feet straight away from you.");
     if (mastery == "Sap")
-        return N_("On a hit, the target has Disadvantage on its next attack roll before your next turn.");
+        return N_(
+            "On a hit, the target has Disadvantage on its next attack roll before your next turn.");
     if (mastery == "Slow")
-        return N_("On a hit that deals damage, the target's Speed drops by 10 feet until your next turn.");
+        return N_(
+            "On a hit that deals damage, the target's Speed drops by 10 feet until your next turn.");
     if (mastery == "Topple")
-        return N_("On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone.");
+        return N_(
+            "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone.");
     if (mastery == "Vex")
-        return N_("On a hit that deals damage, your next attack against that target before the end of your next turn has Advantage.");
+        return N_(
+            "On a hit that deals damage, your next attack against that target before the end of your next turn has Advantage.");
     return nullptr;
 }
 
@@ -155,10 +162,11 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
                                const opengold::rules::CharacterSheet &sheet, const Translate &tr)
 {
     const auto &skills = sheet.training.skills;
-    const auto skill = std::find_if(skills.begin(), skills.end(), [&](const auto & s)
-    {
-        return s.id == option.id;
-    });
+    const auto skill = std::find_if(skills.begin(), skills.end(),
+                                    [&](const auto &s)
+                                    {
+                                        return s.id == option.id;
+                                    });
     if (skill != skills.end())
     {
         const int proficiency = 2 + (sheet.level - 1) / 4;
@@ -170,10 +178,10 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
             return name + godot::String(" ") + chosen;
         // The demo shares this header without the game's formatter.
         return tr(expertise ? N_("{skill} {bonus} with Expertise (now {current})")
-                  : N_("{skill} {bonus} if chosen (now {current})"))
-               .replace("{skill}", name)
-               .replace("{bonus}", chosen)
-               .replace("{current}", signed_bonus(skill->bonus));
+                            : N_("{skill} {bonus} if chosen (now {current})"))
+            .replace("{skill}", name)
+            .replace("{bonus}", chosen)
+            .replace("{current}", signed_bonus(skill->bonus));
     }
     if (const auto *effect = mastery_effect(option.description))
         return tr(option.description) + godot::String(": ") + tr(effect);
@@ -199,21 +207,24 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         fixed.training.clear();
         required_node<Label>(parent, "TrainingFixedTitle").set_text(tr(N_("Fixed training")));
         required_node<RichTextLabel>(parent, "TrainingFixed")
-        .call("render",
-              training_summary(
-                  creator.rules().evaluate(fixed, opengold::rules::NameRequirement::optional).training,
-                  tr, true));
+            .call("render",
+                  training_summary(creator.rules()
+                                       .evaluate(fixed, opengold::rules::NameRequirement::optional)
+                                       .training,
+                                   tr, true));
     }
     auto groups = creator.training_options();
-    std::erase_if(groups, [&](const auto & group)
-    {
-        return group.id.starts_with("species:") != species;
-    });
+    std::erase_if(groups,
+                  [&](const auto &group)
+                  {
+                      return group.id.starts_with("species:") != species;
+                  });
     // The race page comes before the scores are rolled, so a species choice
     // shows its own description rather than what it adds to the sheet.
-    const auto sheet = species ? std::optional<opengold::rules::CharacterSheet>{}
-                       : std::optional(creator.sheet());
-    for (auto i = static_cast<unsigned>(groups.size()); i < static_cast<unsigned>(rows->get_child_count()); ++i)
+    const auto sheet =
+        species ? std::optional<opengold::rules::CharacterSheet>{} : std::optional(creator.sheet());
+    for (auto i = static_cast<unsigned>(groups.size());
+         i < static_cast<unsigned>(rows->get_child_count()); ++i)
         required_node<Control>(*rows, String("Group") + String::num_uint64(i)).hide();
     for (unsigned i = 0; i < groups.size(); ++i)
     {
@@ -247,13 +258,14 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         {
             auto *row = Object::cast_to<Control>(box->get_child(j));
             const String row_name = row->get_name();
-            const bool used = row_name == "TitleSlot" || row_name == "TitleSpacer" ||
-                              std::any_of(group.options.begin(), group.options.end(),
-                                          [&](const auto & o)
-            {
-                const auto id = training_string(o.id);
-                return row_name == id || row_name == id + String("Benefit");
-            });
+            const bool used =
+                row_name == "TitleSlot" || row_name == "TitleSpacer" ||
+                std::any_of(group.options.begin(), group.options.end(),
+                            [&](const auto &o)
+                            {
+                                const auto id = training_string(o.id);
+                                return row_name == id || row_name == id + String("Benefit");
+                            });
             if (used)
                 continue;
             row->hide();
@@ -265,8 +277,8 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             group.control == opengold::rules::TrainingChoiceControl::single_selection;
         if (single && !box->has_meta("radios"))
             box->set_meta("radios", Ref<ButtonGroup>(memnew(ButtonGroup)));
-        const Ref<ButtonGroup> radios = single ? Ref<ButtonGroup>(box->get_meta("radios"))
-                                        : Ref<ButtonGroup>();
+        const Ref<ButtonGroup> radios =
+            single ? Ref<ButtonGroup>(box->get_meta("radios")) : Ref<ButtonGroup>();
         int row_index = 2; // after the title's slot and its spacer
         for (const auto &option : group.options)
         {
@@ -312,7 +324,7 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
             check->set_tooltip_text(training_source(group.id, tr));
             benefit->set_text(sheet ? training_benefit(group, option, *sheet, tr)
                               : option.description.empty() ? String()
-                              : tr(option.description));
+                                                           : tr(option.description));
             benefit->show();
         }
     }

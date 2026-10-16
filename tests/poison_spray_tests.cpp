@@ -106,9 +106,8 @@ std::string arg(const Message &m, std::string_view name)
 Character hero(unsigned level = 1, bool poison = true)
 {
     auto d = draft();
-    d.cantrips = poison ? std::vector<std::string> {"fire_bolt", "poison_spray"}
-                 :
-                 std::vector<std::string> {"fire_bolt"};
+    d.cantrips = poison ? std::vector<std::string>{"fire_bolt", "poison_spray"}
+                        : std::vector<std::string>{"fire_bolt"};
     Character h(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 1; n < level; ++n)
@@ -124,15 +123,14 @@ auto custom(std::string affinity = {})
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, Side side = Side::opposition,
-std::optional<VitalState> vital = {})
+            std::vector<std::string> gear = {}, Side side = Side::opposition,
+            std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{10, 8, std::vector<Terrain>(80)},
-        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-            {2, "target", "Target", side, target, {}, vital}
-        }},
-    seed);
+                           {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                            {2, "target", "Target", side, target, {}, vital}}},
+                          seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
         check(c->submit(command(*c, "end")), "Reach caster");
@@ -162,69 +160,67 @@ void access()
         {
             ++wizards;
             check(preset.creation_data().cantrips ==
-                  std::optional{std::vector<std::string>{"fire_bolt", "poison_spray",
-                          "ray_of_frost"
-                                                        }} &&
-                  rules->spell_access(preset.sheet()).cantrips.size() == 3,
+                          std::optional{std::vector<std::string>{"fire_bolt", "poison_spray",
+                                                                 "ray_of_frost"}} &&
+                      rules->spell_access(preset.sheet()).cantrips.size() == 3,
                   "Preset Wizards arrive with pre-generated available cantrips");
             const auto &book = preset.creation_data().spells->learning.at("spellbook:1");
             const auto &prepared = *preset.creation_data().spells->prepared;
-            check(preset.creation_data().spells && !book.empty() && book.front() == "magic_missile" &&
-                  !prepared.empty() && prepared.front() == "magic_missile",
+            check(preset.creation_data().spells && !book.empty() &&
+                      book.front() == "magic_missile" && !prepared.empty() &&
+                      prepared.front() == "magic_missile",
                   "Preset Wizards pre-generate independent book and preparation selections");
         }
     check(wizards > 0, "Preset Wizard path exercised");
     const auto original = creation->evaluate(d, NameRequirement::required);
     check(rules->spell_access(original).cantrips.size() == 1 &&
-          rules->spell_access(original).cantrips[0].id == "fire_bolt",
+              rules->spell_access(original).cantrips[0].id == "fire_bolt",
           "Missing draft choices retain legacy Fire Bolt only");
     d.cantrips.emplace();
     auto sheet = creation->evaluate(d, NameRequirement::required);
     check(rules->spell_access(sheet).cantrips.empty(),
           "Explicit empty selection remains pending without silently refilling");
-    d.cantrips = std::vector<std::string> {"poison_spray"};
+    d.cantrips = std::vector<std::string>{"poison_spray"};
     sheet = creation->evaluate(d, NameRequirement::required);
     const auto access = rules->spell_access(sheet);
     check(access.cantrip_choices == 3 && access.cantrips.size() == 1 &&
-          access.cantrips[0].id == "poison_spray" &&
-          access.cantrips[0].source_id == "class:wizard:spellcasting" &&
-          access.cantrips[0].acquired_level == 1,
+              access.cantrips[0].id == "poison_spray" &&
+              access.cantrips[0].source_id == "class:wizard:spellcasting" &&
+              access.cantrips[0].acquired_level == 1,
           "Actual creation selection has Wizard source and first acquisition level");
-    for (const auto &bad : std::vector<std::vector<std::string>>
-{
-    {"poison_spray", "poison_spray"},
-    {"magic_missile"},
-    {"unknown"},
-    {"poison_spray", "fire_bolt", "fire_bolt", "poison_spray"}
-})
+    for (const auto &bad : std::vector<std::vector<std::string>>{
+             {"poison_spray", "poison_spray"},
+             {"magic_missile"},
+             {"unknown"},
+             {"poison_spray", "fire_bolt", "fire_bolt", "poison_spray"}})
     {
         d.cantrips = bad;
         rejects(
             [&]
-        {
-            (void)creation->evaluate(d, NameRequirement::required);
-        });
-    }
-    for (const auto &klass : creation->choices(CreationField::character_class))
-        if (klass.id != "wizard" && klass.id != "warlock" && klass.id != "sorcerer" &&
-                klass.id != "druid")
-        {
-            d = draft();
-            d.character_class = klass.id;
-            d.cantrips = std::vector<std::string> {"poison_spray"};
-            rejects(
-                [&]
             {
                 (void)creation->evaluate(d, NameRequirement::required);
             });
+    }
+    for (const auto &klass : creation->choices(CreationField::character_class))
+        if (klass.id != "wizard" && klass.id != "warlock" && klass.id != "sorcerer" &&
+            klass.id != "druid")
+        {
+            d = draft();
+            d.character_class = klass.id;
+            d.cantrips = std::vector<std::string>{"poison_spray"};
+            rejects(
+                [&]
+                {
+                    (void)creation->evaluate(d, NameRequirement::required);
+                });
         }
     for (unsigned level = 1; level <= 4; ++level)
     {
         auto h = hero(level);
         auto current = rules->spell_access(h.sheet());
         check(current.cantrip_choices == (level == 4 ? 4u : 3u) &&
-              current.cantrips.size() == (level == 4 ? 3u : 2u) &&
-              current.cantrips[1].acquired_level == 1,
+                  current.cantrips.size() == (level == 4 ? 3u : 2u) &&
+                  current.cantrips[1].acquired_level == 1,
               "Advancement retains chosen cantrips, source and correct entitlement");
     }
     auto profile = rules->character_profile(hero().sheet(), {}).data;
@@ -233,22 +229,21 @@ void access()
     profile.replace(0, 4, "PC10");
     rejects(
         [&]
-    {
-        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
-                {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
-            }},
-        13);
-    });
+        {
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+                                 {{1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                                  {2, "vanguard", "Enemy", Side::opposition, {3, 1}}}},
+                                13);
+        });
     auto invalid = hero().sheet();
     for (auto &g : invalid.grants)
         if (g.id == "spell:poison_spray")
             g.source_id = "species:tiefling";
     rejects(
         [&]
-    {
-        (void)rules->character_profile(invalid, {});
-    });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
 }
 
 void rolls()
@@ -256,12 +251,9 @@ void rolls()
     // Independent SplitMix64 golden values: two initiative rolls, then attack.
     // seed 0: natural 20, 5+8 damage; 13: natural 17, 8 damage; 40: natural 1.
     for (unsigned level = 1; level <= 4; ++level)
-        for (unsigned seed :
-                {
-                    0u, 13u, 40u
-                })
+        for (unsigned seed : {0u, 13u, 40u})
             for (const auto &defense :
-                    std::vector<std::string> {"", "resistance", "vulnerability", "immunity"})
+                 std::vector<std::string>{"", "resistance", "vulnerability", "immunity"})
             {
                 auto rules =
                     custom(defense.empty() ? "" : "affinity target test " + defense + " poison\n");
@@ -277,30 +269,30 @@ void rolls()
                 check(
                     arg(hit, "roll") == std::to_string(seed == 0    ? 20
                                                        : seed == 13 ? 17
-                                                       : 1) &&
-                    arg(hit, "bonus") == std::to_string(level == 4 ? 6 : 5),
+                                                                    : 1) &&
+                        arg(hit, "bonus") == std::to_string(level == 4 ? 6 : 5),
                     "Spell attack uses Intelligence and proficiency, not weapon modifier or a save");
                 // From level three a Wizard is an Evoker: Potent Cantrip deals half
                 // damage on a miss, covered by opengold_wizard_spell_tests.
                 const bool potent = seed == 40 && level >= 3;
                 const int raw = seed == 0    ? 13
                                 : seed == 13 ? 8
-                                : 0,
-                                expected = defense == "immunity"        ? 0
-                                           : defense == "resistance"    ? raw / 2
-                                           : defense == "vulnerability" ? raw * 2
-                                           : raw;
+                                             : 0,
+                          expected = defense == "immunity"        ? 0
+                                     : defense == "resistance"    ? raw / 2
+                                     : defense == "vulnerability" ? raw * 2
+                                                                  : raw;
                 check(
                     (potent || unit(*c, 2).hit_points == 1000 - expected),
                     "d12 Poison damage, critical doubling and typed defenses match independent values");
                 const auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
-                      after.movement_feet == before.movement_feet &&
-                      after.persistent == before.persistent,
+                          after.movement_feet == before.movement_feet &&
+                          after.persistent == before.persistent,
                       "Cantrip spends Action only; slots, resources and movement stay available");
                 check(potent || rng(*c) == start_rng + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
-                        : seed == 13 ? 2u
-                        : 1u),
+                                                                                : seed == 13 ? 2u
+                                                                                             : 1u),
                       "No extra saving throw, damage modifier or RNG draw");
                 check(unit(*c, 2).conditions.empty(), "Poison damage does not impose Poisoned");
                 const auto saved = c->save();
@@ -310,7 +302,7 @@ void rolls()
     auto c = battle(*rules, hero(), 13, {2, 1});
     check(c->submit(command(*c, "poison_spray", 2)), "Nearby spell attack");
     check(arg(attack(*c), "roll") == "8" && arg(attack(*c), "disadvantage") == " (disadvantage)" &&
-          unit(*c, 2).hit_points == 996,
+              unit(*c, 2).hit_points == 996,
           "Conscious adjacent hostile imposes ranged-attack Disadvantage");
 }
 
@@ -318,10 +310,7 @@ void eligibility()
 {
     auto rules = custom();
     const auto h = hero();
-    for (int feet :
-            {
-                5, 30, 35
-            })
+    for (int feet : {5, 30, 35})
     {
         auto c = battle(*rules, h, 13, {1 + feet / 5, 1});
         check(has(*c, "poison_spray", 2) == (feet <= 30), "Range includes 30 feet and excludes 35");
@@ -332,19 +321,18 @@ void eligibility()
                   "Out-of-range cast preserves all state");
         }
     }
-    for (const auto &gear : std::vector<std::vector<std::string>> {{},
-    {"shield"},
-    {"quarterstaff"},
-    {"longbow"},
-    {"wand", "shield"},
-    {"quarterstaff", "shield"},
-    {"plate"}
-})
+    for (const auto &gear : std::vector<std::vector<std::string>>{{},
+                                                                  {"shield"},
+                                                                  {"quarterstaff"},
+                                                                  {"longbow"},
+                                                                  {"wand", "shield"},
+                                                                  {"quarterstaff", "shield"},
+                                                                  {"plate"}})
     {
         auto c = battle(*rules, h, 13, {3, 1}, gear);
         while (c->snapshot().actor != 1)
             check(c->submit(command(*c, "end")), "Reach armored caster");
-        check(unit(*c).known_cantrips == std::vector<std::string> {"fire_bolt", "poison_spray"},
+        check(unit(*c).known_cantrips == std::vector<std::string>{"fire_bolt", "poison_spray"},
               "Knowledge remains visible while armor blocks casting");
         // Full hands block nothing (CLASS-11); untrained armor does.
         const bool allowed = gear.empty() || gear[0] != "plate";
@@ -361,35 +349,32 @@ void eligibility()
     auto profile = rules->character_profile(h.sheet(), {});
     Battlefield board{10, 8, std::vector<Terrain>(80)};
     board.terrain[1 * 10 + 2] = Terrain::obstacle;
-    auto blocked = rules->create({board,
-        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-            {2, "target", "Enemy", Side::opposition, {3, 1}}
-        }},
-    13);
+    auto blocked =
+        rules->create({board,
+                       {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                        {2, "target", "Enemy", Side::opposition, {3, 1}}}},
+                      13);
     check(!has(*blocked, "poison_spray", 2), "Opaque obstruction blocks the path");
     auto normal = battle(*rules, h);
     const auto before = normal->save();
-    for (EntityId bad :
-            {
-                0u, 999u
-            })
+    for (EntityId bad : {0u, 999u})
         check(!normal->submit({normal->snapshot().revision, 1, bad, "poison_spray"}) &&
-              normal->save() == before,
+                  normal->save() == before,
               "No terrain/object/unknown target can be forged");
     check(has(*normal, "poison_spray", 1), "A creature-targeting spell can target its own caster");
     const auto hp = unit(*normal).hit_points;
     check(normal->submit(command(*normal, "poison_spray", 1)) && unit(*normal).hit_points == hp - 8,
           "Self-targeting resolves an actual spell attack and damage");
-    auto dead = rules->create({{10, 8, std::vector<Terrain>(80)},
-        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-            {2, "target", "Dead", Side::opposition, {3, 1}, {}, VitalState{0, true, {}}},
-            {3, "target", "Enemy", Side::opposition, {8, 1}}
-        }},
-    13);
+    auto dead = rules->create(
+        {{10, 8, std::vector<Terrain>(80)},
+         {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+          {2, "target", "Dead", Side::opposition, {3, 1}, {}, VitalState{0, true, {}}},
+          {3, "target", "Enemy", Side::opposition, {8, 1}}}},
+        13);
     check(!has(*dead, "poison_spray", 2), "A corpse is not an eligible creature target");
     const auto dead_before = dead->save();
     check(!dead->submit({dead->snapshot().revision, 1, 2, "poison_spray"}) &&
-          dead->save() == dead_before,
+              dead->save() == dead_before,
           "Dead-target rejection preserves all state");
 }
 
@@ -398,29 +383,19 @@ void allies_and_unconscious()
     auto rules = custom();
     const auto h = hero();
     auto profile = rules->character_profile(h.sheet(), {});
-    for (bool unconscious :
-            {
-                false, true
-            })
-        for (bool adjacent :
-                {
-                    false, true
-                })
+    for (bool unconscious : {false, true})
+        for (bool adjacent : {false, true})
         {
             Encounter e{{10, 8, std::vector<Terrain>(80)},
-                {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-                    {
-                        2,
-                        "target",
-                        "Ally",
-                        Side::party,
-                        {adjacent ? 2 : 3, 1},
-                        {},
-unconscious ? std::optional<VitalState>{{0, false, {}}} :
-                        std::nullopt
-                    },
-                    {3, "target", "Enemy", Side::opposition, {8, 1}}
-                }};
+                        {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                         {2,
+                          "target",
+                          "Ally",
+                          Side::party,
+                          {adjacent ? 2 : 3, 1},
+                          {},
+                          unconscious ? std::optional<VitalState>{{0, false, {}}} : std::nullopt},
+                         {3, "target", "Enemy", Side::opposition, {8, 1}}}};
             auto c = rules->create(e, 13);
             while (c->snapshot().actor != 1)
                 check(c->submit(command(*c, "end")), "Reach caster with third initiative slot");
@@ -449,10 +424,7 @@ void campaign()
 {
     auto rules = module();
     auto creation = srd5::character_rules();
-    for (bool npc :
-            {
-                false, true
-            })
+    for (bool npc : {false, true})
         for (unsigned level = 1; level <= 4; ++level)
         {
             CampaignParty p(module());
@@ -484,11 +456,11 @@ void campaign()
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *creation, *rules, "poison", nullptr).party);
             check(encode_campaign(restored, nullptr, "poison") == saved &&
-                  restored.member(id).character.creation_data().cantrips ==
-                  p.member(id).character.creation_data().cantrips,
+                      restored.member(id).character.creation_data().cantrips ==
+                          p.member(id).character.creation_data().cantrips,
                   "Replay preserves chosen cantrips, history and resources exactly");
             check(restored.state().wealth[3] == 37 &&
-                  restored.profile(id).data == p.profile(id).data,
+                      restored.profile(id).data == p.profile(id).data,
                   "Inventory, wealth, equipment and cast access retained");
         }
 }
@@ -498,23 +470,20 @@ void ui_fixtures()
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "poison-fixtures";
     std::filesystem::create_directories(path);
     auto rules = module();
-    for (const auto &name :
-            {"known", "blocked", "unknown"
-            })
+    for (const auto &name : {"known", "blocked", "unknown"})
     {
         const auto h = hero(3, std::string_view(name) != "unknown");
         const auto profile =
             // Untrained armor blocks casting; full hands do not (CLASS-11).
             rules->character_profile(h.sheet(), std::string_view(name) == "blocked"
-                                     ? std::vector<std::string> {"plate"}
-                                     : std::vector<std::string> {"quarterstaff"});
-        const auto c =
-        rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Poison Wizard", Side::party, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", Side::party, {3, 1}},
-                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
-            }},
-        2);
+                                                    ? std::vector<std::string>{"plate"}
+                                                    : std::vector<std::string>{"quarterstaff"});
+        const auto c = rules->create(
+            {{12, 9, std::vector<Terrain>(108)},
+             {{1, "campaign-character", "Poison Wizard", Side::party, {1, 1}, profile.data},
+              {2, "vanguard", "Ally", Side::party, {3, 1}},
+              {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
+            2);
         // Untrained armor's initiative Disadvantage may put the caster later.
         for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
             for (const auto &end : c->legal_commands())

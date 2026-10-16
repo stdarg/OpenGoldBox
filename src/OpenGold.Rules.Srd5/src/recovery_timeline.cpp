@@ -9,10 +9,10 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
 {
     std::vector<RecoverySubject> ordered(subjects.begin(), subjects.end());
     std::sort(ordered.begin(), ordered.end(),
-              [](const auto & a, const auto & b)
-    {
-        return a.effects.id < b.effects.id;
-    });
+              [](const auto &a, const auto &b)
+              {
+                  return a.effects.id < b.effects.id;
+              });
     for (std::size_t i = 0; i < ordered.size(); ++i)
     {
         if (!ordered[i].effects.id || (i && ordered[i - 1].effects.id == ordered[i].effects.id))

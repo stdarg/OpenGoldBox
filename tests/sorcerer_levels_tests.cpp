@@ -73,7 +73,7 @@ Character sorcerer(unsigned level, const std::string &spell = {})
     {
         auto choice = rules->default_advancement(hero.sheet());
         if (!spell.empty() && hero.sheet().level + 1 == static_cast<int>(level) &&
-                std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+            std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
             choice.spells.back() = spell;
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
@@ -83,10 +83,11 @@ Character sorcerer(unsigned level, const std::string &spell = {})
 bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb && (!target || command.target == target);
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && (!target || command.target == target);
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -108,10 +109,11 @@ bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -147,21 +149,25 @@ std::unique_ptr<CombatSession> field(const RulesModule &rules, const CharacterSh
 {
     const std::vector<std::string> gear{"quarterstaff"};
     auto c = rules.create({{14, 7, std::vector<Terrain>(98)},
-        {   {1, "campaign-character", "Sorcerer", Side::party, {1, 2},
-                rules.character_profile(sheet, gear).data},
-            {98, "dummy", "Foe", Side::opposition, foe}
-        }},
-    1);
+                           {{1,
+                             "campaign-character",
+                             "Sorcerer",
+                             Side::party,
+                             {1, 2},
+                             rules.character_profile(sheet, gear).data},
+                            {98, "dummy", "Foe", Side::opposition, foe}}},
+                          1);
     to_turn(*c, 1);
     return c;
 }
 
 bool granted(const CharacterSheet &sheet, std::string_view id, unsigned level)
 {
-    return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
-    {
-        return g.id == id && g.level == level;
-    });
+    return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id && g.level == level;
+                       });
 }
 
 void progression_checks()
@@ -174,40 +180,53 @@ void progression_checks()
         party.advance(id, party.default_advancement(id));
     const auto sheet = party.member(id).character.sheet();
     check(sheet.level == 15, "A Sorcerer reaches 15");
-    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
-{
-    {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}, {11, 16}, {12, 16}, {13, 17}, {14, 17},
-    {15, 18}
-})
-    check(rules->spell_access(sorcerer(level).sheet()).prepared_choices == count,
-          "Prepared spells: 9 at 5 to 18 at 15");
+    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{5, 9},
+                                                                                 {6, 10},
+                                                                                 {7, 11},
+                                                                                 {8, 12},
+                                                                                 {9, 14},
+                                                                                 {10, 15},
+                                                                                 {11, 16},
+                                                                                 {12, 16},
+                                                                                 {13, 17},
+                                                                                 {14, 17},
+                                                                                 {15, 18}})
+        check(rules->spell_access(sorcerer(level).sheet()).prepared_choices == count,
+              "Prepared spells: 9 at 5 to 18 at 15");
     check(rules->spell_access(sorcerer(10).sheet()).cantrip_choices == 6, "A sixth cantrip at 10");
     check(granted(sheet, "feature:sorcerous_restoration", 5) &&
-          granted(sheet, "feature:sorcery_incarnate", 7) && granted(sheet, "feature:dragon_wings", 14),
+              granted(sheet, "feature:sorcery_incarnate", 7) &&
+              granted(sheet, "feature:dragon_wings", 14),
           "Sorcerous Restoration at 5, Sorcery Incarnate at 7, Dragon Wings at 14");
-    check(std::count_if(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id.starts_with("affinity:") && g.level == 6;
-    }) == 1, "Elemental Affinity's type at 6");
-    check(std::count_if(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id.starts_with("metamagic:");
-    }) == 4, "Two more Metamagic options at 10");
+    check(std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.id.starts_with("affinity:") && g.level == 6;
+                        }) == 1,
+          "Elemental Affinity's type at 6");
+    check(std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.id.starts_with("metamagic:");
+                        }) == 4,
+          "Two more Metamagic options at 10");
     const auto dummies = dummy_rules();
-    for (const auto &[level, slot] : std::vector<std::pair<unsigned, unsigned>>
-{
-    {5, 3}, {7, 4}, {9, 5}, {11, 6}, {13, 7}, {15, 8}
-})
+    for (const auto &[level, slot] : std::vector<std::pair<unsigned, unsigned>>{
+             {5, 3}, {7, 4}, {9, 5}, {11, 6}, {13, 7}, {15, 8}})
     {
         auto c = field(*dummies, sorcerer(level).sheet());
-        check(slots(*c, slot) >= 1 && slots(*c, slot + 1) == 0, "A new slot level every two levels");
+        check(slots(*c, slot) >= 1 && slots(*c, slot + 1) == 0,
+              "A new slot level every two levels");
     }
-    check(rules->advancement_options(sorcerer(4).sheet()).description.find("Sorcerous Restoration") != std::string::npos,
-          "The level's description names its feature");
+    check(
+        rules->advancement_options(sorcerer(4).sheet()).description.find("Sorcerous Restoration") !=
+            std::string::npos,
+        "The level's description names its feature");
     const auto bytes = encode_campaign(party, nullptr, "sorcerer-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "sorcerer-levels", nullptr).party);
+                                 "sorcerer-levels", nullptr)
+                     .party);
     check(encode_campaign(next, nullptr, "sorcerer-levels") == bytes,
           "A level-15 Sorcerer saves and reloads");
 }
@@ -223,7 +242,7 @@ void draconic_spells_checks()
     check(offered(*c9, "summon_dragon_acid"), "Summon Dragon is always prepared at 9");
     auto fireball = field(*rules, sorcerer(5, "fireball").sheet());
     check(submit(*fireball, "fireball") && submit_cell(*fireball, "area_move", Cell{9, 2}) &&
-          submit(*fireball, "area_cast") && logged(*fireball, " Fire damage."),
+              submit(*fireball, "area_cast") && logged(*fireball, " Fire damage."),
           "A level-5 Sorcerer casts Fireball");
 }
 
@@ -232,9 +251,11 @@ void font_of_magic_checks()
     const auto rules = dummy_rules();
     auto c = field(*rules, sorcerer(9).sheet());
     check(offered(*c, "create_slot_5") && !offered(*c, "create_slot_6") &&
-          submit(*c, "create_slot_5") && logged(*c, "creates a level-5 spell slot.") &&
-          slots(*c, 5) == 2, "Font of Magic creates a level-5 slot at 9 for 7 Sorcery Points");
-    check(submit(*c, "convert_slot_5") && logged(*c, "turns a level-5 spell slot into Sorcery Points."),
+              submit(*c, "create_slot_5") && logged(*c, "creates a level-5 spell slot.") &&
+              slots(*c, 5) == 2,
+          "Font of Magic creates a level-5 slot at 9 for 7 Sorcery Points");
+    check(submit(*c, "convert_slot_5") &&
+              logged(*c, "turns a level-5 spell slot into Sorcery Points."),
           "A level-5 slot becomes Sorcery Points");
 }
 
@@ -248,16 +269,20 @@ void restoration_checks()
     check(submit(*c, "create_slot_2"), "Spend Sorcery Points");
     state = unit(*c, 1).persistent;
     const auto info = rules->recovery_info(sheet, state);
-    check(std::any_of(info.choices.begin(), info.choices.end(), [](const auto & choice)
-    {
-        return choice.id == "sorcerous_restoration";
-    }), "Sorcerous Restoration is a Short Rest choice");
+    check(std::any_of(info.choices.begin(), info.choices.end(),
+                      [](const auto &choice)
+                      {
+                          return choice.id == "sorcerous_restoration";
+                      }),
+          "Sorcerous Restoration is a Short Rest choice");
     (void)rules->recover_rest_choice(state, sheet, "sorcerous_restoration");
     const auto after = rules->recovery_info(sheet, state);
-    check(std::none_of(after.choices.begin(), after.choices.end(), [](const auto & choice)
-    {
-        return choice.id == "sorcerous_restoration";
-    }), "Once per Long Rest");
+    check(std::none_of(after.choices.begin(), after.choices.end(),
+                       [](const auto &choice)
+                       {
+                           return choice.id == "sorcerous_restoration";
+                       }),
+          "Once per Long Rest");
 }
 
 void incarnate_checks()
@@ -272,8 +297,9 @@ void incarnate_checks()
     check(submit(*c, "metamagic_careful") && submit(*c, "metamagic_distant"),
           "Sorcery Incarnate readies two options while Innate Sorcery is active");
     check(submit(*c, "fireball") && submit_cell(*c, "area_move", Cell{9, 2}) &&
-          submit(*c, "area_cast") && logged(*c, "Sorcerer uses Careful Spell.") &&
-          logged(*c, "Sorcerer uses Distant Spell."), "Both options change one spell");
+              submit(*c, "area_cast") && logged(*c, "Sorcerer uses Careful Spell.") &&
+              logged(*c, "Sorcerer uses Distant Spell."),
+          "Both options change one spell");
 }
 
 void wings_checks()
@@ -281,7 +307,8 @@ void wings_checks()
     const auto rules = dummy_rules();
     auto c = field(*rules, sorcerer(14).sheet());
     check(submit(*c, "dragon_wings") && logged(*c, "Sorcerer spreads dragon wings.") &&
-          unit(*c, 1).status.find("Dragon Wings") != std::string::npos, "Dragon Wings");
+              unit(*c, 1).status.find("Dragon Wings") != std::string::npos,
+          "Dragon Wings");
     check(!offered(*c, "dragon_wings") && !offered(*c, "dragon_wings_points"),
           "The wings last their hour");
 }

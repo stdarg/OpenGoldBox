@@ -14,9 +14,8 @@ constexpr unsigned javelin = 21, quarrel = 28, bastard_sword = 34, broad_sword =
                    leather_armor = 50, padded_armor = 51, studded_leather = 52, ring_mail = 53,
                    scale_mail = 54, chain_mail = 55, splint_mail = 56, banded_mail = 57,
                    plate_mail = 58, shield = 59, magic_user_scroll = 61, cleric_scroll = 62,
-                   gauntlets = 63, type_67 = 67, potion = 71, arrow = 73, bracers = 77,
-                   wand_a = 78, wand_b = 79, type_84 = 84, type_89 = 89, cloak = 92,
-                   ring_of_protection = 93;
+                   gauntlets = 63, type_67 = 67, potion = 71, arrow = 73, bracers = 77, wand_a = 78,
+                   wand_b = 79, type_84 = 84, type_89 = 89, cloak = 92, ring_of_protection = 93;
 
 // The engine's 63-byte item record, before it is decoded.
 struct GeneratedItem
@@ -34,16 +33,13 @@ struct PresetItem
     std::array<unsigned, 3> effects;
 };
 
-constexpr std::array<PresetItem, 7> presets{{
-        {0xB9, 0xBB, 0x40, 1, 800, {3, 0x63, 0}},
-        {0xEF, 0xA7, 0x40, 1, 1100, {1, 0x3B, 0}},
-        {0xB9, 0xA7, 0x40, 1, 400, {1, 3, 0}},
-        {0xAD, 0xA7, 0x40, 1, 450, {1, 0x30, 0}},
-        {0xCE, 0xA7, 0x45, 1, 11000, {0x1E, 0x0F, 0}},
-        {0xE2, 0xA7, 0x64, 10, 15000, {0, 0x26, 0x83}},
-        {0x9D, 0xA7, 0x15, 20, 3000, {1, 0x33, 0}}
-    }
-};
+constexpr std::array<PresetItem, 7> presets{{{0xB9, 0xBB, 0x40, 1, 800, {3, 0x63, 0}},
+                                             {0xEF, 0xA7, 0x40, 1, 1100, {1, 0x3B, 0}},
+                                             {0xB9, 0xA7, 0x40, 1, 400, {1, 3, 0}},
+                                             {0xAD, 0xA7, 0x40, 1, 450, {1, 0x30, 0}},
+                                             {0xCE, 0xA7, 0x45, 1, 11000, {0x1E, 0x0F, 0}},
+                                             {0xE2, 0xA7, 0x64, 10, 15000, {0, 0x26, 0x83}},
+                                             {0x9D, 0xA7, 0x15, 20, 3000, {1, 0x33, 0}}}};
 
 unsigned rolled(const DieRoller &roll, unsigned sides)
 {
@@ -64,11 +60,11 @@ unsigned random_item_type(const DieRoller &roll)
         if (weapon >= 60 && weapon <= 90)
         {
             const auto sword = rolled(roll, 10);
-            return sword <= 4 ? long_sword
+            return sword <= 4   ? long_sword
                    : sword <= 7 ? broad_sword
                    : sword == 8 ? bastard_sword
                    : sword == 9 ? short_sword
-                   : two_handed_sword;
+                                : two_handed_sword;
         }
         if (weapon >= 91 && weapon <= 94)
             return arrow;
@@ -183,14 +179,14 @@ unsigned item_weight(unsigned type, unsigned &count)
 
 unsigned enchanted_value(unsigned type, int plus)
 {
-    const auto per_plus = type == shield ? 2500
-                          : type == arrow || type == quarrel ? 150
-                          : type == ring_mail || type == scale_mail ? 3000
+    const auto per_plus = type == shield                              ? 2500
+                          : type == arrow || type == quarrel          ? 150
+                          : type == ring_mail || type == scale_mail   ? 3000
                           : type == chain_mail || type == splint_mail ? 3500
-                          : type == banded_mail ? 4000
-                          : type == plate_mail ? 5000
-                          : type == bracers ? 3000
-                          : 2000;
+                          : type == banded_mail                       ? 4000
+                          : type == plate_mail                        ? 5000
+                          : type == bracers                           ? 3000
+                                                                      : 2000;
     return static_cast<unsigned>(plus * per_plus);
 }
 
@@ -274,7 +270,7 @@ ItemRecord generate_item(unsigned type, const DieRoller &roll)
     item.type = type;
     std::optional<unsigned> preset;
     if ((type >= 1 && type <= shield) || type == arrow || type == bracers ||
-            type == ring_of_protection)
+        type == ring_of_protection)
         preset = enchant(item, roll);
     else if (type == magic_user_scroll || type == cleric_scroll)
         write_scroll(item, roll);

@@ -4,6 +4,7 @@
 // Native acceptance hooks follow the existing rest control checks. They drive
 // the live campaign and the same button signals used by the player.
 #include "godot_nodes.h"
+
 void RolfTourView::check_mastery_rest_controls()
 {
     try
@@ -19,11 +20,10 @@ void RolfTourView::check_mastery_rest_controls()
             auto rules = opengold::srd5::character_rules();
             auto draft = campaign_->member(campaign_->selected()).character.creation_data();
             campaign_ = std::make_shared<opengold::CampaignParty>(
-                            opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data())));
+                opengold::srd5::load(std::filesystem::path(rest_rules_path().utf8().get_data())));
             unsigned index = 0;
             for (const std::string klass :
-                    {"fighter", "barbarian", "rogue", "paladin", "ranger", "wizard"
-                    })
+                 {"fighter", "barbarian", "rogue", "paladin", "ranger", "wizard"})
             {
                 draft.character_class = klass;
                 draft.name = klass;
@@ -35,14 +35,14 @@ void RolfTourView::check_mastery_rest_controls()
                 {
                     const auto groups = rules->training_options(draft);
                     const auto &group = *std::find_if(groups.begin(), groups.end(),
-                                                      [&](const auto & g)
-                    {
-                        return g.id == original.id;
-                    });
+                                                      [&](const auto &g)
+                                                      {
+                                                          return g.id == original.id;
+                                                      });
                     auto &selected = draft.training[group.id];
                     for (const auto &o : group.options)
                         if (selected.size() < group.count &&
-                                std::find(selected.begin(), selected.end(), o.id) == selected.end())
+                            std::find(selected.begin(), selected.end(), o.id) == selected.end())
                             selected.push_back(o.id);
                 }
                 // Wizards, Paladins and Rangers choose spells at creation, and a
@@ -74,8 +74,8 @@ void RolfTourView::check_mastery_rest_controls()
                 }
                 opengold::Character h(*rules, draft, {});
                 const auto id = index == 3 || index == 4
-                                ? campaign_->recruit("mastery-ui:" + klass, std::move(h))
-                                : campaign_->add_pc(std::move(h));
+                                    ? campaign_->recruit("mastery-ui:" + klass, std::move(h))
+                                    : campaign_->add_pc(std::move(h));
                 if (klass == "fighter")
                 {
                     campaign_->award_experience(2700, "mastery-ui-levels");
@@ -89,12 +89,12 @@ void RolfTourView::check_mastery_rest_controls()
                 bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
             bytes.insert(bytes.end(), {0, 0});
             auto program = std::make_shared<const opengold::por::EclProgram>(
-                               opengold::por::EclProgram::decode(bytes, "mastery rest controls"));
+                opengold::por::EclProgram::decode(bytes, "mastery rest controls"));
             auto resources = std::make_shared<opengold::por::PhlanResources>();
             resources->programs[0] = program;
             const opengold::Image placeholder{1, 1, 0, 0, {0, 0, 0, 255}};
             session_.emplace(opengold::por::GeoMap{}, program,
-                             std::array<opengold::Image, 3> {placeholder, placeholder, placeholder},
+                             std::array<opengold::Image, 3>{placeholder, placeholder, placeholder},
                              0x9914, opengold::por::WallArtSet{}, resources);
             session_->campaign_party(campaign_);
             session_->advance(1);
@@ -102,23 +102,23 @@ void RolfTourView::check_mastery_rest_controls()
             auto *picker = &presentation::required_node<Window>(*this, "RestDialog");
             presentation::required_node<OptionButton>(*picker, "Kind").select(1);
             presentation::required_node<OptionButton>(*picker, "Kind")
-            .emit_signal("item_selected", 1);
+                .emit_signal("item_selected", 1);
             presentation::required_node<Button>(*picker, "Start").emit_signal("pressed");
             check(campaign_->state().spell_rest && campaign_->state().training_rest &&
-                  campaign_->state().spell_rest->members.size() == 3 &&
-                  campaign_->state().training_rest->members.size() == 5,
+                      campaign_->state().spell_rest->members.size() == 3 &&
+                      campaign_->state().training_rest->members.size() == 5,
                   "Completed camp creates independent spell and mastery windows");
             // The Wizard, Paladin and Ranger each keep their spells in turn.
             for (int caster = 0; caster < 3; ++caster)
             {
                 check(presentation::required_node<Window>(*this, "RestSpells").is_visible() &&
-                      !w->is_visible(),
+                          !w->is_visible(),
                       "Spell choices precede mastery choices");
                 presentation::required_node<Button>(*this, "RestSpells/Cancel")
-                .emit_signal("pressed");
+                    .emit_signal("pressed");
                 check(presentation::required_node<Label>(*this, "RestSpells/Error")
-                      .get_text()
-                      .is_empty(),
+                          .get_text()
+                          .is_empty(),
                       "Each caster keeps current spells");
             }
             check(w->is_visible() && !campaign_->state().spell_rest,
@@ -134,13 +134,14 @@ void RolfTourView::check_mastery_rest_controls()
                 campaign_->restore(
                     opengold::decode_campaign(bytes, *opengold::srd5::character_rules(),
                                               campaign_->rule_module(), "mastery-rest-ui", nullptr)
-                    .party);
+                        .party);
                 rest_training_member_ = 0;
                 refresh_rest();
                 check(w->is_visible() &&
-                      !presentation::required_node<Button>(*w, "Apply").is_disabled(),
+                          !presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "Reload restores a valid selected mastery set");
-                auto *box = &presentation::required_node<CheckBox>(*w,
+                auto *box = &presentation::required_node<CheckBox>(
+                    *w,
                     "Choices/Rows/" + presentation::training_string(rest_training_choice_.front()));
                 box->grab_focus();
             }
@@ -154,24 +155,30 @@ void RolfTourView::check_mastery_rest_controls()
             }
             else if (phase == 3)
             {
-                const auto original = campaign_->rule_module().rest_training_options(
-                                          campaign_->member(rest_training_member_).character.sheet(),
-                                          opengold::RestKind::long_rest).front();
-                auto *box = &presentation::required_node<CheckBox>(*w,
-                    "Choices/Rows/" + presentation::training_string(original.selected.front()));
+                const auto original =
+                    campaign_->rule_module()
+                        .rest_training_options(
+                            campaign_->member(rest_training_member_).character.sheet(),
+                            opengold::RestKind::long_rest)
+                        .front();
+                auto *box = &presentation::required_node<CheckBox>(
+                    *w, "Choices/Rows/" + presentation::training_string(original.selected.front()));
                 check(box->has_focus(), "Keyboard deselection preserves checkbox focus");
                 check(!box->is_pressed(), "Keyboard Space toggles the selected checkbox");
                 check(presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "Incomplete mastery selections disable Apply");
-                const auto options = campaign_->rule_module().rest_training_options(
-                                         campaign_->member(rest_training_member_).character.sheet(),
-                                         opengold::RestKind::long_rest).front();
+                const auto options =
+                    campaign_->rule_module()
+                        .rest_training_options(
+                            campaign_->member(rest_training_member_).character.sheet(),
+                            opengold::RestKind::long_rest)
+                        .front();
                 for (const auto &o : options.group.options)
                     if (std::find(options.selected.begin(), options.selected.end(), o.id) ==
-                            options.selected.end())
+                        options.selected.end())
                     {
-                        auto *other = &presentation::required_node<CheckBox>(*w, "Choices/Rows/" +
-                            presentation::training_string(o.id));
+                        auto *other = &presentation::required_node<CheckBox>(
+                            *w, "Choices/Rows/" + presentation::training_string(o.id));
                         other->set_pressed(true);
                         break;
                     }
@@ -188,8 +195,8 @@ void RolfTourView::check_mastery_rest_controls()
                             std::filesystem::path(dir.utf8().get_data()));
                         const auto image = get_viewport()->get_texture()->get_image();
                         check(image.is_valid() &&
-                              image->save_png(dir.path_join(
-                                                  String::num_uint64(rest_check_stage_) + ".png")) == OK,
+                                  image->save_png(dir.path_join(
+                                      String::num_uint64(rest_check_stage_) + ".png")) == OK,
                               "Mastery rest capture saved");
                     }
             }
@@ -209,18 +216,15 @@ void RolfTourView::check_mastery_rest_controls()
                     event->set_pressed(true);
                     w->emit_signal("window_input", event);
                     check(campaign_->member(id).character.sheet().grants ==
-                          before.character.sheet().grants,
+                              before.character.sheet().grants,
                           "Escape discards edits and keeps current grants");
                 }
                 else
                 {
                     const auto expected = campaign_->preview_rest_training(
-                                              rest_training_ticket_, id, rest_training_choice_);
+                        rest_training_ticket_, id, rest_training_choice_);
                     presentation::required_node<Button>(*w, "Apply").grab_focus();
-                    for (bool down :
-                            {
-                                true, false
-                            })
+                    for (bool down : {true, false})
                     {
                         Ref<InputEventKey> event;
                         event.instantiate();
@@ -229,8 +233,8 @@ void RolfTourView::check_mastery_rest_controls()
                         w->push_input(event, true);
                     }
                     check(campaign_->member(id).character.sheet().grants ==
-                          expected.character.sheet().grants &&
-                          campaign_->member(id).vitals == before.vitals,
+                                  expected.character.sheet().grants &&
+                              campaign_->member(id).vitals == before.vitals,
                           "Keyboard Apply commits exactly the native preview and preserves vitals");
                 }
             }

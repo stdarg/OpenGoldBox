@@ -35,7 +35,8 @@ std::vector<MemberRestInfo> CampaignParty::rest_info(RestKind kind) const
                 {
                     const auto needed =
                         static_cast<std::uint64_t>(timing.wait_after_rest_minutes - elapsed) *
-                        60000 + m.last_rest_subminute_milliseconds;
+                            60000 +
+                        m.last_rest_subminute_milliseconds;
                     if (needed > state_.subminute_milliseconds)
                         info.wait_milliseconds = needed - state_.subminute_milliseconds;
                 }
@@ -127,7 +128,7 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
             continue;
         rules_->recover(member.vitals, member.character.sheet());
         const auto choices = rules_->spell_choice_options(member.character.sheet(),
-                             rules::SpellChoiceContext::long_rest);
+                                                          rules::SpellChoiceContext::long_rest);
         if (choices.may_prepare || choices.may_replace)
         {
             if (!state.spell_rest)
@@ -154,8 +155,8 @@ void CampaignParty::require_rest_ticket(RestTicket ticket) const
 {
     outside_combat();
     if (!state_.short_rest || state_.short_rest->ticket != ticket ||
-            state_.short_rest->completed_minutes != state_.time_minutes ||
-            state_.short_rest->completed_subminute_milliseconds != state_.subminute_milliseconds)
+        state_.short_rest->completed_minutes != state_.time_minutes ||
+        state_.short_rest->completed_subminute_milliseconds != state_.subminute_milliseconds)
         throw std::runtime_error("Expired Short Rest spending request");
 }
 
@@ -173,7 +174,7 @@ std::vector<rules::HitDieResult> CampaignParty::heal_with_hit_dice(RestTicket ti
     // request spends them all; a die is never spent at full HP.
     std::vector<rules::HitDieResult> result;
     while (m.vitals.hit_points < rules_->hit_point_maximum(m.character.sheet(), m.vitals) &&
-            rules_->recovery_info(m.character.sheet(), m.vitals).hit_dice > 0)
+           rules_->recovery_info(m.character.sheet(), m.vitals).hit_dice > 0)
     {
         result.push_back(rules_->spend_hit_die(m.vitals, m.character.sheet(), next.random_state));
         if (result.back().healing == 0)
@@ -187,7 +188,7 @@ std::vector<rules::HitDieResult> CampaignParty::heal_with_hit_dice(RestTicket ti
 }
 
 rules::Message CampaignParty::recover_rest_choice(RestTicket ticket, MemberId id,
-        std::string_view choice)
+                                                  std::string_view choice)
 {
     require_rest_ticket(ticket);
     const auto &session = *state_.short_rest;
@@ -211,21 +212,26 @@ void CampaignParty::finish_short_rest(RestTicket ticket)
     auto session = std::move(*state_.short_rest);
     state_.short_rest.reset();
     auto spells = session;
-    std::erase_if(spells.members, [&](MemberId id)
-    {
-        return !rules_->spell_choice_options(member(id).character.sheet(),
-                                             rules::SpellChoiceContext::short_rest).may_prepare;
-    });
+    std::erase_if(spells.members,
+                  [&](MemberId id)
+                  {
+                      return !rules_
+                                  ->spell_choice_options(member(id).character.sheet(),
+                                                         rules::SpellChoiceContext::short_rest)
+                                  .may_prepare;
+                  });
     if (!spells.members.empty())
     {
         state_.spell_rest = std::move(spells);
         state_.spells_after_short_rest = true;
     }
-    std::erase_if(session.members, [&](MemberId id)
-    {
-        return rules_->rest_training_options(member(id).character.sheet(),
-                                             RestKind::short_rest).empty();
-    });
+    std::erase_if(
+        session.members,
+        [&](MemberId id)
+        {
+            return rules_->rest_training_options(member(id).character.sheet(), RestKind::short_rest)
+                .empty();
+        });
     if (session.members.empty())
         return;
     state_.training_rest = std::move(session);

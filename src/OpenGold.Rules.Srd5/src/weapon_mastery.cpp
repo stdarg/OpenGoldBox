@@ -21,9 +21,9 @@ unsigned count(CharacterClass klass, unsigned acquired)
         return 0;
     return klass == CharacterClass::fighter ? 3
            : klass == CharacterClass::barbarian || klass == CharacterClass::paladin ||
-           klass == CharacterClass::ranger || klass == CharacterClass::rogue
-           ? 2
-           : 0;
+                   klass == CharacterClass::ranger || klass == CharacterClass::rogue
+               ? 2
+               : 0;
 }
 
 std::string source(CharacterClass klass, unsigned acquired)
@@ -73,10 +73,9 @@ bool is_mastery_grant(const rules::FeatureGrant &grant)
 }
 
 rules::TrainingChoiceGroup mastery_options(CharacterClass klass, unsigned acquired,
-        std::span<const rules::FeatureGrant> grants)
+                                           std::span<const rules::FeatureGrant> grants)
 {
-    rules::TrainingChoiceGroup group
-    {
+    rules::TrainingChoiceGroup group{
         source(klass, acquired), "Weapon Mastery", count(klass, acquired), {}};
     group.acquired_level = acquired;
     group.continuity_id = acquired == 1 ? "weapon_mastery" : "";
@@ -84,14 +83,14 @@ rules::TrainingChoiceGroup mastery_options(CharacterClass klass, unsigned acquir
         return group;
     for (const auto &item : weapons)
         if (eligible(klass, item) && std::none_of(grants.begin(), grants.end(),
-                [&](const auto & g)
-    {
-        return g.id == "mastery:" +
-               std::string(item.key) &&
-                   g.source_id != group.id;
-        }))
-    group.options.push_back({std::string(item.key), std::string(item.label),
-                             std::string(mastery_name(item.mastery))});
+                                                  [&](const auto &g)
+                                                  {
+                                                      return g.id == "mastery:" +
+                                                                         std::string(item.key) &&
+                                                             g.source_id != group.id;
+                                                  }))
+            group.options.push_back({std::string(item.key), std::string(item.label),
+                                     std::string(mastery_name(item.mastery))});
     return group;
 }
 
@@ -109,10 +108,10 @@ rules::TrainingChoices mastery_choices(std::span<const rules::FeatureGrant> gran
             const auto key = grant.id.substr(8);
             require(group.count && grant.source_id == group.id && kinds.insert(key).second);
             require(std::any_of(group.options.begin(), group.options.end(),
-                                [&](const auto & o)
-            {
-                return o.id == key;
-            }));
+                                [&](const auto &o)
+                                {
+                                    return o.id == key;
+                                }));
             auto &choices = result[group.id];
             choices.push_back(key);
             require(choices.size() <= group.count);
@@ -129,14 +128,14 @@ unsigned mastery_replacements(CharacterClass klass)
 {
     return klass == CharacterClass::fighter || klass == CharacterClass::barbarian ? 1
            : klass == CharacterClass::rogue || klass == CharacterClass::paladin ||
-           klass == CharacterClass::ranger
-           ? 2
-           : 0;
+                   klass == CharacterClass::ranger
+               ? 2
+               : 0;
 }
 
 std::vector<rules::FeatureGrant> replace_masteries(std::span<const rules::FeatureGrant> grants,
-        CharacterClass klass, unsigned level,
-        std::span<const std::string> selected)
+                                                   CharacterClass klass, unsigned level,
+                                                   std::span<const std::string> selected)
 {
     require(level <= 20);
     const auto previous = mastery_choices(grants, klass, level);

@@ -14,10 +14,10 @@ inline void keep_initiative(rules::CombatSession &session)
     {
         const auto commands = session.legal_commands();
         const auto choice = std::find_if(commands.begin(), commands.end(),
-                                         [](const auto & c)
-        {
-            return c.verb == "initiative_keep";
-        });
+                                         [](const auto &c)
+                                         {
+                                             return c.verb == "initiative_keep";
+                                         });
         if (choice == commands.end() || !session.submit(*choice))
             throw std::runtime_error("Missing Initiative decline");
     }
@@ -27,10 +27,11 @@ inline void keep_initiative(rules::CombatSession &session)
 inline bool logged(const rules::CombatSession &session, std::string_view text)
 {
     const auto log = session.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 } // namespace opengold::test
 #endif

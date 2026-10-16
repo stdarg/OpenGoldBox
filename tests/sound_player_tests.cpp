@@ -12,7 +12,8 @@ using namespace opengold::por;
 
 // An output reference must not copy or assign only its empty base part
 // (Effective C++ Items 5 and 6).
-static_assert(!std::is_copy_constructible_v<SoundOutput> && !std::is_copy_assignable_v<SoundOutput>);
+static_assert(!std::is_copy_constructible_v<SoundOutput> &&
+              !std::is_copy_assignable_v<SoundOutput>);
 
 namespace
 {
@@ -108,7 +109,7 @@ void pcm_contract()
     require(pcm.samples()[0] == -32768, "PCM buffer owns its samples");
     require(pcm.sample_rate() == 48000 && pcm.channels() == 1, "PCM format metadata");
     require(pcm.little_endian_bytes() ==
-            std::vector<std::uint8_t> {0, 128, 255, 255, 0, 0, 1, 0, 255, 127},
+                std::vector<std::uint8_t>{0, 128, 255, 255, 0, 0, 1, 0, 255, 127},
             "Signed PCM serialization at the device boundary");
     require(pcm.duration() == 5.0 / 48000, "PCM duration");
     PcmBuffer empty({});
@@ -126,33 +127,33 @@ void bank_contract()
     require(sounds.at(7).pcm.samples().data() == samples, "Lookup reuses prepared PCM");
     rejects<std::out_of_range>(
         [&]
-    {
-        (void)sounds.at(1);
-    });
+        {
+            (void)sounds.at(1);
+        });
     rejects<std::invalid_argument>(
         []
-    {
-        (void)SoundBank({tone(0)});
-    });
+        {
+            (void)SoundBank({tone(0)});
+        });
     rejects<std::invalid_argument>(
         []
-    {
-        (void)SoundBank({tone(3), tone(3)});
-    });
+        {
+            (void)SoundBank({tone(3), tone(3)});
+        });
     auto invalid = tone(1);
     invalid.ticks.clear();
     rejects<std::invalid_argument>(
         [&]
-    {
-        (void)SoundBank({invalid});
-    });
+        {
+            (void)SoundBank({invalid});
+        });
     invalid = tone(1);
     invalid.tick_divisor = 0;
     rejects<std::runtime_error>(
         [&]
-    {
-        (void)SoundBank({tone(2), invalid});
-    });
+        {
+            (void)SoundBank({tone(2), invalid});
+        });
     require(SoundBank({}).clips().empty(), "Empty bank is usable without a game installation");
 }
 
@@ -162,7 +163,7 @@ void playback_contract()
     {
         SoundPlayer player(bank(), std::make_unique<FakeOutput>(state));
         require(state.alive == 1 && state.prepares == 1 &&
-                state.prepared_ids == std::vector<unsigned> {42, 7},
+                    state.prepared_ids == std::vector<unsigned>{42, 7},
                 "Player owns output and prepares the bank once");
         require(!player.current_sound() && state.gain == 1, "Initial state");
         player.play(7);
@@ -170,9 +171,9 @@ void playback_contract()
         const auto starts = state.starts, stops = state.stops;
         rejects<std::out_of_range>(
             [&]
-        {
-            player.play(999);
-        });
+            {
+                player.play(999);
+            });
         require(state.starts == starts && state.stops == stops && player.current_sound() == 7,
                 "Invalid ID leaves current audio uninterrupted");
         player.play(7);
@@ -193,17 +194,14 @@ void playback_contract()
         require(state.gain == 0 && player.volume() == .6, "Volume change while muted");
         player.set_muted(false);
         require(state.gain == .6 && player.effective_gain() == .6, "Unmute restores latest volume");
-        for (const auto invalid :
-                {
-                    -0.1, 1.1, std::numeric_limits<double>::infinity(),
-                    std::numeric_limits<double>::quiet_NaN()
-                })
+        for (const auto invalid : {-0.1, 1.1, std::numeric_limits<double>::infinity(),
+                                   std::numeric_limits<double>::quiet_NaN()})
         {
             rejects<std::invalid_argument>(
                 [&]
-            {
-                player.set_volume(invalid);
-            });
+                {
+                    player.set_volume(invalid);
+                });
             require(player.volume() == .6 && state.gain == .6,
                     "Rejected volume leaves output unchanged");
         }
@@ -212,9 +210,9 @@ void playback_contract()
         state.fail_play = true;
         rejects<std::runtime_error>(
             [&]
-        {
-            player.play(42);
-        });
+            {
+                player.play(42);
+            });
         require(!state.playing && !player.current_sound(),
                 "Device failure stops partially started playback");
         state.fail_play = false;
@@ -229,16 +227,16 @@ void failed_construction()
 {
     rejects<std::invalid_argument>(
         []
-    {
-        SoundPlayer player(bank(), nullptr);
-    });
+        {
+            SoundPlayer player(bank(), nullptr);
+        });
     OutputState state;
     state.fail_prepare = true;
     rejects<std::runtime_error>(
         [&]
-    {
-        SoundPlayer player(bank(), std::make_unique<FakeOutput>(state));
-    });
+        {
+            SoundPlayer player(bank(), std::make_unique<FakeOutput>(state));
+        });
     require(state.alive == 0 && state.destroyed == 1 && !state.playing,
             "Failed preparation releases owned output and stops partial playback");
 }

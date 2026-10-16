@@ -50,10 +50,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId ta
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::count_if(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::count_if(log.begin(), log.end(),
+                         [&](const auto &line)
+                         {
+                             return line.find(text) != std::string::npos;
+                         });
 }
 
 // Each new conversion fights from combat.rules.
@@ -63,9 +64,9 @@ void conversions()
     for (const auto *creature : {"lizardfolk", "giant-lizard", "gnoll-warrior", "norris-the-gray"})
     {
         auto c = module->create({{8, 4, std::vector<Terrain>(32)},
-            {{1, creature, "Monster", Side::opposition, {1, 1}},
-             {2, "target", "Target", Side::party, {2, 1}}}},
-        3);
+                                 {{1, creature, "Monster", Side::opposition, {1, 1}},
+                                  {2, "target", "Target", Side::party, {2, 1}}}},
+                                3);
         check(c->snapshot().combatants.size() == 2, std::string(creature) + " joins a fight");
     }
 }
@@ -75,9 +76,9 @@ void multiattack()
 {
     auto module = rules();
     auto c = module->create({{8, 4, std::vector<Terrain>(32)},
-        {{1, "lizardfolk", "Lizardfolk", Side::opposition, {1, 1}},
-         {2, "target", "Target", Side::party, {2, 1}}}},
-    3);
+                             {{1, "lizardfolk", "Lizardfolk", Side::opposition, {1, 1}},
+                              {2, "target", "Target", Side::party, {2, 1}}}},
+                            3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end", c->snapshot().actor), "Reach the Lizardfolk's turn");
     check(submit(*c, "melee", 1, 2) && count_logged(*c, "Lizardfolk -> Target") == 2,
@@ -133,10 +134,11 @@ void arrow_traps()
         check(r.total == r.natural + 3 && r.armor_class == armor_class,
               "An arrow rolls d20 + 3 against the member's AC");
         check(r.hit == (r.natural == 20 || (r.natural != 1 && r.total >= r.armor_class)) &&
-              r.critical == (r.natural == 20), "An arrow hits by the SRD attack roll rules");
+                  r.critical == (r.natural == 20),
+              "An arrow hits by the SRD attack roll rules");
         check(r.damage >= (r.hit ? (r.critical ? 2 : 1) : 0) &&
-              r.damage <= (r.hit ? (r.critical ? 12 : 6) : 0) &&
-              state.hit_points == sheet.hit_points - r.damage,
+                  r.damage <= (r.hit ? (r.critical ? 12 : 6) : 0) &&
+                  state.hit_points == sheet.hit_points - r.damage,
               "A hit deals 1d6, or 2d6 on a 20");
         missed |= !r.hit;
         hit |= r.hit;
@@ -153,7 +155,7 @@ void arrow_traps()
         dropped = module->hazard_attack(frail, sheet, {}, {100, 1, 1, 0, "piercing"}, random);
     }
     check(!dropped.death_saves.empty() &&
-          (frail.dead || frail.hit_points == 1 || dropped.death_saves.back() >= 10),
+              (frail.dead || frail.hit_points == 1 || dropped.death_saves.back() >= 10),
           "A dropped member's death saves are rolled until stable, revived or dead");
     bool rejected = false;
     try

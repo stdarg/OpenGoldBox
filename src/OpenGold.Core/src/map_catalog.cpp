@@ -22,19 +22,19 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
             const auto bank = name.substr(3, name.size() - 7);
             if (!std::all_of(bank.begin(), bank.end(),
                              [](char c)
-        {
-            return c >= '0' && c <= '9';
-        }))
-            continue;
+                             {
+                                 return c >= '0' && c <= '9';
+                             }))
+                continue;
             if (!archives.emplace(name, entry.path()).second)
                 throw MapError("Ambiguous map archive " + name);
         }
         MapCatalog catalog;
         for (const auto &[name, path] : archives)
         {
-            auto bytes = detail::read_archive_bytes<MapError>(path,
-                "Map archive too large: " + name, "Cannot open " + name,
-                "Cannot read " + name);
+            auto bytes =
+                detail::read_archive_bytes<MapError>(path, "Map archive too large: " + name,
+                                                     "Cannot open " + name, "Cannot read " + name);
             auto dax = decode_dax_archive(bytes);
             if (!dax)
                 throw MapError("Invalid DAX archive " + name);

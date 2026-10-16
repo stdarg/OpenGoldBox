@@ -19,7 +19,7 @@ void check(bool ok, const std::string &message)
 std::unique_ptr<opengold::CombatDemo> training_demo()
 {
     auto demo = std::make_unique<opengold::CombatDemo>(opengold::srd5::load(
-            std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules"));
+        std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules"));
     demo->training();
     return demo;
 }

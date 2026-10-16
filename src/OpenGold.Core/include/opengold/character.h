@@ -101,10 +101,11 @@ class Character
                  const rules::AdvancementChoice &choice);
     // A Short Rest's choices (Memorize Spell) change less than a Long Rest's;
     // either replays as a Long Rest's, which allows more.
-    void choose_spells(const rules::RulesModule &, const rules::SpellChoices &,
-                       std::uint64_t rest_session,
-                       rules::SpellChoiceContext context = rules::SpellChoiceContext::long_rest,
-                       rules::ChoiceCompleteness completeness = rules::ChoiceCompleteness::complete);
+    void
+    choose_spells(const rules::RulesModule &, const rules::SpellChoices &,
+                  std::uint64_t rest_session,
+                  rules::SpellChoiceContext context = rules::SpellChoiceContext::long_rest,
+                  rules::ChoiceCompleteness completeness = rules::ChoiceCompleteness::complete);
     void replace_rest_training(const rules::RulesModule &, std::span<const std::string>,
                                std::uint64_t rest_session);
     void train_at_hall(const rules::RulesModule &, std::string grant);
@@ -128,7 +129,6 @@ class Character
     {
         return advancements_;
     }
-
 
   private:
     rules::CharacterDraft creation_;

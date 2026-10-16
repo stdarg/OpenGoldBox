@@ -59,9 +59,11 @@ Character druid(unsigned level = 1, std::string order = "warden", std::string la
     d.rolls[4] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {order}}};
     d.cantrips = std::move(cantrips);
-    d.spells = SpellChoices{{},
-        std::vector<std::string> {"cure_wounds", "entangle", "faerie_fire", "thunderwave"},
-        {}, {}};
+    d.spells = SpellChoices{
+        {},
+        std::vector<std::string>{"cure_wounds", "entangle", "faerie_fire", "thunderwave"},
+        {},
+        {}};
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "druid-xp");
@@ -102,28 +104,31 @@ bool aim(CombatSession &c, Cell cell)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
 {
     const auto conditions = unit(c, id).conditions;
-    return std::any_of(conditions.begin(), conditions.end(), [&](const auto & condition)
-    {
-        return condition.source == label;
-    });
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [&](const auto &condition)
+                       {
+                           return condition.source == label;
+                       });
 }
 
 bool has_grant(const Character &hero, std::string_view id)
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 // The Druid (1), an ally (2) and an enemy (98) beside the Druid or 15 feet away.
@@ -133,11 +138,10 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
 {
     const auto profile = module.character_profile(sheet, gear).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
-            {2, "target", "Ally", Side::party, ally},
-            {98, "target", "Enemy", Side::opposition, {adjacent ? 2 : 4, 1}}
-        }},
-    seed);
+                            {{1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                             {2, "target", "Ally", Side::party, ally},
+                             {98, "target", "Enemy", Side::opposition, {adjacent ? 2 : 4, 1}}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Druid's turn");
     check(c->snapshot().actor == 1, "The Druid acts");
@@ -164,21 +168,21 @@ void cantrip_checks()
     {
         auto c = battle(*module, sheet);
         check(submit(*c, "produce_flame") && has_condition(*c, 1, "Produce Flame") &&
-              unit(*c, 1).action && !unit(*c, 1).bonus_action,
+                  unit(*c, 1).action && !unit(*c, 1).bonus_action,
               "Produce Flame is a Bonus Action");
         check(submit(*c, "hurl_flame", 98) && logged(*c, "Druid hurls Produce Flame.") &&
-              !unit(*c, 1).action && has_condition(*c, 1, "Produce Flame"),
+                  !unit(*c, 1).action && has_condition(*c, 1, "Produce Flame"),
               "Hurling the flame is an Action and the flame stays");
     }
     {
         auto c = battle(*module, sheet);
         const auto commands = c->legal_commands();
         check(std::none_of(commands.begin(), commands.end(),
-                           [](const auto & command)
-        {
-            return command.verb == "shillelagh" || command.verb == "hurl_flame";
-        }),
-        "Shillelagh needs a Club or Quarterstaff; no flame, no hurl");
+                           [](const auto &command)
+                           {
+                               return command.verb == "shillelagh" || command.verb == "hurl_flame";
+                           }),
+              "Shillelagh needs a Club or Quarterstaff; no flame, no hurl");
     }
     auto plain = battle(*module, sheet, {"quarterstaff"}, true);
     check(submit(*plain, "melee", 98), "A plain staff strike");
@@ -199,16 +203,14 @@ void creation_checks()
     const auto draft = druid(1).creation_data();
     const auto access = module->spell_access(druid(1).sheet());
     check(access.cantrip_choices == 2 && access.prepared_choices == 4 &&
-          creation->cantrip_options(draft).count == 2 &&
-          creation->spell_choice_options(draft).prepared_count == 4,
+              creation->cantrip_options(draft).count == 2 &&
+              creation->spell_choice_options(draft).prepared_count == 4,
           "A level-one Druid knows two cantrips and prepares four spells");
-    for (const auto &bad : std::vector<std::vector<std::string>>
-{
-    {"cure_wounds", "entangle", "faerie_fire", "magic_missile"},
-        {"cure_wounds", "entangle", "faerie_fire", "faerie_fire"},
-        {"cure_wounds", "entangle", "faerie_fire", "barkskin"},
-        {"cure_wounds", "entangle", "faerie_fire", "thunderwave", "goodberry"}
-    })
+    for (const auto &bad : std::vector<std::vector<std::string>>{
+             {"cure_wounds", "entangle", "faerie_fire", "magic_missile"},
+             {"cure_wounds", "entangle", "faerie_fire", "faerie_fire"},
+             {"cure_wounds", "entangle", "faerie_fire", "barkskin"},
+             {"cure_wounds", "entangle", "faerie_fire", "thunderwave", "goodberry"}})
     {
         auto wrong = draft;
         wrong.spells = SpellChoices{{}, bad, {}, {}};
@@ -243,19 +245,21 @@ void order_checks()
     draft.character_class = "druid";
     draft.training["class:druid:primal_order"] = {"magician"};
     check(srd5::character_rules()->cantrip_options(draft).count == 3 &&
-          module->spell_access(magician).cantrip_choices == 3 &&
-          module->spell_access(warden).cantrip_choices == 2,
+              module->spell_access(magician).cantrip_choices == 3 &&
+              module->spell_access(warden).cantrip_choices == 2,
           "Magician learns one extra cantrip");
-    const auto casts = [&](const CharacterSheet & sheet)
+    const auto casts = [&](const CharacterSheet &sheet)
     {
         auto c = battle(*module, sheet, {"chain_shirt"});
         const auto commands = c->legal_commands();
-        return std::any_of(commands.begin(), commands.end(), [](const auto & command)
-        {
-            return command.verb == "produce_flame";
-        });
+        return std::any_of(commands.begin(), commands.end(),
+                           [](const auto &command)
+                           {
+                               return command.verb == "produce_flame";
+                           });
     };
-    check(casts(warden) && !casts(magician), "Warden trains Medium armor; others cannot cast in it");
+    check(casts(warden) && !casts(magician),
+          "Warden trains Medium armor; others cannot cast in it");
 }
 
 void circle_checks()
@@ -263,9 +267,10 @@ void circle_checks()
     auto module = rules();
     const auto third = druid(3), fourth = druid(4);
     check(has_grant(third, "subclass:land") && has_grant(third, "feature:circle_spells") &&
-          has_grant(third, "land:arid"), "Level three brings the Circle of the Land");
+              has_grant(third, "land:arid"),
+          "Level three brings the Circle of the Land");
     const auto always = module->spell_access(third.sheet()).always_prepared;
-    check(always == std::vector<std::string> {"blur", "burning_hands", "fire_bolt"},
+    check(always == std::vector<std::string>{"blur", "burning_hands", "fire_bolt"},
           "Arid Land's Circle Spells are always prepared");
     auto c = battle(*module, third.sheet());
     check(submit(*c, "fire_bolt", 98), "A Circle cantrip is cast");
@@ -273,15 +278,15 @@ void circle_checks()
     // with Wisdom like the Druid's other spells.
     const auto polar = druid(3, "warden", "polar").sheet();
     check(has_grant(druid(3, "warden", "polar"), "land:polar") &&
-          module->spell_access(polar).always_prepared ==
-          std::vector<std::string> {"fog_cloud", "hold_person", "ray_of_frost"},
+              module->spell_access(polar).always_prepared ==
+                  std::vector<std::string>{"fog_cloud", "hold_person", "ray_of_frost"},
           "Polar Land's Circle Spells are always prepared");
     auto frost = battle(*module, polar);
     check(submit(*frost, "ray_of_frost", 98) && attack_bonus(*frost) == 2 + 4,
           "A Polar Land Druid casts Ray of Frost with Wisdom (+4) and proficiency (+2)");
     const auto temperate = druid(3, "warden", "temperate").sheet();
     check(module->spell_access(temperate).always_prepared ==
-          std::vector<std::string> {"misty_step", "shocking_grasp", "sleep"},
+              std::vector<std::string>{"misty_step", "shocking_grasp", "sleep"},
           "Temperate Land's Circle Spells are always prepared");
     auto grasp = battle(*module, temperate, {}, true);
     check(submit(*grasp, "shocking_grasp", 98) && attack_bonus(*grasp) == 2 + 4,
@@ -298,7 +303,8 @@ void barkskin_checks()
     auto c = battle(*module, sheet);
     const int before = unit(*c, 2).armor_class;
     check(before < 17 && submit(*c, "barkskin", 2) && unit(*c, 2).armor_class == 17 &&
-          unit(*c, 1).action, "Barkskin is a Bonus Action that raises AC to 17");
+              unit(*c, 1).action,
+          "Barkskin is a Bonus Action that raises AC to 17");
 }
 
 // A level-three Druid with `spell` prepared in place of its last prepared spell.
@@ -312,10 +318,11 @@ CharacterSheet preparing(std::string spell)
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::count_if(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::count_if(log.begin(), log.end(),
+                         [&](const auto &line)
+                         {
+                             return line.find(text) != std::string::npos;
+                         });
 }
 
 // Ends turns until the given creature acts.
@@ -339,9 +346,10 @@ void flame_blade_checks()
     auto module = rules();
     auto c = battle(*module, preparing("flame_blade"), {}, true);
     check(!submit(*c, "flame_blade_strike", 98) && submit(*c, "flame_blade") &&
-          has_condition(*c, 1, "Flame Blade") && unit(*c, 1).action,
+              has_condition(*c, 1, "Flame Blade") && unit(*c, 1).action,
           "Flame Blade is a Bonus Action that evokes the blade");
-    check(submit(*c, "flame_blade_strike", 98) && !unit(*c, 1).action && logged(*c, "Druid -> Enemy"),
+    check(submit(*c, "flame_blade_strike", 98) && !unit(*c, 1).action &&
+              logged(*c, "Druid -> Enemy"),
           "A melee spell attack with the blade is an Action");
 }
 
@@ -351,13 +359,14 @@ void moonbeam_checks()
     // The ally stands far enough from the Druid that a beam on it spares the Druid.
     auto c = battle(*module, preparing("moonbeam"), {}, false, Cell{1, 5});
     check(submit(*c, "moonbeam") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
-          c->snapshot().moonbeams.front() == Cell{4, 1},
+              c->snapshot().moonbeams.front() == Cell{4, 1},
           "Moonbeam shines on the enemy");
     const auto burned = [&]
     {
         return count_logged(*c, "Radiant damage from the Moonbeam.");
     };
-    check(burned() == 1 && logged(*c, "Enemy Constitution save"), "The enemy saves when it appears");
+    check(burned() == 1 && logged(*c, "Enemy Constitution save"),
+          "The enemy saves when it appears");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The beam survives a checkpoint");
     reach(*c, 98);
@@ -366,7 +375,8 @@ void moonbeam_checks()
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Druid's turn");
     check(submit(*c, "move_moonbeam", 2) && !unit(*c, 1).action && burned() == 3 &&
-          logged(*c, "Ally Constitution save"), "A Magic action moves the beam onto the ally");
+              logged(*c, "Ally Constitution save"),
+          "A Magic action moves the beam onto the ally");
 }
 
 void spike_growth_checks()
@@ -374,7 +384,7 @@ void spike_growth_checks()
     auto module = rules();
     auto c = battle(*module, preparing("spike_growth"));
     check(submit(*c, "spike_growth") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
-          c->snapshot().battlefield.at(Cell{4, 1}) == Terrain::difficult,
+              c->snapshot().battlefield.at(Cell{4, 1}) == Terrain::difficult,
           "Spike Growth makes Difficult Terrain");
     reach(*c, 98);
     check(move_to(*c, Cell{5, 1}) && count_logged(*c, "Piercing damage from the spikes.") == 1,
@@ -384,28 +394,29 @@ void spike_growth_checks()
 void heat_metal_checks()
 {
     auto module = rules();
-    const auto caster = module->character_profile(preparing("heat_metal"),
-                        std::vector<std::string> {}).data;
+    const auto caster =
+        module->character_profile(preparing("heat_metal"), std::vector<std::string>{}).data;
     // An enemy Druid in Chain Mail wears metal; the "target" monster has no
     // equipment row, so it wears none.
-    const auto knight = module->character_profile(druid().sheet(),
-                        std::vector<std::string> {"chain_mail"}).data;
-    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
-            {2, "target", "Ally", Side::party, {1, 2}},
-            {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight},
-            {98, "target", "Enemy", Side::opposition, {4, 1}}
-        }},
-    5);
+    const auto knight =
+        module->character_profile(druid().sheet(), std::vector<std::string>{"chain_mail"}).data;
+    auto c =
+        module->create({{12, 6, std::vector<Terrain>(72)},
+                        {{1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
+                         {2, "target", "Ally", Side::party, {1, 2}},
+                         {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight},
+                         {98, "target", "Enemy", Side::opposition, {4, 1}}}},
+                       5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Druid's turn");
     check(!submit(*c, "heat_metal", 98), "A monster without an equipment row wears no metal");
     check(submit(*c, "heat_metal", 97) && logged(*c, "Fire damage from the hot metal.") &&
-          has_condition(*c, 97, "Heated (Heat Metal)"), "Heat Metal burns the Knight in Chain Mail");
+              has_condition(*c, 97, "Heated (Heat Metal)"),
+          "Heat Metal burns the Knight in Chain Mail");
     check(!submit(*c, "heat_metal_again", 97), "Not again on the casting turn");
     reach(*c, 1);
     check(submit(*c, "heat_metal_again", 97) && !unit(*c, 1).bonus_action &&
-          count_logged(*c, "Fire damage from the hot metal.") == 2,
+              count_logged(*c, "Fire damage from the hot metal.") == 2,
           "A Bonus Action on a later turn heats it again");
 }
 
@@ -422,32 +433,31 @@ unsigned wild_shapes_left(const CombatSession &c)
 void creature_equipment_checks()
 {
     auto module = rules();
-    const auto caster = module->character_profile(preparing("heat_metal"),
-                        std::vector<std::string> {}).data;
+    const auto caster =
+        module->character_profile(preparing("heat_metal"), std::vector<std::string>{}).data;
     auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
-            {96, "slums-orc-leader", "Orc Leader", Side::opposition, {5, 1}},
-            {95, "slums-orc", "Orc", Side::opposition, {5, 3}}
-        }},
-    5);
+                             {{1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
+                              {96, "slums-orc-leader", "Orc Leader", Side::opposition, {5, 1}},
+                              {95, "slums-orc", "Orc", Side::opposition, {5, 3}}}},
+                            5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Druid's turn");
     const auto commands = c->legal_commands();
     const auto heats = [&](EntityId target)
     {
-        return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-        {
-            return command.verb == "heat_metal" && command.target == target;
-        });
+        return std::any_of(commands.begin(), commands.end(),
+                           [&](const auto &command)
+                           {
+                               return command.verb == "heat_metal" && command.target == target;
+                           });
     };
     check(heats(96) && !heats(95), "Heat Metal targets the orc leader in chain mail, not the orc");
     const auto base = read(root / "data/rules/srd-5.2.1/combat.rules");
-    for (const auto *bad :
-            {"equipment slums-orc metal_armor", "equipment nobody metal_armor MON2CHA.DAX:4 chain_mail",
-             "equipment slums-orc shield MON2CHA.DAX:4 shield",
-             "equipment slums-orc-leader metal_armor MON2CHA.DAX:5 chain_mail",
-             "equipment slums-orc metal_armor MON2CHA.DAX:4 chain_mail extra"
-            })
+    for (const auto *bad : {"equipment slums-orc metal_armor",
+                            "equipment nobody metal_armor MON2CHA.DAX:4 chain_mail",
+                            "equipment slums-orc shield MON2CHA.DAX:4 shield",
+                            "equipment slums-orc-leader metal_armor MON2CHA.DAX:5 chain_mail",
+                            "equipment slums-orc metal_armor MON2CHA.DAX:4 chain_mail extra"})
     {
         bool rejected = false;
         try
@@ -470,15 +480,17 @@ void wild_shape_checks()
     auto c = battle(*module, druid(2).sheet(), {}, true);
     const int druid_ac = unit(*c, 1).armor_class;
     check(wild_shapes_left(*c) == 2 && submit(*c, "wild_shape_wolf") && wild_shapes_left(*c) == 1 &&
-          unit(*c, 1).form == "wolf" && has_condition(*c, 1, "Wild Shape ({form})") &&
-          unit(*c, 1).armor_class == 12 && unit(*c, 1).temporary_hp.amount == 2 &&
-          !unit(*c, 1).bonus_action && unit(*c, 1).action,
+              unit(*c, 1).form == "wolf" && has_condition(*c, 1, "Wild Shape ({form})") &&
+              unit(*c, 1).armor_class == 12 && unit(*c, 1).temporary_hp.amount == 2 &&
+              !unit(*c, 1).bonus_action && unit(*c, 1).action,
           "A Bonus Action takes the Wolf's form with Temporary HP equal to the Druid level");
     const auto commands = c->legal_commands();
-    check(std::none_of(commands.begin(), commands.end(), [](const auto & command)
-    {
-        return command.verb == "produce_flame" || command.verb == "cure_wounds";
-    }), "A Beast form casts no spells");
+    check(std::none_of(commands.begin(), commands.end(),
+                       [](const auto &command)
+                       {
+                           return command.verb == "produce_flame" || command.verb == "cure_wounds";
+                       }),
+          "A Beast form casts no spells");
     const auto saved = c->save();
     check(module->restore(saved)->snapshot().combatants.front().form == "wolf",
           "The form survives a checkpoint");
@@ -489,7 +501,7 @@ void wild_shape_checks()
           "The Wolf's bite knocks a Medium creature Prone");
     reach(*c, 1);
     check(submit(*c, "leave_wild_shape") && unit(*c, 1).form.empty() &&
-          unit(*c, 1).armor_class == druid_ac && logged(*c, "Druid leaves Wild Shape."),
+              unit(*c, 1).armor_class == druid_ac && logged(*c, "Druid leaves Wild Shape."),
           "A Bonus Action leaves the form");
 }
 
@@ -499,22 +511,25 @@ void wild_shape_checks()
 void beast_form_checks()
 {
     auto module = rules();
+
     struct Form
     {
         const char *key;
         int armor_class, speed;
         const char *bonus;
     };
-    for (const auto &form : {Form{"wolf", 12, 40, " + 4 vs AC"}, Form{"boar", 11, 40, " + 3 vs AC"},
-            Form{"giant_lizard", 12, 40, " + 4 vs AC"}, Form{"giant_snake", 13, 30, " + 4 vs AC"}
-         })
+
+    for (const auto &form :
+         {Form{"wolf", 12, 40, " + 4 vs AC"}, Form{"boar", 11, 40, " + 3 vs AC"},
+          Form{"giant_lizard", 12, 40, " + 4 vs AC"}, Form{"giant_snake", 13, 30, " + 4 vs AC"}})
     {
         auto c = battle(*module, druid(2).sheet(), {}, true);
         const int hp = unit(*c, 1).hit_points;
         check(submit(*c, std::string("wild_shape_") + form.key) && unit(*c, 1).form == form.key &&
-              unit(*c, 1).armor_class == form.armor_class &&
-              unit(*c, 1).movement_feet == form.speed && unit(*c, 1).hit_points == hp,
-              std::string("The ") + form.key + " form's AC and Speed, keeping the Druid's Hit Points");
+                  unit(*c, 1).armor_class == form.armor_class &&
+                  unit(*c, 1).movement_feet == form.speed && unit(*c, 1).hit_points == hp,
+              std::string("The ") + form.key +
+                  " form's AC and Speed, keeping the Druid's Hit Points");
         check(submit(*c, "melee", 98) && logged(*c, form.bonus),
               std::string("The ") + form.key + " form attacks with its own bonus");
     }
@@ -522,30 +537,32 @@ void beast_form_checks()
     // Faerie Fire's Concentration continues in Wild Shape.
     auto c = battle(*module, druid(3).sheet(), {}, true);
     check(submit(*c, "faerie_fire") && submit(*c, "area_cast") &&
-          has_condition(*c, 1, "Concentrating"),
+              has_condition(*c, 1, "Concentrating"),
           "The Druid concentrates on Faerie Fire");
     check(submit(*c, "wild_shape_wolf") && has_condition(*c, 1, "Concentrating"),
           "Concentration continues in the Wolf's form");
 
     // A shaped Druid's Chain Mail merges into the form: no metal to heat.
-    const auto caster = module->character_profile(preparing("heat_metal"),
-                        std::vector<std::string> {}).data;
-    const auto knight = module->character_profile(druid(2).sheet(),
-                        std::vector<std::string> {"chain_mail"}).data;
-    auto heat = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
-            {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight}
-        }},
-    5);
+    const auto caster =
+        module->character_profile(preparing("heat_metal"), std::vector<std::string>{}).data;
+    const auto knight =
+        module->character_profile(druid(2).sheet(), std::vector<std::string>{"chain_mail"}).data;
+    auto heat =
+        module->create({{12, 6, std::vector<Terrain>(72)},
+                        {{1, "campaign-character", "Druid", Side::party, {1, 1}, caster},
+                         {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight}}},
+                       5);
     for (unsigned turns = 0; heat->snapshot().actor != 97 && turns < 6; ++turns)
         check(submit(*heat, "end"), "Reach the Knight's turn");
     check(submit(*heat, "wild_shape_wolf"), "The Knight takes the Wolf's form");
     reach(*heat, 1);
     const auto offers = heat->legal_commands();
-    check(std::none_of(offers.begin(), offers.end(), [](const auto & command)
-    {
-        return command.verb == "heat_metal" && command.target == 97;
-    }), "Heat Metal cannot reach armor merged into a Beast form");
+    check(std::none_of(offers.begin(), offers.end(),
+                       [](const auto &command)
+                       {
+                           return command.verb == "heat_metal" && command.target == 97;
+                       }),
+          "Heat Metal cannot reach armor merged into a Beast form");
 }
 
 // The Druid's vital state with the Wolf's form on, `remaining_ms` left of it,
@@ -558,7 +575,8 @@ VitalState shaped(const RulesModule &module, const CharacterSheet &sheet, unsign
     const auto at = vitals.resources.find("FX8");
     std::istringstream in(vitals.resources.substr(at));
     auto effects = fx::read_effects(in);
-    fx::apply_spell_benefit(effects, {.scope = 3, .actor = 1}, "Druid", fx::EffectKind::wild_shape, 1);
+    fx::apply_spell_benefit(effects, {.scope = 3, .actor = 1}, "Druid", fx::EffectKind::wild_shape,
+                            1);
     effects.active.back().remaining_ms = remaining_ms;
     if (laughing)
         fx::apply_repeating_condition(effects, fx::EffectKind::laughing, {.scope = 3, .actor = 98},
@@ -571,13 +589,15 @@ VitalState shaped(const RulesModule &module, const CharacterSheet &sheet, unsign
 }
 
 std::unique_ptr<CombatSession> shaped_battle(const RulesModule &module, const CharacterSheet &sheet,
-        const VitalState &vitals, std::uint64_t seed = 5)
+                                             const VitalState &vitals, std::uint64_t seed = 5)
 {
-    Participant druid{1, "campaign-character", "Druid", Side::party, {1, 1},
-                      module.character_profile(sheet, {}).data};
+    Participant druid{1,       "campaign-character",
+                      "Druid", Side::party,
+                      {1, 1},  module.character_profile(sheet, {}).data};
     druid.state = vitals;
     return module.create({{12, 6, std::vector<Terrain>(72)},
-        {druid, {98, "target", "Enemy", Side::opposition, {2, 1}}}}, seed);
+                          {druid, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                         seed);
 }
 
 // Wild Shape ends at 0 Hit Points, when the Druid starts a turn
@@ -602,23 +622,27 @@ void wild_shape_end_checks()
 
     // Wild Shape lasts until the fight ends (WILD-1).
     {
-        Participant druid_in{1, "campaign-character", "Druid", Side::party, {1, 1},
-                             module->character_profile(sheet, {}).data};
+        Participant druid_in{1,       "campaign-character",
+                             "Druid", Side::party,
+                             {1, 1},  module->character_profile(sheet, {}).data};
         Participant weak{98, "target", "Enemy", Side::opposition, {2, 1}};
         weak.state = VitalState{1};
         auto c = module->create({{12, 6, std::vector<Terrain>(72)}, {druid_in, weak}}, 5);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "end"), "Reach the Druid's turn");
         check(submit(*c, "wild_shape_wolf") && submit(*c, "melee", 98) &&
-              c->snapshot().outcome == Outcome::victory, "The Wolf wins the fight");
+                  c->snapshot().outcome == Outcome::victory,
+              "The Wolf wins the fight");
         const auto vitals = unit(*c, 1).persistent;
         std::istringstream in(vitals.resources.substr(vitals.resources.find("FX8")));
         const auto effects = fx::read_effects(in);
         check(unit(*c, 1).form.empty() && logged(*c, "Druid leaves Wild Shape.") &&
-              std::none_of(effects.active.begin(), effects.active.end(), [](const auto & e)
-        {
-            return e.kind == fx::EffectKind::wild_shape;
-        }), "The form ends with the fight and is not carried to the next");
+                  std::none_of(effects.active.begin(), effects.active.end(),
+                               [](const auto &e)
+                               {
+                                   return e.kind == fx::EffectKind::wild_shape;
+                               }),
+              "The form ends with the fight and is not carried to the next");
     }
 
     bool dropped = false;
@@ -630,7 +654,8 @@ void wild_shape_end_checks()
         check(submit(*c, "melee", 1), "The enemy attacks the Wolf");
         if (unit(*c, 1).hit_points > 0)
             continue;
-        check(unit(*c, 1).form.empty() && unit(*c, 1).prone, "Dropping to 0 Hit Points ends the form");
+        check(unit(*c, 1).form.empty() && unit(*c, 1).prone,
+              "Dropping to 0 Hit Points ends the form");
         dropped = true;
     }
     check(dropped, "Some seed drops the shaped Druid");
@@ -655,7 +680,7 @@ void prone_mover_checks()
         covered = true;
         const auto mover = unit(*c, 98);
         check(mover.cell.x < 8 && c->snapshot().outcome == Outcome::ongoing &&
-              c->snapshot().actor == 98,
+                  c->snapshot().actor == 98,
               "Knocked Prone mid-route, the mover stops short and keeps its turn");
         check(submit(*c, "end"), "The fight goes on");
     }
@@ -672,15 +697,14 @@ void charge_checks()
     for (int x = 0; x < 12; ++x)
         corridor[12 + x] = Terrain::open;
     // The Boar at (1,1) charges along the corridor at `enemy` on (`at`,1).
-    const auto charge = [&](const std::string &enemy, int at, int stop, std::uint64_t seed,
-                            bool reload)
+    const auto charge =
+        [&](const std::string &enemy, int at, int stop, std::uint64_t seed, bool reload)
     {
         const auto profile = module->character_profile(druid(2).sheet(), {}).data;
         auto c = module->create({{12, 3, corridor},
-            {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
-                {98, enemy, "Enemy", Side::opposition, {at, 1}}
-            }},
-        seed);
+                                 {{1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                                  {98, enemy, "Enemy", Side::opposition, {at, 1}}}},
+                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "end"), "Reach the Druid's turn");
         check(submit(*c, "wild_shape_boar") && move_to(*c, Cell{stop, 1}),
@@ -723,42 +747,45 @@ void land_rest_checks()
     check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
     if (party.state().spell_rest)
         party.keep_rest_spells(id);
-    const auto offered = rules->rest_training_options(party.member(id).character.sheet(),
-                         RestKind::long_rest);
+    const auto offered =
+        rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest);
     check(offered.size() == 1 && offered.front().group.id == "subclass:druid:land" &&
-          offered.front().selected == std::vector<std::string> {"arid"},
+              offered.front().selected == std::vector<std::string>{"arid"},
           "After a Long Rest the land may change");
     party.replace_rest_training(party.state().training_rest->ticket, id,
-                                std::vector<std::string> {"polar"});
+                                std::vector<std::string>{"polar"});
     const auto &sheet = party.member(id).character.sheet();
     check(has_grant(party.member(id).character, "land:polar") &&
-          !has_grant(party.member(id).character, "land:arid"),
+              !has_grant(party.member(id).character, "land:arid"),
           "The Druid's land is now Polar");
     const auto access = rules->spell_choice_options(sheet, SpellChoiceContext::long_rest);
-    check(std::none_of(access.preparation.begin(), access.preparation.end(), [](const auto & o)
-    {
-        return o.id == "fog_cloud" || o.id == "hold_person";
-    }) && std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), "fog_cloud") ==
-    sheet.prepared_spells.end(),
-    "Polar Circle Spells are always prepared, outside the Druid's own list");
+    check(std::none_of(access.preparation.begin(), access.preparation.end(),
+                       [](const auto &o)
+                       {
+                           return o.id == "fog_cloud" || o.id == "hold_person";
+                       }) &&
+              std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), "fog_cloud") ==
+                  sheet.prepared_spells.end(),
+          "Polar Circle Spells are always prepared, outside the Druid's own list");
 }
 
 void lands_aid_checks()
 {
     auto module = rules();
-    const auto profile = module->character_profile(druid(3).sheet(), std::vector<std::string> {}).data;
-    auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
-            {2, "target", "Ally", Side::party, {4, 2}, {}, VitalState{3, false, {}}},
-            {98, "target", "Enemy", Side::opposition, {4, 1}}
-        }},
-    5);
+    const auto profile =
+        module->character_profile(druid(3).sheet(), std::vector<std::string>{}).data;
+    auto c =
+        module->create({{12, 6, std::vector<Terrain>(72)},
+                        {{1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                         {2, "target", "Ally", Side::party, {4, 2}, {}, VitalState{3, false, {}}},
+                         {98, "target", "Enemy", Side::opposition, {4, 1}}}},
+                       5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Druid's turn");
     check(submit(*c, "lands_aid") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
-          logged(*c, "Druid uses Land's Aid.") && logged(*c, "Enemy takes") &&
-          logged(*c, "Necrotic damage from the thorns.") && unit(*c, 2).hit_points > 3 &&
-          !unit(*c, 1).action && wild_shapes_left(*c) == 1,
+              logged(*c, "Druid uses Land's Aid.") && logged(*c, "Enemy takes") &&
+              logged(*c, "Necrotic damage from the thorns.") && unit(*c, 2).hit_points > 3 &&
+              !unit(*c, 1).action && wild_shapes_left(*c) == 1,
           "Land's Aid spends a Wild Shape use: thorns for the enemy, flowers for the ally");
 }
 

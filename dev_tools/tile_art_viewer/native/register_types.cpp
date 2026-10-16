@@ -16,14 +16,14 @@ void terminate(godot::ModuleInitializationLevel)
 
 extern "C"
 {
-GDExtensionBool GDE_EXPORT tile_art_viewer_init(
-    GDExtensionInterfaceGetProcAddress get_proc_address,
-    const GDExtensionClassLibraryPtr library, GDExtensionInitialization *initialization)
-{
-    godot::GDExtensionBinding::InitObject init(get_proc_address, library, initialization);
-    init.register_initializer(initialize);
-    init.register_terminator(terminate);
-    init.set_minimum_library_initialization_level(godot::MODULE_INITIALIZATION_LEVEL_SCENE);
-    return init.init();
-}
+    GDExtensionBool GDE_EXPORT tile_art_viewer_init(
+        GDExtensionInterfaceGetProcAddress get_proc_address,
+        const GDExtensionClassLibraryPtr library, GDExtensionInitialization *initialization)
+    {
+        godot::GDExtensionBinding::InitObject init(get_proc_address, library, initialization);
+        init.register_initializer(initialize);
+        init.register_terminator(terminate);
+        init.set_minimum_library_initialization_level(godot::MODULE_INITIALIZATION_LEVEL_SCENE);
+        return init.init();
+    }
 }

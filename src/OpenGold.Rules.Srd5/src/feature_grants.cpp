@@ -13,8 +13,8 @@ namespace opengold::srd5::detail
 {
 namespace
 {
-constexpr rules::AbilityArray<std::string_view> ability_ids{"strength", "dexterity",
-    "constitution", "intelligence", "wisdom", "charisma"};
+constexpr rules::AbilityArray<std::string_view> ability_ids{
+    "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
 
 void require(bool value)
 {
@@ -34,10 +34,10 @@ std::string choice_id(rules::CreationField field, std::string_view label, const 
 {
     const auto &choices = creation_choices(field);
     const auto found = std::find_if(choices.begin(), choices.end(),
-                                    [&](const rules::CreationChoice & choice)
-    {
-        return choice.label == label;
-    });
+                                    [&](const rules::CreationChoice &choice)
+                                    {
+                                        return choice.label == label;
+                                    });
     if (found == choices.end())
         throw std::runtime_error(unknown);
     return found->id;
@@ -61,11 +61,11 @@ std::string background_feat(std::string_view background)
            : background == "soldier" ? "feat:savage_attacker"
            : background == "acolyte" ? "feat:magic_initiate_cleric"
            : background == "sage"    ? "feat:magic_initiate_wizard"
-           : std::string();
+                                     : std::string();
 }
 
 std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::string_view race,
-        std::string_view background)
+                                                 std::string_view background)
 {
     std::vector<rules::FeatureGrant> result;
     if (auto feat = background_feat(background); !feat.empty())
@@ -80,9 +80,9 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
     if (klass == CharacterClass::barbarian || klass == CharacterClass::monk)
         result.push_back({"feature:unarmored_defense", class_source(klass), 1, {}});
     if (klass == CharacterClass::cleric || klass == CharacterClass::wizard ||
-            klass == CharacterClass::paladin || klass == CharacterClass::ranger ||
-            klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
-            klass == CharacterClass::druid)
+        klass == CharacterClass::paladin || klass == CharacterClass::ranger ||
+        klass == CharacterClass::sorcerer || klass == CharacterClass::bard ||
+        klass == CharacterClass::druid)
         result.push_back({"feature:spellcasting", class_source(klass), 1, {}});
     if (klass == CharacterClass::sorcerer)
         result.push_back({"feature:innate_sorcery", "class:sorcerer", 1, {}});
@@ -109,10 +109,8 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
 rules::FeatureGrant advancement_grant(CharacterClass klass, unsigned level,
                                       const rules::AdvancementChoice &choice)
 {
-    rules::FeatureGrant result{"feat:" + choice.feat,
-                               class_source(klass) + ":ability_score_improvement",
-                               level,
-                               {}};
+    rules::FeatureGrant result{
+        "feat:" + choice.feat, class_source(klass) + ":ability_score_improvement", level, {}};
     for (const auto ability : rules::all_abilities)
         if (choice.abilities[ability])
             result.choices.emplace(ability_ids[ability], std::to_string(choice.abilities[ability]));
@@ -325,27 +323,22 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
 
 std::vector<rules::AdvancementOption> fighting_styles()
 {
-    return
-    {
+    return {
         {"defense", "Defense", "+1 AC while wearing armor."},
         {"archery", "Archery", "+2 to attack rolls with Ranged weapons."},
-        {
-            "great_weapon_fighting", "Great Weapon Fighting",
-            "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."
-        },
-        {
-            "two_weapon_fighting", "Two-Weapon Fighting",
-            "Add your ability modifier to the extra attack granted by the Light property."
-        }};
+        {"great_weapon_fighting", "Great Weapon Fighting",
+         "Treat damage dice showing 1 or 2 as 3 with an eligible Melee weapon held in two hands."},
+        {"two_weapon_fighting", "Two-Weapon Fighting",
+         "Add your ability modifier to the extra attack granted by the Light property."}};
 }
 
 bool has_grant(std::span<const rules::FeatureGrant> grants, std::string_view id)
 {
     return std::any_of(grants.begin(), grants.end(),
-                       [&](const auto & grant)
-    {
-        return grant.id == id;
-    });
+                       [&](const auto &grant)
+                       {
+                           return grant.id == id;
+                       });
 }
 
 GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, CharacterClass klass,
@@ -506,15 +499,16 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         else if (grant.source_id == blessed_strikes)
         {
             // Blessed Strikes: one of its two options, chosen at level seven.
-            require(klass == CharacterClass::cleric && grant.level == 7 && grant.choices.empty() &&
-                    (grant.id == "strikes:divine_strike" ||
-                     grant.id == "strikes:potent_spellcasting"));
+            require(
+                klass == CharacterClass::cleric && grant.level == 7 && grant.choices.empty() &&
+                (grant.id == "strikes:divine_strike" || grant.id == "strikes:potent_spellcasting"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
         else if (grant.source_id == elemental_affinity)
         {
             // Elemental Affinity: one of its five types, chosen at level six.
-            require(klass == CharacterClass::sorcerer && grant.level == 6 && grant.choices.empty() &&
+            require(klass == CharacterClass::sorcerer && grant.level == 6 &&
+                    grant.choices.empty() &&
                     (grant.id == "affinity:acid" || grant.id == "affinity:cold" ||
                      grant.id == "affinity:fire" || grant.id == "affinity:lightning" ||
                      grant.id == "affinity:poison"));
@@ -545,23 +539,24 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                     (on_class_list(CharacterClass::cleric, spell->id) ||
                      on_class_list(CharacterClass::druid, spell->id) ||
                      on_class_list(CharacterClass::wizard, spell->id)));
-            const auto index = static_cast<unsigned>(std::count_if(
-                                   entitlements.begin(), entitlements.end(), [&](const auto & held)
-            {
-                return held.first == grant.source_id;
-            }));
+            const auto index =
+                static_cast<unsigned>(std::count_if(entitlements.begin(), entitlements.end(),
+                                                    [&](const auto &held)
+                                                    {
+                                                        return held.first == grant.source_id;
+                                                    }));
             require(index < 2 && entitlements.emplace(grant.source_id, index).second);
         }
         else if (grant.source_id == fiendish_resilience)
         {
             // Fiendish Resilience: any type but Force, chosen at level ten.
-            constexpr std::array<std::string_view, 12> types{"acid", "bludgeoning", "cold", "fire",
-                "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing",
-                "thunder"};
-            require(klass == CharacterClass::warlock && grant.level == 10 && grant.choices.empty() &&
-                    grant.id.starts_with("resilience:") &&
+            constexpr std::array<std::string_view, 12> types{
+                "acid",     "bludgeoning", "cold",    "fire",    "lightning", "necrotic",
+                "piercing", "poison",      "psychic", "radiant", "slashing",  "thunder"};
+            require(klass == CharacterClass::warlock && grant.level == 10 &&
+                    grant.choices.empty() && grant.id.starts_with("resilience:") &&
                     std::find(types.begin(), types.end(), std::string_view(grant.id).substr(11)) !=
-                    types.end());
+                        types.end());
             require(entitlements.emplace(grant.source_id, 0).second);
         }
         else if (grant.source_id == elemental_fury)
@@ -581,17 +576,16 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         }
         else if (grant.source_id == class_source(klass) + ":fighting_style")
         {
-            require(
-                (klass == CharacterClass::fighter ||
-                 ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
-                  grant.level == 2)) &&
-                grant.choices.empty() &&
-                (grant.id == "feat:defense" || grant.id == "feat:archery" ||
-                 grant.id == "feat:great_weapon_fighting" ||
-                 grant.id == "feat:two_weapon_fighting" ||
-                 (klass == CharacterClass::paladin && grant.id == "feature:blessed_warrior") ||
-                 (klass == CharacterClass::ranger && grant.id == "feature:druidic_warrior")) &&
-                has_grant(grants, "feature:fighting_style"));
+            require((klass == CharacterClass::fighter ||
+                     ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
+                      grant.level == 2)) &&
+                    grant.choices.empty() &&
+                    (grant.id == "feat:defense" || grant.id == "feat:archery" ||
+                     grant.id == "feat:great_weapon_fighting" ||
+                     grant.id == "feat:two_weapon_fighting" ||
+                     (klass == CharacterClass::paladin && grant.id == "feature:blessed_warrior") ||
+                     (klass == CharacterClass::ranger && grant.id == "feature:druidic_warrior")) &&
+                    has_grant(grants, "feature:fighting_style"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
         else
@@ -617,8 +611,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
             {
                 require(grant.choices.empty());
                 if (grant.id == "feat:defense" || grant.id == "feat:archery" ||
-                        grant.id == "feat:great_weapon_fighting" ||
-                        grant.id == "feat:two_weapon_fighting")
+                    grant.id == "feat:great_weapon_fighting" ||
+                    grant.id == "feat:two_weapon_fighting")
                     require(has_grant(grants, "feature:fighting_style"));
                 else
                     require(grant.id == "feat:savage_attacker" || grant.id == "feat:alert" ||
@@ -660,7 +654,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
     if (klass == CharacterClass::warlock)
         for (const unsigned arcanum : {11u, 13u, 15u})
             if (level >= arcanum)
-                require(entitlements.contains({"class:warlock:arcanum:" + std::to_string(arcanum), 0}));
+                require(
+                    entitlements.contains({"class:warlock:arcanum:" + std::to_string(arcanum), 0}));
     if (klass == CharacterClass::fighter && level >= 7)
         require(entitlements.contains({std::string(champion_style), 0}));
     require(required.empty() && advancement_count == feats_by(klass, level));

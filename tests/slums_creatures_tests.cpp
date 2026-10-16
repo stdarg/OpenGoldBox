@@ -34,14 +34,13 @@ std::string read(const std::filesystem::path &p)
 // drops a Troll in one blow and a burner that does it with Fire.
 std::unique_ptr<RulesModule> rules(std::string extra = {})
 {
-    return srd5::parse_content(
-               read(root / "data/rules/srd-5.2.1/combat.rules") +
-               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
-               "creature slasher 30 1000 20 30 30 10 20 20 0 0 0 0 0 0 0 0 0 1 0\n"
-               "damage_types slasher slashing slashing\n"
-               "creature burner 30 1000 20 30 30 10 20 20 0 0 0 0 0 0 0 0 0 1 0\n"
-               "damage_types burner fire fire\n" +
-               extra);
+    return srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
+                               "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "creature slasher 30 1000 20 30 30 10 20 20 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "damage_types slasher slashing slashing\n"
+                               "creature burner 30 1000 20 30 30 10 20 20 0 0 0 0 0 0 0 0 0 1 0\n"
+                               "damage_types burner fire fire\n" +
+                               extra);
 }
 
 std::unique_ptr<CombatSession> fight(const RulesModule &module, const std::string &monster,
@@ -49,28 +48,30 @@ std::unique_ptr<CombatSession> fight(const RulesModule &module, const std::strin
                                      Cell hero_cell = {2, 1})
 {
     return module.create({{10, 4, std::vector<Terrain>(40)},
-        {{1, monster, "Monster", Side::opposition, monster_cell},
-         {2, hero, "Hero", Side::party, hero_cell}}},
-    7);
+                          {{1, monster, "Monster", Side::opposition, monster_cell},
+                           {2, hero, "Hero", Side::party, hero_cell}}},
+                         7);
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     const auto snapshot = c.snapshot();
     return *std::find_if(snapshot.combatants.begin(), snapshot.combatants.end(),
-                         [&](const auto & u)
-    {
-        return u.id == id;
-    });
+                         [&](const auto &u)
+                         {
+                             return u.id == id;
+                         });
 }
 
 bool offered(const CombatSession &c, std::string_view verb, EntityId actor, EntityId target)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb && command.actor == actor && command.target == target;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && command.actor == actor &&
+                                  command.target == target;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId target = 0)
@@ -94,10 +95,11 @@ void turn_of(CombatSession &c, EntityId id)
 std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::count_if(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::count_if(log.begin(), log.end(),
+                         [&](const auto &line)
+                         {
+                             return line.find(text) != std::string::npos;
+                         });
 }
 
 void creatures_join()
@@ -125,14 +127,14 @@ void troll_attacks()
 // A Troll (1) with a sturdy ally (4) far away, against two heroes who act first
 // (initiative +20): `first` beside the Troll and `second` beside it too.
 std::unique_ptr<CombatSession> troll_fight(const RulesModule &module, const std::string &first,
-        const std::string &second)
+                                           const std::string &second)
 {
     return module.create({{10, 4, std::vector<Terrain>(40)},
-        {   {1, "troll", "Monster", Side::opposition, {1, 1}},
-            {4, "target", "Ally", Side::opposition, {9, 3}},
-            {2, first, "Hero", Side::party, {2, 1}}, {3, second, "Friend", Side::party, {1, 2}}
-        }},
-    7);
+                          {{1, "troll", "Monster", Side::opposition, {1, 1}},
+                           {4, "target", "Ally", Side::opposition, {9, 3}},
+                           {2, first, "Hero", Side::party, {2, 1}},
+                           {3, second, "Friend", Side::party, {1, 2}}}},
+                         7);
 }
 
 // The hero acting now and the other one.
@@ -164,17 +166,17 @@ void troll_gets_up_later()
     const auto [first, second] = heroes(*c);
     check(submit(*c, "melee", first, 1), "A hero attacks the Troll");
     check(unit(*c, 1).hit_points == 0 && !unit(*c, 1).dead &&
-          c->snapshot().outcome == Outcome::ongoing,
+              c->snapshot().outcome == Outcome::ongoing,
           "A downed Troll is not dead while its side fights on");
     check(submit(*c, "end", first) && c->snapshot().actor == second &&
-          offered(*c, "melee", second, 1),
+              offered(*c, "melee", second, 1),
           "A downed Troll can still be attacked");
     const auto fell = c->snapshot().round;
     const auto rose = round_troll_gets_up(*c);
     check(rose >= fell + 3 && rose <= fell + 18, "The Troll stays down for 3d6 rounds");
     check(unit(*c, 1).hit_points == unit(*c, 1).max_hit_points &&
-          count_logged(*c, "Monster gets back up.") == 1 &&
-          count_logged(*c, "Monster regenerates") == 0,
+              count_logged(*c, "Monster gets back up.") == 1 &&
+              count_logged(*c, "Monster regenerates") == 0,
           "The Troll gets back up with all its Hit Points");
 }
 
@@ -254,7 +256,7 @@ void troll_stays_down()
     turn_of(*c, 2);
     check(submit(*c, "melee", 2, 1), "The slasher fells the Troll");
     check(c->snapshot().outcome == Outcome::victory && unit(*c, 1).dead &&
-          count_logged(*c, "Monster stays down.") == 1,
+              count_logged(*c, "Monster stays down.") == 1,
           "With every enemy down the fight is won and the Troll stays down");
 }
 
@@ -271,10 +273,10 @@ void downed_square_stood_on()
     for (int x = 0; x < 10; ++x)
         corridor[static_cast<std::size_t>(10 + x)] = Terrain::open;
     auto c = module->create({{10, 3, corridor},
-        {   {1, "poker", "Monster", Side::opposition, {1, 1}},
-            {2, "frail", "Hero", Side::party, {2, 1}}, {3, "target", "Friend", Side::party, {3, 1}}
-        }},
-    7);
+                             {{1, "poker", "Monster", Side::opposition, {1, 1}},
+                              {2, "frail", "Hero", Side::party, {2, 1}},
+                              {3, "target", "Friend", Side::party, {3, 1}}}},
+                            7);
     turn_of(*c, 1);
     check(submit(*c, "melee", 1, 2) && unit(*c, 2).hit_points == 0 && !unit(*c, 2).dead,
           "The monster drops the hero beside it");

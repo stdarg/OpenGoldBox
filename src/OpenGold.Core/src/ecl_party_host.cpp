@@ -37,13 +37,11 @@ AdndGroup adnd_group(std::string_view class_id)
 // table ends there and nothing is extrapolated.
 int adnd_thac0(AdndGroup group, unsigned level)
 {
-    static constexpr std::array<std::array<int, 12>, 4> table{{
-            {20, 20, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9},
-            {20, 20, 20, 18, 18, 18, 16, 16, 16, 14, 14, 14},
-            {21, 21, 21, 21, 21, 19, 19, 19, 19, 19, 17, 17},
-            {20, 20, 20, 20, 19, 19, 19, 19, 16, 16, 16, 16}
-        }
-    };
+    static constexpr std::array<std::array<int, 12>, 4> table{
+        {{20, 20, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9},
+         {20, 20, 20, 18, 18, 18, 16, 16, 16, 14, 14, 14},
+         {21, 21, 21, 21, 21, 19, 19, 19, 19, 19, 17, 17},
+         {20, 20, 20, 20, 19, 19, 19, 19, 16, 16, 16, 16}}};
     const auto row = static_cast<std::size_t>(group);
     return table[row][std::clamp(level, 1u, 12u) - 1];
 }
@@ -52,15 +50,23 @@ int adnd_thac0(AdndGroup group, unsigned level)
 // or nullopt for items that are not armor. A shield improves AC by one.
 std::optional<int> adnd_armor(std::string_view definition)
 {
-    static constexpr std::array<std::pair<std::string_view, int>, 12> suits{{
-        {"padded", 8},      {"leather", 8},     {"studded_leather", 7},
-        {"hide", 6},        {"chain_shirt", 6}, {"scale_mail", 6},
-        {"breastplate", 5}, {"half_plate", 4},  {"ring_mail", 7},
-        {"chain_mail", 5},  {"splint", 4},      {"plate", 3}}};
-    const auto found = std::find_if(suits.begin(), suits.end(), [&](const auto &suit)
-    {
-        return suit.first == definition;
-    });
+    static constexpr std::array<std::pair<std::string_view, int>, 12> suits{{{"padded", 8},
+                                                                             {"leather", 8},
+                                                                             {"studded_leather", 7},
+                                                                             {"hide", 6},
+                                                                             {"chain_shirt", 6},
+                                                                             {"scale_mail", 6},
+                                                                             {"breastplate", 5},
+                                                                             {"half_plate", 4},
+                                                                             {"ring_mail", 7},
+                                                                             {"chain_mail", 5},
+                                                                             {"splint", 4},
+                                                                             {"plate", 3}}};
+    const auto found = std::find_if(suits.begin(), suits.end(),
+                                    [&](const auto &suit)
+                                    {
+                                        return suit.first == definition;
+                                    });
     if (found == suits.end())
         return std::nullopt;
     return found->second;
@@ -77,8 +83,7 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
 {
     const auto &sheet = m.character.sheet();
     AdndCombatValues values;
-    values.thac0 =
-        adnd_thac0(adnd_group(m.character.creation_data().character_class), sheet.level);
+    values.thac0 = adnd_thac0(adnd_group(m.character.creation_data().character_class), sheet.level);
     int weapon_bonus = 0;
     for (const auto equipped : m.equipped)
     {
@@ -129,11 +134,11 @@ unsigned party_strength(const CampaignParty &party)
             const int cleric_levels = class_id == "cleric" ? static_cast<int>(sheet.level) : 0;
             const int magic_user_levels =
                 group == AdndGroup::magic_user ? static_cast<int>(sheet.level) : 0;
-            result += static_cast<unsigned>(cleric_levels * 4 + m.vitals.hit_points +
-                                            5 * std::max(0, -adnd.armor_class) +
-                                            5 * std::max(0, 21 - adnd.thac0) +
-                                            magic_user_levels * 8) /
-                      10;
+            result +=
+                static_cast<unsigned>(cleric_levels * 4 + m.vitals.hit_points +
+                                      5 * std::max(0, -adnd.armor_class) +
+                                      5 * std::max(0, 21 - adnd.thac0) + magic_user_levels * 8) /
+                10;
         }
     return result & 255;
 }
@@ -148,8 +153,9 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
         if (id)
         {
             const auto &m = party.member(id);
-            const unsigned move =
-                m.vitals.dead || m.vitals.hit_points == 0 ? 0 : party.profile(id).movement_feet * 2 / 5;
+            const unsigned move = m.vitals.dead || m.vitals.hit_points == 0
+                                      ? 0
+                                      : party.profile(id).movement_feet * 2 / 5;
             low = std::min(low, move);
             high = std::max(high, move);
             total += move;
@@ -158,8 +164,8 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
     // The fourth output is not recoverable from the scripts; the Slums' Run after
     // a parley compares it with the monsters' speed, as the encounter menu's
     // Flee compares the slowest member, so it is the slowest member too.
-    return count ? std::array<unsigned, 4> {low, high, total / count, low} :
-           std::array<unsigned, 4> {};
+    return count ? std::array<unsigned, 4>{low, high, total / count, low}
+                 : std::array<unsigned, 4>{};
 }
 
 EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
@@ -186,7 +192,7 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
     }
     for (unsigned n = 0; n < fields.size(); ++n)
         reply.writes.push_back(
-        {EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n)), fields[n]});
+            {EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n)), fields[n]});
     reply.writes.push_back({EclAddress{0x6DB1}, static_cast<std::uint16_t>(slot.index)});
     reply.writes.push_back({EclAddress{0x6DB4}, static_cast<std::uint16_t>(slot.index)});
     return reply;

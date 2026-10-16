@@ -39,11 +39,11 @@ const rules::RulesModule &module()
 {
     static const auto rules =
         srd5::parse_content("OPENGOLD_SRD5 1 fuzz.synthetic.1\n"
-                        "creature hero 16 40 20 30 5 1 8 3 4 1 6 2 80 320 2 2 4 1 7\n"
-                        "creature enemy 12 18 -10 30 3 1 6 1 3 1 6 1 80 320 0 0 0 1 0\n"
-                        "creature caster 16 40 20 30 5 1 8 3 4 1 6 2 80 320 2 2 4 3 7\n"
-                        "saves enemy 0 1 1 0 0 0\n"
-                        "spellcasting caster 2 39\n");
+                            "creature hero 16 40 20 30 5 1 8 3 4 1 6 2 80 320 2 2 4 1 7\n"
+                            "creature enemy 12 18 -10 30 3 1 6 1 3 1 6 1 80 320 0 0 0 1 0\n"
+                            "creature caster 16 40 20 30 5 1 8 3 4 1 6 2 80 320 2 2 4 3 7\n"
+                            "saves enemy 0 1 1 0 0 0\n"
+                            "spellcasting caster 2 39\n");
     return *rules;
 }
 
@@ -81,10 +81,7 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
         // ID 0 is present in the authored seeds. Mutations can also choose any
         // byte ID, including missing records and a later animation frame.
         const auto id = data.empty() ? 0 : data.back();
-        for (const auto selected :
-                {
-                    std::uint8_t(0), std::uint8_t(id)
-                })
+        for (const auto selected : {std::uint8_t(0), std::uint8_t(id)})
         {
             check_image(decode_ega_sprite(data, selected, 0));
             check_image(decode_ega_sprite(data, selected, 1));
@@ -111,10 +108,10 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
                 "Character pixel count mismatch");
         require(std::all_of(icon->pixels.begin(), icon->pixels.end(),
                             [](auto p)
-        {
-            return p < 16;
-        }),
-        "Character pixels are not palette indices");
+                            {
+                                return p < 16;
+                            }),
+                "Character pixels are not palette indices");
         por::IndexedIcon body{24, 24, std::vector<std::uint8_t>(576)};
         const auto composed = por::compose_character_icon(*icon, body, {});
         require(composed.rgba.size() == 24 * 24 * 4, "Composed character dimensions changed");
@@ -126,7 +123,7 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
         try
         {
             program = std::make_shared<const por::EclProgram>(
-                          por::EclProgram::decode(data, "synthetic fuzz"));
+                por::EclProgram::decode(data, "synthetic fuzz"));
         }
         catch (const por::EclError &)
         {
@@ -142,7 +139,7 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
             const auto first = machine.run(64), second = copy.run(64);
             require(first.instructions <= 64, "ECL exceeded instruction budget");
             require(first.state == second.state && first.diagnostic == second.diagnostic &&
-                    machine.address() == copy.address() && machine.trace() == copy.trace(),
+                        machine.address() == copy.address() && machine.trace() == copy.trace(),
                     "Copied ECL machine is not deterministic");
         }
         break;
@@ -281,22 +278,19 @@ std::vector<FuzzSeed> checkpoint_seeds()
     std::vector<FuzzSeed> seeds;
     for (unsigned seed = 0; seed < 4; ++seed)
     {
-        rules::Encounter encounter
-        {
-            {8, 8, std::vector<rules::Terrain>(64)},
-            {   {1, "hero", "Hero", rules::Side::party, {2, 2}},
-                {2, "enemy", "Enemy", rules::Side::opposition, {3, 2}}
-            }};
+        rules::Encounter encounter{{8, 8, std::vector<rules::Terrain>(64)},
+                                   {{1, "hero", "Hero", rules::Side::party, {2, 2}},
+                                    {2, "enemy", "Enemy", rules::Side::opposition, {3, 2}}}};
         encounter.battlefield.terrain[2 * 8 + 1] = rules::Terrain::difficult;
         auto session = module().create(encounter, seed);
         seeds.push_back(text_seed("initial-" + std::to_string(seed), session->save()));
         const auto commands = session->legal_commands();
         const auto move = std::find_if(commands.begin(), commands.end(),
-                                       [](const auto & command)
-        {
-            return command.verb == "move" &&
-                   command.destination == rules::Cell{1, 2};
-        });
+                                       [](const auto &command)
+                                       {
+                                           return command.verb == "move" &&
+                                                  command.destination == rules::Cell{1, 2};
+                                       });
         require(move != commands.end() && session->submit(*move),
                 "Invalid synthetic movement seed");
         require(session->snapshot().reaction_pending, "Synthetic seed should pause for a reaction");
@@ -304,19 +298,16 @@ std::vector<FuzzSeed> checkpoint_seeds()
         session->submit(session->legal_commands().front());
         seeds.push_back(text_seed("continued-" + std::to_string(seed), session->save()));
     }
-    rules::Encounter effects
-    {
-        {8, 8, std::vector<rules::Terrain>(64)},
-        {   {1, "caster", "Caster", rules::Side::party, {2, 2}},
-            {2, "enemy", "Target", rules::Side::opposition, {3, 2}}
-        }};
+    rules::Encounter effects{{8, 8, std::vector<rules::Terrain>(64)},
+                             {{1, "caster", "Caster", rules::Side::party, {2, 2}},
+                              {2, "enemy", "Target", rules::Side::opposition, {3, 2}}}};
     auto session = module().create(effects, 3);
     auto commands = session->legal_commands();
     auto cast = std::find_if(commands.begin(), commands.end(),
-                             [](const auto & c)
-    {
-        return c.verb == "blindness";
-    });
+                             [](const auto &c)
+                             {
+                                 return c.verb == "blindness";
+                             });
     require(cast != commands.end() && session->submit(*cast), "Condition corpus casts Blindness");
     require(!session->snapshot().combatants.back().conditions.empty(),
             "Condition corpus contains an active effect");
@@ -325,18 +316,18 @@ std::vector<FuzzSeed> checkpoint_seeds()
     {
         commands = session->legal_commands();
         const auto end = std::find_if(commands.begin(), commands.end(),
-                                      [](const auto & c)
-        {
-            return c.verb == "end";
-        });
+                                      [](const auto &c)
+                                      {
+                                          return c.verb == "end";
+                                      });
         require(end != commands.end() && session->submit(*end), "Condition corpus advances time");
     }
     commands = session->legal_commands();
     cast = std::find_if(commands.begin(), commands.end(),
-                        [](const auto & c)
-    {
-        return c.verb == "blindness";
-    });
+                        [](const auto &c)
+                        {
+                            return c.verb == "blindness";
+                        });
     require(cast != commands.end() && session->submit(*cast), "Condition corpus recasts Blindness");
     seeds.push_back(text_seed("overlapping-effects", session->save()));
     return seeds;

@@ -13,17 +13,18 @@ namespace
 {
 // The ITEM3.DAX list of New Phlan's general store, the shop that sells oil.
 constexpr unsigned general_store_list = 54;
+
 std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
 {
-    return detail::find_archive<EclError>(directory, name,
-        "Ambiguous archive " + std::string(name), "Missing " + std::string(name));
+    return detail::find_archive<EclError>(directory, name, "Ambiguous archive " + std::string(name),
+                                          "Missing " + std::string(name));
 }
 
 std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 {
-    return detail::read_archive_bytes<EclError>(path,
-        "Archive exceeds size limit", "Cannot open " + path.string(),
-        "Incomplete archive read");
+    return detail::read_archive_bytes<EclError>(path, "Archive exceeds size limit",
+                                                "Cannot open " + path.string(),
+                                                "Incomplete archive read");
 }
 
 } // namespace
@@ -40,8 +41,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     const auto intro = program->instruction(0xB0B9);
     const auto setup = program->instruction(0xB0AD);
     if (first.opcode != 9 || first.operands[0].value != 1 || first.operands[1].value != 0x4AC5 ||
-            intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
-            setup.operands[0].value != 12)
+        intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
+        setup.operands[0].value != 12)
         throw EclError("This ECL3:0 does not match the supported Rolf entry profile");
     // Explicit, verified Phlan profile. This does not implement general 127
     // operand semantics or assume that every map shares its GEO/art record ID.
@@ -49,12 +50,12 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     // (Effective C++ Item 26).
     const auto pieces = program->instruction(0x9B11);
     if (pieces.opcode != 55 || pieces.operands.size() != 3 ||
-            std::any_of(pieces.operands.begin(), pieces.operands.end(),
-                        [](const auto & a)
-{
-    return a.tag != 0 || a.value != 127;
-}))
-    throw EclError("Unsupported Phlan wall resource profile");
+        std::any_of(pieces.operands.begin(), pieces.operands.end(),
+                    [](const auto &a)
+                    {
+                        return a.tag != 0 || a.value != 127;
+                    }))
+        throw EclError("Unsupported Phlan wall resource profile");
     const auto maps = MapCatalog::load(directory);
     const auto map = maps.find({"GEO3.DAX", 0});
     if (!map)
@@ -66,7 +67,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             throw EclError(std::string("Invalid wall archive ") + name);
         return records;
     };
-    const auto find_record = [](const DaxDecodeResult & records,
+    const auto find_record = [](const DaxDecodeResult &records,
                                 unsigned id) -> const std::vector<std::uint8_t> &
     {
         for (const auto &record : records.records)
@@ -86,10 +87,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         tiles.insert(tiles.end(), decoded->begin(), decoded->end());
     };
     append(find_record(shared, 203), 45);
-    for (unsigned id :
-            {
-                101, 102, 103
-            })
+    for (unsigned id : {101, 102, 103})
         append(find_record(local, id), 70);
     auto wall_art = decode_wall_art(find_record(definitions, 0), tiles);
     if (!wall_art || wall_art->appearances.size() != 15)
@@ -104,10 +102,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         sprites[i] = std::move(result.image);
     }
     auto town = std::make_shared<PhlanResources>();
-    for (unsigned id :
-            {
-                0, 8, 11
-            })
+    for (unsigned id : {0, 8, 11})
     {
         auto p = catalog.find({"ECL3.DAX", static_cast<std::uint8_t>(id)});
         if (!p)
@@ -141,6 +136,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         return lists;
     };
     town->treasure = item_lists("ITEM3.DAX");
+
     // The general store, which sells the original's oil, also stocks the SRD
     // gear OpenGoldBox adds: torches (sold by ten, as prices are whole gold),
     // Acid and Alchemist's Fire at their SRD prices.
@@ -151,10 +147,11 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         std::uint16_t price_gp;
         std::uint8_t quantity;
     };
+
     constexpr std::array<StockedGear, 3> added_gear{
-        {   {authored_item::torch, "10 Torches", 1, 10}, {authored_item::acid, "Vial of Acid", 25, 1},
-            {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1}
-        }};
+        {{authored_item::torch, "10 Torches", 1, 10},
+         {authored_item::acid, "Vial of Acid", 25, 1},
+         {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1}}};
     auto &general_store = town->treasure[general_store_list];
     for (const auto &gear : added_gear)
     {
@@ -168,7 +165,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     }
     town->item_templates = *templates;
     town->sprite_archive = std::move(bytes);
-    const auto pictures = [&](const char *name, auto & destination)
+    const auto pictures = [&](const char *name, auto &destination)
     {
         for (const auto &record : archive(name).records)
         {
@@ -182,6 +179,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     pictures("PIC3.DAX", town->pictures);
     town->map = map->get();
     town->wall_art = *wall_art;
+
     // The districts beyond New Phlan, one row per area: its script, its archive
     // bank (ECLn, GEOn, WALLDEFn, MONnCHA and so on), the maps its script loads
     // with each map's three wall banks (`LOAD PIECES`), and the original
@@ -191,38 +189,54 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         unsigned id;
         std::array<unsigned, 3> pieces;
     };
+
     struct Conversion
     {
         std::uint8_t record;
         const char *definition;
         unsigned fit_xp, award_xp;
     };
+
     struct AreaSource
     {
         unsigned script, bank;
         std::vector<DistrictMap> maps;
         std::vector<Conversion> creatures;
     };
+
     // The original Slums creatures' experience follows docs/EXPEDITION.md; the
     // set-encounter creatures added later and Kuto's Well award each stat
     // block's XP, a leader double (docs/audits/kutos-well.md).
-    const std::array areas{
-        AreaSource{20, 2, {{20, {2, 4, 1}}},
-            {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
-                {11, "slums-kobold-leader-sword", 25, 50}, {2, "slums-goblin", 50, 50},
-                {3, "slums-goblin-leader", 50, 100}, {12, "slums-goblin-leader", 50, 100},
-                {4, "slums-orc", 100, 75}, {13, "slums-orc", 100, 75},
-                {5, "slums-orc-leader", 100, 150}, {14, "slums-orc-leader", 100, 150},
-                {15, "slums-orc-leader", 100, 150}, {63, "slums-bugbear", 200, 200},
-                {6, "slums-hobgoblin", 100, 100}, {7, "slums-hobgoblin", 100, 200},
-                {8, "ogre", 450, 450}, {31, "troll", 1800, 1800},
-                {73, "gnoll-warrior", 100, 100}, {94, "slums-magic-user", 200, 200}
-            }},
-        AreaSource{29, 8, {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
-            {   {0, "slums-kobold", 25, 25}, {1, "slums-kobold-leader", 25, 50},
-                {57, "lizardfolk", 100, 100}, {59, "giant-lizard", 50, 50},
-                {73, "gnoll-warrior", 100, 100}, {32, "norris-the-gray", 450, 450}
-            }}};
+    const std::array areas{AreaSource{20,
+                                      2,
+                                      {{20, {2, 4, 1}}},
+                                      {{0, "slums-kobold", 25, 25},
+                                       {1, "slums-kobold-leader", 25, 50},
+                                       {11, "slums-kobold-leader-sword", 25, 50},
+                                       {2, "slums-goblin", 50, 50},
+                                       {3, "slums-goblin-leader", 50, 100},
+                                       {12, "slums-goblin-leader", 50, 100},
+                                       {4, "slums-orc", 100, 75},
+                                       {13, "slums-orc", 100, 75},
+                                       {5, "slums-orc-leader", 100, 150},
+                                       {14, "slums-orc-leader", 100, 150},
+                                       {15, "slums-orc-leader", 100, 150},
+                                       {63, "slums-bugbear", 200, 200},
+                                       {6, "slums-hobgoblin", 100, 100},
+                                       {7, "slums-hobgoblin", 100, 200},
+                                       {8, "ogre", 450, 450},
+                                       {31, "troll", 1800, 1800},
+                                       {73, "gnoll-warrior", 100, 100},
+                                       {94, "slums-magic-user", 200, 200}}},
+                           AreaSource{29,
+                                      8,
+                                      {{29, {3, 20, 1}}, {32, {18, 17, 1}}},
+                                      {{0, "slums-kobold", 25, 25},
+                                       {1, "slums-kobold-leader", 25, 50},
+                                       {57, "lizardfolk", 100, 100},
+                                       {59, "giant-lizard", 50, 50},
+                                       {73, "gnoll-warrior", 100, 100},
+                                       {32, "norris-the-gray", 450, 450}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -236,7 +250,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     for (const auto &area : areas)
     {
         const auto bank = std::to_string(area.bank);
-        const auto program = catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
+        const auto program =
+            catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
         if (!program)
             throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
         town->programs.emplace(area.script, program);
@@ -278,12 +293,12 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 const auto id = conversion.record;
                 const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
                 if (!creature)
-                    throw EclError("Missing original creature MON" + bank + "CHA:" +
-                                   std::to_string(id));
+                    throw EclError("Missing original creature MON" + bank +
+                                   "CHA:" + std::to_string(id));
                 district->encounter_creatures.emplace(id, creature->get());
-                district->conversions.emplace(
-                    id, EncounterConversion{conversion.definition, conversion.fit_xp,
-                                            conversion.award_xp});
+                district->conversions.emplace(id, EncounterConversion{conversion.definition,
+                                                                      conversion.fit_xp,
+                                                                      conversion.award_xp});
             }
             district->combat_archive =
                 read_archive(resolve_archive(directory, "CPIC" + bank + ".DAX"));
@@ -382,16 +397,11 @@ void RolfTourSession::reset_run()
         }
     // Minimal explicit isolated state, not a fabricated whole party/world model.
     for (const std::uint16_t address :
-            {
-                0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
-                0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F
-            })
+         {0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
+          0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
         machine_.bind_variable(EclAddress{address}, 0);
     machine_.bind_variable(ecl_clock_hour, 12); // Research fixture: midday.
-    for (const std::uint8_t opcode :
-            {
-                12, 13, 14, 45, 49, 58
-            })
+    for (const std::uint8_t opcode : {12, 13, 14, 45, 49, 58})
         machine_.enable_host(opcode);
     if (town_)
         configure_town();
@@ -511,7 +521,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
     {
     case 12:
         if (request.arguments[0].number() != 12 || request.arguments[1].number() != 2 ||
-                request.arguments[2].number() != 9)
+            request.arguments[2].number() != 9)
             throw EclError("Unsupported encounter setup in Rolf tour");
         snapshot_.sprite_frame = 2;
         break;
@@ -549,10 +559,9 @@ void RolfTourSession::handle_host(const EclRequest &request)
             pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
             reply.writes = {{ecl_party_x, static_cast<std::uint16_t>(pose.x)},
-                {ecl_party_y, static_cast<std::uint16_t>(pose.y)},
-                {ecl_wall_ahead, cell.walls[index(pose.facing)]},
-                {ecl_cell_event, cell.event_raw}
-            };
+                            {ecl_party_y, static_cast<std::uint16_t>(pose.y)},
+                            {ecl_wall_ahead, cell.walls[index(pose.facing)]},
+                            {ecl_cell_event, cell.event_raw}};
         }
         else if (service == EclAddress{0x2C90} || service == EclAddress{0xC018})
         {
@@ -580,9 +589,8 @@ void RolfTourSession::handle_host(const EclRequest &request)
     }
     if (!machine_.resume_host(request.id, reply))
         throw EclError("Tour host reply rejected");
-    if (opcode == 45 &&
-            (request.arguments[0].address() == EclAddress{0x2C90} ||
-             request.arguments[0].address() == EclAddress{0xC01E}))
+    if (opcode == 45 && (request.arguments[0].address() == EclAddress{0x2C90} ||
+                         request.arguments[0].address() == EclAddress{0xC01E}))
         publish_pose();
     ++snapshot_.revision;
 }
@@ -693,8 +701,8 @@ bool RolfTourSession::camp(RestKind kind)
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)
         return false;
     if (!town_ || !campaign_ || snapshot_.phase != TourPhase::completed || campaign_->in_combat() ||
-            campaign_->state().short_rest || campaign_->state().spell_rest ||
-            campaign_->state().training_rest)
+        campaign_->state().short_rest || campaign_->state().spell_rest ||
+        campaign_->state().training_rest)
         return false;
     camp_kind_ = kind;
     begin_event(EventTrigger::camp);
@@ -707,8 +715,8 @@ bool RolfTourSession::explore(ExplorationCommand command)
     if (command == ExplorationCommand::camp)
         return camp(RestKind::long_rest);
     if (snapshot_.phase != TourPhase::completed ||
-            (campaign_ && (campaign_->in_combat() || campaign_->state().short_rest ||
-                           campaign_->state().spell_rest || campaign_->state().training_rest)))
+        (campaign_ && (campaign_->in_combat() || campaign_->state().short_rest ||
+                       campaign_->state().spell_rest || campaign_->state().training_rest)))
         return false;
     if (town_)
     {
@@ -740,7 +748,7 @@ bool RolfTourSession::explore(ExplorationCommand command)
         const int x = static_cast<int>(pose.x) + step_x(pose.facing),
                   y = static_cast<int>(pose.y) + step_y(pose.facing);
         if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[index(pose.facing)] ||
-                edge.doors[index(pose.facing)])
+            edge.doors[index(pose.facing)])
             return false;
         const auto &other = map_.at(x, y);
         const auto reverse = reversed(pose.facing);

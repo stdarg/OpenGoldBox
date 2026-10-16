@@ -81,8 +81,10 @@ Character bard(unsigned level = 1, std::string background = "sage")
     d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
     d.spells = SpellChoices{{},
-        std::vector<std::string> {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person"},
-        {}, {}};
+                            std::vector<std::string>{"dissonant_whispers", "faerie_fire",
+                                                     "healing_word", "charm_person"},
+                            {},
+                            {}};
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "bard-xp");
@@ -118,41 +120,44 @@ bool aim(CombatSession &c, Cell cell)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
 {
     const auto conditions = unit(c, id).conditions;
-    return std::any_of(conditions.begin(), conditions.end(), [&](const auto & condition)
-    {
-        return condition.source == label;
-    });
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [&](const auto &condition)
+                       {
+                           return condition.source == label;
+                       });
 }
 
 bool has_grant(const Character &hero, std::string_view id)
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 // The Bard (1), an ally (2) and an enemy (98) 15 feet away, both `creature`.
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
-                                      std::uint64_t seed = 5, const std::string &creature = "target")
+                                      std::uint64_t seed = 5,
+                                      const std::string &creature = "target")
 {
-    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string>{}).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
-            {2, creature, "Ally", Side::party, {3, 2}},
-            {98, creature, "Enemy", Side::opposition, {4, 1}}
-        }},
-    seed);
+                            {{1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
+                             {2, creature, "Ally", Side::party, {3, 2}},
+                             {98, creature, "Enemy", Side::opposition, {4, 1}}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "end"), "Reach the Bard's turn");
     check(c->snapshot().actor == 1, "The Bard acts");
@@ -190,15 +195,14 @@ void safest_flight_checks()
 {
     const auto module = rules();
     const auto hero = bard();
-    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
     for (std::uint64_t seed = 1; seed < 64; ++seed)
     {
         auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Bard", Side::party, {1, 2}, profile},
-                {2, "target", "Ally", Side::party, {6, 1}},
-                {98, "target", "Enemy", Side::opposition, {4, 2}}
-            }},
-        seed);
+                                 {{1, "campaign-character", "Bard", Side::party, {1, 2}, profile},
+                                  {2, "target", "Ally", Side::party, {6, 1}},
+                                  {98, "target", "Enemy", Side::opposition, {4, 2}}}},
+                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "end"), "Reach the Bard's turn");
         check(submit(*c, "dissonant_whispers", 98), "The Bard casts Dissonant Whispers");
@@ -263,11 +267,13 @@ void advancement_checks()
     check(has_grant(bard(2), "feature:jack_of_all_trades"), "Level two brings Jack of All Trades");
     const auto &grants = third.sheet().grants;
     check(has_grant(third, "subclass:lore") && has_grant(third, "feature:bonus_proficiencies") &&
-          std::count_if(grants.begin(), grants.end(), [](const auto & g)
-    {
-        return g.source_id == "subclass:bard:lore" && g.id.starts_with("skill:");
-    }) == 3,
-    "Level three brings the College of Lore and three skills");
+              std::count_if(grants.begin(), grants.end(),
+                            [](const auto &g)
+                            {
+                                return g.source_id == "subclass:bard:lore" &&
+                                       g.id.starts_with("skill:");
+                            }) == 3,
+          "Level three brings the College of Lore and three skills");
     check(fourth.sheet().level == 4 && fourth.sheet().prepared_spells.size() == 7,
           "A level-four Bard prepares seven spells");
 }
@@ -292,7 +298,8 @@ AttackRoll attack_roll(const CombatSession &c, std::string_view prefix)
         if (line.starts_with(prefix))
         {
             int natural = 0, bonus = 0, ac = 0;
-            std::sscanf(line.c_str() + prefix.size(), ": d20 %d + %d vs AC %d", &natural, &bonus, &ac);
+            std::sscanf(line.c_str() + prefix.size(), ": d20 %d + %d vs AC %d", &natural, &bonus,
+                        &ac);
             return {natural == 1 ? -100 : natural + bonus, ac};
         }
     throw std::runtime_error("No attack line");
@@ -304,8 +311,8 @@ void inspiration_checks()
     {
         auto c = battle(*module, bard());
         check(inspiration_left(*c) == 4 && submit(*c, "bardic_inspiration", 2) &&
-              logged(*c, "Bard inspires Ally.") && has_condition(*c, 2, "Inspired") &&
-              inspiration_left(*c) == 3 && unit(*c, 1).action,
+                  logged(*c, "Bard inspires Ally.") && has_condition(*c, 2, "Inspired") &&
+                  inspiration_left(*c) == 3 && unit(*c, 1).action,
               "Bardic Inspiration is a Bonus Action; Charisma 18 gives four uses");
     }
     // The guard (+4 against AC 20) misses often. Its die is added without
@@ -358,15 +365,15 @@ void inspiration_checks()
 void cutting_check_checks()
 {
     const auto module = srd5::parse_content(
-                            read(root / "data/rules/srd-5.2.1/combat.rules") +
-                            "\ncreature dull 10 50 0 30 4 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nperception dull 4\n");
+        read(root / "data/rules/srd-5.2.1/combat.rules") +
+        "\ncreature dull 10 50 0 30 4 1 4 0 0 0 0 0 0 0 0 0 0 1 0\nperception dull 4\n");
     // A wall at x = 4 from y = 0 to 2 keeps the Bard at (3, 1) out of sight.
     std::vector<Terrain> walled(72);
     for (int y = 0; y <= 2; ++y)
         walled[y * 12 + 4] = Terrain::obstacle;
     const auto hero = bard(3);
-    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
-    const auto step = [](CombatSession & c, Cell cell)
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
+    const auto step = [](CombatSession &c, Cell cell)
     {
         for (const auto &command : c.legal_commands())
             if (command.verb == "move" && command.destination == cell)
@@ -376,10 +383,9 @@ void cutting_check_checks()
     for (std::uint64_t seed = 1; seed < 200; ++seed)
     {
         auto c = module->create({{12, 6, walled},
-            {   {1, "campaign-character", "Bard", Side::party, {3, 1}, profile},
-                {98, "dull", "Foe", Side::opposition, {8, 1}}
-            }},
-        seed);
+                                 {{1, "campaign-character", "Bard", Side::party, {3, 1}, profile},
+                                  {98, "dull", "Foe", Side::opposition, {8, 1}}}},
+                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Bard's turn");
         if (!submit(*c, "hide") || !unit(*c, 1).hidden)
@@ -407,20 +413,24 @@ void cutting_check_checks()
 void cutting_damage_checks()
 {
     // A brute that always hits for 1d4 + 2.
-    const auto module = srd5::parse_content(
-                            read(root / "data/rules/srd-5.2.1/combat.rules") +
+    const auto module =
+        srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                             "\ncreature brute 10 50 0 30 20 1 4 2 0 0 0 0 0 0 0 0 0 1 0\n");
     const auto hero = bard(3);
-    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
     // The brute's attack on the Bard with `hit_points` left.
     const auto struck = [&](int hit_points, std::uint64_t seed)
     {
         auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Bard", Side::party, {1, 1}, profile,
-                    VitalState{hit_points, false, {}, {}}},
-                {98, "brute", "Brute", Side::opposition, {2, 1}}
-            }},
-        seed);
+                                 {{1,
+                                   "campaign-character",
+                                   "Bard",
+                                   Side::party,
+                                   {1, 1},
+                                   profile,
+                                   VitalState{hit_points, false, {}, {}}},
+                                  {98, "brute", "Brute", Side::opposition, {2, 1}}}},
+                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the brute's turn");
         check(c->submit(choose_demo_command(*c)), "The brute attacks");
@@ -433,7 +443,7 @@ void cutting_damage_checks()
         if (!logged(*c, "Bard uses Cutting Words: -"))
             continue;
         check(logged(*c, "damage, keeping Bard standing.") && unit(*c, 1).hit_points > 0 &&
-              !unit(*c, 1).reaction && inspiration_left(*c) == 3,
+                  !unit(*c, 1).reaction && inspiration_left(*c) == 3,
               "Cutting Words on a lethal roll keeps the Bard standing, for a Reaction and a use");
         saved = true;
     }
@@ -452,7 +462,7 @@ void inspired_save_checks()
     fx::apply_spell_benefit(effects, {.scope = 1, .actor = 1}, "Bard", fx::EffectKind::inspired, 6);
     std::uint64_t rng = 7;
     const fx::SaveResult near{fx::Ability::wisdom, 9, 2, 15, 0, false},
-          far{fx::Ability::wisdom, 2, 2, 15, 0, false};
+        far{fx::Ability::wisdom, 2, 2, 15, 0, false};
     check(fx::inspiration_die(effects.active, far, rng) == 0 && rng == 7,
           "A save 11 short keeps the die and rolls nothing");
     const int die = fx::inspiration_die(effects.active, near, rng);
@@ -465,12 +475,11 @@ void inspired_save_checks()
 // the Bard's level, so totals differ only by their bonuses.
 int initiative(const RulesModule &module, const Character &hero)
 {
-    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string>{}).data;
     const auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
-            {98, "target", "Enemy", Side::opposition, {4, 1}}
-        }},
-    5);
+                                  {{1, "campaign-character", "Bard", Side::party, {1, 1}, profile},
+                                   {98, "target", "Enemy", Side::opposition, {4, 1}}}},
+                                 5);
     return unit(*c, 1).initiative;
 }
 
@@ -509,16 +518,14 @@ void creation_checks()
     const Character hero(*creation, draft, {});
     const auto access = module->spell_access(hero.sheet());
     check(access.cantrip_choices == 2 && access.prepared_choices == 4 &&
-          creation->cantrip_options(draft).count == 2 &&
-          creation->spell_choice_options(draft).prepared_count == 4,
+              creation->cantrip_options(draft).count == 2 &&
+              creation->spell_choice_options(draft).prepared_count == 4,
           "A level-one Bard knows two cantrips and prepares four spells");
-    for (const auto &bad : std::vector<std::vector<std::string>>
-{
-    {"dissonant_whispers", "faerie_fire", "healing_word", "magic_missile"},
-        {"dissonant_whispers", "faerie_fire", "healing_word", "healing_word"},
-        {"dissonant_whispers", "faerie_fire", "healing_word", "heat_metal"},
-        {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person", "heroism"}
-    })
+    for (const auto &bad : std::vector<std::vector<std::string>>{
+             {"dissonant_whispers", "faerie_fire", "healing_word", "magic_missile"},
+             {"dissonant_whispers", "faerie_fire", "healing_word", "healing_word"},
+             {"dissonant_whispers", "faerie_fire", "healing_word", "heat_metal"},
+             {"dissonant_whispers", "faerie_fire", "healing_word", "charm_person", "heroism"}})
     {
         bool refused = false;
         try

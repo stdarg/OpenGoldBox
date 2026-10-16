@@ -68,7 +68,7 @@ Character warlock(unsigned level = 1, std::vector<std::string> first = {},
     if (!first.empty())
         d.training["class:warlock:invocations"] = first;
     d.cantrips = {"eldritch_blast", "chill_touch"};
-    d.spells = SpellChoices{{}, std::vector<std::string> {"hex", "hellish_rebuke"}, {}, {}};
+    d.spells = SpellChoices{{}, std::vector<std::string>{"hex", "hellish_rebuke"}, {}, {}};
     CampaignParty party(module_rules());
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "warlock-xp");
@@ -109,19 +109,21 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // Level-one and level-two slots in "SRD13 winds slots slots2 ...".
@@ -141,12 +143,11 @@ void reach_turn(CombatSession &c);
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero,
                                       std::uint64_t seed = 5, std::string enemy = "target")
 {
-    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string>{}).data;
     auto c = module.create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
-            {98, enemy, "Enemy", Side::opposition, {2, 1}}
-        }},
-    seed);
+                            {{1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                             {98, enemy, "Enemy", Side::opposition, {2, 1}}}},
+                           seed);
     if (!c->snapshot().initiative_choices.empty())
         check(submit(*c, "initiative_keep"), "Keep Initiative");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -193,8 +194,8 @@ void hellish_rebuke_checks()
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved, "The question survives a checkpoint");
         check(submit(*c, "rebuke") && logged(*c, "Warlock casts Hellish Rebuke at Enemy.") &&
-              logged(*c, "Enemy Dexterity save") && logged(*c, "Fire damage") &&
-              slots(unit(*c, 1).persistent).first == 0 && !unit(*c, 1).reaction,
+                  logged(*c, "Enemy Dexterity save") && logged(*c, "Fire damage") &&
+                  slots(unit(*c, 1).persistent).first == 0 && !unit(*c, 1).reaction,
               "Hellish Rebuke spends the Reaction and the slot");
         return;
     }
@@ -215,7 +216,8 @@ void rebuke_spell_damage_checks()
     check(c->snapshot().reaction_pending && offered(*c, "rebuke"),
           "The darts' damage asks about Hellish Rebuke");
     check(submit(*c, "rebuke") && logged(*c, "Warlock casts Hellish Rebuke at Enemy.") &&
-          !offered(*c, "rebuke"), "One Hellish Rebuke answers the spell");
+              !offered(*c, "rebuke"),
+          "One Hellish Rebuke answers the spell");
 }
 
 // One spell slot per turn: after Hex on its own turn, the Warlock cannot spend
@@ -263,11 +265,12 @@ void advancement_checks()
     check(slots(unit(*c, 1).persistent) == std::pair{2, 0}, "Two level-1 slots at level 2");
     check(submit(*c, "hex", 98), "Spend a slot on Hex");
     const auto actions = rules_module->camp_actions(second.sheet(), unit(*c, 1).persistent);
-    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
-    {
-        return a.id == "magical_cunning";
-    }),
-    "Magical Cunning is offered at camp with a slot spent");
+    check(std::any_of(actions.begin(), actions.end(),
+                      [](const auto &a)
+                      {
+                          return a.id == "magical_cunning";
+                      }),
+          "Magical Cunning is offered at camp with a slot spent");
     auto vitals = unit(*c, 1).persistent;
     std::vector<CampTarget> party{{second.sheet(), vitals}};
     RandomState random{7};
@@ -276,7 +279,7 @@ void advancement_checks()
     auto spent = unit(*c, 1).persistent;
     auto sheet = second.sheet();
     check(rules_module->advance_character(sheet, spent, rules_module->default_advancement(sheet)) &&
-          slots(spent) == std::pair{0, 1},
+              slots(spent) == std::pair{0, 1},
           "A spent Pact slot stays spent when the slots change level");
     rules_module->use_party_camp_action(second.sheet(), vitals, party, "magical_cunning", random);
     check(slots(vitals).first == 2, "Magical Cunning restores the spent slot");
@@ -284,7 +287,7 @@ void advancement_checks()
     const auto third = warlock(3);
     auto d = battle(*module, third);
     check(slots(unit(*d, 1).persistent) == std::pair{0, 2} && offered(*d, "hex_2") &&
-          !offered(*d, "hex"),
+              !offered(*d, "hex"),
           "From level 3 two level-2 slots cast level-1 spells at level 2");
     check(warlock(4).sheet().level == 4, "A Warlock reaches level 4");
 }
@@ -299,12 +302,12 @@ void magical_cunning_checks()
     const auto spend_slot = [&](const VitalState &state)
     {
         const auto profile =
-            module->character_profile(second.sheet(), std::vector<std::string> {}).data;
-        auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile, state},
-                {98, "target", "Enemy", Side::opposition, {2, 1}}
-            }},
-        5);
+            module->character_profile(second.sheet(), std::vector<std::string>{}).data;
+        auto c = module->create(
+            {{12, 6, std::vector<Terrain>(72)},
+             {{1, "campaign-character", "Warlock", Side::party, {1, 1}, profile, state},
+              {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+            5);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "end"), "Reach the Warlock's turn");
         check(submit(*c, "hex", 98), "Spend a slot on Hex");
@@ -313,10 +316,11 @@ void magical_cunning_checks()
     const auto offered_at_camp = [&](const VitalState &state)
     {
         const auto actions = rules_module->camp_actions(second.sheet(), state);
-        return std::any_of(actions.begin(), actions.end(), [](const auto & a)
-        {
-            return a.id == "magical_cunning";
-        });
+        return std::any_of(actions.begin(), actions.end(),
+                           [](const auto &a)
+                           {
+                               return a.id == "magical_cunning";
+                           });
     };
     auto vitals = spend_slot({second.sheet().hit_points, false, {}});
     std::vector<CampTarget> party{{second.sheet(), vitals}};
@@ -355,24 +359,27 @@ void invocation_checks()
         if (group.id == "class:warlock:invocations")
             for (const auto &option : group.options)
                 first.push_back(option.id);
-    check(first == std::vector<std::string> {"armor_of_shadows", "eldritch_mind", "pact_of_the_blade",
-                                              "pact_of_the_tome"},
+    check(first == std::vector<std::string>{"armor_of_shadows", "eldritch_mind",
+                                            "pact_of_the_blade", "pact_of_the_tome"},
           "Level 1 offers the invocations without prerequisites");
     auto module = rules();
     {
         auto c = battle(*module, warlock(1, {"armor_of_shadows"}));
         const int ac = unit(*c, 1).armor_class;
         check(submit(*c, "armor_of_shadows", 1) && unit(*c, 1).armor_class == ac + 3 &&
-              slots(unit(*c, 1).persistent).first == 1,
+                  slots(unit(*c, 1).persistent).first == 1,
               "Armor of Shadows casts Mage Armor without a slot");
     }
     {
-        const auto hero = warlock(2, {"eldritch_mind"}, {"agonizing_blast:eldritch_blast", "repelling_blast:eldritch_blast"});
+        const auto hero =
+            warlock(2, {"eldritch_mind"},
+                    {"agonizing_blast:eldritch_blast", "repelling_blast:eldritch_blast"});
         auto c = battle(*module, hero);
         check(submit(*c, "eldritch_blast", 98) && logged(*c, "Enemy is pushed 10 feet."),
               "Repelling Blast pushes the creature Eldritch Blast hits");
         for (const auto &line : c->snapshot().log())
-            if (line.starts_with("Warlock -> Enemy") && line.find(" hits for ") != std::string::npos)
+            if (line.starts_with("Warlock -> Enemy") &&
+                line.find(" hits for ") != std::string::npos)
             {
                 const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));
                 check(damage >= 5 && damage <= 14, "Agonizing Blast adds +4 to 1d10");
@@ -383,26 +390,29 @@ void invocation_checks()
         auto c = battle(*module, hero);
         check(submit(*c, "fiendish_vigor", 1) && unit(*c, 1).temporary_hp.amount == 12,
               "Fiendish Vigor grants False Life's highest result");
-        const auto profile = module->character_profile(hero.sheet(), std::vector<std::string> {}).data;
-        auto start = module->create({{12, 6, std::vector<Terrain>(72)},
-            {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
-                {2, "target", "Ally", Side::party, {1, 2}},
-                {98, "target", "Enemy", Side::opposition, {2, 1}}
-            }},
-        5);
-        check(start->snapshot().initiative_choices == std::vector<EntityId> {1},
+        const auto profile =
+            module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
+        auto start =
+            module->create({{12, 6, std::vector<Terrain>(72)},
+                            {{1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                             {2, "target", "Ally", Side::party, {1, 2}},
+                             {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                           5);
+        check(start->snapshot().initiative_choices == std::vector<EntityId>{1},
               "Lessons of the First Ones grants Alert's Initiative swap");
     }
     {
         // Pact of the Blade: a longsword with proficiency and Charisma (+4).
         auto blade = rules();
         const auto hero = warlock(1, {"pact_of_the_blade"});
-        const auto profile = blade->character_profile(hero.sheet(), std::vector<std::string> {"longsword"});
+        const auto profile =
+            blade->character_profile(hero.sheet(), std::vector<std::string>{"longsword"});
         check(profile.melee_attack_bonus == 6, "Pact of the Blade uses Charisma and proficiency");
     }
     {
-        auto c = battle(*module, warlock(3, {"eldritch_mind"}, {"devils_sight", "agonizing_blast:eldritch_blast"},
-                                         {"darkness"}));
+        auto c = battle(*module,
+                        warlock(3, {"eldritch_mind"},
+                                {"devils_sight", "agonizing_blast:eldritch_blast"}, {"darkness"}));
         check(submit(*c, "darkness") && submit(*c, "area_cast"), "Darkness over both creatures");
         reach_turn(*c);
         check(submit(*c, "eldritch_blast", 98) && logged(*c, "(advantage)"),
@@ -413,10 +423,11 @@ void invocation_checks()
 bool has_grant(const Character &hero, std::string_view id)
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 // The blast invocations name a damaging Warlock cantrip and repeat for
@@ -431,8 +442,8 @@ void invocation_gap_checks()
     const auto offered_ids = [&]
     {
         std::vector<std::string> ids;
-        for (const auto &group : party.rule_module().advancement_options(
-                    party.member(id).character.sheet()).training)
+        for (const auto &group :
+             party.rule_module().advancement_options(party.member(id).character.sheet()).training)
             for (const auto &option : group.options)
                 ids.push_back(option.id);
         return ids;
@@ -442,17 +453,19 @@ void invocation_gap_checks()
         return std::find(offered_ids.begin(), offered_ids.end(), option) != offered_ids.end();
     };
     check(listed("agonizing_blast:eldritch_blast") && listed("agonizing_blast:chill_touch") &&
-          listed("repelling_blast:chill_touch") && listed("eldritch_spear:eldritch_blast") &&
-          !listed("eldritch_spear:chill_touch") && listed("lessons_skilled"),
+              listed("repelling_blast:chill_touch") && listed("eldritch_spear:eldritch_blast") &&
+              !listed("eldritch_spear:chill_touch") && listed("lessons_skilled"),
           "Blast invocations for each damaging cantrip; Eldritch Spear needs range");
 
     {
-        const auto hero = warlock(2, {"eldritch_mind"},
-        {"agonizing_blast:eldritch_blast", "agonizing_blast:chill_touch"});
+        const auto hero =
+            warlock(2, {"eldritch_mind"},
+                    {"agonizing_blast:eldritch_blast", "agonizing_blast:chill_touch"});
         auto c = battle(*module, hero);
         check(submit(*c, "chill_touch", 98), "The Warlock casts Chill Touch");
         for (const auto &line : c->snapshot().log())
-            if (line.starts_with("Warlock -> Enemy") && line.find(" hits for ") != std::string::npos)
+            if (line.starts_with("Warlock -> Enemy") &&
+                line.find(" hits for ") != std::string::npos)
             {
                 const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));
                 check(damage >= 5 && damage <= 14, "Agonizing Blast adds +4 to Chill Touch's 1d10");
@@ -461,10 +474,13 @@ void invocation_gap_checks()
     {
         const auto hero = warlock(2, {"eldritch_mind"}, {"lessons_skilled", "fiendish_vigor"});
         const auto &grants = hero.sheet().grants;
-        check(std::count_if(grants.begin(), grants.end(), [](const auto & g)
-        {
-            return g.source_id == "invocation:lessons_skilled" && g.id.starts_with("skill:");
-        }) == 3, "Lessons of the First Ones teaches Skilled's three skills");
+        check(std::count_if(grants.begin(), grants.end(),
+                            [](const auto &g)
+                            {
+                                return g.source_id == "invocation:lessons_skilled" &&
+                                       g.id.starts_with("skill:");
+                            }) == 3,
+              "Lessons of the First Ones teaches Skilled's three skills");
         CampaignParty missing(module_rules());
         const auto member = missing.add_pc(warlock(1, {"eldritch_mind"}));
         missing.award_experience(300, "gap-xp");
@@ -484,26 +500,27 @@ void invocation_gap_checks()
     {
         // A target immune to Radiant damage takes none from the Radiant blade
         // and the longsword's Slashing from the ordinary attack.
-        const auto immune = srd5::parse_content(
-                                read(root / "data/rules/srd-5.2.1/combat.rules") +
+        const auto immune =
+            srd5::parse_content(read(root / "data/rules/srd-5.2.1/combat.rules") +
                                 "\ncreature target 1 1000 0 30 20 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n"
                                 "affinity target test immunity radiant\n");
         const auto hero = warlock(1, {"pact_of_the_blade"});
         const auto profile =
-            immune->character_profile(hero.sheet(), std::vector<std::string> {"longsword"}).data;
+            immune->character_profile(hero.sheet(), std::vector<std::string>{"longsword"}).data;
         const auto strike = [&](std::string_view verb)
         {
-            auto c = immune->create({{12, 6, std::vector<Terrain>(72)},
-                {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
-                    {98, "target", "Enemy", Side::opposition, {2, 1}}
-                }},
-            5);
+            auto c =
+                immune->create({{12, 6, std::vector<Terrain>(72)},
+                                {{1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                                 {98, "target", "Enemy", Side::opposition, {2, 1}}}},
+                               5);
             if (!c->snapshot().initiative_choices.empty())
                 check(submit(*c, "initiative_keep"), "Keep Initiative");
             for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
                 check(submit(*c, "end"), "Reach the Warlock's turn");
             check(offered(*c, "melee_necrotic") && offered(*c, "melee_psychic") &&
-                  submit(*c, verb, 98), "The pact weapon strikes");
+                      submit(*c, verb, 98),
+                  "The pact weapon strikes");
             return unit(*c, 98).hit_points;
         };
         check(strike("melee_radiant") == 1000 && strike("melee") < 1000,
@@ -515,12 +532,12 @@ void fiend_checks()
 {
     const auto third = warlock(3);
     check(has_grant(third, "subclass:fiend") && has_grant(third, "feature:dark_ones_blessing") &&
-          has_grant(third, "feature:fiend_spells"),
+              has_grant(third, "feature:fiend_spells"),
           "Level three brings the Fiend Patron");
     auto module = rules();
     auto c = battle(*module, third);
     check(offered(*c, "burning_hands_2") && offered(*c, "command_halt_2") &&
-          offered(*c, "scorching_ray"),
+              offered(*c, "scorching_ray"),
           "Fiend Spells are always prepared");
     for (std::uint64_t seed = 1; seed < 32; ++seed)
     {
@@ -530,7 +547,7 @@ void fiend_checks()
             continue;
         // Charisma 18 (+4) and Warlock level 3.
         check(logged(*d, "Dark One's Blessing: Warlock gains 7 Temporary Hit Points.") &&
-              unit(*d, 1).temporary_hp.amount == 7,
+                  unit(*d, 1).temporary_hp.amount == 7,
               "Dropping an enemy grants Dark One's Blessing");
         return;
     }
@@ -543,18 +560,18 @@ void ally_blessing_checks()
 {
     auto module = rules();
     const auto profile =
-        module->character_profile(warlock(3).sheet(), std::vector<std::string> {}).data;
+        module->character_profile(warlock(3).sheet(), std::vector<std::string>{}).data;
     // The Warlock (1) at (1,1) and an ally (2) beside a weakling (98) at `foe`.
     const auto blessed = [&](Cell foe)
     {
         for (std::uint64_t seed = 1; seed < 64; ++seed)
         {
-            auto c = module->create({{12, 6, std::vector<Terrain>(72)},
-                {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
-                    {2, "target", "Ally", Side::party, {foe.x + 1, foe.y}},
-                    {98, "weakling", "Enemy", Side::opposition, foe}
-                }},
-            seed);
+            auto c =
+                module->create({{12, 6, std::vector<Terrain>(72)},
+                                {{1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                                 {2, "target", "Ally", Side::party, {foe.x + 1, foe.y}},
+                                 {98, "weakling", "Enemy", Side::opposition, foe}}},
+                               seed);
             for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 4; ++turns)
                 check(submit(*c, "end"), "Reach the ally's turn");
             check(submit(*c, "melee", 98), "The ally attacks the weakling");
@@ -569,8 +586,6 @@ void ally_blessing_checks()
     check(!blessed({4, 1}), "An enemy dropped 15 feet away does not");
 }
 
-
-
 // The automated policy marks its foe with Hex, then blasts it.
 void policy_checks()
 {
@@ -581,13 +596,14 @@ void policy_checks()
     check(choose_demo_command(*c).verb == "eldritch_blast", "Then it casts Eldritch Blast");
     // Eldritch Blast may target any creature; the policy still blasts the
     // enemy, not a weaker ally.
-    const auto profile = module->character_profile(warlock().sheet(), std::vector<std::string> {}).data;
-    auto d = module->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
-            {2, "target", "Ally", Side::party, {1, 3}, {}, VitalState{3, false, {}}},
-            {98, "target", "Enemy", Side::opposition, {4, 1}}
-        }},
-    5);
+    const auto profile =
+        module->character_profile(warlock().sheet(), std::vector<std::string>{}).data;
+    auto d =
+        module->create({{12, 6, std::vector<Terrain>(72)},
+                        {{1, "campaign-character", "Warlock", Side::party, {1, 1}, profile},
+                         {2, "target", "Ally", Side::party, {1, 3}, {}, VitalState{3, false, {}}},
+                         {98, "target", "Enemy", Side::opposition, {4, 1}}}},
+                       5);
     for (unsigned turns = 0; d->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*d, "end"), "Reach the Warlock's turn");
     for (unsigned n = 0; n < 3; ++n)

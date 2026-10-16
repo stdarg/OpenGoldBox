@@ -55,19 +55,19 @@ void every_handler_is_guarded()
         const std::string text{std::istreambuf_iterator<char>(in), {}};
         check(text.find("callable_mp(") == std::string::npos,
               entry.path().filename().string() +
-              " connects a handler with callable_mp; use presentation::guarded");
+                  " connects a handler with callable_mp; use presentation::guarded");
         // A node taken out of the tree must be owned in the same step.
         check(entry.path().filename() == "godot_nodes.h" ||
-              text.find("remove_child(") == std::string::npos,
+                  text.find("remove_child(") == std::string::npos,
               entry.path().filename().string() +
-              " removes a child by hand; use presentation::detach_child");
+                  " removes a child by hand; use presentation::detach_child");
         // get_node<T> returns null for a missing node and every caller
         // dereferenced it; a lookup that may fail says so with
         // get_node_or_null.
         check(entry.path().filename() == "godot_nodes.h" ||
-              text.find("get_node<") == std::string::npos,
+                  text.find("get_node<") == std::string::npos,
               entry.path().filename().string() +
-              " looks up a node with get_node<T>; use presentation::required_node");
+                  " looks up a node with get_node<T>; use presentation::required_node");
     }
     check(sources > 20, "The game's sources are found");
 }
@@ -88,12 +88,11 @@ void headers_keep_to_themselves()
         const std::string text{std::istreambuf_iterator<char>(in), {}};
         const auto name = entry.path().filename().string();
         check(text.find("#ifndef ") != std::string::npos &&
-              text.find("#define ") != std::string::npos,
+                  text.find("#define ") != std::string::npos,
               name + " has no include guard");
         check(text.find("\nusing namespace ") == std::string::npos,
               name + " has a using-directive at namespace scope");
-        check(text.find("\nnamespace\n") == std::string::npos,
-              name + " has an unnamed namespace");
+        check(text.find("\nnamespace\n") == std::string::npos, name + " has an unnamed namespace");
     }
     check(headers > 20, "The game's headers are found");
 }

@@ -171,6 +171,7 @@ class RolfTourSession
     // elsewhere it takes the whole party back to that sanctuary. Throws when
     // it can do neither, before spending anything.
     void recall(opengold::MemberId caster);
+
     [[nodiscard]] bool has_sanctuary() const
     {
         return sanctuary_.has_value();
@@ -284,6 +285,7 @@ class RolfTourSession
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
     std::vector<opengold::MemberId> temple_targets_;
+
     // A training hall's PROGRAM 0: the script waits on `request` while the
     // party buys sessions of experience and skill lessons from the list.
     struct HallChoice
@@ -300,6 +302,7 @@ class RolfTourSession
         opengold::MemberId member{};
         std::string grant; // a lesson's skill or Expertise grant
     };
+
     struct HallVisit
     {
         std::uint64_t request{};
@@ -307,6 +310,7 @@ class RolfTourSession
         opengold::MemberId member{}; // whose lessons are listed; 0 lists the services
         std::vector<HallChoice> choices;
     };
+
     std::optional<HallVisit> hall_visit_;
     void open_hall(std::uint64_t request);
     void show_hall(std::vector<opengold::rules::Message> notice);
@@ -321,6 +325,7 @@ class RolfTourSession
     bool robbed_{};
     std::vector<Equipment> treasure_;
     std::optional<Image> picture_;
+
     // Everything an event can change, saved when it begins so a failed event
     // rolls back as a whole rather than member by hand-paired member
     // (Effective C++ Item 29).
@@ -337,6 +342,7 @@ class RolfTourSession
         TourSnapshot snapshot;
         PartySlot selected_character{};
     };
+
     std::optional<EventCheckpoint> event_checkpoint_;
     void roll_back_event();
     std::vector<std::string> diagnostics_;
@@ -379,8 +385,7 @@ class RolfTourSession
     void search_destination();
     // The coins and items of an encounter's original creature records.
     [[nodiscard]] PendingLoot encounter_loot(unsigned area, std::vector<unsigned> records,
-            std::string reward,
-                                         bool items) const;
+                                             std::string reward, bool items) const;
     void show_encounter_menu();
     void fit_staged_encounter();
     void announce_spokesman();
@@ -409,6 +414,7 @@ class RolfTourSession
     void announce_camp_attack();
     [[nodiscard]] bool camp_warded() const;
     bool transition_{}, message_only_{};
+
     // Word of Recall: the square where the party last used a temple of New
     // Phlan this session, and the sanctuary it prepared (saved).
     struct Sanctuary
@@ -417,6 +423,7 @@ class RolfTourSession
         PartyPose pose;
         auto operator<=>(const Sanctuary &) const = default;
     };
+
     std::optional<Sanctuary> temple_square_, sanctuary_;
     std::uint64_t shop_request_{};
     void configure_town();

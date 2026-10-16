@@ -12,7 +12,7 @@ namespace presentation
 {
 template <class Translate>
 godot::Window *setup_training_replacement(godot::Node &parent, const godot::Callable &keep,
-        const godot::Callable &apply, const Translate &tr)
+                                          const godot::Callable &apply, const Translate &tr)
 {
     using namespace godot;
     auto owned = make_node<Window>();
@@ -45,13 +45,12 @@ godot::Window *setup_training_replacement(godot::Node &parent, const godot::Call
 // One section per choice the rest can change. Weapon Mastery checks several
 // boxes; a single pick (the Hunter's Prey, the land) works like radio buttons.
 template <class Translate>
-void refresh_training_replacement(godot::Window &w,
-                                  std::span<const opengold::rules::TrainingReplacementOptions> choices,
-                                  std::span<const std::string> selected,
-                                  const godot::Callable &toggled, const Translate &tr)
+void refresh_training_replacement(
+    godot::Window &w, std::span<const opengold::rules::TrainingReplacementOptions> choices,
+    std::span<const std::string> selected, const godot::Callable &toggled, const Translate &tr)
 {
     using namespace godot;
-    const auto chosen = [&](const std::string & id)
+    const auto chosen = [&](const std::string &id)
     {
         return std::find(selected.begin(), selected.end(), id) != selected.end();
     };
@@ -82,11 +81,12 @@ void refresh_training_replacement(godot::Window &w,
     for (const auto &choice : choices)
     {
         const auto &group = choice.group;
-        const auto picks = static_cast<unsigned>(std::count_if(group.options.begin(),
-                           group.options.end(), [&](const auto & o)
-        {
-            return chosen(o.id);
-        }));
+        const auto picks =
+            static_cast<unsigned>(std::count_if(group.options.begin(), group.options.end(),
+                                                [&](const auto &o)
+                                                {
+                                                    return chosen(o.id);
+                                                }));
         if (group.count > 1)
         {
             limit.set_text(tr(N_("Selected")) + ": " + String::num_uint64(picks) + " / " +

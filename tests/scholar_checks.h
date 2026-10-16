@@ -14,8 +14,7 @@ void choices_and_sources()
 {
     auto rules = module();
     for (const auto *name :
-            {"arcana", "history", "investigation", "medicine", "nature", "religion"
-            })
+         {"arcana", "history", "investigation", "medicine", "nature", "religion"})
     {
         CampaignParty party(module());
         const auto id = party.add_pc(wizard(name));
@@ -23,34 +22,34 @@ void choices_and_sources()
         const auto &initial = party.member(id).character.sheet();
         const auto groups = rules->advancement_options(initial).training;
         check(groups.size() == 1 && groups[0].acquired_level == 2 &&
-              groups[0].options.size() == 1 && groups[0].options[0].id == name,
+                  groups[0].options.size() == 1 && groups[0].options[0].id == name,
               "Scholar filters all six choices by actual proficiency");
         const auto before = encode_campaign(party, nullptr, "scholar");
         auto choice = party.default_advancement(id);
         choice.training.clear();
         rejects(
             [&]
-        {
-            party.advance(id, choice);
-        });
+            {
+                party.advance(id, choice);
+            });
         choice.training[source] = {"insight"};
         rejects(
             [&]
-        {
-            party.advance(id, choice);
-        });
+            {
+                party.advance(id, choice);
+            });
         choice.training[source] = {name, name};
         rejects(
             [&]
-        {
-            party.advance(id, choice);
-        });
+            {
+                party.advance(id, choice);
+            });
         choice.training = {{"forged", {name}}};
         rejects(
             [&]
-        {
-            party.advance(id, choice);
-        });
+            {
+                party.advance(id, choice);
+            });
         check(encode_campaign(party, nullptr, "scholar") == before,
               "Invalid Scholar choices are atomic");
         choice.training = {{source, {name}}};
@@ -63,14 +62,14 @@ void choices_and_sources()
             const auto &trained = skill(sheet, name);
             const auto check_result = rules->ability_check(sheet, {}, trained.ability, name);
             check(trained.expertise && check_result.expertise && check_result.proficiency == 4 &&
-                  trained.bonus == sheet.modifiers[trained.ability] + 4,
+                      trained.bonus == sheet.modifiers[trained.ability] + 4,
                   "Expertise doubles proficiency exactly once at every supported level");
             check(std::any_of(trained.sources.begin(), trained.sources.end(),
-                              [](const auto & grant)
-            {
-                return grant.source_id == source && grant.level == 2;
-            }),
-            "Scholar source remains level two");
+                              [](const auto &grant)
+                              {
+                                  return grant.source_id == source && grant.level == 2;
+                              }),
+                  "Scholar source remains level two");
             const auto bytes = encode_campaign(party, nullptr, "scholar");
             check(bytes.starts_with("OPENGOLD-CAMPAIGN 31\n"),
                   "Wizard spell history is written in the current campaign format");
@@ -85,36 +84,34 @@ void choices_and_sources()
                     g.level = 1;
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(forged, {});
-            });
+                {
+                    (void)rules->character_profile(forged, {});
+                });
             forged = sheet;
             forged.grants.push_back({"expertise:" + std::string(name), source, 2, {}});
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(forged, {});
-            });
+                {
+                    (void)rules->character_profile(forged, {});
+                });
             forged = sheet;
             std::erase_if(forged.grants,
-                          [&](const auto & g)
-            {
-                return g.id == "skill:" + std::string(name);
-            });
+                          [&](const auto &g)
+                          {
+                              return g.id == "skill:" + std::string(name);
+                          });
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(forged, {});
-            });
+                {
+                    (void)rules->character_profile(forged, {});
+                });
         }
     }
-    for (const auto *klass :
-            {"fighter", "cleric", "rogue"
-            })
+    for (const auto *klass : {"fighter", "cleric", "rogue"})
     {
         const auto character = hero(draft(klass));
         check(rules->training_options(character.sheet()).empty() &&
-              rules->advancement_options(character.sheet()).training.empty(),
+                  rules->advancement_options(character.sheet()).training.empty(),
               "Other classes have no Scholar entitlement");
     }
 }
@@ -124,8 +121,8 @@ auto prior_module()
     std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) /
                      "data/rules/srd-5.2.1/combat.rules");
     return srd5::parse_content(
-               std::string(std::istreambuf_iterator<char>(in), {}) +
-               "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
+        std::string(std::istreambuf_iterator<char>(in), {}) +
+        "\ncreature recovery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n");
 }
 
 void medicine_combat()
@@ -136,21 +133,21 @@ void medicine_combat()
     check(character.advance(*rules, scratch), "Scholar medic advances normally");
     const auto profile = rules->character_profile(character.sheet(), {}).data;
     check(profile.starts_with("PC43 "), "Scholar combat uses the current profile version");
-    auto encounter = [&](const std::string & data)
+    auto encounter = [&](const std::string &data)
     {
-        return Encounter{{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Scholar", Side::party, {1, 1}, data},
-                {
-                    2,
-                    "recovery_target",
-                    "Patient",
-                    Side::party,
-                    {2, 1},
-                    {},
-                    VitalState{0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}
-                },
-                {99, "vanguard", "Enemy", Side::opposition, {6, 6}}
-            }};
+        return Encounter{
+            {8, 8, std::vector<Terrain>(64)},
+            {{1, "campaign-character", "Scholar", Side::party, {1, 1}, data},
+             {2,
+              "recovery_target",
+              "Patient",
+              Side::party,
+              {2, 1},
+              {},
+              VitalState{
+                  0, false,
+                  "SRD13 0 0 0 0 0 0 0 0 0 0 1 1 0 0 6000 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+             {99, "vanguard", "Enemy", Side::opposition, {6, 6}}}};
     };
     bool success = false, failure = false;
     for (unsigned seed = 0; seed < 80 && !(success && failure); ++seed)
@@ -170,10 +167,10 @@ void medicine_combat()
         }
         auto commands = combat->legal_commands();
         const auto found = std::find_if(commands.begin(), commands.end(),
-                                        [](const auto & c)
-        {
-            return c.verb == "stabilize" && c.target == 2;
-        });
+                                        [](const auto &c)
+                                        {
+                                            return c.verb == "stabilize" && c.target == 2;
+                                        });
         if (found == commands.end())
             continue;
         auto copy = rules->restore(combat->save());
@@ -227,9 +224,9 @@ void verify_ui(const char *path)
     auto creation = srd5::character_rules();
     CampaignParty expected(module());
     expected.restore(decode_campaign(read_campaign_file(std::filesystem::path(OPENGOLD_BINARY_DIR) /
-            "scholar-ui.ogs"),
+                                                        "scholar-ui.ogs"),
                                      *creation, *rules, assets, nullptr)
-                     .party);
+                         .party);
     expected.advance(1, expected.default_advancement(1));
     auto saved = decode_campaign(read_campaign_file(path), *creation, *rules, assets, nullptr);
     auto state = expected.checkpoint();

@@ -97,23 +97,20 @@ unsigned remaining(const Character &h, const VitalState &state)
 }
 
 auto battle(const Character &h, std::vector<std::string> gear = {},
-std::optional<VitalState> state = {}, unsigned seed = 2)
+            std::optional<VitalState> state = {}, unsigned seed = 2)
 {
     auto rules = module();
     auto c = rules->create({{10, 8, std::vector<Terrain>(80)},
-        {   {
-                1,
-                "campaign-character",
-                "Fighter",
-                Side::party,
-                {1, 1},
-                rules->character_profile(h.sheet(), gear).data,
-                state
-            },
-            {2, "vanguard", "Enemy", Side::opposition, {2, 1}},
-            {3, "vanguard", "Enemy 2", Side::opposition, {8, 1}}
-        }},
-    seed);
+                            {{1,
+                              "campaign-character",
+                              "Fighter",
+                              Side::party,
+                              {1, 1},
+                              rules->character_profile(h.sheet(), gear).data,
+                              state},
+                             {2, "vanguard", "Enemy", Side::opposition, {2, 1}},
+                             {3, "vanguard", "Enemy 2", Side::opposition, {8, 1}}}},
+                           seed);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -154,35 +151,35 @@ void grants()
         {
             auto bad = h.sheet();
             std::erase_if(bad.grants,
-                          [](const auto & g)
-            {
-                return g.id == "feature:action_surge";
-            });
+                          [](const auto &g)
+                          {
+                              return g.id == "feature:action_surge";
+                          });
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(bad, {});
-            });
+                {
+                    (void)rules->character_profile(bad, {});
+                });
             bad = h.sheet();
             for (auto &g : bad.grants)
                 if (g.id == "feature:action_surge")
                     g.level = 1;
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(bad, {});
-            });
+                {
+                    (void)rules->character_profile(bad, {});
+                });
             auto profile = rules->character_profile(h.sheet(), {}).data;
             profile.replace(0, 4, "PC12");
             rejects(
                 [&]
-            {
-                (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                    {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
-                        {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
-                    }},
-                2);
-            });
+                {
+                    (void)rules->create(
+                        {{8, 8, std::vector<Terrain>(64)},
+                         {{1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                          {2, "vanguard", "Enemy", Side::opposition, {3, 1}}}},
+                        2);
+                });
         }
     }
     for (const auto &klass : srd5::character_rules()->choices(CreationField::character_class))
@@ -195,17 +192,12 @@ void actions()
 {
     auto rules = module();
     for (unsigned level = 2; level <= 4; ++level)
-        for (bool first :
-                {
-                    false, true
-                })
-            for (const auto verb :
-                    {"dash", "dodge", "disengage", "melee", "ranged"
-                    })
+        for (bool first : {false, true})
+            for (const auto verb : {"dash", "dodge", "disengage", "melee", "ranged"})
             {
                 auto h = hero(level);
                 auto c = battle(
-                             h, {std::string_view(verb) == "ranged" ? "light_crossbow" : "longsword"});
+                    h, {std::string_view(verb) == "ranged" ? "light_crossbow" : "longsword"});
                 const auto before = unit(*c);
                 const auto random = rng(*c);
                 if (!first)
@@ -214,9 +206,9 @@ void actions()
                 act(*c, "action_surge");
                 check(
                     rng(*c) == random && unit(*c).action &&
-                    unit(*c).bonus_action == before.bonus_action &&
-                    unit(*c).reaction == before.reaction &&
-                    unit(*c).movement_feet == before.movement_feet,
+                        unit(*c).bonus_action == before.bonus_action &&
+                        unit(*c).reaction == before.reaction &&
+                        unit(*c).movement_feet == before.movement_feet,
                     "Activation consumes no RNG, ordinary action, Bonus Action, Reaction or movement");
                 const auto pending = c->save();
                 check(!c->submit(ticket) && c->save() == pending, "Duplicate activation is atomic");
@@ -245,7 +237,7 @@ void actions()
     act(*c, "dash");
     act(*c, "adrenaline_rush");
     check(unit(*c).movement_feet == 120 && !unit(*c).action && !unit(*c).bonus_action &&
-          unit(*c).reaction,
+              unit(*c).reaction,
           "Two Dashes and independent Bonus Action Dash grant four speed allowances");
     check(rules->restore(c->save())->save() == c->save(),
           "Four-speed movement checkpoint is valid");
@@ -273,18 +265,15 @@ void actions()
     check(c->save() == copy->save() && unit(*c).action,
           "Pending reaction preserves both action allowances");
     auto dead = rules->create({{8, 8, std::vector<Terrain>(64)},
-        {   {
-                1,
-                "campaign-character",
-                "Dead Fighter",
-                Side::party,
-                {1, 1},
-                rules->character_profile(h.sheet(), {}).data,
-                VitalState{0, true, {}}
-            },
-            {2, "vanguard", "Enemy", Side::opposition, {3, 1}}
-        }},
-    2);
+                               {{1,
+                                 "campaign-character",
+                                 "Dead Fighter",
+                                 Side::party,
+                                 {1, 1},
+                                 rules->character_profile(h.sheet(), {}).data,
+                                 VitalState{0, true, {}}},
+                                {2, "vanguard", "Enemy", Side::opposition, {3, 1}}}},
+                              2);
     check(!has(*dead, "action_surge"), "Dead character cannot activate");
 }
 
@@ -306,9 +295,7 @@ void attacks_and_malformed()
     c = battle(h);
     act(*c, "action_surge");
     const auto valid = c->save();
-    for (const auto suffix :
-            {"2 1 1", "-1 1 1", "1 1 1", "0 0 1"
-            })
+    for (const auto suffix : {"2 1 1", "-1 1 1", "1 1 1", "0 0 1"})
     {
         std::istringstream in(valid);
         std::string edited, line;
@@ -325,18 +312,18 @@ void attacks_and_malformed()
         }
         rejects(
             [&]
-        {
-            (void)rules->restore(edited);
-        });
+            {
+                (void)rules->restore(edited);
+            });
         check(c->save() == valid, "Malformed allowance cannot mutate the running encounter");
     }
     auto wrong_version = valid;
     wrong_version.replace(9, 2, "13");
     rejects(
         [&]
-    {
-        (void)rules->restore(wrong_version);
-    });
+        {
+            (void)rules->restore(wrong_version);
+        });
 }
 
 void savage()
@@ -375,10 +362,7 @@ void recovery()
     act(*c, "action_surge");
     auto spent = unit(*c).persistent;
     check(spent.resources.starts_with("SRD13 "), "Spent pool has explicit versioned continuation");
-    for (bool long_rest :
-            {
-                false, true
-            })
+    for (bool long_rest : {false, true})
     {
         auto state = spent;
         if (long_rest)
@@ -392,9 +376,7 @@ void recovery()
           "Advancing to level three does not replenish spent Surge");
     check(h.advance(*rules, state) && remaining(h, state) == 0,
           "Advancing to level four does not replenish spent Surge");
-    for (const auto value :
-            {"-1", "2", "2147483648"
-            })
+    for (const auto value : {"-1", "2", "2147483648"})
     {
         auto bad = spent;
         // Action Surge uses precede Arcane Recovery uses and the effects.
@@ -404,9 +386,9 @@ void recovery()
         bad.resources.replace(begin, arcane - begin, value);
         rejects(
             [&]
-        {
-            rules->validate_character_state(hero(2).sheet(), bad);
-        });
+            {
+                rules->validate_character_state(hero(2).sheet(), bad);
+            });
     }
 }
 
@@ -414,10 +396,7 @@ void campaign()
 {
     auto rules = module();
     auto creation = srd5::character_rules();
-    for (bool npc :
-            {
-                false, true
-            })
+    for (bool npc : {false, true})
     {
         CampaignParty p(module());
         auto h = hero();
@@ -458,10 +437,10 @@ void ui_fixtures()
     std::filesystem::create_directories(path);
     std::ofstream(path / "level1.save", std::ios::binary) << battle(hero(1))->save();
     std::ofstream(path / "cleric.save", std::ios::binary)
-            << battle(hero(1, "human", "cleric"))->save();
+        << battle(hero(1, "human", "cleric"))->save();
     for (unsigned level = 3; level <= 4; ++level)
         std::ofstream(path / ("level" + std::to_string(level) + ".save"), std::ios::binary)
-                << battle(hero(level, "orc"), {"longsword"})->save();
+            << battle(hero(level, "orc"), {"longsword"})->save();
     auto c = battle(hero(2), {"longsword"});
     std::ofstream(path / "available.save", std::ios::binary) << c->save();
     act(*c, "action_surge");

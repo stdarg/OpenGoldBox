@@ -94,10 +94,11 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool offers(const CombatSession &c, std::string_view verb, EntityId target)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb && command.target == target;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb && command.target == target;
+                       });
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -113,13 +114,13 @@ CombatantView unit(const CombatSession &c, EntityId id)
 std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character &hero)
 {
     const auto profile = module.character_profile(hero.sheet(), {}).data;
-    auto c = module.create({{14, 8, std::vector<Terrain>(112)},
-        {   {1, "campaign-character", "Healer", Side::party, {1, 1}, profile},
-            {2, "target", "Near ally", Side::party, {1, 2}, {}, VitalState{1, false, {}, {}}},
-            {3, "target", "Far ally", Side::party, {1, 5}, {}, VitalState{1, false, {}, {}}},
-            {99, "target", "Enemy", Side::opposition, {12, 7}}
-        }},
-    11);
+    auto c = module.create(
+        {{14, 8, std::vector<Terrain>(112)},
+         {{1, "campaign-character", "Healer", Side::party, {1, 1}, profile},
+          {2, "target", "Near ally", Side::party, {1, 2}, {}, VitalState{1, false, {}, {}}},
+          {3, "target", "Far ally", Side::party, {1, 5}, {}, VitalState{1, false, {}, {}}},
+          {99, "target", "Enemy", Side::opposition, {12, 7}}}},
+        11);
     // Alert first offers to swap initiative; keep it.
     (void)submit(*c, "initiative_keep");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
@@ -164,7 +165,8 @@ void routes()
                    weak = caster(route.klass, route.spell, route.ability, 4);
         const int gap = modifier(strong, route.ability) - modifier(weak, route.ability);
         check(gap > 0, label + ": the two casters differ in their casting ability");
-        check(healed(*module, strong, route.spell, 2) == healed(*module, weak, route.spell, 2) + gap,
+        check(healed(*module, strong, route.spell, 2) ==
+                  healed(*module, weak, route.spell, 2) + gap,
               label + ": heals with the class's casting ability");
 
         // Cure Wounds touches; Healing Word reaches the ally 20 feet away.
@@ -173,7 +175,7 @@ void routes()
         check(offers(*c, route.spell, 3) == !touch,
               label + (touch ? ": Touch range only" : ": reaches 60 feet"));
         check(submit(*c, route.spell, 2) && unit(*c, 1).action == !touch &&
-              unit(*c, 1).bonus_action == touch,
+                  unit(*c, 1).bonus_action == touch,
               label + (touch ? ": takes the Action" : ": takes the Bonus Action"));
 
         if (!route.second_slot)
@@ -183,8 +185,7 @@ void routes()
         const int die = touch ? 8 : 4;
         const int one = healed(*module, third, route.spell, 2),
                   two = healed(*module, third, route.spell + "_2", 2);
-        check(two >= one + 2 && two <= one + 2 * die,
-              label + ": a level-2 slot adds two dice");
+        check(two >= one + 2 && two <= one + 2 * die, label + ": a level-2 slot adds two dice");
     }
 }
 
@@ -211,7 +212,8 @@ void disciple_of_life()
     const auto module = rules();
     const auto before = caster("cleric", "healing_word", Ability::wisdom, 6, 2),
                life = caster("cleric", "healing_word", Ability::wisdom, 6, 3);
-    check(healed(*module, life, "healing_word", 2) == healed(*module, before, "healing_word", 2) + 3,
+    check(healed(*module, life, "healing_word", 2) ==
+              healed(*module, before, "healing_word", 2) + 3,
           "Disciple of Life adds 2 + the slot's level to Healing Word");
 }
 } // namespace

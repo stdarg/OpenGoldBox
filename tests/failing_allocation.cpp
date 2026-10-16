@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <new>
 
-void *operator new (std::size_t size)
+void *operator new(std::size_t size)
 {
     const long left = opengold::test::allocations_until_failure.load();
     if (left == 0)
@@ -21,12 +21,12 @@ void *operator new (std::size_t size)
     throw std::bad_alloc();
 }
 
-void operator delete (void *memory) noexcept
+void operator delete(void *memory) noexcept
 {
     std::free(memory);
 }
 
-void operator delete (void *memory, std::size_t) noexcept
+void operator delete(void *memory, std::size_t) noexcept
 {
     std::free(memory);
 }

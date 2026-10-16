@@ -27,20 +27,21 @@ using presentation::gs;
 
 void CharacterPoolDialog::_ready()
 {
-    presentation::run_guarded(*this, [&]
-    {
-        connect_controls();
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  connect_controls();
+                              });
 }
 
 void CharacterPoolDialog::connect_controls()
 {
     required_node<ItemList>(*this, "List")
-    .connect("item_selected", presentation::guarded(this, &CharacterPoolDialog::select));
+        .connect("item_selected", presentation::guarded(this, &CharacterPoolDialog::select));
     required_node<Button>(*this, "Add")
-    .connect("pressed", presentation::guarded(this, &CharacterPoolDialog::add));
+        .connect("pressed", presentation::guarded(this, &CharacterPoolDialog::add));
     required_node<Button>(*this, "Close")
-    .connect("pressed", presentation::guarded(this, &CharacterPoolDialog::close));
+        .connect("pressed", presentation::guarded(this, &CharacterPoolDialog::close));
     connect("close_requested", presentation::guarded(this, &CharacterPoolDialog::close));
 }
 
@@ -109,30 +110,31 @@ void CharacterPoolDialog::select(std::int64_t index)
     const auto &character = pool_[pool_index_];
     required_node<RichTextLabel>(*this, "Text").call("render", presentation::sheet_text(character));
     required_node<TextureRect>(*this, "Portrait")
-    .set_texture(portraits_->texture(character.appearance(), character.creation_data()));
+        .set_texture(portraits_->texture(character.appearance(), character.creation_data()));
     for (unsigned i = 1; i < 3; ++i)
     {
         const auto source = art_->icon(character.appearance(),
                                        i == 2 ? por::IconPose::action : por::IconPose::ready);
         required_node<TextureRect>(*this, i == 1 ? "Ready" : "Action")
-        .set_texture(presentation::image_texture(source));
+            .set_texture(presentation::image_texture(source));
     }
     const bool added =
         std::find(pool_added_.begin(), pool_added_.end(), pool_index_) != pool_added_.end();
     const auto &slots = campaign_().state().slots;
-    const bool full = std::none_of(slots.begin(), slots.begin() + 6, [](auto id)
-    {
-        return !id;
-    });
+    const bool full = std::none_of(slots.begin(), slots.begin() + 6,
+                                   [](auto id)
+                                   {
+                                       return !id;
+                                   });
     required_node<Button>(*this, "Add").set_disabled(added || full);
     const auto &c = character.creation_data().character_class;
     required_node<Label>(*this, "Status")
-    .set_text(i18n::text(
-                  added  ? N_("Already added. Use Rejoin party for a reserved member.")
-                  : full ? N_("All six PC positions are occupied.")
-                  : (c == "fighter" || c == "cleric" || c == "wizard")
-                  ? N_("Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding.")
-                  : N_("Starts with 3d6 x 10 gp to buy its gear. This class can explore and equip gear; its combat features are not implemented yet.")));
+        .set_text(i18n::text(
+            added  ? N_("Already added. Use Rejoin party for a reserved member.")
+            : full ? N_("All six PC positions are occupied.")
+            : (c == "fighter" || c == "cleric" || c == "wizard")
+                ? N_("Starts with 3d6 x 10 gp to buy its gear. Preview portraits and both combat poses before adding.")
+                : N_("Starts with 3d6 x 10 gp to buy its gear. This class can explore and equip gear; its combat features are not implemented yet.")));
 }
 
 void CharacterPoolDialog::add()

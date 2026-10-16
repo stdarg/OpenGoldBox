@@ -37,10 +37,11 @@ void EquipmentSpriteDemo::_ready()
     list->connect("item_selected", callable_mp(this, &EquipmentSpriteDemo::select));
     list->connect("item_activated", callable_mp(this, &EquipmentSpriteDemo::activate));
     get_node<Button>("Shield")->connect("pressed",
-            callable_mp(this, &EquipmentSpriteDemo::toggle_shield));
+                                        callable_mp(this, &EquipmentSpriteDemo::toggle_shield));
     for (bool equip : {true, false})
-        get_node<Button>(equip ? "Equip" : "Unequip")->connect("pressed",
-                callable_mp(this, &EquipmentSpriteDemo::change_equipment).bind(equip));
+        get_node<Button>(equip ? "Equip" : "Unequip")
+            ->connect("pressed",
+                      callable_mp(this, &EquipmentSpriteDemo::change_equipment).bind(equip));
     if (Engine::get_singleton()->is_editor_hint())
         return;
     try
@@ -68,10 +69,10 @@ void EquipmentSpriteDemo::_ready()
         appearance.combat_body = 24;
         Character character(*srd5::character_rules(), draft, appearance);
         campaign_ = std::make_unique<CampaignParty>(
-                        srd5::load(path(ProjectSettings::get_singleton()->globalize_path(
-                                            "res://../../data/rules/srd-5.2.1/combat.rules"))));
+            srd5::load(path(ProjectSettings::get_singleton()->globalize_path(
+                "res://../../data/rules/srd-5.2.1/combat.rules"))));
         std::set<int> seen;
-        const auto add = [&](int type, const std::string & name)
+        const auto add = [&](int type, const std::string &name)
         {
             if (type < 1 || !seen.insert(type).second)
                 return;
@@ -107,7 +108,7 @@ void EquipmentSpriteDemo::_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && key->is_ctrl_pressed() &&
-            key->get_keycode() == KEY_X)
+        key->get_keycode() == KEY_X)
         get_tree()->quit();
 }
 
@@ -187,23 +188,20 @@ void EquipmentSpriteDemo::refresh()
     get_node<Button>("Equip")->set_disabled(equipped);
     get_node<Button>("Unequip")->set_disabled(!equipped);
     const auto resolved = por::resolve_combat_appearance(member, catalog_);
-    for (bool action :
-            {
-                false, true
-            })
+    for (bool action : {false, true})
     {
         const auto pose = action ? por::IconPose::action : por::IconPose::ready;
         get_node<TextureRect>(action ? "Action" : "Ready")
-        ->set_texture(presentation::image_texture(resolved.icon(*art_, pose)));
+            ->set_texture(presentation::image_texture(resolved.icon(*art_, pose)));
     }
     set_meta("body", resolved.appearance.combat_body);
     set_meta("equipment_body", resolved.selection.body);
     get_node<Label>("Equipment")
-    ->set_text(
-        gs(resolved.selection.label + "\nCharacter body " +
-           std::to_string(resolved.appearance.combat_body) +
-           (resolved.selection.matched ? "" : " - No artwork assignment; showing unarmed.") +
-           "\nOriginal pixels, enlarged. Both poses use the same scale."));
+        ->set_text(
+            gs(resolved.selection.label + "\nCharacter body " +
+               std::to_string(resolved.appearance.combat_body) +
+               (resolved.selection.matched ? "" : " - No artwork assignment; showing unarmed.") +
+               "\nOriginal pixels, enlarged. Both poses use the same scale."));
 }
 
 void EquipmentSpriteDemo::change_equipment(bool equip)

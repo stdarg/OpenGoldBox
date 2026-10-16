@@ -21,7 +21,7 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
         {
             const auto p = (y * image.width + x) * 4;
             if (image.rgba[p + 3] < 128 ||
-                    std::max({image.rgba[p], image.rgba[p + 1], image.rgba[p + 2]}) < 40)
+                std::max({image.rgba[p], image.rgba[p + 1], image.rgba[p + 2]}) < 40)
                 continue;
             unsigned nearest = 0;
             int distance = 200000;
@@ -47,9 +47,9 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
     std::iota(order.begin(), order.end(), 0);
     std::stable_sort(order.begin(), order.end(),
                      [&](auto a, auto b)
-    {
-        return counts[a] > counts[b];
-    });
+                     {
+                         return counts[a] > counts[b];
+                     });
     return counts[order[alternate]] ? order[alternate] : order[0];
 }
 } // namespace
@@ -63,16 +63,14 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
     const auto classes = rules.choices(CreationField::character_class);
     const auto alignments = rules.choices(CreationField::alignment);
     // Every pool member has a distinct given name and surname.
-    const std::array<const char *, 48> first
-    {
+    const std::array<const char *, 48> first{
         "Arlen",  "Mira",  "Toren",  "Selene", "Borin",   "Lyra",   "Cedric",  "Nessa",
         "Dorian", "Elara", "Finn",   "Mara",   "Garrick", "Isolde", "Hadrian", "Jessa",
         "Ivor",   "Kaela", "Joren",  "Liora",  "Kael",    "Maeve",  "Lucan",   "Nadia",
         "Merric", "Orla",  "Nolan",  "Petra",  "Oren",    "Quinn",  "Perrin",  "Rhea",
         "Rolan",  "Sable", "Silas",  "Talia",  "Theron",  "Una",    "Ulric",   "Vera",
         "Valen",  "Wren",  "Willem", "Xara",   "Yoren",   "Ysolde", "Zev",     "Zinnia"};
-    const std::array<const char *, 48> surnames
-    {
+    const std::array<const char *, 48> surnames{
         "Ashfall",      "Songbrook",   "Dawnward",   "Greenbough",  "Ironvale",    "Stillwater",
         "Brightshield", "Thornpath",   "Nightwind",  "Emberheart",  "Duskwatch",   "Starweave",
         "Amberforge",   "Bramblewood", "Cinderhill", "Deepwell",    "Eaglecrest",  "Frostmere",
@@ -103,15 +101,13 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             {
                 const int score = 18 - static_cast<int>(rank) - (variant == 3 && rank == 0 ? 1 : 0);
                 // Authored, valid 4d6-drop-lowest provenance for each strong score.
-                d.rolls[d.assignment[priority[rank]]] =
-                {
-                    {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3
-                };
+                d.rolls[d.assignment[priority[rank]]] = {
+                    {6, score >= 17 ? 6 : 5, score - 6 - (score >= 17 ? 6 : 5), 1}, 3};
             }
             d.background = primary == Ability::strength       ? "soldier"
                            : primary == Ability::dexterity    ? "criminal"
                            : primary == Ability::intelligence ? "sage"
-                           : "acolyte";
+                                                              : "acolyte";
             const auto bonuses = rules.adjustments(d.background);
             for (unsigned a = 0; a < bonuses.size(); ++a)
                 if (bonuses[a].bonuses[primary] == 2)
@@ -127,10 +123,10 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             {
                 const auto current = rules.training_options(d);
                 const auto group = std::find_if(current.begin(), current.end(),
-                                                [&](const auto & g)
-                {
-                    return g.id == requested.id;
-                });
+                                                [&](const auto &g)
+                                                {
+                                                    return g.id == requested.id;
+                                                });
                 if (group == current.end() || group->options.size() < group->count)
                     throw std::runtime_error("Incomplete preset training options");
                 for (unsigned n = 0; n < group->count; ++n)
@@ -154,17 +150,18 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                 d.spells = SpellChoices{};
                 // Two groups can offer the same spell (a Sage Wizard's spellbook
                 // and Magic Initiate), but a spell is learned only once.
-                const auto chosen = [&](const std::string & id)
+                const auto chosen = [&](const std::string &id)
                 {
-                    if (d.cantrips && std::find(d.cantrips->begin(), d.cantrips->end(), id) !=
-                            d.cantrips->end())
+                    if (d.cantrips &&
+                        std::find(d.cantrips->begin(), d.cantrips->end(), id) != d.cantrips->end())
                         return true;
                     return std::any_of(d.spells->learning.begin(), d.spells->learning.end(),
-                                       [&](const auto & picks)
-                    {
-                        return std::find(picks.second.begin(), picks.second.end(), id) !=
-                               picks.second.end();
-                    });
+                                       [&](const auto &picks)
+                                       {
+                                           return std::find(picks.second.begin(),
+                                                            picks.second.end(),
+                                                            id) != picks.second.end();
+                                       });
                 };
                 for (const auto &group : spell_options.learning)
                     for (const auto &option : group.options)
@@ -196,15 +193,13 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             appearance.combat_body = (c * 2 + variant * 5) % 32;
             appearance.icon_size = d.race == "gnome"     ? por::IconSize::small
                                    : d.race == "goliath" ? por::IconSize::large
-                                   : por::IconSize::regular;
+                                                         : por::IconSize::regular;
             const auto portrait = art.portrait(appearance);
             const auto cloth = dominant(portrait, 40, portrait.height),
                        trim = dominant(portrait, 40, portrait.height, 1),
                        skin = dominant(portrait, 14, 38);
-            appearance.colors =
-            {
-                {{7, cloth, skin, trim, cloth, trim}, {15, trim, skin, cloth, trim, cloth}}
-            };
+            appearance.colors = {
+                {{7, cloth, skin, trim, cloth, trim}, {15, trim, skin, cloth, trim, cloth}}};
             art.validate(appearance);
             result.emplace_back(rules, std::move(d), std::move(appearance));
         }
@@ -219,8 +214,8 @@ namespace item_type
 {
 constexpr std::uint8_t none = 0, battleaxe = 1, quarterstaff = 6, dagger = 8, mace = 23,
                        longsword = 36, shortsword = 37, longbow = 41, shortbow = 42,
-                       light_crossbow = 46, bolt = 28, arrow = 73, leather = 50,
-                       chain_mail = 55, shield = 59;
+                       light_crossbow = 46, bolt = 28, arrow = 73, leather = 50, chain_mail = 55,
+                       shield = 59;
 }
 
 struct StartingKit
@@ -235,8 +230,7 @@ struct StartingKit
 StartingKit starting_kit(std::string_view character_class)
 {
     using namespace item_type;
-    static constexpr std::array<std::pair<std::string_view, StartingKit>, 12> kits
-    {{
+    static constexpr std::array<std::pair<std::string_view, StartingKit>, 12> kits{{
         {"barbarian", {battleaxe, none, true, longbow, arrow}},
         {"bard", {dagger, leather, false, shortbow, arrow}},
         {"cleric", {mace, leather, true, light_crossbow, bolt}},
@@ -250,10 +244,11 @@ StartingKit starting_kit(std::string_view character_class)
         {"warlock", {quarterstaff, leather, false, light_crossbow, bolt}},
         {"wizard", {quarterstaff, none, false, light_crossbow, bolt}},
     }};
-    const auto kit = std::find_if(kits.begin(), kits.end(), [&](const auto &entry)
-    {
-        return entry.first == character_class;
-    });
+    const auto kit = std::find_if(kits.begin(), kits.end(),
+                                  [&](const auto &entry)
+                                  {
+                                      return entry.first == character_class;
+                                  });
     if (kit == kits.end())
         throw std::runtime_error("No starting kit for class " + std::string(character_class));
     return kit->second;
@@ -262,8 +257,7 @@ StartingKit starting_kit(std::string_view character_class)
 
 void outfit_pool_member(CampaignParty &party, MemberId member)
 {
-    const auto kit =
-        starting_kit(party.member(member).character.creation_data().character_class);
+    const auto kit = starting_kit(party.member(member).character.creation_data().character_class);
     const auto add = [&](std::uint8_t type, std::uint8_t quantity, bool equip)
     {
         if (type == item_type::none)

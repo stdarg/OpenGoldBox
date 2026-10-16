@@ -49,9 +49,8 @@ std::unique_ptr<CombatSession> fight(const RulesModule &rules, std::string_view 
                                      bool beside = false)
 {
     Encounter e{{8, 4, std::vector<Terrain>(32)},
-        {   {1, "runner", "Runner", Side::party, {0, 1}},
-            {9, std::string(enemy), "Enemy", Side::opposition, {beside ? 1 : 7, 1}}
-        }};
+                {{1, "runner", "Runner", Side::party, {0, 1}},
+                 {9, std::string(enemy), "Enemy", Side::opposition, {beside ? 1 : 7, 1}}}};
     if (second_member)
         e.participants.push_back({2, "runner", "Stayer", Side::party, {3, 3}});
     return rules.create(std::move(e), seed);
@@ -79,18 +78,20 @@ void turn_of(CombatSession &c, EntityId id)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 const CombatantView &unit(const Snapshot &s, EntityId id)
 {
-    return *std::find_if(s.combatants.begin(), s.combatants.end(), [&](const auto & u)
-    {
-        return u.id == id;
-    });
+    return *std::find_if(s.combatants.begin(), s.combatants.end(),
+                         [&](const auto &u)
+                         {
+                             return u.id == id;
+                         });
 }
 
 void faster_party_gets_away()
@@ -138,7 +139,8 @@ void even_speed_is_a_coin_toss()
         else if (c->snapshot().outcome == Outcome::fled)
             escaped = true;
     }
-    check(stayed && escaped, "As fast as the fastest enemy, a member gets away about half the time");
+    check(stayed && escaped,
+          "As fast as the fastest enemy, a member gets away about half the time");
 }
 
 void fight_goes_on_without_one_who_fled()
@@ -168,6 +170,7 @@ void leaving_reach_provokes()
     check(c->submit(*offered(*c, "flee", 1)) && c->snapshot().reaction_pending,
           "Running off beside an enemy provokes an opportunity attack");
 }
+
 // The Flee button's policy: a member fast enough runs for the nearest edge,
 // Dashing when it must, and steps off; a slower one fights on as the demo AI
 // would.
@@ -176,9 +179,8 @@ void flee_policy()
     const auto rules = module();
     {
         Encounter e{{16, 4, std::vector<Terrain>(64)},
-            {   {1, "runner", "Runner", Side::party, {8, 1}},
-                {9, "slow", "Enemy", Side::opposition, {15, 3}}
-            }};
+                    {{1, "runner", "Runner", Side::party, {8, 1}},
+                     {9, "slow", "Enemy", Side::opposition, {15, 3}}}};
         auto c = rules->create(std::move(e), 1);
         for (unsigned n = 0; n < 200 && c->snapshot().outcome == Outcome::ongoing; ++n)
             check(c->submit(choose_flee_command(*c)), "The flee policy's command is legal");
@@ -189,9 +191,10 @@ void flee_policy()
     turn_of(*c, 1);
     const auto policy = choose_flee_command(*c), demo = choose_demo_command(*c);
     check(policy.verb == demo.verb && policy.target == demo.target &&
-          policy.destination == demo.destination,
+              policy.destination == demo.destination,
           "A member too slow to flee fights on as the demo AI would");
 }
+
 // Monster morale, the original's rule: once its side has lost more of its Hit
 // Points than the encounter's morale allows, a creature flees in panic when no
 // opponent is faster, surrenders when one is and it is not witless, and fights
@@ -208,9 +211,8 @@ MoraleFight morale_fight(const RulesModule &rules, std::string_view enemy, unsig
     for (std::uint64_t seed = 1; seed < 60; ++seed)
     {
         Encounter e{{8, 4, std::vector<Terrain>(32)},
-            {   {1, "runner", "Runner", Side::party, {0, 1}},
-                {9, std::string(enemy), "Enemy", Side::opposition, {1, 1}}
-            }};
+                    {{1, "runner", "Runner", Side::party, {0, 1}},
+                     {9, std::string(enemy), "Enemy", Side::opposition, {1, 1}}}};
         e.participants[1].morale = own;
         e.participants[1].intelligence = intelligence;
         e.morale = morale;
@@ -236,9 +238,8 @@ void cornered_monster_fights()
     for (std::uint64_t seed = 1; seed < 80; ++seed)
     {
         Encounter e{{8, 4, std::vector<Terrain>(32)},
-            {   {1, "runner", "Runner", Side::party, {0, 1}},
-                {9, "even", "Enemy", Side::opposition, {1, 1}}
-            }};
+                    {{1, "runner", "Runner", Side::party, {0, 1}},
+                     {9, "even", "Enemy", Side::opposition, {1, 1}}}};
         e.morale = 1;
         auto c = rules->create(std::move(e), seed);
         turn_of(*c, 1);
@@ -249,13 +250,16 @@ void cornered_monster_fights()
         for (unsigned n = 0; n < 80 && c->snapshot().outcome == Outcome::ongoing; ++n)
             check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
         const auto log = c->snapshot().log();
-        const auto stayed = std::find(log.begin(), log.end(), "Enemy cannot get away and must stay.");
+        const auto stayed =
+            std::find(log.begin(), log.end(), "Enemy cannot get away and must stay.");
         if (stayed == log.end())
             continue;
-        check(std::any_of(stayed, log.end(), [](const auto & line)
-        {
-            return line.starts_with("Enemy -> Runner");
-        }), "Cornered, the broken creature attacks again");
+        check(std::any_of(stayed, log.end(),
+                          [](const auto &line)
+                          {
+                              return line.starts_with("Enemy -> Runner");
+                          }),
+              "Cornered, the broken creature attacks again");
         check(!unit(c->snapshot(), 9).panicked, "Cornered, it is no longer fleeing in panic");
         return;
     }
@@ -275,9 +279,8 @@ void cornered_at_once()
         for (int y = 0; y < 8; ++y)
             terrain[static_cast<std::size_t>(y * 20 + 10)] = Terrain::obstacle;
         Encounter e{{20, 9, std::move(terrain)},
-            {   {1, "runner", "Runner", Side::party, {1, 1}},
-                {9, "even", "Enemy", Side::opposition, {18, 1}, {}, VitalState{10}}
-            }};
+                    {{1, "runner", "Runner", Side::party, {1, 1}},
+                     {9, "even", "Enemy", Side::opposition, {18, 1}, {}, VitalState{10}}}};
         e.morale = 1;
         auto c = rules->create(std::move(e), seed);
         for (unsigned n = 0; n < 40 && c->snapshot().outcome == Outcome::ongoing; ++n)
@@ -290,13 +293,14 @@ void cornered_at_once()
             const auto s = c->snapshot();
             const auto &enemy = unit(s, 9);
             check(!enemy.panicked && std::none_of(enemy.conditions.begin(), enemy.conditions.end(),
-                                                  [](const auto & condition)
-            {
-                return condition.source == "Fleeing in panic";
-            }), "Failing to get away, it is no longer fleeing in panic");
+                                                  [](const auto &condition)
+                                                  {
+                                                      return condition.source == "Fleeing in panic";
+                                                  }),
+                  "Failing to get away, it is no longer fleeing in panic");
             const auto failed_at = s.log().size();
             for (auto now = c->snapshot(); now.actor == 9 && now.outcome == Outcome::ongoing;
-                    now = c->snapshot())
+                 now = c->snapshot())
                 check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
             const auto log = c->snapshot().log();
             check(std::find(log.begin() + static_cast<std::ptrdiff_t>(failed_at), log.end(),
@@ -316,10 +320,12 @@ void monsters_break()
         check(logged(*c, "Enemy flees in panic.") && unit(c->snapshot(), 9).panicked,
               "A wounded side below its morale flees when no opponent is faster");
         const auto conditions = unit(c->snapshot(), 9).conditions;
-        check(std::any_of(conditions.begin(), conditions.end(), [](const auto & condition)
-        {
-            return condition.source == "Fleeing in panic";
-        }), "A panicked creature shows it among its conditions");
+        check(std::any_of(conditions.begin(), conditions.end(),
+                          [](const auto &condition)
+                          {
+                              return condition.source == "Fleeing in panic";
+                          }),
+              "A panicked creature shows it among its conditions");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A panicked creature survives a checkpoint");
         for (unsigned n = 0; n < 60 && c->snapshot().outcome == Outcome::ongoing; ++n)
@@ -331,7 +337,7 @@ void monsters_break()
         auto [c, wounded] = morale_fight(*rules, "slow", 1);
         const auto s = c->snapshot();
         check(logged(*c, "Enemy surrenders.") && s.outcome == Outcome::victory &&
-              unit(s, 9).surrendered && unit(s, 9).hit_points == 0,
+                  unit(s, 9).surrendered && unit(s, 9).hit_points == 0,
               "Outpaced, a broken creature surrenders and counts as defeated");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A surrender survives a checkpoint");
@@ -339,7 +345,7 @@ void monsters_break()
     {
         auto [c, wounded] = morale_fight(*rules, "slow", 1, 0, 3);
         check(!logged(*c, "surrenders") && !logged(*c, "panic") &&
-              c->snapshot().outcome == Outcome::ongoing,
+                  c->snapshot().outcome == Outcome::ongoing,
               "A witless creature that cannot run fights on");
     }
     {
@@ -348,7 +354,8 @@ void monsters_break()
     }
     {
         auto [c, wounded] = morale_fight(*rules, "fast", 1, 100);
-        check(!logged(*c, "panic"), "A creature's own morale holds it while its wounds stay within it");
+        check(!logged(*c, "panic"),
+              "A creature's own morale holds it while its wounds stay within it");
     }
 }
 } // namespace

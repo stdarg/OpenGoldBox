@@ -114,15 +114,14 @@ auto custom(std::string affinity = {})
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {3, 1},
-std::vector<std::string> gear = {}, Side side = Side::opposition,
-std::optional<VitalState> vital = {})
+            std::vector<std::string> gear = {}, Side side = Side::opposition,
+            std::optional<VitalState> vital = {})
 {
     auto profile = rules.character_profile(h.sheet(), gear);
     auto c = rules.create({{28, 8, std::vector<Terrain>(224)},
-        {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
-            {2, "target", "Target", side, target, {}, vital}
-        }},
-    seed);
+                           {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile.data},
+                            {2, "target", "Target", side, target, {}, vital}}},
+                          seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
         check(c->submit(command(*c, "end")), "Reach caster");
@@ -140,7 +139,7 @@ fx::EffectState effects(const VitalState &state)
 }
 
 const std::vector<std::string> choices{"fire_bolt", "poison_spray", "ray_of_frost",
-    "shocking_grasp"};
+                                       "shocking_grasp"};
 
 Character hero(std::vector<std::string> spells = choices)
 {
@@ -166,28 +165,27 @@ void access()
     for (const auto &spell : access.cantrips)
         check(spell.source_id == "class:sorcerer:spellcasting" && spell.acquired_level == 1,
               "Real source and acquisition level");
-    for (const auto &bad : std::vector<std::vector<std::string>> {{"fire_bolt", "fire_bolt"},
-    {"eldritch_blast"},
-    {"sacred_flame"},
-    {"magic_missile"},
-    {"unknown"}
-})
+    for (const auto &bad : std::vector<std::vector<std::string>>{{"fire_bolt", "fire_bolt"},
+                                                                 {"eldritch_blast"},
+                                                                 {"sacred_flame"},
+                                                                 {"magic_missile"},
+                                                                 {"unknown"}})
     {
         d.cantrips = bad;
         rejects(
             [&]
-        {
-            (void)creation->evaluate(d, NameRequirement::required);
-        });
+            {
+                (void)creation->evaluate(d, NameRequirement::required);
+            });
     }
     for (unsigned mode = 0; mode < 4; ++mode)
     {
         auto bad = h.sheet();
         auto &g = *std::find_if(bad.grants.begin(), bad.grants.end(),
-                                [](const auto & g)
-        {
-            return g.id == "spell:fire_bolt";
-        });
+                                [](const auto &g)
+                                {
+                                    return g.id == "spell:fire_bolt";
+                                });
         if (mode == 0)
             g.source_id = "class:wizard:spellcasting";
         if (mode == 1)
@@ -198,9 +196,9 @@ void access()
             bad.grants.push_back(g);
         rejects(
             [&]
-        {
-            (void)rules->character_profile(bad, {});
-        });
+            {
+                (void)rules->character_profile(bad, {});
+            });
     }
     auto profile = rules->character_profile(h.sheet(), {}).data;
     check(profile.starts_with("PC43 1 2 4 fire_bolt poison_spray ray_of_frost shocking_grasp "),
@@ -208,13 +206,12 @@ void access()
     profile.replace(0, 4, "PC28");
     rejects(
         [&]
-    {
-        (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
-                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
-            }},
-        13);
-    });
+        {
+            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
+                                 {{1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                                  {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
+                                13);
+        });
     auto absent = battle(*custom(), hero({}));
     for (const auto &spell : choices)
         check(!has(*absent, spell), "Unselected spell unavailable");
@@ -243,20 +240,15 @@ void access()
 void rolls()
 {
     for (const auto &spell : choices)
-        for (unsigned seed :
-                {
-                    0u, 3u, 13u, 40u
-                })
-            for (const std::string defense :
-                    {"", "resistance", "vulnerability", "immunity"
-                    })
+        for (unsigned seed : {0u, 3u, 13u, 40u})
+            for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
             {
                 const std::string type = spell == "fire_bolt"      ? "fire"
                                          : spell == "poison_spray" ? "poison"
                                          : spell == "ray_of_frost" ? "cold"
-                                         : "lightning";
+                                                                   : "lightning";
                 auto rules = custom(
-                                 defense.empty() ? "" : "affinity target test " + defense + " " + type + "\n");
+                    defense.empty() ? "" : "affinity target test " + defense + " " + type + "\n");
                 auto c = battle(*rules, hero(), seed,
                                 spell == "shocking_grasp" ? Cell{2, 1} : Cell{3, 1});
                 auto copy = rules->restore(c->save());
@@ -271,31 +263,31 @@ void rolls()
                     : seed == 0  ? ((spell == "ray_of_frost" || spell == "shocking_grasp") ? 9 : 13)
                     : seed == 13 ? ((spell == "ray_of_frost" || spell == "shocking_grasp") ? 4 : 8)
                     : spell == "poison_spray" ? 12
-                    : 8;
+                                              : 8;
                 const int expected = defense == "immunity"        ? 0
                                      : defense == "resistance"    ? raw / 2
                                      : defense == "vulnerability" ? raw * 2
-                                     : raw;
+                                                                  : raw;
                 check(unit(*c, 2).hit_points == 1000 - expected,
                       "Independent typed damage and critical/miss values");
                 check(arg(attack(*c), "bonus") == "6", "Charisma 18 rather than Intelligence 15");
                 check(rng(*c) == random + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
-                        : seed == 40 ? 1u
-                        : 2u),
+                                                                   : seed == 40 ? 1u
+                                                                                : 2u),
                       "Exact random draw budget");
                 auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
-                      after.movement_feet == before.movement_feet &&
-                      after.persistent == before.persistent,
+                          after.movement_feet == before.movement_feet &&
+                          after.persistent == before.persistent,
                       "Only Magic action spent");
                 if (spell == "ray_of_frost")
                     check(fx::speed_penalty(effects(unit(*c, 2).persistent)) ==
-                          (seed == 40 ? 0 : 10),
+                              (seed == 40 ? 0 : 10),
                           "Hit slows even through Cold immunity");
                 if (spell == "shocking_grasp")
                     check(
                         unit(*c, 2).reaction && fx::opportunity_blocked(effects(
-                                    unit(*c, 2).persistent)) == (seed != 40),
+                                                    unit(*c, 2).persistent)) == (seed != 40),
                         "Shocking Grasp suppresses opportunities through immunity without spending Reaction");
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Repeated cast rejects atomically");
@@ -305,13 +297,13 @@ void rolls()
 void timing()
 {
     auto rules = custom();
-    for (const auto &spell : std::vector<std::string> {"ray_of_frost", "shocking_grasp"})
+    for (const auto &spell : std::vector<std::string>{"ray_of_frost", "shocking_grasp"})
     {
         auto c = battle(*rules, hero(), 13, {2, 1});
         check(c->submit(command(*c, spell, 2)), "Hit applies timed effect");
         auto copy = rules->restore(c->save());
         check(c->submit(command(*c, "end")) && copy->submit(command(*copy, "end")) &&
-              c->save() == copy->save(),
+                  c->save() == copy->save(),
               "Target-turn effect continuation");
         if (spell == "shocking_grasp")
             check(!fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
@@ -335,11 +327,8 @@ void eligibility()
         const int range = spell == "fire_bolt"      ? 120
                           : spell == "poison_spray" ? 30
                           : spell == "ray_of_frost" ? 60
-                          : 5;
-        for (int feet :
-                {
-                    range, range + 5
-                })
+                                                    : 5;
+        for (int feet : {range, range + 5})
         {
             auto c = battle(*rules, hero(), 13, {1 + feet / 5, 1});
             check(has(*c, spell, 2) == (feet == range), "Source-specific spell range boundary");
@@ -357,13 +346,13 @@ void eligibility()
             auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
             auto saved = c->save();
             check(!has(*c, spell) && !c->submit({c->snapshot().revision, 1, 2, spell}) &&
-                  c->save() == saved,
+                      c->save() == saved,
                   "Untrained armor blocks casting");
         }
         auto c = battle(*rules, hero(), 13, {2, 1});
         check(c->submit(command(*c, spell, 2)), "Adjacent cast allowed");
         check(arg(attack(*c), "disadvantage") ==
-              (spell == "shocking_grasp" ? "" : " (disadvantage)"),
+                  (spell == "shocking_grasp" ? "" : " (disadvantage)"),
               "Only ranged spells suffer adjacent hostile Disadvantage");
     }
 }
@@ -372,16 +361,13 @@ void campaign()
 {
     auto rules = module();
     for (const auto &spell : choices)
-        for (bool npc :
-                {
-                    false, true
-                })
+        for (bool npc : {false, true})
         {
             CampaignParty party(module());
             auto h = hero();
             h.add_item({.definition_id = "quarterstaff", .name = "Quarterstaff"});
             const auto id = npc ? party.recruit("fixture:sorcerer-cantrip", std::move(h))
-                            : party.add_pc(std::move(h));
+                                : party.add_pc(std::move(h));
             party.equip(id, 1);
             auto state = party.checkpoint();
             state.roster[0].vitals.hit_points -= 2;
@@ -397,21 +383,18 @@ void campaign()
             party.apply_combat(c->snapshot());
             party.end_combat();
             check(party.member(id).vitals == unit(*c, id).persistent &&
-                  party.state().wealth == state.wealth,
+                      party.state().wealth == state.wealth,
                   "Handoff preserves actual damage/effects and wealth");
             auto saved = encode_campaign(party, nullptr, "sorcerer-cantrip");
             CampaignParty restored(module());
             restored.restore(decode_campaign(saved, *srd5::character_rules(), *rules,
                                              "sorcerer-cantrip", nullptr)
-                             .party);
+                                 .party);
             check(encode_campaign(restored, nullptr, "sorcerer-cantrip") == saved &&
-                  restored.member(id).character.creation_data().cantrips ==
-                  party.member(id).character.creation_data().cantrips,
+                      restored.member(id).character.creation_data().cantrips ==
+                          party.member(id).character.creation_data().cantrips,
                   "Exact campaign reconstruction retains explicit choices");
-            for (auto kind :
-                    {
-                        RestKind::short_rest, RestKind::long_rest
-                    })
+            for (auto kind : {RestKind::short_rest, RestKind::long_rest})
             {
                 check(bool(restored.rest(kind)), "Camp/inn rest");
                 if (restored.state().short_rest)
@@ -420,10 +403,10 @@ void campaign()
                 CampaignParty again(module());
                 again.restore(decode_campaign(saved, *srd5::character_rules(), *rules,
                                               "sorcerer-cantrip", nullptr)
-                              .party);
+                                  .party);
                 check(encode_campaign(again, nullptr, "sorcerer-cantrip") == saved &&
-                      rules->spell_access(again.member(id).character.sheet()).cantrips.size() ==
-                      4,
+                          rules->spell_access(again.member(id).character.sheet()).cantrips.size() ==
+                              4,
                       "Rest save/reload preserves all learned cantrips");
             }
         }
@@ -434,20 +417,18 @@ void fixtures()
     auto rules = module();
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "sorcerer-fixtures";
     std::filesystem::create_directories(path);
-    for (const std::string kind :
-            {"known", "blocked", "unknown"
-            })
+    for (const std::string kind : {"known", "blocked", "unknown"})
     {
-        auto h = hero(kind == "unknown" ? std::vector<std::string> {} : choices);
-        auto profile = rules->character_profile(
-                           h.sheet(), kind == "blocked" ? std::vector<std::string> {"plate"}
-                           : std::vector<std::string> {});
-        auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile.data},
-                {2, "vanguard", "Ally", Side::party, {2, 1}},
-                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
-            }},
-        2);
+        auto h = hero(kind == "unknown" ? std::vector<std::string>{} : choices);
+        auto profile = rules->character_profile(h.sheet(), kind == "blocked"
+                                                               ? std::vector<std::string>{"plate"}
+                                                               : std::vector<std::string>{});
+        auto c = rules->create(
+            {{12, 9, std::vector<Terrain>(108)},
+             {{1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile.data},
+              {2, "vanguard", "Ally", Side::party, {2, 1}},
+              {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
+            2);
         // Untrained armor's initiative Disadvantage may put the caster later.
         for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
             for (const auto &end : c->legal_commands())

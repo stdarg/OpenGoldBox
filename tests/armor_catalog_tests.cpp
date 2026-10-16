@@ -57,7 +57,7 @@ std::vector<Expected> expectations()
         std::istringstream fields(row);
         Expected e;
         fields >> e.key >> e.category >> e.ac >> e.strength >> e.stealth >> e.weight >> e.cost >>
-               e.don >> e.doff;
+            e.don >> e.doff;
         check(bool(fields), "Complete independent source row");
         result.push_back(e);
     }
@@ -84,11 +84,9 @@ Character hero(std::string klass = "fighter", int strength = 15, int dexterity =
         return AbilityRoll{{score - 12, 6, 6, 1}, 3};
     };
     // Low Strength uses three ordinary dice; Dexterity 3 is the negative-modifier boundary.
-d.rolls[0] = strength < 13 ? AbilityRoll{{4, 4, strength - 8, 1}, 3} :
-    roll(strength);
+    d.rolls[0] = strength < 13 ? AbilityRoll{{4, 4, strength - 8, 1}, 3} : roll(strength);
     d.rolls[1] = dexterity < 13 && dexterity != 3 ? AbilityRoll{{4, 4, dexterity - 8, 1}, 3}
-:
-    roll(dexterity);
+                                                  : roll(dexterity);
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -134,8 +132,7 @@ Message attack(const CombatSession &c)
 
 void definitions()
 {
-    const std::map<std::string, catalog::ArmorCategory> categories
-    {
+    const std::map<std::string, catalog::ArmorCategory> categories{
         {"light", catalog::ArmorCategory::light},
         {"medium", catalog::ArmorCategory::medium},
         {"heavy", catalog::ArmorCategory::heavy},
@@ -149,13 +146,13 @@ void definitions()
         const auto *a = catalog::armor(e.key);
         check(a && keys.insert(e.key).second, "Every source entry has exactly one definition");
         check(a->category == categories.at(e.category) && a->base_ac == e.ac &&
-              a->strength == e.strength && a->stealth_disadvantage == e.stealth,
+                  a->strength == e.strength && a->stealth_disadvantage == e.stealth,
               "Armor mechanics match independent table");
         check(a->weight_pounds == e.weight && a->cost_cp == e.cost && a->don_seconds == e.don &&
-              a->doff_seconds == e.doff,
+                  a->doff_seconds == e.doff,
               "Weight, price and timing match independent table");
         check(!a->label.empty() && a->label.front() >= 'A' && a->label.front() <= 'Z' &&
-              a->label.find('_') == std::string_view::npos,
+                  a->label.find('_') == std::string_view::npos,
               "Display name is human-readable");
     }
 }
@@ -165,19 +162,19 @@ void all_classes()
     auto rules = module(true);
     // Independent starting traits from SRD pp.28,31,36,41,47,49,53,57,61,64,70,77.
     const std::map<std::string, std::string> training{{"barbarian", "light medium shield"},
-        {"bard", "light"},
-        {"cleric", "light medium shield"},
-        {"druid", "light shield"},
-        {"fighter", "light medium heavy shield"},
-        {"monk", ""},
-        {"paladin", "light medium heavy shield"},
-        {"ranger", "light medium shield"},
-        {"rogue", "light"},
-        {"sorcerer", ""},
-        {"warlock", "light"},
-        {"wizard", ""}};
+                                                      {"bard", "light"},
+                                                      {"cleric", "light medium shield"},
+                                                      {"druid", "light shield"},
+                                                      {"fighter", "light medium heavy shield"},
+                                                      {"monk", ""},
+                                                      {"paladin", "light medium heavy shield"},
+                                                      {"ranger", "light medium shield"},
+                                                      {"rogue", "light"},
+                                                      {"sorcerer", ""},
+                                                      {"warlock", "light"},
+                                                      {"wizard", ""}};
     check(srd5::character_rules()->choices(CreationField::character_class).size() ==
-          training.size(),
+              training.size(),
           "All twelve classes covered");
     for (const auto &[klass, trained] : training)
     {
@@ -186,20 +183,20 @@ void all_classes()
         for (const auto &e : expectations())
         {
             const bool proficient = trained.find(e.category) != std::string::npos,
-                  shield = e.category == "shield", penalty = !shield && !proficient;
+                       shield = e.category == "shield", penalty = !shield && !proficient;
             const std::array<std::string, 2> gear{e.key, "dagger"};
             const auto profile = rules->character_profile(h.sheet(), gear);
             const int unarmored_con =
                 klass == "barbarian" ? h.sheet().modifiers[Ability::constitution] : 0;
             const int ac = shield ? 13 + unarmored_con + (proficient ? 2 : 0)
-                           : e.ac + (e.category == "light"    ? 3
-                                     : e.category == "medium" ? 2
-                                     : 0);
+                                  : e.ac + (e.category == "light"    ? 3
+                                            : e.category == "medium" ? 2
+                                                                     : 0);
             check(
                 profile.armor_class == ac && profile.strength_dexterity_disadvantage == penalty,
                 "Every class/armor uses correct AC and training, including Druid's Light-only starting training");
             check(rules->equipment_info(e.key).slot ==
-                  (shield ? EquipmentSlot::shield : EquipmentSlot::armor),
+                      (shield ? EquipmentSlot::shield : EquipmentSlot::armor),
                   "All entries equip through the shared equipment contract");
             for (unsigned index = 0; index < 6; ++index)
             {
@@ -209,36 +206,35 @@ void all_classes()
                 const bool physical = ability == Ability::strength || ability == Ability::dexterity;
                 check(
                     plain.disadvantage == (penalty && physical) &&
-                    stealth.disadvantage ==
-                    ((penalty && physical) || (e.stealth && ability == Ability::dexterity)),
+                        stealth.disadvantage ==
+                            ((penalty && physical) || (e.stealth && ability == Ability::dexterity)),
                     "Only applicable ability checks receive armor penalties; alternate-ability Stealth is distinct");
             }
-            auto c = rules->create({{4, 4, std::vector<Terrain>(16)},
-                {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
-                    {2, "target", "Target", Side::opposition, {2, 1}}
-                }},
-            2);
+            auto c = rules->create(
+                {{4, 4, std::vector<Terrain>(16)},
+                 {{1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+                  {2, "target", "Target", Side::opposition, {2, 1}}}},
+                2);
             check(c->snapshot().actor == 1 && unit(*c).initiative == (penalty ? 10 : 14),
                   "Actual initiative uses seed-2 rolls 11/7 once for untrained armor");
             if (klass == "wizard")
-                check(
-                    has(*c, "fire_bolt") == !penalty && has(*c, "magic_missile") == !penalty,
-                    "Untrained armor blocks casting; a dagger and shield do not (CLASS-11)");
+                check(has(*c, "fire_bolt") == !penalty && has(*c, "magic_missile") == !penalty,
+                      "Untrained armor blocks casting; a dagger and shield do not (CLASS-11)");
             auto copy = rules->restore(c->save());
             const auto before = unit(*c);
             const auto ticket = command(*c, "melee");
             check(c->submit(ticket) && copy->submit(ticket) && c->save() == copy->save(),
                   "All class/armor combinations preserve exact checkpoint continuation");
             check(argument(attack(*c), "roll") == std::to_string(penalty ? 10 : 12) &&
-                  argument(attack(*c), "disadvantage") == (penalty ? " (disadvantage)" : ""),
+                      argument(attack(*c), "disadvantage") == (penalty ? " (disadvantage)" : ""),
                   "Actual melee attack applies the armor penalty, independent seed oracle");
             check(
                 unit(*c, 2).hit_points == 1000 - (penalty ? 7 : 4),
                 "Finesse dagger damage follows actual dice without an invented armor damage penalty");
             check(!unit(*c).action && unit(*c).bonus_action == before.bonus_action &&
-                  unit(*c).reaction == before.reaction &&
-                  unit(*c).movement_feet == before.movement_feet &&
-                  unit(*c).persistent == before.persistent,
+                      unit(*c).reaction == before.reaction &&
+                      unit(*c).movement_feet == before.movement_feet &&
+                      unit(*c).persistent == before.persistent,
                   "Attacks retain unrelated resources and movement");
             const auto saved = c->save();
             check(!c->submit(ticket) && c->save() == saved, "Stale armor attack is atomic");
@@ -252,10 +248,7 @@ void boundaries()
     for (const auto &e : expectations())
         if (e.category != "shield")
         {
-            for (int dex :
-                    {
-                        3, 10, 14, 18
-                    })
+            for (int dex : {3, 10, 14, 18})
             {
                 const auto h = hero("fighter", 15, dex);
                 const int modifier = dex == 3 ? -4 : dex == 10 ? 0 : dex == 14 ? 2 : 4;
@@ -263,77 +256,72 @@ void boundaries()
                       "Dexterity boundary fixture");
                 const int added = e.category == "light"    ? modifier
                                   : e.category == "medium" ? std::min(2, modifier)
-                                  : 0;
+                                                           : 0;
                 check(
                     rules->character_profile(h.sheet(), std::array{e.key}).armor_class ==
-                    e.ac + added,
+                        e.ac + added,
                     "Light/full Dexterity, Medium capped positive/uncapped negative, Heavy ignores both");
             }
-            for (const auto race :
-                    {"human", "dwarf", "goliath"
-                    })
-                for (int strength :
-                        {
-                            12, 13, 14, 15
-                        })
+            for (const auto race : {"human", "dwarf", "goliath"})
+                for (int strength : {12, 13, 14, 15})
                 {
                     const auto h = hero("fighter", strength, 16, race);
                     const int speed = std::string_view(race) == "goliath" ? 35 : 30;
                     check(rules->character_profile(h.sheet(), std::array{e.key}).movement_feet ==
-                          speed - (strength < e.strength ? 10 : 0),
+                              speed - (strength < e.strength ? 10 : 0),
                           "Strength thresholds apply once to every species, including Dwarf");
                 }
             const auto h = hero();
             const std::array<std::string, 2> guarded{e.key, "shield"};
             check(rules->character_profile(h.sheet(), guarded).armor_class ==
-                  e.ac +
-                  (e.category == "light"    ? 3
-                   : e.category == "medium" ? 2
-                   : 0) +
-                  2,
+                      e.ac +
+                          (e.category == "light"    ? 3
+                           : e.category == "medium" ? 2
+                                                    : 0) +
+                          2,
                   "Trained shield adds to each armor AC");
             rejects(
                 [&]
-            {
-                (void)rules->character_profile(h.sheet(),
-                std::array<std::string, 2>{e.key, e.key});
-            });
+                {
+                    (void)rules->character_profile(h.sheet(),
+                                                   std::array<std::string, 2>{e.key, e.key});
+                });
         }
     const auto h = hero();
     rejects(
         [&]
-    {
-        (void)rules->character_profile(h.sheet(),
-        std::array<std::string, 2>{"shield", "shield"});
-    });
+        {
+            (void)rules->character_profile(h.sheet(),
+                                           std::array<std::string, 2>{"shield", "shield"});
+        });
     rejects(
         [&]
-    {
-        (void)rules->character_profile(
-        h.sheet(), std::array<std::string, 3>{"plate", "greatsword", "shield"});
-    });
+        {
+            (void)rules->character_profile(
+                h.sheet(), std::array<std::string, 3>{"plate", "greatsword", "shield"});
+        });
     rejects(
         [&]
-    {
-        (void)rules->ability_check(h.sheet(), {}, static_cast<Ability>(6), "");
-    });
+        {
+            (void)rules->ability_check(h.sheet(), {}, static_cast<Ability>(6), "");
+        });
     rejects(
         [&]
-    {
-        (void)rules->ability_check(h.sheet(), {}, Ability::dexterity, "unknown");
-    });
+        {
+            (void)rules->ability_check(h.sheet(), {}, Ability::dexterity, "unknown");
+        });
     const auto rogue = hero("rogue", 15, 16, "human", "criminal");
-    const auto both = rules->ability_check(rogue.sheet(), std::array<std::string, 1> {"padded"},
+    const auto both = rules->ability_check(rogue.sheet(), std::array<std::string, 1>{"padded"},
                                            Ability::dexterity, "stealth");
     check(both.proficiency == 2 && both.disadvantage,
           "Skill proficiency and armor Disadvantage remain independent");
     // Existing saving throw engine consumes the same profile penalty as live combat.
     const auto mage = hero("wizard");
-    const auto p = rules->character_profile(mage.sheet(), std::array<std::string, 1> {"plate"});
+    const auto p = rules->character_profile(mage.sheet(), std::array<std::string, 1>{"plate"});
     for (unsigned ability = 0; ability < 6; ++ability)
     {
         const auto modifiers = catalog::saving_modifiers(static_cast<catalog::Ability>(ability),
-            p.strength_dexterity_disadvantage, false);
+                                                         p.strength_dexterity_disadvantage, false);
         check(modifiers.disadvantage == (ability < 2),
               "Untrained armor affects Strength/Dexterity saves only");
     }
@@ -347,36 +335,36 @@ void campaign()
         auto h = hero();
         const auto item = h.add_item({.definition_id = e.key, .name = e.key, .quantity = 1}),
                    other =
-                       h.add_item({.definition_id =
-                                              e.category == "shield" ? "shield" : "leather",
-                                          .name = "Other",
-                                          .quantity = 1});
+                       h.add_item({.definition_id = e.category == "shield" ? "shield" : "leather",
+                                   .name = "Other",
+                                   .quantity = 1});
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(h));
         auto state = party.checkpoint();
-        state.roster[0].vitals = {5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+        state.roster[0].vitals = {
+            5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
         party.restore(std::move(state));
         party.equip(id, item);
         const auto before = encode_campaign(party, nullptr, "armor");
         rejects(
             [&]
-        {
-            party.equip(id, other);
-        });
+            {
+                party.equip(id, other);
+            });
         check(encode_campaign(party, nullptr, "armor") == before,
               "Second armor/shield rejects without changing equipment, wounds, resources or time");
         CampaignParty restored(module());
         restored.restore(
             decode_campaign(before, *srd5::character_rules(), *rules, "armor", nullptr).party);
         check(encode_campaign(restored, nullptr, "armor") == before &&
-              restored.participants()[0].character_profile ==
-              party.participants()[0].character_profile,
+                  restored.participants()[0].character_profile ==
+                      party.participants()[0].character_profile,
               "All thirteen entries survive campaign reconstruction and next encounter adaptation");
         check(restored.ability_check(id, Ability::dexterity, "stealth").disadvantage == e.stealth,
               "Campaign check query incorporates equipped armor after reload");
         restored.unequip(id, item);
         check(!restored.ability_check(id, Ability::dexterity, "stealth").disadvantage &&
-              restored.member(id).vitals == party.member(id).vitals,
+                  restored.member(id).vitals == party.member(id).vitals,
               "Unequipping removes penalties without restoring resources");
     }
 }

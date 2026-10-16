@@ -110,7 +110,7 @@ struct CharacterSheet
     Identity identity;
     std::string name, race, gender, character_class, alignment, background;
     AbilityArray<int> base{}, bonuses{}, scores{},
-                 modifiers{}; // bonuses is the sum of all sources.
+        modifiers{}; // bonuses is the sum of all sources.
     int level{1}, hit_die{}, hit_points{};
     std::string hp_explanation;
     AbilityArray<int> saving_throws{};
@@ -150,21 +150,21 @@ class CharacterRules
     adjustments(std::string_view background) const = 0;
     [[nodiscard]] virtual std::array<AbilityRoll, 6> roll(RandomState &random_state) const = 0;
     [[nodiscard]] virtual std::optional<int> ability_score(const CharacterDraft &draft,
-            Ability ability) const = 0;
+                                                           Ability ability) const = 0;
 
     [[nodiscard]] virtual std::array<Ability, 6> preset_ability_priority(std::string_view,
-            unsigned) const = 0;
+                                                                         unsigned) const = 0;
     [[nodiscard]] virtual ClassRequirements class_requirements(std::string_view id) const = 0;
     [[nodiscard]] virtual CharacterSheet evaluate(const CharacterDraft &draft,
-            NameRequirement name) const = 0;
+                                                  NameRequirement name) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterDraft &) const = 0;
     [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterDraft &) const = 0;
     [[nodiscard]] virtual TrainingChoiceGroup cantrip_options(const CharacterDraft &) const = 0;
     // An empty skill is a plain ability check. No default: an override cannot
     // redefine one (Effective C++ Item 37).
-    [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
-            Ability ability, std::string_view skill) const = 0;
+    [[nodiscard]] virtual AbilityCheckModifier
+    ability_check(const CharacterSheet &, Ability ability, std::string_view skill) const = 0;
 
   protected:
     // Implementations may copy themselves (a session's rollback does), but an
@@ -176,12 +176,13 @@ class CharacterRules
     CharacterRules &operator=(const CharacterRules &) = default;
     CharacterRules &operator=(CharacterRules &&) = default;
 };
+
 // Whether the draft's scores meet a class's requirements, and which target
 // scores the chosen class leaves unmet. They need only the public interface,
 // so they are not members (Effective C++ Item 23).
 [[nodiscard]] bool class_eligible(const CharacterRules &rules, const CharacterDraft &draft,
                                   std::string_view id);
 [[nodiscard]] AbilityArray<bool> unmet_targets(const CharacterRules &rules,
-        const CharacterDraft &draft);
+                                               const CharacterDraft &draft);
 } // namespace opengold::rules
 #endif

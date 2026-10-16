@@ -55,10 +55,11 @@ Command command(const CombatSession &session, std::string_view verb)
 bool has_grip_command(const CombatSession &session)
 {
     const auto commands = session.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [](const auto & c)
-    {
-        return c.verb.starts_with("grip");
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [](const auto &c)
+                       {
+                           return c.verb.starts_with("grip");
+                       });
 }
 
 struct WeaponCase
@@ -69,8 +70,7 @@ struct WeaponCase
 };
 
 // Independent SRD 5.2.1 pp. 90-91 expectations, including the 2024 War Pick.
-constexpr std::array weapons
-{
+constexpr std::array weapons{
     WeaponCase{"quarterstaff", 6, 8, false}, WeaponCase{"spear", 6, 8, true},
     WeaponCase{"battleaxe", 8, 10, false},   WeaponCase{"longsword", 8, 10, false},
     WeaponCase{"trident", 8, 10, true},      WeaponCase{"warhammer", 8, 10, false},
@@ -90,24 +90,15 @@ void damage_follows_other_hand()
         return seed == 40  ? 0
                : seed == 0 ? (sides == 6   ? 9
                               : sides == 8 ? 11
-                              : 15)
-               : (sides == 6   ? 4
-                  : sides == 8 ? 6
-                  : 10);
+                                           : 15)
+                           : (sides == 6   ? 4
+                              : sides == 8 ? 6
+                                           : 10);
     };
     for (const auto &weapon : weapons)
-        for (const bool shield :
-                {
-                    false, true
-                })
-            for (const int seed :
-                    {
-                        0, 13, 40
-                    })
-                for (const bool thrown :
-                        {
-                            false, true
-                        })
+        for (const bool shield : {false, true})
+            for (const int seed : {0, 13, 40})
+                for (const bool thrown : {false, true})
                 {
                     if (thrown && !weapon.thrown)
                         continue;
@@ -119,10 +110,10 @@ void damage_follows_other_hand()
                           "Rules report two hands only when the other hand is empty");
                     check(!shield || profile.armor_class == 14,
                           "One-handed grip keeps the trained shield's AC");
-                    Encounter e{{8, 8, std::vector<Terrain>(64)},
-                        {   {1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
-                            {2, "vanguard", "Target", Side::opposition, {thrown ? 3 : 2, 1}}
-                        }};
+                    Encounter e{
+                        {8, 8, std::vector<Terrain>(64)},
+                        {{1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
+                         {2, "vanguard", "Target", Side::opposition, {thrown ? 3 : 2, 1}}}};
                     auto combat = rules->create(e, seed);
                     check(combat->snapshot().actor == 1, "Fixed seed starts the hero");
                     check(!has_grip_command(*combat), "No grip command is offered");
@@ -133,18 +124,18 @@ void damage_follows_other_hand()
                     check(unit(*combat, 2).hit_points == 28 - damage(seed, sides),
                           "Melee/thrown/critical damage matches fixed SRD dice oracle");
                     const auto log = combat->snapshot().log();
-                    const std::string grip = thrown ? " damage." : shield ? " damage (one-handed)."
-                                             : " damage (two-handed).";
+                    const std::string grip = thrown   ? " damage."
+                                             : shield ? " damage (one-handed)."
+                                                      : " damage (two-handed).";
                     check(seed == 40 || log.back().ends_with(grip),
                           "The damage line names the grip a melee hit used");
                     const auto after = unit(*combat, 1);
                     check(!after.action && after.bonus_action == before.bonus_action &&
-                          after.reaction == before.reaction &&
-                          after.movement_feet == before.movement_feet,
+                              after.reaction == before.reaction &&
+                              after.movement_feet == before.movement_feet,
                           "Weapon attack spends only its action");
                     const auto saved = combat->save();
-                    check(rules->restore(saved)->save() == saved,
-                          "Attack resources round trip");
+                    check(rules->restore(saved)->save() == saved, "Attack resources round trip");
                 }
     for (const auto &weapon : weapons)
     {
@@ -152,8 +143,8 @@ void damage_follows_other_hand()
         check(rules->character_profile(sheet, gear).weapon_hands == 1,
               "A second held weapon keeps a Versatile weapon one-handed");
     }
-    for (const auto &[key, hands] :
-            std::array<std::pair<const char *, unsigned>, 3> {{{"greatsword", 2}, {"shortbow", 2}, {"mace", 1}}})
+    for (const auto &[key, hands] : std::array<std::pair<const char *, unsigned>, 3>{
+             {{"greatsword", 2}, {"shortbow", 2}, {"mace", 1}}})
     {
         const std::array<std::string, 1> gear{key};
         check(rules->character_profile(sheet, gear).weapon_hands == hands,
@@ -167,9 +158,8 @@ void reaction_continuation()
     const std::array<std::string, 1> gear{"longsword"};
     const auto profile = rules->character_profile(hero().sheet(), gear);
     Encounter e{{8, 8, std::vector<Terrain>(64)},
-        {   {1, "campaign-character", "Reactor", Side::party, {1, 1}, profile.data},
-            {2, "vanguard", "Mover", Side::opposition, {2, 1}}
-        }};
+                {{1, "campaign-character", "Reactor", Side::party, {1, 1}, profile.data},
+                 {2, "vanguard", "Mover", Side::opposition, {2, 1}}}};
     std::unique_ptr<CombatSession> combat;
     for (unsigned seed = 0; seed < 100; ++seed)
     {
@@ -181,7 +171,7 @@ void reaction_continuation()
     move.destination = {3, 1};
     check(combat->submit(move), "Enemy attempts to leave reach");
     check(combat->snapshot().reaction_pending && combat->snapshot().actor == 1 &&
-          !has_grip_command(*combat),
+              !has_grip_command(*combat),
           "The reaction offers no grip decision");
     const auto before = unit(*combat, 1);
     auto restored = rules->restore(combat->save());
@@ -197,16 +187,15 @@ void campaign()
     auto rules = module();
     CampaignParty party(module());
     auto character = hero();
-    const auto staff = character.add_item({.definition_id = "quarterstaff",
-                                                  .name = "Quarterstaff",
-                                                  .quantity = 1}),
-               shield = character.add_item({.definition_id = "shield",
-                                                   .name = "Shield",
-                                                   .quantity = 1});
+    const auto staff = character.add_item(
+                   {.definition_id = "quarterstaff", .name = "Quarterstaff", .quantity = 1}),
+               shield =
+                   character.add_item({.definition_id = "shield", .name = "Shield", .quantity = 1});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, staff);
     auto wounded = party.checkpoint();
-    wounded.roster[0].vitals = {5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
+    wounded.roster[0].vitals = {
+        5, false, "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"};
     party.restore(std::move(wounded));
     const auto vitals = party.member(id).vitals;
     check(party.profile(id).weapon_hands == 2, "An empty other hand wields the staff two-handed");
@@ -218,14 +207,16 @@ void campaign()
     CampaignParty restored(module());
     restored.restore(std::move(decoded.party));
     check(encode_campaign(restored, nullptr, "grip") == saved &&
-          restored.profile(id).weapon_hands == 1,
+              restored.profile(id).weapon_hands == 1,
           "The campaign stores equipment, and the grip is derived from it");
     party.unequip(id, shield);
     check(party.profile(id).weapon_hands == 2, "Removing the shield frees the other hand");
     auto participants = party.participants();
     check(participants[0].character_profile ==
-          rules->character_profile(party.member(id).character.sheet(),
-                                   std::array<std::string, 1> {"quarterstaff"}).data,
+              rules
+                  ->character_profile(party.member(id).character.sheet(),
+                                      std::array<std::string, 1>{"quarterstaff"})
+                  .data,
           "The next encounter uses the current equipment");
 }
 } // namespace
@@ -237,7 +228,8 @@ int main()
         damage_follows_other_hand();
         reaction_continuation();
         campaign();
-        std::cout << "Versatile tests passed: seven weapons, automatic grip, reactions and campaign\n";
+        std::cout
+            << "Versatile tests passed: seven weapons, automatic grip, reactions and campaign\n";
         return 0;
     }
     catch (const std::exception &e)

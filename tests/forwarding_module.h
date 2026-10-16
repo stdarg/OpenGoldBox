@@ -15,8 +15,7 @@ namespace opengold::test
 class ForwardingModule : public rules::RulesModule
 {
   public:
-    explicit ForwardingModule(std::unique_ptr<rules::RulesModule> rules)
-        : rules_(std::move(rules))
+    explicit ForwardingModule(std::unique_ptr<rules::RulesModule> rules) : rules_(std::move(rules))
     {
     }
 
@@ -31,7 +30,7 @@ class ForwardingModule : public rules::RulesModule
     }
 
     std::unique_ptr<rules::CombatSession> create(rules::Encounter encounter,
-            std::uint64_t seed) const override
+                                                 std::uint64_t seed) const override
     {
         return rules_->create(std::move(encounter), seed);
     }
@@ -42,7 +41,7 @@ class ForwardingModule : public rules::RulesModule
     }
 
     rules::CharacterProfile character_profile(const rules::CharacterSheet &sheet,
-            std::span<const std::string> gear) const override
+                                              std::span<const std::string> gear) const override
     {
         return rules_->character_profile(sheet, gear);
     }
@@ -53,7 +52,8 @@ class ForwardingModule : public rules::RulesModule
     }
 
     std::vector<rules::EquipmentChoice> equipment_choices(const rules::CharacterSheet &sheet,
-            std::span<const std::string> gear, unsigned selected) const override
+                                                          std::span<const std::string> gear,
+                                                          unsigned selected) const override
     {
         return rules_->equipment_choices(sheet, gear, selected);
     }
@@ -72,7 +72,7 @@ class ForwardingModule : public rules::RulesModule
     }
 
     rules::SpellChoiceOptions spell_choice_options(const rules::CharacterSheet &sheet,
-            rules::SpellChoiceContext context) const override
+                                                   rules::SpellChoiceContext context) const override
     {
         return rules_->spell_choice_options(sheet, context);
     }
@@ -85,15 +85,17 @@ class ForwardingModule : public rules::RulesModule
     }
 
     rules::AbilityCheckModifier ability_check(const rules::CharacterSheet &sheet,
-            std::span<const std::string> gear, rules::Ability ability,
-            std::string_view skill) const override
+                                              std::span<const std::string> gear,
+                                              rules::Ability ability,
+                                              std::string_view skill) const override
     {
         return rules_->ability_check(sheet, gear, ability, skill);
     }
 
     rules::AbilityCheckRoll roll_ability_check(const rules::CharacterSheet &sheet,
-            std::span<const std::string> gear, rules::Ability ability, std::string_view skill,
-            RandomState &random_state) const override
+                                               std::span<const std::string> gear,
+                                               rules::Ability ability, std::string_view skill,
+                                               RandomState &random_state) const override
     {
         return rules_->roll_ability_check(sheet, gear, ability, skill, random_state);
     }
@@ -109,8 +111,9 @@ class ForwardingModule : public rules::RulesModule
         return rules_->rest_training_options(sheet, kind);
     }
 
-    rules::TrainingChoices replace_rest_training(rules::CharacterSheet &sheet,
-            std::span<const std::string> selected) const override
+    rules::TrainingChoices
+    replace_rest_training(rules::CharacterSheet &sheet,
+                          std::span<const std::string> selected) const override
     {
         return rules_->replace_rest_training(sheet, selected);
     }
@@ -121,8 +124,9 @@ class ForwardingModule : public rules::RulesModule
         return rules_->training_options(sheet);
     }
 
-    rules::TrainingChoiceGroup hall_training_options(const rules::CharacterSheet &sheet,
-            std::span<const std::string> class_ids) const override
+    rules::TrainingChoiceGroup
+    hall_training_options(const rules::CharacterSheet &sheet,
+                          std::span<const std::string> class_ids) const override
     {
         return rules_->hall_training_options(sheet, class_ids);
     }
@@ -137,8 +141,9 @@ class ForwardingModule : public rules::RulesModule
         return rules_->advancement_options(sheet);
     }
 
-    rules::AdvancementOptions advancement_options(const rules::CharacterSheet &sheet,
-            const rules::AdvancementChoice &choice) const override
+    rules::AdvancementOptions
+    advancement_options(const rules::CharacterSheet &sheet,
+                        const rules::AdvancementChoice &choice) const override
     {
         return rules_->advancement_options(sheet, choice);
     }
@@ -149,7 +154,7 @@ class ForwardingModule : public rules::RulesModule
     }
 
     rules::CharacterSheet spell_choice_sheet(const rules::CharacterSheet &sheet,
-            const rules::AdvancementChoice &choice) const override
+                                             const rules::AdvancementChoice &choice) const override
     {
         return rules_->spell_choice_sheet(sheet, choice);
     }
@@ -184,8 +189,7 @@ class ForwardingModule : public rules::RulesModule
         rules_->recover_short_rest(state, sheet);
     }
 
-    rules::Message recover_rest_choice(rules::VitalState &state,
-                                       const rules::CharacterSheet &sheet,
+    rules::Message recover_rest_choice(rules::VitalState &state, const rules::CharacterSheet &sheet,
                                        std::string_view choice) const override
     {
         return rules_->recover_rest_choice(state, sheet, choice);
@@ -247,7 +251,7 @@ class ForwardingModule : public rules::RulesModule
     }
 
     std::vector<rules::CampAction> camp_actions(const rules::CharacterSheet &sheet,
-            const rules::VitalState &state) const override
+                                                const rules::VitalState &state) const override
     {
         return rules_->camp_actions(sheet, state);
     }

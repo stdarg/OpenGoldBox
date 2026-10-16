@@ -37,6 +37,7 @@ void stabilize(LifeState &state, std::uint64_t &rng);
 // (Beacon of Hope) rolls twice and keeps the higher.
 [[nodiscard]] int death_save(LifeState &state, std::uint64_t &rng, bool can_heal = true,
                              bool lucky = false, int bonus = 0, bool advantage = false);
+
 // How damage at 0 HP lands: a critical hit costs two death-save failures, and a
 // creature that dies at zero makes none. Named fields keep the two apart.
 struct DamageOptions
@@ -44,6 +45,7 @@ struct DamageOptions
     bool critical{};
     bool dies_at_zero{};
 };
+
 void damage_life(LifeState &state, int amount, int maximum_hp, DamageOptions options = {});
 // Original script assignments change actual HP, bypassing the damage buffer.
 void set_life_hit_points(LifeState &state, int hit_points, int maximum_hp);
@@ -52,6 +54,6 @@ void start_stable_recovery(LifeState &state, std::uint64_t &rng);
 // Combat rolls death saves at turn entry; this only retains its remaining
 // cadence and advances natural recovery. Campaign event scheduling is separate.
 [[nodiscard]] bool advance_recovery_clock(LifeState &state, std::uint64_t milliseconds,
-        bool can_heal = true);
+                                          bool can_heal = true);
 } // namespace opengold::srd5::detail
 #endif

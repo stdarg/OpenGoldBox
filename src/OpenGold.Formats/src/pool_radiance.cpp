@@ -13,7 +13,6 @@ constexpr int signed_byte(std::uint8_t value)
     return value < 128 ? value : static_cast<int>(value) - 256;
 }
 
-
 template <std::size_t N>
 void copy(std::span<const std::uint8_t> b, std::size_t p, std::array<std::uint8_t, N> &out)
 {

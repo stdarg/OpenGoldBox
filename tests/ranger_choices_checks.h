@@ -20,31 +20,32 @@ void ranger_choices_checks()
     const Character ranger(*creation_rules, draft, {});
     const auto access = rules->spell_access(ranger.sheet());
     check(access.cantrip_choices == 0 && access.prepared_choices == 2 &&
-          access.always_prepared == std::vector<std::string> {"hunters_mark"},
+              access.always_prepared == std::vector<std::string>{"hunters_mark"},
           "A level-one Ranger prepares two spells and always has Hunter's Mark");
     const auto options = creation_rules->spell_choice_options(draft);
     check(options.may_prepare && options.prepared_count == 2 &&
-          option_ids(options.preparation) ==
-          std::vector<std::string> {"cure_wounds", "ensnaring_strike", "entangle", "fog_cloud", "goodberry",
-                                    "longstrider"
-                                   },
+              option_ids(options.preparation) ==
+                  std::vector<std::string>{"cure_wounds", "ensnaring_strike", "entangle",
+                                           "fog_cloud", "goodberry", "longstrider"},
           "Creation prepares from the implemented Ranger list, without Hunter's Mark");
     rejects(
         [&]
-    {
-        (void)creation_rules->evaluate(ranger_draft({"hunters_mark"}), NameRequirement::required);
-    });
+        {
+            (void)creation_rules->evaluate(ranger_draft({"hunters_mark"}),
+                                           NameRequirement::required);
+        });
     rejects(
         [&]
-    {
-        (void)creation_rules->evaluate(ranger_draft({"bless"}), NameRequirement::required);
-    });
+        {
+            (void)creation_rules->evaluate(ranger_draft({"bless"}), NameRequirement::required);
+        });
     const auto messages = rules->character_profile(ranger.sheet(), {}).spell_messages;
-    check(std::any_of(messages.begin(), messages.end(), [](const auto & m)
-    {
-        return m.source.starts_with("Ranger spellcasting: Wisdom score");
-    }),
-    "Ranger spellcasting uses Wisdom");
+    check(std::any_of(messages.begin(), messages.end(),
+                      [](const auto &m)
+                      {
+                          return m.source.starts_with("Ranger spellcasting: Wisdom score");
+                      }),
+          "Ranger spellcasting uses Wisdom");
     CharacterCreator creator(srd5::character_rules(), 1);
     creator.roll();
     for (unsigned n = 0; n < 6; ++n)
@@ -62,28 +63,31 @@ void ranger_choices_checks()
         party.advance(id, party.default_advancement(id));
         const auto &sheet = party.member(id).character.sheet();
         check(slot_capacity(*rules, party.member(id)) == slots[level - 1] &&
-              rules->spell_access(sheet).prepared_choices == prepared[level - 1],
+                  rules->spell_access(sheet).prepared_choices == prepared[level - 1],
               "Ranger slots and prepared spells follow the class table");
     }
     const auto recovery = party.recovery_info(id);
-    check(std::any_of(recovery.resources.begin(), recovery.resources.end(), [](const auto & r)
-    {
-        return r.id == "favored_enemy" && r.capacity == 2 && !r.short_rest_recovery;
-    }),
-    "Favored Enemy has two free casts, restored by a Long Rest");
+    check(std::any_of(recovery.resources.begin(), recovery.resources.end(),
+                      [](const auto &r)
+                      {
+                          return r.id == "favored_enemy" && r.capacity == 2 &&
+                                 !r.short_rest_recovery;
+                      }),
+          "Favored Enemy has two free casts, restored by a Long Rest");
     const auto bytes = saved(party);
     CampaignParty restored(module());
-    restored.restore(decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
+    restored.restore(
+        decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
     check(saved(restored) == bytes, "A level-four Ranger round-trips");
 
     // After a Long Rest a Ranger replaces one prepared spell, not more.
     CampaignParty resting(module());
-    const auto rester =
-        resting.add_pc(Character(*creation_rules, ranger_draft({"cure_wounds", "longstrider"}), {}));
+    const auto rester = resting.add_pc(
+        Character(*creation_rules, ranger_draft({"cure_wounds", "longstrider"}), {}));
     (void)resting.rest(RestKind::long_rest);
     check(resting.state().spell_rest.has_value(), "The Ranger's Long Rest opens the spell window");
     SpellChoices same;
-    same.prepared = std::vector<std::string> {"longstrider", "cure_wounds"};
+    same.prepared = std::vector<std::string>{"longstrider", "cure_wounds"};
     resting.choose_spells(rester, same);
     check(!resting.state().spell_rest, "Keeping the preparation closes the window");
 }
@@ -100,32 +104,34 @@ void druidic_warrior_checks()
     auto choice = party.default_advancement(id);
     choice.fighting_style = "druidic_warrior";
     const auto options = rules->spell_choice_options(rules->spell_choice_sheet(sheet, choice),
-                         SpellChoiceContext::advancement);
+                                                     SpellChoiceContext::advancement);
     check(options.learning.size() == 1 && options.learning.front().count == 2 &&
-          option_ids(options.learning.front().options) ==
-          std::vector<std::string> {"guidance", "poison_spray", "produce_flame", "resistance",
-                                    "shillelagh", "spare_the_dying", "starry_wisp"
-                                   },
+              option_ids(options.learning.front().options) ==
+                  std::vector<std::string>{"guidance", "poison_spray", "produce_flame",
+                                           "resistance", "shillelagh", "spare_the_dying",
+                                           "starry_wisp"},
           "Druidic Warrior learns two Druid cantrips at level two");
     auto cleric_cantrip = choice;
     (*cleric_cantrip.spell_learning)["cantrips:2"] = {"sacred_flame"};
     const auto before = saved(party);
     rejects(
         [&]
-    {
-        party.advance(id, cleric_cantrip);
-    });
+        {
+            party.advance(id, cleric_cantrip);
+        });
     check(saved(party) == before, "Druidic Warrior learns only Druid cantrips");
     (*choice.spell_learning)["cantrips:2"] = {"poison_spray", "spare_the_dying"};
     party.advance(id, choice);
     const auto &warrior = party.member(id).character.sheet();
     const auto access = rules->spell_access(warrior);
     check(access.cantrip_choices == 2 && access.cantrips.size() == 2 &&
-          access.cantrips.front().id == "poison_spray" &&
-          rules->character_profile(warrior, {}).data.find(" poison_spray ") != std::string::npos,
+              access.cantrips.front().id == "poison_spray" &&
+              rules->character_profile(warrior, {}).data.find(" poison_spray ") !=
+                  std::string::npos,
           "The Ranger knows Poison Spray and Spare the Dying");
     const auto bytes = saved(party);
     CampaignParty restored(module());
-    restored.restore(decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
+    restored.restore(
+        decode_campaign(bytes, *creation_rules, *rules, "spell-access", nullptr).party);
     check(saved(restored) == bytes, "A Druidic Warrior round-trips");
 }

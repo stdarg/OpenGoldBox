@@ -14,9 +14,9 @@ using namespace opengold;
 
 namespace
 {
-using presentation::signed_number;
-using presentation::rich_text_literal;
 using presentation::gs;
+using presentation::rich_text_literal;
+using presentation::signed_number;
 
 // The party, when given, adds what it knows about the member: current HP,
 // gold, AC and where each item is held.
@@ -25,16 +25,14 @@ String formatted_sheet(const Character &character, const PartyMember *member,
 {
     const auto &s = character.sheet();
     std::string text = i18n::formatted(
-                           "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
-    {
-        {"name", gs(rich_text_literal(s.name))},
-        {"level", s.level},
-        {"race", i18n::text(s.race)},
-        {"gender", i18n::text(s.gender)},
-        {"class", i18n::text(s.character_class)},
-        {"alignment", i18n::text(s.alignment)},
-        {"background", i18n::text(s.background)}
-    });
+        "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
+        {{"name", gs(rich_text_literal(s.name))},
+         {"level", s.level},
+         {"race", i18n::text(s.race)},
+         {"gender", i18n::text(s.gender)},
+         {"class", i18n::text(s.character_class)},
+         {"alignment", i18n::text(s.alignment)},
+         {"background", i18n::text(s.background)}});
     // The current class is not a future goal.
     String goals;
     const auto &draft = character.creation_data();
@@ -54,20 +52,21 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         temporary = party->recovery_info(member->id).temporary_hp;
     text += "[theme_emphasis]" +
             std::string(presentation::hp_text(member ? member->vitals.hit_points : s.hit_points,
-                s.hit_points, member && member->vitals.dead,
-                temporary, s.hp_messages)
-                        .utf8()
-                        .get_data()) +
+                                              s.hit_points, member && member->vitals.dead,
+                                              temporary, s.hp_messages)
+                            .utf8()
+                            .get_data()) +
             "[/theme_emphasis]";
     text += i18n::formatted("   Hit Dice: {level}d{die}", {{"level", s.level}, {"die", s.hit_die}});
     if (member)
-        text += i18n::formatted("   Party gold {gold}   XP {xp}",
-    {{"gold", coins(party->state().wealth, Coin::gold)}, {"xp", member->experience}});
+        text += i18n::formatted(
+            "   Party gold {gold}   XP {xp}",
+            {{"gold", coins(party->state().wealth, Coin::gold)}, {"xp", member->experience}});
     if (member && member->vitals.dead)
         text += "   " + i18n::utf8("Dead");
     if (member && party->can_advance(member->id))
         text += "   [theme_emphasis]" + i18n::utf8("Ready to level up") + "[/theme_emphasis]";
-    const auto display = [](const std::string & id)
+    const auto display = [](const std::string &id)
     {
         if (id == "archery")
             return i18n::utf8(N_("archery"));
@@ -89,21 +88,20 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         text += "\n" + i18n::formatted("Prepared spells: {spells}", {{"spells", spells}});
     }
     text += "\n[theme_font=sheet_note]" +
-            std::string(i18n::render(s.hp_messages).utf8().get_data()) +
-            "[/theme_font]";
+            std::string(i18n::render(s.hp_messages).utf8().get_data()) + "[/theme_font]";
     text += "\n\n[theme_title]" + i18n::utf8("Attributes") + "[/theme_title]";
     text += i18n::utf8(
-                "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]");
+        "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]");
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = opengold::rules::all_abilities[i];
         const auto score = std::to_string(s.scores[ability]);
         const auto colored =
             s.modifiers[ability] == 0
-            ? score
-            : "[theme_color=" + std::string(s.modifiers[ability] > 0
-                ? "score_positive" : "score_negative") + "]" +
-            score + "[/theme_color]";
+                ? score
+                : "[theme_color=" +
+                      std::string(s.modifiers[ability] > 0 ? "score_positive" : "score_negative") +
+                      "]" + score + "[/theme_color]";
         text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" + colored +
                 "[/cell][cell]" + signed_number(s.saving_throws[ability]) +
                 (s.save_proficiencies[ability] ? " *" : "") + "[/cell]";
@@ -115,7 +113,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         {
             const auto p = party->profile(member->id);
             text += "\n\n" + i18n::formatted("AC {ac}   Speed {speed} ft",
-            {{"ac", p.armor_class}, {"speed", p.movement_feet}});
+                                             {{"ac", p.armor_class}, {"speed", p.movement_feet}});
         }
         catch (const std::exception &e)
         {
@@ -132,7 +130,8 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         positions = party->profile(member->id).equipment_positions;
     for (const auto &item : character.inventory().items())
     {
-        text += "\n" + rich_text_literal(i18n::utf8(item.name)) + " x" + std::to_string(item.quantity);
+        text +=
+            "\n" + rich_text_literal(i18n::utf8(item.name)) + " x" + std::to_string(item.quantity);
         if (member)
         {
             const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);
@@ -140,10 +139,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
                 text += " / " + i18n::utf8(positions.at(held - member->equipped.begin()).source);
         }
     }
-    text += presentation::training_summary(s.training,
-                                           i18n::text)
-            .utf8()
-            .get_data();
+    text += presentation::training_summary(s.training, i18n::text).utf8().get_data();
     return gs(text);
 }
 } // namespace

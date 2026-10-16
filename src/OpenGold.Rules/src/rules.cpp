@@ -16,6 +16,7 @@ Terrain Battlefield::at(Cell p) const noexcept
                        static_cast<std::size_t>(p.x);
     return index < terrain.size() ? terrain[index] : Terrain::obstacle;
 }
+
 bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
 {
     if (board.at(from) == Terrain::obstacle || board.at(to) == Terrain::obstacle)
@@ -37,7 +38,7 @@ bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
             // Exact corner contact touches both side cells as well as the
             // diagonal cell. Checking all three prevents sight through walls.
             if (board.at({current.x + step_x, current.y}) == Terrain::obstacle ||
-                    board.at({current.x, current.y + step_y}) == Terrain::obstacle)
+                board.at({current.x, current.y + step_y}) == Terrain::obstacle)
                 return false;
             current.x += step_x;
             current.y += step_y;

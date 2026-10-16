@@ -46,7 +46,7 @@ class ConcentrationState
     std::optional<ConcentrationSource> start(Concentration next, bool incapacitated_or_dead = false)
     {
         if (!next.source.scope || !next.source.application || !next.source.caster ||
-                !next.remaining_ms || incapacitated_or_dead)
+            !next.remaining_ms || incapacitated_or_dead)
             throw std::runtime_error("Invalid concentration start");
         auto old = stop();
         active_ = next;
@@ -116,7 +116,7 @@ inline void write_concentration(std::ostream &out, const ConcentrationState &sta
 // against its owner and effect registry and enforce the named spell's duration.
 inline ConcentrationState read_concentration(std::istream &in)
 {
-    const auto number = [&](auto & value)
+    const auto number = [&](auto &value)
     {
         std::string token;
         in >> token;

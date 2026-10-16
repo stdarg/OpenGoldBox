@@ -43,9 +43,8 @@ std::vector<std::uint8_t> read_archive_bytes(const std::filesystem::path &path,
 }
 
 template <class Error>
-std::filesystem::path find_archive(const std::filesystem::path &directory,
-                                   std::string_view name, std::string ambiguous,
-                                   std::string missing)
+std::filesystem::path find_archive(const std::filesystem::path &directory, std::string_view name,
+                                   std::string ambiguous, std::string missing)
 {
     std::optional<std::filesystem::path> match;
     for (const auto &file : std::filesystem::directory_iterator(directory))

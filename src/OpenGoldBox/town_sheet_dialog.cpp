@@ -13,18 +13,19 @@ using presentation::required_node;
 
 void TownSheetDialog::_ready()
 {
-    presentation::run_guarded(*this, [&]
-    {
-        connect_controls();
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  connect_controls();
+                              });
 }
 
 void TownSheetDialog::connect_controls()
 {
     required_node<Button>(*this, "MakeLeader")
-    .connect("pressed", presentation::guarded(this, &TownSheetDialog::make_leader));
+        .connect("pressed", presentation::guarded(this, &TownSheetDialog::make_leader));
     required_node<Button>(*this, "Close")
-    .connect("pressed", presentation::guarded(this, &TownSheetDialog::close));
+        .connect("pressed", presentation::guarded(this, &TownSheetDialog::close));
     connect("close_requested", presentation::guarded(this, &TownSheetDialog::close));
 }
 
@@ -55,7 +56,8 @@ void TownSheetDialog::show_member(std::int64_t slot)
         return;
     const auto &m = campaign.member(campaign.state().slots[slot]);
     member_ = m.id;
-    required_node<RichTextLabel>(*this, "Text").call("render", presentation::sheet_text(campaign, m));
+    required_node<RichTextLabel>(*this, "Text")
+        .call("render", presentation::sheet_text(campaign, m));
     required_node<Button>(*this, "MakeLeader").set_disabled(m.id == campaign.leader());
     popup_centered();
 }

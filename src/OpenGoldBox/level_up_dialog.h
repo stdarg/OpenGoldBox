@@ -76,6 +76,7 @@ class LevelUpDialog : public godot::Window
     // The group on the showing checkbox page.
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_skilled_group() const;
     [[nodiscard]] const opengold::rules::TrainingChoiceGroup *advancement_dropdown_group() const;
+
     // A page, and for a checkbox page which of the groups it shows.
     struct AdvancementStep
     {
@@ -83,6 +84,7 @@ class LevelUpDialog : public godot::Window
         std::size_t index{};
         bool operator==(const AdvancementStep &) const = default;
     };
+
     // The pages in order: the first, the checkbox pages, the Replace page, a
     // checkbox page a replacement brings, the spells.
     [[nodiscard]] std::vector<AdvancementStep> advancement_steps() const;

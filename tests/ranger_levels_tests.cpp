@@ -50,7 +50,8 @@ CharacterDraft draft()
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.rolls[1] = {{6, 6, 6, 1}, 3};
-    d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds", "ensnaring_strike"}, {}, {}};
+    d.spells =
+        SpellChoices{{}, std::vector<std::string>{"cure_wounds", "ensnaring_strike"}, {}, {}};
     return d;
 }
 
@@ -74,7 +75,7 @@ Character ranger(unsigned level, std::string tactic = "escape_the_horde",
             spells.insert(spells.end(), picks.begin(), picks.end());
             for (const auto &spell : choice.spells)
                 if (spells.size() < choice.spells.size() &&
-                        std::find(spells.begin(), spells.end(), spell) == spells.end())
+                    std::find(spells.begin(), spells.end(), spell) == spells.end())
                     spells.push_back(spell);
             choice.spells = spells;
         }
@@ -86,10 +87,11 @@ Character ranger(unsigned level, std::string tactic = "escape_the_horde",
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -119,10 +121,11 @@ std::vector<std::string> log_lines(const CombatSession &c)
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = log_lines(c);
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
@@ -160,11 +163,14 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
 {
     const std::vector<std::string> gear{"longsword"};
     auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 1},
-                rules.character_profile(hero.sheet(), gear).data},
-            {98, std::move(kind), "Foe", Side::opposition, {2, 1}}
-        }},
-    seed);
+                           {{1,
+                             "campaign-character",
+                             "Ranger",
+                             Side::party,
+                             {1, 1},
+                             rules.character_profile(hero.sheet(), gear).data},
+                            {98, std::move(kind), "Foe", Side::opposition, {2, 1}}}},
+                          seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     return c;
@@ -173,10 +179,11 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
 bool grants(const Character &hero, std::string_view id, int level)
 {
     const auto &all = hero.sheet().grants;
-    return std::any_of(all.begin(), all.end(), [&](const auto & g)
-    {
-        return g.id == id && static_cast<int>(g.level) == level;
-    });
+    return std::any_of(all.begin(), all.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id && static_cast<int>(g.level) == level;
+                       });
 }
 
 void progression_checks()
@@ -189,45 +196,47 @@ void progression_checks()
         party.advance(id, party.default_advancement(id));
     check(party.member(id).character.sheet().level == 15,
           "A Ranger reaches the game's cap of 15: " +
-          std::to_string(party.member(id).character.sheet().level));
+              std::to_string(party.member(id).character.sheet().level));
     const auto eight = ranger(8);
     check(!rules->advancement_options(ranger(15).sheet()).level, "Level 15 is the cap");
     check(grants(eight, "feature:extra_attack", 5) && grants(eight, "feature:roving", 6) &&
-          grants(eight, "tactics:escape_the_horde", 7), "The level 5-7 features arrive at their levels");
-    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
-{
-    {4, 5}, {5, 6}, {7, 7}, {8, 7}
-})
-    check(rules->spell_access(ranger(level).sheet()).prepared_choices == count,
-          "Prepared spells by level: 5 at 4, 6 at 5, 7 at 7 and 8");
-    const auto preparable = [&](const Character & hero, std::string_view spell)
+              grants(eight, "tactics:escape_the_horde", 7),
+          "The level 5-7 features arrive at their levels");
+    for (const auto &[level, count] :
+         std::vector<std::pair<unsigned, unsigned>>{{4, 5}, {5, 6}, {7, 7}, {8, 7}})
+        check(rules->spell_access(ranger(level).sheet()).prepared_choices == count,
+              "Prepared spells by level: 5 at 4, 6 at 5, 7 at 7 and 8");
+    const auto preparable = [&](const Character &hero, std::string_view spell)
     {
-        const auto options = rules->spell_choice_options(hero.sheet(), SpellChoiceContext::long_rest);
+        const auto options =
+            rules->spell_choice_options(hero.sheet(), SpellChoiceContext::long_rest);
         return std::any_of(options.preparation.begin(), options.preparation.end(),
-                           [&](const auto & o)
-        {
-            return o.id == spell;
-        });
+                           [&](const auto &o)
+                           {
+                               return o.id == spell;
+                           });
     };
     const auto five = ranger(5);
     check(!preparable(ranger(4), "barkskin"), "No level-2 spells at level 4");
     for (const auto *spell : {"aid", "barkskin", "gust_of_wind", "lesser_restoration",
-                              "magic_weapon", "protection_from_poison", "silence", "spike_growth"
-                             })
+                              "magic_weapon", "protection_from_poison", "silence", "spike_growth"})
         check(preparable(five, spell), std::string("A level-5 Ranger can prepare ") + spell);
     check(rules->character_profile(ranger(5).sheet(), {}).movement_feet == 30 &&
-          rules->character_profile(ranger(6).sheet(), {}).movement_feet == 40,
+              rules->character_profile(ranger(6).sheet(), {}).movement_feet == 40,
           "Roving: Speed +10 feet from level 6");
     const auto dummies = dummy_rules();
     auto c = duel(*dummies, five, "dummy", 1);
     check(slots(*c, 1) == 4 && slots(*c, 2) == 2, "Four level-1 and two level-2 slots at level 5");
-    check(slots(*duel(*dummies, ranger(7), "dummy", 1), 2) == 3, "Three level-2 slots from level 7");
+    check(slots(*duel(*dummies, ranger(7), "dummy", 1), 2) == 3,
+          "Three level-2 slots from level 7");
     check(remaining(*duel(*dummies, ranger(4), "dummy", 1), "favored_enemy") == 2 &&
-          remaining(*c, "favored_enemy") == 3, "Favored Enemy: a third free Hunter's Mark at level 5");
+              remaining(*c, "favored_enemy") == 3,
+          "Favored Enemy: a third free Hunter's Mark at level 5");
     const auto bytes = encode_campaign(party, nullptr, "ranger-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "ranger-levels", nullptr).party);
+                                 "ranger-levels", nullptr)
+                     .party);
     check(encode_campaign(next, nullptr, "ranger-levels") == bytes,
           "A level-15 Ranger saves and reloads");
 }
@@ -237,35 +246,36 @@ void high_progression_checks()
     const auto rules = module();
     const auto training = rules->advancement_options(ranger(8).sheet()).training;
     check(training.size() == 1 && training.front().id == "class:ranger:expertise:9" &&
-          training.front().label == "Ranger Expertise" && training.front().count == 2,
+              training.front().label == "Ranger Expertise" && training.front().count == 2,
           "Level 9 offers Expertise in two skills");
     const auto nine = ranger(9);
-    check(std::count_if(nine.sheet().grants.begin(), nine.sheet().grants.end(), [](const auto & g)
-    {
-        return g.source_id == "class:ranger:expertise:9" && g.id.starts_with("expertise:");
-    }) == 2, "Level 9 gains Expertise in two skills");
+    check(std::count_if(nine.sheet().grants.begin(), nine.sheet().grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.source_id == "class:ranger:expertise:9" &&
+                                   g.id.starts_with("expertise:");
+                        }) == 2,
+          "Level 9 gains Expertise in two skills");
     check(grants(ranger(10), "feature:tireless", 10) &&
-          grants(ranger(11), "feature:superior_hunters_prey", 11),
+              grants(ranger(11), "feature:superior_hunters_prey", 11),
           "Tireless at 10 and Superior Hunter's Prey at 11");
-    for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
-{
-    {9, 9}, {10, 9}, {11, 10}, {12, 10}
-})
-    check(rules->spell_access(ranger(level).sheet()).prepared_choices == count,
-          "Prepared spells by level: 9 at 9 and 10, 10 at 11 and 12");
-    const auto preparable = [&](const Character & hero, std::string_view spell)
+    for (const auto &[level, count] :
+         std::vector<std::pair<unsigned, unsigned>>{{9, 9}, {10, 9}, {11, 10}, {12, 10}})
+        check(rules->spell_access(ranger(level).sheet()).prepared_choices == count,
+              "Prepared spells by level: 9 at 9 and 10, 10 at 11 and 12");
+    const auto preparable = [&](const Character &hero, std::string_view spell)
     {
-        const auto options = rules->spell_choice_options(hero.sheet(), SpellChoiceContext::long_rest);
+        const auto options =
+            rules->spell_choice_options(hero.sheet(), SpellChoiceContext::long_rest);
         return std::any_of(options.preparation.begin(), options.preparation.end(),
-                           [&](const auto & o)
-        {
-            return o.id == spell;
-        });
+                           [&](const auto &o)
+                           {
+                               return o.id == spell;
+                           });
     };
     check(!preparable(ranger(8), "wind_wall"), "No level-3 spells at level 8");
     for (const auto *spell : {"conjure_animals", "dispel_magic", "plant_growth",
-                              "protection_from_energy", "revivify", "wind_wall"
-                             })
+                              "protection_from_energy", "revivify", "wind_wall"})
         check(preparable(nine, spell), std::string("A level-9 Ranger can prepare ") + spell);
     const auto dummies = dummy_rules();
     auto c = duel(*dummies, nine, "dummy", 1);
@@ -274,20 +284,19 @@ void high_progression_checks()
     check(remaining(*c, "favored_enemy") == 4, "Favored Enemy: four free Hunter's Marks at 9");
     const auto thirteen = ranger(13);
     check(grants(thirteen, "feature:relentless_hunter", 13) &&
-          grants(ranger(14), "feature:natures_veil", 14) &&
-          grants(ranger(15), "feature:superior_hunters_defense", 15),
+              grants(ranger(14), "feature:natures_veil", 14) &&
+              grants(ranger(15), "feature:superior_hunters_defense", 15),
           "Relentless Hunter at 13, Nature's Veil at 14, Superior Hunter's Defense at 15");
     check(rules->spell_access(thirteen.sheet()).prepared_choices == 11 &&
-          rules->spell_access(ranger(15).sheet()).prepared_choices == 12,
+              rules->spell_access(ranger(15).sheet()).prepared_choices == 12,
           "Prepared spells: 11 at 13, 12 at 15");
     check(!preparable(ranger(12), "stoneskin"), "No level-4 spells at level 12");
-    for (const auto *spell : {"conjure_woodland_beings", "dominate_beast", "freedom_of_movement",
-                              "stoneskin"
-                             })
+    for (const auto *spell :
+         {"conjure_woodland_beings", "dominate_beast", "freedom_of_movement", "stoneskin"})
         check(preparable(thirteen, spell), std::string("A level-13 Ranger can prepare ") + spell);
     auto t = duel(*dummies, thirteen, "dummy", 1);
     check(slots(*t, 4) == 1 && slots(*duel(*dummies, ranger(15), "dummy", 1), 4) == 2 &&
-          remaining(*t, "favored_enemy") == 5,
+              remaining(*t, "favored_enemy") == 5,
           "One level-4 slot at 13, two at 15; five free Hunter's Marks");
 }
 
@@ -299,7 +308,7 @@ void tireless_checks()
     const auto uses = remaining(*c, "tireless");
     check(uses >= 1 && offered(*c, "tireless"), "Tireless is offered at level 10");
     check(submit(*c, "tireless", 1) && unit(*c, 1).temporary_hp.amount > 0 &&
-          remaining(*c, "tireless") == uses - 1 && !offered(*c, "melee"),
+              remaining(*c, "tireless") == uses - 1 && !offered(*c, "melee"),
           "Tireless spends the Action and a use for Temporary Hit Points");
     check(logged(*c, "Ranger uses Tireless."), "The log names Tireless");
 }
@@ -311,13 +320,16 @@ std::unique_ptr<CombatSession> hunt(const RulesModule &rules, const Character &h
 {
     const std::vector<std::string> gear{"longsword"};
     auto c = rules.create({{12, 3, std::vector<Terrain>(36)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 1},
-                rules.character_profile(hero.sheet(), gear).data},
-            {97, "dummy", "Quarry", Side::opposition, {2, 1}},
-            {98, "dummy", "Second", Side::opposition, {4, 1}},
-            {99, "dummy", "Far", Side::opposition, {10, 1}}
-        }},
-    seed);
+                           {{1,
+                             "campaign-character",
+                             "Ranger",
+                             Side::party,
+                             {1, 1},
+                             rules.character_profile(hero.sheet(), gear).data},
+                            {97, "dummy", "Quarry", Side::opposition, {2, 1}},
+                            {98, "dummy", "Second", Side::opposition, {4, 1}},
+                            {99, "dummy", "Far", Side::opposition, {10, 1}}}},
+                          seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 8; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     check(submit(*c, "hunters_mark_free", 97), "Mark the quarry");
@@ -338,25 +350,28 @@ void superior_prey_checks()
         if (!logged(*c, "Force damage from Hunter's Mark"))
             continue;
         const auto commands = c->legal_commands();
-        const auto targets = std::count_if(commands.begin(), commands.end(), [](const auto & o)
-        {
-            return o.verb == "superior_hunters_prey";
-        });
-        check(targets == 1 && std::any_of(commands.begin(), commands.end(), [](const auto & o)
-        {
-            return o.verb == "superior_hunters_prey" && o.target == 98;
-        }), "Only the creature within 30 feet of the quarry is offered");
+        const auto targets = std::count_if(commands.begin(), commands.end(),
+                                           [](const auto &o)
+                                           {
+                                               return o.verb == "superior_hunters_prey";
+                                           });
+        check(targets == 1 && std::any_of(commands.begin(), commands.end(),
+                                          [](const auto &o)
+                                          {
+                                              return o.verb == "superior_hunters_prey" &&
+                                                     o.target == 98;
+                                          }),
+              "Only the creature within 30 feet of the quarry is offered");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the chance");
-        check(submit(*c, "superior_hunters_prey", 98) &&
-              logged(*c, "Second takes ") && logged(*c, " Force damage from Superior Hunter's Prey.") &&
-              !offered(*c, "superior_hunters_prey"),
+        check(submit(*c, "superior_hunters_prey", 98) && logged(*c, "Second takes ") &&
+                  logged(*c, " Force damage from Superior Hunter's Prey.") &&
+                  !offered(*c, "superior_hunters_prey"),
               "The mark's damage strikes the second creature, once a turn");
         struck = true;
     }
     check(struck, "A seed where the quarry is hit");
 }
-
 
 void extra_attack_checks()
 {
@@ -412,12 +427,19 @@ bool second_attack_disadvantaged(const Character &hero, std::uint64_t seed, bool
               "The Barbarian levels up");
     const std::vector<std::string> gear{"longsword"};
     auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Ranger", Side::opposition, {1, 1},
-                rules->character_profile(hero.sheet(), gear).data},
-            {2, "campaign-character", "Barbarian", Side::party, {2, 1},
-                rules->character_profile(barbarian.sheet(), gear).data}
-        }},
-    seed);
+                            {{1,
+                              "campaign-character",
+                              "Ranger",
+                              Side::opposition,
+                              {1, 1},
+                              rules->character_profile(hero.sheet(), gear).data},
+                             {2,
+                              "campaign-character",
+                              "Barbarian",
+                              Side::party,
+                              {2, 1},
+                              rules->character_profile(barbarian.sheet(), gear).data}}},
+                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Barbarian's turn");
     check(submit(*c, "melee", 1) && submit(*c, "melee", 1), "The Barbarian attacks twice");
@@ -454,20 +476,26 @@ void tactics_rest_checks()
     const auto rules = module();
     auto sheet = ranger(7).sheet();
     const auto offered_rest = rules->rest_training_options(sheet, RestKind::short_rest);
-    const auto group = std::find_if(offered_rest.begin(), offered_rest.end(), [](const auto & o)
-    {
-        return o.group.id == tactics;
-    });
-    check(group != offered_rest.end() && group->selected == std::vector<std::string> {"escape_the_horde"},
+    const auto group = std::find_if(offered_rest.begin(), offered_rest.end(),
+                                    [](const auto &o)
+                                    {
+                                        return o.group.id == tactics;
+                                    });
+    check(group != offered_rest.end() &&
+              group->selected == std::vector<std::string>{"escape_the_horde"},
           "A Short Rest offers Defensive Tactics, Escape the Horde chosen");
-    rules->replace_rest_training(sheet, std::vector<std::string> {"multiattack_defense"});
-    check(std::any_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id == "tactics:multiattack_defense";
-    }) && std::none_of(sheet.grants.begin(), sheet.grants.end(), [](const auto & g)
-    {
-        return g.id == "tactics:escape_the_horde";
-    }), "The rest swaps Escape the Horde for Multiattack Defense");
+    rules->replace_rest_training(sheet, std::vector<std::string>{"multiattack_defense"});
+    check(std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                      [](const auto &g)
+                      {
+                          return g.id == "tactics:multiattack_defense";
+                      }) &&
+              std::none_of(sheet.grants.begin(), sheet.grants.end(),
+                           [](const auto &g)
+                           {
+                               return g.id == "tactics:escape_the_horde";
+                           }),
+          "The rest swaps Escape the Horde for Multiattack Defense");
     check(rules->rest_training_options(ranger(6).sheet(), RestKind::short_rest).size() == 1,
           "Before level 7 a rest offers only the Hunter's Prey");
 }
@@ -478,7 +506,8 @@ void ensnaring_upcast_checks()
     const auto rules = dummy_rules();
     auto four = duel(*rules, ranger(4), "dummy", 1);
     check(submit(*four, "melee", 98) && offered(*four, "ensnaring_strike") &&
-          !offered(*four, "ensnaring_strike_2"), "No level-2 slot at level 4");
+              !offered(*four, "ensnaring_strike_2"),
+          "No level-2 slot at level 4");
     bool above_six = false;
     for (std::uint64_t seed = 1; seed < 80 && !above_six; ++seed)
     {
@@ -493,11 +522,13 @@ void ensnaring_upcast_checks()
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the vines' dice");
         check(submit(*c, "end"), "End the Ranger's turn");
         for (const auto &line : log_lines(*c))
-            if (line.starts_with("Foe takes ") && line.ends_with(" Piercing damage from the vines."))
+            if (line.starts_with("Foe takes ") &&
+                line.ends_with(" Piercing damage from the vines."))
                 above_six = above_six || std::stoi(line.substr(10)) > 6;
     }
     check(above_six, "The vines deal more than one d6 could");
 }
+
 // A level-9 Ranger with the level-3 spells to test, 40 feet from a dummy, on
 // its turn.
 std::unique_ptr<CombatSession> field(const RulesModule &rules, std::uint64_t seed,
@@ -510,11 +541,14 @@ std::unique_ptr<CombatSession> field(const RulesModule &rules, std::uint64_t see
     sheet.prepared_spells[1] = "plant_growth";
     const std::vector<std::string> gear{std::move(weapon)};
     auto c = rules.create({{12, 5, std::vector<Terrain>(60), std::move(plants)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 2},
-                rules.character_profile(sheet, gear).data},
-            {98, "dummy", "Foe", Side::opposition, {9, 2}}
-        }},
-    seed);
+                           {{1,
+                             "campaign-character",
+                             "Ranger",
+                             Side::party,
+                             {1, 2},
+                             rules.character_profile(sheet, gear).data},
+                            {98, "dummy", "Foe", Side::opposition, {9, 2}}}},
+                          seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     return c;
@@ -542,7 +576,7 @@ void protection_from_energy_checks()
         check(offered(*c, std::string("protection_from_energy_") + type),
               std::string("Protection from Energy offers ") + type);
     check(submit(*c, "protection_from_energy_fire", 1) &&
-          logged(*c, "Ranger gains Resistance to Fire damage.") && slots(*c, 3) == 1,
+              logged(*c, "Ranger gains Resistance to Fire damage.") && slots(*c, 3) == 1,
           "Protection from Energy spends a level-3 slot for Fire Resistance");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the ward");
@@ -556,7 +590,8 @@ void conjure_animals_checks()
     {
         auto c = field(*rules, seed);
         check(cast_at(*c, "conjure_animals", Cell{4, 2}) && slots(*c, 3) == 1 &&
-              c->snapshot().spirits.size() == 4 && logged(*c, "A pack of spirit animals appears."),
+                  c->snapshot().spirits.size() == 4 &&
+                  logged(*c, "A pack of spirit animals appears."),
               "Conjure Animals sets a pack of two squares by two");
         check(!offered(*c, "move_spirit_pack"), "The pack moves only once the Ranger has moved");
         Command step;
@@ -567,7 +602,8 @@ void conjure_animals_checks()
               "After moving, the Ranger may move the pack");
         const auto before = c->snapshot().spirits;
         check(submit(*c, "move_spirit_pack", 98) && c->snapshot().spirits != before &&
-              !offered(*c, "move_spirit_pack"), "The pack moves beside the dummy, once a turn");
+                  !offered(*c, "move_spirit_pack"),
+              "The pack moves beside the dummy, once a turn");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the pack");
         struck = logged(*c, "Foe takes ") && logged(*c, " Slashing damage from the spirit pack.");
@@ -580,12 +616,13 @@ void wind_wall_checks()
     const auto rules = dummy_rules();
     auto c = field(*rules, 1, "longbow");
     check(offered(*c, "wind_wall_vertical") && offered(*c, "wind_wall_horizontal") &&
-          offered(*c, "wind_wall_rising") && offered(*c, "wind_wall_falling"),
+              offered(*c, "wind_wall_rising") && offered(*c, "wind_wall_falling"),
           "Wind Wall offers four directions");
-    check(submit(*c, "wind_wall_vertical") &&
-          c->snapshot().area_targeting->cells.size() == 5, "A vertical wall fills the column");
+    check(submit(*c, "wind_wall_vertical") && c->snapshot().area_targeting->cells.size() == 5,
+          "A vertical wall fills the column");
     check(submit_cell(*c, "area_move", Cell{5, 2}) && submit(*c, "area_cast") &&
-          c->snapshot().walls.size() == 5 && slots(*c, 3) == 1, "Wind Wall rises");
+              c->snapshot().walls.size() == 5 && slots(*c, 3) == 1,
+          "Wind Wall rises");
     check(submit(*c, "end"), "End the Ranger's turn");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Back to the Ranger");
@@ -609,20 +646,22 @@ void plant_growth_checks()
             plants[static_cast<std::size_t>(y * 12 + x)] = true;
     auto c = field(*rules, 1, "longsword", plants);
     check(cast_at(*c, "plant_growth", Cell{6, 2}) &&
-          logged(*c, "The plants grow thick and overgrown.") && slots(*c, 3) == 1,
+              logged(*c, "The plants grow thick and overgrown.") && slots(*c, 3) == 1,
           "Plant Growth's Overgrowth");
     const auto board = c->snapshot().battlefield;
     check(board.at({8, 2}) == Terrain::overgrown && board.at({5, 2}) == Terrain::open,
           "Only squares with plants are overgrown");
-    check(c->movement_reach(98).size() < field(*rules, 1, "longsword", plants)->movement_reach(98).size(),
+    check(c->movement_reach(98).size() <
+              field(*rules, 1, "longsword", plants)->movement_reach(98).size(),
           "The overgrowth slows the dummy");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the overgrowth");
 }
+
 // A Ranger of the level with `spell` prepared, beside a brute that always
 // hits and a beast 10 feet from it, on the Ranger's turn.
-std::unique_ptr<CombatSession> wilds(const RulesModule &rules, unsigned level,
-                                     std::string spell, std::uint64_t seed)
+std::unique_ptr<CombatSession> wilds(const RulesModule &rules, unsigned level, std::string spell,
+                                     std::uint64_t seed)
 {
     auto sheet = ranger(level).sheet();
     auto &prepared = sheet.prepared_spells;
@@ -630,12 +669,15 @@ std::unique_ptr<CombatSession> wilds(const RulesModule &rules, unsigned level,
         prepared[0] = std::move(spell);
     const std::vector<std::string> gear{"longsword"};
     auto c = rules.create({{12, 5, std::vector<Terrain>(60)},
-        {   {1, "campaign-character", "Ranger", Side::party, {1, 2},
-                rules.character_profile(sheet, gear).data},
-            {98, "brute", "Foe", Side::opposition, {2, 2}},
-            {99, "beast", "Wolf", Side::opposition, {3, 3}}
-        }},
-    seed);
+                           {{1,
+                             "campaign-character",
+                             "Ranger",
+                             Side::party,
+                             {1, 2},
+                             rules.character_profile(sheet, gear).data},
+                            {98, "brute", "Foe", Side::opposition, {2, 2}},
+                            {99, "beast", "Wolf", Side::opposition, {3, 3}}}},
+                          seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
         check(submit(*c, "end"), "Reach the Ranger's turn");
     return c;
@@ -660,7 +702,7 @@ void relentless_hunter_checks()
         const bool saved = logged(*c, "Ranger Constitution save:");
         check(saved == (level == 12),
               level == 12 ? "Damage tests the Ranger's Concentration at 12"
-              : "Relentless Hunter: no Concentration save for Hunter's Mark at 13");
+                          : "Relentless Hunter: no Concentration save for Hunter's Mark at 13");
     }
 }
 
@@ -671,7 +713,8 @@ void natures_veil_checks()
     auto c = wilds(*rules, 14, "stoneskin", 1);
     const auto uses = remaining(*c, "natures_veil");
     check(uses >= 1 && submit(*c, "natures_veil", 1) && remaining(*c, "natures_veil") == uses - 1 &&
-          !offered(*c, "natures_veil"), "Nature's Veil spends the Bonus Action and a use");
+              !offered(*c, "natures_veil"),
+          "Nature's Veil spends the Bonus Action and a use");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the veil");
     brute_attacks(*c);
@@ -693,16 +736,18 @@ void hunters_defense_checks()
     check(c->snapshot().reaction_pending && offered(*c, "superior_defense"),
           "A hit asks the Ranger about Superior Hunter's Defense");
     check(submit(*c, "superior_defense", 0) &&
-          logged(*c, "Ranger uses Superior Hunter's Defense: Resistance to ") &&
-          !unit(*c, 1).reaction, "The Reaction gives Resistance to the hit's type");
+              logged(*c, "Ranger uses Superior Hunter's Defense: Resistance to ") &&
+              !unit(*c, 1).reaction,
+          "The Reaction gives Resistance to the hit's type");
 }
 
 void stoneskin_checks()
 {
     const auto rules = dummy_rules();
     auto c = wilds(*rules, 13, "stoneskin", 1);
-    check(submit(*c, "stoneskin", 1) && logged(*c, "Ranger gains Stoneskin.") && slots(*c, 4) == 0 &&
-          !offered(*c, "stoneskin"), "Stoneskin spends the level-4 slot");
+    check(submit(*c, "stoneskin", 1) && logged(*c, "Ranger gains Stoneskin.") &&
+              slots(*c, 4) == 0 && !offered(*c, "stoneskin"),
+          "Stoneskin spends the level-4 slot");
 }
 
 void woodland_beings_checks()
@@ -713,26 +758,32 @@ void woodland_beings_checks()
     {
         auto sheet = ranger(13).sheet();
         auto &prepared = sheet.prepared_spells;
-        if (std::find(prepared.begin(), prepared.end(), "conjure_woodland_beings") == prepared.end())
+        if (std::find(prepared.begin(), prepared.end(), "conjure_woodland_beings") ==
+            prepared.end())
             prepared[0] = "conjure_woodland_beings";
         const std::vector<std::string> gear{"longsword"};
         auto c = rules->create({{12, 5, std::vector<Terrain>(60)},
-            {   {1, "campaign-character", "Ranger", Side::party, {1, 2},
-                    rules->character_profile(sheet, gear).data},
-                {98, "dummy", "Foe", Side::opposition, {7, 2}}
-            }},
-        seed);
+                                {{1,
+                                  "campaign-character",
+                                  "Ranger",
+                                  Side::party,
+                                  {1, 2},
+                                  rules->character_profile(sheet, gear).data},
+                                 {98, "dummy", "Foe", Side::opposition, {7, 2}}}},
+                               seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
             check(submit(*c, "end"), "Reach the Ranger's turn");
         check(submit(*c, "conjure_woodland_beings", 1) && slots(*c, 4) == 0 &&
-              logged(*c, "Woodland spirits flit around Ranger.") && !c->snapshot().spirits.empty(),
+                  logged(*c, "Woodland spirits flit around Ranger.") &&
+                  !c->snapshot().spirits.empty(),
               "Conjure Woodland Beings surrounds the Ranger with spirits");
         check(offered(*c, "woodland_disengage"), "Disengage as a Bonus Action while it lasts");
         Command step;
         for (const auto &command : c->legal_commands())
             if (command.verb == "move" && command.destination == Cell{5, 2})
                 step = command;
-        check(step.actor == 1 && c->submit(step), "The Ranger carries its spirits toward the dummy");
+        check(step.actor == 1 && c->submit(step),
+              "The Ranger carries its spirits toward the dummy");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spirits");
         check(logged(*c, "Foe Wisdom save:"), "The spirits reaching the dummy force a save");
@@ -749,10 +800,12 @@ void dominate_beast_checks()
     {
         auto c = wilds(*rules, 13, "dominate_beast", seed);
         const auto commands = c->legal_commands();
-        check(!std::any_of(commands.begin(), commands.end(), [](const auto & o)
-        {
-            return o.verb == "dominate_beast" && o.target == 98;
-        }), "Dominate Beast is offered only against a Beast");
+        check(!std::any_of(commands.begin(), commands.end(),
+                           [](const auto &o)
+                           {
+                               return o.verb == "dominate_beast" && o.target == 98;
+                           }),
+              "Dominate Beast is offered only against a Beast");
         check(submit(*c, "dominate_beast", 99), "Cast Dominate Beast on the wolf");
         if (!logged(*c, "Wolf is dominated by Ranger."))
             continue;
@@ -763,10 +816,12 @@ void dominate_beast_checks()
         const auto order = c->snapshot().combatants;
         const auto place = [&](EntityId id)
         {
-            return std::find_if(order.begin(), order.end(), [&](const auto & a)
-            {
-                return a.id == id;
-            }) - order.begin();
+            return std::find_if(order.begin(), order.end(),
+                                [&](const auto &a)
+                                {
+                                    return a.id == id;
+                                }) -
+                   order.begin();
         };
         check(place(99) == place(1) + 1, "The wolf takes its turns right after the Ranger");
         for (unsigned turns = 0; c->snapshot().actor != 99 && turns < 6; ++turns)
@@ -775,7 +830,7 @@ void dominate_beast_checks()
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
             check(submit(*c, "end"), "Back to the Ranger");
         check(submit(*c, "hunters_mark_free", 98) && logged(*c, "Wolf is no longer dominated.") &&
-              unit(*c, 99).side == Side::opposition,
+                  unit(*c, 99).side == Side::opposition,
               "Another Concentration spell ends the domination");
     }
     check(dominated, "A seed where the wolf fails its save");

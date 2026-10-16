@@ -33,10 +33,11 @@ void StartupView::_bind_methods()
 
 void StartupView::_ready()
 {
-    presentation::run_guarded(*this, [&]
-    {
-        open_startup();
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  open_startup();
+                              });
 }
 
 void StartupView::open_startup()
@@ -52,30 +53,30 @@ void StartupView::choose_game_path()
     i18n::prepare_ui(required_node<Window>(*this, "ChecksumWarning"));
     auto *dialog = &required_node<Window>(*this, "PathDialog"); // scene-owned
     dialog->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
-    required_node<Button>(*dialog, "Cancel").connect("pressed",
-            presentation::guarded(this, &StartupView::close_language));
+    required_node<Button>(*dialog, "Cancel")
+        .connect("pressed", presentation::guarded(this, &StartupView::close_language));
     required_node<Button>(*dialog, "Continue")
-    .connect("pressed", presentation::guarded(this, &StartupView::accept_path));
-    required_node<Button>(*dialog, "Browse").connect("pressed",
-            presentation::guarded(this, &StartupView::browse_path));
-    required_node<LineEdit>(*dialog, "Path").connect("text_submitted",
-            presentation::guarded(this, &StartupView::submitted_path));
-    required_node<LineEdit>(*dialog, "Path").connect("text_changed",
-            presentation::guarded(this, &StartupView::path_edited));
+        .connect("pressed", presentation::guarded(this, &StartupView::accept_path));
+    required_node<Button>(*dialog, "Browse")
+        .connect("pressed", presentation::guarded(this, &StartupView::browse_path));
+    required_node<LineEdit>(*dialog, "Path")
+        .connect("text_submitted", presentation::guarded(this, &StartupView::submitted_path));
+    required_node<LineEdit>(*dialog, "Path")
+        .connect("text_changed", presentation::guarded(this, &StartupView::path_edited));
     required_node<FileDialog>(*dialog, "BrowseDialog")
-    .connect("dir_selected", presentation::guarded(this, &StartupView::picked_path));
+        .connect("dir_selected", presentation::guarded(this, &StartupView::picked_path));
     auto *warning = &required_node<Window>(*this, "ChecksumWarning");
     warning->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
-    required_node<Button>(*warning, "Quit").connect("pressed",
-            presentation::guarded(this, &StartupView::close_language));
+    required_node<Button>(*warning, "Quit")
+        .connect("pressed", presentation::guarded(this, &StartupView::close_language));
     required_node<Button>(*warning, "Continue")
-    .connect("pressed", presentation::guarded(this, &StartupView::continue_path));
+        .connect("pressed", presentation::guarded(this, &StartupView::continue_path));
     const auto saved = settings::saved_game_path();
     pending_path_ = settings::game_path();
     if (pending_path_.is_empty())
         pending_path_ = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
     if (settings::flag("--reset-game-path") || saved.is_empty() ||
-            !settings::validate_game_path(saved).usable)
+        !settings::validate_game_path(saved).usable)
     {
         show_path();
         return;
@@ -91,22 +92,25 @@ void StartupView::choose_language()
         auto *dialog = &required_node<Window>(*this, "LanguageDialog"); // scene-owned
         // Native language names remain stable; other text previews the selected locale.
         dialog->set_auto_translate_mode(Node::AUTO_TRANSLATE_MODE_DISABLED);
-        dialog->connect("close_requested", presentation::guarded(this, &StartupView::close_language));
+        dialog->connect("close_requested",
+                        presentation::guarded(this, &StartupView::close_language));
         auto *choices = &required_node<ItemList>(*dialog, "Choices");
         choices->add_item("English");
         choices->set_item_metadata(0, "en");
         choices->add_item(String::utf8("Español"));
         choices->set_item_metadata(1, "es");
         choices->select(i18n::language() == "es" ? 1 : 0);
-        choices->connect("item_selected", presentation::guarded(this, &StartupView::preview_language));
+        choices->connect("item_selected",
+                         presentation::guarded(this, &StartupView::preview_language));
         preview_language(choices->get_selected_items()[0]);
-        choices->connect("item_activated", presentation::guarded(this, &StartupView::activate_language));
+        choices->connect("item_activated",
+                         presentation::guarded(this, &StartupView::activate_language));
         required_node<Button>(*dialog, "Continue")
-        .connect("pressed", presentation::guarded(this, &StartupView::accept_language));
+            .connect("pressed", presentation::guarded(this, &StartupView::accept_language));
         dialog->popup_centered();
         choices->grab_focus();
-        required_node<Button>(*dialog, "Cancel").connect(
-            "pressed", presentation::guarded(this, &StartupView::close_language));
+        required_node<Button>(*dialog, "Cancel")
+            .connect("pressed", presentation::guarded(this, &StartupView::close_language));
         return;
     }
     choose_game_path();
@@ -160,7 +164,7 @@ void StartupView::check_path()
     if (!result.usable)
     {
         String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
-                         : i18n::text(result.error.utf8().get_data());
+                                                 : i18n::text(result.error.utf8().get_data());
         for (int i = 0; i < std::min(static_cast<int>(result.missing.size()), 5); ++i)
             message += " " + result.missing[i];
         if (result.missing.size() > 5)
@@ -173,8 +177,8 @@ void StartupView::check_path()
     {
         choosing_path_ = true;
         auto *warning = &required_node<Window>(*this, "ChecksumWarning");
-        required_node<RichTextLabel>(*warning, "Files").set_text(pending_path_ + "\n\n" +
-                String("\n").join(result.different));
+        required_node<RichTextLabel>(*warning, "Files")
+            .set_text(pending_path_ + "\n\n" + String("\n").join(result.different));
         warning->popup_centered();
         required_node<Button>(*warning, "Quit").grab_focus();
         return;
@@ -188,7 +192,7 @@ void StartupView::continue_path()
     if (save_pending_path_ && !settings::save_game_path(pending_path_))
     {
         show_path(i18n::text(
-                      "Cannot save settings beside the executable. Check that the folder is writable and settings.cfg is valid."));
+            "Cannot save settings beside the executable. Check that the folder is writable and settings.cfg is valid."));
         return;
     }
     save_pending_path_ = false;
@@ -242,6 +246,7 @@ void StartupView::preview_language(std::int64_t index)
     auto *choices = &required_node<ItemList>(*dialog, "Choices");
     if (index < 0 || index >= choices->get_item_count())
         return;
+
     // Preview does not change the active or saved language until
     // confirmation: the guard puts the locale back however this ends
     // (Effective C++ Item 13).
@@ -265,6 +270,7 @@ void StartupView::preview_language(std::int64_t index)
         TranslationServer &translations_;
         String previous_;
     };
+
     auto *translations = TranslationServer::get_singleton();
     const RestoreLocale restore(*translations);
     translations->set_locale(choices->get_item_metadata(static_cast<std::int32_t>(index)));
@@ -272,8 +278,8 @@ void StartupView::preview_language(std::int64_t index)
     required_node<Label>(*dialog, "Title").set_text(i18n::text("Choose language"));
     required_node<Button>(*dialog, "Continue").set_text(i18n::text("Continue"));
     required_node<Button>(*dialog, "Cancel").set_text(i18n::text("Cancel"));
-    required_node<Label>(*dialog, "Status").set_text(
-        language_save_failed_ ? i18n::text("Cannot save language.") : String());
+    required_node<Label>(*dialog, "Status")
+        .set_text(language_save_failed_ ? i18n::text("Cannot save language.") : String());
 }
 
 void StartupView::close_language()
@@ -289,7 +295,7 @@ void StartupView::show_screen()
     if (image->get_texture().is_null())
     {
         Ref<Texture2D> texture = ResourceLoader::get_singleton()->load(
-                                     "res://bin/splashes/OpenGoldBoxSplashBackground.png");
+            "res://bin/splashes/OpenGoldBoxSplashBackground.png");
         if (texture.is_null())
         {
             UtilityFunctions::push_error("Missing shared splash background");
@@ -316,17 +322,18 @@ void StartupView::show_screen()
 
 void StartupView::_input(const Ref<InputEvent> &event)
 {
-    presentation::run_guarded(*this, [&]
-    {
-        respond_to_input(event);
-    });
+    presentation::run_guarded(*this,
+                              [&]
+                              {
+                                  respond_to_input(event);
+                              });
 }
 
 void StartupView::respond_to_input(const Ref<InputEvent> &event)
 {
     const Ref<InputEventKey> key = event;
     if (finishing_ || choosing_language_ || choosing_path_ || key.is_null() || !key->is_pressed() ||
-            key->is_echo())
+        key->is_echo())
         return;
     // Application shortcuts must not advance a splash.
     if (key->is_ctrl_pressed() && (key->get_keycode() == KEY_X || key->get_keycode() == KEY_S))
@@ -357,7 +364,7 @@ void StartupView::open_character_creation()
 {
     const bool demo = settings::flag("--combat-demo");
     if (get_tree()->change_scene_to_file(demo ? "res://scenes/combat_demo.tscn"
-                                         : "res://scenes/character_creation.tscn") != OK)
+                                              : "res://scenes/character_creation.tscn") != OK)
     {
         UtilityFunctions::push_error("Cannot open game scene.");
         get_tree()->quit(1);

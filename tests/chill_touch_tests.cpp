@@ -51,9 +51,9 @@ Character hero(std::string klass = "wizard", unsigned level = 1, std::string rac
     d.rolled = true;
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
-    d.cantrips = std::vector<std::string> {"chill_touch"};
+    d.cantrips = std::vector<std::string>{"chill_touch"};
     if (klass == "fighter" || klass == "cleric")
-        d.cantrips = std::vector<std::string> {};
+        d.cantrips = std::vector<std::string>{};
     Character h(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
@@ -116,20 +116,17 @@ std::uint64_t rng(const CombatSession &c)
 }
 
 auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Cell target = {2, 1},
-std::vector<std::string> gear = {})
+            std::vector<std::string> gear = {})
 {
     auto c = rules.create({{20, 8, std::vector<Terrain>(160)},
-        {   {
-                1,
-                "campaign-character",
-                "Caster",
-                Side::party,
-                {1, 1},
-                rules.character_profile(h.sheet(), gear).data
-            },
-            {2, "target", "Target", Side::opposition, target}
-        }},
-    seed);
+                           {{1,
+                             "campaign-character",
+                             "Caster",
+                             Side::party,
+                             {1, 1},
+                             rules.character_profile(h.sheet(), gear).data},
+                            {2, "target", "Target", Side::opposition, target}}},
+                          seed);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     return c;
@@ -138,18 +135,16 @@ std::vector<std::string> gear = {})
 void access()
 {
     auto rules = module();
-    for (const auto *klass :
-            {"wizard", "sorcerer", "warlock"
-            })
+    for (const auto *klass : {"wizard", "sorcerer", "warlock"})
     {
         auto h = hero(klass);
         auto access = rules->spell_access(h.sheet());
         check(access.cantrips.size() == 1 && access.cantrips[0].id == "chill_touch",
               "Real learned cantrip");
         check(access.cantrips[0].source_id ==
-              (std::string(klass) == "warlock"
-               ? "class:warlock:pact_magic"
-               : "class:" + std::string(klass) + ":spellcasting"),
+                  (std::string(klass) == "warlock"
+                       ? "class:warlock:pact_magic"
+                       : "class:" + std::string(klass) + ":spellcasting"),
               "Class provenance");
         auto c = battle(*custom(), h);
         act(*c, "chill_touch", 2);
@@ -158,8 +153,8 @@ void access()
             for (const auto &arg : message.arguments)
                 if (arg.name == "bonus")
                 {
-                    const auto ability = std::string(klass) == "wizard" ? Ability::intelligence
-                                         : Ability::charisma;
+                    const auto ability =
+                        std::string(klass) == "wizard" ? Ability::intelligence : Ability::charisma;
                     check(arg.value == std::to_string(2 + (h.sheet().scores[ability] - 10) / 2),
                           "Class Intelligence/Charisma casting bonus");
                     checked = true;
@@ -171,52 +166,46 @@ void access()
         profile.replace(0, 4, "PC28");
         rejects(
             [&]
-        {
-            (void)rules->create({{8, 8, std::vector<Terrain>(64)},
-                {   {1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
-                    {2, "vanguard", "Enemy", Side::opposition, {2, 1}}
-                }},
-            13);
-        });
+            {
+                (void)rules->create(
+                    {{8, 8, std::vector<Terrain>(64)},
+                     {{1, "campaign-character", "Forged", Side::party, {1, 1}, profile},
+                      {2, "vanguard", "Enemy", Side::opposition, {2, 1}}}},
+                    13);
+            });
         auto draft = h.creation_data();
-        draft.cantrips = std::vector<std::string> {"chill_touch", "chill_touch"};
+        draft.cantrips = std::vector<std::string>{"chill_touch", "chill_touch"};
         rejects(
             [&]
+            {
+                Character invalid(*srd5::character_rules(), draft, {});
+            });
+    }
+    auto draft = hero("warlock").creation_data();
+    draft.cantrips = std::vector<std::string>{"eldritch_blast", "poison_spray", "chill_touch"};
+    rejects(
+        [&]
         {
             Character invalid(*srd5::character_rules(), draft, {});
         });
-    }
-    auto draft = hero("warlock").creation_data();
-    draft.cantrips = std::vector<std::string> {"eldritch_blast", "poison_spray", "chill_touch"};
-    rejects(
-        [&]
-    {
-        Character invalid(*srd5::character_rules(), draft, {});
-    });
     draft = hero("sorcerer").creation_data();
-    draft.cantrips = std::vector<std::string> {"fire_bolt", "poison_spray", "ray_of_frost",
-        "shocking_grasp", "chill_touch"
-                                              };
+    draft.cantrips = std::vector<std::string>{"fire_bolt", "poison_spray", "ray_of_frost",
+                                              "shocking_grasp", "chill_touch"};
     rejects(
         [&]
-    {
-        Character invalid(*srd5::character_rules(), draft, {});
-    });
+        {
+            Character invalid(*srd5::character_rules(), draft, {});
+        });
 }
 
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
-        for (unsigned seed :
-                {
-                    0u, 13u, 40u
-                })
-            for (const std::string defense :
-                    {"", "resistance", "vulnerability", "immunity"
-                    })
+        for (unsigned seed : {0u, 13u, 40u})
+            for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
             {
                 auto rules = custom(
-                                 defense.empty() ? "" : "affinity target test " + defense + " necrotic\n");
+                    defense.empty() ? "" : "affinity target test " + defense + " necrotic\n");
                 auto c = battle(*rules, hero("wizard", level), seed);
                 auto copy = rules->restore(c->save());
                 const auto random = rng(*c);
@@ -231,25 +220,25 @@ void damage()
                 const int expected = defense == "immunity"        ? 0
                                      : defense == "resistance"    ? raw / 2
                                      : defense == "vulnerability" ? raw * 2
-                                     : raw;
+                                                                  : raw;
                 check((potent || unit(*c, 2).hit_points == 1000 - expected),
                       "1d10 melee Necrotic hit/crit/miss through level four");
                 check(potent || rng(*c) == random + 0x9e3779b97f4a7c15ULL * (seed == 0    ? 3u
-                        : seed == 13 ? 2u
-                        : 1u),
+                                                                             : seed == 13 ? 2u
+                                                                                          : 1u),
                       "No ranged melee disadvantage, save or flat damage modifier");
                 check(blocked(*c) == (seed != 40), "Hit prevents healing even through immunity");
                 if (seed != 40)
                 {
                     const auto fx = effects(unit(*c, 2).persistent);
                     check(fx.active.size() == 1 && fx.active[0].source_actor == 1 &&
-                          fx.active[0].remaining_ms == 9000,
+                              fx.active[0].remaining_ms == 9000,
                           "End of next caster turn, with source");
                 }
                 const auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
-                      after.movement_feet == before.movement_feet &&
-                      after.persistent == before.persistent,
+                          after.movement_feet == before.movement_feet &&
+                          after.persistent == before.persistent,
                       "Only ordinary Magic action spent");
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Repeated command is atomic");
@@ -282,34 +271,28 @@ void timing()
 
 void skipped_caster()
 {
-    for (bool lethal :
-            {
-                false, true
-            })
+    for (bool lethal : {false, true})
     {
         bool covered = false;
         const auto rules = srd5::parse_content(
-                               read(root / "data/rules/srd-5.2.1/combat.rules") +
-                               "\ncreature reaper 1 1000 -10 30 30 " +
-                               (lethal ? std::string("10 20 30") : std::string("1 4 0")) + " 0 0 0 0 0 0 0 0 0 1 0\n");
+            read(root / "data/rules/srd-5.2.1/combat.rules") +
+            "\ncreature reaper 1 1000 -10 30 30 " +
+            (lethal ? std::string("10 20 30") : std::string("1 4 0")) + " 0 0 0 0 0 0 0 0 0 1 0\n");
         for (unsigned seed = 0; seed < 50 && !covered; ++seed)
         {
             // Not an Orc: Relentless Endurance would keep it standing.
             auto h = hero("wizard", 1, "human");
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-                {   {
-                        1,
-                        "campaign-character",
-                        "Caster",
-                        Side::party,
-                        {1, 1},
-                        rules->character_profile(h.sheet(), {}).data,
-                        VitalState{1, false, {}}
-                    },
-                    {2, "reaper", "Enemy", Side::opposition, {2, 1}},
-                    {3, "vanguard", "Companion", Side::party, {6, 1}}
-                }},
-            seed);
+                                    {{1,
+                                      "campaign-character",
+                                      "Caster",
+                                      Side::party,
+                                      {1, 1},
+                                      rules->character_profile(h.sheet(), {}).data,
+                                      VitalState{1, false, {}}},
+                                     {2, "reaper", "Enemy", Side::opposition, {2, 1}},
+                                     {3, "vanguard", "Companion", Side::party, {6, 1}}}},
+                                   seed);
             while (c->snapshot().actor != 1)
                 act(*c, "end");
             act(*c, "chill_touch", 2);
@@ -325,7 +308,7 @@ void skipped_caster()
             check(unit(*c).dead == lethal, "Actual enemy hit exercises dead/unconscious caster");
             auto copy = rules->restore(c->save());
             for (unsigned turns = 0; c->snapshot().elapsed_milliseconds < deadline && turns < 6;
-                    ++turns)
+                 ++turns)
             {
                 act(*c, "end");
                 act(*copy, "end");
@@ -344,10 +327,7 @@ void skipped_caster()
 void campaign_handoff()
 {
     auto rules = module();
-    for (bool npc :
-            {
-                false, true
-            })
+    for (bool npc : {false, true})
     {
         CampaignParty party(module());
         const auto h = hero("wizard", 4);
@@ -369,7 +349,7 @@ void campaign_handoff()
         CampaignParty copy(module());
         copy.restore(
             decode_campaign(saved, *srd5::character_rules(), *rules, "chill-handoff", nullptr)
-            .party);
+                .party);
         check(encode_campaign(copy, nullptr, "chill-handoff") == saved,
               "Actual PC/NPC cast round trips");
         check(bool(copy.rest(RestKind::short_rest)),
@@ -379,7 +359,7 @@ void campaign_handoff()
         if (copy.state().short_rest)
             copy.finish_short_rest(copy.state().short_rest->ticket);
         check(bool(copy.rest(RestKind::long_rest)) &&
-              copy.member(id).vitals.hit_points == h.sheet().hit_points,
+                  copy.member(id).vitals.hit_points == h.sheet().hit_points,
               "Long Rest heals normally after effect elapsed");
     }
 }
@@ -387,10 +367,7 @@ void campaign_handoff()
 void legality()
 {
     auto rules = custom();
-    for (int feet :
-            {
-                5, 10
-            })
+    for (int feet : {5, 10})
     {
         auto c = battle(*rules, hero(), 13, {1 + feet / 5, 1}, {"whip"});
         check(has(*c, "chill_touch", 2) == (feet == 5), "Touch ignores weapon reach");
@@ -402,17 +379,15 @@ void legality()
         }
     }
     // Full hands block nothing (CLASS-11); untrained armor does.
-    for (auto gear : std::vector<std::vector<std::string>>
-{
-    {"quarterstaff", "shield"}, {"wand", "shield"}
-})
-    check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "chill_touch"),
-          "Full hands do not block casting");
+    for (auto gear :
+         std::vector<std::vector<std::string>>{{"quarterstaff", "shield"}, {"wand", "shield"}})
+        check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "chill_touch"),
+              "Full hands do not block casting");
     {
         auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
         auto saved = c->save();
         check(!has(*c, "chill_touch") &&
-              !c->submit({c->snapshot().revision, 1, 2, "chill_touch"}) && c->save() == saved,
+                  !c->submit({c->snapshot().revision, 1, 2, "chill_touch"}) && c->save() == saved,
               "Untrained armor prevents casting");
     }
 }
@@ -439,16 +414,15 @@ void lifecycle()
     check(state.active.empty() && state.prone && random == 17,
           "Last source expires without changing posture or RNG");
     for (const char *bad :
-            {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX8 2 1 1 4 5 1 \"Caster\" 1 6000 0 0",
-             "FX8 2 1 1 4 5 1 \"Caster\" 0 12001 0 0", "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 1 0",
-             "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 0 2"
-            })
+         {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX8 2 1 1 4 5 1 \"Caster\" 1 6000 0 0",
+          "FX8 2 1 1 4 5 1 \"Caster\" 0 12001 0 0", "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 1 0",
+          "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 0 2"})
         rejects(
             [&]
-    {
-        std::istringstream in(bad);
-        (void)fx::read_effects(in);
-    });
+            {
+                std::istringstream in(bad);
+                (void)fx::read_effects(in);
+            });
 }
 
 VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
@@ -471,7 +445,8 @@ void recovery()
     const auto hp = state.hit_points;
     RandomState random{13};
     rules->temple_heal(state, h.sheet(), random);
-    check(state.hit_points == hp && random.value != 13, "Temple cast consumes rolls but cannot heal");
+    check(state.hit_points == hp && random.value != 13,
+          "Temple cast consumes rolls but cannot heal");
     rules->set_hit_points(state, h.sheet(), h.sheet().hit_points);
     check(state.hit_points == hp, "Positive script HP assignment is blocked");
     const auto spent = rules->spend_hit_die(state, h.sheet(), random);
@@ -502,16 +477,16 @@ void recovery()
     }
     check(exercised, "Natural 20 branch exercised");
     auto target = rules->character_profile(h.sheet(), {}).data;
-    auto c = rules->create(
-    {
-        {8, 8, std::vector<Terrain>(64)},
-        {   {
-                1, "campaign-character", "Fighter", Side::party, {1, 1}, target,
-                blocked_state(*rules, h, 1)
-            },
-            {2, "target", "Enemy", Side::opposition, {2, 1}}
-        }},
-    13);
+    auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
+                            {{1,
+                              "campaign-character",
+                              "Fighter",
+                              Side::party,
+                              {1, 1},
+                              target,
+                              blocked_state(*rules, h, 1)},
+                             {2, "target", "Enemy", Side::opposition, {2, 1}}}},
+                           13);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     act(*c, "second_wind");
@@ -524,31 +499,24 @@ void healing_spells()
     auto cleric = hero("cleric").sheet();
     cleric.prepared_spells = {"cure_wounds", "healing_word"};
     auto fighter = hero("fighter", 2);
-    for (const char *spell :
-            {"cure_wounds", "healing_word"
-            })
+    for (const char *spell : {"cure_wounds", "healing_word"})
     {
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {
-                    1,
-                    "campaign-character",
-                    "Cleric",
-                    Side::party,
-                    {1, 1},
-                    rules->character_profile(cleric, {}).data
-                },
-                {
-                    2,
-                    "campaign-character",
-                    "Fighter",
-                    Side::party,
-                    {2, 1},
-                    rules->character_profile(fighter.sheet(), {}).data,
-                    blocked_state(*rules, fighter, 1)
-                },
-                {99, "target", "Enemy", Side::opposition, {5, 1}}
-            }},
-        13);
+                                {{1,
+                                  "campaign-character",
+                                  "Cleric",
+                                  Side::party,
+                                  {1, 1},
+                                  rules->character_profile(cleric, {}).data},
+                                 {2,
+                                  "campaign-character",
+                                  "Fighter",
+                                  Side::party,
+                                  {2, 1},
+                                  rules->character_profile(fighter.sheet(), {}).data,
+                                  blocked_state(*rules, fighter, 1)},
+                                 {99, "target", "Enemy", Side::opposition, {5, 1}}}},
+                               13);
         while (c->snapshot().actor != 1)
             act(*c, "end");
         check(blocked(*c), "Block remains before actual healing spell");
@@ -573,19 +541,16 @@ void combat_death_save()
     for (unsigned seed = 0; seed < 100 && !covered; ++seed)
     {
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-            {   {
-                    1,
-                    "campaign-character",
-                    "Fighter",
-                    Side::party,
-                    {1, 1},
-                    rules->character_profile(h.sheet(), {}).data,
-                    vitality
-                },
-                {2, "target", "Enemy", Side::opposition, {2, 1}},
-                {3, "vanguard", "Companion", Side::party, {6, 1}}
-            }},
-        seed);
+                                {{1,
+                                  "campaign-character",
+                                  "Fighter",
+                                  Side::party,
+                                  {1, 1},
+                                  rules->character_profile(h.sheet(), {}).data,
+                                  vitality},
+                                 {2, "target", "Enemy", Side::opposition, {2, 1}},
+                                 {3, "vanguard", "Companion", Side::party, {6, 1}}}},
+                               seed);
         for (unsigned turns = 0; turns < 3 && !covered; ++turns)
         {
             for (const auto &message : c->snapshot().log_messages())
@@ -601,7 +566,7 @@ void combat_death_save()
                     {
                         check(
                             unit(*c).hit_points == 0 && !unit(*c).action &&
-                            c->snapshot().actor != 1,
+                                c->snapshot().actor != 1,
                             "Blocked natural 20 does not wake the combatant or grant its turn's actions");
                         auto restored = rules->restore(c->save());
                         check(restored->save() == c->save(),
@@ -643,28 +608,26 @@ void death_saves_outside_combat()
     CampaignParty loaded(module());
     loaded.restore(
         decode_campaign(settled, *srd5::character_rules(), *rules, "chill-death-saves", nullptr)
-        .party);
+            .party);
     loaded.advance_time(std::chrono::milliseconds(1999));
     loaded.advance_time(std::chrono::milliseconds(4000));
     check(encode_campaign(loaded, nullptr, "chill-death-saves") ==
-          encode_campaign(whole, nullptr, "chill-death-saves"),
+              encode_campaign(whole, nullptr, "chill-death-saves"),
           "Death saves resolved in the first moment continue identically after save/load");
     const auto &settled_vitals = whole.member(id).vitals;
     // Independent SplitMix64 calculation: seed 17's first d20 is 20, so more
     // than one draw proves the blocked natural 20 counted only as a success.
     check(settled_vitals.hit_points == 0 &&
-          (settled_vitals.dead ||
-           settled_vitals.description.find("Stable") != std::string::npos) &&
-          whole.state().random_state.value != 17 + 0x9e3779b97f4a7c15ULL,
+              (settled_vitals.dead ||
+               settled_vitals.description.find("Stable") != std::string::npos) &&
+              whole.state().random_state.value != 17 + 0x9e3779b97f4a7c15ULL,
           "While Chill Touch prevents healing, a natural 20 is a success, not 1 HP");
 }
 
 void persistence()
 {
     auto rules = custom();
-    for (const auto *klass :
-            {"wizard", "sorcerer", "warlock"
-            })
+    for (const auto *klass : {"wizard", "sorcerer", "warlock"})
     {
         CampaignParty party(module());
         auto h = hero(klass);
@@ -700,10 +663,7 @@ void earned_lifecycle()
     fx::start_stable_recovery(life, random);
     check(life == pending && random == 17,
           "Earned recovery cannot reroll on repeated stabilization");
-    for (bool buffer :
-            {
-                false, true
-            })
+    for (bool buffer : {false, true})
     {
         auto damaged = pending;
         if (buffer)
@@ -717,30 +677,23 @@ void earned_lifecycle()
     fx::damage_life(life, 0, 20);
     check(life == pending, "Zero resolved damage preserves earned recovery");
     check(fx::advance_recovery_clock(life, 1) && life.hp == 1 &&
-          life.recovery == fx::RecoveryClock{},
+              life.recovery == fx::RecoveryClock{},
           "Earned recovery grants exactly one HP once allowed");
-    for (const auto &invalid : std::vector<fx::LifeState> {{1, 0, 0, true, false, {0, 0, true}},
-    {0, 0, 0, true, true, {0, 0, true}},
-    {0, 0, 0, false, false, {0, 0, true}},
-    {0, 0, 0, true, false, {0, 1, true}}
-})
-    rejects(
-        [&]
-    {
-        fx::validate_recovery(invalid);
-    });
+    for (const auto &invalid : std::vector<fx::LifeState>{{1, 0, 0, true, false, {0, 0, true}},
+                                                          {0, 0, 0, true, true, {0, 0, true}},
+                                                          {0, 0, 0, false, false, {0, 0, true}},
+                                                          {0, 0, 0, true, false, {0, 1, true}}})
+        rejects(
+            [&]
+            {
+                fx::validate_recovery(invalid);
+            });
 }
 
 void stable_timeline()
 {
-    for (auto mode :
-            {
-                fx::RecoveryMode::campaign, fx::RecoveryMode::combat
-            })
-        for (unsigned deadline :
-                {
-                    999u, 1000u, 1001u, 3000u, 4000u
-                })
+    for (auto mode : {fx::RecoveryMode::campaign, fx::RecoveryMode::combat})
+        for (unsigned deadline : {999u, 1000u, 1001u, 3000u, 4000u})
         {
             fx::LifeState life{0, 0, 0, true, false, {0, deadline}}, other{10};
             fx::EffectState effect, other_effect;
@@ -752,18 +705,15 @@ void stable_timeline()
             auto pieces = life, other_pieces = other;
             auto piece_effect = effect, other_piece_effect = other_effect;
             std::vector<fx::RecoverySubject> whole{{{2, other_effect, {}}, other},
-                {{1, effect, {}}, life}};
+                                                   {{1, effect, {}}, life}};
             std::vector<fx::RecoverySubject> chunked{{{2, other_piece_effect, {}}, other_pieces},
-                {{1, piece_effect, {}}, pieces}};
+                                                     {{1, piece_effect, {}}, pieces}};
             std::uint64_t random = 17, piece_random = 17;
             fx::elapse_recovery(whole, 2999, random, mode);
-            for (unsigned step :
-                    {
-                        1u, 998u, 1u, 999u, 1000u
-                    })
+            for (unsigned step : {1u, 998u, 1u, 999u, 1000u})
                 fx::elapse_recovery(chunked, step, piece_random, mode);
             check(life == pieces && effect == piece_effect && other_effect == other_piece_effect &&
-                  random == piece_random,
+                      random == piece_random,
                   "Shared effect/deadline ordering and RNG are partition invariant");
             check(life.hp == 0 && life.recovery.stable_recovery_due == (deadline < 3000),
                   "No recovery before last blocking source expires");
@@ -779,7 +729,7 @@ VitalState stable_blocked(unsigned deadline = 1000)
 {
     return {0, false,
             "SRD13 2 0 0 0 0 0 0 0 0 0 0 0 1 2 0 " + std::to_string(deadline) +
-            " 0 \"\" 2 1 0 0 0 0 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
+                " 0 \"\" 2 1 0 0 0 0 0 FX8 2 1 1 4 5 99 \"Enemy\" 0 9000 0 0"};
 }
 
 void stable_continuation()
@@ -796,7 +746,7 @@ void stable_continuation()
     party.advance_time(std::chrono::milliseconds(1000));
     const auto pending = party.member(id).vitals;
     check(pending.hit_points == 0 && pending.resources.find("14400001") != pending.resources.npos &&
-          party.state().random_state.value == 17,
+              party.state().random_state.value == 17,
           "Earned recovery stored without additional d4 draw");
     auto bytes = encode_campaign(party, nullptr, "earned-recovery");
     CampaignParty loaded(module());
@@ -808,32 +758,29 @@ void stable_continuation()
     no_block.resources.replace(no_block.resources.find("FX8"), std::string::npos, "FX8 1 0 0");
     rejects(
         [&]
-    {
-        rules->validate_character_state(h.sheet(), no_block);
-    });
+        {
+            rules->validate_character_state(h.sheet(), no_block);
+        });
     loaded.advance_time(std::chrono::milliseconds(7999));
     check(loaded.member(id).vitals.hit_points == 0 && loaded.state().random_state.value == 17,
           "Deferred recovery waits without reroll");
     loaded.advance_time(std::chrono::milliseconds(1));
     party.advance_time(std::chrono::milliseconds(8000));
     check(loaded.member(id).vitals.hit_points == 1 && loaded.state().random_state.value == 17 &&
-          encode_campaign(loaded, nullptr, "earned-recovery") ==
-          encode_campaign(party, nullptr, "earned-recovery"),
+              encode_campaign(loaded, nullptr, "earned-recovery") ==
+                  encode_campaign(party, nullptr, "earned-recovery"),
           "Saved earned recovery resumes at exact expiry");
     auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-        {   {
-                1,
-                "campaign-character",
-                "Patient",
-                Side::party,
-                {1, 1},
-                rules->character_profile(h.sheet(), {}).data,
-                pending
-            },
-            {2, "vanguard", "Companion", Side::party, {3, 1}},
-            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
-        }},
-    13);
+                            {{1,
+                              "campaign-character",
+                              "Patient",
+                              Side::party,
+                              {1, 1},
+                              rules->character_profile(h.sheet(), {}).data,
+                              pending},
+                             {2, "vanguard", "Companion", Side::party, {3, 1}},
+                             {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
+                           13);
     check(unit(*c).hit_points == 0, "Combat retains due recovery while blocked");
     auto copy = rules->restore(c->save());
     const auto random = rng(*c);
@@ -851,27 +798,24 @@ void stable_actual_cast()
 {
     auto rules = custom("affinity target test immunity necrotic\n");
     auto h = hero();
-    auto c = rules->create({{8, 8, std::vector<Terrain>(64)},
-        {   {
-                1,
-                "campaign-character",
-                "Caster",
-                Side::party,
-                {1, 1},
-                rules->character_profile(h.sheet(), {}).data
-            },
-            {
-                2,
-                "target",
-                "Patient",
-                Side::party,
-                {2, 1},
-                {},
-                VitalState{0, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}
-            },
-            {99, "vanguard", "Enemy", Side::opposition, {6, 1}}
-        }},
-    13);
+    auto c = rules->create(
+        {{8, 8, std::vector<Terrain>(64)},
+         {{1,
+           "campaign-character",
+           "Caster",
+           Side::party,
+           {1, 1},
+           rules->character_profile(h.sheet(), {}).data},
+          {2,
+           "target",
+           "Patient",
+           Side::party,
+           {2, 1},
+           {},
+           VitalState{0, false,
+                      "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 5000 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0"}},
+          {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
+        13);
     while (c->snapshot().actor != 1)
         act(*c, "end");
     check(unit(*c, 2).hit_points == 0, "Stable before actual cast");
@@ -903,18 +847,15 @@ void fixtures()
     auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "chill-fixtures";
     std::filesystem::create_directories(path);
     auto rules = module();
-    for (const auto *klass :
-            {"wizard", "sorcerer", "warlock"
-            })
+    for (const auto *klass : {"wizard", "sorcerer", "warlock"})
     {
         auto h = hero(klass);
         auto profile = rules->character_profile(h.sheet(), {}).data;
         auto c = rules->create({{12, 9, std::vector<Terrain>(108)},
-            {   {1, "campaign-character", "Caster", Side::party, {1, 1}, profile},
-                {2, "vanguard", "Ally", Side::party, {2, 1}},
-                {99, "vanguard", "Enemy", Side::opposition, {5, 1}}
-            }},
-        2);
+                                {{1, "campaign-character", "Caster", Side::party, {1, 1}, profile},
+                                 {2, "vanguard", "Ally", Side::party, {2, 1}},
+                                 {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
+                               2);
         while (c->snapshot().actor != 1)
             act(*c, "end");
         std::ofstream(path / (std::string(klass) + ".save"), std::ios::binary) << c->save();

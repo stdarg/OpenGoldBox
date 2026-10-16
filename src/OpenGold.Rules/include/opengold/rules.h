@@ -47,10 +47,9 @@ enum class Ability : unsigned
 }
 
 // Every ability, in order, for loops that need to know which one they are on.
-inline constexpr std::array<Ability, 6> all_abilities
-{
-    Ability::strength,     Ability::dexterity, Ability::constitution,
-    Ability::intelligence, Ability::wisdom,    Ability::charisma};
+inline constexpr std::array<Ability, 6> all_abilities{Ability::strength,     Ability::dexterity,
+                                                      Ability::constitution, Ability::intelligence,
+                                                      Ability::wisdom,       Ability::charisma};
 
 // One value per ability, reachable only by naming the Ability, so code such
 // as scores[2] cannot silently mean Constitution (Effective C++ Item 18).
@@ -183,7 +182,7 @@ struct AdvancementChoice
     std::vector<std::string> spells;
     TrainingChoices training;
     std::optional<std::string>
-    fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
+        fighting_style; // Class-granted choice/replacement, separate from a level-four feat.
     std::optional<TrainingChoices> spell_learning; // Required for Wizards; absent otherwise.
     // A cantrip, a known spell, and an Eldritch Invocation or Metamagic option.
     LevelSwap cantrip_swap, spell_swap, option_swap;
@@ -544,7 +543,7 @@ struct CombatantView
     std::vector<ResourcePool> resources;
     std::vector<Message> hp_messages;
     std::vector<std::string>
-    bonus_actions; // Entitlements remain visible after spending the Bonus Action.
+        bonus_actions; // Entitlements remain visible after spending the Bonus Action.
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
     std::string form; // Wild Shape's Beast form, such as "wolf"; empty otherwise.
     bool prone{};
@@ -561,8 +560,8 @@ struct CombatantView
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.
     bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
-    bool fled{}; // Ran off the field; it rejoins the party when the fight ends.
-    bool hidden{}; // Hidden by the Hide action until an enemy finds it.
+    bool fled{};     // Ran off the field; it rejoins the party when the fight ends.
+    bool hidden{};   // Hidden by the Hide action until an enemy finds it.
     bool banished{}; // Banishment: off the field until the spell ends.
     // A party member fast enough to run off the field (no conscious enemy is
     // faster) that has not failed a flight this fight.
@@ -658,7 +657,7 @@ struct Snapshot
     Outcome outcome{};
     Battlefield battlefield;
     std::vector<CombatantView> combatants; // Initiative order.
-    std::vector<LogEntry> log_entries; // Oldest first.
+    std::vector<LogEntry> log_entries;     // Oldest first.
     bool reaction_pending{};
     std::uint64_t elapsed_milliseconds{};
     std::optional<TemporaryHpOffer> temporary_hp_offer;
@@ -760,29 +759,31 @@ class RulesModule
     [[nodiscard]] virtual Identity identity() const = 0;
     [[nodiscard]] virtual std::vector<std::string> supported_features() const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession> create(Encounter encounter,
-            std::uint64_t seed) const = 0;
+                                                                std::uint64_t seed) const = 0;
     [[nodiscard]] virtual std::unique_ptr<CombatSession>
     restore(std::string_view checkpoint) const = 0;
-    [[nodiscard]] virtual CharacterProfile character_profile(const CharacterSheet &,
-            std::span<const std::string>) const = 0;
+    [[nodiscard]] virtual CharacterProfile
+    character_profile(const CharacterSheet &, std::span<const std::string>) const = 0;
     [[nodiscard]] virtual EquipmentInfo equipment_info(std::string_view) const = 0;
     [[nodiscard]] virtual std::vector<EquipmentChoice>
     equipment_choices(const CharacterSheet &, std::span<const std::string>, unsigned) const = 0;
     [[nodiscard]] virtual EquipmentChange equipment_change(const CharacterSheet &,
-            std::span<const std::string> candidates, unsigned selected,
-            EquipmentOperation) const = 0;
+                                                           std::span<const std::string> candidates,
+                                                           unsigned selected,
+                                                           EquipmentOperation) const = 0;
     [[nodiscard]] virtual SpellAccess spell_access(const CharacterSheet &) const = 0;
     [[nodiscard]] virtual SpellChoiceOptions spell_choice_options(const CharacterSheet &,
-            SpellChoiceContext) const = 0;
+                                                                  SpellChoiceContext) const = 0;
     // No default for the completeness: an override cannot redefine one
     // (Effective C++ Item 37), and every caller says which it means.
     virtual void apply_spell_choices(CharacterSheet &, const SpellChoices &, SpellChoiceContext,
                                      ChoiceCompleteness) const = 0;
     // An empty skill is a plain ability check. No default: an override cannot
     // redefine one (Effective C++ Item 37).
-    [[nodiscard]] virtual AbilityCheckModifier
-    ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
-                  std::string_view skill) const = 0;
+    [[nodiscard]] virtual AbilityCheckModifier ability_check(const CharacterSheet &,
+                                                             std::span<const std::string> gear,
+                                                             Ability ability,
+                                                             std::string_view skill) const = 0;
     // Rolls that check outside combat, advancing the campaign service random state.
     [[nodiscard]] virtual AbilityCheckRoll
     roll_ability_check(const CharacterSheet &, std::span<const std::string> gear, Ability ability,
@@ -796,7 +797,7 @@ class RulesModule
     // change, and a choice they leave out keeps its picks. Returns the changed
     // choices' selections by group.
     virtual TrainingChoices replace_rest_training(CharacterSheet &,
-            std::span<const std::string>) const = 0;
+                                                  std::span<const std::string>) const = 0;
     [[nodiscard]] virtual std::vector<TrainingChoiceGroup>
     training_options(const CharacterSheet &) const = 0;
     // A training hall's skills for a member of the hall's classes (stable class
@@ -806,13 +807,13 @@ class RulesModule
     // Adds one hall-trained skill or Expertise at the sheet's level. Atomic.
     virtual void train_at_hall(CharacterSheet &, std::string_view grant) const = 0;
     [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &) const = 0;
-    [[nodiscard]] virtual AdvancementOptions advancement_options(const CharacterSheet &sheet,
-            const AdvancementChoice &) const = 0;
+    [[nodiscard]] virtual AdvancementOptions
+    advancement_options(const CharacterSheet &sheet, const AdvancementChoice &) const = 0;
     [[nodiscard]] virtual AdvancementChoice default_advancement(const CharacterSheet &) const = 0;
     // The sheet a level-up's spell choices are offered for: one level higher,
     // with the choice's features that change them (such as a Fighting Style).
     [[nodiscard]] virtual CharacterSheet spell_choice_sheet(const CharacterSheet &,
-            const AdvancementChoice &) const = 0;
+                                                            const AdvancementChoice &) const = 0;
     // The only form a module overrides; default_advancement() supplies the
     // choice when the player makes none. False means this module's supported
     // advancement ceiling was reached.
@@ -820,7 +821,7 @@ class RulesModule
                                    const AdvancementChoice &) const = 0;
     virtual void recover(VitalState &state, const CharacterSheet &sheet) const = 0;
     [[nodiscard]] virtual RecoveryInfo recovery_info(const CharacterSheet &,
-            const VitalState &) const = 0;
+                                                     const VitalState &) const = 0;
     // A granting feature must establish entitlement and spend its costs before
     // calling this operation. The choice is explicit; pools never stack.
     virtual void grant_temporary_hit_points(VitalState &, const CharacterSheet &,
@@ -830,14 +831,13 @@ class RulesModule
     // these resource operations. Each spend commits one die and its RNG draw.
     virtual void recover_short_rest(VitalState &, const CharacterSheet &) const = 0;
     [[nodiscard]] virtual Message recover_rest_choice(VitalState &, const CharacterSheet &,
-            std::string_view) const = 0;
+                                                      std::string_view) const = 0;
     virtual HitDieResult spend_hit_die(VitalState &, const CharacterSheet &,
                                        RandomState &) const = 0;
     // Advances module-owned lasting effects for a group in deterministic order.
     // A duration, not a bare count, so minutes or the dice state cannot be
     // passed where milliseconds belong (Effective C++ Item 18).
-    virtual void elapse(std::span<Participant>, std::chrono::milliseconds,
-                        RandomState &) const = 0;
+    virtual void elapse(std::span<Participant>, std::chrono::milliseconds, RandomState &) const = 0;
     virtual void validate_character_state(const CharacterSheet &, const VitalState &) const = 0;
     [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;
     [[nodiscard]] virtual RestPolicy short_rest_policy() const = 0;
@@ -845,15 +845,15 @@ class RulesModule
     virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
                              RandomState &random_state) const = 0;
     // `gear` is what the member wears, so the attack meets its armor and shield.
-    [[nodiscard]] virtual HazardAttackResult hazard_attack(VitalState &state,
-            const CharacterSheet &sheet, std::span<const std::string> gear,
-            const HazardAttack &attack, RandomState &random_state) const = 0;
+    [[nodiscard]] virtual HazardAttackResult
+    hazard_attack(VitalState &state, const CharacterSheet &sheet, std::span<const std::string> gear,
+                  const HazardAttack &attack, RandomState &random_state) const = 0;
     // The current Hit Point maximum, which a lasting effect such as Aid raises
     // above the sheet's.
     [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &,
-            const VitalState &) const = 0;
+                                                const VitalState &) const = 0;
     [[nodiscard]] virtual std::vector<CampAction> camp_actions(const CharacterSheet &,
-            const VitalState &) const = 0;
+                                                               const VitalState &) const = 0;
     // Uses one of camp_actions() on the target. A character acting on itself
     // passes the same VitalState as both user and target.
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
@@ -864,23 +864,27 @@ class RulesModule
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                        std::span<CampTarget> party, std::string_view action,
                                        RandomState &random_state) const = 0;
+
     // Gold coins a camp action on `target` takes from the party purse, such as
     // Revivify's offering.
     [[nodiscard]] virtual unsigned camp_action_gold(const CharacterSheet &target,
-            std::string_view action) const
+                                                    std::string_view action) const
     {
         (void)target;
         (void)action;
         return 0;
     }
+
     // The same, for an action whose price depends on the target's state, such
     // as a simulacrum's repair.
     [[nodiscard]] virtual unsigned camp_action_gold(const CharacterSheet &target,
-            const VitalState &target_state, std::string_view action) const
+                                                    const VitalState &target_state,
+                                                    std::string_view action) const
     {
         (void)target_state;
         return camp_action_gold(target, action);
     }
+
     // The state of a new simulacrum of `original` (SRD 5.2.1 p. 162), made
     // after use_camp_action() has cast the spell; the campaign adds it to the
     // party.
@@ -889,6 +893,7 @@ class RulesModule
         (void)original;
         throw std::runtime_error("This rules module has no Simulacrum");
     }
+
     // The species of a body Reincarnate forms (SRD 5.2.1 p. 158), rolled
     // with `random_state`; use_camp_action() has revived the member.
     [[nodiscard]] virtual std::string reincarnation_species(RandomState &random_state) const
@@ -896,15 +901,18 @@ class RulesModule
         (void)random_state;
         throw std::runtime_error("This rules module has no Reincarnate");
     }
+
     // A member's `state` fitted to its sheet `after` a change of body, from
     // `before`: what it had, within what the new body allows.
     [[nodiscard]] virtual VitalState fitted_state(const CharacterSheet &before,
-            const VitalState &state, const CharacterSheet &after) const
+                                                  const VitalState &state,
+                                                  const CharacterSheet &after) const
     {
         (void)before;
         (void)after;
         return state;
     }
+
     // Whether the party's camp wards (Magic Circle) keep away every creature of
     // these definitions, so they cannot interrupt the rest.
     [[nodiscard]] virtual bool keeps_away(std::span<const CampTarget> party,
@@ -914,9 +922,11 @@ class RulesModule
         (void)definitions;
         return false;
     }
+
     // A spell cast while exploring, such as Knock on a locked door.
     [[nodiscard]] virtual bool can_cast_exploration_spell(const CharacterSheet &,
-            const VitalState &, std::string_view) const = 0;
+                                                          const VitalState &,
+                                                          std::string_view) const = 0;
     virtual void cast_exploration_spell(const CharacterSheet &caster, VitalState &state,
                                         std::string_view spell) const = 0;
 

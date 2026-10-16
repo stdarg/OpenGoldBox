@@ -45,11 +45,14 @@ Character druid()
     for (auto &r : d.rolls)
         r = {{6, 5, 4, 1}, 3};
     d.rolls[4] = {{6, 6, 6, 1}, 3};
-    d.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {"warden"}}};
+    d.training = {{"class:druid", {"nature", "medicine"}},
+                  {"class:druid:primal_order", {"warden"}}};
     d.cantrips = {"produce_flame", "shillelagh"};
-    d.spells = SpellChoices{{},
-        std::vector<std::string> {"cure_wounds", "entangle", "faerie_fire", "thunderwave"},
-        {}, {}};
+    d.spells = SpellChoices{
+        {},
+        std::vector<std::string>{"cure_wounds", "entangle", "faerie_fire", "thunderwave"},
+        {},
+        {}};
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -58,10 +61,12 @@ bool casts(const CombatSession &fight, const Command &command)
     const auto state = fight.snapshot();
     for (const auto &a : state.combatants)
         if (a.id == state.actor)
-            return std::any_of(a.spells.begin(), a.spells.end(), [&](const auto & spell)
-        {
-            return command.verb == spell || command.verb.starts_with(spell + "_");
-        });
+            return std::any_of(a.spells.begin(), a.spells.end(),
+                               [&](const auto &spell)
+                               {
+                                   return command.verb == spell ||
+                                          command.verb.starts_with(spell + "_");
+                               });
     return false;
 }
 
@@ -75,7 +80,8 @@ void party_keeps_quick()
     const auto saved = encode_campaign(party, nullptr, "quick");
     check(saved.starts_with("OPENGOLD-CAMPAIGN 31\n"), "Campaign saves are format 31");
     CampaignParty loaded(module());
-    loaded.restore(decode_campaign(saved, *srd5::character_rules(), *module(), "quick", nullptr).party);
+    loaded.restore(
+        decode_campaign(saved, *srd5::character_rules(), *module(), "quick", nullptr).party);
     check(loaded.member(id).quick && loaded.state().quick_magic,
           "Quick and Quick magic survive a save, for the next fight");
     loaded.take_control();
@@ -88,10 +94,9 @@ void magic_off_casts_nothing()
     const auto rules = module();
     const auto profile = rules->character_profile(druid().sheet(), {}).data;
     auto fight = rules->create({{12, 6, std::vector<Terrain>(72)},
-        {   {1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
-            {98, "bandit", "Enemy", Side::opposition, {6, 1}}
-        }},
-    5);
+                                {{1, "campaign-character", "Druid", Side::party, {1, 1}, profile},
+                                 {98, "bandit", "Enemy", Side::opposition, {6, 1}}}},
+                               5);
     for (unsigned turns = 0; fight->snapshot().actor != 1 && turns < 4; ++turns)
         for (const auto &command : fight->legal_commands())
             if (command.verb == "end" || command.verb == "initiative_keep")

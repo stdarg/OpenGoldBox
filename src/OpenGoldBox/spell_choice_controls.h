@@ -34,7 +34,7 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
     auto groups = options.learning;
     if (options.may_prepare)
         groups.push_back(
-    {"prepared", "Prepared spells", options.prepared_count, options.preparation});
+            {"prepared", "Prepared spells", options.prepared_count, options.preparation});
     int position = 0;
     for (const auto &group : groups)
     {
@@ -55,11 +55,11 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         static const std::vector<std::string> none;
         const auto &picked = group.id == "prepared" ? (choices.prepared ? *choices.prepared : none)
                              : it == choices.learning.end() ? none
-                             : it->second;
+                                                            : it->second;
         label->set_text(tr(group.label) +
                         (group.id == "prepared" ? String()
-                         : " / " + tr(N_("Level")) + " " +
-                         String::num_uint64(group.acquired_level)) +
+                                                : " / " + tr(N_("Level")) + " " +
+                                                      String::num_uint64(group.acquired_level)) +
                         " (" + String::num_uint64(picked.size()) + " / " +
                         String::num_uint64(group.count) + ")");
         auto *pending = &required_node<Label>(*section, "Pending");
@@ -160,8 +160,7 @@ godot::Window *setup_spell_dialog(godot::Node &parent, const godot::String &name
     known->set_scroll_active(true);
     auto *scroll = dialog_control<ScrollContainer>(*w, "Choices");
     spell_rows(*scroll, "Rows");
-    dialog_control<Label>(*w, "ReplaceLabel")
-    ->set_text(tr(N_("Replace cantrip")));
+    dialog_control<Label>(*w, "ReplaceLabel")->set_text(tr(N_("Replace cantrip")));
     dialog_control<Label>(*w, "WithLabel")->set_text(tr(N_("With")));
     dialog_control<OptionButton>(*w, "Replace");
     dialog_control<OptionButton>(*w, "With");

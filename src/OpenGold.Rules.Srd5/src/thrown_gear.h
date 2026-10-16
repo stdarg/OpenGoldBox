@@ -10,9 +10,9 @@ namespace opengold::srd5::detail
 // thrower's Dexterity modifier and Proficiency Bonus). Each throw uses one up.
 enum class ThrownGearEffect
 {
-    acid,             // 2d6 Acid damage on a failed save
-    alchemists_fire,  // 1d4 Fire damage and Burning on a failed save
-    oil               // Covered in oil: its next Fire damage within 1 minute deals 5 more
+    acid,            // 2d6 Acid damage on a failed save
+    alchemists_fire, // 1d4 Fire damage and Burning on a failed save
+    oil              // Covered in oil: its next Fire damage within 1 minute deals 5 more
 };
 
 struct ThrownGear
@@ -25,8 +25,7 @@ struct ThrownGear
 
 inline constexpr int thrown_gear_range = 20;
 
-inline constexpr std::array thrown_gear_items
-{
+inline constexpr std::array thrown_gear_items{
     ThrownGear{"acid", ThrownGearEffect::acid, 2500, "Acid"},
     ThrownGear{"alchemists_fire", ThrownGearEffect::alchemists_fire, 5000, "Alchemist's Fire"},
     ThrownGear{"oil", ThrownGearEffect::oil, 10, "Oil"},

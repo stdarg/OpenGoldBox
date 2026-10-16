@@ -65,19 +65,20 @@ CharacterDraft draft(std::string klass)
 
 bool holds(const CharacterSheet &sheet, std::string_view id, unsigned level)
 {
-    return std::any_of(sheet.grants.begin(), sheet.grants.end(), [&](const auto & g)
-    {
-        return g.id == id && g.level == level;
-    });
+    return std::any_of(sheet.grants.begin(), sheet.grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id && g.level == level;
+                       });
 }
 
 unsigned count_of(const CharacterSheet &sheet, std::string_view prefix)
 {
     return static_cast<unsigned>(std::count_if(sheet.grants.begin(), sheet.grants.end(),
-                                 [&](const auto & g)
-    {
-        return g.id.starts_with(prefix);
-    }));
+                                               [&](const auto &g)
+                                               {
+                                                   return g.id.starts_with(prefix);
+                                               }));
 }
 
 unsigned capacity(const CampaignParty &party, MemberId id, std::string_view pool)
@@ -121,24 +122,31 @@ void fighter_checks()
     check(sheet().level == 15, "The rules advance a Fighter to level 15");
     check(!party.rule_module().advancement_options(sheet()).level,
           "Level 15 is the Fighter's rules cap");
-    check(holds(sheet(), "feature:extra_attack", 5) && holds(sheet(), "feature:tactical_shift", 5) &&
-          holds(sheet(), "feature:additional_fighting_style", 7) &&
-          holds(sheet(), "feature:indomitable", 9) && holds(sheet(), "feature:tactical_master", 9) &&
-          holds(sheet(), "feature:heroic_warrior", 10) &&
-          holds(sheet(), "feature:two_extra_attacks", 11) &&
-          holds(sheet(), "feature:studied_attacks", 13) &&
-          holds(sheet(), "feature:superior_critical", 15),
+    check(holds(sheet(), "feature:extra_attack", 5) &&
+              holds(sheet(), "feature:tactical_shift", 5) &&
+              holds(sheet(), "feature:additional_fighting_style", 7) &&
+              holds(sheet(), "feature:indomitable", 9) &&
+              holds(sheet(), "feature:tactical_master", 9) &&
+              holds(sheet(), "feature:heroic_warrior", 10) &&
+              holds(sheet(), "feature:two_extra_attacks", 11) &&
+              holds(sheet(), "feature:studied_attacks", 13) &&
+              holds(sheet(), "feature:superior_critical", 15),
           "The class and Champion features arrive at their levels");
-    check(std::count_if(sheet().grants.begin(), sheet().grants.end(), [](const auto & g)
-    {
-        return g.source_id == "class:fighter:ability_score_improvement";
-    }) == 5, "Feats or ability points at levels 4, 6, 8, 12 and 14");
+    check(std::count_if(sheet().grants.begin(), sheet().grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.source_id == "class:fighter:ability_score_improvement";
+                        }) == 5,
+          "Feats or ability points at levels 4, 6, 8, 12 and 14");
     check(sheet().ability_adjustments.size() == 6,
           "Each Ability Score Improvement records its own adjustment");
-    check(std::count_if(sheet().grants.begin(), sheet().grants.end(), [](const auto & g)
-    {
-        return g.source_id == "subclass:fighter:champion:fighting_style" && g.level == 7;
-    }) == 1, "The Champion's second Fighting Style feat");
+    check(std::count_if(sheet().grants.begin(), sheet().grants.end(),
+                        [](const auto &g)
+                        {
+                            return g.source_id == "subclass:fighter:champion:fighting_style" &&
+                                   g.level == 7;
+                        }) == 1,
+          "The Champion's second Fighting Style feat");
     check(count_of(sheet(), "mastery:") == 5, "Five Weapon Mastery kinds at level 15");
     check(capacity(party, id, "second_wind") == 4, "Second Wind has four uses at level 15");
     check(capacity(party, id, "indomitable") == 2, "Indomitable has two uses from level 13");
@@ -146,13 +154,13 @@ void fighter_checks()
     const auto modifier = (sheet().scores[Ability::strength] - 10) / 2;
     check(profile.melee_attack_bonus == modifier + 5,
           "Unarmed attacks add the level-15 Proficiency Bonus of +5");
-    check(sheet().saving_throws[Ability::strength] == modifier + 5,
-          "A proficient save adds +5");
+    check(sheet().saving_throws[Ability::strength] == modifier + 5, "A proficient save adds +5");
 
     const auto bytes = encode_campaign(party, nullptr, "fighter-levels");
     CampaignParty next(module());
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
-                                 "fighter-levels", nullptr).party);
+                                 "fighter-levels", nullptr)
+                     .party);
     check(encode_campaign(next, nullptr, "fighter-levels") == bytes,
           "A level-15 Fighter saves and reloads exactly");
 }
@@ -160,10 +168,11 @@ void fighter_checks()
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -177,10 +186,12 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 std::size_t attack_lines(const CombatSession &c)
 {
     const auto log = c.snapshot().log();
-    return static_cast<std::size_t>(std::count_if(log.begin(), log.end(), [](const auto & line)
-    {
-        return line.starts_with("Veteran -> Dummy: d20");
-    }));
+    return static_cast<std::size_t>(std::count_if(log.begin(), log.end(),
+                                                  [](const auto &line)
+                                                  {
+                                                      return line.starts_with(
+                                                          "Veteran -> Dummy: d20");
+                                                  }));
 }
 
 // A fight between the Fighter of the level, with the gear, and a dummy beside
@@ -190,11 +201,11 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
                                     std::optional<VitalState> state = std::nullopt)
 {
     const auto profile = rules.character_profile(hero.sheet(), gear).data;
-    auto c = rules.create({{8, 3, std::vector<Terrain>(24)},
-        {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile, state},
-            {98, "dummy", "Dummy", Side::opposition, {2, 1}}
-        }},
-    3);
+    auto c =
+        rules.create({{8, 3, std::vector<Terrain>(24)},
+                      {{1, "campaign-character", "Veteran", Side::party, {1, 1}, profile, state},
+                       {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
+                     3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
     return c;
@@ -212,10 +223,11 @@ std::unique_ptr<RulesModule> dummy_rules()
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 // Extra Attack: the Attack action makes two attacks; Action Surge's action
@@ -228,10 +240,9 @@ void extra_attack_checks()
         const auto hero = fighter(level);
         const auto profile = rules->character_profile(hero.sheet(), {}).data;
         auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
-                {98, "dummy", "Dummy", Side::opposition, {2, 1}}
-            }},
-        3);
+                                {{1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
+                                 {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
+                               3);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
         check(submit(*c, "melee", 98) && attack_lines(*c) == 1, "The first attack");
@@ -280,7 +291,8 @@ void tactical_shift_checks()
     check(moved && !c->snapshot().reaction_pending && !logged(*c, "Dummy -> Veteran"),
           "Leaving the dummy's reach provokes nothing");
     check(submit(*c, "end") && !c->snapshot().free_movement && c->snapshot().actor == 1 &&
-          offered(*c, "dash"), "Finishing the shift leaves the turn's Action");
+              offered(*c, "dash"),
+          "Finishing the shift leaves the turn's Action");
 }
 
 // Tactical Master: Push, Sap or Slow in place of the weapon's own mastery,
@@ -296,8 +308,8 @@ void tactical_master_checks()
     auto c = duel(*rules, hero, {weapon});
     const bool push = offered(*c, "melee_push"), sap = offered(*c, "melee_sap"),
                slow = offered(*c, "melee_slow");
-    check(push + sap + slow == 2, "Tactical Master offers the two masteries the weapon lacks: " +
-          weapon);
+    check(push + sap + slow == 2,
+          "Tactical Master offers the two masteries the weapon lacks: " + weapon);
     const auto verb = push ? "melee_push" : "melee_slow";
     check(submit(*c, verb, 98), "A Tactical Master attack");
     const auto saved = c->save();
@@ -328,10 +340,9 @@ void studied_attacks_checks()
     {
         const auto profile = rules->character_profile(fighter(level).sheet(), {}).data;
         auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
-                {98, "wall", "Dummy", Side::opposition, {2, 1}}
-            }},
-        seed);
+                                {{1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
+                                 {98, "wall", "Dummy", Side::opposition, {2, 1}}}},
+                               seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
         check(submit(*c, "melee", 98), "The first attack");
@@ -347,10 +358,11 @@ void studied_attacks_checks()
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the mark");
         check(submit(*c, "melee", 98), "The second attack");
         const auto log = c->snapshot().log();
-        const auto last = std::find_if(log.rbegin(), log.rend(), [](const auto & line)
-        {
-            return line.starts_with("Veteran -> Dummy: d20");
-        });
+        const auto last = std::find_if(log.rbegin(), log.rend(),
+                                       [](const auto &line)
+                                       {
+                                           return line.starts_with("Veteran -> Dummy: d20");
+                                       });
         check(last != log.rend() && last->find("(advantage)") != std::string::npos,
               "The next attack roll has Advantage");
         return;
@@ -368,13 +380,14 @@ void superior_critical_checks()
         bool found = false;
         for (std::uint64_t seed = 1; seed < 400 && !found; ++seed)
         {
-            auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-                {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
-                    {98, "dummy", "Dummy", Side::opposition, {2, 1}}
-                }},
-            seed);
+            auto c =
+                rules->create({{8, 3, std::vector<Terrain>(24)},
+                               {{1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
+                                {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
+                              seed);
             for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
-                check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
+                check(submit(*c, "initiative_keep") || submit(*c, "end"),
+                      "Reach the Fighter's turn");
             check(submit(*c, "melee", 98), "An attack");
             for (const auto &line : c->snapshot().log())
                 if (line.starts_with("Veteran -> Dummy: d20 18 "))
@@ -397,10 +410,9 @@ void indomitable_checks()
     for (std::uint64_t seed = 1; seed < 400; ++seed)
     {
         auto c = rules->create({{8, 3, std::vector<Terrain>(24)},
-            {   {1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
-                {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}
-            }},
-        seed);
+                                {{1, "campaign-character", "Veteran", Side::party, {1, 1}, profile},
+                                 {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}}},
+                               seed);
         for (unsigned turns = 0; turns < 8 && !logged(*c, "uses Indomitable"); ++turns)
             if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
                 check(submit(*c, "initiative_keep") || submit(*c, "decline") || submit(*c, "end"),

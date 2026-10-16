@@ -4,9 +4,7 @@ namespace alert_checks
 CampaignParty party()
 {
     CampaignParty p(module());
-    for (const auto *klass :
-            {"fighter", "rogue"
-            })
+    for (const auto *klass : {"fighter", "rogue"})
     {
         auto d = draft(klass, "criminal");
         if (d.character_class == "rogue")
@@ -19,10 +17,7 @@ CampaignParty party()
         p.equip(id, 1);
     }
     p.award_experience(2700, "alert-baseline");
-    for (unsigned id :
-            {
-                1, 2
-            })
+    for (unsigned id : {1, 2})
         for (unsigned level = 2; level <= 4; ++level)
             p.advance(id, p.default_advancement(id));
     auto state = p.checkpoint();
@@ -87,13 +82,8 @@ void grants()
               "Every class Criminal receives one sourced Alert feat");
         (void)rules->character_profile(h.sheet(), {});
     }
-    for (const auto klass :
-            {"fighter", "rogue", "cleric", "wizard", "paladin", "ranger"
-            })
-        for (bool criminal :
-                {
-                    false, true
-                })
+    for (const auto klass : {"fighter", "rogue", "cleric", "wizard", "paladin", "ranger"})
+        for (bool criminal : {false, true})
         {
             auto d = draft(klass, criminal ? "criminal" : "sage");
             choose_first_options(d);
@@ -104,10 +94,10 @@ void grants()
                 p.advance(id, p.default_advancement(id));
             const auto options = rules->advancement_options(p.member(id).character.sheet());
             const auto found = std::find_if(options.feats.begin(), options.feats.end(),
-                                            [](const auto & f)
-            {
-                return f.id == "alert";
-            });
+                                            [](const auto &f)
+                                            {
+                                                return f.id == "alert";
+                                            });
             check(found != options.feats.end() && found->available != criminal,
                   "All current level-four routes enforce nonrepeatable Alert");
             auto choice = p.default_advancement(id);
@@ -118,9 +108,9 @@ void grants()
                 const auto old = encode_campaign(p, nullptr, "alert");
                 rejects(
                     [&]
-                {
-                    p.advance(id, choice);
-                });
+                    {
+                        p.advance(id, choice);
+                    });
                 check(encode_campaign(p, nullptr, "alert") == old,
                       "Duplicate Alert rejects atomically");
             }
@@ -141,9 +131,9 @@ void grants()
     invalid.grants.push_back({"feat:alert", "background:criminal", 1, {}});
     rejects(
         [&]
-    {
-        (void)rules->character_profile(invalid, {});
-    });
+        {
+            (void)rules->character_profile(invalid, {});
+        });
 }
 
 void run()
@@ -157,26 +147,24 @@ void run()
     const int champion_first = style_route_checks::die(dice_state, 20);
     const int champion_roll = std::max(champion_first, style_route_checks::die(dice_state, 20));
     const int rogue_roll = style_route_checks::die(dice_state, 20);
-    const int fighter_total = champion_roll +
-        p.member(1).character.sheet().modifiers[Ability::dexterity] + 2;
-    const int rogue_total = rogue_roll +
-        p.member(2).character.sheet().modifiers[Ability::dexterity] + 2;
+    const int fighter_total =
+        champion_roll + p.member(1).character.sheet().modifiers[Ability::dexterity] + 2;
+    const int rogue_total =
+        rogue_roll + p.member(2).character.sheet().modifiers[Ability::dexterity] + 2;
     check(unit(*c, 1).initiative == fighter_total && unit(*c, 2).initiative == rogue_total,
           "Actual proficiency adds once, including Champion Advantage");
     check(before.initiative_choices.size() == 2 && before.elapsed_milliseconds == 0,
           "All Alert holders choose before time passes");
     exact(*c);
-    for (const auto *tail :
-            {"2 1 1\n", "1 99\n"
-            })
+    for (const auto *tail : {"2 1 1\n", "1 99\n"})
     {
         auto bad = c->save();
         bad.replace(bad.rfind('\n', bad.size() - 2) + 1, std::string::npos, tail);
         rejects(
             [&]
-        {
-            (void)module()->restore(bad);
-        });
+            {
+                (void)module()->restore(bad);
+            });
     }
     const auto stale = command(*c, "initiative_keep", 2);
     auto illegal = command(*c, "initiative_swap", 1, 2);
@@ -191,7 +179,7 @@ void run()
     decide(*c, 1, 2);
     check(unit(*c, 1).initiative == rogue_total && unit(*c, 2).initiative == fighter_total,
           "Swap exchanges complete current totals without rerolling");
-    check(c->snapshot().initiative_choices == std::vector<EntityId> {2},
+    check(c->snapshot().initiative_choices == std::vector<EntityId>{2},
           "Swap does not consume ally's own decision");
     exact(*c);
     bytes = c->save();
@@ -200,12 +188,9 @@ void run()
     check(c->snapshot().initiative_choices.empty() && unit(*c, 1).initiative == fighter_total,
           "Later holder can exchange updated totals");
     exact(*c);
-    for (unsigned id :
-            {
-                1, 2
-            })
+    for (unsigned id : {1, 2})
         check(unit(*c, id).action && unit(*c, id).bonus_action && unit(*c, id).reaction &&
-              unit(*c, id).hit_points == p.member(id).vitals.hit_points,
+                  unit(*c, id).hit_points == p.member(id).vitals.hit_points,
               "Choice spends no action, reaction or HP");
     // Decisions can be resolved in either order, including choosing Keep first.
     c = battle(p);
@@ -218,13 +203,11 @@ void run()
     actors[1].cell = {2, 1};
     actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     actors[1].state->hit_points = 0;
-    auto helpless = module()->create(
-    { {12, 8, std::vector<Terrain>(96)}, actors
-    }, 37);
-    check(helpless->snapshot().initiative_choices == std::vector<EntityId> {1},
+    auto helpless = module()->create({{12, 8, std::vector<Terrain>(96)}, actors}, 37);
+    check(helpless->snapshot().initiative_choices == std::vector<EntityId>{1},
           "Incapacitated holder cannot swap");
     check(helpless->legal_commands().size() == 1 &&
-          helpless->legal_commands()[0].verb == "initiative_keep",
+              helpless->legal_commands()[0].verb == "initiative_keep",
           "Incapacitated ally excluded");
     check(unit(*helpless, 2).initiative == unit(*c, 2).initiative,
           "Incapacitation preserves Initiative proficiency");
@@ -236,10 +219,8 @@ void run()
     actors[0].cell = {1, 1};
     actors[1].cell = {8, 6};
     actors[1].side = Side::opposition;
-    auto enemy = module()->create(
-    { {12, 8, std::vector<Terrain>(96)}, actors
-    }, 37);
-    check(enemy->snapshot().initiative_choices == std::vector<EntityId> {1},
+    auto enemy = module()->create({{12, 8, std::vector<Terrain>(96)}, actors}, 37);
+    check(enemy->snapshot().initiative_choices == std::vector<EntityId>{1},
           "Enemy holder keeps its roll automatically");
     decline(*enemy);
     // Conditional disadvantage combines with the Champion's existing Advantage.
@@ -248,14 +229,12 @@ void run()
     actors[0].surprised = true;
     actors[1].cell = {2, 1};
     actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
-    auto surprised = module()->create(
-    { {12, 8, std::vector<Terrain>(96)}, actors
-    }, 37);
+    auto surprised = module()->create({{12, 8, std::vector<Terrain>(96)}, actors}, 37);
     exact(*surprised);
     dice_state = 37;
     const int roll = style_route_checks::die(dice_state, 20);
-    check(unit(*surprised, 1).initiative == roll +
-          p.member(1).character.sheet().modifiers[Ability::dexterity] + 2,
+    check(unit(*surprised, 1).initiative ==
+              roll + p.member(1).character.sheet().modifiers[Ability::dexterity] + 2,
           "Advantage and Disadvantage cancel before adding Alert once");
     decline(*surprised);
     bool down_first = false;
@@ -266,9 +245,7 @@ void run()
     actors.push_back({99, "vanguard", "Enemy", Side::opposition, {8, 6}});
     for (unsigned seed = 1; seed <= 32; ++seed)
     {
-        auto pending = module()->create(
-        { {12, 8, std::vector<Terrain>(96)}, actors
-        }, seed);
+        auto pending = module()->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
         exact(*pending);
         const auto state = pending->snapshot();
         if (state.combatants.front().id == 2)
@@ -285,7 +262,7 @@ void run()
     check(down_first, "Tests cover an incapacitated first Initiative slot");
     const auto dir = std::filesystem::path(OPENGOLD_BINARY_DIR) / "alert-fixtures";
     std::filesystem::create_directories(dir);
-    const auto save = [&](const char *name, const CombatSession & battle)
+    const auto save = [&](const char *name, const CombatSession &battle)
     {
         std::ofstream out(dir / (std::string(name) + ".save"), std::ios::binary);
         out << battle.save();

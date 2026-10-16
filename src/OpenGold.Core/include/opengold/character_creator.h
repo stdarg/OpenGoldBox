@@ -33,7 +33,7 @@ struct ChoiceToggle
 // Magic Initiate taught; a species skill the character built Expertise on is
 // kept. The new species' own choices are left to make.
 [[nodiscard]] rules::CharacterDraft reincarnation_draft(const Character &former,
-        std::string_view species);
+                                                        std::string_view species);
 
 // What Reincarnate's pages chose: the new species' "species:" training groups,
 // and the spells a Human's Versatile Magic Initiate teaches.
@@ -52,12 +52,15 @@ class CharacterCreator
     // portrait, then the sheet. `rules` replays the character's levels and
     // must outlive the creator: the game view ends the pages before it
     // replaces the campaign that owns it.
-    CharacterCreator(std::unique_ptr<rules::CharacterRules> creation, const rules::RulesModule &rules,
-                     const Character &former, std::string_view species);
+    CharacterCreator(std::unique_ptr<rules::CharacterRules> creation,
+                     const rules::RulesModule &rules, const Character &former,
+                     std::string_view species);
+
     [[nodiscard]] bool reincarnating() const noexcept
     {
         return former_.has_value();
     }
+
     [[nodiscard]] ReincarnationChoices reincarnation_choices() const;
     // The training choices on offer; while reincarnating, a species' skill or
     // cantrip the character already has from elsewhere is not.

@@ -7,10 +7,10 @@
 namespace i18n
 {
 inline constexpr std::array<const char *, 6> ability_names{N_("Strength"),     N_("Dexterity"),
-    N_("Constitution"), N_("Intelligence"),
-    N_("Wisdom"),       N_("Charisma")};
+                                                           N_("Constitution"), N_("Intelligence"),
+                                                           N_("Wisdom"),       N_("Charisma")};
 inline constexpr std::array<const char *, 6> ability_short{N_("STR"), N_("DEX"), N_("CON"),
-    N_("INT"), N_("WIS"), N_("CHA")};
+                                                           N_("INT"), N_("WIS"), N_("CHA")};
 
 inline godot::String requirements(const opengold::rules::ClassRequirements &requirement)
 {
@@ -20,9 +20,8 @@ inline godot::String requirements(const opengold::rules::ClassRequirements &requ
         if (!result.is_empty())
             result += requirement.any ? i18n::text(" or ") : i18n::text(" and ");
         const auto name = text(ability_short.at(opengold::rules::ability_index(ability)));
-        result += i18n::format("{ability} {minimum}", {{"ability", name},
-            {"minimum", requirement.minimum}
-        });
+        result += i18n::format("{ability} {minimum}",
+                               {{"ability", name}, {"minimum", requirement.minimum}});
     }
     return result;
 }
@@ -36,9 +35,8 @@ inline godot::String adjustment(const opengold::rules::ScoreAdjustment &adjustme
             if (!result.is_empty())
                 result += ", ";
             const auto name = text(ability_short.at(opengold::rules::ability_index(ability)));
-            result += i18n::format("{ability} +{bonus}", {{"ability", name},
-                {"bonus", adjustment.bonuses[ability]}
-            });
+            result += i18n::format("{ability} +{bonus}",
+                                   {{"ability", name}, {"bonus", adjustment.bonuses[ability]}});
         }
     return result;
 }

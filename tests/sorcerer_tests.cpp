@@ -99,19 +99,21 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool offered(const CombatSession &c, std::string_view verb)
 {
     const auto commands = c.legal_commands();
-    return std::any_of(commands.begin(), commands.end(), [&](const auto & command)
-    {
-        return command.verb == verb;
-    });
+    return std::any_of(commands.begin(), commands.end(),
+                       [&](const auto &command)
+                       {
+                           return command.verb == verb;
+                       });
 }
 
 bool logged(const CombatSession &c, std::string_view text)
 {
     const auto log = c.snapshot().log();
-    return std::any_of(log.begin(), log.end(), [&](const auto & line)
-    {
-        return line.find(text) != std::string::npos;
-    });
+    return std::any_of(log.begin(), log.end(),
+                       [&](const auto &line)
+                       {
+                           return line.find(text) != std::string::npos;
+                       });
 }
 
 unsigned pool(const CombatSession &c, std::string_view id)
@@ -135,10 +137,11 @@ int first_level_slots(const CombatSession &c)
 bool has_grant(const Character &hero, std::string_view id)
 {
     const auto &grants = hero.sheet().grants;
-    return std::any_of(grants.begin(), grants.end(), [&](const auto & g)
-    {
-        return g.id == id;
-    });
+    return std::any_of(grants.begin(), grants.end(),
+                       [&](const auto &g)
+                       {
+                           return g.id == id;
+                       });
 }
 
 // The Sorcerer (1), an enemy (98) 15 feet away and, optionally, an ally (2).
@@ -146,7 +149,7 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                                       std::string enemy = "target",
                                       std::optional<Cell> ally = std::nullopt)
 {
-    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string> {}).data;
+    const auto profile = module.character_profile(hero.sheet(), std::vector<std::string>{}).data;
     std::vector<Participant> participants{
         {1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile},
         {98, enemy, "Enemy", Side::opposition, {4, 1}}};
@@ -166,13 +169,14 @@ void spellcasting_checks()
     auto module = rules();
     auto c = battle(*module, hero);
     check(offered(*c, "magic_missile") && offered(*c, "burning_hands") &&
-          offered(*c, "sorcerous_burst_fire") && offered(*c, "sorcerous_burst_psychic") &&
-          offered(*c, "fire_bolt"),
+              offered(*c, "sorcerous_burst_fire") && offered(*c, "sorcerous_burst_psychic") &&
+              offered(*c, "fire_bolt"),
           "Prepared spells and cantrips, Sorcerous Burst once per damage type");
     check(submit(*c, "sorcerous_burst_psychic", 98) && logged(*c, "Sorcerer -> Enemy"),
           "Sorcerous Burst is a spell attack");
     auto rules_module = module_rules();
-    const auto options = rules_module->spell_choice_options(hero.sheet(), SpellChoiceContext::long_rest);
+    const auto options =
+        rules_module->spell_choice_options(hero.sheet(), SpellChoiceContext::long_rest);
     check(!options.may_prepare, "A Long Rest does not change a Sorcerer's prepared spells");
 }
 
@@ -181,7 +185,8 @@ void innate_sorcery_checks()
     auto module = rules();
     auto c = battle(*module, sorcerer());
     check(pool(*c, "innate_sorcery") == 2 && submit(*c, "innate_sorcery") &&
-          pool(*c, "innate_sorcery") == 1 && unit(*c, 1).action && !offered(*c, "innate_sorcery"),
+              pool(*c, "innate_sorcery") == 1 && unit(*c, 1).action &&
+              !offered(*c, "innate_sorcery"),
           "Innate Sorcery is a Bonus Action with two uses");
     check(submit(*c, "fire_bolt", 98) && logged(*c, "(advantage)"),
           "Innate Sorcery gives Advantage on spell attack rolls");
@@ -190,8 +195,9 @@ void innate_sorcery_checks()
 void draconic_checks()
 {
     const auto third = sorcerer(3), fourth = sorcerer(4);
-    check(has_grant(third, "subclass:draconic") && has_grant(third, "feature:draconic_resilience") &&
-          has_grant(third, "feature:draconic_spells"),
+    check(has_grant(third, "subclass:draconic") &&
+              has_grant(third, "feature:draconic_resilience") &&
+              has_grant(third, "feature:draconic_spells"),
           "Level three brings Draconic Sorcery");
     // d6 + Constitution at level one and 4 + Constitution per later level, plus 3
     // from Draconic Resilience.
@@ -200,12 +206,13 @@ void draconic_checks()
           "Draconic Resilience adds 3 Hit Points");
     check(fourth.sheet().hit_points == third.sheet().hit_points + 4 + con + 1,
           "And one more at each later level");
-    check(fourth.sheet().prepared_spells.size() == 7, "A level-four Sorcerer prepares seven spells");
+    check(fourth.sheet().prepared_spells.size() == 7,
+          "A level-four Sorcerer prepares seven spells");
     auto module = rules();
     auto c = battle(*module, third);
     check(unit(*c, 1).armor_class == 10 + 2 + 2, "Unarmored AC is 10 + Dexterity + Charisma");
     check(offered(*c, "chromatic_orb_fire") && offered(*c, "command_halt") &&
-          offered(*c, "scorching_ray") && offered(*c, "dragons_breath_fire"),
+              offered(*c, "scorching_ray") && offered(*c, "dragons_breath_fire"),
           "Draconic Spells are always prepared, with level-two spells");
 }
 
@@ -216,13 +223,13 @@ void font_of_magic_checks()
     auto module = rules();
     auto c = battle(*module, second);
     check(pool(*c, "sorcery_points") == 2 && first_level_slots(*c) == 3 &&
-          !offered(*c, "convert_slot_1") && !offered(*c, "create_slot_2"),
+              !offered(*c, "convert_slot_1") && !offered(*c, "create_slot_2"),
           "Two Sorcery Points; a full pool takes no more, and level-2 slots wait for level three");
     check(submit(*c, "create_slot_1") && pool(*c, "sorcery_points") == 0 &&
-          first_level_slots(*c) == 4 && !unit(*c, 1).bonus_action,
+              first_level_slots(*c) == 4 && !unit(*c, 1).bonus_action,
           "A Bonus Action turns 2 Sorcery Points into a level-1 slot");
     check(submit(*c, "convert_slot_1") && pool(*c, "sorcery_points") == 1 &&
-          first_level_slots(*c) == 3 && unit(*c, 1).action,
+              first_level_slots(*c) == 3 && unit(*c, 1).action,
           "A slot becomes Sorcery Points without an action");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "Sorcery Points survive a checkpoint");
@@ -255,14 +262,14 @@ void level_two_slot_checks()
     auto module = rules();
     auto c = battle(*module, third);
     check(pool(*c, "sorcery_points") == 3 && stored_slots(unit(*c, 1).persistent).second == 2 &&
-          !offered(*c, "convert_slot_2"),
+              !offered(*c, "convert_slot_2"),
           "Three Sorcery Points and two level-two slots at level three; a full pool takes no more");
     check(submit(*c, "create_slot_2") && pool(*c, "sorcery_points") == 0 &&
-          stored_slots(unit(*c, 1).persistent).second == 3 && !unit(*c, 1).bonus_action,
+              stored_slots(unit(*c, 1).persistent).second == 3 && !unit(*c, 1).bonus_action,
           "A Bonus Action turns 3 Sorcery Points into a third level-two slot");
     auto state = unit(*c, 1).persistent;
     check(submit(*c, "convert_slot_2") && pool(*c, "sorcery_points") == 2 &&
-          stored_slots(unit(*c, 1).persistent).second == 2,
+              stored_slots(unit(*c, 1).persistent).second == 2,
           "A level-two slot becomes 2 Sorcery Points");
     module->recover_short_rest(state, third.sheet());
     check(rest_pool(*module, third, state) == 0 && stored_slots(state).second == 3,
@@ -275,32 +282,34 @@ void level_two_slot_checks()
 void metamagic_checks()
 {
     auto module = rules();
-    check(has_grant(sorcerer(2), "feature:metamagic") && has_grant(sorcerer(2), "metamagic:careful"),
+    check(has_grant(sorcerer(2), "feature:metamagic") &&
+              has_grant(sorcerer(2), "metamagic:careful"),
           "Level two brings two Metamagic options");
     {
         auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}));
         check(submit(*c, "metamagic_quickened") && pool(*c, "sorcery_points") == 2 &&
-              offered(*c, "metamagic_cancel"),
-          "Readying Quickened Spell costs nothing yet");
+                  offered(*c, "metamagic_cancel"),
+              "Readying Quickened Spell costs nothing yet");
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved, "A readied option survives a checkpoint");
         check(submit(*c, "fire_bolt", 98) && logged(*c, "Sorcerer uses Quickened Spell.") &&
-              unit(*c, 1).action && !unit(*c, 1).bonus_action && pool(*c, "sorcery_points") == 0,
+                  unit(*c, 1).action && !unit(*c, 1).bonus_action &&
+                  pool(*c, "sorcery_points") == 0,
               "Quickened Spell casts an Action spell as a Bonus Action for 2 Sorcery Points");
     }
     {
         // A spell that may target any creature quickens too.
         auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}));
         check(submit(*c, "metamagic_quickened") && submit(*c, "ray_of_frost", 98) &&
-              logged(*c, "Sorcerer uses Quickened Spell.") && unit(*c, 1).action &&
-              !unit(*c, 1).bonus_action,
+                  logged(*c, "Sorcerer uses Quickened Spell.") && unit(*c, 1).action &&
+                  !unit(*c, 1).bonus_action,
               "Quickened Spell casts Ray of Frost as a Bonus Action");
     }
     {
         auto c = battle(*module, sorcerer(2, {"quickened", "seeking"}), "armored");
         check(submit(*c, "metamagic_seeking") && submit(*c, "fire_bolt", 98) &&
-              logged(*c, "Seeking Spell rerolls the missed attack.") &&
-              pool(*c, "sorcery_points") == 1,
+                  logged(*c, "Seeking Spell rerolls the missed attack.") &&
+                  pool(*c, "sorcery_points") == 1,
               "Seeking Spell rerolls a missed spell attack for 1 Sorcery Point");
         check(submit(*c, "end") && pool(*c, "sorcery_points") == 1, "End the turn");
     }
@@ -309,33 +318,35 @@ void metamagic_checks()
         const auto at_enemy = [&]
         {
             const auto commands = c->legal_commands();
-            return std::any_of(commands.begin(), commands.end(), [](const auto & command)
-            {
-                return command.verb == "shocking_grasp" && command.target == 98;
-            });
+            return std::any_of(commands.begin(), commands.end(),
+                               [](const auto &command)
+                               {
+                                   return command.verb == "shocking_grasp" && command.target == 98;
+                               });
         };
         check(!at_enemy() && submit(*c, "metamagic_distant") && at_enemy() &&
-              submit(*c, "shocking_grasp", 98) && logged(*c, "Sorcerer uses Distant Spell."),
+                  submit(*c, "shocking_grasp", 98) && logged(*c, "Sorcerer uses Distant Spell."),
               "Distant Spell turns Touch into 30 feet");
     }
     {
         auto c = battle(*module, sorcerer(2, {"distant", "transmuted"}));
         check(submit(*c, "metamagic_transmuted_cold") && submit(*c, "burning_hands") &&
-              submit(*c, "area_cast") && logged(*c, "Cold damage"),
+                  submit(*c, "area_cast") && logged(*c, "Cold damage"),
               "Transmuted Spell changes Burning Hands' Fire to Cold");
     }
     {
         auto c = battle(*module, sorcerer(2, {"careful", "twinned"}), "target", Cell{2, 1});
         check(submit(*c, "metamagic_careful") && submit(*c, "burning_hands") &&
-              submit(*c, "area_cast") && logged(*c, "Enemy Dexterity save") &&
-              !logged(*c, "Ally Dexterity save") && !logged(*c, "Ally takes"),
+                  submit(*c, "area_cast") && logged(*c, "Enemy Dexterity save") &&
+                  !logged(*c, "Ally Dexterity save") && !logged(*c, "Ally takes"),
               "Careful Spell spares the ally in the cone");
     }
     {
-        auto c = battle(*module, sorcerer(2, {"careful", "twinned"}, {"magic_missile", "charm_person"}),
-                        "target", Cell{2, 2});
+        auto c =
+            battle(*module, sorcerer(2, {"careful", "twinned"}, {"magic_missile", "charm_person"}),
+                   "target", Cell{2, 2});
         check(submit(*c, "metamagic_twinned") && submit(*c, "charm_person", 98) &&
-              c->snapshot().spell_targeting.has_value(),
+                  c->snapshot().spell_targeting.has_value(),
               "Twinned Spell lets Charm Person choose a second creature");
     }
 }
@@ -347,7 +358,7 @@ void heightened_checks()
     auto module = rules();
     auto c = battle(*module, sorcerer(2, {"heightened", "quickened"}, {"magic_missile", "sleep"}));
     check(submit(*c, "metamagic_heightened") && submit(*c, "sleep") && submit(*c, "area_cast") &&
-          logged(*c, "Sorcerer uses Heightened Spell.") && logged(*c, "Enemy Wisdom save"),
+              logged(*c, "Sorcerer uses Heightened Spell.") && logged(*c, "Enemy Wisdom save"),
           "Heightened Sleep asks the enemy to save");
     const auto saved = c->save();
     check(module->restore(saved)->save() == saved, "The mark survives a checkpoint");
@@ -364,11 +375,12 @@ void heightened_checks()
                                     fx::spell_index("blindness"));
         std::array<fx::EffectSubject, 1> subject{{{1, effects, {}}}};
         int natural = 0;
-        fx::elapse_effects(subject, 1000, seed, [&](const auto & event)
-        {
-            if (event.save)
-                natural = event.save->natural;
-        });
+        fx::elapse_effects(subject, 1000, seed,
+                           [&](const auto &event)
+                           {
+                               if (event.save)
+                                   natural = event.save->natural;
+                           });
         return natural;
     };
     bool lower = false;

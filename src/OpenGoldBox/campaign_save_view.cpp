@@ -49,24 +49,23 @@ void CharacterCreationView::setup_saves()
     save_read_check_ = OS::get_singleton()->get_cmdline_user_args().has("--save-check-read");
     auto dialog = presentation::make_node<SaveSlots>();
     dialog->set_name("SaveSlots");
-    dialog->connect_host([this](const auto & p)
-    {
-        save_campaign(p);
-    },
-    [this](const auto & p)
-    {
-        load_campaign(p);
-    });
+    dialog->connect_host(
+        [this](const auto &p)
+        {
+            save_campaign(p);
+        },
+        [this](const auto &p)
+        {
+            load_campaign(p);
+        });
     presentation::attach_child(*this, std::move(dialog));
-    for (bool saving :
-            {
-                true, false
-            })
+    for (bool saving : {true, false})
     {
         auto &button = required_node<Button>(*this, saving ? "PartyPanel/Save" : "PartyPanel/Load");
         button.set_text(i18n::text(saving ? N_("Save game") : N_("Load game")));
-        button.connect("pressed",
-                       presentation::guarded(this, &CharacterCreationView::open_saves).bind(saving));
+        button.connect(
+            "pressed",
+            presentation::guarded(this, &CharacterCreationView::open_saves).bind(saving));
     }
 }
 
@@ -77,7 +76,7 @@ void CharacterCreationView::open_saves(bool saving)
     if (campaign_defeated_ && saving)
         return;
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
-            town && !town->can_leave() && !campaign_defeated_)
+        town && !town->can_leave() && !campaign_defeated_)
         return;
     required_node<SaveSlots>(*this, "SaveSlots").open(saving);
 }
@@ -105,10 +104,11 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
     auto module = rules_module();
     auto saved = decode_campaign(read_campaign_file(path), *srd5::character_rules(), *module,
                                  campaign_asset_identity(directory),
-                                 std::function<por::RolfTourSession()>([&]
-    {
-        return por::RolfTourSession::load(directory);
-    }));
+                                 std::function<por::RolfTourSession()>(
+                                     [&]
+                                     {
+                                         return por::RolfTourSession::load(directory);
+                                     }));
     auto replacement = std::make_shared<CampaignParty>(std::move(module));
     replacement->restore(std::move(saved.party));
     for (const auto &m : replacement->state().roster)
@@ -133,7 +133,8 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
                       presentation::guarded(this, &CharacterCreationView::open_advancement));
         town->connect("reincarnation_requested",
                       presentation::guarded(this, &CharacterCreationView::open_reincarnation));
-        town->connect("save_requested", presentation::guarded(this, &CharacterCreationView::open_saves));
+        town->connect("save_requested",
+                      presentation::guarded(this, &CharacterCreationView::open_saves));
         presentation::attach_child(*this, std::move(owned));
     }
     // All decoding, resource loading and character validation completed above.
@@ -198,8 +199,8 @@ void RolfTourView::request_save(bool saving)
 
 void CharacterCreationView::save_checkpoint_check(const std::string &name)
 {
-    auto directory = presentation::path_from_godot(ProjectSettings::get_singleton()
-        ->globalize_path("user://checks/save-check"));
+    auto directory = presentation::path_from_godot(
+        ProjectSettings::get_singleton()->globalize_path("user://checks/save-check"));
     save_campaign(directory / (name + ".ogs"));
     error_ = "";
     if (name == "final")
@@ -219,13 +220,12 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
 
 void CharacterCreationView::load_checkpoint_check()
 {
-    auto directory = presentation::path_from_godot(ProjectSettings::get_singleton()
-        ->globalize_path("user://checks/save-check"));
+    auto directory = presentation::path_from_godot(
+        ProjectSettings::get_singleton()->globalize_path("user://checks/save-check"));
     const auto assets = campaign_asset_identity(game_directory());
     for (const char *name :
-            {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",
-             "rejected-service", "denied-rest", "short-rest-spending", "final"
-            })
+         {"advancement", "interrupted-rest", "cancelled-service", "temple-payment", "inn-rest",
+          "rejected-service", "denied-rest", "short-rest-spending", "final"})
     {
         auto path = directory / (std::string(name) + ".ogs");
         load_campaign(path);
@@ -265,8 +265,8 @@ void CharacterCreationView::load_checkpoint_check()
             required_node<Button>(*rest, "Save").emit_signal("pressed");
             if (!required_node<SaveSlots>(*this, "SaveSlots").is_visible() || rest->is_visible())
                 throw std::runtime_error("Rest save did not use existing save dialog");
-            required_node<Button>(required_node<SaveSlots>(*this, "SaveSlots"),
-                                  "Cancel").emit_signal("pressed");
+            required_node<Button>(required_node<SaveSlots>(*this, "SaveSlots"), "Cancel")
+                .emit_signal("pressed");
             required_node<Button>(*town, "Camp").emit_signal("pressed");
             required_node<Button>(*rest, "Heal").emit_signal("pressed");
             if (encode_campaign(*campaign_, town->saved_session(), assets) == before)
@@ -315,7 +315,7 @@ void CharacterCreationView::capture_save_ui()
         auto *dialog = &required_node<SaveSlots>(*this, "SaveSlots");
         const auto image = dialog->get_texture()->get_image();
         if (image.is_null() || image->save_png(ProjectSettings::get_singleton()->globalize_path(
-                "user://checks/campaign-load-dialog.png")) != OK)
+                                   "user://checks/campaign-load-dialog.png")) != OK)
             throw std::runtime_error("Cannot capture save dialog");
         dialog->hide();
     }
