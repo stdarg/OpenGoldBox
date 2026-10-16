@@ -127,8 +127,9 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
     if (character.inventory().empty())
         text += "\n" + i18n::utf8("Empty");
-    const auto positions =
-        member ? party->profile(member->id).equipment_positions : std::vector<rules::Message> {};
+    std::vector<rules::Message> positions;
+    if (member)
+        positions = party->profile(member->id).equipment_positions;
     for (const auto &item : character.inventory().items())
     {
         text += "\n" + rich_text_literal(i18n::utf8(item.name)) + " x" + std::to_string(item.quantity);

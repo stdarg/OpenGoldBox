@@ -833,7 +833,8 @@ void RolfTourView::refresh()
         }
     }
     const bool loaded = session_.has_value();
-    const TourSnapshot s = loaded ? session_->snapshot() : TourSnapshot{};
+    static const TourSnapshot none;
+    const TourSnapshot &s = loaded ? session_->snapshot() : none;
     refresh_rest();
     const bool waiting = loaded && s.phase == TourPhase::awaiting_continue;
     const bool completed = loaded && s.phase == TourPhase::completed;

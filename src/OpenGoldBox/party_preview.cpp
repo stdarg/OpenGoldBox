@@ -363,7 +363,7 @@ void CharacterCreationView::refresh_party()
     {
         auto slot = std::find(state.slots.begin(), state.slots.end(), m.id);
         const bool leader = slot != state.slots.end() && m.id == campaign_->leader();
-        const auto sheet = m.character.sheet();
+        const auto &sheet = m.character.sheet();
         // The roster has room for the six starting members' photos and identity.
         const auto title = (leader ? String::utf8("★ ") : String()) + gs(sheet.name) +
                            (slot == state.slots.end() ? i18n::text(" (Reserve)") : String());

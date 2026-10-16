@@ -710,15 +710,15 @@ void CombatView::sync_art(bool preserve_effects)
     // or corrupt art file leaves the previous art in place rather than an
     // empty or half-built battlefield (Effective C++ Item 29).
     auto built = demo_ ? build_art() : ArtSet{};
-    if (!demo_)
-        built.campaign = campaign_art_;
     missing_art_ = std::move(built.missing);
     art_ = std::move(built.sprites);
     form_art_ = std::move(built.forms);
     portraits_ = std::move(built.portraits);
     terrain_art_ = std::move(built.terrain);
     skull_art_ = std::move(built.skull);
-    campaign_art_ = std::move(built.campaign);
+    // Without a combat the campaign's art stays as it is.
+    if (demo_)
+        campaign_art_ = std::move(built.campaign);
     if (!preserve_effects)
     {
         known_dead_.clear();
@@ -730,7 +730,9 @@ void CombatView::sync_art(bool preserve_effects)
 CombatView::ArtSet CombatView::build_art() const
 {
     ArtSet result;
-    result.campaign = campaign_art_;
+    // A campaign builds its members' art below; otherwise the art stays.
+    if (!campaign_)
+        result.campaign = campaign_art_;
     auto &missing_art = result.missing;
     auto &art = result.sprites;
     auto &form_art = result.forms;
@@ -2013,9 +2015,9 @@ void CombatView::refresh()
         return a.id == s.actor;
     });
     auto *cantrips = &required_node<OptionButton>(*this, "Cantrip");
-    std::vector<std::string> known;
-    if (player && s.outcome == Outcome::ongoing && active != s.combatants.end())
-        known = active->known_cantrips;
+    static const std::vector<std::string> no_cantrips;
+    const auto &known = player && s.outcome == Outcome::ongoing && active != s.combatants.end()
+                        ? active->known_cantrips : no_cantrips;
     if (std::find(known.begin(), known.end(), mode_) != known.end())
         cantrip_ = mode_;
     if (std::find(known.begin(), known.end(), cantrip_) == known.end())

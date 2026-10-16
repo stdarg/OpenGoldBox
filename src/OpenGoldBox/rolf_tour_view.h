@@ -49,9 +49,10 @@ class RolfTourView : public godot::Control
         return session_ ? &*session_ : nullptr;
     }
 
-    [[nodiscard]] std::optional<opengold::CampaignEncounter> pending_encounter() const
+    [[nodiscard]] const std::optional<opengold::CampaignEncounter> &pending_encounter() const
     {
-        return session_ ? session_->pending_encounter() : std::nullopt;
+        static const std::optional<opengold::CampaignEncounter> none;
+        return session_ ? session_->pending_encounter() : none;
     }
 
     bool resolve_combat(const opengold::rules::Snapshot &result)

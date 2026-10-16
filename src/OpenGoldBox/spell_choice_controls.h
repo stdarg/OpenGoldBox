@@ -52,11 +52,10 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         section->show();
         auto *label = &required_node<Label>(*section, "Count");
         const auto it = choices.learning.find(group.id);
-        const auto picked = group.id == "prepared"
-                            ? choices.prepared.value_or(std::vector<std::string> {})
-                            : it == choices.learning.end() ? std::vector<std::string> {}
-                            :
-                            it->second;
+        static const std::vector<std::string> none;
+        const auto &picked = group.id == "prepared" ? (choices.prepared ? *choices.prepared : none)
+                             : it == choices.learning.end() ? none
+                             : it->second;
         label->set_text(tr(group.label) +
                         (group.id == "prepared" ? String()
                          : " / " + tr(N_("Level")) + " " +

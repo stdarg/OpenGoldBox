@@ -571,11 +571,13 @@ void CharacterCreationView::refresh()
         .set_text(i18n::text(
                       N_("Fill all six boxes to continue.\nAssigned scores include bonuses.")));
     }
-    std::optional<CharacterSheet> s;
+    // The finished character's sheet, or one worked out from the draft.
+    std::optional<CharacterSheet> drafted;
+    const CharacterSheet *s = nullptr;
     if (completed_)
-        s = completed_->sheet();
+        s = &completed_->sheet();
     else if (creator_->scores_assigned())
-        s = creator_->sheet();
+        s = &drafted.emplace(creator_->sheet());
     if (stats)
         for (unsigned i = 0; i < 6; ++i)
         {
@@ -625,6 +627,7 @@ void CharacterCreationView::refresh()
             i18n::text);
         instructions = N_("Choose the required training options. Back preserves your selections.");
     }
+    static const opengold::rules::SpellChoices no_spells;
     if (step == CreationStep::spell_choices)
     {
         presentation::refresh_cantrip_controls(
@@ -635,7 +638,7 @@ void CharacterCreationView::refresh()
                                      "BookChoices");
         presentation::refresh_spell_groups(
             *book, creator_->spell_choice_options(),
-            d.spells.value_or(opengold::rules::SpellChoices{}),
+            d.spells ? *d.spells : no_spells,
             presentation::guarded(this, &CharacterCreationView::creation_spell_toggled),
             i18n::text);
         presentation::equalize_choice_widths(required_node<Control>(*this, "SpellChoices"));
