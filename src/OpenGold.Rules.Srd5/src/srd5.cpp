@@ -780,6 +780,67 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::sorcerer, "shatter", 3},
     SpellAccessRow{CharacterClass::sorcerer, "web", 3},
     SpellAccessRow{CharacterClass::sorcerer, "command", 3},
+    // Sorcerer level-3 spells, with the level-3 slot of Sorcerer level 5.
+    SpellAccessRow{CharacterClass::sorcerer, "blink", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "counterspell", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "dispel_magic", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "fear", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "fireball", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "haste", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "hypnotic_pattern", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "lightning_bolt", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "protection_from_energy", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "sleet_storm", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "stinking_cloud", 5},
+    SpellAccessRow{CharacterClass::sorcerer, "vampiric_touch", 5},
+    // Sorcerer level-4 spells, with the level-4 slot of Sorcerer level 7.
+    SpellAccessRow{CharacterClass::sorcerer, "banishment", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "blight", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "charm_monster", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "confusion", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "dimension_door", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "dominate_beast", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "fire_shield", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "greater_invisibility", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "ice_storm", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "polymorph", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "stoneskin", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "vitriolic_sphere", 7},
+    SpellAccessRow{CharacterClass::sorcerer, "wall_of_fire", 7},
+    // Sorcerer level-5 spells, with the level-5 slot of Sorcerer level 9.
+    SpellAccessRow{CharacterClass::sorcerer, "animate_objects", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "arcane_hand", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "cloudkill", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "cone_of_cold", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "dominate_person", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "hold_monster", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "insect_plague", 9},
+    // Draconic Spells: Summon Dragon, always prepared from 9.
+    SpellAccessRow{CharacterClass::sorcerer, "summon_dragon", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "telekinesis", 9},
+    SpellAccessRow{CharacterClass::sorcerer, "wall_of_stone", 9},
+    // Sorcerer level-6 spells, with the level-6 slot of Sorcerer level 11.
+    SpellAccessRow{CharacterClass::sorcerer, "chain_lightning", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "circle_of_death", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "disintegrate", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "eyebite", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "flesh_to_stone", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "freezing_sphere", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "globe_of_invulnerability", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "sunbeam", 11},
+    SpellAccessRow{CharacterClass::sorcerer, "true_seeing", 11},
+    // Sorcerer level-7 spells, with the level-7 slot of Sorcerer level 13.
+    SpellAccessRow{CharacterClass::sorcerer, "delayed_blast_fireball", 13},
+    SpellAccessRow{CharacterClass::sorcerer, "finger_of_death", 13},
+    SpellAccessRow{CharacterClass::sorcerer, "fire_storm", 13},
+    SpellAccessRow{CharacterClass::sorcerer, "prismatic_spray", 13},
+    SpellAccessRow{CharacterClass::sorcerer, "reverse_gravity", 13},
+    // Sorcerer level-8 spells, with the level-8 slot of Sorcerer level 15.
+    SpellAccessRow{CharacterClass::sorcerer, "dominate_monster", 15},
+    SpellAccessRow{CharacterClass::sorcerer, "earthquake", 15},
+    SpellAccessRow{CharacterClass::sorcerer, "incendiary_cloud", 15},
+    SpellAccessRow{CharacterClass::sorcerer, "power_word_stun", 15},
+    SpellAccessRow{CharacterClass::sorcerer, "sunburst", 15},
     SpellAccessRow{CharacterClass::bard, "true_strike", 1},
     SpellAccessRow{CharacterClass::bard, "vicious_mockery", 1},
     SpellAccessRow{CharacterClass::bard, "starry_wisp", 1},
@@ -1037,6 +1098,12 @@ struct Definition
     // Uncanny Metabolism's once-per-Long-Rest use (kept in Actor::arcane).
     int focus{}, metabolism{};
     int innate_sorcery{}; // Sorcerer: Innate Sorcery uses, in Actor::free_casts
+    // Sorcerer level 5: Sorcerous Restoration's use, in Actor::arcane.
+    int sorcerous_restoration{};
+    // Sorcerer level 6: Elemental Affinity's type; level 7: Sorcery
+    // Incarnate; level 14: Dragon Wings.
+    std::optional<detail::DamageType> elemental_affinity;
+    bool sorcery_incarnate{}, dragon_wings{};
     // Magic Initiate: the spell attack bonus (the feat's ability modifier plus
     // Proficiency Bonus) of each spell it teaches, and each feat's level-one
     // spell in feat order, cast once per Long Rest without a slot.
@@ -1385,6 +1452,8 @@ constexpr std::array resource_descriptors
         &Definition::innate_sorcery, 0, true},
     ResourceDescriptor{"sorcery_points", "Sorcery Points", &Actor::lay_on_hands,
         &Definition::sorcery_points, 0, true},
+    ResourceDescriptor{"sorcerous_restoration", "Sorcerous Restoration", &Actor::arcane,
+        &Definition::sorcerous_restoration, 0, false},
     ResourceDescriptor{"magical_cunning", "Magical Cunning", &Actor::arcane,
         &Definition::magical_cunning, 0, false},
     ResourceDescriptor{"bardic_inspiration", "Bardic Inspiration", &Actor::arcane,
@@ -1432,12 +1501,16 @@ int lay_capacity(const Definition &d)
     return d.lay_on_hands + d.sorcery_points + d.relentless_rage + d.natures_veil;
 }
 
+// Font of Magic (SRD 5.2.1 p. 66): the Sorcery Points a slot of each level
+// costs, and the Sorcerer level that can create it.
+constexpr std::array<int, 6> font_of_magic_cost{0, 2, 3, 5, 6, 7};
+constexpr std::array<int, 6> font_of_magic_level{0, 2, 3, 5, 7, 9};
+
 // Spell slots of a level, with room for the ones Font of Magic creates from
-// Sorcery Points (2, 3, 5, 6 and 7 points for levels 1 to 5); they vanish on a
-// Long Rest.
+// Sorcery Points; they vanish on a Long Rest.
 int slot_room(const Definition &d, unsigned level)
 {
-    constexpr std::array<int, 6> cost{0, 2, 3, 5, 6, 7};
+    const auto &cost = font_of_magic_cost;
     return d.slots[level] + (level < cost.size() ? d.sorcery_points / cost[level] : 0);
 }
 
@@ -1516,7 +1589,7 @@ int surge_capacity(const Definition &d)
 int arcane_capacity(const Definition &d)
 {
     return d.arcane + d.metabolism + d.magical_cunning + d.bardic_inspiration + d.indomitable +
-           d.persistent_rage + d.tireless + d.divine_intervention;
+           d.persistent_rage + d.tireless + d.divine_intervention + d.sorcerous_restoration;
 }
 
 // Channel Divinity and Rage share one store; no class has both, and each
@@ -2109,6 +2182,9 @@ character_definition(std::string_view bytes,
     d.focus = klass == CharacterClass::monk && level >= 2 ? static_cast<int>(level) : 0;
     d.metabolism = klass == CharacterClass::monk && level >= 2 ? 1 : 0;
     d.innate_sorcery = klass == CharacterClass::sorcerer ? 2 : 0;
+    d.sorcerous_restoration = klass == CharacterClass::sorcerer && level >= 5 ? 1 : 0;
+    d.sorcery_incarnate = klass == CharacterClass::sorcerer && level >= 7;
+    d.dragon_wings = klass == CharacterClass::sorcerer && level >= 14;
     d.sorcery_points =
         klass == CharacterClass::sorcerer && level >= 2 ? static_cast<int>(level) : 0;
     d.pact_magic = klass == CharacterClass::warlock;
@@ -2491,6 +2567,13 @@ character_definition(std::string_view bytes,
             d.divine_strike = level >= 14 ? 2 : 1;
         d.potent_spellcasting |= grant.id == "strikes:potent_spellcasting";
         d.multiattack_defense |= grant.id == "tactics:multiattack_defense";
+        // Elemental Affinity: Resistance to its type.
+        if (grant.id.starts_with("affinity:"))
+        {
+            d.elemental_affinity = detail::damage_type(grant.id.substr(9));
+            d.affinities.push_back({detail::AffinityKind::resistance, d.elemental_affinity,
+                                    "feature:elemental_affinity"});
+        }
     }
     std::vector<std::string> prepared;
     if (detail::prepares_spells(klass))
@@ -3895,15 +3978,22 @@ class Session final : public CombatSession
         Metamagic option{};
         std::optional<detail::DamageType> type;
     };
-    [[nodiscard]] static std::optional<ReadyMetamagic> readied_metamagic(const Actor &a);
-    // The readied option, if it can change this spell and is affordable.
+    // The readied options: one, or two during Sorcery Incarnate.
+    [[nodiscard]] static std::vector<ReadyMetamagic> readied_metamagic(const Actor &a);
+    // How many options the Sorcerer may ready for one spell (Sorcery
+    // Incarnate, Sorcerer 7: two while Innate Sorcery is active).
+    [[nodiscard]] static std::size_t metamagic_room(const Actor &a);
+    // A readied option, if it can change this spell and is affordable.
     [[nodiscard]] static bool readies(const Actor &a, Metamagic option,
                                       const detail::SpellDef &spell);
-    // Spends the readied option on the spell being cast, if it applies.
+    // Spends the readied options that apply on the spell being cast.
     void take_metamagic(Actor &caster, const detail::SpellDef &spell);
     [[nodiscard]] bool casting_with(Metamagic option) const
     {
-        return casting_metamagic_ && casting_metamagic_->option == option;
+        return std::any_of(casting_metamagic_.begin(), casting_metamagic_.end(), [&](const auto & ready)
+        {
+            return ready.option == option;
+        });
     }
     [[nodiscard]] int spell_range(const Actor &caster, const detail::SpellDef &spell) const;
     [[nodiscard]] detail::DamageType cast_damage_type(detail::DamageType type) const;
@@ -3913,7 +4003,7 @@ class Session final : public CombatSession
     [[nodiscard]] std::vector<EntityId> careful_allies(const Actor &caster,
             const std::vector<Cell> &cells) const;
     // Metamagic spent on the spell now resolving, and Heightened Spell's target.
-    std::optional<ReadyMetamagic> casting_metamagic_;
+    std::vector<ReadyMetamagic> casting_metamagic_;
     EntityId heightened_target_{};
     // Overchannel: the spell its Wizard is casting deals its maximum damage,
     // and the Wizard then takes this many d12 of Necrotic damage.
@@ -4205,7 +4295,9 @@ void Session::open_hand(const Actor &monk, Actor &target, std::string_view verb)
 
 void Session::ready_metamagic(Actor &a, std::string_view choice)
 {
-    std::erase_if(a.effects.active, [](const auto & e)
+    // A second option joins the first during Sorcery Incarnate.
+    if (choice == "cancel" || readied_metamagic(a).size() >= metamagic_room(a))
+        std::erase_if(a.effects.active, [](const auto & e)
     {
         return e.kind == detail::EffectKind::metamagic;
     });
@@ -4235,19 +4327,19 @@ void Session::ready_metamagic(Actor &a, std::string_view choice)
 
 void Session::use_font_of_magic(Actor &a, std::string_view verb)
 {
-    const bool second = verb.ends_with("_2");
+    const auto slot = static_cast<unsigned>(verb.back() - '0');
     if (verb.starts_with("create_slot_"))
     {
         a.bonus = false;
-        a.lay_on_hands -= second ? 3 : 2;
-        ++a.slots[second ? 2 : 1];
+        a.lay_on_hands -= font_of_magic_cost[slot];
+        ++a.slots[slot];
     }
     else
     {
-        --a.slots[second ? 2 : 1];
-        a.lay_on_hands = std::min(def(a).sorcery_points, a.lay_on_hands + (second ? 2 : 1));
+        --a.slots[slot];
+        a.lay_on_hands = std::min(def(a).sorcery_points, a.lay_on_hands + static_cast<int>(slot));
     }
-    const std::string level = second ? "2" : "1";
+    const std::string level(1, verb.back());
     log(a.source.name + (verb.starts_with("create_slot_")
                          ? " creates a level-" + level + " spell slot."
                          : " turns a level-" + level + " spell slot into Sorcery Points."),
@@ -4882,6 +4974,8 @@ bool Session::obscured(const Actor &viewer, Cell cell) const
 detail::MovementGrid Session::movement_grid(const Actor &mover) const
 {
     const bool free = detail::has_effect(mover.effects, detail::EffectKind::free_moving);
+    // Dragon Wings: over Difficult Terrain and enemies alike (LEVELS-3).
+    const bool winged = detail::has_effect(mover.effects, detail::EffectKind::dragon_wings);
     std::vector<detail::Occupant> occupants;
     for (const auto &other : actors_)
     {
@@ -4899,7 +4993,8 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         // Terrain, costs nothing extra.
         const bool free_pass = free && unconscious(other);
         occupants.push_back({other.source.cell,
-                             other.source.side != mover.source.side && !nimble_pass && !free_pass,
+                             other.source.side != mover.source.side && !nimble_pass && !free_pass &&
+                             !winged,
                              unconscious(other), other.life.hp == 0});
     }
     // A finished Magic Circle: a creature of its type cannot enter it.
@@ -4931,7 +5026,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
                             in_emanation(zone, cell))
                         board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                             Terrain::difficult;
-    if (free)
+    if (free || winged)
         for (auto &tile : board.terrain)
             if (tile == Terrain::difficult)
                 tile = Terrain::open;
@@ -5280,8 +5375,12 @@ Snapshot Session::snapshot() const
             view.bonus_actions.push_back("leave_wild_shape");
         }
         if (def(a).sorcery_points)
-            view.bonus_actions.insert(view.bonus_actions.end(),
-        {"create_slot_1", "create_slot_2", "convert_slot_1", "convert_slot_2"});
+        {
+            for (unsigned level = 1; level <= 5; ++level)
+                view.bonus_actions.push_back("create_slot_" + std::to_string(level));
+            for (unsigned level = 1; level <= highest_slot_level; ++level)
+                view.bonus_actions.push_back("convert_slot_" + std::to_string(level));
+        }
         for (const auto &known : def(a).metamagic)
             if (known == "transmuted")
                 for (const auto type : transmuted_types)
@@ -5484,6 +5583,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::mazed, "Lost in a maze"},
                     std::pair{detail::EffectKind::word_stunned, "Stunned (Power Word Stun)"},
                     std::pair{detail::EffectKind::overchannel, "Overchannel"},
+                    std::pair{detail::EffectKind::dragon_wings, "Dragon Wings"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -6695,6 +6795,14 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             spell.pattern != detail::SpellPattern::heal &&
             detail::on_class_list(CharacterClass::wizard, spell.id))
         rolled.bonus += casting_modifier(d);
+    // Elemental Affinity (Sorcerer 6): the Charisma modifier added to the
+    // damage roll of a spell of its type.
+    if (d.elemental_affinity && spell.dice.count &&
+            spell.pattern != detail::SpellPattern::auto_damage &&
+            spell.pattern != detail::SpellPattern::heal &&
+            cast_damage_type(detail::chromatic_type(verb).value_or(
+                                 detail::burst_type(verb).value_or(spell.damage))) == *d.elemental_affinity)
+        rolled.bonus += casting_modifier(d);
     const unsigned instances = spell.instances + steps * spell.upcast.extra_instances;
     const int dc = spell_dc(a, spell.id);
     const auto name = std::string(spell.label);
@@ -7838,22 +7946,31 @@ std::vector<Command> Session::offered_commands() const
     // becomes Sorcery Points without an action.
     if (d.sorcery_points)
     {
-        if (a.bonus && a.lay_on_hands >= 2 && a.slots[1] < slot_room(d, 1))
-            add(id, "create_slot_1", "Font of Magic: create a level-1 slot (2 Sorcery Points)");
-        if (a.bonus && d.level >= 3 && a.lay_on_hands >= 3 && a.slots[2] < slot_room(d, 2))
-            add(id, "create_slot_2", "Font of Magic: create a level-2 slot (3 Sorcery Points)");
-        if (a.slots[1] > 0 && a.lay_on_hands < d.sorcery_points)
-            add(id, "convert_slot_1", "Font of Magic: a level-1 slot into 1 Sorcery Point");
-        if (a.slots[2] > 0 && a.lay_on_hands < d.sorcery_points)
-            add(id, "convert_slot_2", "Font of Magic: a level-2 slot into 2 Sorcery Points");
+        // A slot of level 1 to 5, from Sorcerer level 2, 3, 5, 7 and 9.
+        for (unsigned level = 1; level <= 5; ++level)
+            if (a.bonus && d.level >= font_of_magic_level[level] &&
+                    a.lay_on_hands >= font_of_magic_cost[level] && a.slots[level] < slot_room(d, level))
+                add(id, "create_slot_" + std::to_string(level),
+                    "Font of Magic: create a level-" + std::to_string(level) + " slot (" +
+                    std::to_string(font_of_magic_cost[level]) + " Sorcery Points)");
+        for (unsigned level = 1; level <= highest_slot_level; ++level)
+            if (a.slots[level] > 0 && a.lay_on_hands < d.sorcery_points)
+                add(id, "convert_slot_" + std::to_string(level),
+                    "Font of Magic: a level-" + std::to_string(level) + " slot into " +
+                    std::to_string(level) + (level == 1 ? " Sorcery Point" : " Sorcery Points"));
     }
     // Metamagic: ready an affordable option for the next spell this turn, no
     // action; the Sorcery Points are spent when a spell it changes is cast.
+    // Sorcery Incarnate: a second option while Innate Sorcery is active.
     if (!d.metamagic.empty())
     {
-        if (readied_metamagic(a))
+        const auto ready = readied_metamagic(a);
+        int committed = 0;
+        for (const auto &r : ready)
+            committed += metamagic_cost(r.option);
+        if (!ready.empty())
             add(id, "metamagic_cancel", "Metamagic: cancel");
-        else
+        if (ready.size() < metamagic_room(a))
             for (const auto &known : d.metamagic)
             {
                 const auto index = static_cast<std::size_t>(
@@ -7862,8 +7979,12 @@ std::vector<Command> Session::offered_commands() const
                 const auto option = static_cast<Metamagic>(index);
                 const int cost = metamagic_cost(option);
                 // Subtle Spell retired with spell components (CLASS-11).
-                if (a.lay_on_hands < cost || option == Metamagic::subtle)
-                    continue;
+                if (a.lay_on_hands < committed + cost || option == Metamagic::subtle ||
+                        std::any_of(ready.begin(), ready.end(), [&](const auto & r)
+                {
+                    return r.option == option;
+                }))
+                continue;
                 const std::string points = " (" + std::to_string(cost) +
                                            (cost == 1 ? " Sorcery Point)" : " Sorcery Points)");
                 const std::string label(metamagic_labels[index]);
@@ -7887,6 +8008,18 @@ std::vector<Command> Session::offered_commands() const
     if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
             !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
         add(id, "innate_sorcery", "Innate Sorcery");
+    // Sorcery Incarnate (Sorcerer 7): with no use left, 2 Sorcery Points.
+    else if (a.bonus && d.sorcery_incarnate && a.lay_on_hands >= 2 &&
+             !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
+        add(id, "innate_sorcery_points", "Innate Sorcery (2 Sorcery Points)");
+    // Dragon Wings (Sorcerer 14): once per Long Rest, or for 3 Sorcery Points.
+    if (a.bonus && d.dragon_wings && !detail::has_effect(a.effects, detail::EffectKind::dragon_wings))
+    {
+        if (!detail::has_effect(a.effects, detail::EffectKind::wings_used))
+            add(id, "dragon_wings", "Dragon Wings");
+        else if (a.lay_on_hands >= 3)
+            add(id, "dragon_wings_points", "Dragon Wings (3 Sorcery Points)");
+    }
     // Monk's Focus: Patient Defense and Step of the Wind, free or with a Focus
     // Point, and Flurry of Blows for a Focus Point.
     // Heightened Focus: Step of the Wind with Focus may carry an ally beside
@@ -9371,6 +9504,12 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     // Empowered Evocation (Wizard 10).
     if (def(caster).empowered && spell.evocation &&
             detail::on_class_list(CharacterClass::wizard, spell.id))
+        rolled.bonus += casting_modifier(def(caster));
+    // Elemental Affinity (Sorcerer 6); Prismatic Spray's rays each have their own type.
+    if (def(caster).elemental_affinity && spell.rider != detail::Rider::prismatic_spray &&
+            !spell.id.starts_with("breath_weapon_") && spell.id != "spirit_breath" &&
+            cast_damage_type(detail::dragon_type(verb).value_or(spell.damage)) ==
+            *def(caster).elemental_affinity)
         rolled.bonus += casting_modifier(def(caster));
     const int total = spell_dice(caster, rolled);
     // Flame Strike's Radiant beside its Fire, resisted on its own.
@@ -13919,7 +14058,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (spell && casting_with(Metamagic::seeking) && natural != 20 &&
             !attack_hits(natural, bonus, armor_class(target)))
     {
-        casting_metamagic_.reset();
+        std::erase_if(casting_metamagic_, [](const auto & ready)
+        {
+            return ready.option == Metamagic::seeking;
+        });
         natural = detail::d20(modifiers, rng_);
         log("Seeking Spell rerolls the missed attack.", {"Seeking Spell rerolls the missed attack.", {}});
     }
@@ -14322,25 +14464,35 @@ void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
     a.aim_ready = striker.aim_ready;
 }
 
-std::optional<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
+std::vector<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
 {
+    std::vector<ReadyMetamagic> result;
     for (const auto &e : a.effects.active)
         if (e.kind == detail::EffectKind::metamagic)
         {
             if (e.dc < 10)
-                return ReadyMetamagic{static_cast<Metamagic>(e.dc), std::nullopt};
-            return ReadyMetamagic{Metamagic::transmuted,
+                result.push_back({static_cast<Metamagic>(e.dc), std::nullopt});
+            else
+                result.push_back({Metamagic::transmuted,
                                   detail::damage_type(transmuted_types.at(
-                                      static_cast<std::size_t>(e.dc - 10)))};
+                                      static_cast<std::size_t>(e.dc - 10)))});
         }
-    return std::nullopt;
+    return result;
+}
+
+std::size_t Session::metamagic_room(const Actor &a)
+{
+    return a.definition.sorcery_incarnate &&
+           detail::has_effect(a.effects, detail::EffectKind::innate_sorcery) ? 2 : 1;
 }
 
 bool Session::readies(const Actor &a, Metamagic option, const detail::SpellDef &spell)
 {
     const auto ready = readied_metamagic(a);
-    return ready && ready->option == option && metamagic_applies(option, spell) &&
-           a.lay_on_hands >= metamagic_cost(option);
+    return std::any_of(ready.begin(), ready.end(), [&](const auto & r)
+    {
+        return r.option == option;
+    }) && metamagic_applies(option, spell) && a.lay_on_hands >= metamagic_cost(option);
 }
 
 void Session::mark_heightened(const Actor &caster, const detail::SpellDef &spell)
@@ -14363,20 +14515,31 @@ void Session::mark_heightened(const Actor &caster, const detail::SpellDef &spell
 
 void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
 {
-    casting_metamagic_.reset();
+    casting_metamagic_.clear();
     heightened_target_ = 0;
-    const auto ready = readied_metamagic(caster);
-    if (!ready || !readies(caster, ready->option, spell))
-        return;
-    caster.lay_on_hands -= metamagic_cost(ready->option);
-    std::erase_if(caster.effects.active, [](const auto & e)
+    for (const auto &ready : readied_metamagic(caster))
     {
-        return e.kind == detail::EffectKind::metamagic;
-    });
-    casting_metamagic_ = ready;
-    const std::string label(metamagic_labels[static_cast<std::size_t>(ready->option)]);
-    log(caster.source.name + " uses " + label + ".",
-    {"{name} uses {feature}.", {{"name", caster.source.name}, {"feature", label, true}}});
+        if (!readies(caster, ready.option, spell))
+            continue;
+        caster.lay_on_hands -= metamagic_cost(ready.option);
+        // Each option spent leaves; one that cannot change this spell waits.
+        const int value = ready.type ? 10 + static_cast<int>(
+                              std::find_if(transmuted_types.begin(), transmuted_types.end(), [&](auto id)
+        {
+            return detail::damage_type(id) == *ready.type;
+        }) - transmuted_types.begin())
+        : static_cast<int>(ready.option);
+        const auto spent = std::find_if(caster.effects.active.begin(), caster.effects.active.end(),
+                                        [&](const auto & e)
+        {
+            return e.kind == detail::EffectKind::metamagic && e.dc == value;
+        });
+        caster.effects.active.erase(spent);
+        casting_metamagic_.push_back(ready);
+        const std::string label(metamagic_labels[static_cast<std::size_t>(ready.option)]);
+        log(caster.source.name + " uses " + label + ".",
+        {"{name} uses {feature}.", {{"name", caster.source.name}, {"feature", label, true}}});
+    }
 }
 
 int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) const
@@ -14393,8 +14556,9 @@ int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) con
 
 detail::DamageType Session::cast_damage_type(detail::DamageType type) const
 {
-    if (casting_with(Metamagic::transmuted) && transmutable(type))
-        return *casting_metamagic_->type;
+    for (const auto &ready : casting_metamagic_)
+        if (ready.option == Metamagic::transmuted && transmutable(type))
+            return *ready.type;
     return type;
 }
 
@@ -16654,7 +16818,7 @@ void Session::answer_damage()
 
 void Session::perform(const Command &command)
 {
-    casting_metamagic_.reset();
+    casting_metamagic_.clear();
     heightened_target_ = 0;
     overchanneling_ = false;
     const bool askable = std::any_of(actors_.begin(), actors_.end(), [&](const auto & other)
@@ -17191,10 +17355,26 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " inspires " + ally.source.name + ".",
         {"{name} inspires {target}.", {{"name", a.source.name}, {"target", ally.source.name}}});
     }
-    else if (command.verb == "innate_sorcery")
+    else if (command.verb == "dragon_wings" || command.verb == "dragon_wings_points")
     {
         a.bonus = false;
-        --a.free_casts;
+        if (command.verb == "dragon_wings")
+            detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                        detail::EffectKind::wings_used, 0);
+        else
+            a.lay_on_hands -= 3;
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::dragon_wings, 0);
+        log(a.source.name + " spreads dragon wings.",
+        {"{name} spreads dragon wings.", {{"name", a.source.name}}});
+    }
+    else if (command.verb == "innate_sorcery" || command.verb == "innate_sorcery_points")
+    {
+        a.bonus = false;
+        if (command.verb == "innate_sorcery")
+            --a.free_casts;
+        else
+            a.lay_on_hands -= 2;
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::innate_sorcery, 0);
         log(a.source.name + " unleashes Innate Sorcery.",
@@ -19528,6 +19708,10 @@ class Module final : public RulesModule
             result.training = {detail::primal_knowledge_options(sheet.grants)};
         if (klass == CharacterClass::sorcerer && result.level == 2)
             result.training = {detail::metamagic_options()};
+        if (klass == CharacterClass::sorcerer && result.level == 6)
+            result.training = {detail::elemental_affinity_options()};
+        if (klass == CharacterClass::sorcerer && result.level == 10)
+            result.training = {detail::metamagic_options(10, sheet.grants)};
         if (klass == CharacterClass::bard && result.level == 3)
             result.training = {detail::lore_options(sheet.grants)};
         if (klass == CharacterClass::druid && result.level == 3)
@@ -19577,6 +19761,34 @@ class Module final : public RulesModule
                 "A level 6 spell slot and Wizard spells: Chain Lightning, Circle of Death, Contingency, Create Undead, Disintegrate, Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability, Irresistible Dance, Magic Jar, Sunbeam, True Seeing and Wall of Ice.";
         if (klass == CharacterClass::wizard && result.level == 12)
             result.description = "A feat or ability points.";
+        if (klass == CharacterClass::sorcerer && result.level == 5)
+            result.description =
+                "Sorcerous Restoration: after a Short Rest, regain Sorcery Points up to half your Sorcerer level, once per Long Rest.\nLevel 3 spell slots and Sorcerer spells: Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Protection from Energy, Sleet Storm, Stinking Cloud and Vampiric Touch; Draconic Spells: Fear is always prepared. Font of Magic creates level-3 slots.\nProficiency Bonus +3.";
+        if (klass == CharacterClass::sorcerer && result.level == 6)
+            result.description =
+                "Elemental Affinity: choose Acid, Cold, Fire, Lightning or Poison: Resistance to it, and your Charisma modifier added to the damage of your spells of that type.";
+        if (klass == CharacterClass::sorcerer && result.level == 7)
+            result.description =
+                "Sorcery Incarnate: with no Innate Sorcery use left, 2 Sorcery Points start it; while it is active, two Metamagic options can change one spell.\nA level 4 spell slot and Sorcerer spells: Banishment, Blight, Charm Monster, Confusion, Dimension Door, Dominate Beast, Fire Shield, Greater Invisibility, Ice Storm, Polymorph, Stoneskin, Vitriolic Sphere and Wall of Fire; Draconic Spells: Charm Monster is always prepared. Font of Magic creates level-4 slots.";
+        if (klass == CharacterClass::sorcerer && (result.level == 8 || result.level == 12))
+            result.description = "A feat or ability points.";
+        if (klass == CharacterClass::sorcerer && result.level == 9)
+            result.description =
+                "A level 5 spell slot and Sorcerer spells: Animate Objects, Arcane Hand, Cloudkill, Cone of Cold, Dominate Person, Hold Monster, Insect Plague, Telekinesis and Wall of Stone; Draconic Spells: Summon Dragon is always prepared. Font of Magic creates level-5 slots.\nProficiency Bonus +4.";
+        if (klass == CharacterClass::sorcerer && result.level == 10)
+            result.description = "Two more Metamagic options.\nA sixth cantrip.";
+        if (klass == CharacterClass::sorcerer && result.level == 11)
+            result.description =
+                "A level 6 spell slot and Sorcerer spells: Chain Lightning, Circle of Death, Disintegrate, Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability, Sunbeam and True Seeing.";
+        if (klass == CharacterClass::sorcerer && result.level == 13)
+            result.description =
+                "A level 7 spell slot and Sorcerer spells: Delayed Blast Fireball, Finger of Death, Fire Storm, Prismatic Spray and Reverse Gravity.";
+        if (klass == CharacterClass::sorcerer && result.level == 14)
+            result.description =
+                "Dragon Wings: a Bonus Action spreads wings for an hour: you ignore Difficult Terrain and may move through enemies' squares. Once per Long Rest, or for 3 Sorcery Points.";
+        if (klass == CharacterClass::sorcerer && result.level == 15)
+            result.description =
+                "A level 8 spell slot and Sorcerer spells: Dominate Monster, Earthquake, Incendiary Cloud, Power Word Stun and Sunburst.";
         if (klass == CharacterClass::wizard && result.level == 13)
             result.description =
                 "A level 7 spell slot and Wizard spells: Arcane Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray, Reverse Gravity and Simulacrum.";
@@ -20196,7 +20408,8 @@ class Module final : public RulesModule
                     : id == "class:wizard:scholar" ? "expertise:" + value
                     : id == "subclass:ranger:hunter" ? "prey:" + value
                     : id == "class:barbarian:primal_knowledge" ? "skill:" + value
-                    : id == "class:sorcerer:metamagic" ? "metamagic:" + value
+                    : id.starts_with("class:sorcerer:metamagic") ? "metamagic:" + value
+                    : id == detail::elemental_affinity ? "affinity:" + value
                     : id == "class:warlock:invocations:2" ? "invocation:" + value
                     : id == "invocation:lessons_skilled" ? value
                     : id == "subclass:bard:lore" ? "skill:" + value
@@ -20599,6 +20812,7 @@ class Module final : public RulesModule
             return e.kind == detail::EffectKind::prayer_of_healing ||
                    e.kind == detail::EffectKind::relentless_used ||
                    e.kind == detail::EffectKind::overchanneled ||
+                   e.kind == detail::EffectKind::wings_used ||
                    e.kind == detail::EffectKind::trait_uses ||
                    e.kind == detail::EffectKind::heroic_inspiration;
         });
@@ -20652,6 +20866,15 @@ class Module final : public RulesModule
         for (const auto &choice : arcane_allocations(static_cast<unsigned>(d.level + 1) / 2))
             if (can_recover(actor, choice) && !simulacrum)
                 result.choices.push_back({choice.id, choice.label});
+        // Sorcerous Restoration (Sorcerer 5): Sorcery Points up to half the
+        // Sorcerer level, once per Long Rest.
+        if (d.sorcerous_restoration && actor.arcane > 0 && actor.lay_on_hands < d.sorcery_points &&
+                !simulacrum)
+            result.choices.push_back({"sorcerous_restoration",
+            {
+                "Sorcerous Restoration: regain {points} Sorcery Points",
+                {{"points", std::to_string(std::min(d.level / 2, d.sorcery_points - actor.lay_on_hands))}}
+            }});
         return result;
     }
 
@@ -20689,6 +20912,17 @@ class Module final : public RulesModule
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
+        if (choice_id == "sorcerous_restoration")
+        {
+            if (!d.sorcerous_restoration || actor.arcane < 1 || actor.lay_on_hands >= d.sorcery_points)
+                throw std::runtime_error("This rest recovery choice is unavailable");
+            const int regained = std::min(d.level / 2, d.sorcery_points - actor.lay_on_hands);
+            actor.lay_on_hands += regained;
+            --actor.arcane;
+            state = vitals(actor);
+            return {"Sorcerous Restoration restored {points} Sorcery Points.",
+                    {{"points", std::to_string(regained)}}};
+        }
         const auto choices = arcane_allocations(static_cast<unsigned>(d.level + 1) / 2);
         const auto choice = std::find_if(choices.begin(), choices.end(), [&](const auto & value)
         {
@@ -22130,7 +22364,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.223", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.224", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

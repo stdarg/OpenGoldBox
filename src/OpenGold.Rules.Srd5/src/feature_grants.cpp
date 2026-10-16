@@ -238,6 +238,15 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         if (level == 14)
             add("feature:overchannel", "subclass:wizard:evoker");
     }
+    if (klass == CharacterClass::sorcerer)
+    {
+        if (level == 5)
+            add("feature:sorcerous_restoration", "class:sorcerer");
+        if (level == 7)
+            add("feature:sorcery_incarnate", "class:sorcerer");
+        if (level == 14)
+            add("feature:dragon_wings", "subclass:sorcerer:draconic");
+    }
     // Roving's Climb and Swim Speeds are cut (SCOPE-2); its Speed stays.
     if (klass == CharacterClass::ranger)
     {
@@ -476,6 +485,15 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                      grant.id == "strikes:potent_spellcasting"));
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == elemental_affinity)
+        {
+            // Elemental Affinity: one of its five types, chosen at level six.
+            require(klass == CharacterClass::sorcerer && grant.level == 6 && grant.choices.empty() &&
+                    (grant.id == "affinity:acid" || grant.id == "affinity:cold" ||
+                     grant.id == "affinity:fire" || grant.id == "affinity:lightning" ||
+                     grant.id == "affinity:poison"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == defensive_tactics)
         {
             // Defensive Tactics: one of its two options, chosen at level seven.
@@ -554,6 +572,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({std::string(defensive_tactics), 0}));
     if (klass == CharacterClass::cleric && level >= 7)
         require(entitlements.contains({std::string(blessed_strikes), 0}));
+    if (klass == CharacterClass::sorcerer && level >= 6)
+        require(entitlements.contains({std::string(elemental_affinity), 0}));
     if (klass == CharacterClass::fighter && level >= 7)
         require(entitlements.contains({std::string(champion_style), 0}));
     require(required.empty() && advancement_count == feats_by(klass, level));

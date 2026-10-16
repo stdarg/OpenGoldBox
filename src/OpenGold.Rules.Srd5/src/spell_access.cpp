@@ -376,6 +376,10 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::sorcerer, "chromatic_orb", 3},
     AlwaysPrepared{CharacterClass::sorcerer, "command", 3},
     AlwaysPrepared{CharacterClass::sorcerer, "dragons_breath", 3},
+    // Draconic Spells (SRD 5.2.1 p. 70): Fly, Arcane Eye and Legend Lore are cut.
+    AlwaysPrepared{CharacterClass::sorcerer, "fear", 5},
+    AlwaysPrepared{CharacterClass::sorcerer, "charm_monster", 7},
+    AlwaysPrepared{CharacterClass::sorcerer, "summon_dragon", 9},
     AlwaysPrepared{CharacterClass::paladin, "protection_from_evil_and_good", 3},
     AlwaysPrepared{CharacterClass::paladin, "shield_of_faith", 3},
     // Zone of Truth, the other level-5 oath spell, is cut (DM-1).
@@ -1499,7 +1503,7 @@ SwapOffer cantrip_swap_offer(const CharacterSheet &sheet)
 {
     SwapOffer offer{"Cantrip", {}, {}};
     const auto *caster = prepared_caster(class_of(sheet));
-    if (!caster || sheet.level >= 4)
+    if (!caster || sheet.level >= static_cast<int>(level_cap(class_of(sheet))))
         return offer;
     const auto known = [&](std::string_view id)
     {
@@ -1528,7 +1532,8 @@ SwapOffer spell_swap_offer(const CharacterSheet &sheet)
     SwapOffer offer{"Spell", {}, {}};
     const auto klass = class_of(sheet);
     const auto *caster = prepared_caster(klass);
-    if (!caster || caster->rest_change != PreparedCaster::RestChange::none || sheet.level >= 4)
+    if (!caster || caster->rest_change != PreparedCaster::RestChange::none ||
+            sheet.level >= static_cast<int>(level_cap(klass)))
         return offer;
     const auto next = sheet.level + 1u;
     const auto always = always_prepared_spells(klass, next, sheet.grants);

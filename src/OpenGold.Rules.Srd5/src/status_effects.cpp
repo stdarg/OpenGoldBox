@@ -638,6 +638,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::jarred:
     case EffectKind::spirit_breath:
     case EffectKind::shared_resistance:
+    case EffectKind::dragon_wings: // an hour
         return 3600000; // Concentration, up to 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -661,6 +662,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::raised:
     case EffectKind::relentless_used:
     case EffectKind::overchanneled:
+    case EffectKind::wings_used:
     case EffectKind::trait_uses:
     case EffectKind::heroic_inspiration:
         return 86400000; // until a Long Rest, at most a day

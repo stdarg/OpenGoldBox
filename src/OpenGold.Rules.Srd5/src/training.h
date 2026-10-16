@@ -23,7 +23,11 @@ const ExpertisePick *expertise_pick(std::string_view source);
 rules::TrainingChoiceGroup expertise_options(const ExpertisePick &pick,
         std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup primal_knowledge_options(std::span<const rules::FeatureGrant> grants);
-rules::TrainingChoiceGroup metamagic_options();
+// Metamagic: two options at Sorcerer level 2, two more at 10, none of `held`.
+rules::TrainingChoiceGroup metamagic_options(unsigned level = 2,
+        std::span<const rules::FeatureGrant> held = {});
+// The Draconic Sorcerer's Elemental Affinity (level 6): its damage type.
+rules::TrainingChoiceGroup elemental_affinity_options();
 rules::TrainingChoiceGroup lore_options(std::span<const rules::FeatureGrant> grants);
 rules::TrainingChoiceGroup land_options();
 rules::TrainingChoiceGroup hunters_prey_options();

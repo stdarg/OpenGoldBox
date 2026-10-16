@@ -438,9 +438,14 @@ enum class EffectKind : unsigned
     // Simulacrum, on the copy: a Construct whose Hit Point maximum is lowered
     // by `dc` to half the original's, healed only by repair; it never wears off.
     simulacrum = 178,
+    // Dragon Wings (Sorcerer 14), for an hour: no Difficult Terrain, and
+    // enemies' squares passed as an ally's (LEVELS-3).
+    dragon_wings = 179,
+    // Dragon Wings' free use is spent until a Long Rest.
+    wings_used = 180,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = simulacrum
+    last = wings_used
 };
 
 // Magic Circle's creature types, by `dc`.

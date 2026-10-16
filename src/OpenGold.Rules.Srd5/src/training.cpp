@@ -774,12 +774,13 @@ TrainingChoiceGroup land_options()
     return group;
 }
 
-// Metamagic: two options at Sorcerer level two (SRD 5.2.1 pp. 66-67).
-TrainingChoiceGroup metamagic_options()
+// Metamagic: two options at Sorcerer level two and two more at ten (SRD 5.2.1
+// pp. 66-67).
+TrainingChoiceGroup metamagic_options(unsigned level, std::span<const FeatureGrant> held)
 {
-    TrainingChoiceGroup group{"class:sorcerer:metamagic", "Metamagic", 2, {},
-                              TrainingChoiceControl::checkboxes};
-    group.acquired_level = 2;
+    TrainingChoiceGroup group{level >= 10 ? "class:sorcerer:metamagic:10" : "class:sorcerer:metamagic",
+                              "Metamagic", 2, {}, TrainingChoiceControl::checkboxes};
+    group.acquired_level = level >= 10 ? 10 : 2;
     group.options = {
         {"careful", "Careful Spell", "1 Sorcery Point: allies in your save spell's area succeed and take no half damage."},
         {"distant", "Distant Spell", "1 Sorcery Point: double a spell's range, or Touch becomes 30 feet."},
@@ -790,6 +791,26 @@ TrainingChoiceGroup metamagic_options()
         {"seeking", "Seeking Spell", "1 Sorcery Point: reroll a missed spell attack roll."},
         {"transmuted", "Transmuted Spell", "1 Sorcery Point: change Acid, Cold, Fire, Lightning, Poison or Thunder damage to another of them."},
         {"twinned", "Twinned Spell", "1 Sorcery Point: a spell that can take more creatures from a higher slot takes one more."}};
+    std::erase_if(group.options, [&](const auto & option)
+    {
+        return has_grant(held, "metamagic:" + option.id);
+    });
+    return group;
+}
+
+// Elemental Affinity: the Draconic Sorcerer's damage type at level six (SRD
+// 5.2.1 p. 70).
+TrainingChoiceGroup elemental_affinity_options()
+{
+    TrainingChoiceGroup group{std::string(elemental_affinity), "Elemental Affinity", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 6;
+    for (const auto type : {"acid", "cold", "fire", "lightning", "poison"})
+    {
+        const std::string label(damage_name(damage_type(type)));
+        group.options.push_back({type, label, "Resistance to " + label +
+                                 " damage, and your Charisma modifier added to one damage roll of a spell that deals it."});
+    }
     return group;
 }
 
@@ -1005,9 +1026,12 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
                 selected.push_back(grant.id.substr(11));
                 continue;
             }
-            if (grant.source_id == "class:sorcerer:metamagic")
+            if (grant.source_id.starts_with("class:sorcerer:metamagic"))
             {
-                require(klass == CharacterClass::sorcerer && grant.level == 2 &&
+                // Two at level 2, two more at 10.
+                const bool later = grant.source_id == "class:sorcerer:metamagic:10";
+                require(klass == CharacterClass::sorcerer && grant.level == (later ? 10u : 2u) &&
+                        (later || grant.source_id == "class:sorcerer:metamagic") &&
                         grant.choices.empty());
                 // Subtle Spell, retired with spell components (CLASS-11), stays
                 // valid in older saves and does nothing.
@@ -1136,6 +1160,7 @@ TrainingChoices training_choices(std::span<const FeatureGrant> grants, Character
         starting.erase(std::string(pick.source));
     starting.erase("class:barbarian:primal_knowledge");
     starting.erase("class:sorcerer:metamagic");
+    starting.erase("class:sorcerer:metamagic:10");
     starting.erase("class:warlock:invocations:2");
     starting.erase(std::string(lessons_skilled));
     // A swapped level-1 invocation is checked above, not as a starting choice.
@@ -1214,6 +1239,12 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
     require(metamagic.empty() || level >= 2);
     if (klass == CharacterClass::sorcerer && level >= 2)
         result.complete &= metamagic.size() == 2;
+    const auto &more_metamagic = selected(choices, "class:sorcerer:metamagic:10");
+    require(more_metamagic.empty() || level >= 10);
+    for (const auto &id : more_metamagic)
+        require(std::find(metamagic.begin(), metamagic.end(), id) == metamagic.end());
+    if (klass == CharacterClass::sorcerer && level >= 10)
+        result.complete &= more_metamagic.size() == 2;
     const auto &primal = selected(choices, "class:barbarian:primal_knowledge");
     require(primal.empty() || level >= 3);
     if (klass == CharacterClass::barbarian && level >= 3)
@@ -1243,7 +1274,7 @@ AbilityCheckModifier ability_check(std::span<const FeatureGrant> grants, Charact
 SwapOffer option_swap_offer(const CharacterSheet &sheet)
 {
     const auto klass = class_of(sheet);
-    if (sheet.level >= 4)
+    if (sheet.level >= static_cast<int>(level_cap(klass)))
         return {};
     const auto next = static_cast<unsigned>(sheet.level) + 1;
     const auto held = [&](std::string_view prefix, std::string_view source)

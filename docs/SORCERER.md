@@ -1,6 +1,6 @@
 # Sorcerer
 
-Levels 1–4 of the SRD 5.2.1 Sorcerer (pp. 64–70). Charisma is the
+Levels 1–15 of the SRD 5.2.1 Sorcerer (pp. 64–70). Charisma is the
 spellcasting ability; the earlier cantrip work is in
 [Sorcerer cantrips](SORCERER-CANTRIPS.md).
 
@@ -87,3 +87,59 @@ spellcasting ability; the earlier cantrip work is in
   reroll; Distant's Touch at 30 feet; Transmuted's Cold; Careful sparing an
   ally; Twinned's second creature; Heightened Sleep's mark through a
   checkpoint and the lower of two d20s on a repeated save).
+
+## Levels 5–15
+
+The Sorcerer advances to level 15, the cap
+([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Spellcasting** (SRD 5.2.1 p. 65): the Wizard's slots; prepared spells 9,
+  10, 11, 12, 14, 15, 16, 16, 17, 17 and 18 at levels 5–15; a sixth cantrip
+  at 10. Every kept Sorcerer spell of levels 3–8 opens with its slot: at 5
+  Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern,
+  Lightning Bolt, Protection from Energy, Sleet Storm, Stinking Cloud and
+  Vampiric Touch; at 7 Banishment, Blight, Charm Monster, Confusion, Dimension
+  Door, Dominate Beast, Fire Shield, Greater Invisibility, Ice Storm,
+  Polymorph, Stoneskin, Vitriolic Sphere and Wall of Fire; at 9 Animate
+  Objects, Arcane Hand, Cloudkill, Cone of Cold, Dominate Person, Hold
+  Monster, Insect Plague, Telekinesis and Wall of Stone; at 11 Chain
+  Lightning, Circle of Death, Disintegrate, Eyebite, Flesh to Stone, Freezing
+  Sphere, Globe of Invulnerability, Sunbeam and True Seeing; at 13 Delayed
+  Blast Fireball, Finger of Death, Fire Storm, Prismatic Spray and Reverse
+  Gravity; at 15 Dominate Monster, Earthquake, Incendiary Cloud, Power Word
+  Stun and Sunburst. They work as for the [Wizard](WIZARD.md#levels-515) and
+  the [Cleric](CLERIC.md#levels-515). Slow waits for its decision (LEVELS-1);
+  Teleport waits for travel beyond New Phlan; the cut spells stay cut.
+- **Replacing choices:** on gaining any level up to 15, a cantrip, a spell
+  and a Metamagic option may each be replaced
+  ([Replacing choices](LEVEL-SWAPS.md)); the offers used to stop at level 4.
+  The same holds for every class that prepares spells.
+- **Sorcerous Restoration** (5): after a Short Rest, the rest's recovery
+  choices offer **Sorcerous Restoration: regain N Sorcery Points**, half the
+  Sorcerer level rounded down, up to the most it can hold; once per Long Rest.
+- **Draconic Spells:** Fear is always prepared from 5, Charm Monster from 7
+  and Summon Dragon from 9; Fly, Arcane Eye and Legend Lore are cut.
+- **Elemental Affinity** (Draconic 6): a level-up choice of Acid, Cold, Fire,
+  Lightning or Poison: Resistance to it, and the Charisma modifier added to the
+  damage roll of a Sorcerer's spell of that type (an area spell's one roll; a
+  single target's roll). Prismatic Spray's rays and a Breath Weapon take none.
+- **Sorcery Incarnate** (7): with no Innate Sorcery use left, **Innate Sorcery
+  (2 Sorcery Points)** starts it. While Innate Sorcery is active, a second
+  Metamagic option may be readied for the same spell; each that applies is
+  spent and paid when the spell is cast.
+- **Font of Magic** creates slots up to level 5: level 3 from Sorcerer 5 (5
+  Sorcery Points), level 4 from 7 (6) and level 5 from 9 (7); any slot turns
+  into Sorcery Points equal to its level.
+- **Metamagic** (10): two more options, none already known.
+- **Ability Score Improvements** at 8 and 12.
+- **Dragon Wings** (Draconic 14): **Dragon Wings**, a Bonus Action, spreads
+  wings for an hour: the Sorcerer ignores Difficult Terrain and moves through
+  enemies' squares, though it cannot stop in one (LEVELS-3: flight is cut).
+  Once per Long Rest, then **Dragon Wings (3 Sorcery Points)**.
+- Verification: `opengold_sorcerer_levels_tests` (the campaign to 15,
+  prepared counts, the sixth cantrip, each feature's grant, Elemental
+  Affinity's and the later Metamagic choices, a new slot level every two
+  levels, a level-15 round trip, the Draconic spells, Fireball at 5, Font of
+  Magic's level-5 slot both ways, Sorcerous Restoration once per Long Rest,
+  two Metamagic options on one Fireball, Dragon Wings).
