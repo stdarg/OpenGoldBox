@@ -8,6 +8,7 @@
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -22,6 +23,27 @@ using namespace opengold;
 
 namespace
 {
+// A Godot check runs this binary only for the save fixtures its environment
+// names; once each is written, the rest of the expedition need not run.
+constexpr std::array<const char *, 7> fixture_variables{
+    "OPENGOLD_SHOP_FIXTURE", "OPENGOLD_HALL_FIXTURE", "OPENGOLD_REST_CHOICE_FIXTURE",
+    "OPENGOLD_OHLO_FIXTURE", "OPENGOLD_SLUMS_FIXTURES", "OPENGOLD_KUTO_WELL_FIXTURE",
+    "OPENGOLD_KUTO_NORRIS_FIXTURE"};
+std::set<std::string, std::less<>> written_fixtures;
+
+bool requested_fixtures_written()
+{
+    bool requested = false;
+    for (const auto *variable : fixture_variables)
+        if (std::getenv(variable))
+        {
+            requested = true;
+            if (!written_fixtures.contains(variable))
+                return false;
+        }
+    return requested;
+}
+
 void check(bool ok, const char *message)
 {
     if (!ok)
@@ -1470,6 +1492,7 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
         const auto plaza = folder / "kutos-plaza.ogs";
         write_campaign_file(plaza, encode_campaign(*party, &town, campaign_asset_identity(directory)));
         write_approach_fixture(plaza, 7, 7, fixture, directory);
+        written_fixtures.insert("OPENGOLD_KUTO_WELL_FIXTURE");
     }
     walk_to(town, party, 7, 7, catacomb_answer("FIGHT"), false, true);
     check(town.snapshot().area_id == 32, "The well's rungs lead down to the catacombs");
@@ -1492,7 +1515,10 @@ void kutos_well_catacombs(Expedition &trip, const std::filesystem::path &folder,
     const auto save = folder / "before-norris.ogs";
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
     if (const auto *fixture = std::getenv("OPENGOLD_KUTO_NORRIS_FIXTURE"))
+    {
         write_approach_fixture(save, 10, 3, fixture, directory);
+        written_fixtures.insert("OPENGOLD_KUTO_NORRIS_FIXTURE");
+    }
 
     const auto lead = party->state().slots[0];
     const auto experience = party->member(lead).experience;
@@ -2038,6 +2064,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         auto shopper = create_party(directory);
         walk_to(shopper.town, shopper.party, 8, 10);
         write_campaign_file(fixture, encode_campaign(*shopper.party, &shopper.town, assets));
+        written_fixtures.insert("OPENGOLD_SHOP_FIXTURE");
     }
     // tests/training_hall_view_tests.gd steps north into the Fighters' hall at
     // (8,0) of the training area, with a party in three states: Arden can buy
@@ -2057,6 +2084,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
         state.roster.at(2).hall_experience_level = 1;
         trainees.party->restore(std::move(state));
         write_campaign_file(fixture, encode_campaign(*trainees.party, &trainees.town, assets));
+        written_fixtures.insert("OPENGOLD_HALL_FIXTURE");
     }
     // A level-3 Hunter Ranger and a level-3 Circle of the Land Druid saved
     // right after a Long Rest ("-long.ogs") and a Short Rest ("-short.ogs"),
@@ -2097,7 +2125,10 @@ void installed_first_expedition(const std::filesystem::path &executable,
         party->finish_short_rest(party->state().short_rest->ticket);
         write_campaign_file(std::filesystem::path(base).concat("-short.ogs"),
                             encode_campaign(*party, &town, assets));
+        written_fixtures.insert("OPENGOLD_REST_CHOICE_FIXTURE");
     }
+    if (requested_fixtures_written())
+        return;
     general_store_gear(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);
@@ -2118,12 +2149,22 @@ void installed_first_expedition(const std::filesystem::path &executable,
     const auto at_ohlo_door = encode_campaign(*trip.party, &trip.town, assets);
     // The game's own save controls load this fixture in tests/ohlo_save_route_tests.gd.
     if (const auto *fixture = std::getenv("OPENGOLD_OHLO_FIXTURE"))
+    {
         write_campaign_file(fixture, at_ohlo_door);
+        written_fixtures.insert("OPENGOLD_OHLO_FIXTURE");
+        if (requested_fixtures_written())
+            return;
+    }
     hand_in_potion(trip);
     write_campaign_file(save, encode_campaign(*trip.party, &trip.town, assets));
     {
         if (const auto *fixtures = std::getenv("OPENGOLD_SLUMS_FIXTURES"))
+        {
             write_slums_fixtures(save, fixtures, directory);
+            written_fixtures.insert("OPENGOLD_SLUMS_FIXTURES");
+            if (requested_fixtures_written())
+                return;
+        }
         slums_set_encounters(save, directory);
         slums_encounter_menu(save, directory);
         slums_parley_outcomes(save, directory);
@@ -2196,7 +2237,8 @@ int main(int argc, char **argv)
         locked_door_tests();
         if (directory && *directory)
             installed_first_expedition(std::filesystem::absolute(argv[0]), directory);
-        std::cout << "Expedition tests passed.\n";
+        std::cout << (requested_fixtures_written() ? "Expedition fixtures written.\n"
+                      : "Expedition tests passed.\n");
     }
     catch (const std::exception &e)
     {

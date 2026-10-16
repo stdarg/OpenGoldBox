@@ -7600,8 +7600,6 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                 spell.pattern == detail::SpellPattern::weapon_strike ||
                 spell.pattern == detail::SpellPattern::reaction || spell.target != scope)
             continue;
-        // Quickened Spell offers an Action spell in the Bonus Action pass.
-        const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
         // Divine Intervention (Cleric 10): any Cleric spell of level 5 or lower,
         // prepared or not, cast as a Magic action without a slot.
         const bool intervene = !bonus_pass && d.divine_intervention && a.arcane > 0 &&
@@ -7611,7 +7609,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // as a Magic action without a slot.
         const bool arcanum = !bonus_pass && d.arcanum.contains(spell.id) &&
                              !arcanum_spent(a, spell.level);
-        const bool usual = as_bonus == bonus_pass && detail::knows_spell(d.spells, spell.id);
+        const bool known = detail::knows_spell(d.spells, spell.id);
+        if (!known && !intervene && !arcanum)
+            continue;
+        // Quickened Spell offers an Action spell in the Bonus Action pass.
+        const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
+        const bool usual = known && as_bonus == bonus_pass;
         if (!usual && !intervene && !arcanum)
             continue;
         // Natural Recovery (Land 6): a Circle spell once per Long Rest, no slot.
@@ -23809,7 +23812,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.234", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.235", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace opengold::srd5::detail
@@ -3386,8 +3387,25 @@ inline std::optional<std::size_t> wall_direction(std::string_view verb)
     return std::nullopt;
 }
 
+// spell_table by id, built once: a lookup runs for every offered command.
+inline const SpellDef *spell_by_id(std::string_view id)
+{
+    static const auto index = []
+    {
+        std::unordered_map<std::string_view, const SpellDef *> result;
+        for (const auto &spell : spell_table)
+            result.emplace(spell.id, &spell);
+        return result;
+    }();
+    const auto found = index.find(id);
+    return found == index.end() ? nullptr : found->second;
+}
+
 inline const SpellDef *find_spell(std::string_view id)
 {
+    // Most lookups name a spell outright.
+    if (const auto *spell = spell_by_id(id))
+        return spell;
     id = without_cast_suffix(id);
     if (energy_type(id))
         id = "protection_from_energy";
@@ -3451,10 +3469,7 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "sorcerous_burst";
     if (dragon_type(id))
         id = id.starts_with("dragons_breath_exhale_") ? "dragons_breath_exhale" : "dragons_breath";
-    for (const auto &spell : spell_table)
-        if (spell.id == id)
-            return &spell;
-    return nullptr;
+    return spell_by_id(id);
 }
 
 // The spell's place in spell_table, which names it in a saved effect; -1 if
