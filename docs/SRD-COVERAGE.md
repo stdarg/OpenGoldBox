@@ -1247,7 +1247,7 @@ each, the count and three-pick limit, the Confirm gate, Back preserving picks,
 switching feat discarding them, Cancel and window close committing nothing, and
 keyboard commitment through every page. `asi_view_tests.gd` passes for all six
 classes, so the page refactor broke no existing flow. 1026 localized messages
-validate; astyle reports every touched file unchanged.
+validate; every touched file was already in the formatter's layout.
 
 [Scope, mechanics, commands and timing](SKILLED.md),
 [native evidence](../tests/skilled_checks.h),

@@ -1,0 +1,14 @@
+# OpenGold C++ checks: docs/CODING_STYLE.md. clang-format handles layout; this
+# file covers the style rule a formatter cannot apply safely, braces around
+# every if/else/loop body, because clang-tidy works from the compiled code and
+# knows which identifiers are macros. Run it against the build's
+# compile_commands.json. Validated with clang-tidy 23.1.0.
+Checks: '-*,readability-braces-around-statements'
+CheckOptions:
+  # 0: one-statement bodies need braces too.
+  readability-braces-around-statements.ShortStatementLines: 0
+WarningsAsErrors: ''
+# Project headers only; godot-cpp and other third-party code are not ours to fix.
+HeaderFilterRegex: '.*/(src|tests|tools)/.*'
+ExcludeHeaderFilterRegex: '.*/godot-cpp/.*'
+FormatStyle: file

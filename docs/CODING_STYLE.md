@@ -8,10 +8,16 @@ Exclude third-party, generated, build, and packaged files from formatting.
 For design and correctness mistakes to avoid, see
 [CPP_ANTIPATTERNS.md](CPP_ANTIPATTERNS.md).
 
-This document records the agreed style and the pinned formatter setup. The
-project-owned C++ tree is formatted to this style. Select and record an exact
-Artistic Style (astyle) release when upgrading; use that same release in
-editors and automated checks.
+This document records the agreed style and the tools that apply it:
+**clang-format** for layout and **clang-tidy** for the one rule a formatter
+cannot apply safely, required braces. Both come from the same LLVM release;
+pin one release in editors and automated checks.
+
+Most of the existing tree does not yet match: in October 2026, 263 of 322
+project-owned C++ files differed from clang-format's output, and one-statement
+`if` and loop bodies without braces are common. New and changed code follows
+this style; bringing the rest in line is a separate, formatting-only change
+(see [Adoption](#adoption)).
 
 ## Layout and readability
 
@@ -27,8 +33,10 @@ editors and automated checks.
   control keywords and their opening parentheses: `if (condition)`.
 - Remove trailing whitespace.
 - Keep existing naming conventions. Formatting is not a reason to rename symbols.
-- Preserve include order during the initial formatting pass to avoid introducing
-  include-order problems.
+- Preserve include order; the formatter does not sort includes, to avoid
+  introducing include-order problems.
+- Put a blank line before and after every function, class, struct, enum and
+  namespace definition.
 
 For example:
 
@@ -56,116 +64,105 @@ bool attack_hits(int natural, int bonus, int ac) noexcept
   orchestration and transactions; the application injects the rules implementation.
 - Keep formatting changes separate from behavioral changes and refactoring.
 
-astyle handles layout, not architectural correctness or ownership.
-Check required braces in review or a separately configured static-analysis check.
-Do not enable automatic brace insertion as part of the initial formatting pass.
+clang-format handles layout, and clang-tidy checks braces; neither checks
+architectural correctness or ownership, which stay a matter for review.
 
-## Formatter configuration
+## Tools
 
-Use **Artistic Style (astyle)**. The pinned configuration is `.astylerc` in the
-repository root; it is the source of truth for the exact options, including the
-reasoning behind each one and the limits of what astyle can express relative to
-this style (see that file's header comment). Validated with Artistic Style
-3.6.18.
+Use **clang-format** and **clang-tidy** from one LLVM release. The repository
+root holds their configuration, and each file's comments give the reason for
+its less obvious options:
 
-Install the selected astyle release, or use an existing binary of that exact
-release, and make it available on `PATH`:
+- `.clang-format`: layout. It never sorts includes, never splits string
+  literals (tools/localization.py reads message templates straight out of the
+  sources and would lose a split one), and never adds or removes braces.
+- `.clang-tidy`: enables only `readability-braces-around-statements`, with
+  one-statement bodies included. clang-tidy works from the compiled code, so
+  unlike a formatter it knows which identifiers are macros and can add braces
+  safely.
 
-- macOS: `brew install astyle`
-- Debian/Ubuntu: `apt install astyle`
-- Windows: `choco install astyle`, or download a release from
-  [astyle.sourceforge.net](https://astyle.sourceforge.net/install.html)
+Validated with LLVM 23.1.0. Install that release, or another 23.x, and make
+`clang-format`, `git-clang-format` and `clang-tidy` available on `PATH`:
 
-Record its full `astyle --version` output alongside the adopted configuration
-and pin the same release in automated checks. Avoid silently using an editor's
-different bundled version. Upgrade the formatter deliberately and review
-resulting diffs.
+- macOS: `brew install llvm`, then add `$(brew --prefix llvm)/bin` to `PATH`.
+- Debian/Ubuntu: the `clang-format-23` and `clang-tidy-23` packages from
+  [apt.llvm.org](https://apt.llvm.org/).
+- Windows: `winget install LLVM.LLVM`, or a release from
+  [github.com/llvm/llvm-project/releases](https://github.com/llvm/llvm-project/releases).
 
-## Running the formatter in PowerShell
+Check `clang-format --version` before formatting. Do not rely on a version
+bundled with an editor: clang-format's output changes between major releases.
+Upgrade deliberately, in a formatting-only change.
 
-Run these commands from the repository root, after installing the selected
-release; `.astylerc` already exists there:
+## Formatting
 
-```powershell
-astyle --version
-if (-not (Test-Path -LiteralPath .astylerc)) {
-    throw 'Missing the repository .astylerc configuration.'
-}
+Format only what a change touches. `git clang-format` reformats the lines that
+differ from a commit, so new work follows the style without reformatting
+untouched code:
+
 ```
-
-Preview formatted output without changing the source file:
-
-```powershell
-Get-Content .\src\OpenGold.Rules.Srd5\src\srd5.cpp | astyle --options=.astylerc
-```
-
-Apply formatting to that file, then review the changes. `--suffix=none` skips
-the `.orig` backup astyle otherwise leaves next to the file; that backup must
-never be committed:
-
-```powershell
-astyle --options=.astylerc --suffix=none .\src\OpenGold.Rules.Srd5\src\srd5.cpp
-git diff -- src/OpenGold.Rules.Srd5/src/srd5.cpp
+git clang-format --diff HEAD     # preview the staged and unstaged changes
+git clang-format HEAD            # apply it
 git diff --check
 ```
 
-Check formatting without editing files; a nonzero exit code means the check
-failed (for example, formatting differences or an invalid configuration):
+To format a whole file, or check one without editing it (a nonzero exit code
+means it differs):
 
-```powershell
-astyle --options=.astylerc --dry-run --error-on-changes --formatted .\src\OpenGold.Rules.Srd5\src\srd5.cpp
-if ($LASTEXITCODE -ne 0) {
-    throw 'C++ formatting check failed.'
-}
+```
+clang-format -i src/OpenGold.Rules.Srd5/src/srd5.cpp
+clang-format --dry-run -Werror src/OpenGold.Rules.Srd5/src/srd5.cpp
 ```
 
-For additional files, supply an explicitly reviewed list of project-owned
-source/header paths to the same command. Do not recursively format the entire
-working tree. Automated checks should use the pinned release, require the root
-configuration, and run the dry-run check on the agreed file set.
+Name the files explicitly. Never run the formatter recursively over the working
+tree: it would reach godot-cpp and other third-party, generated and build files.
 
-astyle's brace style does not distinguish control/function/class braces from
-aggregate-initializer braces the way clang-format does, so it also breaks
-multi-field struct-literal initializers onto their own line. That changed the
-layout of some data tables enough to need a fix in
-[tools/localization.py](../tools/localization.py)'s extraction regex (its
-structured-data pattern required the opening brace and the first field to be
-adjacent) — check `python tools/localization.py --check` after any
-large-scale reformat, not just the build and tests.
+Reformatting moves source lines, so run `python tools/localization.py` and
+`python tools/localization.py --check` after formatting, as after any source
+change.
+
+## Checking braces
+
+clang-tidy reads the compile commands of a configured build. The top-level
+CMakeLists.txt asks CMake to write `compile_commands.json` into the build
+directory (Ninja and Makefile generators; Visual Studio does not write one).
+Check a file, or let clang-tidy add the braces:
+
+```
+clang-tidy -p build src/OpenGold.Core/src/training_hall.cpp
+clang-tidy -p build --fix src/OpenGold.Core/src/training_hall.cpp
+```
+
+On macOS, Homebrew's clang-tidy does not find Apple's SDK headers by itself;
+add `--extra-arg=-isysroot$(xcrun --show-sdk-path)`. `.clang-tidy` sets
+`FormatStyle: file`, so inserted braces follow `.clang-format` (Allman). Review
+brace fixes on their own, separately from a formatting pass.
 
 ## Editor integration
 
-Point the editor at the pinned binary and `.astylerc` rather than trusting a
-bundled formatter's defaults or an unpinned marketplace extension: define a
-task or external tool that runs `astyle --options=.astylerc --suffix=none` (or
-the stdin/stdout form above for a preview) against the active file, and bind
-it to the format command. If a marketplace astyle extension is used instead,
-point its options-file setting at the repository's `.astylerc` and pin the same
-astyle release the extension calls into. Enable format-on-save only after
-reviewing the initial sample, since saving an existing file can reformat the
-whole file.
+Point the editor at the pinned clang-format binary and the repository's
+`.clang-format` rather than a bundled copy: in VS Code, set
+`C_Cpp.clang_format_path` (C/C++ extension) or `clangd.path`; CLion and Xcode
+plug-ins take the same binary. Format-on-save reformats the whole file, so
+enable it only for files already in the style, or format just the changed
+lines with `git clang-format`.
 
-`.clang-format` also remains in the repository from an earlier phase, for
-editors that only integrate clang-format. It is not the pinned formatter and
-is not guaranteed to match astyle's output byte for byte, particularly for
-wrapped expressions and aggregate initializers (see the caveat above);
-`.astylerc` is authoritative.
+## Adoption
 
-## Adoption and validation
-
-1. Pin the formatter release and add the shared configuration.
-2. Format `srd5.cpp` first and review it as a small sample.
-3. After sample approval, format the agreed project-owned source/header set in
-   a separate formatting-only commit, excluding third-party and generated files.
-4. Review the diff, run `git diff --check`, rebuild affected targets, and run
-   relevant tests before committing source changes. Review missing-brace fixes
-   separately from the mechanical formatting pass, and re-run
-   `python tools/localization.py --check` since reformatting shifts source-line
-   references and, per the caveat above, can change what its extraction
-   patterns match.
-5. Enable editor format-on-save and an automated formatting check to prevent drift.
+1. Pin the LLVM release and keep `.clang-format` and `.clang-tidy` at the
+   repository root (done).
+2. Format new and changed code with `git clang-format` (from now on).
+3. Bring the rest of the tree in line in a separate formatting-only commit over
+   an explicit list of project-owned files, excluding third-party and generated
+   files.
+4. Add the missing braces with `clang-tidy --fix` in another separate commit.
+5. After each of those commits, review the diff, run `git diff --check`,
+   rebuild, run the tests and the localization check.
+6. Then add an automated check (`clang-format --dry-run -Werror` and
+   clang-tidy) so the tree does not drift.
 
 ## References
 
-- [Artistic Style documentation](https://astyle.sourceforge.net/astyle.html)
-- [Artistic Style installation](https://astyle.sourceforge.net/install.html)
+- [clang-format style options](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
+- [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) and
+  [readability-braces-around-statements](https://clang.llvm.org/extra/clang-tidy/checks/readability/braces-around-statements.html)

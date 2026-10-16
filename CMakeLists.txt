@@ -23,6 +23,9 @@ include(CTest)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+# compile_commands.json for clang-tidy (docs/CODING_STYLE.md). Ninja and Makefile
+# generators write it; Visual Studio ignores the setting.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(MSVC)
     # Keep core, tests and the Godot boundary on the same CRT/iterator ABI.
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")

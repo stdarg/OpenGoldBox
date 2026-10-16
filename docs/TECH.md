@@ -690,7 +690,7 @@ Concretely:
   Windows the `python` on `PATH` may be a Microsoft Store stub that cannot run or
   install anything, so `tools/localization.py --check` silently has no host;
   `winget install --id Python.Python.3.12 -e` provides a real one, and
-  `choco install astyle` provides the pinned C++ formatter (see
+  `winget install LLVM.LLVM` provides the pinned clang-format and clang-tidy (see
   [CODING_STYLE.md](CODING_STYLE.md)). A procedure that depends on a tool must
   name how to get it, and a check that cannot run is recorded as unverified,
   never as passed.
