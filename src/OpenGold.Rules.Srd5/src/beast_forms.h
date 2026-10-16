@@ -120,8 +120,12 @@ inline constexpr std::array beast_forms{
 inline constexpr const BeastForm *beast_form(std::string_view key)
 {
     for (const auto &form : beast_forms)
+    {
         if (form.key == key)
+        {
             return &form;
+        }
+    }
     return nullptr;
 }
 } // namespace opengold::srd5::detail

@@ -9,7 +9,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 void ordering()
@@ -30,14 +32,18 @@ void ordering()
     {
         std::vector<EntityId> result;
         for (auto index : presentation::combat_sprite_draw_order(actors))
+        {
             result.push_back(actors[index].id);
+        }
         return result;
     };
     check(ids() == std::vector<EntityId>{9, 20, 12, 11},
           "Lower monster and Goliath draw before monsters above; same-row order is deterministic");
     for (std::size_t i = 0; i < actors.size(); ++i)
+    {
         check(actors[i].id == original[i].id && actors[i].cell == original[i].cell,
               "Rendering preserves initiative order and occupied cells");
+    }
     std::reverse(actors.begin(), actors.end());
     check(ids() == std::vector<EntityId>{9, 20, 12, 11},
           "Initiative order cannot change sprite overlap");

@@ -47,15 +47,23 @@ CharacterDraft draft(std::string klass, std::string background)
     d.name = "Initiate";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     const auto adjustments = srd5::character_rules()->adjustments(d.background);
     for (unsigned n = 0; n < adjustments.size(); ++n)
+    {
         if (adjustments[n].bonuses[Ability::wisdom] == 2 &&
             adjustments[n].bonuses[Ability::charisma] == 1)
+        {
             d.adjustment = n;
+        }
+    }
     if (d.character_class == "fighter")
+    {
         d.training = {{"class:fighter", {"acrobatics", "perception"}},
                       {"class:fighter:fighting_style", {"defense"}}};
+    }
     return d;
 }
 
@@ -110,8 +118,12 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -127,7 +139,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const CharacterS
                        {99, "vanguard", "Target", Side::opposition, enemy}}},
                      seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the initiate's turn");
+    }
     check(c->snapshot().actor == 1, "The initiate acts");
     return c;
 }
@@ -145,8 +159,12 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -154,8 +172,12 @@ CombatantView unit(const CombatSession &c, EntityId id)
 int free_cast(const std::vector<ResourcePool> &pools, std::string_view spell)
 {
     for (const auto &pool : pools)
+    {
         if (pool.id == "magic_initiate:" + std::string(spell))
+        {
             return static_cast<int>(pool.remaining);
+        }
+    }
     return -1;
 }
 
@@ -367,10 +389,14 @@ void shield_checks()
         auto c = battle(*rules, fighter.sheet(), std::nullopt, seed, {2, 1});
         check(submit(*c, "end"), "The Fighter waits");
         for (unsigned turns = 0; c->snapshot().actor != 99 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the enemy's turn");
+        }
         check(submit(*c, "melee", 1), "The enemy attacks the Fighter");
         if (!c->snapshot().reaction_pending || !offered(*c, "shield"))
+        {
             continue;
+        }
         check(submit(*c, "shield") && logged(*c, "casts Shield"), "Shield is cast as a reaction");
         check(free_cast(unit(*c, 1).resources, "shield") == 0, "It spends the free cast");
         return;
@@ -385,7 +411,9 @@ void level_four_checks()
     const auto id = party.add_pc(acolyte());
     party.award_experience(2700, "initiate-xp");
     for (unsigned level = 1; level < 3; ++level)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto options = party.advancement_options(id);
     const auto feat = [&](std::string_view name)
     {

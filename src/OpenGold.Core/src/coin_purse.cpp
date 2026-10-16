@@ -13,14 +13,18 @@ std::uint64_t coin_value(const Purse &purse)
 {
     std::uint64_t total = 0;
     for (std::size_t coin = 0; coin < copper_value.size(); ++coin)
+    {
         total += purse[coin] * copper_value[coin];
+    }
     return total;
 }
 
 void add_coins(Purse &purse, std::size_t coin, std::uint64_t count)
 {
     if (purse[coin] + count > purse_limit)
+    {
         throw std::runtime_error("The purse cannot hold its change");
+    }
     purse[coin] = static_cast<std::uint32_t>(purse[coin] + count);
 }
 
@@ -49,10 +53,14 @@ void pay(Purse &purse, CoinExchange &exchange, std::uint64_t copper)
         copper -= count * copper_value[coin];
     }
     if (!copper)
+    {
         return;
+    }
     std::size_t coin = 0;
     while (!purse[coin])
+    {
         ++coin;
+    }
     --purse[coin];
     ++exchange.paid[coin];
     give_change(purse, exchange.change, copper_value[coin] - copper);
@@ -64,10 +72,14 @@ Purse script_coins(const Purse &purse)
     Purse view;
     const auto total = coin_value(purse);
     for (std::size_t coin = 0; coin < copper_value.size(); ++coin)
+    {
         view[coin] = static_cast<std::uint32_t>(
             std::min<std::uint64_t>(script_coin_limit, total / copper_value[coin]));
+    }
     for (const auto valuable : {Coin::gems, Coin::jewelry})
+    {
         coins(view, valuable) = std::min(coins(purse, valuable), script_coin_limit);
+    }
     return view;
 }
 
@@ -83,17 +95,25 @@ SettledPurse settle_script_coins(const Purse &purse, const Purse &after_script)
         const auto shown = coins(before_script, valuable);
         const auto left = coins(after_script, valuable);
         if (left >= shown)
+        {
             add_coins(settled, static_cast<std::size_t>(valuable), left - shown);
+        }
         else
+        {
             coins(settled, valuable) -= shown - left;
+        }
     }
     Coins owed{};
     for (std::size_t coin = 0; coin < copper_value.size(); ++coin)
     {
         if (after_script[coin] >= before_script[coin])
+        {
             add_coins(settled, coin, after_script[coin] - before_script[coin]);
+        }
         else
+        {
             owed[coin] = before_script[coin] - after_script[coin];
+        }
     }
     CoinExchange exchange;
     std::uint64_t unpaid = 0;
@@ -105,9 +125,13 @@ SettledPurse settle_script_coins(const Purse &purse, const Purse &after_script)
         unpaid += exchange.owed[coin] * copper_value[coin];
     }
     if (!unpaid)
+    {
         return result;
+    }
     if (unpaid > coin_value(settled))
+    {
         throw std::runtime_error("A script took more coins than the purse holds");
+    }
     pay(settled, exchange, unpaid);
     result.exchange = exchange;
     return result;

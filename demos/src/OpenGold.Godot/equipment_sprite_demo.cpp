@@ -39,17 +39,23 @@ void EquipmentSpriteDemo::_ready()
     get_node<Button>("Shield")->connect("pressed",
                                         callable_mp(this, &EquipmentSpriteDemo::toggle_shield));
     for (bool equip : {true, false})
+    {
         get_node<Button>(equip ? "Equip" : "Unequip")
             ->connect("pressed",
                       callable_mp(this, &EquipmentSpriteDemo::change_equipment).bind(equip));
+    }
     if (Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     try
     {
         auto directory = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
         if (directory.is_empty())
+        {
             directory =
                 ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
+        }
         art_ = por::CharacterArt::load(path(directory));
         const auto root = ProjectSettings::get_singleton()->globalize_path("res://../../data/art/");
         catalog_ = por::CombatBodyCatalog::load(path(root.path_join("combat-body-looks.tsv")),
@@ -63,7 +69,9 @@ void EquipmentSpriteDemo::_ready()
         draft.name = "Equipment preview";
         draft.rolled = true;
         for (auto &roll : draft.rolls)
+        {
             roll = {{6, 5, 4, 1}, 3};
+        }
         por::CharacterAppearance appearance;
         appearance.icon_size = por::IconSize::regular;
         appearance.combat_body = 24;
@@ -75,7 +83,9 @@ void EquipmentSpriteDemo::_ready()
         const auto add = [&](int type, const std::string &name)
         {
             if (type < 1 || !seen.insert(type).second)
+            {
                 return;
+            }
             por::Equipment item;
             item.stored.type = type;
             item.stored.stack_size = 1;
@@ -85,12 +95,18 @@ void EquipmentSpriteDemo::_ready()
                                 .original_type = type});
         };
         for (const auto &option : catalog_.options())
+        {
             if (!option.id.ends_with("_shield"))
+            {
                 add(option.original_type, option.label);
+            }
+        }
         add(59, "Shield");
         member_ = campaign_->add_pc(std::move(character));
         for (const auto &item : campaign_->member(member_).character.inventory().items())
+        {
             hands_.push_back(campaign_->equipment_info(member_, item.id).hands);
+        }
         refresh();
         list->grab_focus();
         get_node<Label>("Status")->set_text(
@@ -109,14 +125,18 @@ void EquipmentSpriteDemo::_input(const Ref<InputEvent> &event)
     const Ref<InputEventKey> key = event;
     if (key.is_valid() && key->is_pressed() && !key->is_echo() && key->is_ctrl_pressed() &&
         key->get_keycode() == KEY_X)
+    {
         get_tree()->quit();
+    }
 }
 
 void EquipmentSpriteDemo::select(std::int64_t index)
 {
     selected_ = static_cast<int>(index);
     if (!member_)
+    {
         return;
+    }
     const auto &member = campaign_->member(member_);
     const auto item = member.character.inventory().items()[selected_];
     const bool equipped = std::ranges::find(member.equipped, item.id) != member.equipped.end();
@@ -133,7 +153,9 @@ void EquipmentSpriteDemo::activate(std::int64_t index)
 void EquipmentSpriteDemo::toggle_shield()
 {
     if (!member_)
+    {
         return;
+    }
     try
     {
         const auto &member = campaign_->member(member_);
@@ -141,9 +163,13 @@ void EquipmentSpriteDemo::toggle_shield()
         const bool equipped =
             std::ranges::find(member.equipped, shield.id) != member.equipped.end();
         if (equipped)
+        {
             campaign_->unequip(member_, shield.id);
+        }
         else
+        {
             campaign_->equip(member_, shield.id);
+        }
         get_node<Label>("Status")->set_text(equipped ? "Shield unequipped." : "Shield equipped.");
     }
     catch (const std::exception &error)
@@ -156,7 +182,9 @@ void EquipmentSpriteDemo::toggle_shield()
 void EquipmentSpriteDemo::refresh()
 {
     if (!member_)
+    {
         return;
+    }
     const auto &member = campaign_->member(member_);
     auto *list = get_node<ItemList>("Items");
     list->clear();
@@ -207,14 +235,20 @@ void EquipmentSpriteDemo::refresh()
 void EquipmentSpriteDemo::change_equipment(bool equip)
 {
     if (!member_)
+    {
         return;
+    }
     try
     {
         const auto item = campaign_->member(member_).character.inventory().items()[selected_];
         if (equip)
+        {
             campaign_->equip(member_, item.id);
+        }
         else
+        {
             campaign_->unequip(member_, item.id);
+        }
         get_node<Label>("Status")->set_text(
             gs(item.name + (equip ? " equipped." : " unequipped.")));
         refresh();

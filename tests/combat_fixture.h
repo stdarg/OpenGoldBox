@@ -19,7 +19,9 @@ inline void keep_initiative(rules::CombatSession &session)
                                              return c.verb == "initiative_keep";
                                          });
         if (choice == commands.end() || !session.submit(*choice))
+        {
             throw std::runtime_error("Missing Initiative decline");
+        }
     }
 }
 

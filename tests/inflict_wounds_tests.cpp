@@ -20,7 +20,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -50,7 +52,9 @@ CharacterSheet cleric(unsigned level)
     d.name = "Inflict tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::vector<std::string>{"sacred_flame"};
     d.spells = SpellChoices{
         {}, std::vector<std::string>{"cure_wounds", "healing_word", "inflict_wounds"}, {}, {}};
@@ -58,24 +62,34 @@ CharacterSheet cleric(unsigned level)
     auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
     VitalState state{c.sheet().hit_points, false, {}};
     for (unsigned n = 1; n < level; ++n)
+    {
         check(c.advance(*rules, state, rules->default_advancement(c.sheet())),
               "Advance the Cleric");
+    }
     return c.sheet();
 }
 
 int hit_points(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a.hit_points;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 std::optional<Command> find(const CombatSession &c, std::string_view verb, EntityId target)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.target == target)
+        {
             return command;
+        }
+    }
     return std::nullopt;
 }
 
@@ -113,7 +127,9 @@ int damage(const RulesModule &rules, const CharacterSheet &sheet, std::string_vi
     }
     const auto cast = find(*c, verb, 3);
     if (!cast)
+    {
         return -1;
+    }
     const int before = hit_points(*c, 3);
     check(c->submit(*cast), "Inflict Wounds resolves");
     return before - hit_points(*c, 3);

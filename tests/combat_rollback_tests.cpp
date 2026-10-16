@@ -15,7 +15,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<CombatSession> fight(const RulesModule &rules)
@@ -50,7 +52,9 @@ unsigned fail_at_every_step(const RulesModule &rules, std::size_t command_index)
             }
         }
         if (!failed)
+        {
             return static_cast<unsigned>(failing);
+        }
         check(session->save() == before, "A failed command leaves the fight unchanged");
     }
     throw std::runtime_error("A command never completed");
@@ -63,7 +67,9 @@ void every_opening_command_is_all_or_nothing()
     const auto commands = fight(*rules)->legal_commands().size();
     check(commands > 1, "The opening turn offers several commands");
     for (std::size_t index = 0; index < commands; ++index)
+    {
         check(fail_at_every_step(*rules, index) > 0, "Each command allocates while it runs");
+    }
 }
 } // namespace
 

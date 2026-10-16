@@ -39,23 +39,33 @@ Character hero()
     d.name = "Sleeper";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 CombatantView unit(const CombatSession &s, EntityId id)
 {
     for (const auto &a : s.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &s, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : s.legal_commands())
+    {
         if (c.verb == verb && (!target || c.target == target))
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -72,7 +82,9 @@ bool offers(const CombatSession &s, std::string_view verb)
 void turn(CombatSession &s, EntityId id)
 {
     for (unsigned n = 0; n < 20 && s.snapshot().actor != id; ++n)
+    {
         check(s.submit(command(s, "end")), "Advance fixture turn");
+    }
     check(s.snapshot().actor == id, "Requested conscious turn reached");
 }
 
@@ -92,12 +104,14 @@ void codec()
     std::istringstream in(out.str());
     check(fx::read_effects(in) == state, "Posture round trips");
     for (const auto bad : {"FX8 1 0 2", "FX8 1 0 -1", "FX8 1 0", "FX7 1 0 0 1"})
+    {
         rejects(
             [&]
             {
                 std::istringstream input(bad);
                 (void)fx::read_effects(input);
             });
+    }
 }
 
 void rest_ambush()
@@ -155,11 +169,15 @@ void downed_keeps_gear()
                                     VitalState{1}}}},
                                  seed);
         if (hit->snapshot().actor != 1)
+        {
             continue;
+        }
         check(hit->submit(command(*hit, "melee", 2)), "Damage fixture attack");
         const auto fallen = unit(*hit, 2);
         if (fallen.hit_points)
+        {
             continue;
+        }
         witnessed = true;
         const auto items = hit->snapshot().held_items;
         check(std::all_of(items.begin(), items.end(),
@@ -198,16 +216,22 @@ void bandaged_at_victory()
               {3, "bandit", "Enemy", Side::opposition, {3, 2}, {}, VitalState{1}}}},
             seed);
         for (unsigned n = 0; n < 20 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        {
             check(c->submit(command(*c, c->snapshot().actor == 1 && offers(*c, "melee") ? "melee"
                                                                                         : "end")),
                   "Victory fixture command");
+        }
         if (c->snapshot().outcome != Outcome::victory)
+        {
             continue;
+        }
         const auto log = c->snapshot().log();
         const auto victory = std::find(log.begin(), log.end(), "Victory.");
         const auto bandaged = std::find(victory, log.end(), "Fallen is bandaged and stable.");
         if (bandaged == log.end())
+        {
             continue;
+        }
         witnessed = true;
         const auto fallen = unit(*c, 2);
         check(!fallen.dead && fallen.hit_points == 0 &&

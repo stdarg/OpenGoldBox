@@ -15,19 +15,27 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
         for (const auto &entry : std::filesystem::directory_iterator(directory))
         {
             if (!entry.is_regular_file())
+            {
                 continue;
+            }
             auto name = detail::upper_ascii(entry.path().filename().string());
             if (!name.starts_with("GEO") || !name.ends_with(".DAX"))
+            {
                 continue;
+            }
             const auto bank = name.substr(3, name.size() - 7);
             if (!std::all_of(bank.begin(), bank.end(),
                              [](char c)
                              {
                                  return c >= '0' && c <= '9';
                              }))
+            {
                 continue;
+            }
             if (!archives.emplace(name, entry.path()).second)
+            {
                 throw MapError("Ambiguous map archive " + name);
+            }
         }
         MapCatalog catalog;
         for (const auto &[name, path] : archives)
@@ -37,17 +45,23 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
                                                      "Cannot open " + name, "Cannot read " + name);
             auto dax = decode_dax_archive(bytes);
             if (!dax)
+            {
                 throw MapError("Invalid DAX archive " + name);
+            }
             for (const auto &record : dax.records)
             {
                 auto map = decode_geo_map(record.bytes);
                 if (!map)
+                {
                     throw MapError("Truncated GEO map " + name + ":" + std::to_string(record.id));
+                }
                 catalog.maps_.emplace(MapId{name, record.id}, std::move(*map));
             }
         }
         if (catalog.maps_.empty())
+        {
             throw MapError("No GEO maps found in " + directory.string());
+        }
         return catalog;
     }
     catch (const std::filesystem::filesystem_error &e)
@@ -60,7 +74,9 @@ std::optional<std::reference_wrapper<const GeoMap>> MapCatalog::find(const MapId
 {
     const auto it = maps_.find(id);
     if (it == maps_.end())
+    {
         return std::nullopt;
+    }
     return std::cref(it->second);
 }
 } // namespace opengold::por

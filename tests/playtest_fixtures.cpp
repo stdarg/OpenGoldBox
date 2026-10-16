@@ -22,7 +22,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module_rules()
@@ -44,25 +46,37 @@ CharacterSheet caster(std::string klass, unsigned ability, std::vector<std::stri
     d.name = klass == "druid" ? "Druid" : klass == "bard" ? "Bard" : "Wizard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[ability] = {{6, 6, 6, 1}, 3};
     if (klass == "druid")
+    {
         d.training = {{"class:druid", {"nature", "medicine"}},
                       {"class:druid:primal_order", {"warden"}}};
+    }
     if (klass == "bard")
+    {
         d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
+    }
     if (klass == "wizard")
+    {
         d.training = {{"class:wizard", {"investigation", "medicine"}}};
+    }
     d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     CampaignParty party(module_rules());
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "playtest-xp");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     auto sheet = party.member(id).character.sheet();
     if (!spell.empty())
+    {
         sheet.prepared_spells.back() = std::move(spell);
+    }
     return sheet;
 }
 
@@ -78,13 +92,17 @@ CharacterSheet fighter()
     d.name = "Fighter";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 6, 6, 1}, 3};
     CampaignParty party(module_rules());
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "playtest-xp");
     for (unsigned n = 1; n < 4; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character.sheet();
 }
 
@@ -100,7 +118,9 @@ CharacterSheet monk()
     d.name = "Monk";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[1] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:monk", {"acrobatics", "stealth"}}};
     CampaignParty party(module_rules());

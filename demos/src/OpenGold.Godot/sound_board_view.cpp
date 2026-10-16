@@ -52,7 +52,9 @@ void SoundBoardView::_ready()
     refresh_buttons();
     volume(get_node<HSlider>("Volume")->get_value());
     if (Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     checking_ = args.has("--sound-check");
     capture_ = args.has("--capture");
@@ -60,11 +62,15 @@ void SoundBoardView::_ready()
     {
         auto directory = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
         if (directory.is_empty())
+        {
             directory =
                 ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
+        }
         if (directory.is_empty())
+        {
             throw std::runtime_error(
                 "Set OPENGOLD_GAME_DIR to your Pool of Radiance folder, then restart.");
+        }
         audio_ = std::make_unique<SoundPlayer>(
             SoundBank::load(std::filesystem::path(directory.utf16().get_data())),
             std::make_unique<GodotSoundOutput>(*get_node<AudioStreamPlayer>("Player")));
@@ -117,7 +123,9 @@ void SoundBoardView::refresh_buttons()
 void SoundBoardView::play(int index)
 {
     if (!loaded_ || index < 0 || static_cast<std::size_t>(index) >= audio_->bank().clips().size())
+    {
         return;
+    }
     const auto &clip = audio_->bank().clips()[index];
     try
     {
@@ -139,18 +147,24 @@ void SoundBoardView::play(int index)
 void SoundBoardView::stop()
 {
     if (audio_)
+    {
         audio_->stop();
+    }
     selected_ = -1;
     refresh_buttons();
     if (loaded_)
+    {
         get_node<Label>("Status")->set_text("Stopped. Choose a sound to play.");
+    }
 }
 
 void SoundBoardView::finished()
 {
     if (selected_ >= 0 && audio_->bank().clips()[selected_].audible)
+    {
         get_node<Label>("Status")->set_text(
             "Played: " + gs(audio_->bank().clips()[selected_].name) + ". Click to replay.");
+    }
     selected_ = -1;
     refresh_buttons();
 }
@@ -158,7 +172,9 @@ void SoundBoardView::finished()
 void SoundBoardView::volume(double value)
 {
     if (audio_)
+    {
         audio_->set_volume(value / 100);
+    }
     get_node<Label>("VolumeLabel")
         ->set_text("Volume " + String::num_int64(static_cast<int64_t>(value)) + "%");
 }
@@ -167,7 +183,9 @@ void SoundBoardView::mute(bool value)
 {
     get_node<Button>("Mute")->set_text(value ? "Unmute" : "Mute");
     if (audio_)
+    {
         audio_->set_muted(value);
+    }
 }
 
 void SoundBoardView::_process(double delta)
@@ -179,7 +197,9 @@ void SoundBoardView::_process(double delta)
         // the scene tree time to free the queued node before checking shutdown.
         check_elapsed_ += delta;
         if (check_elapsed_ < .2)
+        {
             return;
+        }
         check_passed_ = check_passed_ && !teardown_check_output_->is_playing();
         teardown_check_output_->set_gain(0);
         teardown_check_output_->stop();
@@ -204,7 +224,9 @@ void SoundBoardView::_process(double delta)
         return;
     }
     if (audio_ && selected_ >= 0 && !audio_->current_sound())
+    {
         finished();
+    }
     if (capture_ && !captured_ && frames_ > 5)
     {
         const auto path = ProjectSettings::get_singleton()->globalize_path(
@@ -213,7 +235,9 @@ void SoundBoardView::_process(double delta)
         captured_ = true;
     }
     if (!checking_ || !loaded_ || frames_ < 8)
+    {
         return;
+    }
     check_elapsed_ += delta;
     auto *player = get_node<AudioStreamPlayer>("Player");
     if (check_elapsed_ > 20)
@@ -224,7 +248,9 @@ void SoundBoardView::_process(double delta)
         return;
     }
     if (player->is_playing())
+    {
         return;
+    }
     if (++check_index_ == 21)
     {
         get_node<HSlider>("Volume")->set_value(35);

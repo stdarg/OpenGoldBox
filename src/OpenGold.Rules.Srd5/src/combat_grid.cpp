@@ -24,7 +24,9 @@ void validate_battlefield(const Battlefield &board)
                         return tile > Terrain::overgrown;
                     }) ||
         (!board.plants.empty() && board.plants.size() != board.terrain.size()))
+    {
         throw std::runtime_error("Invalid battlefield");
+    }
 }
 
 MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
@@ -33,15 +35,21 @@ MovementGrid::MovementGrid(const Battlefield &board, Cell origin,
 {
     validate_battlefield(board_);
     if (board_.at(origin_) == Terrain::obstacle)
+    {
         throw std::runtime_error("Invalid movement origin");
+    }
     occupancy_.resize(board_.terrain.size(), Occupancy::empty);
     held_.resize(board_.terrain.size());
     for (const auto &occupant : occupants)
     {
         if (!board_.contains(occupant.cell))
+        {
             throw std::runtime_error("Invalid occupant cell");
+        }
         if (!occupant.downed)
+        {
             held_[index(occupant.cell)] = true;
+        }
         auto &entry = occupancy_[index(occupant.cell)];
         // Apply the strongest restriction when several creatures overlap:
         // a conscious enemy blocks; an incapacitated enemy adds difficult terrain.
@@ -67,17 +75,25 @@ bool MovementGrid::can_stop_at(Cell destination) const
 std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
 {
     if (board_.at(from) == Terrain::obstacle || board_.at(to) == Terrain::obstacle)
+    {
         return std::nullopt;
+    }
     const int dx = std::abs(to.x - from.x), dy = std::abs(to.y - from.y);
     if (std::max(dx, dy) != 1)
+    {
         return std::nullopt;
+    }
     if (dx && dy &&
         (board_.at({from.x, to.y}) == Terrain::obstacle ||
          board_.at({to.x, from.y}) == Terrain::obstacle))
+    {
         return std::nullopt;
+    }
     const auto occupant = occupancy_[index(to)];
     if (occupant == Occupancy::enemy)
+    {
         return std::nullopt;
+    }
     const bool difficult =
         board_.at(to) == Terrain::difficult || occupant == Occupancy::incapacitated_enemy;
     return (board_.at(to) == Terrain::overgrown ? 20 : difficult ? 10 : 5) + (crawling_ ? 5 : 0);
@@ -86,7 +102,9 @@ std::optional<int> MovementGrid::step_cost(Cell from, Cell to) const
 ReachableCells MovementGrid::reachable(int budget) const
 {
     if (budget < 0)
+    {
         throw std::runtime_error("Negative movement budget");
+    }
     ReachableCells result;
     result.width_ = board_.width;
     result.height_ = board_.height;
@@ -94,8 +112,12 @@ ReachableCells MovementGrid::reachable(int budget) const
     result.costs_.assign(board_.terrain.size(), unreachable);
     result.previous_.assign(board_.terrain.size(), -1);
     for (int y = 0; y < board_.height; ++y)
+    {
         for (int x = 0; x < board_.width; ++x)
+        {
             result.destinations_.push_back(can_stop_at({x, y}));
+        }
+    }
 
     // Dijkstra: the cheapest queued cell is final when removed. Every edge
     // costs at least 5, so a route through a more expensive cell cannot improve it.
@@ -110,7 +132,9 @@ ReachableCells MovementGrid::reachable(int budget) const
         const auto [spent, current_index] = queue.top();
         queue.pop();
         if (spent != result.costs_[current_index])
+        {
             continue; // Superseded route.
+        }
         const Cell current{current_index % board_.width, current_index / board_.width};
         for (int dy = -1; dy <= 1; ++dy)
         {
@@ -119,10 +143,14 @@ ReachableCells MovementGrid::reachable(int budget) const
                 const Cell next{current.x + dx, current.y + dy};
                 const auto step = step_cost(current, next);
                 if (!step || *step > budget - spent)
+                {
                     continue;
+                }
                 const int next_index = index(next), total = spent + *step;
                 if (total >= result.costs_[next_index])
+                {
                     continue;
+                }
                 result.costs_[next_index] = total;
                 result.previous_[next_index] = current_index;
                 queue.push({total, next_index});
@@ -136,21 +164,29 @@ std::optional<int> ReachableCells::cost_to(Cell destination) const
 {
     if (destination.x < 0 || destination.y < 0 || destination.x >= width_ ||
         destination.y >= height_)
+    {
         return std::nullopt;
+    }
     const auto index = destination.y * width_ + destination.x;
     if (!destinations_[index] || costs_[index] == unreachable)
+    {
         return std::nullopt;
+    }
     return costs_[index];
 }
 
 std::vector<Cell> ReachableCells::path_to(Cell destination) const
 {
     if (!cost_to(destination))
+    {
         return {};
+    }
     std::vector<Cell> path;
     // Each predecessor has strictly lower cost, so this chain cannot cycle.
     for (int at = destination.y * width_ + destination.x; at != origin_; at = previous_[at])
+    {
         path.push_back({at % width_, at / width_});
+    }
     std::reverse(path.begin(), path.end());
     return path;
 }

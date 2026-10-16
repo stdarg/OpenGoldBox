@@ -55,7 +55,9 @@ Command command(const CombatSession &session, std::string_view verb, Cell cell =
                                return c.verb == verb && (verb != "move" || c.destination == cell);
                            });
     if (it == offered.end())
+    {
         throw std::runtime_error("Missing command: " + std::string(verb));
+    }
     return *it;
 }
 
@@ -67,7 +69,9 @@ std::unique_ptr<CombatSession> first_turn(const RulesModule &module, const Encou
     {
         auto session = module.create(encounter, seed);
         if (session->snapshot().actor == actor)
+        {
             return session;
+        }
     }
     throw std::runtime_error("No seed gives the requested first turn");
 }
@@ -78,7 +82,9 @@ std::unique_ptr<CombatSession> hero_first(const RulesModule &module, Encounter e
     {
         auto session = module.create(encounter, seed);
         if (session->snapshot().actor == 1)
+        {
             return session;
+        }
     }
     throw std::runtime_error("No hero-first seed");
 }
@@ -90,7 +96,9 @@ std::unique_ptr<CombatSession> actor_first(const RulesModule &module, Encounter 
     {
         auto session = module.create(encounter, seed);
         if (session->snapshot().actor == id)
+        {
             return session;
+        }
     }
     throw std::runtime_error("No matching first actor seed");
 }
@@ -115,8 +123,12 @@ CombatantView unit(const CombatSession &session, EntityId id)
 {
     const auto state = session.snapshot();
     for (const auto &a : state.combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -125,7 +137,9 @@ void next_round(CombatSession &session)
     const auto round = session.snapshot().round;
     for (auto now = session.snapshot(); now.round == round || now.actor != 1;
          now = session.snapshot())
+    {
         check(session.submit(command(session, "end")), "End turn accepted");
+    }
 }
 
 void turn_budget_tests()
@@ -140,23 +154,32 @@ void turn_budget_tests()
     draft.name = "Mage";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     auto sheet = srd5::character_rules()->evaluate(draft, NameRequirement::required);
     VitalState unused;
     for (unsigned level = 2; level <= 3; ++level)
     {
         auto choice = module->default_advancement(sheet);
         if (level == 3)
+        {
             // Earlier preparations stay; the level-two spells join them.
             for (const auto *spell : {"scorching_ray", "blindness"})
+            {
                 if (std::find(choice.spells.begin(), choice.spells.end(), spell) ==
                     choice.spells.end())
+                {
                     choice.spells.push_back(spell);
+                }
+            }
+        }
         check(module->advance_character(sheet, unused, choice),
               "Create a caster with level-two spells");
     }
     for (const auto verb :
          {"melee", "ranged", "fire_bolt", "magic_missile", "magic_missile_2", "scorching_ray"})
+    {
         for (const bool move_first : {false, true})
         {
             auto e = duel();
@@ -165,12 +188,18 @@ void turn_budget_tests()
             const bool weapon =
                 std::string_view(verb) == "melee" || std::string_view(verb) == "ranged";
             if (weapon)
+            {
                 e.participants[0].state = VitalState{10, false, creature_resources(2)};
+            }
             else
+            {
                 e.participants[0].character_profile = module->character_profile(sheet, {}).data;
+            }
             auto session = hero_first(*module, e);
             if (move_first)
+            {
                 check(session->submit(command(*session, "move", {2, 3})), "Move before attacking");
+            }
             const auto before = unit(*session, 1);
             const auto attack = command(*session, verb);
             check(submit_aimed(*session, attack), "Offensive action accepted");
@@ -228,6 +257,7 @@ void turn_budget_tests()
             check(session->snapshot().actor != 1 && session->snapshot().elapsed_milliseconds > 0,
                   "End Turn advances initiative and time");
         }
+    }
     // Every targeted offensive action may turn the sprite without provoking.
     for (const auto verb : {"melee", "ranged", "fire_bolt", "magic_missile", "magic_missile_2",
                             "scorching_ray", "blindness"})
@@ -238,7 +268,9 @@ void turn_budget_tests()
         e.participants.push_back({3, "vanguard", "Behind attacker", Side::opposition, {1, 2}});
         if (std::string_view(verb) != "melee" && std::string_view(verb) != "ranged" &&
             std::string_view(verb) != "blindness")
+        {
             e.participants[0].character_profile = module->character_profile(sheet, {}).data;
+        }
         auto session = hero_first(*module, e);
         auto attack = command(*session, verb);
         attack.target = 2;
@@ -311,7 +343,9 @@ void turn_budget_tests()
         e.participants[1].cell = {8, 2};
         e.participants[1].facing_left = true;
         if (injured)
+        {
             e.participants[1].state = VitalState{5, false, creature_resources(2)};
+        }
         session = actor_first(*module, e, 2);
         session->submit(command(*session, "ranged"));
         check(session->snapshot().actor == 2, "Enemy attacks also retain their turn");
@@ -367,12 +401,14 @@ void boundary_tests()
                         }) == std::ssize(preview),
           "Active movement preview matches legal move count");
     for (const auto &cell : preview)
+    {
         check(std::any_of(legal.begin(), legal.end(),
                           [&](const auto &c)
                           {
                               return c.verb == "move" && c.destination == cell;
                           }),
               "Active movement preview uses legal destinations");
+    }
     check(!session->movement_reach(2).empty() && session->movement_reach(999).empty(),
           "Off-turn combatants have rules-owned movement previews");
     auto invalid = command(*session, "melee");
@@ -391,7 +427,9 @@ void boundary_tests()
     check(!session->submit(attack) && session->save() == after,
           "Duplicate command rejected atomically");
     for (const auto &c : session->legal_commands())
+    {
         check(c.verb != "melee" && c.verb != "ranged", "Attack consumes the action");
+    }
     auto restored = module->restore(after);
     check(restored->save() == after, "Checkpoint preserves exact module state");
     auto mismatch = after;
@@ -465,11 +503,15 @@ void boundary_tests()
     {
         auto candidate = module->create(vulnerable, seed);
         if (candidate->snapshot().actor != 1)
+        {
             continue;
+        }
         candidate->submit(command(*candidate, "move", {1, 2}));
         candidate->submit(command(*candidate, "opportunity"));
         if (unit(*candidate, 1).hit_points > 0)
+        {
             continue;
+        }
         check(
             !candidate->snapshot().reaction_pending && unit(*candidate, 1).cell == Cell{2, 2} &&
                 candidate->snapshot().actor != 1,
@@ -650,10 +692,14 @@ void mechanics_tests()
     {
         session = module->create(encounter, seed);
         if (session->snapshot().actor != 1)
+        {
             continue;
+        }
         session->submit(command(*session, "melee"));
         if (!unit(*session, 2).dead)
+        {
             continue;
+        }
         check(session->snapshot().actor == 1,
               "Lethal attack preserves the actor's turn while other enemies remain");
         const auto log = session->snapshot().log();
@@ -662,7 +708,9 @@ void mechanics_tests()
                          {
                              return line.find("CRITICAL") != std::string::npos;
                          }))
+        {
             continue;
+        }
         check(session->submit(command(*session, "move", {3, 2})),
               "Can move onto defeated enemy cell");
         restored = module->restore(session->save());
@@ -700,16 +748,22 @@ void mechanics_tests()
     {
         session = module->create(encounter, seed);
         if (session->snapshot().actor != 2)
+        {
             continue;
+        }
         auto missile = command(*session, "magic_missile");
         missile.target = 1;
         check(submit_aimed(*session, missile), "Target player with spell");
         if (unit(*session, 1).hit_points > 0)
+        {
             continue;
+        }
         check(!unit(*session, 1).dead && session->snapshot().outcome == Outcome::ongoing,
               "Zero HP incapacitates player while ally can fight");
         for (int i = 0; i < 3; ++i)
+        {
             session->submit(command(*session, "end"));
+        }
         const auto log = session->snapshot().log();
         check(std::any_of(log.begin(), log.end(),
                           [](const auto &line)
@@ -728,12 +782,16 @@ void mechanics_tests()
     {
         session = module->create(encounter, seed);
         if (session->snapshot().actor != 2)
+        {
             continue;
+        }
         auto missile = command(*session, "magic_missile");
         missile.target = 1;
         submit_aimed(*session, missile);
         if (unit(*session, 1).hit_points > 0)
+        {
             continue;
+        }
         check(!unit(*session, 1).dead && session->snapshot().outcome == Outcome::defeat,
               "Combat ends when the last party member is unconscious, without declaring them dead");
         tested = true;
@@ -750,8 +808,12 @@ void death_save_turn_entry_tests()
     {
         std::vector<int> rolls;
         for (const auto &line : session.snapshot().log())
+        {
             if (line.starts_with("Hero death save: "))
+            {
                 rolls.push_back(std::stoi(line.substr(17)));
+            }
+        }
         return rolls;
     };
     // Exercise all four outcomes both in the first initiative slot and later.
@@ -763,7 +825,9 @@ void death_save_turn_entry_tests()
         {
             const auto healthy = module->create(encounter, seed);
             if ((healthy->snapshot().actor == 1) != first)
+            {
                 continue;
+            }
             auto wounded = encounter;
             wounded.participants[0].state =
                 VitalState{0, false, creature_resources(1, 2, 1, false, 6000)};
@@ -773,8 +837,10 @@ void death_save_turn_entry_tests()
                 check(death_rolls(*combat).empty(),
                       "Death saves wait for the wounded actor's initiative slot");
                 for (unsigned turns = 0; turns < 3 && death_rolls(*combat).empty(); ++turns)
+                {
                     check(combat->submit(command(*combat, "end")),
                           "Advance to the wounded actor's turn");
+                }
             }
             const auto rolls = death_rolls(*combat);
             check(
@@ -794,8 +860,10 @@ void death_save_turn_entry_tests()
                           hero.reaction,
                       "Natural-20 recovery permits the current turn");
                 if (first)
+                {
                     check(combat->snapshot().elapsed_milliseconds == 0,
                           "Natural-20 recovery does not skip the first initiative slot");
+                }
             }
             else if (roll >= 10)
             {
@@ -869,8 +937,11 @@ void allied_transit_tests()
     auto module = srd5::load(pack());
     Battlefield corridor{7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
+    {
         corridor.terrain[7 + x] = Terrain::open;
+    }
     for (const Side side : {Side::party, Side::opposition})
+    {
         for (const bool difficult : {false, true})
         {
             const auto other_side = side == Side::party ? Side::opposition : Side::party;
@@ -880,7 +951,9 @@ void allied_transit_tests()
                          {3, "vanguard", "Ally", side, {1, 1}},
                          {4, "vanguard", "Second ally", side, {2, 1}}}};
             if (difficult)
+            {
                 e.battlefield.terrain[8] = Terrain::difficult;
+            }
             auto session = hero_first(*module, e);
             const auto saved = session->save();
             const auto moves = session->movement_reach(1);
@@ -902,10 +975,13 @@ void allied_transit_tests()
             check(module->restore(session->save())->save() == session->save(),
                   "Completed allied transit round trips");
         }
+    }
     // Pause on an allied space after a travelled prefix, before leaving reach.
     Battlefield board{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
     for (int x = 0; x < 5; ++x)
+    {
         board.terrain[5 + x] = Terrain::open;
+    }
     board.terrain[1] = board.terrain[2] = Terrain::open;
     Encounter e{board,
                 {{1, "vanguard", "Mover", Side::party, {0, 1}},
@@ -922,13 +998,17 @@ void allied_transit_tests()
         std::vector<std::string> rows;
         std::istringstream saved(session->save());
         for (std::string line; std::getline(saved, line);)
+        {
             rows.push_back(line);
+        }
         const auto path_header = 4 + session->snapshot().combatants.size();
         const auto reject_rows = [&](const auto &invalid)
         {
             std::string bytes;
             for (const auto &row : invalid)
+            {
                 bytes += row + '\n';
+            }
             rejects(
                 [&]
                 {
@@ -961,11 +1041,15 @@ void allied_transit_tests()
     {
         auto session = module->create(e, seed);
         if (session->snapshot().actor != 1)
+        {
             continue;
+        }
         session->submit(command(*session, "move", {4, 1}));
         session->submit(command(*session, "opportunity"));
         if (unit(*session, 1).hit_points > 0)
+        {
             continue;
+        }
         check(!session->snapshot().reaction_pending && unit(*session, 1).cell == Cell{2, 1},
               "Incapacitated mover remains where the interrupt hit, on the ally");
         auto waiting = module->restore(session->save());
@@ -981,7 +1065,9 @@ void allied_transit_tests()
         died |= unit(*waiting, 1).dead;
         natural_recovery |= unit(*waiting, 1).hit_points > 0;
         if (recovered)
+        {
             continue;
+        }
         auto restored = module->restore(session->save());
         for (unsigned turns = 0; session->snapshot().actor != 3; ++turns)
         {
@@ -1048,13 +1134,17 @@ void checkpoint_validation_tests()
     std::vector<std::string> lines;
     std::istringstream input(checkpoint);
     for (std::string line; std::getline(input, line);)
+    {
         lines.push_back(line);
+    }
     const auto path_header = 4 + session->snapshot().combatants.size();
     const auto encode = [](const std::vector<std::string> &fields)
     {
         std::string result;
         for (const auto &line : fields)
+        {
             result += line + '\n';
+        }
         return result;
     };
     const auto reject_changes =
@@ -1062,7 +1152,9 @@ void checkpoint_validation_tests()
     {
         auto corrupt = lines;
         for (const auto &[line, text] : changes)
+        {
             corrupt.at(line) = text;
+        }
         rejects(
             [&]
             {
@@ -1151,7 +1243,9 @@ void checkpoint_validation_tests()
     // flag, Resistance's use, Regeneration's block and getting-up round, the
     // thrown-gear state (five), the removed shield and Concentration's two.
     for (unsigned n = 0; n < 14; ++n)
+    {
         no_clocks.resize(no_clocks.find_last_of(' '));
+    }
     const auto grip_separator = no_clocks.rfind(' ', no_clocks.find_last_of(' ') - 1);
     invalid_overlap[grip_separator - 1] = '1';
     reject_changes({{4, invalid_overlap}});
@@ -1160,7 +1254,9 @@ void checkpoint_validation_tests()
     // Only its remaining movement may be charged when validating a restore.
     Battlefield corridor{5, 3, std::vector<Terrain>(15, Terrain::obstacle)};
     for (int x = 0; x < 5; ++x)
+    {
         corridor.terrain[5 + x] = Terrain::open;
+    }
     corridor.terrain[1] = corridor.terrain[2] = Terrain::open; // Clear sight from the reactor.
     Encounter encounter{corridor,
                         {{1, "vanguard", "Mover", Side::party, {0, 1}},
@@ -1214,7 +1310,9 @@ void installed()
 {
     const auto directory = std::getenv("OPENGOLD_GAME_DIR");
     if (!directory)
+    {
         return;
+    }
     CombatDemo demo(srd5::load(pack()));
     demo.slums(directory, 42);
     for (unsigned i = 0; !demo.has_combat(); ++i)
@@ -1231,7 +1329,9 @@ void installed()
     }
     const auto outcome = demo.combat().snapshot().outcome;
     while (demo.waiting())
+    {
         demo.continue_script();
+    }
     check(demo.script_complete(), "Original ECL resumes after real combat");
     check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0 : 128),
           "Actual outcome mapped to original ECL");
@@ -1289,12 +1389,16 @@ void monster_trait_tests()
         {
             auto fight = rules->create(goblin, seed);
             if (fight->snapshot().actor != 2)
+            {
                 continue;
+            }
             check(fight->submit(command(*fight, "melee")), "Goblin attacks");
             hit = !logged(*fight, " misses.");
             if (hit)
+            {
                 check(logged(*fight, "extra damage (Advantage).") == prone,
                       "A goblin adds 1d4 only when its attack roll had Advantage");
+            }
         }
         check(hit, "A goblin hit was exercised");
     }

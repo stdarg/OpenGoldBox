@@ -17,9 +17,13 @@ Character chosen(std::string klass)
                                          });
         auto &selected = d.training[group.id];
         for (const auto &option : group.options)
+        {
             if (selected.size() < group.count &&
                 std::find(selected.begin(), selected.end(), option.id) == selected.end())
+            {
                 selected.push_back(option.id);
+            }
+        }
     }
     return Character(*creation, d, {});
 }
@@ -50,7 +54,9 @@ void run()
                                              });
             check(allowed == offered, "Every SRD weapon obeys the actual class restrictions");
             if (allowed)
+            {
                 ++kinds;
+            }
         }
         if (found == expected.end())
         {
@@ -58,7 +64,9 @@ void run()
             continue;
         }
         if (klass.id == "fighter" || klass.id == "paladin" || klass.id == "ranger")
+        {
             check(kinds == 36, "Full ordinary SRD weapon catalog offered, without firearms");
+        }
         auto h = chosen(klass.id);
         auto grants = h.sheet().grants;
         check(h.sheet().training.masteries.size() == options.count,
@@ -71,11 +79,17 @@ void run()
             auto bad = h.sheet();
             auto g = *std::find_if(grants.begin(), grants.end(), mastery::is_mastery_grant);
             if (n == 0)
+            {
                 g.source_id = "class:wizard:weapon_mastery";
+            }
             else if (n == 1)
+            {
                 g.level = 4;
+            }
             else
+            {
                 g.id = "mastery:wand";
+            }
             bad.grants.push_back(g);
             rejects(
                 [&]
@@ -92,8 +106,12 @@ void run()
             });
         std::vector<std::string> selected;
         for (const auto &g : grants)
+        {
             if (mastery::is_mastery_grant(g))
+            {
                 selected.push_back(g.id.substr(8));
+            }
+        }
         auto next = selected;
         next[0] = options.options.at(options.count).id;
         const auto replaced = mastery::replace_masteries(grants, character_class, 1, next);
@@ -103,14 +121,18 @@ void run()
               "Keeping selections is an exact no-op");
         next[1] = options.options.at(options.count + 1).id;
         if (klass.id == "fighter" || klass.id == "barbarian")
+        {
             rejects(
                 [&]
                 {
                     (void)mastery::replace_masteries(grants, character_class, 1, next);
                 });
+        }
         else
+        {
             check(mastery::replace_masteries(grants, character_class, 1, next) != grants,
                   "Paladin/Ranger/Rogue may replace both kinds");
+        }
         next = selected;
         next[0] = next[1];
         rejects(
@@ -133,7 +155,9 @@ void run()
                 (void)mastery::replace_masteries(grants, character_class, 1, selected);
             });
         if (klass.id == "barbarian")
+        {
             continue;
+        }
         CampaignParty p(module());
         const auto id = p.add_pc(h);
         p.award_experience(2700, "mastery-levels");
@@ -147,8 +171,12 @@ void run()
                       options.count + (klass.id == "fighter" && level == 4 ? 1 : 0),
                   "Mastery count follows actual attained levels");
             for (const auto &g : old)
+            {
                 if (mastery::is_mastery_grant(g))
+                {
                     check(has(sheet, g), "Advancement retains previous mastery choices");
+                }
+            }
         }
         const auto saved_bytes = saved(p);
         CampaignParty copy(module());
@@ -163,7 +191,9 @@ void run()
         const auto id = p.add_pc(hero("fighter"));
         p.award_experience(2700, "pending-mastery");
         for (unsigned n = 2; n <= 4; ++n)
+        {
             p.advance(id, p.default_advancement(id));
+        }
         check(p.member(id).character.sheet().training.masteries.size() == 1,
               "New fourth mastery can coexist with pending historical starting choices");
     }

@@ -25,7 +25,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<rules::RulesModule> module()
@@ -45,7 +47,9 @@ Character cleric(std::string name = "Cleric")
     d.name = std::move(name);
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::vector<std::string>{"sacred_flame", "spare_the_dying", "resistance"};
     d.spells = rules::SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
@@ -61,9 +65,13 @@ Character cleric(std::string name = "Cleric")
             auto spells = hero.sheet().prepared_spells;
             spells.push_back("word_of_recall");
             for (const auto &spell : choice.spells)
+            {
                 if (spells.size() < choice.spells.size() &&
                     std::find(spells.begin(), spells.end(), spell) == spells.end())
+                {
                     spells.push_back(spell);
+                }
+            }
             choice.spells = spells;
         }
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
@@ -77,7 +85,9 @@ void settle(RolfTourSession &town, bool *temple = nullptr)
     {
         const auto s = town.snapshot();
         if (s.phase == TourPhase::completed)
+        {
             return;
+        }
         check(s.phase != TourPhase::faulted, s.diagnostic);
         if (s.phase == TourPhase::awaiting_continue)
         {
@@ -88,17 +98,25 @@ void settle(RolfTourSession &town, bool *temple = nullptr)
                                                  return c == "Cancel";
                                              });
             if (temple && service)
+            {
                 *temple = true;
+            }
             // At a temple, ask for its service: "DO YOU SEEK HEALING?" YES.
             const bool asked = temple && s.dialogue.find("SEEK HEALING") != std::string::npos;
             town.choose(s.continue_ticket, asked || s.choices.empty() ? 0 : s.choices.size() - 1);
         }
         else if (s.phase == TourPhase::awaiting_input)
+        {
             town.input(s.continue_ticket, "0");
+        }
         else if (s.phase == TourPhase::shopping)
+        {
             town.leave_shop(s.continue_ticket);
+        }
         else
+        {
             town.advance(.3);
+        }
     }
     throw std::runtime_error("A town event did not settle");
 }
@@ -112,7 +130,9 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
     {
         const auto p = town.snapshot().pose;
         if (p.x == tx && p.y == ty)
+        {
             return true;
+        }
         std::array<int, 256> previous;
         previous.fill(-1);
         std::queue<int> cells;
@@ -127,25 +147,35 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
             {
                 const int x = cell % 16 + dx[d], y = cell / 16 + dy[d];
                 if (x < 0 || y < 0 || x >= 16 || y >= 16)
+                {
                     continue;
+                }
                 const auto &a = town.map().at(cell % 16, cell / 16);
                 const auto &b = town.map().at(x, y);
                 const unsigned reverse = (d + 2) % 4;
                 if (a.doors[d] > 1 || b.doors[reverse] > 1 || (a.walls[d] && !a.doors[d]) ||
                     (b.walls[reverse] && !b.doors[reverse]))
+                {
                     continue;
+                }
                 const int next = y * 16 + x;
                 if (previous[static_cast<std::size_t>(next)] >= 0 || refused.contains({cell, next}))
+                {
                     continue;
+                }
                 previous[static_cast<std::size_t>(next)] = cell;
                 cells.push(next);
             }
         }
         int next = static_cast<int>(ty * 16 + tx);
         if (previous[static_cast<std::size_t>(next)] < 0)
+        {
             return false;
+        }
         while (previous[static_cast<std::size_t>(next)] != origin)
+        {
             next = previous[static_cast<std::size_t>(next)];
+        }
         const unsigned facing = next % 16 > int(p.x)   ? 1
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
@@ -155,7 +185,9 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool *temple = nul
         settle(town, temple);
         const auto now = town.snapshot().pose;
         if (forward && static_cast<int>(now.y * 16 + now.x) != next)
+        {
             refused.insert({origin, next});
+        }
     }
     return false;
 }
@@ -214,7 +246,9 @@ int main()
     try
     {
         if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+        {
             recall_checks(directory);
+        }
     }
     catch (const std::exception &error)
     {

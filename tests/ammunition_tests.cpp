@@ -14,7 +14,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool condition, const char *message)
 {
     if (!condition)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 auto module()
@@ -39,7 +41,9 @@ void continue_attack(CombatSession &session)
 {
     act(session, "ranged", 2);
     if (session.snapshot().free_movement)
+    {
         act(session, "end");
+    }
     act(session, "action_surge");
     act(session, "ranged", 2);
 }
@@ -56,7 +60,9 @@ void purchased_ammunition()
     draft.name = "Ammunition baseline";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     Character hero(*srd5::character_rules(), draft, {});
     const auto bow = hero.add_item({.definition_id = "longbow", .name = "Baseline longbow"});
     hero.add_item({.definition_id = "dagger", .name = "Carried dagger", .quantity = 2});
@@ -73,7 +79,9 @@ void purchased_ammunition()
 
     party.award_experience(2700, "ammunition-baseline");
     for (unsigned level = 2; level <= 4; ++level)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto campaign = encode_campaign(party, nullptr, "ammunition-before");
     party.restore(
         decode_campaign(campaign, *srd5::character_rules(), *rules, "ammunition-before", nullptr)
@@ -99,7 +107,9 @@ void purchased_ammunition()
     actors.push_back({3, "vanguard", "Reserve", Side::opposition, {7, 7}});
     auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)
+    {
         act(*combat, "end");
+    }
     auto copy = rules->restore(combat->save());
     check(copy->save() == combat->save(), "Combat round trip retains exact state");
     continue_attack(*combat);
@@ -124,10 +134,14 @@ void inventory_paths()
         draft.name = "Ammunition carrier";
         draft.rolled = true;
         for (auto &roll : draft.rolls)
+        {
             roll = {{6, 5, 4, 1}, 3};
+        }
         Character hero(*srd5::character_rules(), draft, {});
         for (const auto key : {"arrow", "bolt", "sling_bullet", "firearm_bullet", "needle"})
+        {
             hero.add_item({.definition_id = key, .name = key, .quantity = 21});
+        }
         const auto bow = hero.add_item({.definition_id = "shortbow", .name = "Shortbow"});
         CampaignParty party(module());
         const auto id = party.add_pc(std::move(hero));
@@ -166,11 +180,17 @@ void inventory_paths()
             {
                 auto special = original;
                 if (variant == 0)
+                {
                     special.stored.magic_bonus = 1;
+                }
                 else if (variant == 1)
+                {
                     special.stored.cursed_raw = 1;
+                }
                 else
+                {
                     special.stored.effect_codes[0] = 1;
+                }
                 check(equipment_conversion(special) == "por:unsupported:" + std::to_string(type),
                       "Magic, cursed and effect-bearing ammunition remains unsupported");
                 party.purchase(id, special);

@@ -32,39 +32,57 @@ Character hero(std::string klass = "fighter", std::string race = "orc")
     d.name = "Orc tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 ResourcePool pool(const Character &c, const VitalState &state)
 {
     for (const auto &p : module()->recovery_info(c.sheet(), state).resources)
+    {
         if (p.id == "adrenaline_rush")
+        {
             return p;
+        }
+    }
     return {};
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -78,7 +96,9 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
     auto rules = module();
     VitalState state{c.sheet().hit_points - 1};
     if (temporary.amount)
+    {
         rules->grant_temporary_hit_points(state, c.sheet(), temporary, TemporaryHpChoice::use_new);
+    }
     Encounter e{{20, 20, std::vector<Terrain>(400)},
                 {{1,
                   "campaign-character",
@@ -90,7 +110,9 @@ auto battle(const Character &c, TemporaryHitPoints temporary = {})
                  {99, "vanguard", "Opponent", Side::opposition, {18, 18}}}};
     auto combat = rules->create(e, 42);
     while (combat->snapshot().actor != 1)
+    {
         act(*combat, "end");
+    }
     return combat;
 }
 
@@ -98,7 +120,9 @@ void next_turn(CombatSession &c)
 {
     act(c, "end");
     while (c.snapshot().actor != 1)
+    {
         act(c, "end");
+    }
 }
 
 void ordinary_classes()
@@ -172,6 +196,7 @@ void decisions()
     auto rules = module();
     const auto c = hero();
     for (int previous : {1, 2, 7})
+    {
         for (const auto verb : {"temp_hp_keep", "temp_hp_use"})
         {
             auto combat = battle(c, {previous, "spell:fixture"});
@@ -216,6 +241,7 @@ void decisions()
                     (void)rules->restore(corrupt);
                 });
         }
+    }
     auto combat = battle(c, {7, "spell:fixture"});
     act(*combat, "adrenaline_rush");
     check(choose_demo_command(*combat).verb == "temp_hp_keep",
@@ -235,7 +261,9 @@ void decisions()
         auto at = bad.resources.find(" FX8");
         check(at != bad.resources.npos, "Effect boundary");
         for (unsigned field = 0; field < 2; ++field)
+        {
             at = bad.resources.rfind(' ', at - 1);
+        }
         auto start = bad.resources.rfind(' ', at - 1);
         bad.resources.replace(start + 1, at - start - 1, remaining);
         rejects(
@@ -260,7 +288,9 @@ void movement()
                  {99, "vanguard", "Opponent", Side::opposition, {3, 2}}}};
     auto combat = rules->create(e, 42);
     while (combat->snapshot().actor != 1)
+    {
         act(*combat, "end");
+    }
     act(*combat, "adrenaline_rush");
     const auto offered = combat->legal_commands();
     const auto move = std::find_if(offered.begin(), offered.end(),

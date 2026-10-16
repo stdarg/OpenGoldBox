@@ -22,7 +22,9 @@ using Bytes = std::vector<std::uint8_t>;
 void require(bool condition, std::string_view message)
 {
     if (!condition)
+    {
         throw std::runtime_error(std::string(message));
+    }
 }
 
 void u16(Bytes &b, std::size_t p, unsigned n)
@@ -103,9 +105,13 @@ void write(const std::filesystem::path &path, const Bytes &bytes)
 {
     std::ofstream out(path, std::ios::binary);
     for (const auto b : bytes)
+    {
         out.put(static_cast<char>(b));
+    }
     if (!out)
+    {
         throw std::runtime_error("Cannot write test fixture");
+    }
 }
 
 class Fixture
@@ -141,7 +147,9 @@ class Fixture
             write(path_ / (prefix + "CHA.DAX"), dax({}));
             write(path_ / (prefix + "ITM.DAX"), dax({}));
             if (bank != 1 && bank != 3)
+            {
                 write(path_ / (prefix + "SPC.DAX"), dax({}));
+            }
         }
         Bytes templates(2 + 128 * 16);
         auto p = 2 + 36 * 16;
@@ -257,10 +265,14 @@ void modifiers_and_effects()
         c.abilities.exceptional_strength = static_cast<std::uint8_t>(percent);
         const auto m = ability_modifiers(c);
         if (percent == 101)
+        {
             require(!m.strength_damage, "Invalid percentile remains unknown");
+        }
         else
+        {
             require(m.strength_to_hit == hit && m.strength_damage == damage,
                     "Exceptional strength boundary");
+        }
     }
     c.abilities.strength = 19;
     c.strength_bonus_flag_raw = 0;
@@ -346,8 +358,10 @@ void effect_contracts()
         require(effect.incoming_damage_multiplier == (half ? std::optional(0.5) : std::nullopt),
                 "Half damage metadata is limited to documented effects");
         if (half || resistances.contains(code))
+        {
             require(effect.kind == EffectKind::resistance && !effect.subject.empty(),
                     "Resistance identifies its damage or effect subject");
+        }
         const auto drain = code == 0x55   ? std::optional(1)
                            : code == 0x56 ? std::optional(2)
                                           : std::nullopt;
@@ -363,8 +377,10 @@ void effect_contracts()
             require(delay.has_value() == (code == 0x65),
                     "Only troll regeneration has a revival delay");
             if (delay)
+            {
                 require(delay->count == 3 && delay->sides == 6 && delay->modifier == 0,
                         "Troll revival takes 3d6 rounds");
+            }
         }
     }
     for (const auto pair : {std::pair{0x19, 0x47}, std::pair{0x23, 0x31}, std::pair{0x3b, 0x3e},
@@ -542,9 +558,13 @@ void instances()
         try
         {
             if (healing)
+            {
                 first.heal(-1);
+            }
             else
+            {
                 first.take_damage(-1);
+            }
         }
         catch (const std::invalid_argument &)
         {

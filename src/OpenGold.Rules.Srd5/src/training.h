@@ -27,8 +27,12 @@ inline constexpr std::array expertise_picks{
 inline constexpr const ExpertisePick *expertise_pick(std::string_view source)
 {
     for (const auto &pick : expertise_picks)
+    {
         if (pick.source == source)
+        {
             return &pick;
+        }
+    }
     return nullptr;
 }
 

@@ -44,7 +44,9 @@ Character fighter()
     d.name = "Trainee";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.training = {{"class:fighter", {"acrobatics", "history"}},
                   {"class:fighter:fighting_style", {"defense"}}};
     d.spells = SpellChoices{{{"feat:magic_initiate_cleric:ability", {"wisdom"}},
@@ -73,10 +75,16 @@ Character pool_character(std::string_view klass, std::string_view skill)
     for (const auto &preset : character_pool(*srd5::character_rules(), art))
     {
         if (preset.creation_data().character_class != klass)
+        {
             continue;
+        }
         for (const auto &trained : preset.sheet().training.skills)
+        {
             if (trained.id == skill && trained.proficient)
+            {
                 return preset;
+            }
+        }
     }
     throw std::runtime_error("No pool character has the skill");
 }
@@ -84,8 +92,12 @@ Character pool_character(std::string_view klass, std::string_view skill)
 const SkillTraining &skill(const CampaignParty &party, MemberId id, std::string_view skill_id)
 {
     for (const auto &trained : party.member(id).character.sheet().training.skills)
+    {
         if (trained.id == skill_id)
+        {
             return trained;
+        }
+    }
     throw std::runtime_error("Unknown skill");
 }
 
@@ -169,7 +181,9 @@ void experience_sessions()
     party.set_wealth({0, 0, 0, 99999, 0, 0, 0});
     party.award_experience(165000, "test:veteran");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     check(party.experience_offer(id, TrainingHall::fighters).denial ==
               TrainingDenial::highest_level,
           "There is no session past the highest level");

@@ -9,7 +9,9 @@ std::optional<WallTiles> decode_wall_tiles(std::span<const std::uint8_t> record)
     if (record.size() < 17 || record[0] != 8 || record[1] != 0 || record[2] != 1 ||
         record[3] != 0 || !record[8] ||
         record.size() != 17 + static_cast<std::size_t>(record[8]) * 32)
+    {
         return std::nullopt;
+    }
     WallTiles result(record[8]);
     for (std::size_t frame = 0; frame < result.size(); ++frame)
     {
@@ -28,20 +30,28 @@ std::optional<WallArtSet> decode_wall_art(std::span<const std::uint8_t> definiti
     constexpr unsigned slice_size = 156;
     if (definitions.empty() || definitions.size() % slice_size ||
         definitions.size() > 15 * slice_size || tiles.empty() || tiles.size() > 256)
+    {
         return std::nullopt;
+    }
     for (const auto &tile : tiles)
+    {
         if (std::any_of(tile.begin(), tile.end(),
                         [](auto color)
                         {
                             return color > 15;
                         }))
+        {
             return std::nullopt;
+        }
+    }
     if (std::any_of(definitions.begin(), definitions.end(),
                     [&](auto index)
                     {
                         return index >= tiles.size();
                     }))
+    {
         return std::nullopt;
+    }
 
     // Data-layout facts: ten stored perspectives per 156-byte appearance.
     constexpr std::array<unsigned, 10> offsets{0, 2, 6, 10, 22, 38, 54, 110, 132, 154};

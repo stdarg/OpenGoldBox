@@ -24,11 +24,13 @@ bool greataxe_damage_within(const CombatSession &c, int modifier)
 void choose(CombatSession &c, std::string_view verb, unsigned item)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.item == item)
         {
             check(c.submit(command), "Effect choice accepted");
             return;
         }
+    }
     throw std::runtime_error("Missing effect choice " + std::string(verb) + " " +
                              std::to_string(item));
 }
@@ -47,14 +49,20 @@ void matrix()
         const auto kind = weapon.mastery;
         // Firearms cannot be mastered.
         if (weapon.key == "musket" || weapon.key == "pistol")
+        {
             continue;
+        }
         if (kind != fx::Mastery::slow && kind != fx::Mastery::topple &&
             kind != fx::Mastery::cleave && kind != fx::Mastery::push)
+        {
             continue;
+        }
         for (bool ranged : {false, true})
         {
             if ((!ranged && weapon.ranged) || (ranged && !weapon.ranged && !weapon.thrown))
+            {
                 continue;
+            }
             // Club is already selected by the common fixture helper.
             auto draft = hero("quarterstaff").creation_data();
             draft.training["class:fighter:weapon_mastery"] = {std::string(weapon.key), "dagger",
@@ -69,7 +77,9 @@ void matrix()
                 turn(*c, 1);
                 act(*c, ranged ? "ranged" : "melee", 99);
                 if (!c->snapshot().optional_effect_choice)
+                {
                     continue;
+                }
                 check(c->snapshot().optional_effect_choice->title.source ==
                           (kind == fx::Mastery::slow     ? "Slow"
                            : kind == fx::Mastery::topple ? "Topple"
@@ -90,9 +100,13 @@ void matrix()
                 const auto movement = unit(*c, 1).movement_feet;
                 choose(*c, "effect_use", 1);
                 if (kind == fx::Mastery::slow)
+                {
                     check(fx::slowed(state(*c, 99)), "Slow applied on actual damaging hit");
+                }
                 if (kind == fx::Mastery::topple)
+                {
                     check(!c->snapshot().optional_effect_choice, "Topple save resolves choice");
+                }
                 if (kind == fx::Mastery::cleave)
                 {
                     check(c->snapshot().effect_targeting && !offers(*c, "melee"),
@@ -126,6 +140,7 @@ void simultaneous()
 {
     auto r = module();
     for (const auto weapon : {"longbow", "maul"})
+    {
         for (bool movement_first : {false, true})
         {
             auto c = r->restore(mastery_choice_checks::critical_before(weapon));
@@ -158,12 +173,14 @@ void simultaneous()
                   "Both chosen effects finish independently");
             roundtrip(*r, *c);
         }
+    }
 }
 
 void reactions()
 {
     auto r = rules();
     for (const auto key : {"javelin", "maul", "halberd", "warhammer"})
+    {
         for (bool move_first : {false, true})
         {
             CampaignParty p(module());
@@ -173,7 +190,9 @@ void reactions()
             p.equip(1, 1);
             p.award_experience(900, "reaction-mastery");
             while (p.member(1).character.sheet().level < 3)
+            {
                 p.advance(1, p.default_advancement(1));
+            }
             auto actors = p.participants();
             actors.front().cell = {1, 1};
             // Melee reaches adjacent squares only (MELEE-1), the halberd's too.
@@ -187,13 +206,19 @@ void reactions()
                 turn(*c, 99);
                 Command move;
                 for (const auto &cmd : c->legal_commands())
+                {
                     if (cmd.verb == "move" && cmd.destination == Cell{edge + 1, 1})
+                    {
                         move = cmd;
+                    }
+                }
                 check(!move.verb.empty() && c->submit(move) && c->snapshot().reaction_pending,
                       "Mastery source gets a real opportunity");
                 act(*c, "opportunity", 99);
                 if (!critical(*c) || !c->snapshot().optional_effect_choice)
+                {
                     continue;
+                }
                 // On the enemy turn, mastery is offered before movement regardless of player
                 // preference.
                 check(c->snapshot().optional_effect_choice->options.size() == 1,
@@ -214,14 +239,18 @@ void reactions()
                     if (move_first)
                     {
                         for (const auto &cmd : c->legal_commands())
+                        {
                             if (cmd.verb == "move")
                             {
                                 check(c->submit(cmd), "Reaction Champion movement");
                                 break;
                             }
+                        }
                     }
                     if (c->snapshot().free_movement)
+                    {
                         act(*c, "end");
+                    }
                 }
                 roundtrip(*r, *c);
                 check(!c->snapshot().reaction_pending && !unit(*c, 1).reaction,
@@ -230,6 +259,7 @@ void reactions()
             }
             check(tested, "Critical opportunity with optional mastery covered");
         }
+    }
 }
 
 void cleave_criticals()
@@ -242,7 +272,9 @@ void cleave_criticals()
     p.equip(1, 1);
     p.award_experience(900, "cleave-champion");
     while (p.member(1).character.sheet().level < 3)
+    {
         p.advance(1, p.default_advancement(1));
+    }
     auto actors = p.participants();
     actors.front().cell = {1, 1};
     actors.push_back({99, "mastery_target", "First", Side::opposition, {2, 1}});
@@ -254,11 +286,15 @@ void cleave_criticals()
         turn(*c, 1);
         act(*c, "melee", 99);
         if (!critical(*c))
+        {
             continue;
+        }
         choose(*c, "effect_use", 1);
         act(*c, "effect_attack", 98);
         if (!critical(*c))
+        {
             continue;
+        }
         check(greataxe_damage_within(*c, 0),
               "Cleave omits positive ability modifier even on a critical");
         roundtrip(*r, *c);
@@ -290,7 +326,9 @@ void ui_fixtures()
 {
     const auto output = std::getenv("OPENGOLD_OPTIONAL_MASTERY_FIXTURES");
     if (!output)
+    {
         return;
+    }
     auto r = module();
     const auto directory = std::filesystem::path(output);
     std::filesystem::create_directories(directory);
@@ -319,7 +357,9 @@ void ui_fixtures()
             const auto before = c->save();
             act(*c, "melee", 99);
             if (!c->snapshot().optional_effect_choice)
+            {
                 continue;
+            }
             write(name + "-before", before);
             write(name + "-pending", c->save());
             auto skip = r->restore(c->save());
@@ -393,7 +433,9 @@ void boundaries()
             turn(*c, 1);
             act(*c, "melee", 99);
             if (result(*c).source.ends_with("misses."))
+            {
                 continue;
+            }
             check(bool(c->snapshot().optional_effect_choice) == (std::string_view(key) == "maul"),
                   "Slow needs damage; Topple only needs a hit");
             tested = true;
@@ -405,7 +447,9 @@ void boundaries()
     {
         auto e = encounter(*r, hero("warhammer"), "warhammer");
         if (blocked)
+        {
             e.battlefield.terrain[1 * 12 + 3] = Terrain::obstacle;
+        }
         auto c = r->create(e, 11);
         turn(*c, 1);
         act(*c, "melee", 99);
@@ -416,6 +460,7 @@ void boundaries()
             choose(*c, "effect_use", 1);
             unsigned count = 0;
             for (const auto &command : c->legal_commands())
+            {
                 if (command.verb == "effect_push")
                 {
                     check(command.destination.y == 1 &&
@@ -423,6 +468,7 @@ void boundaries()
                           "Push allows only five or ten feet straight away");
                     ++count;
                 }
+            }
             check(count == 2, "Both unobstructed landing distances offered");
         }
     }
@@ -434,7 +480,9 @@ void boundaries()
         turn(*c, 1);
         act(*c, "melee", 99);
         if (!c->snapshot().optional_effect_choice)
+        {
             continue;
+        }
         const auto description = c->snapshot().optional_effect_choice->description;
         check(arg(description, "dc") ==
                   std::to_string(10 + hero("maul").sheet().modifiers[Ability::strength]),
@@ -459,7 +507,9 @@ void movement_enables_mastery()
         p.equip(1, 1);
         p.award_experience(900, "positioning");
         while (p.member(1).character.sheet().level < 3)
+        {
             p.advance(1, p.default_advancement(1));
+        }
         auto roster = p.participants();
         roster.front().cell = {1, 1};
         const bool cleave = std::string_view(key) == "halberd";
@@ -467,10 +517,14 @@ void movement_enables_mastery()
         // beside the first is out of reach until the Champion steps to (2,2).
         roster.push_back({99, "mastery_target", "First", Side::opposition, {2, 1}});
         if (cleave)
+        {
             roster.push_back({98, "mastery_target", "Second", Side::opposition, {3, 2}});
+        }
         Battlefield board{12, 8, std::vector<Terrain>(96)};
         if (!cleave)
+        {
             board.terrain[15] = Terrain::obstacle;
+        }
         bool tested = false;
         for (unsigned seed = 1; seed < 128 && !tested; ++seed)
         {
@@ -478,7 +532,9 @@ void movement_enables_mastery()
             turn(*c, 1);
             act(*c, "melee", 99);
             if (!critical(*c))
+            {
                 continue;
+            }
             check(c->snapshot().optional_effect_choice &&
                       c->snapshot().optional_effect_choice->options.size() == 2 &&
                       !c->snapshot().optional_effect_choice->options[0].available,
@@ -488,12 +544,14 @@ void movement_enables_mastery()
             const Cell destination{2, 2};
             bool moved = false;
             for (const auto &cmd : c->legal_commands())
+            {
                 if (cmd.verb == "move" && cmd.destination == destination)
                 {
                     check(c->submit(cmd), "Move to enable mastery");
                     moved = true;
                     break;
                 }
+            }
             check(moved, "Legal enabling position");
             act(*c, "end");
             roundtrip(*r, *c);
@@ -530,14 +588,18 @@ void slain_reaction_mover()
         auto c = r->create({{12, 8, std::vector<Terrain>(96)}, roster, 777}, seed);
         turn(*c, 99);
         for (const auto &cmd : c->legal_commands())
+        {
             if (cmd.verb == "move" && cmd.destination == Cell{3, 1})
             {
                 check(c->submit(cmd), "Doomed mover leaves reach");
                 break;
             }
+        }
         act(*c, "opportunity", 99);
         if (!hit(*c))
+        {
             continue;
+        }
         check(unit(*c, 99).hit_points == 0 && c->snapshot().optional_effect_choice,
               "Slain mover leaves Cleave available on another creature");
         roundtrip(*r, *c);
@@ -555,6 +617,7 @@ void physical_and_damage()
 {
     auto r = rules();
     for (const auto key : {"javelin", "trident"})
+    {
         for (const auto background : {"sage", "soldier"})
         {
             CampaignParty p(module());
@@ -572,7 +635,9 @@ void physical_and_damage()
                 turn(*c, 1);
                 act(*c, "throw", 99);
                 if (!c->snapshot().optional_effect_choice)
+                {
                     continue;
+                }
                 roundtrip(*r, *c);
                 choose(*c, "effect_use", 1);
                 roundtrip(*r, *c);
@@ -582,12 +647,15 @@ void physical_and_damage()
             }
             check(tested, "Immediate and deferred thrown mastery provenance covered");
         }
+    }
     for (int score : {3, 18})
     {
         auto draft = hero("greataxe", "fighter", "soldier").creation_data();
         const int face = score / 3;
         for (auto &roll : draft.rolls)
+        {
             roll = {{face, face, face, 1}, 3};
+        }
         Character h(*srd5::character_rules(), draft, {});
         auto e = encounter(*r, h, "greataxe");
         e.participants.push_back({98, "mastery_target", "Ally", Side::party, {2, 2}});
@@ -598,13 +666,17 @@ void physical_and_damage()
             turn(*c, 1);
             act(*c, "melee", 99);
             if (!hit(*c))
+            {
                 continue;
+            }
             choose(*c, "effect_use", 1);
             check(choose_demo_command(*c).verb == "effect_skip",
                   "Automatic combat declines Cleave when only allies are available");
             act(*c, "effect_attack", 98);
             if (!hit(*c))
+            {
                 continue;
+            }
             check(greataxe_damage_within(*c, std::min(0, h.sheet().modifiers[Ability::strength])),
                   "Cleave retains negative ability modifiers and omits positive ones");
             roundtrip(*r, *c);
@@ -674,11 +746,15 @@ void unconscious_cleave()
         turn(*c, 1);
         act(*c, "melee", 99);
         if (!hit(*c))
+        {
             continue;
+        }
         choose(*c, "effect_use", 1);
         act(*c, "effect_attack", 98);
         if (!hit(*c))
+        {
             continue;
+        }
         check(critical(*c), "Cleave against an adjacent unconscious creature is a critical hit");
         roundtrip(*r, *c);
         tested = true;

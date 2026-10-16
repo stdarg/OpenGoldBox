@@ -72,19 +72,27 @@ void CharacterCreationView::setup_saves()
 void CharacterCreationView::open_saves(bool saving)
 {
     if (campaign_->in_combat())
+    {
         return;
+    }
     if (campaign_defeated_ && saving)
+    {
         return;
+    }
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
         town && !town->can_leave() && !campaign_defeated_)
+    {
         return;
+    }
     required_node<SaveSlots>(*this, "SaveSlots").open(saving);
 }
 
 void CharacterCreationView::save_campaign(const std::filesystem::path &path)
 {
     if (campaign_defeated_)
+    {
         throw std::runtime_error("Load a saved game after defeat");
+    }
     const auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
     const auto bytes = encode_campaign(*campaign_, town ? town->saved_session() : nullptr,
                                        campaign_asset_identity(game_directory()));
@@ -96,10 +104,14 @@ void CharacterCreationView::save_campaign(const std::filesystem::path &path)
 void CharacterCreationView::load_campaign(const std::filesystem::path &path)
 {
     if (campaign_->in_combat())
+    {
         throw std::runtime_error("Finish combat before loading");
+    }
     auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
     if (town && !town->can_leave() && !campaign_defeated_)
+    {
         throw std::runtime_error("Finish the current event before loading");
+    }
     const auto directory = game_directory();
     auto module = rules_module();
     auto saved = decode_campaign(read_campaign_file(path), *srd5::character_rules(), *module,
@@ -122,7 +134,9 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
         owned = presentation::instantiate_scene("res://scenes/rolf_tour.tscn");
         town = Object::cast_to<RolfTourView>(owned.get());
         if (!town)
+        {
             throw std::runtime_error("Invalid town scene");
+        }
         town->set_name("CampaignTown");
         town->hide();
         town->campaign_party(replacement);
@@ -194,7 +208,9 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
 void RolfTourView::request_save(bool saving)
 {
     if (embedded_party_ && session_ && session_->can_leave())
+    {
         emit_signal("save_requested", saving);
+    }
 }
 
 void CharacterCreationView::save_checkpoint_check(const std::string &name)
@@ -210,9 +226,13 @@ void CharacterCreationView::save_checkpoint_check(const std::string &name)
         required_node<LineEdit>(*dialog, "Name").set_text(i18n::text(N_("Restart test")));
         required_node<Button>(*dialog, "Action").emit_signal("pressed");
         if (dialog->is_visible())
+        {
             required_node<Button>(*dialog, "Action").emit_signal("pressed");
+        }
         if (dialog->is_visible())
+        {
             throw std::runtime_error("Save slot UI did not complete its write");
+        }
         error_ = "";
     }
     UtilityFunctions::print("Saved restart case: ", String::utf8(name.c_str()));
@@ -232,14 +252,24 @@ void CharacterCreationView::load_checkpoint_check()
         auto *town = &required_node<RolfTourView>(*this, "CampaignTown");
         const auto before = encode_campaign(*campaign_, town->saved_session(), assets);
         if (before != read_campaign_file(path))
+        {
             throw std::runtime_error(std::string("State changed across process restart: ") + name);
+        }
         if (std::string_view(name) != "short-rest-spending")
+        {
             campaign_->award_experience(300, "preview:bandit:v1");
+        }
         if (encode_campaign(*campaign_, town->saved_session(), assets) != before)
+        {
             throw std::runtime_error("Reward duplicated after restart");
+        }
         if (std::string_view(name) == "inn-rest" || std::string_view(name) == "denied-rest")
+        {
             if (campaign_->rest())
+            {
                 throw std::runtime_error("Rest timer reset after restart");
+            }
+        }
         auto corrupt = before;
         corrupt.back() ^= 1;
         auto broken = directory / "corrupt.ogs";
@@ -254,23 +284,31 @@ void CharacterCreationView::load_checkpoint_check()
             rejected = true;
         }
         if (!rejected || encode_campaign(*campaign_, town->saved_session(), assets) != before)
+        {
             throw std::runtime_error("Rejected load changed live campaign");
+        }
         if (std::string_view(name) == "short-rest-spending")
         {
             town->show();
             town->resume_party();
             auto *rest = &required_node<Window>(*town, "RestDialog");
             if (!rest->is_visible() || !campaign_->state().short_rest)
+            {
                 throw std::runtime_error("Reload did not reopen pending rest controls");
+            }
             required_node<Button>(*rest, "Save").emit_signal("pressed");
             if (!required_node<SaveSlots>(*this, "SaveSlots").is_visible() || rest->is_visible())
+            {
                 throw std::runtime_error("Rest save did not use existing save dialog");
+            }
             required_node<Button>(required_node<SaveSlots>(*this, "SaveSlots"), "Cancel")
                 .emit_signal("pressed");
             required_node<Button>(*town, "Camp").emit_signal("pressed");
             required_node<Button>(*rest, "Heal").emit_signal("pressed");
             if (encode_campaign(*campaign_, town->saved_session(), assets) == before)
+            {
                 throw std::runtime_error("Reloaded rest could not heal with its Hit Dice");
+            }
             required_node<Button>(*rest, "Finish").emit_signal("pressed");
             town->hide();
         }
@@ -281,19 +319,29 @@ void CharacterCreationView::load_checkpoint_check()
     auto *slots = &required_node<ItemList>(*dialog, "Slots");
     int index = -1;
     for (int i = 0; i < slots->get_item_count(); ++i)
+    {
         if (slots->get_item_text(i) == "Restart test")
+        {
             index = i;
+        }
+    }
     if (index < 0)
+    {
         throw std::runtime_error("Named UI save missing after restart");
+    }
     slots->select(index);
     slots->emit_signal("item_selected", index);
     auto original = campaign_;
     required_node<Button>(*dialog, "Action").emit_signal("pressed");
     if (campaign_ != original || !dialog->is_visible())
+    {
         throw std::runtime_error("Load failed to wait for confirmation");
+    }
     required_node<Button>(*dialog, "Action").emit_signal("pressed");
     if (dialog->is_visible() || campaign_ == original)
+    {
         throw std::runtime_error("Confirmed UI load failed");
+    }
     UtilityFunctions::print(
         "Godot campaign restart check passed: nine complete states, reward claims, rest timers, rejected-load rollback and named-slot controls.");
     if (capture_)
@@ -305,7 +353,9 @@ void CharacterCreationView::load_checkpoint_check()
         save_capture_frames_ = 1;
     }
     else
+    {
         get_tree()->quit(0);
+    }
 }
 
 void CharacterCreationView::capture_save_ui()
@@ -316,7 +366,9 @@ void CharacterCreationView::capture_save_ui()
         const auto image = dialog->get_texture()->get_image();
         if (image.is_null() || image->save_png(ProjectSettings::get_singleton()->globalize_path(
                                    "user://checks/campaign-load-dialog.png")) != OK)
+        {
             throw std::runtime_error("Cannot capture save dialog");
+        }
         dialog->hide();
     }
     if (save_capture_frames_ == 8)

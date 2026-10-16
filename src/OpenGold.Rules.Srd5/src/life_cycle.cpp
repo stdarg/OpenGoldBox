@@ -16,7 +16,9 @@ void validate_temporary_hp(const rules::TemporaryHitPoints &pool)
                                  (c >= '0' && c <= '9') || c == ':' || c == '/' || c == '_' ||
                                  c == '-' || c == '.');
                     }))
+    {
         throw std::runtime_error("Invalid Temporary Hit Points");
+    }
 }
 
 void grant_temporary_hp(LifeState &state, const rules::TemporaryHitPoints &offered,
@@ -25,12 +27,18 @@ void grant_temporary_hp(LifeState &state, const rules::TemporaryHitPoints &offer
     validate_temporary_hp(state.temporary_hp);
     validate_temporary_hp(offered);
     if (state.dead || !offered.amount)
+    {
         throw std::runtime_error(
             "Temporary Hit Points require a living recipient and a positive grant");
+    }
     if (choice == rules::TemporaryHpChoice::use_new)
+    {
         state.temporary_hp = offered;
+    }
     else if (choice != rules::TemporaryHpChoice::keep_current || !state.temporary_hp.amount)
+    {
         throw std::runtime_error("Invalid Temporary Hit Point choice");
+    }
 }
 
 unsigned encode_stable_recovery(const RecoveryClock &clock)
@@ -42,7 +50,9 @@ void decode_stable_recovery(RecoveryClock &clock)
 {
     clock.stable_recovery_due = clock.stable_recovery_in_ms == 4 * recovery_hour_ms + 1;
     if (clock.stable_recovery_due)
+    {
         clock.stable_recovery_in_ms = 0;
+    }
 }
 
 void validate_recovery(const LifeState &state)
@@ -55,21 +65,27 @@ void validate_recovery(const LifeState &state)
         (state.stable && clock.death_save_in_ms) ||
         (!state.stable && (clock.stable_recovery_in_ms || clock.stable_recovery_due)) ||
         (clock.stable_recovery_due && clock.stable_recovery_in_ms))
+    {
         throw std::runtime_error("Invalid recovery clock");
+    }
 }
 
 void start_stable_recovery(LifeState &state, std::uint64_t &rng)
 {
     if (state.hp == 0 && !state.dead && state.stable && !state.recovery.stable_recovery_in_ms &&
         !state.recovery.stable_recovery_due)
+    {
         state.recovery.stable_recovery_in_ms =
             static_cast<unsigned>(roll_die(rng, 4)) * recovery_hour_ms;
+    }
 }
 
 void stabilize(LifeState &state, std::uint64_t &rng)
 {
     if (state.hp != 0 || state.dead)
+    {
         throw std::runtime_error("Stabilization requires a living creature at zero HP");
+    }
     state.stable = true;
     state.successes = state.failures = 0;
     state.recovery.death_save_in_ms = 0;
@@ -80,7 +96,9 @@ int death_save(LifeState &state, std::uint64_t &rng, bool can_heal, bool lucky, 
                bool advantage)
 {
     if (state.hp != 0 || state.dead || state.stable)
+    {
         throw std::runtime_error("Death save requires an unstable living creature at zero HP");
+    }
     const auto d20 = [&]
     {
         const int natural = roll_die(rng, 20);
@@ -88,7 +106,9 @@ int death_save(LifeState &state, std::uint64_t &rng, bool can_heal, bool lucky, 
     };
     int natural = d20();
     if (advantage)
+    {
         natural = std::max(natural, d20());
+    }
     state.recovery.death_save_in_ms = death_turn_ms;
     if (natural == 20 && can_heal)
     {
@@ -97,18 +117,26 @@ int death_save(LifeState &state, std::uint64_t &rng, bool can_heal, bool lucky, 
         state.recovery = {};
     }
     else if (natural == 1)
+    {
         state.failures += 2;
+    }
     else if (natural + bonus >= 10)
+    {
         ++state.successes;
+    }
     else
+    {
         ++state.failures;
+    }
     if (state.failures >= 3)
     {
         state.dead = true;
         state.recovery = {};
     }
     else if (state.successes >= 3)
+    {
         stabilize(state, rng);
+    }
     return natural;
 }
 
@@ -122,13 +150,19 @@ void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp, Dam
     const int remaining = was_zero ? damage : hp_loss - state.hp;
     state.hp = std::max(0, state.hp - hp_loss);
     if (state.hp)
+    {
         return;
+    }
     state.stable = false;
     state.recovery = {death_turn_ms, 0};
     if (was_zero)
+    {
         state.failures += options.critical ? 2 : 1;
+    }
     else
+    {
         state.successes = state.failures = 0;
+    }
     if (options.dies_at_zero || remaining >= maximum_hp || state.failures >= 3)
     {
         state.dead = true;
@@ -140,14 +174,20 @@ void apply_damage(LifeState &state, int damage, int hp_loss, int maximum_hp, Dam
 void damage_life(LifeState &state, int amount, int maximum_hp, DamageOptions options)
 {
     if (amount < 0 || maximum_hp < 1 || state.hp < 0 || state.hp > maximum_hp)
+    {
         throw std::runtime_error("Invalid damage");
+    }
     validate_temporary_hp(state.temporary_hp);
     if (!amount || state.dead)
+    {
         return;
+    }
     const int absorbed = std::min(amount, state.temporary_hp.amount);
     state.temporary_hp.amount -= absorbed;
     if (!state.temporary_hp.amount)
+    {
         state.temporary_hp.source_id.clear();
+    }
     apply_damage(state, amount, amount - absorbed, maximum_hp, options);
 }
 
@@ -155,19 +195,29 @@ void set_life_hit_points(LifeState &state, int hp, int maximum_hp)
 {
     if (hp < 0 || hp > maximum_hp || maximum_hp < 1 || state.hp < 0 || state.hp > maximum_hp ||
         (state.dead && hp))
+    {
         throw std::runtime_error("Invalid HP assignment");
+    }
     if (hp == state.hp)
+    {
         return;
+    }
     if (hp > state.hp)
+    {
         (void)heal_life(state, hp - state.hp, maximum_hp);
+    }
     else
+    {
         apply_damage(state, state.hp - hp, state.hp - hp, maximum_hp, {});
+    }
 }
 
 int heal_life(LifeState &state, int amount, int maximum_hp, bool can_heal)
 {
     if (amount < 0 || maximum_hp < 1 || state.hp < 0 || state.hp > maximum_hp || state.dead)
+    {
         throw std::runtime_error("Invalid healing");
+    }
     const int healed = can_heal ? std::min(amount, maximum_hp - state.hp) : 0;
     if (healed)
     {
@@ -192,7 +242,9 @@ bool advance_recovery_clock(LifeState &state, std::uint64_t milliseconds, bool c
             clock.stable_recovery_due = true;
         }
         else
+        {
             clock.stable_recovery_in_ms -= static_cast<unsigned>(milliseconds);
+        }
     }
     if (clock.stable_recovery_due && can_heal)
     {

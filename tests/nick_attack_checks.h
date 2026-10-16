@@ -14,8 +14,12 @@ CampaignParty party(std::string weapon = "dagger", bool style = false, bool nega
                                                                 : "defense"};
     }
     if (negative)
+    {
         for (auto &roll : draft.rolls)
+        {
             roll = {{2, 2, 1, 1}, 3};
+        }
+    }
     Character h(*srd5::character_rules(), draft, {});
     h.add_item({.definition_id = weapon, .name = "First weapon"});
     h.add_item({.definition_id = weapon, .name = "Second weapon"});
@@ -51,8 +55,11 @@ void grants_and_budgets()
 {
     unsigned hits = 0, criticals = 0;
     for (const auto weapon : {"dagger", "light_hammer", "sickle", "scimitar"})
+    {
         for (bool style : {false, true})
+        {
             for (bool negative : {false, true})
+            {
                 for (unsigned seed = 1; seed <= 48; ++seed)
                 {
                     auto p = party(weapon, style, negative, seed % 2);
@@ -84,7 +91,9 @@ void grants_and_budgets()
                               "Nick shares Light damage modifier and Two-Weapon Fighting");
                         ++hits;
                         if (count == 2)
+                        {
                             ++criticals;
+                        }
                         check(p.rule_module().restore(c->save())->save() == c->save(),
                               "Nick hit restores with unspent Bonus Action");
                     }
@@ -107,8 +116,12 @@ void grants_and_budgets()
                     settle(*c);
                     check(offers(*c, "nick_melee"), "Fresh turn resets shared extra attack budget");
                 }
+            }
+        }
+    }
     check(hits > 0 && criticals > 0, "Matrix actually exercises ordinary and critical Nick damage");
     for (const auto klass : {"fighter", "rogue", "paladin", "ranger", "barbarian"})
+    {
         for (bool npc : {false, true})
         {
             auto p = party("dagger", false, false, npc, klass);
@@ -120,6 +133,7 @@ void grants_and_budgets()
             check(unit(*c, 1).bonus_action && !offers(*c, "light_melee"),
                   "All five class PC/NPC routes receive the same Nick rule");
         }
+    }
     auto p = party();
     auto c = battle(p);
     act(*c, "melee", 99);
@@ -159,11 +173,13 @@ void grants_and_budgets()
     settle(*c);
     act(*c, "action_surge");
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb == "weapon_select" && command.item == 2)
         {
             check(c->submit(command), "Select other weapon");
             break;
         }
+    }
     act(*c, "melee", 99);
     settle(*c);
     check(
@@ -184,7 +200,9 @@ void pending_interactions()
     p.equip(1, 2, EquipmentOperation::equip_other);
     p.award_experience(900, "nick-rogue");
     while (p.member(1).character.sheet().level < 3)
+    {
         p.advance(1, p.default_advancement(1));
+    }
     bool checked = false;
     for (unsigned seed = 1; seed <= 128 && !checked; ++seed)
     {
@@ -193,7 +211,9 @@ void pending_interactions()
         act(*c, "melee", 99);
         settle(*c);
         if (!fx::vexed_by(state(*c, 99), {.scope = 777, .actor = 1}))
+        {
             continue;
+        }
         check(logged(*c, "adds Sneak Attack"),
               "The first eligible hit applies Sneak Attack automatically");
         act(*c, "nick_melee", 99);
@@ -224,7 +244,9 @@ void pending_interactions()
         settle(*c);
         act(*c, "nick_melee", 99);
         if (arg(result(*c), "hit") != "CRITICAL")
+        {
             continue;
+        }
         check(c->snapshot().free_movement.has_value(), "Nick critical grants Champion movement");
         auto copy = champion.rule_module().restore(c->save());
         act(*c, "end");
@@ -314,14 +336,20 @@ void forged_budgets()
         });
     std::size_t row = 0;
     for (unsigned i = 0; i < 4; ++i)
+    {
         row = bytes.find('\n', row) + 1;
+    }
     while (!bytes.substr(row).starts_with("1 "))
+    {
         row = bytes.find('\n', row) + 1;
+    }
     // The Light budget, the Nick origin and the Cleave flag precede the actor
     // row's twenty-one later fields (Colossus Slayer through Concentration).
     auto end = bytes.find('\n', row);
     for (unsigned n = 0; n < 21; ++n)
+    {
         end = bytes.rfind(' ', end - 1);
+    }
     const auto cleave = bytes.rfind(' ', end - 1), origin = bytes.rfind(' ', cleave - 1),
                budget = bytes.rfind(' ', origin - 1);
     bad = bytes;
@@ -344,7 +372,9 @@ void ui_fixtures()
 {
     const auto output = std::getenv("OPENGOLD_NICK_FIXTURES");
     if (!output)
+    {
         return;
+    }
     auto r = module();
     const auto path = std::filesystem::path(output);
     std::filesystem::create_directories(path);

@@ -25,7 +25,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -56,7 +58,9 @@ CharacterDraft bard_draft(std::vector<std::string> prepared)
     d.name = "Bard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
@@ -76,7 +80,9 @@ Character bard(unsigned level = 1, std::string background = "sage")
     d.name = "Bard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
@@ -89,31 +95,45 @@ Character bard(unsigned level = 1, std::string background = "sage")
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "bard-xp");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
 bool aim(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "area_move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -159,7 +179,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {98, creature, "Enemy", Side::opposition, {4, 1}}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Bard's turn");
+    }
     check(c->snapshot().actor == 1, "The Bard acts");
     return c;
 }
@@ -169,7 +191,9 @@ void reach(CombatSession &c, EntityId id)
 {
     check(submit(c, "end"), "End the turn");
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 4; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
 }
 
 // The enemy fleeing Dissonant Whispers leaves the ally's reach: the ally may
@@ -204,10 +228,14 @@ void safest_flight_checks()
                                   {98, "target", "Enemy", Side::opposition, {4, 2}}}},
                                 seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Bard's turn");
+        }
         check(submit(*c, "dissonant_whispers", 98), "The Bard casts Dissonant Whispers");
         if (!logged(*c, "Enemy flees from Bard."))
+        {
             continue;
+        }
         check(!c->snapshot().reaction_pending && unit(*c, 98).cell.x == 10,
               "The enemy runs 30 feet round the ally's reach, provoking nothing");
         return;
@@ -248,7 +276,9 @@ void spell_checks()
             check(submit(*c, "faerie_fire") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast"),
                   "Faerie Fire on the enemy");
             if (!has_condition(*c, 98, "Outlined (Faerie Fire)"))
+            {
                 continue;
+            }
             outlined = true;
             reach(*c, 2);
             check(submit(*c, "melee", 98) && logged(*c, "(advantage)"),
@@ -281,8 +311,12 @@ void advancement_checks()
 unsigned inspiration_left(const CombatSession &c)
 {
     for (const auto &pool : unit(c, 1).resources)
+    {
         if (pool.id == "bardic_inspiration")
+        {
             return pool.remaining;
+        }
+    }
     throw std::runtime_error("No Bardic Inspiration pool");
 }
 
@@ -295,6 +329,7 @@ struct AttackRoll
 AttackRoll attack_roll(const CombatSession &c, std::string_view prefix)
 {
     for (const auto &line : c.snapshot().log())
+    {
         if (line.starts_with(prefix))
         {
             int natural = 0, bonus = 0, ac = 0;
@@ -302,6 +337,7 @@ AttackRoll attack_roll(const CombatSession &c, std::string_view prefix)
                         &ac);
             return {natural == 1 ? -100 : natural + bonus, ac};
         }
+    }
     throw std::runtime_error("No attack line");
 }
 
@@ -350,7 +386,9 @@ void inspiration_checks()
         check(submit(*c, "melee", 2) && !c->snapshot().reaction_pending,
               "The enemy attacks the ally; the Bard is not asked");
         if (!logged(*c, "Bard uses Cutting Words: -"))
+        {
             continue;
+        }
         cut = true;
         check(!unit(*c, 1).reaction && inspiration_left(*c) == 3,
               "Cutting Words spends the Bard's Reaction and a use");
@@ -370,14 +408,20 @@ void cutting_check_checks()
     // A wall at x = 4 from y = 0 to 2 keeps the Bard at (3, 1) out of sight.
     std::vector<Terrain> walled(72);
     for (int y = 0; y <= 2; ++y)
+    {
         walled[y * 12 + 4] = Terrain::obstacle;
+    }
     const auto hero = bard(3);
     const auto profile = module->character_profile(hero.sheet(), std::vector<std::string>{}).data;
     const auto step = [](CombatSession &c, Cell cell)
     {
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == "move" && command.destination == cell)
+            {
                 return c.submit(command);
+            }
+        }
         return false;
     };
     for (std::uint64_t seed = 1; seed < 200; ++seed)
@@ -387,18 +431,26 @@ void cutting_check_checks()
                                   {98, "dull", "Foe", Side::opposition, {8, 1}}}},
                                 seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Bard's turn");
+        }
         if (!submit(*c, "hide") || !unit(*c, 1).hidden)
+        {
             continue;
+        }
         // Into the monster's view; its Passive Perception 14 misses the Bard.
         check(step(*c, {3, 2}) && step(*c, {3, 3}) && step(*c, {3, 4}) && submit(*c, "end"),
               "The Bard steps into view and ends its turn");
         if (!unit(*c, 1).hidden || c->snapshot().actor != 98)
+        {
             continue;
+        }
         const auto choice = choose_demo_command(*c);
         check(choice.verb == "search" && c->submit(choice), "The monster searches");
         if (!logged(*c, "Bard uses Cutting Words: -"))
+        {
             continue;
+        }
         check(!unit(*c, 1).reaction && inspiration_left(*c) == 3,
               "Cutting Words spends the Reaction and a use");
         check(logged(*c, "turning the success into a failure.") == unit(*c, 1).hidden,
@@ -432,7 +484,9 @@ void cutting_damage_checks()
                                   {98, "brute", "Brute", Side::opposition, {2, 1}}}},
                                 seed);
         for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the brute's turn");
+        }
         check(c->submit(choose_demo_command(*c)), "The brute attacks");
         return c;
     };
@@ -441,7 +495,9 @@ void cutting_damage_checks()
     {
         const auto c = struck(5, seed);
         if (!logged(*c, "Bard uses Cutting Words: -"))
+        {
             continue;
+        }
         check(logged(*c, "damage, keeping Bard standing.") && unit(*c, 1).hit_points > 0 &&
                   !unit(*c, 1).reaction && inspiration_left(*c) == 3,
               "Cutting Words on a lethal roll keeps the Bard standing, for a Reaction and a use");
@@ -449,8 +505,10 @@ void cutting_damage_checks()
     }
     check(saved, "A 5 or 6 against 5 Hit Points brings Cutting Words");
     for (std::uint64_t seed = 1; seed < 20; ++seed)
+    {
         check(!logged(*struck(7, seed), "Cutting Words"),
               "No roll of 3 to 6 can drop the Bard from 7 Hit Points; the die is kept");
+    }
 }
 
 // Bardic Inspiration on the saves that are rolled outside a command: the

@@ -53,8 +53,12 @@ inline constexpr std::array armors{
 inline constexpr const Armor *armor(std::string_view key)
 {
     for (const auto &item : armors)
+    {
         if (item.key == key)
+        {
             return &item;
+        }
+    }
     return nullptr;
 }
 

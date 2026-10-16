@@ -22,14 +22,18 @@ constexpr unsigned max_ticks = 4096;
 std::uint8_t byte(std::span<const std::uint8_t> data, std::size_t p)
 {
     if (p >= data.size())
+    {
         invalid("truncated data or out-of-range pointer");
+    }
     return data[p];
 }
 
 std::uint16_t word(std::span<const std::uint8_t> data, std::size_t p)
 {
     if (p >= data.size() || data.size() - p < 2)
+    {
         invalid("truncated data or out-of-range pointer");
+    }
     return format::read_u16(data, p);
 }
 
@@ -63,7 +67,9 @@ struct Voice
     std::uint16_t &at_offset(unsigned offset)
     {
         if (offset % 2 || offset >= 48)
+        {
             invalid("invalid voice field");
+        }
         return fields[offset / 2];
     }
 };
@@ -86,7 +92,9 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
             if (op == 0xfe)
             {
                 if (destination == 0 || --destination != 0)
+                {
                     p = value;
+                }
             }
             else
             {
@@ -108,7 +116,9 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
         else if (op == 0xfb)
         {
             if (!return_position)
+            {
                 invalid("return without a sound subroutine");
+            }
             p = return_position;
         }
         else if (op == 0xfd)
@@ -116,12 +126,16 @@ void commands(std::span<const std::uint8_t> data, std::array<Voice, 4> &voices, 
             const auto offset = word(data, p);
             p += 2;
             if (offset % 48 || offset / 48 >= voices.size())
+            {
                 invalid("invalid voice selection");
+            }
             selected = offset / 48;
             // Synthesis fields reset; sequencing and loop counters remain intact.
             for (const unsigned field :
                  {4U, 6U, 8U, 10U, 12U, 16U, 18U, 22U, 24U, 26U, 28U, 30U, 32U, 34U, 36U})
+            {
                 voices[selected].at_offset(field) = 0;
+            }
         }
         else
         {
@@ -144,57 +158,81 @@ bool SoundEffect::audible() const noexcept
 std::vector<std::uint8_t> unpack_sound_executable(std::span<const std::uint8_t> file)
 {
     if (file.size() < 32 || file.size() > max_image || word(file, 0) != 0x5a4d)
+    {
         invalid("START.EXE is not a supported DOS executable");
+    }
     const std::size_t header = word(file, 8) * 16U;
     if (header < 32 || header > file.size())
+    {
         invalid("invalid DOS header size");
+    }
     const auto packed = header + word(file, 22) * 16U;
     const bool exepack = word(file, 20) == 18 && packed <= file.size() &&
                          file.size() - packed >= 18 && word(file, packed + 16) == 0x4252;
     if (!exepack)
+    {
         return {file.begin() + header, file.end()};
+    }
     const std::size_t size = word(file, packed + 12) * 16U;
     if (!size || size > max_image || word(file, packed + 14) != 1)
+    {
         invalid("unsupported EXEPACK layout");
+    }
     std::vector<std::uint8_t> result(size);
     std::size_t input = packed, output = size;
     // EXEPACK pads the compressed stream to a paragraph with FF bytes.
     for (unsigned padding = 0; input > header && file[input - 1] == 255; ++padding)
     {
         if (padding >= 15)
+        {
             invalid("invalid EXEPACK padding");
+        }
         --input;
     }
     for (;;)
     {
         if (input - header < 3)
+        {
             invalid("truncated EXEPACK command");
+        }
         const auto op = file[--input];
         input -= 2;
         const std::size_t count = word(file, input);
         if (count > output)
+        {
             invalid("EXEPACK output overflow");
+        }
         output -= count;
         if ((op & 0xfe) == 0xb0)
         {
             if (input == header)
+            {
                 invalid("truncated EXEPACK fill");
+            }
             std::fill_n(result.begin() + output, count, file[--input]);
         }
         else if ((op & 0xfe) == 0xb2)
         {
             if (count > input - header)
+            {
                 invalid("truncated EXEPACK literal");
+            }
             input -= count;
             std::copy_n(file.begin() + input, count, result.begin() + output);
         }
         else
+        {
             invalid("invalid EXEPACK command");
+        }
         if (op & 1)
+        {
             break;
+        }
     }
     if (output != input - header)
+    {
         invalid("EXEPACK size mismatch");
+    }
     std::copy_n(file.begin() + header, output, result.begin());
     return result;
 }
@@ -203,7 +241,9 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
                                                  const std::array<std::uint16_t, 4> &entries)
 {
     if (data.size() > 65536)
+    {
         invalid("sound segment too large");
+    }
     using enum Field;
     std::array<Voice, 4> voices{};
     for (std::size_t i = 0; i < voices.size(); ++i)
@@ -222,7 +262,9 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
         {
             auto &v = voices[i];
             if (!v[delay])
+            {
                 continue;
+            }
             active = true;
             v[gate] += v[gate_delta];
             v[pitch] += v[sweep];
@@ -231,11 +273,17 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
             if (next)
             {
                 if (!v[period])
+                {
                     invalid("zero modulation period");
+                }
                 if (next >= v[period])
+                {
                     next -= v[period];
+                }
                 if (next >= v[period] || next >= 32768)
+                {
                     invalid("invalid modulation phase");
+                }
                 v[phase] = next;
                 const auto sample = std::bit_cast<std::int8_t>(byte(data, v[wave] + next / 16));
                 const auto product =
@@ -247,7 +295,9 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
             }
             v[output] = static_cast<std::uint16_t>(v[pitch] + modulation);
             if (--v[delay] == 0)
+            {
                 commands(data, voices, i, return_position);
+            }
             if (!chosen && v[delay] && v[gate])
             {
                 chosen = true;
@@ -255,7 +305,9 @@ std::vector<SpeakerTick> decode_speaker_sequence(std::span<const std::uint8_t> d
             }
         }
         if (!active)
+        {
             return result;
+        }
         result.push_back(sound);
     }
     invalid("sound duration limit exceeded");
@@ -265,18 +317,26 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
 {
     auto path = directory / "START.EXE";
     if (!std::filesystem::exists(path))
+    {
         path = directory / "start.exe";
+    }
     std::ifstream input(path, std::ios::binary | std::ios::ate);
     if (!input)
+    {
         invalid("cannot open START.EXE; select your Pool of Radiance PC 1.3 folder");
+    }
     const auto length = input.tellg();
     if (length <= 0 || length > static_cast<std::streamoff>(max_image))
+    {
         invalid("invalid START.EXE size");
+    }
     std::vector<std::uint8_t> bytes(static_cast<std::size_t>(length));
     input.seekg(0);
     input.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
     if (!input)
+    {
         invalid("could not read START.EXE");
+    }
     const auto image = unpack_sound_executable(bytes);
     std::uint64_t fingerprint = 14695981039346656037ULL;
     for (const auto value : image)
@@ -285,7 +345,9 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
         fingerprint *= 1099511628211ULL;
     }
     if (image.size() != 0x10bf0 || fingerprint != 0x4bd7cdf744ac2004ULL)
+    {
         invalid("unsupported START.EXE revision; this demo requires the Steam PC 1.3 image");
+    }
     constexpr std::array<std::string_view, 21> names{
         "Silence",          "Cast spell",       "Magic damage",
         "Magic effect",     "Reduced to 0 HP",  "Ranged attack launched",
@@ -301,7 +363,9 @@ std::vector<SoundEffect> load_sound_effects(const std::filesystem::path &directo
     {
         std::array<std::uint16_t, 4> entries{};
         for (std::size_t voice = 0; voice < 4; ++voice)
+        {
             entries[voice] = word(segment, 0x55f + i * 8 + voice * 2);
+        }
         effects.push_back({static_cast<unsigned>(i + 1), std::string(names[i]), i >= 12, timer,
                            decode_speaker_sequence(segment, entries)});
     }

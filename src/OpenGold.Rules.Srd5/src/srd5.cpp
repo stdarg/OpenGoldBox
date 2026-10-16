@@ -57,9 +57,13 @@ namespace
 std::string weapon_label(std::string_view key)
 {
     if (const auto *item = detail::weapon(key))
+    {
         return std::string(item->label);
+    }
     if (const auto *item = detail::armor(key))
+    {
         return std::string(item->label);
+    }
     return std::string(key);
 }
 
@@ -80,12 +84,16 @@ bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::st
     const bool protector = detail::has_grant(grants, "order:protector");
     const bool warden = detail::has_grant(grants, "order:warden");
     if (const auto *weapon = detail::weapon(key))
+    {
         return detail::weapon_proficient(klass, *weapon) ||
                ((protector || warden) && weapon->martial);
+    }
     if (const auto *armor = detail::armor(key))
+    {
         return detail::armor_trained(klass, armor->category) ||
                (protector && armor->category == detail::ArmorCategory::heavy) ||
                (warden && armor->category == detail::ArmorCategory::medium);
+    }
     throw std::runtime_error("Unsupported equipment conversion: " + std::string(key));
 }
 } // namespace
@@ -464,18 +472,30 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     std::string text;
     if (trained(detail::class_of(sheet), sheet.grants, item))
+    {
         text = "Class training: no untrained-use penalty.";
+    }
     else if (item == "shield")
+    {
         text = "Untrained shield: no AC bonus.";
+    }
     else if (detail::armor(item))
+    {
         text =
             "Untrained armor: disadvantage on Strength/Dexterity attacks, checks (including initiative), and saves; cannot cast spells.";
+    }
     else
+    {
         text = "Untrained weapon: no proficiency bonus on attack rolls.";
+    }
     if (item == "chain_mail" && sheet.scores[Ability::strength] < 13)
+    {
         text += " Chain mail requires Strength 13: speed reduced by 10 feet.";
+    }
     if (item == "wand")
+    {
         text += " Plain focus only; no charged wand spell is granted.";
+    }
     return text;
 }
 
@@ -1088,8 +1108,12 @@ std::vector<std::string> allowed_spells(CharacterClass klass, unsigned level)
 {
     std::vector<std::string> result;
     for (const auto &row : class_spell_access)
+    {
         if (row.klass == klass && level >= row.min_level)
+        {
             result.emplace_back(row.spell);
+        }
+    }
     return result;
 }
 
@@ -1208,7 +1232,9 @@ SpellSlots spell_slots(CharacterClass klass, unsigned level)
                                                {4, 3, 3, 2}}};
     SpellSlots result{};
     if (level < 1 || level > full.size())
+    {
         return result;
+    }
     if (klass == CharacterClass::warlock)
     {
         const unsigned pact_level = std::min(5u, (level + 1) / 2);
@@ -1451,40 +1477,74 @@ struct CombatDisplay
 CombatDisplay combat_display(std::string_view definition)
 {
     if (definition == "slums-kobold")
+    {
         return {"Kobold", "Dagger", "Dagger"};
+    }
     if (definition == "slums-kobold-leader" || definition == "slums-kobold-leader-sword")
+    {
         return {"Kobold Leader", "Dagger", "Dagger"};
+    }
     if (definition == "bandit")
+    {
         return {"Bandit", "Scimitar", "Light crossbow"};
+    }
     if (definition == "slums-goblin")
+    {
         return {"Goblin Guard", "Scimitar", "Shortbow"};
+    }
     if (definition == "slums-goblin-leader")
+    {
         return {"Goblin Leader", "Scimitar", "Shortbow"};
+    }
     if (definition == "slums-orc")
+    {
         return {"Orc", "Greataxe", "Javelin"};
+    }
     if (definition == "slums-orc-leader")
+    {
         return {"Orc Leader", "Greataxe", "Javelin"};
+    }
     if (definition == "slums-orc-leader-archer")
+    {
         return {"Orc Leader", "Greataxe", "Longbow"};
+    }
     if (definition == "slums-bugbear")
+    {
         return {"Bugbear", "Grab", "Light hammer"};
+    }
     // The Slums' set encounters and Kuto's Well: their SRD stat blocks' attacks.
     if (definition == "slums-hobgoblin")
+    {
         return {"Hobgoblin", "Longsword", "Longbow"};
+    }
     if (definition == "ogre")
+    {
         return {"Ogre", "Greatclub", "Javelin"};
+    }
     if (definition == "troll")
+    {
         return {"Troll", "Rend", nullptr};
+    }
     if (definition == "slums-magic-user")
+    {
         return {"Magic-User", "Dagger", nullptr};
+    }
     if (definition == "gnoll-warrior")
+    {
         return {"Gnoll Warrior", "Rend", "Bone bow"};
+    }
     if (definition == "lizardfolk")
+    {
         return {"Lizardfolk", "Bite", "Javelin"};
+    }
     if (definition == "giant-lizard")
+    {
         return {"Giant Lizard", "Bite", nullptr};
+    }
     if (definition == "norris-the-gray")
+    {
         return {"Norris the Gray", "Scimitar", nullptr};
+    }
     return {nullptr, nullptr, nullptr};
 }
 
@@ -1760,8 +1820,12 @@ int slot_room(const Definition &d, unsigned level)
 bool slots_in_range(const SpellSlots &slots, const Definition &d)
 {
     for (unsigned level = 1; level <= highest_slot_level; ++level)
+    {
         if (slots[level] < 0 || slots[level] > slot_room(d, level))
+        {
             return false;
+        }
+    }
     return slots[0] == 0;
 }
 
@@ -1769,8 +1833,12 @@ bool slots_in_range(const SpellSlots &slots, const Definition &d)
 unsigned lowest_slot(const Actor &a, unsigned from)
 {
     for (unsigned level = from; level <= highest_slot_level; ++level)
+    {
         if (a.slots[level] > 0)
+        {
             return level;
+        }
+    }
     return 0;
 }
 
@@ -1875,7 +1943,9 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.prone_bite = form.prone_bite || form.prone_large;
     d.prone_large = form.prone_large;
     if (form.slashing)
+    {
         d.melee_type = detail::DamageType::slashing;
+    }
     d.bloodied_fury = form.bloodied_fury;
     d.charge = form.charge;
     return d;
@@ -1897,6 +1967,7 @@ void add_initiate_pools(std::vector<rules::ResourcePool> &pools, const Actor &ac
                         const Definition &d)
 {
     for (std::size_t n = 0; n < d.initiate_spells.size(); ++n)
+    {
         pools.push_back(
             {"magic_initiate:" + d.initiate_spells[n],
              {d.lineage_spells.contains(d.initiate_spells[n]) ? "Lineage: {spell}"
@@ -1905,14 +1976,19 @@ void add_initiate_pools(std::vector<rules::ResourcePool> &pools, const Actor &ac
              (actor.initiate_casts >> n) & 1 ? 1u : 0u,
              1u,
              0u});
+    }
 }
 
 // A hidden creature's Stealth total: the DC to find it.
 int stealth_total(const Actor &a)
 {
     for (const auto &effect : a.effects.active)
+    {
         if (effect.kind == detail::EffectKind::hidden)
+        {
             return effect.dc;
+        }
+    }
     return 0;
 }
 
@@ -1920,8 +1996,12 @@ int stealth_total(const Actor &a)
 int trait_uses_spent(const Actor &a)
 {
     for (const auto &effect : a.effects.active)
+    {
         if (effect.kind == detail::EffectKind::trait_uses)
+        {
             return effect.dc;
+        }
+    }
     return 0;
 }
 
@@ -1935,24 +2015,30 @@ void add_trait_pool(std::vector<rules::ResourcePool> &pools, const Actor &actor,
                     const Definition &d)
 {
     if (d.breath)
+    {
         pools.push_back({"breath_weapon",
                          {"Breath Weapon", {}},
                          static_cast<unsigned>(std::max(0, trait_uses_left(actor))),
                          static_cast<unsigned>(d.trait_uses),
                          0u});
+    }
     if (d.giant != GiantBoon::none)
+    {
         pools.push_back({"giant_ancestry",
                          {std::string(giant_boon_label(d.giant)), {}},
                          static_cast<unsigned>(std::max(0, trait_uses_left(actor))),
                          static_cast<unsigned>(d.trait_uses),
                          0u});
+    }
     if (d.resourceful)
+    {
         pools.push_back(
             {"heroic_inspiration",
              {"Heroic Inspiration", {}},
              detail::has_effect(actor.effects, detail::EffectKind::heroic_inspiration) ? 1u : 0u,
              1u,
              0u});
+    }
 }
 
 // The slot level a spell verb casts at: a "_N" verb names a slot above the
@@ -1986,9 +2072,13 @@ std::vector<unsigned> cast_levels(const Actor &a, const detail::SpellDef &spell)
     std::vector<unsigned> result;
     const unsigned lowest = lowest_slot(a, spell.level);
     for (unsigned level = spell.level; level <= highest_slot_level; ++level)
+    {
         if (a.slots[level] > 0 &&
             (level == lowest || (level > spell.level && upcast_matters(spell, level))))
+        {
             result.push_back(level);
+        }
+    }
     return result;
 }
 
@@ -1998,7 +2088,9 @@ std::pair<std::string, std::string> cast_at(const detail::SpellDef &spell, unsig
                                             std::string verb, std::string label)
 {
     if (level == spell.level)
+    {
         return {std::move(verb), std::move(label)};
+    }
     const auto slot = std::to_string(level);
     return {std::move(verb) + "_" + slot, std::move(label) + " (level " + slot + " slot)"};
 }
@@ -2047,11 +2139,15 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
                                            return e.kind == detail::EffectKind::arcanum_used;
                                        });
         if (used != a.effects.active.end())
+        {
             used->dc |= bit;
+        }
         else
+        {
             // Effects that last past the fight carry scope 1, as camp effects do.
             detail::apply_spell_benefit(a.effects, detail::EffectSource{.scope = 1, .actor = 1},
                                         a.source.name, detail::EffectKind::arcanum_used, bit);
+        }
         return;
     }
     --a.slots[slot_level_of(verb, spell)];
@@ -2067,8 +2163,12 @@ bool unconscious(const Actor &a)
 int return_penalty(const Actor &a)
 {
     for (const auto &e : a.effects.active)
+    {
         if (e.kind == detail::EffectKind::returned)
+        {
             return e.dc;
+        }
+    }
     return 0;
 }
 
@@ -2105,8 +2205,12 @@ std::string recovered_levels(const std::array<unsigned, 5> &slots)
 {
     std::string levels;
     for (unsigned level = 5; level >= 1; --level)
+    {
         for (unsigned n = 0; n < slots[level - 1]; ++n)
+        {
             levels += (levels.empty() ? "" : ", ") + std::to_string(level);
+        }
+    }
     return levels;
 }
 
@@ -2123,10 +2227,16 @@ std::vector<ArcaneAllocation> arcane_allocations(unsigned budget)
             "arcane_recovery:" + std::to_string(slots[0]) + ":" + std::to_string(slots[1]);
         unsigned last = 1;
         for (unsigned level = 3; level <= 5; ++level)
+        {
             if (slots[level - 1])
+            {
                 last = level - 1;
+            }
+        }
         for (unsigned index = 2; index <= last; ++index)
+        {
             id += ":" + std::to_string(slots[index]);
+        }
         const auto levels = recovered_levels(slots);
         Message label = levels == "1"      ? Message{"One level-one spell slot", {}}
                         : levels == "1, 1" ? Message{"Two level-one spell slots", {}}
@@ -2140,7 +2250,9 @@ std::vector<ArcaneAllocation> arcane_allocations(unsigned budget)
         if (level == 0)
         {
             if (left < budget)
+            {
                 add();
+            }
             return;
         }
         for (unsigned count = 0; count * level <= left; ++count)
@@ -2158,9 +2270,13 @@ std::vector<ArcaneAllocation> arcane_allocations(unsigned budget)
 bool gives_condition(detail::EffectKind kind, std::string_view condition)
 {
     if (condition == "blinded")
+    {
         return kind == detail::EffectKind::blindness || kind == detail::EffectKind::dazzled;
+    }
     if (condition == "paralyzed")
+    {
         return kind == detail::EffectKind::hold_person;
+    }
     return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
            kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened;
 }
@@ -2313,7 +2429,9 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
     {
         total += level * choice.slots[level - 1];
         if (std::cmp_greater(choice.slots[level - 1], d.slots[level] - actor.slots[level]))
+        {
             return false;
+        }
     }
     // Arcane Recovery (Wizard) or Natural Recovery (Land Druid 6).
     return conscious(actor) && (d.arcane || d.natural_recovery) && actor.arcane > 0 &&
@@ -2323,7 +2441,9 @@ bool can_recover(const Actor &actor, const ArcaneAllocation &choice)
 int movement_left(const Actor &a)
 {
     if (!conscious(a) || a.aim_used)
+    {
         return 0;
+    }
     // A resisted Stunning Strike halves the Speed, and so does Slow.
     const int staggered =
         (detail::has_effect(a.effects, detail::EffectKind::staggered) ? a.definition.speed / 2
@@ -2402,7 +2522,9 @@ int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<cons
                     {
                         return n < -4 || n > 5;
                     }))
+    {
         throw std::runtime_error("Invalid HP advancement history");
+    }
     int hp = die + modifiers.front() + (dwarf ? static_cast<int>(modifiers.size()) : 0) +
              (draconic && modifiers.size() >= 3 ? static_cast<int>(modifiers.size()) : 0);
     for (std::size_t i = 1; i < modifiers.size(); ++i)
@@ -2411,7 +2533,9 @@ int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<cons
         // Constitution rises only with a feat level's ability points.
         if (increase < 0 || increase > 1 ||
             (increase && !detail::gains_feat(klass, static_cast<unsigned>(i + 1))))
+        {
             throw std::runtime_error("Invalid Constitution advancement history");
+        }
         // SRD p. 23: gain HP first, then apply a new modifier per attained level.
         hp += std::max(1, die / 2 + 1 + modifiers[i - 1]) + increase * static_cast<int>(i + 1);
     }
@@ -2424,7 +2548,9 @@ character_definition(std::string_view bytes,
                      std::optional<std::span<const std::string>> equipment_override = std::nullopt)
 {
     if (bytes.size() > 8192)
+    {
         throw std::runtime_error("Character profile exceeds limit");
+    }
     std::istringstream in{std::string(bytes)};
     std::string magic, class_label, race;
     AbilityArray<int> scores{};
@@ -2433,39 +2559,53 @@ character_definition(std::string_view bytes,
     // Untrusted input: bound the list and require every id to be a supported
     // spell before anything else looks at it.
     if (!in || magic != profile_magic || listed > detail::spell_table.size())
+    {
         throw std::runtime_error("Invalid character profile");
+    }
     std::vector<std::string> stored_spells;
     for (unsigned n = 0; n < listed; ++n)
     {
         std::string id;
         in >> id;
         if (!in || !detail::find_spell(id) || detail::knows_spell(stored_spells, id))
+        {
             throw std::runtime_error("Invalid character profile");
+        }
         stored_spells.push_back(std::move(id));
     }
     in >> std::quoted(class_label) >> std::quoted(race);
     for (auto &score : scores)
+    {
         in >> score;
+    }
     if (!in || level < 1 || level > 20 || features > 63 ||
         std::any_of(scores.begin(), scores.end(),
                     [](int n)
                     {
                         return n < 3 || n > 20;
                     }))
+    {
         throw std::runtime_error("Invalid character profile");
+    }
     const auto character_class = detail::class_from_label(class_label);
     if (!character_class)
+    {
         throw std::runtime_error("Unknown class");
+    }
     const CharacterClass klass = *character_class;
     if (level > detail::level_cap(klass))
+    {
         throw std::runtime_error("Invalid character profile");
+    }
     const auto &races = detail::creation_choices(CreationField::race);
     if (std::none_of(races.begin(), races.end(),
                      [&](const auto &r)
                      {
                          return r.label == race;
                      }))
+    {
         throw std::runtime_error("Unknown species");
+    }
     const int str = ability_modifier(scores[Ability::strength]),
               dex = ability_modifier(scores[Ability::dexterity]),
               con = ability_modifier(scores[Ability::constitution]);
@@ -2473,10 +2613,14 @@ character_definition(std::string_view bytes,
     const int proficiency = 2 + (static_cast<int>(level) - 1) / 4;
     std::vector<int> hp_modifiers(level, con);
     for (auto &modifier : hp_modifiers)
+    {
         in >> modifier;
+    }
     in >> count;
     if (!in || count > 3 || hp_modifiers.back() != con)
+    {
         throw std::runtime_error("Invalid character HP history or equipment count");
+    }
     const int die = klass == CharacterClass::barbarian ? 12
                     : (klass == CharacterClass::fighter || klass == CharacterClass::paladin ||
                        klass == CharacterClass::ranger)
@@ -2497,7 +2641,9 @@ character_definition(std::string_view bytes,
     d.naturally_stealthy = race == "Halfling";
     // Gnomes and Halflings are Small.
     if (race == "Gnome" || race == "Halfling")
+    {
         d.size = 1;
+    }
     // Elves do not sleep, so Sleep cannot touch them.
     d.sleepless = race == "Elf";
     d.rages = klass == CharacterClass::barbarian ? (level >= 12  ? 5
@@ -2550,9 +2696,11 @@ character_definition(std::string_view bytes,
     d.dexterity = dex;
     d.rushes = race == "Orc" ? proficiency : 0;
     for (const auto ability : all_abilities)
+    {
         d.saves[ability_index(ability)] =
             ability_modifier(scores[ability]) +
             (detail::save_proficient(klass, level, ability) ? proficiency : 0);
+    }
     d.alert = (features & 32) != 0;
     d.ac = 10 + dex;
     // Jack of All Trades adds half the Proficiency Bonus to Initiative, as
@@ -2574,7 +2722,9 @@ character_definition(std::string_view bytes,
                           : 0;
     // Two Extra Attacks (Fighter 11): three attacks with each Attack action.
     if (klass == CharacterClass::fighter && level >= 11)
+    {
         d.extra_attacks = 2;
+    }
     d.studied_attacks = klass == CharacterClass::fighter && level >= 13;
     const bool barbarian = klass == CharacterClass::barbarian;
     d.mindless_rage = barbarian && level >= 6;
@@ -2674,7 +2824,9 @@ character_definition(std::string_view bytes,
     d.casting = proficiency + ability_modifier(scores[casting_ability]);
     if ((features & 1) && klass != CharacterClass::fighter && klass != CharacterClass::paladin &&
         klass != CharacterClass::ranger)
+    {
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
+    }
     d.spells = stored_spells;
     d.savage = (features & 2) != 0;
     d.known_cantrips = detail::spells_of_level(d.spells, true);
@@ -2689,7 +2841,9 @@ character_definition(std::string_view bytes,
         d.equipment_keys.push_back(std::move(key));
     }
     if (equipment_override)
+    {
         d.equipment_keys.assign(equipment_override->begin(), equipment_override->end());
+    }
     // Grants come before equipment because a Divine Order can add training.
     std::string background;
     in >> std::quoted(background);
@@ -2705,9 +2859,13 @@ character_definition(std::string_view bytes,
                            });
     };
     if (chose("size:small"))
+    {
         d.size = 1;
+    }
     if (chose("lineage:wood_elf"))
+    {
         d.speed = 35;
+    }
     using detail::DamageType;
     for (const auto &[choice, type] :
          std::initializer_list<std::pair<std::string_view, DamageType>>{
@@ -2724,6 +2882,7 @@ character_definition(std::string_view bytes,
              {"dragon:green", DamageType::poison},
              {"dragon:silver", DamageType::cold},
              {"dragon:white", DamageType::cold}})
+    {
         if (chose(choice))
         {
             d.affinities.push_back(
@@ -2735,6 +2894,7 @@ character_definition(std::string_view bytes,
                 d.trait_uses = proficiency;
             }
         }
+    }
     // Giant Ancestry: as many uses as the Proficiency Bonus.
     for (const auto &[choice, boon] : std::initializer_list<std::pair<std::string_view, GiantBoon>>{
              {"giant:cloud", GiantBoon::cloud},
@@ -2743,24 +2903,34 @@ character_definition(std::string_view bytes,
              {"giant:hill", GiantBoon::hill},
              {"giant:stone", GiantBoon::stone},
              {"giant:storm", GiantBoon::storm}})
+    {
         if (chose(choice))
         {
             d.giant = boon;
             d.trait_uses = proficiency;
         }
+    }
     // Magic Initiate's and a lineage's spells: their own ability, and a free
     // cast of the leveled one each Long Rest.
     auto gifts = detail::magic_initiate_spells(grants);
     for (auto &lineage : detail::lineage_spells(grants, level))
+    {
         gifts.push_back(std::move(lineage));
+    }
     for (const auto &feat : gifts)
     {
         for (const auto &spell : feat.spells)
+        {
             d.initiate_casting.emplace(spell, proficiency + ability_modifier(scores[feat.ability]));
+        }
         if (!feat.free_spell.empty())
+        {
             d.initiate_spells.push_back(feat.free_spell);
+        }
         if (feat.feat.starts_with("species:"))
+        {
             d.lineage_spells.insert(feat.free_spell);
+        }
     }
     // A stored spell is the class's at this level, or one Magic Initiate teaches.
     const auto allowed = allowed_spells(klass, level);
@@ -2770,7 +2940,9 @@ character_definition(std::string_view bytes,
                bard_secret(klass, level, grants, id);
     };
     if (!std::all_of(stored_spells.begin(), stored_spells.end(), storable))
+    {
         throw std::runtime_error("Invalid prepared spells or feat prerequisites");
+    }
     const auto invoked = [&](std::string_view id)
     {
         return std::any_of(grants.begin(), grants.end(),
@@ -2780,13 +2952,19 @@ character_definition(std::string_view bytes,
                            });
     };
     for (const auto &grant : grants)
+    {
         for (auto &[prefix, cantrips] : std::initializer_list<
                  std::pair<std::string_view, std::set<std::string, std::less<>> *>>{
                  {"invocation:agonizing_blast:", &d.agonizing},
                  {"invocation:eldritch_spear:", &d.eldritch_spear},
                  {"invocation:repelling_blast:", &d.repelling}})
+        {
             if (grant.id.starts_with(prefix))
+            {
                 cantrips->insert(grant.id.substr(prefix.size()));
+            }
+        }
+    }
     d.armor_of_shadows = invoked("armor_of_shadows");
     d.devils_sight = invoked("devils_sight");
     d.eldritch_mind = invoked("eldritch_mind");
@@ -2795,10 +2973,14 @@ character_definition(std::string_view bytes,
     // Thirsting Blade: Extra Attack with the pact weapon.
     d.thirsting_blade = invoked("thirsting_blade");
     if (d.thirsting_blade)
+    {
         d.extra_attacks = std::max(d.extra_attacks, 1);
+    }
     // Devouring Blade: three attacks.
     if (invoked("devouring_blade"))
+    {
         d.extra_attacks = std::max(d.extra_attacks, 2);
+    }
     d.eldritch_smite = invoked("eldritch_smite");
     d.lifedrinker = invoked("lifedrinker");
     d.witch_sight = invoked("witch_sight");
@@ -2818,7 +3000,9 @@ character_definition(std::string_view bytes,
             if (weapon)
             {
                 if (d.other_weapon)
+                {
                     throw std::runtime_error("Only two weapons may be equipped");
+                }
                 d.other_weapon = true;
                 hands += item->hands;
                 continue;
@@ -2865,7 +3049,9 @@ character_definition(std::string_view bytes,
                  item && item->category != detail::ArmorCategory::shield)
         {
             if (armor)
+            {
                 throw std::runtime_error("Only one armor may be equipped");
+            }
             if (!trained(klass, grants, key))
             {
                 d.str_dex_disadvantage = true;
@@ -2876,17 +3062,23 @@ character_definition(std::string_view bytes,
             d.ac = item->base_ac + item->dexterity_contribution(dex);
             d.stealth_disadvantage = item->stealth_disadvantage;
             if (scores[Ability::strength] < item->strength)
+            {
                 d.speed -= 10;
+            }
         }
         else if (key == "shield")
         {
             if (shield)
+            {
                 throw std::runtime_error("Only one shield may be equipped");
+            }
             shield = true;
             ++hands;
         }
         else
+        {
             throw std::runtime_error("Unsupported equipment conversion: " + key);
+        }
     }
     d.shield = shield;
     // The grip follows the other hand at attack time: a Versatile weapon is
@@ -2928,35 +3120,55 @@ character_definition(std::string_view bytes,
                              })
                     ->bonus;
     if (klass == CharacterClass::rogue && level >= 7)
+    {
         for (const auto &skill : training.skills)
+        {
             if (skill.proficient)
+            {
                 d.reliable.insert(skill.id);
+            }
+        }
+    }
     for (const auto &grant : grants)
     {
         if (detail::is_mastery_grant(grant))
+        {
             d.masteries.push_back(grant.id.substr(8));
+        }
         if (grant.id.starts_with("metamagic:"))
+        {
             d.metamagic.push_back(grant.id.substr(10));
+        }
         d.hunters_lore |= grant.id == "feature:hunters_lore";
         d.colossus_slayer |= grant.id == "prey:colossus_slayer";
         d.horde_breaker |= grant.id == "prey:horde_breaker";
         d.escape_the_horde |= grant.id == "tactics:escape_the_horde";
         if (grant.id == "strikes:divine_strike")
+        {
             d.divine_strike = level >= 14 ? 2 : 1;
+        }
         d.potent_spellcasting |= grant.id == "strikes:potent_spellcasting";
         d.multiattack_defense |= grant.id == "tactics:multiattack_defense";
         if (grant.id.starts_with("arcanum:"))
+        {
             d.arcanum.insert(grant.id.substr(8));
+        }
         if (grant.id.starts_with("land:"))
+        {
             d.land = grant.id.substr(5);
+        }
         d.druid_potent |= grant.id == "fury:potent_spellcasting";
         if (grant.id == "fury:primal_strike")
+        {
             d.primal_strike = level >= 15 ? 2 : 1;
+        }
         // Fiendish Resilience: Resistance to its type.
         if (grant.id.starts_with("resilience:"))
+        {
             d.affinities.push_back({detail::AffinityKind::resistance,
                                     detail::damage_type(grant.id.substr(11)),
                                     "feature:fiendish_resilience"});
+        }
         // Elemental Affinity: Resistance to its type.
         if (grant.id.starts_with("affinity:"))
         {
@@ -2966,8 +3178,12 @@ character_definition(std::string_view bytes,
         }
     }
     for (const auto &id : detail::circle_spells(level, d.land))
+    {
         if (detail::find_spell(id)->level)
+        {
             d.circle.insert(id);
+        }
+    }
     // Nature's Ward (Land 10): Resistance by the current land.
     if (d.natures_ward && !d.land.empty())
     {
@@ -2983,7 +3199,9 @@ character_definition(std::string_view bytes,
         // Always-prepared spells are stored with the others but never prepared.
         prepared = detail::spells_of_level(stored_spells, false);
         for (const auto &id : detail::always_prepared_spells(klass, level, grants))
+        {
             std::erase(prepared, id);
+        }
     }
     const auto access = detail::spell_access(grants, klass, level, prepared);
     // Compare as sets: the grants and the stored list must describe the same
@@ -2995,49 +3213,75 @@ character_definition(std::string_view bytes,
         return left == right;
     };
     if (!same_spells(detail::casting_ids(access), stored_spells))
+    {
         throw std::runtime_error("Character casting access disagrees with spell grants");
+    }
     const auto features_only = detail::without_spell_grants(detail::without_training(grants));
     const auto effects =
         detail::validate_grants(features_only, klass, detail::race_id(race), background, level);
     if (effects.feats != features)
+    {
         throw std::runtime_error("Character effects disagree with acquired grants");
+    }
     // Each level's Constitution modifier: the score before any feat, plus
     // what the Ability Score Improvements gained by that level gave it.
     for (unsigned i = 0; i < level; ++i)
     {
         int score = scores[Ability::constitution] - effects.abilities[Ability::constitution];
         for (const auto &g : grants)
+        {
             if (g.id == "feat:ability_score_improvement" && g.level <= i + 1)
+            {
                 if (const auto raised = g.choices.find("constitution"); raised != g.choices.end())
+                {
                     score += raised->second == "2" ? 2 : 1;
+                }
+            }
+        }
         if (hp_modifiers[i] != ability_modifier(score))
+        {
             throw std::runtime_error("HP history disagrees with acquired ability choices");
+        }
     }
     if (race == "Dwarf")
+    {
         d.affinities.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                                 "species:dwarf/trait:dwarven_resilience"});
+    }
     if (hands > 2)
+    {
         throw std::runtime_error(
             "Not enough free hands. Unequip the shield or two-handed weapon first.");
+    }
     if (!armor && klass == CharacterClass::barbarian)
+    {
         d.ac = std::max(d.ac, 10 + dex + con);
+    }
     // Draconic Resilience: dragon-like scales.
     if (!armor && klass == CharacterClass::sorcerer && level >= 3)
+    {
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[Ability::charisma]));
+    }
     if (!armor && !shield && klass == CharacterClass::monk)
+    {
         d.ac = std::max(d.ac, 10 + dex + ability_modifier(scores[Ability::wisdom]));
+    }
     // Martial Arts: the better of Strength and Dexterity for attack and damage
     // rolls, and the Martial Arts die (a d6 through level four) when larger.
     d.martial_arts = klass == CharacterClass::monk && !armor && !shield && monk_weapons;
     // Unarmored Movement: 10 feet more without armor or a Shield, 15 from level
     // 6, 20 from 10 and 25 from 14.
     if (klass == CharacterClass::monk && level >= 2 && !armor && !shield)
+    {
         d.speed += level >= 14 ? 25 : level >= 10 ? 20 : level >= 6 ? 15 : 10;
+    }
     // Fast Movement and Roving: 10 feet more without Heavy armor.
     if (((klass == CharacterClass::barbarian && level >= 5) ||
          (klass == CharacterClass::ranger && level >= 6)) &&
         !d.heavy_armor)
+    {
         d.speed += 10;
+    }
     if (d.martial_arts)
     {
         d.martial_modifier = std::max(str, dex);
@@ -3057,24 +3301,36 @@ character_definition(std::string_view bytes,
     // Empowered Strikes: Unarmed Strikes deal Force damage, which almost
     // nothing resists, so it is always chosen.
     if (d.empowered_strikes && !weapon)
+    {
         d.melee_type = detail::DamageType::force;
+    }
     if (shield && trained(klass, grants, "shield"))
+    {
         d.ac += 2;
+    }
     // Mage Armor's AC for a creature wearing no armor.
     if (!armor)
+    {
         d.mage_armor_ac = 13 + dex + (shield && trained(klass, grants, "shield") ? 2 : 0);
+    }
     if (armor && (features & 1))
+    {
         ++d.ac;
+    }
     // The alignment, for spells that change with it (Spirit Guardians).
     std::string alignment;
     in >> std::quoted(alignment);
     if (!in || alignment.size() > 40)
+    {
         throw std::runtime_error("Invalid character profile alignment");
+    }
     d.evil =
         alignment.find("evil") != std::string::npos || alignment.find("Evil") != std::string::npos;
     in >> std::ws;
     if (!in.eof())
+    {
         throw std::runtime_error("Invalid character profile fields");
+    }
     return d;
 }
 
@@ -3101,26 +3357,36 @@ void restore_vitals(Actor &a, const VitalState &state)
         std::string magic;
         in >> magic >> a.winds;
         for (unsigned level = 1; level <= highest_slot_level; ++level)
+        {
             in >> a.slots[level];
+        }
         in >> a.life.successes >> a.life.failures >> a.life.stable >> a.hit_dice >>
             a.life.recovery.death_save_in_ms >> a.life.recovery.stable_recovery_in_ms >>
             a.life.temporary_hp.amount >> std::quoted(a.life.temporary_hp.source_id) >> a.rushes >>
             a.surges >> a.arcane >> a.lay_on_hands >> a.free_casts >> a.channel_divinity >>
             a.initiate_casts;
         if (!in || magic != vitals_magic)
+        {
             throw std::runtime_error("Invalid character resource state");
+        }
         detail::decode_stable_recovery(a.life.recovery);
         a.effects = detail::read_effects(in);
         in >> std::ws;
         if (!in.eof())
+        {
             throw std::runtime_error("Trailing character resource state");
+        }
     }
     // A simulacrum is a Construct.
     if (detail::has_effect(a.effects, detail::EffectKind::simulacrum))
+    {
         a.definition.creature_type = "construct";
+    }
     const auto &d = a.definition;
     if (!slots_in_range(a.slots, d))
+    {
         throw std::runtime_error("Invalid character vitals");
+    }
     if (a.life.hp < 0 || a.life.hp > max_hp(a) || (a.life.dead && a.life.hp != 0) || a.winds < 0 ||
         a.winds > d.winds || a.arcane < 0 || a.arcane > arcane_capacity(d) || a.surges < 0 ||
         a.surges > surge_capacity(d) || a.rushes < 0 || a.rushes > d.rushes || a.hit_dice < 0 ||
@@ -3130,11 +3396,15 @@ void restore_vitals(Actor &a, const VitalState &state)
         a.free_casts > free_cast_capacity(d) || a.channel_divinity < 0 ||
         a.channel_divinity > channel_capacity(d) || a.initiate_casts < 0 ||
         (a.initiate_casts & ~initiate_capacity(d)))
+    {
         throw std::runtime_error("Invalid character vitals");
+    }
     detail::validate_recovery(a.life);
     detail::validate_temporary_hp(a.life.temporary_hp);
     if (a.life.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
+    {
         throw std::runtime_error("Earned recovery requires active healing prevention");
+    }
 }
 
 // An actor for a rules call outside combat: full Second Winds and slots from
@@ -3165,7 +3435,9 @@ VitalState vitals(const Actor &a)
     std::ostringstream out;
     out << vitals_magic << ' ' << a.winds << ' ';
     for (unsigned level = 1; level <= highest_slot_level; ++level)
+    {
         out << a.slots[level] << ' ';
+    }
     out << a.life.successes << ' ' << a.life.failures << ' ' << a.life.stable << ' ' << a.hit_dice
         << ' ' << a.life.recovery.death_save_in_ms << ' '
         << detail::encode_stable_recovery(a.life.recovery) << ' ' << a.life.temporary_hp.amount
@@ -3182,20 +3454,31 @@ VitalState vitals(const Actor &a)
     detail::write_effects(out, effects);
     std::string description;
     for (unsigned level = 1; level <= highest_slot_level; ++level)
+    {
         if (a.definition.slots[level])
+        {
             description += (description.empty() ? "" : "\n") + std::string(slot_labels[level]) +
                            ": " + std::to_string(a.slots[level]) + " / " +
                            std::to_string(a.definition.slots[level]);
+        }
+    }
     if (a.definition.winds)
+    {
         description = "Second Wind uses: " + std::to_string(a.winds) + " / " +
                       std::to_string(a.definition.winds);
+    }
     if (a.definition.arcane)
+    {
         description += (description.empty() ? "" : "\n") + std::string("Arcane Recovery uses: ") +
                        std::to_string(a.arcane) + " / 1";
+    }
     if (a.definition.surges && a.surges < a.definition.surges)
+    {
         description += (description.empty() ? "" : "\n") + std::string("Action Surge uses: ") +
                        std::to_string(a.surges) + " / " + std::to_string(a.definition.surges);
+    }
     if (a.life.hp == 0)
+    {
         description +=
             (description.empty() ? "" : "\n") +
             std::string(a.life.dead     ? "Dead"
@@ -3204,22 +3487,39 @@ VitalState vitals(const Actor &a)
             (!a.life.dead && !a.life.stable ? std::to_string(a.life.successes) + " successes, " +
                                                   std::to_string(a.life.failures) + " failures"
                                             : "");
+    }
     if (detail::healing_blocked(a.effects))
+    {
         description += "\nChill Touch: cannot regain HP.";
+    }
     if (detail::has_effect(a.effects, detail::EffectKind::shocking_grasp))
+    {
         description += "\nShocking Grasp: cannot make Opportunity Attacks.";
+    }
     if (detail::frosted(a.effects))
+    {
         description += "\nRay of Frost: Speed reduced by 10 feet.";
+    }
     if (detail::slowed(a.effects))
+    {
         description += "\nSlow: Speed reduced by 10 feet.";
+    }
     if (detail::has_effect(a.effects, detail::EffectKind::frosts_chill))
+    {
         description += "\nFrost's Chill: Speed reduced by 10 feet.";
+    }
     if (detail::has_effect(a.effects, detail::EffectKind::hamstrung))
+    {
         description += "\nHamstring Blow: Speed reduced by 15 feet.";
+    }
     if (detail::blinded(a.effects))
+    {
         description += "\nBlinded";
+    }
     if (a.effects.prone)
+    {
         description += "\nProne";
+    }
     return {a.life.hp, a.life.dead, out.str(), description};
 }
 
@@ -3243,8 +3543,12 @@ Definition without_shield(std::string_view profile, const Definition &d)
 {
     std::vector<std::string> keys;
     for (const auto &key : d.equipment_keys)
+    {
         if (key != "shield")
+        {
             keys.push_back(key);
+        }
+    }
     return character_definition(profile, std::span<const std::string>(keys));
 }
 
@@ -3334,7 +3638,9 @@ bool turns_to_attack(std::string_view verb)
     // spell except the ally-targeted ones counts alongside weapon attacks.
     if (verb.starts_with("light_") || verb.starts_with("nick_") || verb.starts_with("throw") ||
         verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot")
+    {
         return true;
+    }
     const auto *spell = detail::find_spell(verb);
     return spell && spell->target != detail::SpellTarget::wounded_ally;
 }
@@ -3390,13 +3696,21 @@ class ProfileDefinitions
         std::string key(profile);
         key += keys ? '\x1e' : '\x1f';
         if (keys)
+        {
             for (const auto &item : *keys)
+            {
                 (key += item) += '\x1f';
+            }
+        }
         if (const auto found = parsed_.find(key); found != parsed_.end())
+        {
             return found->second;
+        }
         // A long fight with many changes of gear keeps the cache bounded.
         if (parsed_.size() >= 512)
+        {
             parsed_.clear();
+        }
         return parsed_.emplace(std::move(key), character_definition(profile, keys)).first->second;
     }
 
@@ -3422,20 +3736,26 @@ class Session final : public CombatSession
           scope_(encounter.scope), morale_(encounter.morale), gold_(encounter.party_gold)
     {
         if (!scope_)
+        {
             throw std::runtime_error("Invalid encounter scope");
+        }
         if (morale_ > 100 ||
             std::any_of(encounter.participants.begin(), encounter.participants.end(),
                         [](const auto &p)
                         {
                             return p.morale > 100 || p.intelligence > 30;
                         }))
+        {
             throw std::runtime_error("Invalid encounter morale");
+        }
         detail::validate_battlefield(board_);
         // A restored fight may have one creature left on the field, the rest
         // having run off it.
         if (encounter.participants.size() < (restoring ? 1u : 2u) ||
             encounter.participants.size() > 64)
+        {
             throw std::runtime_error("Invalid encounter size");
+        }
         // Room for every participant and the creatures spells bring in, so a
         // summoning never moves the actors others hold.
         actors_.reserve(128);
@@ -3448,8 +3768,10 @@ class Session final : public CombatSession
                 board_.at(p.cell) == Terrain::obstacle || p.side > Side::opposition ||
                 p.name.empty() || p.name.size() > 160 ||
                 (p.character_profile.empty() && !content_->definitions.contains(p.definition)))
+            {
                 throw std::runtime_error("Invalid participant or unsupported rules definition: " +
                                          p.definition);
+            }
             sides.insert(p.side);
             Actor a;
             a.definition = p.character_profile.empty() ? content_->definitions.at(p.definition)
@@ -3469,7 +3791,9 @@ class Session final : public CombatSession
             a.initiate_casts = initiate_capacity(d);
             a.facing_left = a.source.facing_left;
             if (a.source.state)
+            {
                 restore_vitals(a, *a.source.state);
+            }
             // A Druid still in a Beast form from earlier fights in that form.
             refresh_form(a);
             a.initiative = detail::d20({d.champion || d.feral_instinct,
@@ -3480,7 +3804,9 @@ class Session final : public CombatSession
             actors_.push_back(std::move(a));
         }
         if (sides.size() != 2 && !restoring)
+        {
             throw std::runtime_error("Encounter needs both sides");
+        }
         // Fixed tie adjudication: descending initiative, then stable entity ID.
         std::stable_sort(actors_.begin(), actors_.end(),
                          [](const Actor &a, const Actor &b)
@@ -3490,14 +3816,26 @@ class Session final : public CombatSession
                          });
         log("Combat begins. Each square is 5 feet.");
         if (!restoring)
+        {
             wake_resting_participants();
+        }
         // Contingency: a spell waiting for the fight to start takes effect.
         if (!restoring)
+        {
             for (auto &a : actors_)
+            {
                 if (detail::has_effect(a.effects, detail::EffectKind::contingency))
+                {
                     for (const auto &e : std::vector<detail::Effect>(a.effects.active))
+                    {
                         if (e.kind == detail::EffectKind::contingency && e.dc % 4 == 1)
+                        {
                             fire_contingency(a);
+                        }
+                    }
+                }
+            }
+        }
         update_outcome();
         frost_movement_ = std::any_of(
             actors_.begin(), actors_.end(),
@@ -3512,40 +3850,70 @@ class Session final : public CombatSession
             for (const auto &a : actors_)
             {
                 for (const auto &key : a.definition.equipment_keys)
+                {
                     if (const auto *w = detail::weapon(key); w && (w->thrown || w->light))
+                    {
                         physical_inventory_ = true;
+                    }
+                }
                 for (const auto &item : a.source.inventory)
+                {
                     if (const auto *w = detail::weapon(item.definition);
                         w && (w->thrown || w->light))
+                    {
                         physical_inventory_ = true;
+                    }
+                }
             }
             // Thrown gear is counted once, from what each character carries in.
             for (auto &a : actors_)
+            {
                 for (const auto &item : a.source.inventory)
+                {
                     if (const auto *gear = detail::thrown_gear(item.definition))
+                    {
                         a.thrown_gear_left[static_cast<std::size_t>(gear->effect)] += item.quantity;
+                    }
+                }
+            }
             for (const auto &a : actors_)
+            {
                 if (a.definition.other_weapon)
+                {
                     physical_inventory_ = true;
+                }
+            }
             if (physical_inventory_)
+            {
                 initialize_items();
+            }
         }
         if (!restoring && std::any_of(actors_.begin(), actors_.end(),
                                       [](const auto &a)
                                       {
                                           return a.definition.two_weapon_fighting;
                                       }))
+        {
             activate_light();
+        }
         if (!restoring)
         {
             if (outcome_ == Outcome::ongoing)
+            {
                 for (const auto &a : actors_)
+                {
                     if (a.source.side == Side::party &&
                         (def(a).alert || metabolism_ready(a) || persistent_ready(a)) &&
                         conscious(a))
+                    {
                         initiative_choices_.push_back(a.source.id);
+                    }
+                }
+            }
             if (initiative_choices_.empty())
+            {
                 start_encounter_turns();
+            }
         }
     }
 
@@ -3991,7 +4359,9 @@ class Session final : public CombatSession
                                             return a.source.id == id;
                                         });
         if (found == actors_.end())
+        {
             throw std::logic_error("No combatant has id " + std::to_string(id));
+        }
         return *found;
     }
 
@@ -4013,9 +4383,13 @@ class Session final : public CombatSession
     void log(std::string english, Message message = {})
     {
         if (message.source.empty())
+        {
             message.source = english;
+        }
         if (log_.size() == 80)
+        {
             log_.erase(log_.begin());
+        }
         log_.push_back({std::move(english), std::move(message)});
     }
 
@@ -4050,16 +4424,22 @@ class Session final : public CombatSession
     {
         std::vector<Cell> walls;
         for (const auto &zone : zones_)
+        {
             if (zone.kind == ZoneKind::stone_wall ||
                 (force && (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::ice_wall)))
+            {
                 walls.insert(walls.end(), zone.cells.begin(), zone.cells.end());
+            }
+        }
         auto &cached = walled_boards_[force ? 1 : 0];
         if (!cached || cached->walls != walls)
         {
             auto board = board_;
             for (const auto cell : walls)
+            {
                 board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                     Terrain::obstacle;
+            }
             cached = WalledBoard{std::move(walls), std::move(board)};
         }
         return cached->board;
@@ -4149,7 +4529,9 @@ class Session final : public CombatSession
                                             return a.source.id == id;
                                         });
         if (found == actors_.end())
+        {
             throw std::logic_error("No combatant has id " + std::to_string(id));
+        }
         return static_cast<std::size_t>(found - actors_.begin());
     }
 
@@ -4171,8 +4553,12 @@ class Session final : public CombatSession
     void clear_departed_overlaps()
     {
         for (auto &a : actors_)
+        {
             if (a.life.dead || !shares_occupied_space(a))
+            {
                 a.involuntary_overlap = false;
+            }
+        }
     }
 
     // Emits every table spell whose row matches `scope` and pass. Called once
@@ -4757,21 +5143,31 @@ class Session final : public CombatSession
         for (std::size_t i = 0; i < actors_.size(); ++i)
         {
             for (auto &effect : actors_[i].effects.active)
+            {
                 if (effect.kind == detail::EffectKind::blindness)
+                {
                     effect.save_in_ms = turn_end_ms(i);
+                }
+            }
             if (actors_[i].life.hp == 0 && !actors_[i].life.dead && !actors_[i].life.stable)
+            {
                 actors_[i].life.recovery.death_save_in_ms = i ? turn_end_ms(i - 1) : 0;
+            }
         }
         // Perfect Focus (Monk 15): at least 4 Focus Points when the fight starts.
         for (auto &a : actors_)
+        {
             if (def(a).perfect_focus && a.surges < 4 && conscious(a))
             {
                 a.surges = 4;
                 log(a.source.name + " has 4 Focus Points (Perfect Focus).",
                     {"{name} has 4 Focus Points (Perfect Focus).", {{"name", a.source.name}}});
             }
+        }
         if (outcome_ == Outcome::ongoing && !begin_turn())
+        {
             end_turn();
+        }
     }
 
     // Uncanny Metabolism is offered at Initiative only while it would restore
@@ -4785,7 +5181,9 @@ class Session final : public CombatSession
     void resolve_initiative(const Command &command)
     {
         if (command.verb == "initiative_swap")
+        {
             std::swap(actor(command.actor).initiative, actor(command.target).initiative);
+        }
         if (command.verb == "uncanny_metabolism")
         {
             // All Focus Points back, and the Martial Arts die plus the Monk
@@ -4814,7 +5212,9 @@ class Session final : public CombatSession
                                                                  : a.source.id < b.source.id;
                          });
         if (initiative_choices_.empty())
+        {
             start_encounter_turns();
+        }
     }
 
     void validate_initiative() const;
@@ -4839,23 +5239,36 @@ unsigned Session::held_weapon(const Actor &a) const
         return item.holder == a.source.id && !item.stowed && detail::weapon(item.definition);
     };
     if (a.selected_weapon)
+    {
         for (const auto &item : items_)
+        {
             if (item.id == a.selected_weapon && eligible(item))
+            {
                 return item.id;
+            }
+        }
+    }
     for (const auto &item : items_)
+    {
         if (eligible(item))
+        {
             return item.id;
+        }
+    }
     return 0;
 }
 
 void Session::activate_light()
 {
     if (light_active_)
+    {
         return;
+    }
     physical_inventory_ = true;
     initialize_items();
     const auto count = items_.size();
     for (unsigned i = 0; i < count; ++i)
+    {
         if (items_[i].holder && !items_[i].stowed && items_[i].quantity > 1)
         {
             auto carried = items_[i];
@@ -4865,6 +5278,7 @@ void Session::activate_light()
             items_[i].quantity = 1;
             items_.push_back(std::move(carried));
         }
+    }
     light_active_ = true;
 }
 
@@ -4882,7 +5296,9 @@ void Session::open_hand(const Actor &monk, Actor &target, std::string_view verb)
     }
     else if (verb == "flurry_push" &&
              !saving_throw_succeeds(target, detail::Ability::strength, def(monk).focus_dc))
+    {
         push_away(monk, target, 3);
+    }
     else if (verb == "flurry_topple" && !target.effects.prone &&
              !saving_throw_succeeds(target, detail::Ability::dexterity, def(monk).focus_dc))
     {
@@ -4896,13 +5312,17 @@ void Session::ready_metamagic(Actor &a, std::string_view choice)
 {
     // A second option joins the first during Sorcery Incarnate.
     if (choice == "cancel" || readied_metamagic(a).size() >= metamagic_room(a))
+    {
         std::erase_if(a.effects.active,
                       [](const auto &e)
                       {
                           return e.kind == detail::EffectKind::metamagic;
                       });
+    }
     if (choice == "cancel")
+    {
         return;
+    }
     int value = 0;
     std::string label;
     if (choice.starts_with("transmuted_"))
@@ -4957,20 +5377,32 @@ void Session::use_focus_movement(Actor &a, std::string_view verb, EntityId carri
     const bool patient = verb.starts_with("patient_defense");
     a.bonus = false;
     if (focus)
+    {
         --a.surges;
+    }
     if (patient || focus)
+    {
         a.disengaged = true;
+    }
     if (patient && focus)
+    {
         a.dodge = true;
+    }
     // Heightened Focus: Patient Defense with Focus gives two Martial Arts dice
     // of Temporary Hit Points.
     if (patient && focus && def(a).heightened_focus)
+    {
         if (const int amount = roll(def(a).martial_die) + roll(def(a).martial_die);
             amount > a.life.temporary_hp.amount)
+        {
             detail::grant_temporary_hp(a.life, {amount, "feature:heightened_focus"},
                                        TemporaryHpChoice::use_new);
+        }
+    }
     if (!patient)
+    {
         a.fleet_step = false;
+    }
     if (!patient)
     {
         a.movement += def(a).speed;
@@ -5011,7 +5443,9 @@ Loadout Session::item_loadout(const Actor &a, unsigned token) const
 {
     const auto &item = items_.at(token - 1);
     if (item.holder != a.source.id || item.stowed || !detail::weapon(item.definition))
+    {
         throw std::runtime_error("Weapon is not held");
+    }
     return {equipped_definition(a, items_, token), token, a.light_damage};
 }
 
@@ -5028,7 +5462,9 @@ bool Session::has_nick(const Actor &a) const
 bool Session::nick_weapon(const Actor &a, unsigned token) const
 {
     if (!token || token > items_.size())
+    {
         return false;
+    }
     const auto &key = items_[token - 1].definition;
     const auto *w = detail::weapon(key);
     return w && w->mastery == detail::Mastery::nick &&
@@ -5039,7 +5475,9 @@ bool Session::nick_weapon(const Actor &a, unsigned token) const
 bool Session::light_eligible(const Actor &a, unsigned token) const
 {
     if (!token || token > items_.size())
+    {
         return false;
+    }
     const auto *weapon = detail::weapon(items_[token - 1].definition);
     return weapon && weapon->light &&
            std::any_of(a.light_origins.begin(), a.light_origins.end(),
@@ -5052,36 +5490,54 @@ bool Session::light_eligible(const Actor &a, unsigned token) const
 void Session::qualify_light(Actor &a, unsigned token)
 {
     if (!token)
+    {
         return;
+    }
     const auto *weapon = detail::weapon(items_.at(token - 1).definition);
     if (nick_active_ && weapon && weapon->light)
+    {
         a.nick_origin = token;
+    }
     if (weapon && weapon->light &&
         std::find(a.light_origins.begin(), a.light_origins.end(), token) == a.light_origins.end())
+    {
         a.light_origins.push_back(token);
+    }
 }
 
 bool Session::has_weapon_reaction(const Actor &a, Cell from, Cell to) const
 {
     if (aloft(a))
+    {
         return false;
+    }
     const auto reaches = [&](int reach)
     {
         return distance(a.source.cell, from) <= reach && distance(a.source.cell, to) > reach;
     };
     if (reaches(def(a).reach))
+    {
         return true;
+    }
     for (const auto &item : items_)
+    {
         if (item.holder == a.source.id && !item.stowed)
+        {
             if (const auto *w = detail::weapon(item.definition); w && reaches(melee_reach))
+            {
                 return true;
+            }
+        }
+    }
     return false;
 }
 
 bool Session::weapon_reaction(const Actor &a, const Definition &weapon) const
 {
     if (!pending() || path_index_ >= path_.size())
+    {
         return false;
+    }
     return distance(a.source.cell, mover().source.cell) <= weapon.reach &&
            distance(a.source.cell, path_[path_index_]) > weapon.reach;
 }
@@ -5093,39 +5549,59 @@ void Session::validate_light() const
                                                         {
                                                             return has_nick(a);
                                                         })))
+    {
         throw std::runtime_error("Nick requires an actual mastery entitlement");
+    }
     if (light_active_ && (!physical_inventory_ || !items_active_))
+    {
         throw std::runtime_error("Light attacks require physical weapon identities");
+    }
     for (const auto &a : actors_)
     {
         if ((!nick_active_ && a.nick_origin) ||
             (a.nick_origin && std::find(a.light_origins.begin(), a.light_origins.end(),
                                         a.nick_origin) == a.light_origins.end()))
+        {
             throw std::runtime_error("Invalid Nick Attack action origin");
+        }
         if (a.light_extra > 2 || (!nick_active_ && a.light_extra) ||
             (a.light_extra &&
              (a.light_origins.empty() || a.source.id != actors_[turn_].source.id)) ||
             (a.light_extra == 1 && a.bonus) || (a.light_extra == 2 && !has_nick(a)))
+        {
             throw std::runtime_error("Invalid shared Light/Nick expenditure");
+        }
         if (!light_active_ &&
             (a.selected_weapon || !a.light_origins.empty() || a.definition.two_weapon_fighting))
+        {
             throw std::runtime_error("Missing Light attack checkpoint state");
+        }
         if (a.selected_weapon &&
             (a.selected_weapon > items_.size() || held_weapon(a) != a.selected_weapon))
+        {
             throw std::runtime_error("Invalid selected weapon");
+        }
         if (!a.light_origins.empty() && (a.source.id != actors_[turn_].source.id ||
                                          (a.actions.normal && (!a.surge_used || a.actions.surge))))
+        {
             throw std::runtime_error("Light attack lacks an Attack action");
+        }
         if (a.light_origins.size() > 1 && (!a.surge_used || a.actions.normal || a.actions.surge))
+        {
             throw std::runtime_error("Too many qualifying Attack actions");
+        }
         std::set<unsigned> seen;
         for (auto id : a.light_origins)
         {
             if (!id || id > items_.size() || !seen.insert(id).second)
+            {
                 throw std::runtime_error("Invalid qualifying weapon identity");
+            }
             const auto *w = detail::weapon(items_[id - 1].definition);
             if (!w || !w->light)
+            {
                 throw std::runtime_error("Qualifying weapon is not Light");
+            }
         }
     }
 }
@@ -5133,10 +5609,14 @@ void Session::validate_light() const
 void Session::initialize_items()
 {
     if (items_active_)
+    {
         return;
+    }
     std::vector<const Actor *> ordered;
     for (const auto &a : actors_)
+    {
         ordered.push_back(&a);
+    }
     std::sort(ordered.begin(), ordered.end(),
               [](auto a, auto b)
               {
@@ -5146,13 +5626,19 @@ void Session::initialize_items()
     {
         std::set<std::uint64_t> ids;
         for (const auto &source : a->source.inventory)
+        {
             if (!source.inventory_id || !source.quantity || !ids.insert(source.inventory_id).second)
+            {
                 throw std::runtime_error("Invalid carried item source");
+            }
+        }
         for (unsigned i = 0; i < a->definition.equipment_keys.size(); ++i)
         {
             const auto &key = a->definition.equipment_keys[i];
             if (key != "shield" && !detail::weapon(key))
+            {
                 continue;
+            }
             HeldItemView item{
                 static_cast<unsigned>(items_.size() + 1),
                 a->source.id,
@@ -5161,19 +5647,28 @@ void Session::initialize_items()
                 key,
                 {key == "shield" ? "Shield" : std::string(detail::weapon(key)->label), {}}};
             if (physical_inventory_)
+            {
                 for (const auto &source : a->source.inventory)
+                {
                     if (source.equipment_index == static_cast<int>(i))
                     {
                         if (source.definition != key || item.inventory_id)
+                        {
                             throw std::runtime_error("Carried item disagrees with equipped source");
+                        }
                         item.inventory_id = source.inventory_id;
                         item.quantity = source.quantity;
                     }
+                }
+            }
             items_.push_back(std::move(item));
         }
         if (physical_inventory_)
+        {
             for (const auto &source : a->source.inventory)
+            {
                 if (source.equipment_index < 0 && detail::weapon(source.definition))
+                {
                     items_.push_back({static_cast<unsigned>(items_.size() + 1),
                                       a->source.id,
                                       a->source.id,
@@ -5183,6 +5678,9 @@ void Session::initialize_items()
                                       source.inventory_id,
                                       source.quantity,
                                       true});
+                }
+            }
+        }
     }
     items_active_ = true;
 }
@@ -5191,21 +5689,39 @@ Definition Session::equipped_definition(const Actor &a, const std::vector<HeldIt
                                         unsigned selected) const
 {
     if (a.source.character_profile.empty())
+    {
         throw std::runtime_error("Equipment exchange requires a character equipment profile");
+    }
     if (!selected)
+    {
         selected = a.selected_weapon;
+    }
     std::vector<std::string> keys;
     for (const auto &key : profiles_->of(a.source.character_profile).equipment_keys)
+    {
         if (key != "shield" && !detail::weapon(key))
+        {
             keys.push_back(key);
+        }
+    }
     if (selected)
+    {
         for (const auto &item : items)
+        {
             if (item.id == selected && item.holder == a.source.id && !item.stowed)
+            {
                 keys.push_back(item.definition);
+            }
+        }
+    }
     for (const auto &item : items)
+    {
         if (item.holder == a.source.id && !item.stowed && item.id != selected &&
             !(a.shield_off && item.definition == "shield"))
+        {
             keys.push_back(item.definition);
+        }
+    }
     return profiles_->of(a.source.character_profile, std::span<const std::string>(keys));
 }
 
@@ -5213,8 +5729,12 @@ Loadout Session::thrown_loadout(const Actor &a, std::string_view weapon) const
 {
     std::vector<std::string> keys;
     for (const auto &key : a.definition.equipment_keys)
+    {
         if (!detail::weapon(key))
+        {
             keys.push_back(key);
+        }
+    }
     keys.emplace_back(weapon);
     return {profiles_->of(a.source.character_profile, std::span<const std::string>(keys)),
             a.selected_weapon, a.light_damage};
@@ -5235,7 +5755,9 @@ bool Session::carries(const Actor &a, std::string_view key) const
 std::string_view Session::carried_ranged_weapon(const Actor &a) const
 {
     if (a.source.character_profile.empty() || def(a).range)
+    {
         return {};
+    }
     const auto has_ammunition = [&](detail::Ammunition type)
     {
         return type == detail::Ammunition::none ||
@@ -5247,17 +5769,23 @@ std::string_view Session::carried_ranged_weapon(const Actor &a) const
                            });
     };
     for (const auto &item : a.source.inventory)
+    {
         if (const auto *w = detail::weapon(item.definition);
             w && w->ranged && item.quantity && has_ammunition(w->ammunition) &&
             (w->hands == 1 || !wears_shield(def(a))))
+        {
             return w->key;
+        }
+    }
     return {};
 }
 
 bool Session::shield_blocks_bow(const Actor &a) const
 {
     if (a.shield_off || !wears_shield(def(a)) || !carried_ranged_weapon(a).empty())
+    {
         return false;
+    }
     auto unshielded = a;
     unshielded.definition = without_shield(a.source.character_profile, a.definition);
     return !carried_ranged_weapon(unshielded).empty();
@@ -5277,15 +5805,23 @@ void Session::check_morale(Actor &a)
     {
         int remaining = 0, total = 0;
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side)
             {
                 total += max_hp(other);
                 if (!other.life.dead && !other.fled)
+                {
                     remaining += other.life.hp;
+                }
             }
+        }
         for (const auto &gone : fled_)
+        {
             if (gone.source.side == a.source.side)
+            {
                 total += gone.max_hp;
+            }
+        }
         const int percent = total ? remaining * 100 / total / 5 * 5 : 0;
         holds = percent > 0 && percent >= 100 - static_cast<int>(morale_);
     }
@@ -5311,8 +5847,10 @@ void Session::check_morale(Actor &a)
     if (!outpaced)
     {
         if (!a.panicked)
+        {
             log(a.source.name + " flees in panic.",
                 {"{name} flees in panic.", {{"name", a.source.name}}});
+        }
         a.panicked = true;
         return;
     }
@@ -5337,11 +5875,17 @@ bool Session::can_run_off(const Actor &a) const
         actors_[turn_].source.id != a.source.id || outcome_ != Outcome::ongoing || pending() ||
         temporary_offer_ || check_choice_ || graze_ || effect_waiting() || champion_move_ ||
         movement_left(a) < 5 || off_field_steps(a).empty())
+    {
         return false;
+    }
     for (const auto &other : actors_)
+    {
         if (other.source.side != a.source.side && conscious(other) &&
             current_speed(other) > current_speed(a))
+        {
             return false;
+        }
+    }
     return true;
 }
 
@@ -5349,9 +5893,13 @@ std::vector<Cell> Session::off_field_steps(const Actor &a) const
 {
     std::vector<Cell> steps;
     for (const auto step : {Cell{0, -1}, Cell{1, 0}, Cell{0, 1}, Cell{-1, 0}})
+    {
         if (const Cell next{a.source.cell.x + step.x, a.source.cell.y + step.y};
             !board_.contains(next))
+        {
             steps.push_back(next);
+        }
+    }
     return steps;
 }
 
@@ -5359,8 +5907,12 @@ void Session::run_off_field(Actor &a)
 {
     int fastest = 0;
     for (const auto &other : actors_)
+    {
         if (other.source.side != a.source.side && conscious(other))
+        {
             fastest = std::max(fastest, current_speed(other));
+        }
+    }
     if (current_speed(a) < fastest || (current_speed(a) == fastest && roll(2) == 1))
     {
         // Cornered, a broken monster fights on from now, not from its next turn.
@@ -5389,32 +5941,46 @@ void Session::remove_fled()
     {
         const auto &a = actors_[i];
         if (!a.fled)
+        {
             continue;
+        }
         // A summoned creature vanishes; it never leaves the fight as one that fled.
         if (detail::has_effect(a.effects, detail::EffectKind::summoned))
         {
             actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
             if (i < turn_)
+            {
                 --turn_;
+            }
             else if (turn_ >= actors_.size())
+            {
                 turn_ = 0;
+            }
             continue;
         }
         Departed gone{{}, a.surrendered ? 0 : a.life.hp, max_hp(a), armor_class(a), vitals(a)};
         gone.surrendered = a.surrendered;
         if (!a.source.character_profile.empty())
+        {
             for (const auto &gear : detail::thrown_gear_items)
+            {
                 gone.thrown_gear_left.emplace_back(
                     std::string(gear.key),
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
+            }
+        }
         // `a` is erased next, so its participant moves rather than copies.
         gone.source = std::move(a.source);
         fled_.push_back(std::move(gone));
         actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(i));
         if (i < turn_)
+        {
             --turn_;
+        }
         else if (turn_ >= actors_.size())
+        {
             turn_ = 0;
+        }
     }
 }
 
@@ -5438,9 +6004,13 @@ void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear
          {{"name", a.source.name}, {"item", label, true}, {"target", target.source.name}}});
     // Forcing an enemy's save on the thrower's own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
+    {
         extend_rage(a);
+    }
     if (saving_throw_succeeds(target, detail::Ability::dexterity, dc))
+    {
         return;
+    }
     if (gear.effect == detail::ThrownGearEffect::oil)
     {
         target.oiled_until_round = static_cast<int>(round_) + 10;
@@ -5474,7 +6044,9 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
     attacker.light_damage = light;
     attack_as(a, std::move(attacker), target, AttackRange::ranged);
     if (mastery_)
+    {
         mastery_->thrown_item = token;
+    }
 }
 
 Battlefield Session::zoned_board() const
@@ -5485,36 +6057,66 @@ Battlefield Session::zoned_board() const
     auto board = board_;
     // Walls of Force and Stone stop movement.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::force_wall || zone.kind == ZoneKind::stone_wall ||
             zone.kind == ZoneKind::ice_wall)
+        {
             for (const auto cell : zone.cells)
+            {
                 board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                     Terrain::obstacle;
+            }
+        }
+    }
     for (const auto &zone : zones_)
+    {
         // Wall of Thorns: 4 feet of movement for each foot, as Overgrowth.
         if (zone.kind == ZoneKind::thorns)
+        {
             for (const auto cell : zone.cells)
+            {
                 if (board.at(cell) != Terrain::obstacle)
+                {
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                         Terrain::overgrown;
+                }
+            }
+        }
+    }
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
             zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
             zone.kind == ZoneKind::spikes || zone.kind == ZoneKind::swarm ||
             zone.kind == ZoneKind::blades || zone.kind == ZoneKind::quake ||
             zone.kind == ZoneKind::sleet || zone.kind == ZoneKind::tentacles ||
             zone.kind == ZoneKind::hail)
+        {
             for (const auto cell : zone.cells)
+            {
                 if (board.at(cell) == Terrain::open)
+                {
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                         Terrain::difficult;
+                }
+            }
+        }
+    }
     // Plant Growth's Overgrowth: 4 feet of movement for each foot.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::overgrowth)
+        {
             for (const auto cell : zone.cells)
+            {
                 if (board.at(cell) != Terrain::obstacle)
+                {
                     board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                         Terrain::overgrown;
+                }
+            }
+        }
+    }
     return board;
 }
 
@@ -5523,6 +6125,7 @@ Cell Session::spectral_cell(const Actor &target, Cell from) const
     // The open, unoccupied square beside the target nearest `from`.
     std::optional<Cell> best;
     for (int dy = -1; dy <= 1; ++dy)
+    {
         for (int dx = -1; dx <= 1; ++dx)
         {
             const Cell cell{target.source.cell.x + dx, target.source.cell.y + dy};
@@ -5532,10 +6135,15 @@ Cell Session::spectral_cell(const Actor &target, Cell from) const
                             {
                                 return !other.life.dead && other.source.cell == cell;
                             }))
+            {
                 continue;
+            }
             if (!best || distance(cell, from) < distance(*best, from))
+            {
                 best = cell;
+            }
         }
+    }
     return best.value_or(target.source.cell);
 }
 
@@ -5595,7 +6203,9 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
         // stopping there.
         if (other.life.dead || downed_riser(other) || other.source.id == mover.source.id ||
             absent(other))
+        {
             continue;
+        }
         const bool nimble_pass = def(mover).nimble && def(other).size > def(mover).size;
         // Freedom of Movement: an unconscious enemy's square, Difficult
         // Terrain, costs nothing extra.
@@ -5608,70 +6218,124 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     // A finished Magic Circle: a creature of its type cannot enter it.
     std::vector<Cell> warded_cells;
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::circle && zone.ends_ms &&
             def(mover).creature_type == detail::ward_types[zone.warded] &&
             !in_zone(zone, mover.source.cell))
+        {
             warded_cells.insert(warded_cells.end(), zone.cells.begin(), zone.cells.end());
+        }
+    }
     // A Guardian of Faith holds its square: enemies cannot pass it.
     // A guardian whose caster has left the fight serves no one.
     for (const auto &zone : zones_)
+    {
         if (const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                              [&](const auto &a)
                                              {
                                                  return a.source.id == zone.caster;
                                              });
             zone.kind == ZoneKind::guardian && caster != actors_.end())
+        {
             occupants.push_back(
                 {zone.cells.front(), caster->source.side != mover.source.side, false, false});
+        }
+    }
     // Frightened: no square closer to a creature it fears and can see.
     auto board = zoned_board();
     // Spirit Guardians halve an enemy's Speed in their Emanation: here its
     // squares are Difficult Terrain to it.
     for (const auto &zone : zones_)
+    {
         if ((zone.kind == ZoneKind::guardians || zone.kind == ZoneKind::elementals) &&
             actor(zone.caster).source.side != mover.source.side)
+        {
             for (int y = 0; y < board.height; ++y)
+            {
                 for (int x = 0; x < board.width; ++x)
+                {
                     if (const Cell cell{x, y};
                         board.at(cell) == Terrain::open && in_emanation(zone, cell))
+                    {
                         board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                             Terrain::difficult;
+                    }
+                }
+            }
+        }
+    }
     if (free || winged)
+    {
         for (auto &tile : board.terrain)
+        {
             if (tile == Terrain::difficult)
+            {
                 tile = Terrain::open;
+            }
+        }
+    }
     for (const auto cell : warded_cells)
+    {
         if (cell != mover.source.cell)
+        {
             board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                 Terrain::obstacle;
+        }
+    }
     // Antilife Shell: only its caster, Constructs and Undead cross its edge.
     for (const auto &zone : zones_)
+    {
         if (const auto *caster = find_actor(zone.caster);
             zone.kind == ZoneKind::antilife && caster && caster->source.id != mover.source.id &&
             def(mover).creature_type != "construct" && def(mover).creature_type != "undead")
         {
             const bool inside = distance(caster->source.cell, mover.source.cell) <= 10;
             for (int y = 0; y < board.height; ++y)
+            {
                 for (int x = 0; x < board.width; ++x)
+                {
                     if ((distance(caster->source.cell, Cell{x, y}) <= 10) != inside)
+                    {
                         board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                             Terrain::obstacle;
+                    }
+                }
+            }
         }
+    }
     // Forcecage: no one crosses its bars or walls, in or out.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::cage || zone.kind == ZoneKind::box)
+        {
             for (int y = 0; y < board.height; ++y)
+            {
                 for (int x = 0; x < board.width; ++x)
+                {
                     if (in_zone(zone, Cell{x, y}) != in_zone(zone, mover.source.cell))
+                    {
                         board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                             Terrain::obstacle;
+                    }
+                }
+            }
+        }
+    }
     for (const auto *fear : fears_in_sight(mover))
+    {
         for (int y = 0; y < board.height; ++y)
+        {
             for (int x = 0; x < board.width; ++x)
+            {
                 if (distance({x, y}, fear->source.cell) <
                     distance(mover.source.cell, fear->source.cell))
+                {
                     board.terrain[static_cast<std::size_t>(y * board.width + x)] =
                         Terrain::obstacle;
+                }
+            }
+        }
+    }
     return {board, mover.source.cell, occupants, mover.effects.prone};
 }
 
@@ -5703,50 +6367,86 @@ Snapshot Session::snapshot() const
     }
     s.battlefield = zoned_board();
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::fog || zone.kind == ZoneKind::darkness ||
             zone.kind == ZoneKind::sleet || zone.kind == ZoneKind::stench ||
             zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers)
+        {
             s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
+        }
         else if (zone.kind == ZoneKind::silence)
+        {
             s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
+        }
         // Arcane Sword's sword and Conjure Fey's spirit are drawn as Spiritual
         // Weapon's force is.
         else if (zone.kind == ZoneKind::spiritual_weapon || zone.kind == ZoneKind::sword ||
                  zone.kind == ZoneKind::fey)
+        {
             s.spiritual_weapons.push_back(zone.cells.front());
+        }
         else if (zone.kind == ZoneKind::flaming_sphere)
+        {
             s.flaming_spheres.push_back(zone.cells.front());
+        }
         else if (zone.kind == ZoneKind::moonbeam || zone.kind == ZoneKind::pillar)
+        {
             s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
+        }
         else if (zone.kind == ZoneKind::holy || zone.kind == ZoneKind::antimagic ||
                  zone.kind == ZoneKind::elementals)
         {
             for (int y = 0; y < board_.height; ++y)
+            {
                 for (int x = 0; x < board_.width; ++x)
+                {
                     if (const Cell cell{x, y}; in_emanation(zone, cell))
+                    {
                         s.circles.push_back(cell);
+                    }
+                }
+            }
         }
         else if (zone.kind == ZoneKind::guardian || zone.kind == ZoneKind::hound)
+        {
             s.guardians.push_back(zone.cells.front());
+        }
         else if (zone.kind == ZoneKind::circle)
+        {
             s.circles.insert(s.circles.end(), zone.cells.begin(), zone.cells.end());
+        }
         else if (zone.kind == ZoneKind::animals || zone.kind == ZoneKind::swarm)
+        {
             s.spirits.insert(s.spirits.end(), zone.cells.begin(), zone.cells.end());
+        }
         else if (emanates(zone))
         {
             for (int y = 0; y < board_.height; ++y)
+            {
                 for (int x = 0; x < board_.width; ++x)
+                {
                     if (const Cell cell{x, y}; in_emanation(zone, cell))
+                    {
                         s.spirits.push_back(cell);
+                    }
+                }
+            }
         }
         else if (zone.kind == ZoneKind::wind_wall || zone.kind == ZoneKind::blades ||
                  zone.kind == ZoneKind::fire_wall || zone.kind == ZoneKind::thorns)
+        {
             s.walls.insert(s.walls.end(), zone.cells.begin(), zone.cells.end());
+        }
         else if (zone.kind == ZoneKind::tentacles)
+        {
             s.spirits.insert(s.spirits.end(), zone.cells.begin(), zone.cells.end());
+        }
+    }
     s.log_entries = log_;
     if (!initiative_choices_.empty())
+    {
         s.actor = initiative_choices_.front();
+    }
     if (graze_)
     {
         const auto &g = *graze_;
@@ -5799,11 +6499,15 @@ Snapshot Session::snapshot() const
             s.actor = s.optional_effect_choice->actor;
             if (s.optional_effect_choice->options.size() > 1 &&
                 actors_[turn_].source.side == Side::party)
+            {
                 s.actor = actors_[turn_].source.id;
+            }
         }
     }
     if (champion_move_)
+    {
         s.free_movement = FreeMovement{champion_move_->actor, champion_move_->remaining};
+    }
     if (check_choice_)
     {
         const auto &c = *check_choice_;
@@ -5817,8 +6521,10 @@ Snapshot Session::snapshot() const
                                actor(c.actor).winds};
     }
     if (temporary_offer_)
+    {
         s.temporary_hp_offer = TemporaryHpOffer{
             actors_[turn_].source.id, actors_[turn_].life.temporary_hp, *temporary_offer_};
+    }
     // What may be done now, the same for every combatant's weapons below.
     const auto offered = legal_commands();
     for (const auto &a : actors_)
@@ -5830,13 +6536,21 @@ Snapshot Session::snapshot() const
                              : a.dodge         ? "Dodging"
                                                : "Ready";
         if (def(a).slots[1])
+        {
             status += " | slots " + std::to_string(a.slots[1]);
+        }
         for (unsigned level = 2; level <= highest_slot_level; ++level)
+        {
             if (def(a).slots[level])
+            {
                 status +=
                     " | L" + std::to_string(level) + " slots " + std::to_string(a.slots[level]);
+            }
+        }
         if (def(a).winds)
+        {
             status += " | Second Wind " + std::to_string(a.winds);
+        }
         s.combatants.push_back({a.source.id, a.source.name, a.source.definition, a.source.side,
                                 a.source.cell, a.life.hp, max_hp(a), armor_class(a), a.initiative,
                                 champion_move_ && champion_move_->actor == a.source.id
@@ -5867,15 +6581,22 @@ Snapshot Session::snapshot() const
                                                 current_speed(other) > current_speed(a);
                                      });
         for (const auto &gear : detail::thrown_gear_items)
+        {
             if (a.source.side == Side::party && !a.source.character_profile.empty())
+            {
                 view.thrown_gear_left.emplace_back(
                     std::string(gear.key),
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
+            }
+        }
         view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
         if (physical_inventory_)
+        {
             for (const auto &item : items_)
+            {
                 if (item.holder == a.source.id)
+                {
                     if (const auto *w = detail::weapon(item.definition); w && w->thrown)
                     {
                         view.thrown_weapons.push_back({item.id, item.label,
@@ -5886,17 +6607,23 @@ Snapshot Session::snapshot() const
                                                                               c.item == item.id;
                                                                    })});
                     }
+                }
+            }
+        }
         view.selected_weapon = held_weapon(a);
         view.nick_mastery = has_nick(a);
         unsigned hand_index = 0;
         for (const auto &item : items_)
+        {
             if (item.holder == a.source.id)
+            {
                 if (const auto *w = detail::weapon(item.definition))
                 {
                     const std::string hand = item.stowed    ? "Carried"
                                              : hand_index++ ? "Other hand"
                                                             : "Main hand";
                     if (!item.stowed)
+                    {
                         view.weapons.push_back(
                             {item.id,
                              {"{hand} — {weapon}",
@@ -5909,6 +6636,7 @@ Snapshot Session::snapshot() const
                                                         c.verb == "weapon_select" &&
                                                         c.item == item.id;
                                              })});
+                    }
                     if (nick_weapon(a, item.id))
                     {
                         const auto option = [&](const char *verb, const char *label)
@@ -5926,11 +6654,17 @@ Snapshot Session::snapshot() const
                                              })});
                         };
                         if (!item.stowed && !w->ranged)
+                        {
                             option("nick_melee", "Nick attack — {weapon} ({hand})");
+                        }
                         if (!item.stowed && w->ranged)
+                        {
                             option("nick_ranged", "Nick ranged attack — {weapon} ({hand})");
+                        }
                         if (w->thrown)
+                        {
                             option("nick_throw", "Nick throw — {weapon} ({hand})");
+                        }
                     }
                     if (w->light && !a.light_origins.empty())
                     {
@@ -5949,99 +6683,169 @@ Snapshot Session::snapshot() const
                                              })});
                         };
                         if (!item.stowed && !w->ranged)
+                        {
                             option("light_melee", "Light attack — {weapon} ({hand})");
+                        }
                         if (!item.stowed && w->ranged)
+                        {
                             option("light_ranged", "Light ranged attack — {weapon} ({hand})");
+                        }
                         if (w->thrown)
+                        {
                             option("light_throw", "Light throw — {weapon} ({hand})");
+                        }
                     }
                 }
+            }
+        }
         if (a.effects.prone)
+        {
             view.conditions.push_back({"Prone", {}});
+        }
         // Its morale broke: it runs for the edge (MORALE-1).
         if (a.panicked)
+        {
             view.conditions.push_back({"Fleeing in panic", {}});
+        }
         if (def(a).cunning)
+        {
             view.bonus_actions = {"cunning_dash", "cunning_disengage", "cunning_hide"};
+        }
         if (def(a).sneak_level >= 3)
+        {
             view.bonus_actions.push_back("steady_aim");
+        }
         if (def(a).lay_on_hands)
         {
             view.bonus_actions.push_back("lay_on_hands");
             view.bonus_actions.push_back("lay_on_hands_cure");
             if (def(a).restoring_touch)
+            {
                 view.bonus_actions.push_back("lay_on_hands_restore");
+            }
         }
         if (def(a).rages)
+        {
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
+        }
         if (def(a).intimidating_presence)
+        {
             view.bonus_actions.insert(view.bonus_actions.end(),
                                       {"intimidating_presence", "intimidating_presence_rage"});
+        }
         if (def(a).natures_veil)
+        {
             view.bonus_actions.push_back("natures_veil");
+        }
         if (detail::knows_spell(def(a).spells, "conjure_woodland_beings"))
+        {
             view.bonus_actions.push_back("woodland_disengage");
+        }
         if (def(a).martial_arts)
+        {
             view.bonus_actions.push_back("martial_arts");
+        }
         if (def(a).innate_sorcery)
+        {
             view.bonus_actions.push_back("innate_sorcery");
+        }
         if (def(a).bardic_inspiration)
+        {
             view.bonus_actions.push_back("bardic_inspiration");
+        }
         if (def(a).wild_shapes)
         {
             for (const auto &form : detail::beast_forms)
+            {
                 view.bonus_actions.push_back("wild_shape_" + std::string(form.key));
+            }
             view.bonus_actions.push_back("leave_wild_shape");
         }
         if (def(a).sorcery_points)
         {
             for (unsigned level = 1; level <= 5; ++level)
+            {
                 view.bonus_actions.push_back("create_slot_" + std::to_string(level));
+            }
             for (unsigned level = 1; level <= highest_slot_level; ++level)
+            {
                 view.bonus_actions.push_back("convert_slot_" + std::to_string(level));
+            }
         }
         for (const auto &known : def(a).metamagic)
+        {
             if (known == "transmuted")
+            {
                 for (const auto type : transmuted_types)
+                {
                     view.bonus_actions.push_back("metamagic_transmuted_" + std::string(type));
+                }
+            }
             else
+            {
                 view.bonus_actions.push_back("metamagic_" + known);
+            }
+        }
         if (!def(a).metamagic.empty())
+        {
             view.bonus_actions.push_back("metamagic_cancel");
+        }
         if (def(a).focus)
+        {
             view.bonus_actions.insert(view.bonus_actions.end(),
                                       {"flurry_of_blows", "flurry_addle", "flurry_push",
                                        "flurry_topple", "flurry_stun", "patient_defense",
                                        "patient_defense_focus", "step_of_the_wind",
                                        "step_of_the_wind_focus", "step_of_the_wind_carry"});
+        }
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
+        {
             view.bonus_actions.push_back("divine_smite_free");
+        }
         for (const auto *smite : {"divine_smite", "searing_smite", "ensnaring_strike"})
+        {
             if (detail::knows_spell(def(a).spells, smite))
+            {
                 view.bonus_actions.push_back(smite);
+            }
+        }
         // Divine Smite and Shining Smite from each higher slot level the
         // character has.
         for (unsigned level = 2; level <= highest_slot_level; ++level)
         {
             if (!def(a).slots[level])
+            {
                 continue;
+            }
             if (detail::knows_spell(def(a).spells, "divine_smite"))
+            {
                 view.bonus_actions.push_back("divine_smite_" + std::to_string(level));
+            }
             if (detail::knows_spell(def(a).spells, "shining_smite"))
+            {
                 view.bonus_actions.push_back(level == 2 ? std::string("shining_smite")
                                                         : "shining_smite_" + std::to_string(level));
+            }
         }
         for (const auto &descriptor : resource_descriptors)
+        {
             if (descriptor.combat_view && capacity_of(descriptor, def(a)))
+            {
                 view.resources.push_back(resource_pool(descriptor, a, def(a)));
+            }
+        }
         add_initiate_pools(view.resources, a, def(a));
         add_trait_pool(view.resources, a, a.definition);
         // Explicit display order: this list feeds the combat cantrip dropdown,
         // so its order is observable in the UI and is not the table's order.
         for (const auto *id : {"fire_bolt", "chill_touch", "shocking_grasp", "eldritch_blast",
                                "poison_spray", "ray_of_frost", "sacred_flame"})
+        {
             if (detail::knows_spell(def(a).known_cantrips, id))
+            {
                 view.known_cantrips.push_back(id);
+            }
+        }
 
         if (def(a).hit_die)
         {
@@ -6051,15 +6855,23 @@ Snapshot Session::snapshot() const
                   {"die", std::to_string(def(a).hit_die)},
                   {"modifier", std::to_string(def(a).constitution)}}});
             if (def(a).dwarf)
+            {
                 view.hp_messages.push_back({"Dwarven Toughness: +{hp} maximum HP.",
                                             {{"hp", std::to_string(def(a).level)}}});
+            }
         }
         if (display.type)
+        {
             view.type_name = display.type;
+        }
         if (display.melee)
+        {
             view.melee_weapon = display.melee;
+        }
         if (display.ranged)
+        {
             view.ranged_weapon = display.ranged;
+        }
         view.ranged_attack_available = def(a).range > 0;
         auto &messages = s.combatants.back().status_messages;
         messages.push_back({a.life.dead ? "Dead"
@@ -6070,19 +6882,32 @@ Snapshot Session::snapshot() const
                                               : "Ready",
                             {}});
         if (def(a).slots[1])
+        {
             messages.push_back({"Spell slots: {count}", {{"count", std::to_string(a.slots[1])}}});
+        }
         if (def(a).slots[2])
+        {
             messages.push_back({"L2 slots: {count}", {{"count", std::to_string(a.slots[2])}}});
+        }
         for (unsigned level = 3; level <= highest_slot_level; ++level)
+        {
             if (def(a).slots[level])
+            {
                 messages.push_back({"L{level} slots: {count}",
                                     {{"level", std::to_string(level)},
                                      {"count", std::to_string(a.slots[level])}}});
+            }
+        }
         if (a.actions.surge)
+        {
             messages.push_back({"Action Surge action ready (no Magic).", {}});
+        }
         if (def(a).winds)
+        {
             messages.push_back({"Second Wind: {count}", {{"count", std::to_string(a.winds)}}});
+        }
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::chill_touch)
             {
                 Message message{"Chill Touch ({source}): cannot regain HP.",
@@ -6090,7 +6915,9 @@ Snapshot Session::snapshot() const
                 messages.push_back(message);
                 view.conditions.push_back(std::move(message));
             }
+        }
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::sap || effect.kind == detail::EffectKind::vex ||
                 effect.kind == detail::EffectKind::slow)
             {
@@ -6104,6 +6931,7 @@ Snapshot Session::snapshot() const
                 messages.push_back(message);
                 view.conditions.push_back(std::move(message));
             }
+        }
         if (detail::has_effect(a.effects, detail::EffectKind::shocking_grasp))
         {
             messages.push_back({"Shocking Grasp: cannot make Opportunity Attacks.", {}});
@@ -6125,6 +6953,7 @@ Snapshot Session::snapshot() const
             view.conditions.push_back({"Frost's Chill: Speed reduced by 10 feet.", {}});
         }
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::studied)
             {
                 Message message{
@@ -6133,6 +6962,7 @@ Snapshot Session::snapshot() const
                 messages.push_back(message);
                 view.conditions.push_back(std::move(message));
             }
+        }
         if (detail::has_effect(a.effects, detail::EffectKind::guiding_bolt))
         {
             messages.push_back(
@@ -6231,21 +7061,25 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::heated, "Heated (Heat Metal)"},
               std::pair{detail::EffectKind::scorched, "Scorched (Heat Metal)"},
               std::pair{detail::EffectKind::hidden, "Hidden"}})
+        {
             if (detail::has_effect(a.effects, kind))
             {
                 messages.push_back({label, {}});
                 s.combatants.back().status += std::string(" | ") + label;
                 s.combatants.back().conditions.push_back({label, {}});
             }
+        }
         for (const auto &[shown, label] :
              {std::pair{a.burning, "Burning"},
               std::pair{a.oiled_until_round >= static_cast<int>(round_), "Covered in oil"}})
+        {
             if (shown)
             {
                 messages.push_back({label, {}});
                 s.combatants.back().status += std::string(" | ") + label;
                 s.combatants.back().conditions.push_back({label, {}});
             }
+        }
         if (a.concentration.active())
         {
             messages.push_back({"Concentrating", {}});
@@ -6255,17 +7089,26 @@ Snapshot Session::snapshot() const
         // The art of a creature in a Polymorph form, a summoned creature, or
         // Mislead's double, which wears its caster's.
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::polymorphed)
+            {
                 s.combatants.back().form = std::string(
                     detail::beast_forms.at(static_cast<std::size_t>(effect.dc - 1)).key);
+            }
             else if (effect.kind == detail::EffectKind::illusory)
+            {
                 s.combatants.back().form = "copy:" + std::to_string(effect.source_actor);
+            }
             else if (effect.kind == detail::EffectKind::summoned)
+            {
                 s.combatants.back().form =
                     a.source.definition.starts_with("draconic-spirit") ? "draconic_spirit"
                     : a.source.definition.starts_with("giant-insect")  ? "giant_insect"
                                                                        : "animated_object";
+            }
+        }
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::wild_shape)
             {
                 const auto &form = detail::beast_forms.at(static_cast<std::size_t>(effect.dc - 1));
@@ -6276,7 +7119,9 @@ Snapshot Session::snapshot() const
                 s.combatants.back().status += " | Wild Shape (" + std::string(form.label) + ")";
                 s.combatants.back().conditions.push_back(shape);
             }
+        }
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::mirror_image)
             {
                 const Message duplicates{"Mirror Image ({count} duplicates)",
@@ -6286,6 +7131,7 @@ Snapshot Session::snapshot() const
                     " | Mirror Image (" + std::to_string(effect.dc) + " duplicates)";
                 s.combatants.back().conditions.push_back(duplicates);
             }
+        }
         if (detail::has_effect(a.effects, detail::EffectKind::poisoned))
         {
             messages.push_back({"Poisoned", {}});
@@ -6394,6 +7240,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     {
         // A new bond ends any other on either creature.
         for (auto &other : actors_)
+        {
             std::erase_if(other.effects.active,
                           [&](const auto &e)
                           {
@@ -6401,6 +7248,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                      ((e.source_scope == scope_ && e.source_actor == a.source.id) ||
                                       other.source.id == target.source.id);
                           });
+        }
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::warding_bond, 0);
         log(target.source.name + " gains Warding Bond.",
@@ -6438,9 +7286,13 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {"{name} gains {spell}.",
              {{"name", target.source.name}, {"spell", "False Life", true}}});
         if (target.life.temporary_hp.amount)
+        {
             temporary_offer_ = std::move(offered);
+        }
         else
+        {
             detail::grant_temporary_hp(target.life, offered, TemporaryHpChoice::use_new);
+        }
         return;
     }
     case detail::Rider::expeditious_retreat:
@@ -6505,7 +7357,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::dissonant_whispers:
         // Its Reaction carries it as far from the caster as it can.
         if (!target.reaction || detail::incapacitated(target.effects))
+        {
             return;
+        }
         {
             target.reaction = false;
             log(target.source.name + " flees from " + a.source.name + ".",
@@ -6516,7 +7370,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                 std::max(0, def(target).speed - detail::speed_penalty(target.effects));
             auto route = flight_route(a, target, budget);
             if (route.empty() || !path_.empty())
+            {
                 return;
+            }
             flight_ = Flight{target.source.id, budget};
             path_ = std::move(route);
             path_index_ = 0;
@@ -6648,15 +7504,21 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         const auto effect =
             detail::without_cast_suffix(verb).substr(std::string_view("eyebite_").size());
         if (effect == "asleep")
+        {
             detail::apply_asleep(target.effects, effect_source(a), a.source.name);
+        }
         else
+        {
             detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                         effect == "panicked" ? detail::EffectKind::eye_panic
                                                              : detail::EffectKind::sickened,
                                         0);
+        }
         if (!detail::has_effect(a.effects, detail::EffectKind::eyebiting))
+        {
             detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::eyebiting, 0);
+        }
         log(target.source.name + (effect == "asleep"     ? " falls asleep."
                                   : effect == "panicked" ? " panics."
                                                          : " is sickened."),
@@ -6682,8 +7544,10 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // The caster's soul takes the body (LEVELS-3); its own lies helpless.
         dominate(a, target, dc);
         if (detail::can_apply(a.effects))
+        {
             detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::jarred, 0);
+        }
         return;
     case detail::Rider::globe_of_invulnerability:
     {
@@ -6691,9 +7555,15 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         // lower, one more per slot level above 6.
         std::vector<Cell> cells;
         for (int y = 0; y < board_.height; ++y)
+        {
             for (int x = 0; x < board_.width; ++x)
+            {
                 if (distance(a.source.cell, Cell{x, y}) <= 10)
+                {
                     cells.push_back({x, y});
+                }
+            }
+        }
         Zone globe{a.source.id, ZoneKind::globe, std::move(cells)};
         globe.slot = slot_level_of(verb, spell);
         zones_.push_back(std::move(globe));
@@ -6718,7 +7588,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             static_cast<std::size_t>(std::max(1, casting_modifier(def(a)))), squares.size());
         const auto key = "animated-object-" + std::to_string(slot_level_of(verb, spell));
         for (std::size_t n = 0; n < count; ++n)
+        {
             (void)summon(a, key, "Animated Object", squares[n]);
+        }
         log(std::to_string(count) + " objects animate for " + a.source.name + ".",
             {"{count} objects animate for {name}.",
              {{"count", std::to_string(count)}, {"name", a.source.name}}});
@@ -6778,7 +7650,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
               {"type", "Necrotic", true}}});
         damage(target, amount);
         if (target.life.dead || !detail::can_apply(target.effects))
+        {
             return;
+        }
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::contagion,
                                     static_cast<int>(*detail::contagion_ability(verb)));
@@ -6950,8 +7824,10 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         refresh_form(target);
         change_speed(target, old_speed);
         if (target.life.temporary_hp.amount < form->hit_points)
+        {
             detail::grant_temporary_hp(target.life, {form->hit_points, "spell:animal_shapes"},
                                        TemporaryHpChoice::use_new);
+        }
         log(target.source.name + " turns into a " + std::string(form->label) + ".",
             {"{name} turns into a {form}.",
              {{"name", target.source.name}, {"form", std::string(form->label), true}}});
@@ -6976,8 +7852,10 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         change_speed(target, old_speed);
         // Temporary Hit Points equal to the Beast's Hit Points.
         if (target.life.temporary_hp.amount < form->hit_points)
+        {
             detail::grant_temporary_hp(target.life, {form->hit_points, "spell:polymorph"},
                                        TemporaryHpChoice::use_new);
+        }
         log(target.source.name + " turns into a " + std::string(form->label) + ".",
             {"{name} turns into a {form}.",
              {{"name", target.source.name}, {"form", std::string(form->label), true}}});
@@ -7115,12 +7993,14 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::magic_weapon:
         // Casting it again ends the earlier one.
         for (auto &other : actors_)
+        {
             std::erase_if(other.effects.active,
                           [&](const auto &e)
                           {
                               return e.kind == detail::EffectKind::magic_weapon &&
                                      e.source_actor == a.source.id && e.source_scope == scope_;
                           });
+        }
         // +1, +2 from a level-4 slot, +3 from a level-6 one.
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::magic_weapon,
@@ -7207,6 +8087,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::beacon_of_hope:
         // The game takes every ally within 30 feet, the caster included.
         for (auto &ally : actors_)
+        {
             if (ally.source.side == a.source.side && !ally.life.dead &&
                 distance(a.source.cell, ally.source.cell) <= spell.range &&
                 detail::can_apply(ally.effects))
@@ -7217,13 +8098,16 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                     {"{name} gains {spell}.",
                      {{"name", ally.source.name}, {"spell", "Beacon of Hope", true}}});
             }
+        }
         return;
     case detail::Rider::aid:
     {
         // Aid does not stack with itself; a creature already aided keeps its own.
         if (detail::has_effect(target.effects, detail::EffectKind::aid) || target.life.dead ||
             !detail::can_apply(target.effects))
+        {
             return;
+        }
         const int raise = 5 + 5 * static_cast<int>(upcast_steps(verb, spell));
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::aid, raise);
@@ -7239,8 +8123,12 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         const auto *contagion = [&]() -> const detail::Effect *
         {
             for (const auto &e : target.effects.active)
+            {
                 if (e.kind == detail::EffectKind::contagion)
+                {
                     return &e;
+                }
+            }
             return nullptr;
         }();
         const bool holds =
@@ -7299,7 +8187,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {"{name} gains {spell}.",
              {{"name", target.source.name}, {"spell", std::string(spell.label), true}}});
         if (spell.rider == detail::Rider::hunters_mark)
+        {
             reveal_lore(a, target);
+        }
         return;
     }
     case detail::Rider::command:
@@ -7337,7 +8227,9 @@ void Session::resolve_spell(const detail::SpellDef &spell, std::string_view verb
     cast_resolved_spell(spell, verb, a, std::span<const EntityId>(&target_id, 1));
     ready_vitality(actor(id), spell, damaged_before);
     if (was_invisible)
+    {
         end_invisibility(id);
+    }
     end_hiding(id);
 }
 
@@ -7374,9 +8266,13 @@ void Session::strike_with_spell(const detail::SpellDef &spell, std::string_view 
                SpellAttack{.dice = rolled, .type = type, .bursts = bursts, .spell = spell.id});
     // Repelling Blast pushes a Large or smaller creature 10 feet away.
     if (struck && d.repelling.contains(spell.id) && !target.life.dead && def(target).size <= 3)
+    {
         push_away(a, target, 2);
+    }
     if (struck)
+    {
         apply_rider(spell, verb, a, target, dc);
+    }
     else if (spell.rider == detail::Rider::acid_arrow && target.life.hp > 0)
     {
         // A miss splashes half the initial damage, without the later burn.
@@ -7388,20 +8284,28 @@ void Session::strike_with_spell(const detail::SpellDef &spell, std::string_view 
         damage(target, amount, false);
     }
     else if (d.evoker && !spell.level && target.life.hp > 0)
+    {
         potent_cantrip(target, spell, rolled);
+    }
     // Ice Knife's shard explodes, hit or miss.
     if (spell.rider == detail::Rider::ice_knife)
+    {
         ice_burst(a, target, steps);
+    }
 }
 
 void Session::missile_hits(Actor &a, Actor &target, const detail::SpellDef &spell,
                            const Dice &rolled, unsigned darts, bool split)
 {
     if (sanctuary_stops(a, target))
+    {
         return;
+    }
     const auto name = std::string(spell.label);
     if (spell.id == "magic_missile")
+    {
         ask_reaction(target, Asked::missile);
+    }
     if (spell.id == "magic_missile" &&
         detail::has_effect(target.effects, detail::EffectKind::shield))
     {
@@ -7412,18 +8316,25 @@ void Session::missile_hits(Actor &a, Actor &target, const detail::SpellDef &spel
     int total = 0;
     // Instances resolve separately so resistance applies per instance.
     for (unsigned n = 0; n < darts; ++n)
+    {
         total += resolved_damage(target, spell.damage,
                                  overchanneling_ && a.source.id == overchannel_caster_
                                      ? rolled.count * rolled.sides + rolled.bonus
                                      : dice(rolled));
+    }
     // The plain English keeps its original lower-case damage word so stored
     // combat logs stay byte identical. The template uses the translatable
     // capitalised name, matching the convention in resolved_damage().
     auto lowered = std::string(detail::damage_name(spell.damage));
     for (auto &c : lowered)
+    {
         if (c >= 'A' && c <= 'Z')
+        {
             c += 32;
+        }
+    }
     if (split)
+    {
         log(a.source.name + " casts " + name + " at " + target.source.name + " for " +
                 std::to_string(total) + " " + lowered + " damage.",
             {"{name} casts {spell} at {target} for {damage} {type} damage.",
@@ -7432,7 +8343,9 @@ void Session::missile_hits(Actor &a, Actor &target, const detail::SpellDef &spel
               {"target", target.source.name},
               {"damage", std::to_string(total)},
               {"type", std::string(detail::damage_name(spell.damage)), true}}});
+    }
     else
+    {
         log(a.source.name + " casts " + name + " for " + std::to_string(total) + " " + lowered +
                 " damage.",
             {"{name} casts {spell} for {damage} {type} damage.",
@@ -7440,6 +8353,7 @@ void Session::missile_hits(Actor &a, Actor &target, const detail::SpellDef &spel
               {"spell", name, true},
               {"damage", std::to_string(total)},
               {"type", std::string(detail::damage_name(spell.damage)), true}}});
+    }
     damage(target, total);
 }
 
@@ -7451,32 +8365,48 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const unsigned steps = upcast_steps(verb, spell);
     // Counterspell: a stopped spell keeps its slot.
     if (countered(a) || slowed_spell_fails(a, verb, spell))
+    {
         return;
+    }
     take_metamagic(a, spell);
     take_overchannel(a, spell, verb);
     if (casting_with(Metamagic::heightened))
+    {
         heightened_target_ = target_id;
+    }
     mark_heightened(a, spell);
     if (spell.level)
+    {
         pay_for_spell(a, verb, spell);
+    }
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(steps * spell.upcast.extra_dice);
     // A cantrip's dice grow with the caster's level; Eldritch Blast adds beams.
     if (!spell.level && spell.id != "eldritch_blast")
+    {
         rolled.count *= cantrip_tier(d);
+    }
     if (spell.add_casting_modifier)
+    {
         rolled.bonus = casting_modifier(d, spell.id);
+    }
     // Agonizing Blast adds the Charisma modifier to its cantrip's damage, and
     // Potent Spellcasting (Cleric 7) the Wisdom modifier to a Cleric cantrip's.
     if (d.agonizing.contains(spell.id))
+    {
         rolled.bonus += casting_modifier(d);
+    }
     if (d.potent_spellcasting && !spell.level && spell.dice.count &&
         detail::on_class_list(CharacterClass::cleric, spell.id))
+    {
         rolled.bonus += casting_modifier(d);
+    }
     // Potent Spellcasting (Druid 7, Elemental Fury) for a Druid cantrip.
     if (d.druid_potent && !spell.level && spell.dice.count &&
         detail::on_class_list(CharacterClass::druid, spell.id))
+    {
         rolled.bonus += casting_modifier(d);
+    }
     // Empowered Evocation (Wizard 10): the Intelligence modifier added to a
     // Wizard Evocation spell's damage roll. Magic Missile's darts are rolled
     // one by one, so they take none.
@@ -7484,7 +8414,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         spell.pattern != detail::SpellPattern::auto_damage &&
         spell.pattern != detail::SpellPattern::heal &&
         detail::on_class_list(CharacterClass::wizard, spell.id))
+    {
         rolled.bonus += casting_modifier(d);
+    }
     // Elemental Affinity (Sorcerer 6): the Charisma modifier added to the
     // damage roll of a spell of its type.
     if (d.elemental_affinity && spell.dice.count &&
@@ -7492,7 +8424,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         spell.pattern != detail::SpellPattern::heal &&
         cast_damage_type(detail::chromatic_type(verb).value_or(
             detail::burst_type(verb).value_or(spell.damage))) == *d.elemental_affinity)
+    {
         rolled.bonus += casting_modifier(d);
+    }
     const unsigned instances = spell.instances + steps * spell.upcast.extra_instances;
     const int dc = spell_dc(a, spell.id);
     const auto name = std::string(spell.label);
@@ -7518,7 +8452,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     }
     case detail::SpellPattern::buff:
         if (spell.concentration)
+        {
             begin_concentration(a, spell);
+        }
         apply_rider(spell, verb, a, actor(target_id), dc);
         return;
     case detail::SpellPattern::heal:
@@ -7527,12 +8463,15 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // more for each slot level above 6, and ends Blinded, Poisoned and
         // Befuddlement.
         if (spell.id == "heal")
+        {
             rolled.bonus = 70 + 10 * static_cast<int>(steps);
+        }
         for (const auto id : targets)
         {
             heal(actor(id),
                  healing_roll(actor(id), rolled) + disciple_of_life(a, slot_level_of(verb, spell)));
             if (spell.id == "heal")
+            {
                 std::erase_if(actor(id).effects.active,
                               [](const auto &e)
                               {
@@ -7540,6 +8479,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                                          gives_condition(e.kind, "poisoned") ||
                                          e.kind == detail::EffectKind::befuddled;
                               });
+            }
         }
         blessed_healer(a, spell, verb, targets);
         return;
@@ -7567,15 +8507,21 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             {
                 const Actor *best = nullptr;
                 for (const auto &other : actors_)
+                {
                     if (!other.life.dead && other.life.hp > 0 &&
                         other.source.side != a.source.side && !absent(other) &&
                         distance(a.source.cell, other.source.cell) <= spell_range(a, spell) &&
                         line_of_sight(a.source.cell, other.source.cell) &&
                         (!best || distance(a.source.cell, other.source.cell) <
                                       distance(a.source.cell, best->source.cell)))
+                    {
                         best = &other;
+                    }
+                }
                 if (!best)
+                {
                     break;
+                }
                 aim = best->source.id;
                 log("The beam turns to " + best->source.name + ".",
                     {"The beam turns to {target}.", {{"target", best->source.name}}});
@@ -7593,7 +8539,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // party member stays a target: each hit is a failed death save.
         std::vector<EntityId> rays(targets.begin(), targets.end());
         if (rays.size() == 1)
+        {
             rays.assign(instances, target_id);
+        }
         const auto alive = [&](EntityId id)
         {
             return !actor(id).life.dead;
@@ -7611,9 +8559,13 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                     distance(a.source.cell, other.source.cell) > spell.range ||
                     (spell.requires_sight ? !can_see(a, other)
                                           : !line_of_sight(a.source.cell, other.source.cell)))
+                {
                     continue;
+                }
                 if (!best || rank(other) < rank(*best))
+                {
                     best = &other;
+                }
             }
             return best ? best->source.id : 0;
         };
@@ -7626,7 +8578,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                                                rays.end(), alive);
                 ray = next != rays.end() ? *next : nearest();
                 if (!ray)
+                {
                     continue;
+                }
                 log("The ray turns to " + actor(ray).source.name + ".",
                     {"The ray turns to {target}.", {{"target", actor(ray).source.name}}});
             }
@@ -7648,14 +8602,22 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                                                 return entry.first == id;
                                             });
             if (found != struck.end())
+            {
                 ++found->second;
+            }
             else
+            {
                 struck.push_back({id, 1});
+            }
         }
         if (targets.size() == 1)
+        {
             struck.front().second = instances;
+        }
         for (const auto &[id, darts] : struck)
+        {
             missile_hits(a, actor(id), spell, rolled, darts, struck.size() > 1);
+        }
         return;
     }
     case detail::SpellPattern::save_damage:
@@ -7684,7 +8646,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                 if (struck.life.dead || absent(struck) || sealed_off(struck) ||
                     globe_wards(a, struck.source.cell, slot_level_of(verb, spell)) ||
                     (id != targets.front() && distance(first, struck.source.cell) > 30))
+                {
                     continue;
+                }
                 const bool saved = saving_throw_succeeds(struck, spell.save, dc);
                 const int amount = resolved_damage(
                     struck, spell.damage, evaded(struck, spell.save, true, saved, rolled_damage));
@@ -7700,9 +8664,13 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         }
         auto &target = actor(target_id);
         if (sanctuary_stops(a, target))
+        {
             return;
+        }
         if (spell.concentration)
+        {
             begin_concentration(a, spell);
+        }
         log(a.source.name + " casts " + name + " at " + target.source.name + ".",
             {"{name} casts {spell} at {target}.",
              {{"name", a.source.name}, {"spell", name, true}, {"target", target.source.name}}});
@@ -7711,11 +8679,15 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                            saving_throw_succeeds(target, spell.save, dc);
         // Phantasmal Killer ends on a success, after its half damage.
         if (saved && spell.rider == detail::Rider::phantasmal_killer)
+        {
             end_concentration(a);
+        }
         // Potent Cantrip: a saved-against cantrip still deals half damage.
         const bool halves = spell.half_on_success || (d.evoker && !spell.level);
         if (saved && !halves)
+        {
             return;
+        }
         // Halving comes before resistance, which resolved_damage applies.
         const int rolled_damage = spell_dice(a, rolled);
         const auto damage_type = cast_damage_type(spell.damage);
@@ -7729,7 +8701,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
               {"type", type, true}}});
         damage(target, amount);
         if (amount)
+        {
             curse_strikes(a, target);
+        }
         // Disintegrate: a creature it drops to 0 Hit Points turns to dust, which
         // only Resurrection revives (LEVELS-3).
         if (spell.rider == detail::Rider::disintegrate && amount > 0 && target.life.hp == 0)
@@ -7737,8 +8711,10 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
             target.life.dead = true;
             target.life.recovery = {};
             if (detail::can_apply(target.effects))
+            {
                 detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                             detail::EffectKind::dust, 0);
+            }
             log(target.source.name + " turns to dust.",
                 {"{name} turns to dust.", {{"name", target.source.name}}});
             fall(target);
@@ -7766,10 +8742,14 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         // the start of the caster's next turn.
         if (spell.rider == detail::Rider::finger_of_death && target.life.dead &&
             def(target).creature_type == "humanoid" && detail::can_apply(target.effects))
+        {
             detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::rising, 0);
+        }
         if (!saved && spell.rider != detail::Rider::none && !target.life.dead)
+        {
             apply_rider(spell, verb, a, target, dc);
+        }
         return;
     }
     case detail::SpellPattern::save_condition:
@@ -7777,7 +8757,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         auto &target = actor(target_id);
         if (spell.concentration &&
             !(spell.rider == detail::Rider::bestow_curse && slot_level_of(verb, spell) >= 5))
+        {
             begin_concentration(a, spell);
+        }
         if (spell.rider == detail::Rider::heat_metal)
         {
             std::erase_if(target.effects.active,
@@ -7787,8 +8769,10 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                                      e.source_actor == a.source.id;
                           });
             if (detail::can_apply(target.effects))
+            {
                 detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                             detail::EffectKind::heated, 1);
+            }
             heat_metal(a, target);
             return;
         }
@@ -7812,15 +8796,19 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
              !(charm_or_fear
                    ? charm_or_fear_save(target, spell.save, dc, fought_advantage(spell))
                    : saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))))
+        {
             apply_rider(spell, verb, a, target, dc);
+        }
         else if (spell.rider == detail::Rider::eyebite && detail::can_apply(target.effects))
         {
             // It cannot be targeted again by this casting.
             detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::eye_resisted, 0);
             if (!detail::has_effect(a.effects, detail::EffectKind::eyebiting))
+            {
                 detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                             detail::EffectKind::eyebiting, 0);
+            }
         }
         else if (spell.rider == detail::Rider::flesh_to_stone && detail::can_apply(target.effects))
         {
@@ -7865,7 +8853,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
     // Befuddlement stops the creature's spells.
     if (other.life.dead || rage_of(a) || sealed_off(a) ||
         detail::has_effect(a.effects, detail::EffectKind::befuddled))
+    {
         return;
+    }
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
     {
@@ -7875,7 +8865,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             spell.pattern == detail::SpellPattern::exploration ||
             spell.pattern == detail::SpellPattern::weapon_strike ||
             spell.pattern == detail::SpellPattern::reaction || spell.target != scope)
+        {
             continue;
+        }
         // Divine Intervention (Cleric 10): any Cleric spell of level 5 or lower,
         // prepared or not, cast as a Magic action without a slot.
         const bool intervene = !bonus_pass && d.divine_intervention && a.arcane > 0 &&
@@ -7887,12 +8879,16 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             !bonus_pass && d.arcanum.contains(spell.id) && !arcanum_spent(a, spell.level);
         const bool known = detail::knows_spell(d.spells, spell.id);
         if (!known && !intervene && !arcanum)
+        {
             continue;
+        }
         // Quickened Spell offers an Action spell in the Bonus Action pass.
         const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
         const bool usual = known && as_bonus == bonus_pass;
         if (!usual && !intervene && !arcanum)
+        {
             continue;
+        }
         // Natural Recovery (Land 6): a Circle spell once per Long Rest, no slot.
         const bool natural = usual && d.circle.contains(spell.id) && d.natural_recovery &&
                              !detail::has_effect(a.effects, detail::EffectKind::natural_cast);
@@ -7902,59 +8898,91 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             // Scorching Ray may strike a downed but living foe (the user's call).
             if (other.source.side == a.source.side ||
                 (other.life.hp <= 0 && spell.pattern != detail::SpellPattern::repeat_attack))
+            {
                 continue;
+            }
             break;
         case detail::SpellTarget::wounded_ally:
             if (other.source.side != a.source.side || other.life.hp >= max_hp(other))
+            {
                 continue;
+            }
             break;
         case detail::SpellTarget::any_creature:
             break;
         case detail::SpellTarget::ally:
             if (other.source.side != a.source.side)
+            {
                 continue;
+            }
             break;
         case detail::SpellTarget::self:
             if (other.source.id != a.source.id)
+            {
                 continue;
+            }
             break;
         case detail::SpellTarget::area:
             break; // Aimed at a point after it is chosen.
         case detail::SpellTarget::dying_ally:
             if (other.source.side != a.source.side || other.life.hp != 0 || other.life.stable)
+            {
                 continue;
+            }
             break;
         case detail::SpellTarget::corpse:
             continue; // Offered with the corpses it can raise (Animate Dead).
         }
         if (feet > spell_range(a, spell))
+        {
             continue;
+        }
         // No spell reaches into an Antimagic Field or through a Wall of Force.
         if (spell.target != detail::SpellTarget::area &&
             (sealed_off(other) || !line_of_effect(a.source.cell, other.source.cell)))
+        {
             continue;
+        }
         if (spell.requires_sight && !can_see(a, other))
+        {
             continue;
+        }
         if (spell.requires_effect_capacity && !detail::can_apply(other.effects))
+        {
             continue;
+        }
         if (spell.rider == detail::Rider::lesser_restoration && !restorable(other))
+        {
             continue;
+        }
         if (spell.rider == detail::Rider::remove_curse && !cursed(other))
+        {
             continue;
+        }
         if (spell.rider == detail::Rider::heat_metal && !wears_metal(other))
+        {
             continue;
+        }
         if (spell.humanoid_only && def(other).creature_type != "humanoid")
+        {
             continue;
+        }
         if (spell.not_self && other.source.id == a.source.id)
+        {
             continue;
+        }
         // Mage Armor needs a creature wearing no armor, and lasts only once.
         if (spell.rider == detail::Rider::mage_armor &&
             (!def(other).mage_armor_ac ||
              detail::has_effect(other.effects, detail::EffectKind::mage_armor)))
+        {
             continue;
+        }
         if (spell.rider == detail::Rider::expeditious_retreat &&
             detail::has_effect(other.effects, detail::EffectKind::expeditious_retreat))
+        {
             continue;
+        }
         if ((spell.rider == detail::Rider::blur &&
              detail::has_effect(other.effects, detail::EffectKind::blur)) ||
             (spell.rider == detail::Rider::invisibility &&
@@ -7978,16 +9006,22 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             (spell.rider == detail::Rider::greater_invisibility &&
              detail::has_effect(other.effects, detail::EffectKind::greater_invisible)) ||
             (spell.rider == detail::Rider::shillelagh && !d.shillelagh_weapon))
+        {
             continue;
+        }
         if (usual ? (as_bonus ? !a.bonus : !a.actions.available(true)) : !a.actions.available(true))
+        {
             continue;
+        }
         const bool aimed = spell.target == detail::SpellTarget::area;
         const auto offer = [&](std::string verb, std::string label)
         {
             // Globe of Invulnerability: a spell too weak for it is not cast at
             // a creature inside.
             if (!aimed && globe_wards(a, other.source.cell, slot_level_of(verb, spell)))
+            {
                 return;
+            }
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
@@ -7996,27 +9030,39 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         const auto offer_leveled = [&](const std::string &verb, const std::string &label)
         {
             if (usual && !a.spent_slot)
+            {
                 for (const unsigned level : cast_levels(a, spell))
                 {
                     auto [cast_verb, cast_label] = cast_at(spell, level, verb, label);
                     offer(std::move(cast_verb), std::move(cast_label));
                 }
+            }
             if (usual && (a.initiate_casts & initiate_bit(d, spell.id)))
+            {
                 offer(verb + std::string(detail::initiate_suffix), label + " (Magic Initiate)");
+            }
             if (intervene)
+            {
                 offer(verb + std::string(detail::intervention_suffix),
                       label + " (Divine Intervention)");
+            }
             if (arcanum)
+            {
                 offer(verb + std::string(detail::arcanum_suffix), label + " (Mystic Arcanum)");
+            }
             if (natural)
+            {
                 offer(verb + std::string(detail::natural_suffix), label + " (Natural Recovery)");
+            }
         };
         if (spell.id == "chromatic_orb")
         {
             for (const auto type : detail::chromatic_types)
+            {
                 offer_leveled("chromatic_orb_" + std::string(type),
                               "Chromatic Orb: " +
                                   std::string(detail::damage_name(detail::damage_type(type))));
+            }
             continue;
         }
         if (spell.rider == detail::Rider::guidance)
@@ -8028,16 +9074,20 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::resistance)
         {
             for (const auto type : detail::resistance_types)
+            {
                 offer("resistance_" + std::string(type),
                       "Resistance: " + std::string(detail::damage_name(detail::damage_type(type))));
+            }
             continue;
         }
         if (spell.id == "sorcerous_burst")
         {
             for (const auto type : detail::burst_types)
+            {
                 offer("sorcerous_burst_" + std::string(type),
                       "Sorcerous Burst: " +
                           std::string(detail::damage_name(detail::damage_type(type))));
+            }
             continue;
         }
         if (!spell.level)
@@ -8051,7 +9101,9 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             const auto levels = cast_levels(a, spell);
             if (a.spent_slot || levels.empty() || other.source.id != a.source.id)
+            {
                 continue;
+            }
             for (std::size_t type = 0; type < detail::ward_types.size(); ++type)
             {
                 auto [verb, label] = cast_at(
@@ -8071,13 +9123,17 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                  {"wisdom", "Wisdom"},
                  {"charisma", "Charisma"}}};
             for (const auto &[id, name] : abilities)
+            {
                 offer_leveled("contagion_" + std::string(id), "Contagion: " + std::string(name));
+            }
             continue;
         }
         if (spell.rider == detail::Rider::greater_restoration)
         {
             for (std::size_t n = 0; n < detail::greater_harms.size(); ++n)
+            {
                 if (has_greater_harm(other, n))
+                {
                     offer_leveled("greater_restoration_" + std::string(detail::greater_harms[n]),
                                   std::string("Greater Restoration: ") + (n == 4   ? "Befuddlement"
                                                                           : n == 3 ? "Petrified"
@@ -8085,22 +9141,30 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                                                                               ? "Hit Point maximum"
                                                                           : n ? "curse"
                                                                               : "Charmed"));
+                }
+            }
             continue;
         }
         if (spell.rider == detail::Rider::bestow_curse)
         {
             for (std::size_t n = 0; n < detail::curses.size(); ++n)
+            {
                 offer_leveled("bestow_curse_" + std::string(detail::curses[n]),
                               "Bestow Curse: " + curse_label(n));
+            }
             continue;
         }
         if (spell.rider == detail::Rider::protection_from_energy)
         {
             if (!detail::has_effect(other.effects, detail::EffectKind::energy_ward))
+            {
                 for (const auto type : detail::energy_types)
+                {
                     offer_leveled("protection_from_energy_" + std::string(type),
                                   "Protection from Energy: " +
                                       std::string(detail::damage_name(detail::damage_type(type))));
+                }
+            }
             continue;
         }
         // A wall: one entry for each direction it may run, and a ring when
@@ -8110,19 +9174,27 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             for (std::size_t n = 0; n < detail::wall_directions.size(); ++n)
             {
                 if (detail::wall_directions[n] == "ring" && !spell.ring)
+                {
                     continue;
+                }
                 const auto verb =
                     std::string(spell.id) + "_" + std::string(detail::wall_directions[n]);
                 // Wall of Fire: each direction twice, once for each burning side.
                 if (spell.rider == detail::Rider::wall_of_fire)
+                {
                     for (const std::size_t side : {2 * n, 2 * n + 1})
+                    {
                         offer_leveled(verb + "_" + std::string(detail::wall_sides[side]),
                                       std::string(spell.label) + " (" + wall_direction_label(n) +
                                           ", " + std::string(detail::wall_sides[side]) +
                                           " side burning)");
+                    }
+                }
                 else
+                {
                     offer_leveled(verb,
                                   std::string(spell.label) + " (" + wall_direction_label(n) + ")");
+                }
             }
             continue;
         }
@@ -8130,16 +9202,20 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::animal_shapes)
         {
             for (const auto &form : detail::beast_forms)
+            {
                 offer_leveled("animal_shapes_" + std::string(form.key),
                               "Animal Shapes: " + std::string(form.label));
+            }
             continue;
         }
         // Giant Insect: a centipede, a spider or a wasp.
         if (spell.rider == detail::Rider::giant_insect)
         {
             for (const auto form : {"centipede", "spider", "wasp"})
+            {
                 offer_leveled("giant_insect_" + std::string(form),
                               "Giant Insect: " + std::string(form));
+            }
             continue;
         }
         // Forcecage: a cage of bars or a solid box.
@@ -8154,9 +9230,11 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::conjure_minor_elementals)
         {
             for (const auto type : {"acid", "cold", "fire", "lightning"})
+            {
                 offer_leveled("conjure_minor_elementals_" + std::string(type),
                               "Conjure Minor Elementals: " +
                                   std::string(detail::damage_name(detail::damage_type(type))));
+            }
             continue;
         }
         // Eyebite: asleep, panicked or sickened, as chosen; not a creature that
@@ -8164,9 +9242,13 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::eyebite)
         {
             if (detail::has_effect(other.effects, detail::EffectKind::eye_resisted))
+            {
                 continue;
+            }
             for (const auto effect : {"asleep", "panicked", "sickened"})
+            {
                 offer_leveled("eyebite_" + std::string(effect), "Eyebite: " + std::string(effect));
+            }
             continue;
         }
         // Conjure Elemental: the spirit's element; Summon Dragon: the spirit's
@@ -8174,16 +9256,20 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::conjure_elemental)
         {
             for (const auto element : {"air", "earth", "fire", "water"})
+            {
                 offer_leveled("conjure_elemental_" + std::string(element),
                               "Conjure Elemental: " + std::string(element));
+            }
             continue;
         }
         if (spell.rider == detail::Rider::summon_dragon)
         {
             for (const auto type : {"acid", "cold", "fire", "lightning", "poison"})
+            {
                 offer_leveled("summon_dragon_" + std::string(type),
                               "Summon Dragon: " +
                                   std::string(detail::damage_name(detail::damage_type(type))));
+            }
             continue;
         }
         // Fire Shield: the warm shield or the chill one.
@@ -8197,8 +9283,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         if (spell.rider == detail::Rider::polymorph)
         {
             for (const auto &form : detail::beast_forms)
+            {
                 offer_leveled("polymorph_" + std::string(form.key),
                               "Polymorph: " + std::string(form.label));
+            }
             continue;
         }
         // Dimension Door: alone, or with a willing creature beside the caster.
@@ -8206,10 +9294,13 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             offer_leveled("dimension_door", "Dimension Door");
             if (usual && !a.spent_slot)
+            {
                 for (const auto &ally : actors_)
+                {
                     if (ally.source.side == a.source.side && ally.source.id != a.source.id &&
                         !ally.life.dead && !absent(ally) &&
                         distance(a.source.cell, ally.source.cell) <= 5)
+                    {
                         for (const unsigned level : cast_levels(a, spell))
                         {
                             auto [cast_verb, cast_label] =
@@ -8219,32 +9310,47 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                                                 std::move(cast_verb), std::move(cast_label), Cell{},
                                                 0, true});
                         }
+                    }
+                }
+            }
             continue;
         }
         if (spell.rider == detail::Rider::dragons_breath)
         {
             if (!detail::has_effect(other.effects, detail::EffectKind::dragons_breath))
+            {
                 for (const auto type : detail::dragon_types)
+                {
                     offer_leveled("dragons_breath_" + std::string(type),
                                   "Dragon's Breath: " +
                                       std::string(detail::damage_name(detail::damage_type(type))));
+                }
+            }
             continue;
         }
         if (spell.rider == detail::Rider::enlarge_reduce)
         {
             if (other.source.side == a.source.side)
+            {
                 offer_leveled("enlarge", "Enlarge");
+            }
             else
+            {
                 offer_leveled("reduce", "Reduce");
+            }
             continue;
         }
         // The caster chooses which one condition to end.
         if (spell.rider == detail::Rider::lesser_restoration)
         {
             for (const auto condition : detail::restoration_conditions)
+            {
                 if (has_condition(other, condition))
+                {
                     offer_leveled("lesser_restoration_" + std::string(condition),
                                   "Lesser Restoration: " + condition_name(condition));
+                }
+            }
             continue;
         }
         if (spell.rider == detail::Rider::command)
@@ -8282,7 +9388,9 @@ std::vector<Command> Session::offered_commands() const
 {
     std::vector<Command> commands;
     if (outcome_ != Outcome::ongoing)
+    {
         return commands;
+    }
     const auto add = [&](EntityId who, std::string verb, std::string label, EntityId target = 0,
                          Cell destination = Cell{})
     {
@@ -8294,31 +9402,53 @@ std::vector<Command> Session::offered_commands() const
         const auto &question = reaction_prompt_->question;
         const auto &who = actor(question.target);
         if (question.asked == Asked::redirect)
+        {
             add(who.source.id, "redirect", "Redirect the attack (1 Focus)");
+        }
         else if (question.asked == Asked::rebuke)
+        {
             add(who.source.id, "rebuke", "Cast Hellish Rebuke");
+        }
         else if (question.asked == Asked::boon)
+        {
             add(who.source.id, "giant_boon", std::string(giant_boon_label(def(who).giant)));
+        }
         else if (question.asked == Asked::endure)
+        {
             add(who.source.id, "stones_endurance", "Stone's Endurance");
+        }
         else if (question.asked == Asked::thunder)
+        {
             add(who.source.id, "storms_thunder", "Storm's Thunder");
+        }
         else if (question.asked == Asked::retaliate)
+        {
             add(who.source.id, "retaliate", "Retaliation attack");
+        }
         else if (question.asked == Asked::counter)
+        {
             add(who.source.id, "counterspell", "Cast Counterspell");
+        }
         else
         {
             if (can_shield(who) && !question.critical)
+            {
                 add(who.source.id, "shield",
                     question.asked == Asked::missile ? "Cast Shield against Magic Missile"
                                                      : "Cast Shield against the hit");
+            }
             if (question.asked == Asked::hit && can_deflect(who, question.deflectable))
+            {
                 add(who.source.id, "deflect", "Deflect Attacks");
+            }
             if (question.asked == Asked::hit && can_dodge(who))
+            {
                 add(who.source.id, "uncanny_dodge", "Uncanny Dodge");
+            }
             if (question.asked == Asked::hit && can_defend(who))
+            {
                 add(who.source.id, "superior_defense", "Superior Hunter's Defense");
+            }
         }
         add(who.source.id, "decline", "Decline reaction");
         return commands;
@@ -8357,23 +9487,43 @@ std::vector<Command> Session::offered_commands() const
         // caster has gone.
         Cell origin = caster.source.cell;
         if (area_->verb == "call_lightning_again")
+        {
             for (const auto &zone : zones_)
+            {
                 if (zone.kind == ZoneKind::storm && zone.caster == caster.source.id)
+                {
                     origin = zone.cells.front();
+                }
+            }
+        }
         // Nature's Sanctuary moves up to 60 feet from where it stands.
         const bool trees_move = area_->verb == "move_sanctuary";
         if (trees_move)
+        {
             for (const auto &zone : zones_)
+            {
                 if (zone.kind == ZoneKind::sanctuary && zone.caster == caster.source.id)
+                {
                     origin = zone.cells[zone.cells.size() / 2];
+                }
+            }
+        }
         for (int y = 0; y < board_.height; ++y)
+        {
             for (int x = 0; x < board_.width; ++x)
+            {
                 if (distance(origin, Cell{x, y}) <=
                         (trees_move ? 60 : spell_range(caster, spell)) &&
                     aimable(Cell{x, y}))
+                {
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
+                }
+            }
+        }
         if (spell.storm ? !area_->cubes.empty() : aimable(area_->center))
+        {
             add(caster.source.id, "area_cast", "Cast spell");
+        }
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
     }
@@ -8388,12 +9538,16 @@ std::vector<Command> Session::offered_commands() const
         {
             if (other.life.dead || distance(caster.source.cell, other.source.cell) > spell.range ||
                 sealed_off(other))
+            {
                 continue;
+            }
             // Abjure Foes: enemies the Paladin sees.
             if (spell.rider == detail::Rider::abjure_foes &&
                 (other.source.side == caster.source.side || other.life.hp == 0 ||
                  !can_see(caster, other)))
+            {
                 continue;
+            }
             // A dart or ray can only be aimed at a creature the spell could
             // strike alone; another one may be aimed at it again. A ray, not a
             // dart, may be aimed at a downed but living creature.
@@ -8402,12 +9556,16 @@ std::vector<Command> Session::offered_commands() const
                  (other.life.hp <= 0 && spell.pattern != detail::SpellPattern::repeat_attack) ||
                  (spell.requires_sight ? !can_see(caster, other)
                                        : !line_of_sight(caster.source.cell, other.source.cell))))
+            {
                 continue;
+            }
             add(caster.source.id, selection_->verb, std::string(spell.label), other.source.id);
         }
         // Every dart or ray is aimed before the spell is cast.
         if (!selection_->chosen.empty() && !split)
+        {
             add(caster.source.id, "spell_cast", "Cast spell");
+        }
         add(caster.source.id, "spell_cancel", "Cancel");
         return commands;
     }
@@ -8418,20 +9576,31 @@ std::vector<Command> Session::offered_commands() const
             const auto &a = actor(id);
             add(id, "initiative_keep", "Keep initiative");
             if (def(a).alert)
+            {
                 for (const auto &ally : actors_)
+                {
                     if (ally.source.id != id && ally.source.side == a.source.side &&
                         conscious(ally))
+                    {
                         add(id, "initiative_swap", "Swap initiative", ally.source.id);
+                    }
+                }
+            }
             if (metabolism_ready(a))
+            {
                 add(id, "uncanny_metabolism", "Uncanny Metabolism");
+            }
             if (persistent_ready(a))
+            {
                 add(id, "persistent_rage", "Persistent Rage: regain all Rage uses");
+            }
         }
         return commands;
     }
     const auto add_weapons = [&](const Actor &a, bool reacting)
     {
         for (const auto &item : items_)
+        {
             if (item.holder == a.source.id && !item.stowed && detail::weapon(item.definition) &&
                 item.id != held_weapon(a))
             {
@@ -8448,6 +9617,7 @@ std::vector<Command> Session::offered_commands() const
                     commands.back().item = item.id;
                 }
             }
+        }
     };
     const auto filtered = [&]
     {
@@ -8471,7 +9641,9 @@ std::vector<Command> Session::offered_commands() const
                 if (range == AttackRange::melee && command.verb != "melee" &&
                     command.verb != "opportunity" && command.verb != "light_melee" &&
                     command.verb != "nick_melee")
+                {
                     return false;
+                }
                 const auto &attacker = actor(command.actor);
                 const auto &target = actor(command.target);
                 // A thrown, light or nick attack is made with that weapon.
@@ -8506,11 +9678,17 @@ std::vector<Command> Session::offered_commands() const
             if (m.kind == detail::Mastery::cleave)
             {
                 for (auto target : cleave_targets(m))
+                {
                     add(m.actor, "effect_attack", "Cleave attack", target);
+                }
             }
             else
+            {
                 for (auto cell : push_cells(m))
+                {
                     add(m.actor, "effect_push", "Push", m.target, cell);
+                }
+            }
             add(m.actor, "effect_skip", "Skip", m.target);
             commands.back().item = 1;
             if (m.kind == detail::Mastery::cleave &&
@@ -8520,7 +9698,9 @@ std::vector<Command> Session::offered_commands() const
                                  return c.verb == "effect_attack" &&
                                         actor(c.target).source.side != actor(m.actor).source.side;
                              }))
+            {
                 std::rotate(commands.begin(), commands.end() - 1, commands.end());
+            }
         }
         else
         {
@@ -8543,12 +9723,16 @@ std::vector<Command> Session::offered_commands() const
         add(champion_move_->actor, "end", "Finish free move");
         const auto &mover_cell = actor(champion_move_->actor).source.cell;
         for (const auto cell : movement_reach(champion_move_->actor))
+        {
             // Forceful Blow's move closes on its target the whole way.
             if (!champion_move_->toward ||
                 distance(cell, actor(champion_move_->toward).source.cell) ==
                     distance(mover_cell, actor(champion_move_->toward).source.cell) -
                         distance(mover_cell, cell))
+            {
                 add(champion_move_->actor, "move", "Free move", 0, cell);
+            }
+        }
         return filtered();
     }
     if (check_choice_)
@@ -8572,85 +9756,127 @@ std::vector<Command> Session::offered_commands() const
                                           });
         add_weapons(*reactor, true);
         if (weapon_reaction(*reactor, def(*reactor)))
+        {
             add(pending(), "opportunity", "Opportunity attack", mover().source.id);
+        }
         add(pending(), "decline", "Decline reaction");
         return filtered();
     }
     const auto &a = actors_[turn_];
     if (!conscious(a))
+    {
         return filtered();
+    }
     const auto &d = def(a);
     const auto id = a.source.id;
     add(id, "end", "End turn");
     add_weapons(a, false);
     const int speed = a.aim_used ? 0 : std::max(0, d.speed - detail::speed_penalty(a.effects));
     if (a.effects.prone && speed > 0 && movement_left(a) >= speed / 2)
+    {
         add(id, "stand_up", "Stand up");
+    }
     if (d.surges && a.surges > 0 && !a.surge_used)
+    {
         add(id, "action_surge", "Action Surge", id);
+    }
     if (a.bonus && d.sneak_level >= 3 && !a.moved)
+    {
         add(id, "steady_aim", "Steady Aim");
+    }
     if (a.bonus && d.cunning)
     {
         add(id, "cunning_dash", "Cunning Action: Dash");
         add(id, "cunning_disengage", "Cunning Action: Disengage");
         if (can_hide(a))
+        {
             add(id, "cunning_hide", "Cunning Action: Hide");
+        }
     }
     if (a.bonus && a.rushes > 0)
+    {
         add(id, "adrenaline_rush", "Adrenaline Rush", id);
+    }
     // The Cleric's Channel Divinity: Divine Spark heals or harms another creature
     // within 30 feet; Turn Undead needs an Undead enemy within 30 feet.
     // Revivify: an adjacent ally dead no more than a minute, while the purse
     // holds its offering.
     if (const auto &raise = *detail::find_spell("revivify");
         a.actions.available(true) && !a.spent_slot && detail::knows_spell(d.spells, raise.id))
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side && other.life.dead &&
                 distance(a.source.cell, other.source.cell) <= raise.range &&
                 detail::has_effect(other.effects, detail::EffectKind::fallen) &&
                 !detail::has_effect(other.effects, detail::EffectKind::dust) &&
                 std::cmp_less_equal(300 * def(other).level, gold_ - offerings_gold_))
+            {
                 for (const unsigned level : cast_levels(a, raise))
                 {
                     auto [verb, label] = cast_at(raise, level, "revivify", "Revivify");
                     add(id, std::move(verb), std::move(label), other.source.id);
                 }
+            }
+        }
+    }
     // Animate Dead: an enemy's Small or Medium Humanoid corpse within 10 feet,
     // while the caster is not already casting it.
     // Create Undead too (LEVELS-3: at any hour).
     for (const auto *raising : {"animate_dead", "create_undead"})
+    {
         if (const auto &animate = *detail::find_spell(raising);
             a.actions.available(true) && !a.spent_slot &&
             detail::knows_spell(d.spells, animate.id) &&
             !detail::has_effect(a.effects, detail::EffectKind::animating))
+        {
             for (const auto &other : actors_)
+            {
                 if (animatable(other, a))
+                {
                     for (const unsigned level : cast_levels(a, animate))
                     {
                         auto [verb, label] = cast_at(animate, level, std::string(animate.id),
                                                      std::string(animate.label));
                         add(id, std::move(verb), std::move(label), other.source.id);
                     }
+                }
+            }
+        }
+    }
     // Dispel Evil and Good: a Magic action ends it to free an ally within 5
     // feet from such creatures' charm or fear, or to send one of them home.
     if (detail::has_effect(a.effects, detail::EffectKind::dispel_evil) && a.actions.available(true))
+    {
         for (const auto &other : actors_)
         {
             if (other.life.dead || distance(a.source.cell, other.source.cell) > 5)
+            {
                 continue;
+            }
             if (other.source.side == a.source.side && enchanted_by_otherworld(other))
+            {
                 add(id, "dispel_break", "Dispel Evil and Good: Break Enchantment", other.source.id);
+            }
             if (other.source.side != a.source.side && other.life.hp > 0 && otherworldly(other) &&
                 can_see(a, other))
+            {
                 add(id, "dispel_dismissal", "Dispel Evil and Good: Dismissal", other.source.id);
+            }
         }
+    }
     // Abjure Foes: enemies the Paladin sees within 60 feet.
     if (a.channel_divinity > 0 && a.actions.available() && d.abjure_foes)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 &&
                 distance(a.source.cell, other.source.cell) <= 60 && can_see(a, other))
+            {
                 add(id, "abjure_foes", "Abjure Foes", other.source.id);
+            }
+        }
+    }
     if (a.channel_divinity > 0 && a.actions.available() && d.divine_spark)
     {
         bool undead = false;
@@ -8658,19 +9884,27 @@ std::vector<Command> Session::offered_commands() const
         {
             const int feet = distance(a.source.cell, other.source.cell);
             if (other.source.id == a.source.id || other.life.dead || feet > 30)
+            {
                 continue;
+            }
             if (other.source.side != a.source.side && other.life.hp > 0 &&
                 def(other).creature_type == "undead")
+            {
                 undead = true;
+            }
             const bool wounded_ally = other.source.side == a.source.side &&
                                       other.life.hp < max_hp(other) &&
                                       !detail::healing_blocked(other.effects);
             const bool enemy = other.source.side != a.source.side && other.life.hp > 0;
             if ((wounded_ally || enemy) && can_see(a, other))
+            {
                 add(id, "divine_spark", "Divine Spark", other.source.id);
+            }
         }
         if (undead)
+        {
             add(id, "turn_undead", "Turn Undead", id);
+        }
         // Preserve Life (Life Domain) needs a Bloodied ally within 30 feet.
         if (d.life_domain &&
             std::any_of(actors_.begin(), actors_.end(),
@@ -8680,7 +9914,9 @@ std::vector<Command> Session::offered_commands() const
                                    other.life.hp * 2 <= max_hp(other) &&
                                    distance(a.source.cell, other.source.cell) <= 30;
                         }))
+        {
             add(id, "preserve_life", "Preserve Life", id);
+        }
     }
     // A creature caught by Ensnaring Strike or Entangle may spend its Action to
     // break free.
@@ -8693,45 +9929,67 @@ std::vector<Command> Session::offered_commands() const
                                e.kind == detail::EffectKind::webbed ||
                                e.kind == detail::EffectKind::tentacled;
                     }))
+    {
         add(id, "escape",
             detail::has_effect(a.effects, detail::EffectKind::webbed)      ? "Escape the webs"
             : detail::has_effect(a.effects, detail::EffectKind::tentacled) ? "Escape the tentacles"
                                                                            : "Escape the vines",
             id);
+    }
     // Sleep ends when someone within 5 feet spends an Action to shake the
     // sleeper; Hypnotic Pattern too, for anyone else.
     if (a.actions.available())
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.id != a.source.id && distance(a.source.cell, other.source.cell) <= 5 &&
                 ((other.source.side == a.source.side &&
                   (detail::has_effect(other.effects, detail::EffectKind::drowsy) ||
                    detail::has_effect(other.effects, detail::EffectKind::asleep) ||
                    detail::has_effect(other.effects, detail::EffectKind::knocked_out))) ||
                  detail::has_effect(other.effects, detail::EffectKind::entranced)))
+            {
                 add(id, "shake_awake", "Shake awake", other.source.id);
+            }
+        }
+    }
     // Martial Arts: an Unarmed Strike as a Bonus Action.
     if (a.bonus && d.martial_arts)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 distance(a.source.cell, other.source.cell) <= 5)
+            {
                 add(id, "martial_arts", "Unarmed Strike", other.source.id);
+            }
+        }
+    }
     // Font of Magic: a Bonus Action turns Sorcery Points into a slot; a slot
     // becomes Sorcery Points without an action.
     if (d.sorcery_points)
     {
         // A slot of level 1 to 5, from Sorcerer level 2, 3, 5, 7 and 9.
         for (unsigned level = 1; level <= 5; ++level)
+        {
             if (a.bonus && d.level >= font_of_magic_level[level] &&
                 a.lay_on_hands >= font_of_magic_cost[level] && a.slots[level] < slot_room(d, level))
+            {
                 add(id, "create_slot_" + std::to_string(level),
                     "Font of Magic: create a level-" + std::to_string(level) + " slot (" +
                         std::to_string(font_of_magic_cost[level]) + " Sorcery Points)");
+            }
+        }
         for (unsigned level = 1; level <= highest_slot_level; ++level)
+        {
             if (a.slots[level] > 0 && a.lay_on_hands < d.sorcery_points)
+            {
                 add(id, "convert_slot_" + std::to_string(level),
                     "Font of Magic: a level-" + std::to_string(level) + " slot into " +
                         std::to_string(level) +
                         (level == 1 ? " Sorcery Point" : " Sorcery Points"));
+            }
+        }
     }
     // Metamagic: ready an affordable option for the next spell this turn, no
     // action; the Sorcery Points are spent when a spell it changes is cast.
@@ -8741,10 +9999,15 @@ std::vector<Command> Session::offered_commands() const
         const auto ready = readied_metamagic(a);
         int committed = 0;
         for (const auto &r : ready)
+        {
             committed += metamagic_cost(r.option);
+        }
         if (!ready.empty())
+        {
             add(id, "metamagic_cancel", "Metamagic: cancel");
+        }
         if (ready.size() < metamagic_room(a))
+        {
             for (const auto &known : d.metamagic)
             {
                 const auto index = static_cast<std::size_t>(
@@ -8760,50 +10023,79 @@ std::vector<Command> Session::offered_commands() const
                         {
                             return r.option == option;
                         }))
+                {
                     continue;
+                }
                 const std::string points = " (" + std::to_string(cost) +
                                            (cost == 1 ? " Sorcery Point)" : " Sorcery Points)");
                 const std::string label(metamagic_labels[index]);
                 if (option != Metamagic::transmuted)
+                {
                     add(id, "metamagic_" + known, "Metamagic: " + label + points);
+                }
                 else
+                {
                     for (const auto type : transmuted_types)
+                    {
                         add(id, "metamagic_transmuted_" + std::string(type),
                             "Metamagic: " + label + " to " +
                                 std::string(detail::damage_name(detail::damage_type(type))) +
                                 points);
+                    }
+                }
             }
+        }
     }
     // Font of Inspiration (Bard 5): a spell slot, no action, gives back a
     // Bardic Inspiration use.
     if (d.font_of_inspiration && a.arcane < arcane_capacity(d))
+    {
         for (unsigned level = 1; level <= highest_slot_level; ++level)
+        {
             if (a.slots[level] > 0)
+            {
                 add(id, "font_of_inspiration_" + std::to_string(level),
                     "Font of Inspiration (a level-" + std::to_string(level) + " slot)");
+            }
+        }
+    }
     // Bardic Inspiration: a Bonus Action gives an ally within 60 feet the die.
     if (a.bonus && d.bardic_inspiration && a.arcane > 0)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side && other.source.id != id && !other.life.dead &&
                 distance(a.source.cell, other.source.cell) <= 60 &&
                 !detail::has_effect(other.effects, detail::EffectKind::inspired))
+            {
                 add(id, "bardic_inspiration", "Bardic Inspiration", other.source.id);
+            }
+        }
+    }
     // Innate Sorcery: a Bonus Action, twice per Long Rest.
     if (a.bonus && d.innate_sorcery && a.free_casts > 0 &&
         !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
+    {
         add(id, "innate_sorcery", "Innate Sorcery");
+    }
     // Sorcery Incarnate (Sorcerer 7): with no use left, 2 Sorcery Points.
     else if (a.bonus && d.sorcery_incarnate && a.lay_on_hands >= 2 &&
              !detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
+    {
         add(id, "innate_sorcery_points", "Innate Sorcery (2 Sorcery Points)");
+    }
     // Dragon Wings (Sorcerer 14): once per Long Rest, or for 3 Sorcery Points.
     if (a.bonus && d.dragon_wings &&
         !detail::has_effect(a.effects, detail::EffectKind::dragon_wings))
     {
         if (!detail::has_effect(a.effects, detail::EffectKind::wings_used))
+        {
             add(id, "dragon_wings", "Dragon Wings");
+        }
         else if (a.lay_on_hands >= 3)
+        {
             add(id, "dragon_wings_points", "Dragon Wings (3 Sorcery Points)");
+        }
     }
     // Monk's Focus: Patient Defense and Step of the Wind, free or with a Focus
     // Point, and Flurry of Blows for a Focus Point.
@@ -8812,20 +10104,28 @@ std::vector<Command> Session::offered_commands() const
     const auto offer_carry = [&]
     {
         if (!d.heightened_focus || a.surges <= 0)
+        {
             return;
+        }
         for (const auto &ally : actors_)
+        {
             if (ally.source.side == a.source.side && ally.source.id != id && !ally.life.dead &&
                 def(ally).size <= 3 && distance(a.source.cell, ally.source.cell) <= 5)
+            {
                 add(id, "step_of_the_wind_carry",
                     "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)",
                     ally.source.id);
+            }
+        }
     };
     // Fleet Step: Step of the Wind right after another Bonus Action.
     if (!a.bonus && a.fleet_step)
     {
         add(id, "step_of_the_wind", "Step of the Wind: Dash");
         if (a.surges > 0)
+        {
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
+        }
         offer_carry();
     }
     if (a.bonus && d.focus)
@@ -8838,6 +10138,7 @@ std::vector<Command> Session::offered_commands() const
             add(id, "patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)");
             add(id, "step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)");
             for (const auto &other : actors_)
+            {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     distance(a.source.cell, other.source.cell) <= 5)
                 {
@@ -8851,13 +10152,18 @@ std::vector<Command> Session::offered_commands() const
                     }
                     // Stunning Strike on a Flurry hit costs one more Focus Point.
                     if (d.stunning_strike && d.martial_arts && !a.stun_used && a.surges > 1)
+                    {
                         add(id, "flurry_stun", "Flurry of Blows: Stunning Strike", other.source.id);
+                    }
                 }
+            }
         }
     }
     // Animal Shapes: a Bonus Action leaves the form.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::animal_shaped))
+    {
         add(id, "leave_animal_shape", "Leave the animal shape");
+    }
     // Wild Resurgence (Druid 5): with no Wild Shape use left, a spell slot, no
     // action, once a turn, gives one; once per Long Rest a use gives a
     // level-1 slot.
@@ -8869,11 +10175,17 @@ std::vector<Command> Session::offered_commands() const
                                                     return e.kind == detail::EffectKind::resurged &&
                                                            !e.dc;
                                                 }))
+        {
             for (unsigned level = 1; level <= highest_slot_level; ++level)
+            {
                 if (a.slots[level] > 0)
+                {
                     add(id, "wild_resurgence_" + std::to_string(level),
                         "Wild Resurgence: a level-" + std::to_string(level) +
                             " slot for Wild Shape");
+                }
+            }
+        }
         if (a.channel_divinity > 0 && a.slots[1] < d.slots[1] &&
             std::none_of(
                 a.effects.active.begin(), a.effects.active.end(),
@@ -8881,18 +10193,28 @@ std::vector<Command> Session::offered_commands() const
                 {
                     return e.kind == detail::EffectKind::resurged && e.dc;
                 }))
+        {
             add(id, "wild_resurgence_slot", "Wild Resurgence: Wild Shape for a level-1 slot");
+        }
     }
     // Wild Shape: a Bonus Action takes a Beast form or leaves it.
     if (a.bonus && d.wild_shapes)
     {
         if (a.channel_divinity > 0)
+        {
             for (const auto &form : detail::beast_forms)
+            {
                 if (d.level >= form.level)
+                {
                     add(id, "wild_shape_" + std::string(form.key),
                         "Wild Shape: " + std::string(form.label));
+                }
+            }
+        }
         if (a.form)
+        {
             add(id, "leave_wild_shape", "Leave Wild Shape");
+        }
     }
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
     // extends it.
@@ -8900,20 +10222,30 @@ std::vector<Command> Session::offered_commands() const
     {
         const auto *rage = rage_of(a);
         if (!rage && a.channel_divinity > 0 && !d.heavy_armor)
+        {
             add(id, "rage", "Rage");
+        }
         else if (rage && !d.persistent_rage && rage->remaining_ms <= detail::round_ms)
+        {
             add(id, "extend_rage", "Extend Rage");
+        }
     }
     if (a.bonus && d.intimidating_presence)
     {
         if (a.free_casts > 0)
+        {
             add(id, "intimidating_presence", "Intimidating Presence");
+        }
         else if (a.channel_divinity > 0)
+        {
             add(id, "intimidating_presence_rage", "Intimidating Presence (1 Rage)");
+        }
     }
     // Expeditious Retreat: Dash as a Bonus Action while it lasts.
     if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::expeditious_retreat))
+    {
         add(id, "retreat_dash", "Expeditious Retreat: Dash");
+    }
     // Conjure Woodland Beings: Disengage as a Bonus Action while it lasts.
     if (a.bonus && !a.disengaged &&
         std::any_of(zones_.begin(), zones_.end(),
@@ -8921,23 +10253,37 @@ std::vector<Command> Session::offered_commands() const
                     {
                         return zone.kind == ZoneKind::beings && zone.caster == id;
                     }))
+    {
         add(id, "woodland_disengage", "Disengage (Conjure Woodland Beings)");
+    }
     // Nature's Veil (Ranger 14): a Bonus Action makes the Ranger Invisible
     // until the end of its next turn.
     if (a.bonus && d.natures_veil && a.lay_on_hands > 0 &&
         !detail::has_effect(a.effects, detail::EffectKind::veiled) && detail::can_apply(a.effects))
+    {
         add(id, "natures_veil", "Nature's Veil", id);
+    }
     // Flaming Sphere: a Bonus Action rolls it up to 30 feet into a creature's
     // space, where it stops beside the creature and burns it.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::flaming_sphere && zone.caster == id && a.bonus)
+        {
             for (const auto &other : actors_)
+            {
                 if (other.life.hp > 0 && !other.life.dead && other.source.id != id &&
                     distance(zone.cells.front(), other.source.cell) <= 30)
+                {
                     add(id, "roll_flaming_sphere", "Roll Flaming Sphere", other.source.id);
+                }
+            }
+        }
+    }
     // Heat Metal: a Bonus Action on later turns heats the metal again.
     if (a.bonus)
+    {
         for (const auto &other : actors_)
+        {
             if (!other.life.dead && other.life.hp > 0 &&
                 distance(a.source.cell, other.source.cell) <= 60 &&
                 std::any_of(other.effects.active.begin(), other.effects.active.end(),
@@ -8946,14 +10292,26 @@ std::vector<Command> Session::offered_commands() const
                                 return e.kind == detail::EffectKind::heated &&
                                        e.source_actor == id && !e.dc;
                             }))
+            {
                 add(id, "heat_metal_again", "Heat Metal again", other.source.id);
+            }
+        }
+    }
     // Moonbeam: a Magic action moves the beam up to 60 feet, here onto a creature.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::moonbeam && zone.caster == id && a.actions.available(true))
+        {
             for (const auto &other : actors_)
+            {
                 if (other.life.hp > 0 && !other.life.dead && !in_zone(zone, other.source.cell) &&
                     distance(zone.cells.front(), other.source.cell) <= 60)
+                {
                     add(id, "move_moonbeam", "Move Moonbeam", other.source.id);
+                }
+            }
+        }
+    }
     // Call Lightning: a Magic action calls another bolt while it lasts.
     if (a.actions.available(true) && std::any_of(zones_.begin(), zones_.end(),
                                                  [&](const auto &zone)
@@ -8961,8 +10319,10 @@ std::vector<Command> Session::offered_commands() const
                                                      return zone.kind == ZoneKind::storm &&
                                                             zone.caster == id;
                                                  }))
+    {
         commands.push_back({revision_, id, 0, "call_lightning_again",
                             "Call Lightning: another bolt", Cell{}, 0, true});
+    }
     // Sunbeam: a Magic action fires a new Line while it lasts.
     if (a.actions.available(true) && std::any_of(zones_.begin(), zones_.end(),
                                                  [&](const auto &zone)
@@ -8970,30 +10330,50 @@ std::vector<Command> Session::offered_commands() const
                                                      return zone.kind == ZoneKind::sunbeam &&
                                                             zone.caster == id;
                                                  }))
+    {
         commands.push_back(
             {revision_, id, 0, "sunbeam_line", "Sunbeam: a new Line", Cell{}, 0, true});
+    }
     // Conjure Animals: once the caster has moved this turn, its pack may move
     // too, here beside a creature it can see.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::animals && zone.caster == id && a.moved &&
             !detail::has_effect(a.effects, detail::EffectKind::pack_moved) &&
             detail::can_apply(a.effects))
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     can_see(a, other) && pack_destination(zone, other))
+                {
                     add(id, "move_spirit_pack", "Move spirit pack", other.source.id);
+                }
+            }
+        }
+    }
     // Conjure Celestial: once the caster has moved this turn, the pillar may
     // move too, onto a creature it can see.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::pillar && zone.caster == id && a.moved &&
             !detail::has_effect(a.effects, detail::EffectKind::pack_moved) &&
             detail::can_apply(a.effects))
+        {
             for (const auto &other : actors_)
+            {
                 if (pillar_reaches(zone, other))
+                {
                     add(id, "move_pillar", "Move the pillar of light", other.source.id);
+                }
+            }
+        }
+    }
     // Eyebite: a Magic action on later turns targets another creature.
     if (detail::has_effect(a.effects, detail::EffectKind::eyebiting) && a.actions.available(true))
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 !absent(other) && !sealed_off(other) && can_see(a, other) &&
                 distance(a.source.cell, other.source.cell) <= 60 &&
@@ -9006,47 +10386,76 @@ std::vector<Command> Session::offered_commands() const
                                          e.kind == detail::EffectKind::sickened ||
                                          e.kind == detail::EffectKind::asleep);
                              }))
+            {
                 for (const auto effect : {"asleep", "panicked", "sickened"})
+                {
                     add(id, "evil_eye_" + std::string(effect), "Eyebite: " + std::string(effect),
                         other.source.id);
+                }
+            }
+        }
+    }
     // Irresistible Dance: the dancer's action repeats the save.
     if (detail::has_effect(a.effects, detail::EffectKind::dancing) && a.actions.available())
+    {
         add(id, "stop_dancing", "Try to stop dancing", id);
+    }
     // Magic Jar: the possessing soul's Magic action returns it to its body.
     if (const auto *boss = controller(a);
         boss && a.actions.available(true) &&
         detail::has_effect(boss->effects, detail::EffectKind::jarred))
+    {
         add(id, "leave_host", "Return to your body (Magic Jar)", id);
+    }
     // Arcane Hand: as it appears, then with a Bonus Action, the hand moves up
     // to 60 feet and strikes or pushes a creature beside it.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::hand && zone.caster == id &&
             (a.bonus || detail::has_effect(a.effects, detail::EffectKind::hand_ready)))
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.id != id && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && !sealed_off(other) && can_see(a, other) &&
                     distance(zone.cells.front(), other.source.cell) <= 65)
                 {
                     if (other.source.side != a.source.side)
+                    {
                         add(id, "hand_fist", "Arcane Hand: Clenched Fist", other.source.id);
+                    }
                     if (def(other).size <= 4)
+                    {
                         add(id, "hand_push", "Arcane Hand: Forceful Hand", other.source.id);
+                    }
                 }
+            }
+        }
+    }
     // Telekinesis: a Magic action seizes a creature again, or another.
     if (detail::has_effect(a.effects, detail::EffectKind::telekinetic) && a.actions.available(true))
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.id != id && other.life.hp > 0 && !other.life.dead && !absent(other) &&
                 !sealed_off(other) && def(other).size <= 4 && can_see(a, other) &&
                 distance(a.source.cell, other.source.cell) <= 60)
+            {
                 commands.push_back({revision_, id, other.source.id, "telekinesis_again",
                                     "Telekinesis", Cell{}, 0, false});
+            }
+        }
+    }
     // Summon Dragon: its spirit breathes once a turn besides its Rends.
     if (detail::has_effect(a.effects, detail::EffectKind::spirit_breath) &&
         !detail::has_effect(a.effects, detail::EffectKind::breathed) && conscious(a))
+    {
         commands.push_back({revision_, id, 0, "spirit_breath", "Breath Weapon", Cell{}, 0, true});
+    }
     // Mislead: a Magic action moves the double up to twice the Speed, beside
     // a creature the caster can see.
     for (const auto &twin : actors_)
+    {
         if (const auto illusion =
                 std::find_if(twin.effects.active.begin(), twin.effects.active.end(),
                              [&](const auto &e)
@@ -9055,70 +10464,123 @@ std::vector<Command> Session::offered_commands() const
                                         e.source_actor == id && e.source_scope == scope_;
                              });
             illusion != twin.effects.active.end() && a.actions.available(true))
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.id != id && other.source.id != twin.source.id &&
                     !other.life.dead && !absent(other) && can_see(a, other) &&
                     distance(twin.source.cell, other.source.cell) <= 2 * d.speed + 5)
+                {
                     add(id, "move_double", "Move the double", other.source.id);
+                }
+            }
+        }
+    }
     // Faithful Hound: a Magic action moves it up to 50 feet, beside an enemy
     // the caster can see (LEVELS-4).
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::hound && zone.caster == id && a.actions.available(true))
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && can_see(a, other) &&
                     distance(zone.cells.front(), other.source.cell) <= 55 &&
                     distance(zone.cells.front(), other.source.cell) > 5)
+                {
                     add(id, "move_hound", "Move Faithful Hound", other.source.id);
+                }
+            }
+        }
+    }
     // Vampiric Touch: a Magic action touches again while it lasts.
     if (detail::has_effect(a.effects, detail::EffectKind::vampiric) && a.actions.available(true))
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 !absent(other) && distance(a.source.cell, other.source.cell) <= d.reach)
+            {
                 add(id, "vampiric_touch_again", "Vampiric Touch", other.source.id);
+            }
+        }
+    }
     // Improved Blessed Strikes (Cleric 14): after a Cleric cantrip's damage,
     // Temporary Hit Points for the Cleric or a creature within 60 feet.
     if (detail::has_effect(a.effects, detail::EffectKind::vitality))
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side && !other.life.dead && !absent(other) &&
                 distance(a.source.cell, other.source.cell) <= 60)
+            {
                 add(id, "potent_vitality", "Potent Spellcasting: Temporary Hit Points",
                     other.source.id);
+            }
+        }
+    }
     // Spiritual Weapon: on later turns a Bonus Action moves the force up to 20
     // feet and attacks a creature within 5 feet of it.
     if (const auto *force = spiritual_weapon(a); force && a.bonus)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 distance(force->cells.front(), other.source.cell) <= 25)
+            {
                 add(id, "spiritual_weapon_strike", "Spiritual Weapon attack", other.source.id);
+            }
+        }
+    }
     // Arcane Sword: on later turns a Bonus Action moves the sword up to 30
     // feet and attacks a creature within 5 feet of it.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::sword && zone.caster == id && !zone.dealt && a.bonus)
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && distance(zone.cells.front(), other.source.cell) <= 35)
+                {
                     add(id, "arcane_sword_strike", "Arcane Sword attack", other.source.id);
+                }
+            }
+        }
+    }
     // Conjure Fey: on later turns a Bonus Action teleports the spirit 30 feet
     // and attacks a creature within 5 feet of it.
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::fey && zone.caster == id && !zone.dealt && a.bonus)
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && distance(zone.cells.front(), other.source.cell) <= 35)
+                {
                     add(id, "conjure_fey_strike", "Fey spirit attack", other.source.id);
+                }
+            }
+        }
+    }
     // Nature's Sanctuary (Land 14): a Magic action and a Wild Shape use raise
     // it; a Bonus Action moves it 60 feet.
     if (d.natures_sanctuary && a.channel_divinity > 0 && a.actions.available(true))
+    {
         commands.push_back(
             {revision_, id, 0, "natures_sanctuary", "Nature's Sanctuary", Cell{}, 0, true});
+    }
     if (a.bonus && std::any_of(zones_.begin(), zones_.end(),
                                [&](const auto &zone)
                                {
                                    return zone.kind == ZoneKind::sanctuary && zone.caster == id;
                                }))
+    {
         commands.push_back(
             {revision_, id, 0, "move_sanctuary", "Move Nature's Sanctuary", Cell{}, 0, true});
+    }
     // Delayed Blast Fireball: ending the spell, which takes no action, bursts
     // the bead.
     if (std::any_of(zones_.begin(), zones_.end(),
@@ -9126,7 +10588,9 @@ std::vector<Command> Session::offered_commands() const
                     {
                         return zone.kind == ZoneKind::bead && zone.caster == id;
                     }))
+    {
         add(id, "detonate", "Burst the bead (Delayed Blast Fireball)");
+    }
     // Overchannel (Wizard 14): readied for the next spell, no action; free
     // the first time each Long Rest, then it hurts the Wizard.
     if (d.overchannel && !detail::has_effect(a.effects, detail::EffectKind::overchannel))
@@ -9137,11 +10601,15 @@ std::vector<Command> Session::offered_commands() const
                                            return e.kind == detail::EffectKind::overchanneled;
                                        });
         if (used == a.effects.active.end())
+        {
             add(id, "overchannel", "Overchannel (free)");
+        }
         else
+        {
             add(id, "overchannel",
                 "Overchannel (" + std::to_string(used->dc + 1) +
                     "d12 Necrotic per slot level to you)");
+        }
     }
     // Superior Hunter's Prey (Ranger 11): once per turn, after damaging its
     // quarry, the mark's damage strikes another creature within 30 feet of it.
@@ -9149,10 +10617,14 @@ std::vector<Command> Session::offered_commands() const
     {
         const auto &origin = actor(a.prey_origin);
         for (const auto &other : actors_)
+        {
             if (other.source.id != origin.source.id && other.source.side != a.source.side &&
                 other.life.hp > 0 && !other.life.dead && can_see(a, other) &&
                 distance(origin.source.cell, other.source.cell) <= 30)
+            {
                 add(id, "superior_hunters_prey", "Superior Hunter's Prey", other.source.id);
+            }
+        }
     }
     // Horde Breaker: once per turn, after a weapon attack, another creature
     // within 5 feet of the first target and within the weapon's reach or range.
@@ -9165,7 +10637,9 @@ std::vector<Command> Session::offered_commands() const
             if (other.source.id != origin.source.id && other.source.side != a.source.side &&
                 other.life.hp > 0 && distance(origin.source.cell, other.source.cell) <= 5 &&
                 (feet <= d.reach || (d.range > 0 && feet <= d.long_range)))
+            {
                 add(id, "horde_breaker", "Horde Breaker", other.source.id);
+            }
         }
     }
     // Favored Enemy casts Hunter's Mark without a slot, while no living quarry
@@ -9181,21 +10655,35 @@ std::vector<Command> Session::offered_commands() const
     const bool moving_mark = a.bonus && mark_can_move(a);
     // Hex moves to a new creature as a Bonus Action once its first drops.
     if (a.bonus && hex_can_move(a))
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other))
+            {
                 add(id, "hex_move", "Move Hex", other.source.id);
+            }
+        }
+    }
     if (free_mark || moving_mark)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                 distance(a.source.cell, other.source.cell) <= 90 && can_see(a, other) &&
                 !marked_by(other, a))
             {
                 if (free_mark)
+                {
                     add(id, "hunters_mark_free", "Hunter's Mark (Favored Enemy)", other.source.id);
+                }
                 if (moving_mark)
+                {
                     add(id, "hunters_mark_move", "Move Hunter's Mark", other.source.id);
+                }
             }
+        }
+    }
     // Sacred Weapon comes with the Attack action, so it is offered while the
     // Action is unspent and costs only a Channel Divinity use. The player picks
     // the weapon's own damage or Radiant when imbuing it (SACRED-1).
@@ -9206,39 +10694,67 @@ std::vector<Command> Session::offered_commands() const
         add(id, "sacred_weapon_radiant", "Sacred Weapon (Radiant)", id);
     }
     if (a.bonus && d.aggressive && speed > 0 && enemy_in_sight(a))
+    {
         add(id, "aggressive", "Aggressive");
+    }
     if (a.bonus && a.winds > 0 && a.life.hp < max_hp(a))
+    {
         add(id, "second_wind", "Second Wind", id);
+    }
     // Wholeness of Body: a Bonus Action heals the Martial Arts die + Wisdom.
     if (a.bonus && d.wholeness && a.free_casts > 0 && a.life.hp < max_hp(a))
+    {
         add(id, "wholeness_of_body", "Wholeness of Body", id);
+    }
     // Tireless (Ranger 10): a Magic action gives 1d8 + Wisdom Temporary Hit Points.
     if (d.tireless && a.arcane > 0 && a.actions.available(true))
+    {
         add(id, "tireless", "Tireless", id);
+    }
     // Lay On Hands: touch yourself or an adjacent wounded ally whose healing
     // can take effect, including one at 0 Hit Points.
     if (a.bonus && d.lay_on_hands && a.lay_on_hands > 0)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side && !other.life.dead &&
                 other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
                 distance(a.source.cell, other.source.cell) <= 5)
+            {
                 add(id, "lay_on_hands", "Lay On Hands", other.source.id);
+            }
+        }
+    }
     // Lay On Hands can instead spend 5 points to end Poisoned (SRD 5.2.1 p. 61).
     if (a.bonus && d.lay_on_hands && a.lay_on_hands >= 5)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side && !other.life.dead &&
                 has_condition(other, "poisoned") && distance(a.source.cell, other.source.cell) <= 5)
+            {
                 add(id, "lay_on_hands_cure", "Lay On Hands: cure Poisoned", other.source.id);
+            }
+        }
+    }
     // Restoring Touch (Paladin 14): 5 points end each of several conditions.
     if (a.bonus && d.restoring_touch && a.lay_on_hands >= 5)
+    {
         for (const auto &other : actors_)
+        {
             if (other.source.side == a.source.side && !other.life.dead && touch_restorable(other) &&
                 distance(a.source.cell, other.source.cell) <= 5)
+            {
                 add(id, "lay_on_hands_restore", "Lay On Hands: Restoring Touch (5 per condition)",
                     other.source.id);
+            }
+        }
+    }
     // Cloud's Jaunt: a Bonus Action teleport, aimed like Misty Step.
     if (a.bonus && d.giant == GiantBoon::cloud && trait_uses_left(a) > 0)
+    {
         commands.push_back({revision_, id, 0, "clouds_jaunt", "Cloud's Jaunt", Cell{}, 0, true});
+    }
     // Divine Strike (Blessed Strikes, Cleric 7): once on each of its turns,
     // after a weapon hit, 1d8 more Radiant or Necrotic damage, the player's choice.
     if (d.divine_strike && a.smite_target && !a.strike_used && actor(a.smite_target).life.hp > 0)
@@ -9251,16 +10767,22 @@ std::vector<Command> Session::offered_commands() const
     if (a.smite_target && a.smite_melee && d.pact_of_the_blade && actor(a.smite_target).life.hp > 0)
     {
         if (d.eldritch_smite && !a.smite_used && a.slots[pact_level(d.slots)] > 0)
+        {
             add(id, "eldritch_smite", "Eldritch Smite (a Pact Magic slot)", a.smite_target);
+        }
         if (d.lifedrinker && !a.drink_used)
+        {
             for (const std::string type : {"necrotic", "psychic", "radiant"})
             {
                 const std::string name(detail::damage_name(detail::damage_type(type)));
                 add(id, "lifedrinker_" + type, "Lifedrinker (" + name + ")", a.smite_target);
                 if (a.hit_dice > 0 && a.life.hp < max_hp(a))
+                {
                     add(id, "lifedrinker_" + type + "_heal",
                         "Lifedrinker (" + name + ", spend a Hit Point Die)", a.smite_target);
+                }
             }
+        }
     }
     // Hurl Through Hell (Fiend 14): once on each of its turns, right after an
     // attack roll hits; once per Long Rest, then for a Pact Magic slot.
@@ -9268,19 +10790,27 @@ std::vector<Command> Session::offered_commands() const
         actor(a.smite_target).life.hp > 0 && !absent(actor(a.smite_target)))
     {
         if (!detail::has_effect(a.effects, detail::EffectKind::hurl_used))
+        {
             add(id, "hurl_through_hell", "Hurl Through Hell", a.smite_target);
+        }
         else if (a.slots[pact_level(d.slots)] > 0)
+        {
             add(id, "hurl_through_hell_slot", "Hurl Through Hell (a Pact Magic slot)",
                 a.smite_target);
+        }
     }
     // Primal Strike (Elemental Fury, Druid 7): once on each of its turns, after
     // a weapon or Beast form hit, 1d8 (2d8 from 15) of a chosen element.
     if (d.primal_strike && a.smite_target && !a.strike_used && actor(a.smite_target).life.hp > 0)
+    {
         for (const std::string type : {"cold", "fire", "lightning", "thunder"})
+        {
             add(id, "primal_strike_" + type,
                 "Primal Strike (" + std::string(detail::damage_name(detail::damage_type(type))) +
                     ")",
                 a.smite_target);
+        }
+    }
     // Smites, right after this actor's own melee hit on a creature still standing.
     if (a.bonus && a.smite_target && actor(a.smite_target).life.hp > 0 && !d.spells.empty())
     {
@@ -9291,7 +10821,9 @@ std::vector<Command> Session::offered_commands() const
         {
             const auto &spell = *detail::find_spell(id_of_spell);
             if (!melee || a.spent_slot || !detail::knows_spell(d.spells, spell.id))
+            {
                 return;
+            }
             for (const unsigned level : cast_levels(a, spell))
             {
                 auto [verb, label] =
@@ -9300,11 +10832,15 @@ std::vector<Command> Session::offered_commands() const
             }
         };
         if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
+        {
             add(id, "divine_smite_free", "Divine Smite (Paladin's Smite)", a.smite_target);
+        }
         add_smite("divine_smite");
         // Searing Smite's burn from a higher slot is not built yet: a level-1 slot only.
         if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
+        {
             add(id, "searing_smite", "Searing Smite", a.smite_target);
+        }
         add_smite("shining_smite");
         // Ensnaring Strike follows a Ranged hit too.
         if (detail::knows_spell(d.spells, "ensnaring_strike") && !a.spent_slot)
@@ -9323,19 +10859,26 @@ std::vector<Command> Session::offered_commands() const
         const int feet = distance(a.source.cell, other.source.cell);
         for (const auto scope : {detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
                                  detail::SpellTarget::self, detail::SpellTarget::enemy})
+        {
             offer_spells(commands, a, other, feet, scope, true);
+        }
         // A spell aimed at any creature, such as a Quickened Poison Spray, needs
         // the same clear line as in the Action pass.
         if (line_of_sight(a.source.cell, other.source.cell))
+        {
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, true);
+        }
     }
     offer_spells(commands, a, a, 0, detail::SpellTarget::area, true);
     if (!a.light_extra && !a.light_origins.empty())
+    {
         for (const auto &item : items_)
+        {
             if (item.holder == id && light_eligible(a, item.id))
             {
                 const auto *weapon = detail::weapon(item.definition);
                 for (const auto &other : actors_)
+                {
                     if (other.source.side != a.source.side && !other.life.dead &&
                         other.life.hp > 0 && line_of_sight(a.source.cell, other.source.cell))
                     {
@@ -9355,20 +10898,31 @@ std::vector<Command> Session::offered_commands() const
                         };
                         const int feet = distance(a.source.cell, other.source.cell);
                         if (!item.stowed && !weapon->ranged && feet <= melee_reach)
+                        {
                             offer("light_melee", "nick_melee");
+                        }
                         if (!item.stowed && weapon->ranged && feet <= weapon->long_range)
+                        {
                             offer("light_ranged", "nick_ranged");
+                        }
                         if (weapon->thrown && feet <= weapon->long_range)
+                        {
                             offer("light_throw", "nick_throw");
+                        }
                     }
+                }
             }
+        }
+    }
     // Cunning Strike: offered when the attack would deal Sneak Attack damage.
     const auto offer_cunning = [&](AttackRange range, bool in_reach, const Actor &other)
     {
         if (!d.cunning_strike || a.sneak_used || !in_reach ||
             !sneak_eligible(a, other, range,
                             attack_modifiers(a, other, range, AttackSource::weapon).mode()))
+        {
             return;
+        }
         const std::string base = range == AttackRange::melee ? "melee" : "ranged";
         const std::string label =
             range == AttackRange::melee ? "Melee attack (" : "Ranged attack (";
@@ -9385,17 +10939,23 @@ std::vector<Command> Session::offered_commands() const
         {
             const auto &first = cunning_strikes[i];
             if (!usable(first))
+            {
                 continue;
+            }
             add(id, base + "_" + std::string(first.suffix), label + std::string(first.name) + ")",
                 other.source.id);
             // Improved Cunning Strike: a second effect the dice can also pay for.
             for (std::size_t j = i + 1; d.improved_cunning && j < cunning_strikes.size(); ++j)
+            {
                 if (const auto &second = cunning_strikes[j];
                     usable(second) && first.cost + second.cost <= dice)
+                {
                     add(id,
                         base + "_" + std::string(first.suffix) + "+" + std::string(second.suffix),
                         label + std::string(first.name) + ", " + std::string(second.name) + ")",
                         other.source.id);
+                }
+            }
         }
     };
     // Tactical Master: the attack with Push, Sap or Slow, other than the
@@ -9404,12 +10964,18 @@ std::vector<Command> Session::offered_commands() const
     {
         const auto own = weapon_mastery(a, range);
         if (!d.tactical_master || !in_reach || own == detail::Mastery::none)
+        {
             return;
+        }
         const bool melee = range == AttackRange::melee;
         for (const auto &option : tactical_masteries)
+        {
             if (option.kind != own)
+            {
                 add(id, std::string(melee ? "melee_" : "ranged_") + std::string(option.suffix),
                     std::string(melee ? option.melee_label : option.ranged_label), other.source.id);
+            }
+        }
     };
     // The Attack action's attacks on one foe, with the Magic actions that
     // attack (which need the Action itself); Extra Attack offers the weapon
@@ -9419,36 +10985,54 @@ std::vector<Command> Session::offered_commands() const
         // Reverse Gravity: no melee attack reaches up to a creature fallen
         // upward, or down from it.
         if (aloft(a) || aloft(other))
+        {
             feet = std::max(feet, 15);
+        }
         // A Wild Shape form cannot wield its equipment (SRD 5.2.1), so it
         // draws no Torch or bow and throws no flask.
         const bool wields_equipment = !a.form;
         // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
         // can be equipped with each attack of the Attack action).
         if (wields_equipment && feet <= 5 && carries(a, "torch"))
+        {
             add(id, "torch", "Torch attack", other.source.id);
+        }
         // A carried bow or crossbow is drawn as part of the attack, too.
         if (const auto bow = wields_equipment ? carried_ranged_weapon(a) : std::string_view{};
             !bow.empty() && feet <= detail::weapon(bow)->long_range)
+        {
             add(id, "shoot", "Shoot", other.source.id);
+        }
         for (const auto &gear : detail::thrown_gear_items)
+        {
             if (wields_equipment && feet <= detail::thrown_gear_range &&
                 a.thrown_gear_left[static_cast<std::size_t>(gear.effect)])
+            {
                 add(id, "throw_" + std::string(gear.key), "Throw " + std::string(gear.label),
                     other.source.id);
+            }
+        }
         if (wields_equipment && physical_inventory_)
+        {
             for (const auto &item : items_)
+            {
                 if (item.holder == id)
+                {
                     if (const auto *w = detail::weapon(item.definition);
                         w && w->thrown && feet <= w->long_range)
                     {
                         add(id, "throw", "Throw", other.source.id);
                         commands.back().item = item.id;
                     }
+                }
+            }
+        }
         if (feet <= d.reach)
+        {
             add(id, "melee",
                 a.source.definition.starts_with("slums-kobold") ? "Dagger attack" : "Melee attack",
                 other.source.id);
+        }
         // Pact of the Blade: the pact weapon may deal Necrotic, Psychic
         // or Radiant damage instead of its own type.
         if (feet <= d.reach && d.pact_of_the_blade && d.melee.count && !d.ranged_weapon &&
@@ -9462,19 +11046,27 @@ std::vector<Command> Session::offered_commands() const
         offer_cunning(AttackRange::melee, feet <= d.reach, other);
         // Stunning Strike: a Monk weapon or Unarmed Strike, once a turn, 1 Focus on a hit.
         if (feet <= d.reach && d.stunning_strike && d.martial_arts && !a.stun_used && a.surges > 0)
+        {
             add(id, "melee_stun", "Melee attack (Stunning Strike)", other.source.id);
+        }
         // Flame Blade: a melee spell attack with the blade as an Action.
         if (feet <= 5 && a.actions.available(true) &&
             detail::has_effect(a.effects, detail::EffectKind::flame_blade))
+        {
             add(id, "flame_blade_strike", "Flame Blade attack", other.source.id);
+        }
         // Produce Flame: the flame in hand is hurled as an Action.
         if (feet <= 60 && a.actions.available(true) &&
             detail::has_effect(a.effects, detail::EffectKind::produce_flame))
+        {
             add(id, "hurl_flame", "Hurl flame (Produce Flame)", other.source.id);
+        }
         // Reckless Attack: chosen with the turn's first attack roll, which
         // is the Attack action's first attack.
         if (feet <= d.reach && d.reckless && !a.attacked && strength_attack(a, AttackRange::melee))
+        {
             add(id, "reckless", "Reckless attack", other.source.id);
+        }
         // Brutal Strike: after Reckless Attack, once a turn, one Strength attack
         // gives up its Advantage for 1d10 more damage and a blow.
         if (feet <= d.reach && d.brutal_strike && !a.brutal_used &&
@@ -9482,9 +11074,13 @@ std::vector<Command> Session::offered_commands() const
             strength_attack(a, AttackRange::melee))
         {
             for (const auto &[verb, label, blow] : brutal_blows)
+            {
                 if (d.improved_brutal || blow == BrutalBlow::forceful ||
                     blow == BrutalBlow::hamstring)
+                {
                     add(id, std::string(verb), std::string(label), other.source.id);
+                }
+            }
         }
         // True Strike: the cantrip's attack with the melee weapon in hand.
         if (feet <= d.reach && d.melee.count && !d.ranged_weapon &&
@@ -9502,11 +11098,17 @@ std::vector<Command> Session::offered_commands() const
     };
     // Extra Attack: the Attack action's later attacks, once its first is made.
     if (!a.actions.available() && a.actions.extra_attacks > 0)
+    {
         for (const auto &other : actors_)
+        {
             if (!other.life.dead && other.source.side != a.source.side &&
                 (other.life.hp > 0 || may_rise(other)) &&
                 line_of_sight(a.source.cell, other.source.cell))
+            {
                 offer_attacks(other, distance(a.source.cell, other.source.cell));
+            }
+        }
+    }
     if (a.actions.available())
     {
         offer_spells(commands, a, a, 0, detail::SpellTarget::area, false);
@@ -9516,21 +11118,35 @@ std::vector<Command> Session::offered_commands() const
         {
             if (d.armor_of_shadows && d.mage_armor_ac &&
                 !detail::has_effect(a.effects, detail::EffectKind::mage_armor))
+            {
                 add(id, "armor_of_shadows", "Armor of Shadows (Mage Armor)", id);
+            }
             if (d.fiendish_vigor)
+            {
                 add(id, "fiendish_vigor", "Fiendish Vigor (False Life)", id);
+            }
         }
         // Land's Aid: a Magic action spending a use of Wild Shape, aimed at a point.
         if (d.lands_aid && a.channel_divinity > 0 && a.actions.available(true))
+        {
             commands.push_back({revision_, id, 0, "lands_aid", "Land's Aid", Cell{}, 0, true});
+        }
         // Dragon's Breath: its holder exhales the chosen cone as an Action.
         for (const auto &effect : a.effects.active)
+        {
             if (effect.kind == detail::EffectKind::dragons_breath)
+            {
                 for (const auto type : detail::dragon_types)
+                {
                     if (detail::damage_type(type) == static_cast<detail::DamageType>(effect.dc))
+                    {
                         commands.push_back({revision_, id, 0,
                                             "dragons_breath_exhale_" + std::string(type),
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
+                    }
+                }
+            }
+        }
         // Breath Weapon takes the place of the Attack action's one attack.
         if (def(a).breath && trait_uses_left(a) > 0 && a.actions.available())
         {
@@ -9542,26 +11158,38 @@ std::vector<Command> Session::offered_commands() const
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
         if (can_hide(a))
+        {
             add(id, "hide", "Hide");
+        }
         if (std::any_of(actors_.begin(), actors_.end(),
                         [&](const auto &other)
                         {
                             return other.source.side != a.source.side && hidden(other);
                         }))
+        {
             add(id, "search", "Search");
+        }
         if (shield_blocks_bow(a))
+        {
             add(id, "doff_shield", "Take off shield");
+        }
         if (a.burning)
+        {
             add(id, "extinguish", "Put out the fire");
+        }
         add(id, "disengage", "Disengage");
         for (const auto &other : actors_)
         {
             if (other.life.dead || !line_of_sight(a.source.cell, other.source.cell))
+            {
                 continue;
+            }
             const int feet = distance(a.source.cell, other.source.cell);
             if (!a.source.character_profile.empty() && other.life.hp == 0 && !other.life.stable &&
                 !may_rise(other) && feet <= 5)
+            {
                 add(id, "stabilize", "Stabilize", other.source.id);
+            }
             offer_spells(commands, a, other, feet, detail::SpellTarget::any_creature, false);
             if (other.source.side != a.source.side && (other.life.hp > 0 || may_rise(other)))
             {
@@ -9571,12 +11199,18 @@ std::vector<Command> Session::offered_commands() const
             // A downed foe is struck only by Scorching Ray (the user's call);
             // the spell offers filter out everything else.
             else if (other.source.side != a.source.side)
+            {
                 offer_spells(commands, a, other, feet, detail::SpellTarget::enemy, false);
+            }
             else
+            {
                 for (const auto scope :
                      {detail::SpellTarget::wounded_ally, detail::SpellTarget::ally,
                       detail::SpellTarget::self, detail::SpellTarget::dying_ally})
+                {
                     offer_spells(commands, a, other, feet, scope, false);
+                }
+            }
         }
     }
     else if (a.actions.haste)
@@ -9584,34 +11218,52 @@ std::vector<Command> Session::offered_commands() const
         // Haste's action: one weapon attack, Dash, Disengage, Hide or Utilize.
         add(id, "dash", "Dash");
         if (can_hide(a))
+        {
             add(id, "hide", "Hide");
+        }
         if (shield_blocks_bow(a))
+        {
             add(id, "doff_shield", "Take off shield");
+        }
         add(id, "disengage", "Disengage");
         if (!a.actions.extra_attacks)
+        {
             for (const auto &other : actors_)
+            {
                 if (!other.life.dead && other.source.side != a.source.side &&
                     (other.life.hp > 0 || may_rise(other)) &&
                     line_of_sight(a.source.cell, other.source.cell))
+                {
                     offer_attacks(other, distance(a.source.cell, other.source.cell));
+                }
+            }
+        }
     }
     for (const auto cell : movement_reach(id))
+    {
         add(id, "move", "Move", 0, cell);
+    }
     if (can_run_off(a))
+    {
         for (const auto step : off_field_steps(a))
+        {
             add(id, "flee", "Flee", 0, step);
+        }
+    }
     auto offered = filtered();
     obey_command(offered, a);
     flee_turning(offered, a);
     hold_still(offered, a);
     // Nothing passes through a Wall of Force or of Stone: no attack across it.
     if (walled(true))
+    {
         std::erase_if(offered,
                       [&](const Command &command)
                       {
                           return command.target && attack_action(command.verb) &&
                                  !line_of_effect(a.source.cell, actor(command.target).source.cell);
                       });
+    }
     // Forcecage: nothing crosses its box, and no weapon its cage's bars.
     std::erase_if(offered,
                   [&](const Command &command)
@@ -9623,13 +11275,16 @@ std::vector<Command> Session::offered_commands() const
     // Antilife Shell: no melee attack reaches across its edge, but from a
     // Construct or an Undead.
     if (def(a).creature_type != "construct" && def(a).creature_type != "undead")
+    {
         std::erase_if(offered,
                       [&](const Command &command)
                       {
                           if (!command.target || command.target == id ||
                               (command.verb != "melee" && command.verb != "torch" &&
                                !command.verb.starts_with("melee_")))
+                          {
                               return false;
+                          }
                           const Cell to = actor(command.target).source.cell;
                           return std::any_of(
                               zones_.begin(), zones_.end(),
@@ -9642,6 +11297,7 @@ std::vector<Command> Session::offered_commands() const
                                              (distance(caster->source.cell, to) <= 10);
                               });
                       });
+    }
     // Mislead: once an attack has passed through the double, foes ignore it.
     std::erase_if(offered,
                   [&](const Command &command)
@@ -9689,9 +11345,13 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
                      });
     const auto *command = detail::command_effect(a.effects);
     if (!command && terror != a.effects.active.end())
+    {
         command = &*terror;
+    }
     if (!command)
+    {
         return;
+    }
     const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                      [&](const auto &other)
                                      {
@@ -9700,7 +11360,9 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
                                      });
     // With no caster left there is nothing to approach or flee.
     if (caster == actors_.end() || caster->life.dead)
+    {
         return;
+    }
     const bool approach = command->kind == detail::EffectKind::command &&
                           command->dc == static_cast<int>(detail::CommandOption::approach);
     const int start = distance(a.source.cell, caster->source.cell);
@@ -9708,7 +11370,9 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
     const Command *best = nullptr;
     int best_feet = start;
     if (!approach || start > 5)
+    {
         for (const auto &offer : commands)
+        {
             if (offer.verb == "move")
             {
                 const int feet = distance(offer.destination, caster->source.cell);
@@ -9718,6 +11382,8 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
                     best_feet = feet;
                 }
             }
+        }
+    }
     const auto offered = [&](std::string_view verb)
     {
         return std::find_if(commands.begin(), commands.end(),
@@ -9740,22 +11406,34 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
     if (outcome_ != Outcome::ongoing || (!champion_move_ && pending()) || temporary_offer_ ||
         check_choice_ || graze_ || (!champion_move_ && effect_waiting()) ||
         (champion_move_ && id != champion_move_->actor))
+    {
         return cells;
+    }
     const auto actor = std::find_if(actors_.begin(), actors_.end(),
                                     [&](const auto &a)
                                     {
                                         return a.source.id == id;
                                     });
     if (actor == actors_.end() || !conscious(*actor))
+    {
         return cells;
+    }
     const auto budget = champion_move_ ? champion_move_->remaining : movement_left(*actor);
     if (budget <= 0)
+    {
         return cells;
+    }
     const auto reachable = movement_grid(*actor).reachable(budget);
     for (int y = 0; y < board_.height; ++y)
+    {
         for (int x = 0; x < board_.width; ++x)
+        {
             if (reachable.cost_to({x, y}))
+            {
                 cells.push_back({x, y});
+            }
+        }
+    }
     return cells;
 }
 
@@ -9794,7 +11472,9 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
     const auto result = detail::resolve_damage(parts, affinities(target, added));
     if (def(target).regeneration && result.total > 0 &&
         (type == detail::DamageType::acid || type == detail::DamageType::fire))
+    {
         target.regeneration_blocked = true;
+    }
     if (result.total != amount)
     {
         const auto name = std::string(detail::damage_name(type));
@@ -9813,19 +11493,27 @@ void Session::damage(Actor &target, int amount, bool critical)
 {
     if (!amount || target.life.dead || absent(target) ||
         detail::has_effect(target.effects, detail::EffectKind::illusory))
+    {
         return;
+    }
     amount = endured(target, amount);
     if (!amount)
+    {
         return;
+    }
     const bool standing = target.life.hp > 0;
     const auto source = pending() ? pending() : actors_[turn_].source.id;
     if (standing && source != target.source.id)
+    {
         damage_taken_.push_back({target.source.id, source});
+    }
     // Superior Hunter's Prey: the Ranger's damage to its quarry on its own turn.
     if (auto &ranger = actors_[turn_]; source == ranger.source.id && def(ranger).superior_prey &&
                                        !ranger.prey_used && !ranger.prey_origin &&
                                        marked_by(target, ranger))
+    {
         ranger.prey_origin = target.source.id;
+    }
     const detail::DamageOptions options{
         .critical = critical,
         .dies_at_zero = (target.source.side == Side::opposition || target.turned ||
@@ -9835,11 +11523,17 @@ void Session::damage(Actor &target, int amount, bool critical)
     // Contingency: dropping to half Hit Points or to 0 sets off its spell. A
     // copy of the effects, which firing changes, only when one waits.
     if (detail::has_effect(target.effects, detail::EffectKind::contingency))
+    {
         for (const auto &e : std::vector<detail::Effect>(target.effects.active))
+        {
             if (e.kind == detail::EffectKind::contingency && !target.life.dead &&
                 ((e.dc % 4 == 0 && target.life.hp * 2 <= max_hp(target)) ||
                  (e.dc % 4 == 2 && target.life.hp == 0)))
+            {
                 fire_contingency(target);
+            }
+        }
+    }
     // A summoned creature vanishes at 0 Hit Points; a simulacrum melts away.
     if (target.life.hp == 0 && detail::has_effect(target.effects, detail::EffectKind::summoned))
     {
@@ -9874,9 +11568,13 @@ void Session::damage(Actor &target, int amount, bool critical)
                                                     other.concentration.active();
                                          });
         if (caster != actors_.end())
+        {
             end_concentration(*caster);
+        }
         else
+        {
             end_polymorph(target);
+        }
     }
     // Regeneration: damage never kills it and it makes no death saves; the start
     // of each of its turns decides (regenerate). As in the original game, it may
@@ -9887,7 +11585,9 @@ void Session::damage(Actor &target, int amount, bool critical)
         target.life.successes = target.life.failures = 0;
         target.life.recovery = {detail::death_turn_ms, 0};
         if (standing)
+        {
             target.rises_on_round = static_cast<int>(round_) + dice({3, 6, 0});
+        }
     }
     // Undead Fortitude: a Zombie dropped to 0 Hit Points saves (DC 5 + the
     // damage) to drop to 1 instead, unless the damage is Radiant or a Critical Hit.
@@ -9919,7 +11619,9 @@ void Session::damage(Actor &target, int amount, bool critical)
             {"{name} drops to 1 Hit Point instead (Death Ward).", {{"name", target.source.name}}});
     }
     if (killed && target.life.dead)
+    {
         fall(target);
+    }
     // Dominate Beast: damage lets the creature save again; a success ends the
     // spell. Magic Jar's caster returns to its body then.
     const auto dominated = std::find_if(target.effects.active.begin(), target.effects.active.end(),
@@ -9945,8 +11647,10 @@ void Session::damage(Actor &target, int amount, bool critical)
                               {
                                   return e.kind == detail::EffectKind::jarred;
                               }))
+            {
                 log(caster.source.name + "'s soul returns to its body.",
                     {"{name}'s soul returns to its body.", {{"name", caster.source.name}}});
+            }
         }
     }
     // Magic Jar: the host's death sends the caster's soul home on a Charisma
@@ -9962,8 +11666,10 @@ void Session::damage(Actor &target, int amount, bool critical)
                           return e.kind == detail::EffectKind::jarred;
                       });
         if (saving_throw_succeeds(caster, detail::Ability::charisma, spell_dc(caster, "magic_jar")))
+        {
             log(caster.source.name + "'s soul returns to its body.",
                 {"{name}'s soul returns to its body.", {{"name", caster.source.name}}});
+        }
         else
         {
             caster.life.hp = 0;
@@ -10009,9 +11715,13 @@ void Session::damage(Actor &target, int amount, bool critical)
              {{"name", target.source.name}}});
     }
     if (standing && target.life.hp == 0 && !target.life.dead)
+    {
         protect(target);
+    }
     if (standing && target.life.hp == 0)
+    {
         bless_fiends(target);
+    }
     // Warding Bond: the caster takes the same damage; the bond ends when the
     // caster drops to 0 Hit Points or is more than 60 feet away.
     for (const auto bond : bonds_on(target))
@@ -10024,13 +11734,17 @@ void Session::damage(Actor &target, int amount, bool critical)
         damage(caster, amount, false);
     }
     if (target.life.hp == 0)
+    {
         for (auto &other : actors_)
+        {
             std::erase_if(other.effects.active,
                           [&](const auto &e)
                           {
                               return e.kind == detail::EffectKind::warding_bond &&
                                      e.source_scope == scope_ && e.source_actor == target.source.id;
                           });
+        }
+    }
     // Damage tests Concentration; dropping to 0 Hit Points ends it.
     // Relentless Hunter (Ranger 13): damage cannot break Hunter's Mark.
     const bool relentless_mark = def(target).relentless_hunter && target.life.hp > 0 &&
@@ -10048,7 +11762,9 @@ void Session::damage(Actor &target, int amount, bool critical)
             def(target).saves[2] + aura_of_protection(target) + (rolls ? blessing_die(target) : 0),
             modifiers, target.life.hp == 0 || target.life.dead, rng_, target.effects.active);
         if (result.save)
+        {
             log_save(target, *result.save);
+        }
         if (result.inspiration)
         {
             detail::spend_inspiration(target.effects);
@@ -10065,7 +11781,9 @@ void Session::damage(Actor &target, int amount, bool critical)
             }
         }
         if (result.ended)
+        {
             drop_concentration_effects(target);
+        }
     }
     if (target.life.hp == 0)
     {
@@ -10089,6 +11807,7 @@ void Session::damage(Actor &target, int amount, bool critical)
                   });
     // Hideous Laughter: damage calls for a new Wisdom save, with Advantage.
     for (std::size_t n = 0; n < target.effects.active.size() && target.life.hp > 0; ++n)
+    {
         if (target.effects.active[n].kind == detail::EffectKind::laughing &&
             saving_throw_succeeds(
                 target, detail::Ability::wisdom, target.effects.active[n].dc, true,
@@ -10102,20 +11821,27 @@ void Session::damage(Actor &target, int amount, bool critical)
                 {"{name} stops laughing.", {{"name", target.source.name}}});
             break;
         }
+    }
     // Sacred Weapon ends when its wielder is Incapacitated.
     if (target.life.hp == 0)
+    {
         std::erase_if(target.effects.active,
                       [](const auto &e)
                       {
                           return e.kind == detail::EffectKind::sacred_weapon;
                       });
+    }
     if (target.life.hp == 0 && !target.life.dead && !target.life.stable)
+    {
         target.life.recovery.death_save_in_ms = next_turn_ms(target);
+    }
     if (target.life.hp == 0)
     {
         target.dodge = false;
         if (!target.life.dead && shares_occupied_space(target))
+        {
             target.involuntary_overlap = true;
+        }
         log(target.source.name + (target.life.dead ? " is defeated." : " falls unconscious."),
             {target.life.dead ? "{name} is defeated." : "{name} falls unconscious.",
              {{"name", target.source.name}}});
@@ -10126,12 +11852,16 @@ void Session::damage(Actor &target, int amount, bool critical)
 int Session::heal(Actor &target, int amount)
 {
     if (target.life.hp == 0 && shares_occupied_space(target))
+    {
         target.involuntary_overlap = true;
+    }
     const bool was_unconscious = target.life.hp == 0;
     const int restored = detail::heal_life(target.life, amount, max_hp(target),
                                            !detail::healing_blocked(target.effects));
     if (was_unconscious && restored)
+    {
         target.effects.prone = true;
+    }
     log(target.source.name + " recovers " + std::to_string(restored) + " HP.",
         {"{name} recovers {hp} HP.",
          {{"name", target.source.name}, {"hp", std::to_string(restored)}}});
@@ -10160,19 +11890,27 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
     a.smite_target = 0;
     a.bonus = false;
     if (verb == "divine_smite_free")
+    {
         --a.free_casts;
+    }
     else
+    {
         pay_for_spell(a, verb, spell);
+    }
     auto rolled = spell.dice;
     // Each slot level above the spell's adds a die.
     rolled.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
     // Divine Smite deals 1d8 more to a Fiend or an Undead.
     const auto &type = def(target).creature_type;
     if (!searing && !shining && (type == "fiend" || type == "undead"))
+    {
         ++rolled.count;
+    }
     // The damage is part of the attack, so a critical hit doubles its dice.
     if (a.smite_critical)
+    {
         rolled.count *= 2;
+    }
     const auto damage_type = std::string(detail::damage_name(spell.damage));
     const int amount = resolved_damage(target, spell.damage, dice(rolled));
     log(a.source.name + " casts " + std::string(spell.label) + ": " + target.source.name +
@@ -10185,7 +11923,9 @@ void Session::resolve_smite(Actor &a, std::string_view verb)
           {"type", damage_type, true}}});
     damage(target, amount, false);
     if (searing && target.life.hp > 0 && detail::can_apply(target.effects))
+    {
         detail::apply_searing_smite(target.effects, effect_source(a), a.source.name, spell_dc(a));
+    }
     // Smite of Protection (Devotion 15): the aura shields until the
     // Paladin's next turn.
     if (!searing && !shining && def(a).smite_of_protection && detail::can_apply(a.effects))
@@ -10229,9 +11969,15 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
     {
         // A ring: the squares at its radius from the aimed one.
         for (int y = 0; y < board_.height; ++y)
+        {
             for (int x = 0; x < board_.width; ++x)
+            {
                 if (distance(center, Cell{x, y}) == spell.ring / 2)
+                {
                     cells.push_back({x, y});
+                }
+            }
+        }
         return cells;
     }
     if (spell.wall)
@@ -10240,9 +11986,13 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
         const auto step = steps[detail::wall_direction(verb).value_or(0)];
         const int length = spell.wall / 5;
         for (int n = -length / 2; n < length - length / 2; ++n)
+        {
             if (const Cell cell{center.x + n * step.x, center.y + n * step.y};
                 board_.contains(cell))
+            {
                 cells.push_back(cell);
+            }
+        }
         // Tsunami's wall is 10 feet thick (LEVELS-5): a second row beside the
         // first, away from the caster, square by square along a diagonal.
         if (spell.rider == detail::Rider::tsunami)
@@ -10250,10 +12000,14 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
             const auto heading = wave_headings[wave_heading(verb, origin, center)];
             const Cell beside{heading.x, heading.x ? 0 : heading.y};
             for (int n = -length / 2; n < length - length / 2; ++n)
+            {
                 if (const Cell cell{center.x + n * step.x + beside.x,
                                     center.y + n * step.y + beside.y};
                     board_.contains(cell))
+                {
                     cells.push_back(cell);
+                }
+            }
         }
         return cells;
     }
@@ -10264,16 +12018,22 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
     if (spell.cone)
     {
         for (int y = 0; y < board_.height; ++y)
+        {
             for (int x = 0; x < board_.width; ++x)
             {
                 const double vx = x - origin.x, vy = y - origin.y;
                 if ((!vx && !vy) || distance(origin, Cell{x, y}) > spell.cone)
+                {
                     continue;
+                }
                 const double cosine = (vx * ax + vy * ay) /
                                       (std::sqrt(vx * vx + vy * vy) * std::sqrt(ax * ax + ay * ay));
                 if (cosine >= 0.866)
+                {
                     cells.push_back({x, y});
+                }
             }
+        }
         return cells;
     }
     // A line two squares wide, or one, from the caster toward the aim.
@@ -10282,14 +12042,18 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
         const double length = std::sqrt(ax * ax + ay * ay);
         const double right_edge = spell.narrow_line ? 0.5 : 1.0;
         for (int y = 0; y < board_.height; ++y)
+        {
             for (int x = 0; x < board_.width; ++x)
             {
                 const double vx = x - origin.x, vy = y - origin.y;
                 const double along = (vx * ax + vy * ay) / length;
                 const double across = (vx * ay - vy * ax) / length;
                 if (along > 0 && along * 5 <= spell.line && across > -0.5 && across <= right_edge)
+                {
                     cells.push_back({x, y});
+                }
             }
+        }
         return cells;
     }
     // A cube with a face against the caster, on the aimed side.
@@ -10306,9 +12070,15 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
             return sign > 0 ? start + 1 : sign < 0 ? start - side : start - (side - 1) / 2;
         };
         for (int y = first(origin.y, sy); y < first(origin.y, sy) + side; ++y)
+        {
             for (int x = first(origin.x, sx); x < first(origin.x, sx) + side; ++x)
+            {
                 if (board_.contains(Cell{x, y}))
+                {
                     cells.push_back({x, y});
+                }
+            }
+        }
         return cells;
     }
     // A sphere: every square within its radius of the aimed one.
@@ -10317,9 +12087,15 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
         const int radius =
             spell.radius + static_cast<int>(upcast_steps(verb, spell)) * spell.upcast.extra_radius;
         for (int y = 0; y < board_.height; ++y)
+        {
             for (int x = 0; x < board_.width; ++x)
+            {
                 if (distance(center, Cell{x, y}) <= radius)
+                {
                     cells.push_back({x, y});
+                }
+            }
+        }
         return cells;
     }
     // A square of `area` feet around the aimed cell, clipped to the board;
@@ -10328,9 +12104,15 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
                      detail::without_cast_suffix(verb).ends_with("_box");
     const int side = (box ? 10 : spell.area) / 5, first = (side - 1) / 2;
     for (int y = center.y - first; y < center.y - first + side; ++y)
+    {
         for (int x = center.x - first; x < center.x - first + side; ++x)
+        {
             if (board_.contains(Cell{x, y}))
+            {
                 cells.push_back({x, y});
+            }
+        }
+    }
     return cells;
 }
 
@@ -10351,16 +12133,22 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
 {
     // A teleport's preview starts on the caster; it must be moved before casting.
     if (spell.rider == detail::Rider::misty_step || spell.rider == detail::Rider::dimension_door)
+    {
         return caster.source.cell;
+    }
     // Flaming Sphere starts in the open square beside the nearest enemy.
     if (spell.rider == detail::Rider::flaming_sphere)
     {
         const Actor *nearest = nullptr; // Borrowed from actors_.
         for (const auto &other : actors_)
+        {
             if (other.source.side != caster.source.side && other.life.hp > 0 && !other.life.dead &&
                 (!nearest || distance(caster.source.cell, other.source.cell) <
                                  distance(caster.source.cell, nearest->source.cell)))
+            {
                 nearest = &other;
+            }
+        }
         return nearest ? spectral_cell(*nearest, caster.source.cell) : caster.source.cell;
     }
     // The preview starts on the nearest living enemy in range and in clear
@@ -10383,13 +12171,21 @@ Cell Session::default_area_center(const Actor &caster, const detail::SpellDef &s
 void Session::aim_area(const Command &command)
 {
     if (command.verb == "spell_cancel")
+    {
         area_.reset();
+    }
     else if (command.verb == "area_cast")
+    {
         cast_area();
+    }
     else if (detail::find_spell(area_->verb)->storm)
+    {
         place_storm_cube(command.destination);
+    }
     else
+    {
         area_->center = command.destination;
+    }
 }
 
 void Session::potent_cantrip(Actor &target, const detail::SpellDef &spell,
@@ -10410,12 +12206,18 @@ std::vector<EntityId> Session::sculpted(const Actor &caster, const detail::Spell
     // an Evocation area are spared, chosen automatically.
     std::vector<EntityId> spared;
     if (!def(caster).sculptor || !spell.evocation)
+    {
         return spared;
+    }
     for (const auto &other : actors_)
+    {
         if (spared.size() < 1 + slot_level && other.source.side == caster.source.side &&
             other.source.id != caster.source.id && !other.life.dead && can_see(caster, other) &&
             std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+        {
             spared.push_back(other.source.id);
+        }
+    }
     return spared;
 }
 
@@ -10423,17 +12225,31 @@ int Session::area_dc(const Actor &caster, const detail::SpellDef &spell) const
 {
     // The Draconic Spirit's breath: its summoner's spell save DC.
     if (spell.id == "spirit_breath")
+    {
         for (const auto &e : caster.effects.active)
+        {
             if (e.kind == detail::EffectKind::summoned)
+            {
                 return 8 + e.dc;
+            }
+        }
+    }
     // Breath Weapon: 8 + the Constitution modifier + the Proficiency Bonus.
     if (spell.id.starts_with("breath_weapon_"))
+    {
         return 8 + def(caster).constitution + 2 + (def(caster).level - 1) / 4;
+    }
     // A breath given by Dragon's Breath uses the spell caster's save DC.
     if (spell.id == "dragons_breath_exhale")
+    {
         for (const auto &effect : caster.effects.active)
+        {
             if (effect.kind == detail::EffectKind::dragons_breath)
+            {
                 return spell_dc(actor(effect.source_actor));
+            }
+        }
+    }
     return spell_dc(caster, spell.id);
 }
 
@@ -10443,31 +12259,43 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
     // Each creature in the area, the caster aside, saves for half.
     const auto spared = sculpted(caster, spell, slot_level_of(verb, spell), cells);
     for (const auto id : spared)
+    {
         log(actor(id).source.name + " is spared by Sculpt Spells.",
             {"{name} is spared by Sculpt Spells.", {{"name", actor(id).source.name}}});
+    }
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
     // A cantrip's dice, and a Breath Weapon's, grow with the caster's level.
     if (!spell.level)
+    {
         rolled.count *= cantrip_tier(def(caster));
+    }
     if (def(caster).agonizing.contains(spell.id))
+    {
         rolled.bonus += casting_modifier(def(caster));
+    }
     // Empowered Evocation (Wizard 10).
     if (def(caster).empowered && spell.evocation &&
         detail::on_class_list(CharacterClass::wizard, spell.id))
+    {
         rolled.bonus += casting_modifier(def(caster));
+    }
     // Elemental Affinity (Sorcerer 6); Prismatic Spray's rays each have their own type.
     if (def(caster).elemental_affinity && spell.rider != detail::Rider::prismatic_spray &&
         !spell.id.starts_with("breath_weapon_") && spell.id != "spirit_breath" &&
         cast_damage_type(detail::dragon_type(verb).value_or(spell.damage)) ==
             *def(caster).elemental_affinity)
+    {
         rolled.bonus += casting_modifier(def(caster));
+    }
     const int total = spell_dice(caster, rolled);
     // Flame Strike's Radiant beside its Fire, resisted on its own.
     auto second = spell.second_dice;
     // Ice Storm's Cold does not grow with the slot; Flame Strike's Radiant does.
     if (spell.id != "ice_storm")
+    {
         second.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
+    }
     const int second_total = second.count ? spell_dice(caster, second) : 0;
     const auto second_type = std::string(detail::damage_name(spell.second_damage));
     auto damage_type = spell.id.starts_with("breath_weapon_")
@@ -10475,8 +12303,12 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
                            : cast_damage_type(detail::dragon_type(verb).value_or(spell.damage));
     // The Draconic Spirit breathes the type chosen when it was summoned.
     for (const auto &e : caster.effects.active)
+    {
         if (spell.id == "spirit_breath" && e.kind == detail::EffectKind::spirit_breath)
+        {
             damage_type = static_cast<detail::DamageType>(e.dc);
+        }
+    }
     const auto type = std::string(detail::damage_name(damage_type));
     // Careful Spell: the chosen allies succeed and so take no half damage.
     const auto careful = careful_allies(caster, cells);
@@ -10489,7 +12321,9 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
             sealed_off(other) ||
             globe_wards(caster, other.source.cell, slot_level_of(verb, spell)) ||
             caged_apart(caster.source.cell, other.source.cell, false))
+        {
             continue;
+        }
         const bool saved = saving_throw_succeeds(other, spell.save, dc);
         // Prismatic Spray: a ray for each creature, or two.
         if (spell.rider == detail::Rider::prismatic_spray)
@@ -10500,7 +12334,9 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         // Potent Cantrip: an Evoker's saved-against cantrip still deals half.
         const bool halved = spell.half_on_success || (def(caster).evoker && !spell.level);
         if (saved && !halved)
+        {
             continue;
+        }
         const int amount =
             resolved_damage(other, damage_type, evaded(other, spell.save, halved, saved, total));
         log(other.source.name + " takes " + std::to_string(amount) + " " + type + " damage.",
@@ -10522,9 +12358,13 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
             damage(other, more);
         }
         if (amount)
+        {
             curse_strikes(caster, other);
+        }
         if (!saved && spell.rider == detail::Rider::thunderwave && !other.life.dead)
+        {
             push_away(caster, other, 2);
+        }
         // Sunbeam: Blinded until the start of the caster's next turn.
         if (!saved && spell.rider == detail::Rider::sunbeam && !other.life.dead &&
             detail::can_apply(other.effects))
@@ -10576,7 +12416,9 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
             !detail::can_apply(other.effects) || sealed_off(other) ||
             globe_wards(caster, other.source.cell, spell.level) ||
             caged_apart(caster.source.cell, other.source.cell, false))
+        {
             continue;
+        }
         if (sleep && (def(other).sleepless || def(other).creature_type == "undead" ||
                       def(other).creature_type == "construct"))
         {
@@ -10585,7 +12427,9 @@ void Session::condition_area(Actor &caster, const detail::SpellDef &spell,
             continue;
         }
         if (saving_throw_succeeds(other, spell.save, dc))
+        {
             continue;
+        }
         if (spell.rider == detail::Rider::faerie_fire)
         {
             detail::apply_spell_benefit(other.effects, effect_source(caster), caster.source.name,
@@ -10617,11 +12461,15 @@ void Session::blow(const Zone &line, Actor &creature)
 {
     // Gust of Wind: a Strength save or 15 feet away from the caster.
     if (creature.life.dead || creature.life.hp == 0 || creature.source.id == line.caster)
+    {
         return;
+    }
     const auto &caster = actor(line.caster);
     if (!saving_throw_succeeds(creature, detail::Ability::strength, spell_dc(caster), false,
                                heightened_against(creature, caster, "gust_of_wind")))
+    {
         push_away(caster, creature, 3);
+    }
 }
 
 void Session::burn_beside_spheres(Actor &creature)
@@ -10629,15 +12477,21 @@ void Session::burn_beside_spheres(Actor &creature)
     // Copies: the burn can end a caster's Concentration and with it the sphere.
     const auto zones = zones_;
     for (const auto &zone : zones)
+    {
         if (zone.kind == ZoneKind::flaming_sphere &&
             distance(zone.cells.front(), creature.source.cell) <= 5)
+        {
             sphere_burns(actor(zone.caster), creature);
+        }
+    }
 }
 
 void Session::sphere_burns(const Actor &caster, Actor &creature)
 {
     if (creature.life.dead || creature.life.hp == 0)
+    {
         return;
+    }
     const auto &spell = *detail::find_spell("flaming_sphere");
     const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
                                              heightened_against(creature, caster, spell.id));
@@ -10679,19 +12533,29 @@ void Session::refresh_form(Actor &a)
         // uses the caster's spell attack too.
         if (a.source.definition.starts_with("draconic-spirit") ||
             a.source.definition.starts_with("giant-insect"))
+        {
             d.reach = 10;
+        }
         if (d.range > 0)
+        {
             d.ranged_bonus = summoned->dc;
+        }
         a.form = std::move(d);
     }
     else if (polymorph != a.effects.active.end())
+    {
         a.form = shaped(a.definition,
                         detail::beast_forms.at(static_cast<std::size_t>(polymorph->dc - 1)));
+    }
     else if (shape == a.effects.active.end())
+    {
         a.form.reset();
+    }
     else
+    {
         a.form =
             shaped(a.definition, detail::beast_forms.at(static_cast<std::size_t>(shape->dc - 1)));
+    }
 }
 
 // Gift of the Protectors: the whole party is written in the Warlock's book
@@ -10708,7 +12572,9 @@ void Session::protect(Actor &target)
                    detail::can_apply(a.effects);
         });
     if (warlock == actors_.end())
+    {
         return;
+    }
     // Not healing (Chill Touch cannot stop it); the dying clock is cleared.
     (void)detail::heal_life(target.life, 1, max_hp(target), true);
     detail::apply_spell_benefit(warlock->effects, effect_source(*warlock), warlock->source.name,
@@ -10725,9 +12591,13 @@ void Session::end_animal_shape(Actor &a)
                        {
                            return e.kind == detail::EffectKind::animal_shaped;
                        }))
+    {
         return;
+    }
     if (a.life.temporary_hp.source_id == "spell:animal_shapes")
+    {
         a.life.temporary_hp = {};
+    }
     const int form_speed = def(a).speed;
     refresh_form(a);
     change_speed(a, form_speed);
@@ -10738,7 +12608,9 @@ void Session::end_animal_shape(Actor &a)
 void Session::end_wild_shape(Actor &a)
 {
     if (!a.form)
+    {
         return;
+    }
     std::erase_if(a.effects.active,
                   [](const auto &e)
                   {
@@ -10780,7 +12652,9 @@ void Session::lands_aid(Actor &druid, Cell center)
     for (auto &other : actors_)
     {
         if (!inside(other) || other.source.side == druid.source.side || other.life.hp == 0)
+        {
             continue;
+        }
         const bool saved = saving_throw_succeeds(other, aid.save, dc);
         const int amount = resolved_damage(other, aid.damage, saved ? rolled / 2 : rolled);
         log(other.source.name + " takes " + std::to_string(amount) +
@@ -10791,18 +12665,26 @@ void Session::lands_aid(Actor &druid, Cell center)
     }
     Actor *wounded = nullptr; // Borrowed from actors_.
     for (auto &other : actors_)
+    {
         if (inside(other) && other.source.side == druid.source.side &&
             other.life.hp < max_hp(other) &&
             (!wounded || max_hp(other) - other.life.hp > max_hp(*wounded) - wounded->life.hp))
+        {
             wounded = &other;
+        }
+    }
     if (wounded)
+    {
         (void)heal(*wounded, dice(aid.dice));
+    }
 }
 
 bool Session::wears_metal(const Actor &creature) const
 {
     if (creature.source.character_profile.empty())
+    {
         return def(creature).metal_armor;
+    }
     const auto &keys = def(creature).equipment_keys;
     return std::any_of(keys.begin(), keys.end(),
                        [](const auto &key)
@@ -10824,7 +12706,9 @@ void Session::heat_metal(const Actor &caster, Actor &creature)
     if (creature.life.dead || creature.life.hp == 0 || !detail::can_apply(creature.effects) ||
         saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
                               heightened_against(creature, caster, spell.id)))
+    {
         return;
+    }
     detail::apply_poisoned(creature.effects, effect_source(caster), caster.source.name,
                            next_turn_ms(caster), detail::EffectKind::scorched);
     log(creature.source.name + " has Disadvantage on attack rolls.",
@@ -10845,8 +12729,12 @@ void Session::move_moonbeam(Actor &caster, const Actor &onto)
     log(caster.source.name + " moves the Moonbeam.",
         {"{name} moves the Moonbeam.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
+    {
         if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+        {
             moonbeam_burns(after, other);
+        }
+    }
 }
 
 bool Session::near_pack(const Zone &pack, Cell cell)
@@ -10894,18 +12782,24 @@ void Session::spirits_strike(const Zone &zone, Actor &creature)
         creature.life.dead || creature.life.hp == 0 || absent(creature) ||
         detail::has_effect(creature.effects, tested) || !can_see(*caster, creature) ||
         sealed_off(creature))
+    {
         return;
+    }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
+    {
         detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                                rest_of_turn, tested);
+    }
     const auto &spell = *detail::find_spell(pack        ? "conjure_animals"
                                             : guardians ? "spirit_guardians"
                                                         : "conjure_woodland_beings");
     const bool saved = saving_throw_succeeds(creature, spell.save, zone.save_dc, false,
                                              heightened_against(creature, *caster, spell.id));
     if (saved && !spell.half_on_success)
+    {
         return;
+    }
     const int count = spell.dice.count + static_cast<int>(zone.slot - spell.level);
     const int rolled = dice({count, spell.dice.sides, 0});
     // Spirit Guardians deal Necrotic damage for an evil caster.
@@ -10913,10 +12807,12 @@ void Session::spirits_strike(const Zone &zone, Actor &creature)
     const auto type = fiendish ? detail::DamageType::necrotic : spell.damage;
     const int amount = resolved_damage(creature, type, saved ? rolled / 2 : rolled);
     if (pack)
+    {
         log(creature.source.name + " takes " + std::to_string(amount) +
                 " Slashing damage from the spirit pack.",
             {"{name} takes {damage} Slashing damage from the spirit pack.",
              {{"name", creature.source.name}, {"damage", std::to_string(amount)}}});
+    }
     else if (guardians)
     {
         const auto name = std::string(detail::damage_name(type));
@@ -10928,10 +12824,12 @@ void Session::spirits_strike(const Zone &zone, Actor &creature)
               {"type", name, true}}});
     }
     else
+    {
         log(creature.source.name + " takes " + std::to_string(amount) +
                 " Force damage from the woodland spirits.",
             {"{name} takes {damage} Force damage from the woodland spirits.",
              {{"name", creature.source.name}, {"damage", std::to_string(amount)}}});
+    }
     damage(creature, amount);
 }
 
@@ -10944,6 +12842,7 @@ std::optional<std::vector<Cell>> Session::pack_destination(const Zone &pack,
     std::optional<std::vector<Cell>> best;
     int best_feet = 0;
     for (int y = 0; y + 1 < board_.height; ++y)
+    {
         for (int x = 0; x + 1 < board_.width; ++x)
         {
             const std::vector<Cell> cells{{x, y}, {x + 1, y}, {x, y + 1}, {x + 1, y + 1}};
@@ -10960,16 +12859,21 @@ std::optional<std::vector<Cell>> Session::pack_destination(const Zone &pack,
                                                               other.source.cell == cell;
                                                    });
                             }))
+            {
                 continue;
+            }
             int feet = std::numeric_limits<int>::max();
             for (const auto cell : cells)
+            {
                 feet = std::min(feet, distance(cell, onto.source.cell));
+            }
             if (feet <= 10 && (!best || feet < best_feet))
             {
                 best = cells;
                 best_feet = feet;
             }
         }
+    }
     return best;
 }
 
@@ -10989,8 +12893,12 @@ void Session::move_spirit_pack(Actor &caster, const Actor &onto)
     log(caster.source.name + " moves the spirit pack.",
         {"{name} moves the spirit pack.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
+    {
         if (near_pack(after, other.source.cell) && !near_pack(before, other.source.cell))
+        {
             spirits_strike(after, other);
+        }
+    }
 }
 
 bool Session::across_wind_wall(Cell from, Cell to) const
@@ -11008,7 +12916,9 @@ bool Session::across_wind_wall(Cell from, Cell to) const
                                             return zone.kind == ZoneKind::wind_wall &&
                                                    in_zone(zone, cell);
                                         }))
+        {
             return true;
+        }
     }
     return false;
 }
@@ -11021,7 +12931,9 @@ void Session::dominate(Actor &caster, Actor &target, int dc)
         {"{name} is dominated by {caster}.",
          {{"name", target.source.name}, {"caster", caster.source.name}}});
     if (target.source.side == caster.source.side)
+    {
         return;
+    }
     target.source.side = caster.source.side;
     target.turned = true;
 }
@@ -11029,19 +12941,29 @@ void Session::dominate(Actor &caster, Actor &target, int dc)
 const Actor *Session::controller(const Actor &a) const
 {
     for (const auto &e : a.effects.active)
+    {
         if ((e.kind == detail::EffectKind::dominated || e.kind == detail::EffectKind::raised ||
              e.kind == detail::EffectKind::summoned) &&
             e.source_scope == scope_)
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.id == e.source_actor)
+                {
                     return &other;
+                }
+            }
+        }
+    }
     return nullptr;
 }
 
 void Session::release(Actor &a)
 {
     if (!a.turned || detail::has_effect(a.effects, detail::EffectKind::dominated))
+    {
         return;
+    }
     a.turned = a.skips_turn = false;
     a.source.side = a.source.side == Side::party ? Side::opposition : Side::party;
     log(a.source.name + " is no longer dominated.",
@@ -11051,7 +12973,9 @@ void Session::release(Actor &a)
 void Session::settle_dominated()
 {
     for (auto &a : actors_)
+    {
         release(a);
+    }
     for (bool moved = true; moved;)
     {
         moved = false;
@@ -11059,22 +12983,30 @@ void Session::settle_dominated()
         {
             const auto *boss = controller(actors_[from]);
             if (!boss)
+            {
                 continue;
+            }
             // In place: after its controller, with only that controller's other
             // creatures between them.
             const auto boss_index = index_of(boss->source.id);
             bool placed = boss_index < from;
             for (std::size_t between = boss_index + 1; placed && between < from; ++between)
+            {
                 placed = controller(actors_[between]) == boss;
+            }
             if (placed)
+            {
                 continue;
+            }
             const auto boss_id = boss->source.id;
             auto creature = std::move(actors_[from]);
             // One that has already acted this round waits for the next.
             creature.skips_turn = from < turn_;
             actors_.erase(actors_.begin() + static_cast<std::ptrdiff_t>(from));
             if (from < turn_)
+            {
                 --turn_;
+            }
             const auto after = index_of(boss_id) + 1;
             actors_.insert(actors_.begin() + static_cast<std::ptrdiff_t>(after),
                            std::move(creature));
@@ -11131,17 +13063,23 @@ void Session::finish_animating(Actor &caster, std::string_view undead)
                          return zone.kind == ZoneKind::raising && zone.caster == caster.source.id;
                      });
     if (raising == zones_.end())
+    {
         return;
+    }
     const auto cells = raising->cells;
     zones_.erase(raising);
     for (const auto cell : cells)
+    {
         for (auto &corpse : actors_)
+        {
             if (corpse.life.dead && corpse.source.cell == cell &&
                 corpse.source.side != caster.source.side && !absent(corpse))
             {
                 raise_undead(caster, corpse, undead);
                 break;
             }
+        }
+    }
     caster.concentration.stop();
 }
 
@@ -11164,18 +13102,26 @@ void Session::raise_undead(const Actor &caster, Actor &corpse, std::string_view 
     detail::apply_spell_benefit(corpse.effects, effect_source(caster), caster.source.name,
                                 detail::EffectKind::raised, 0);
     if (undead == "ghoul")
+    {
         log(corpse.source.name + " rises as a Ghoul.",
             {"{name} rises as a Ghoul.", {{"name", corpse.source.name}}});
+    }
     else
+    {
         log(corpse.source.name + " rises as a Zombie.",
             {"{name} rises as a Zombie.", {{"name", corpse.source.name}}});
+    }
 }
 
 const detail::Effect *Session::curse_on(const Actor &a, int curse) const
 {
     for (const auto &e : a.effects.active)
+    {
         if (e.kind == detail::EffectKind::cursed && e.source_scope == scope_ && e.dc % 10 == curse)
+        {
             return &e;
+        }
+    }
     return nullptr;
 }
 
@@ -11183,7 +13129,9 @@ void Session::curse_strikes(const Actor &caster, Actor &target)
 {
     const auto *curse = curse_on(target, 8);
     if (!curse || curse->source_actor != caster.source.id || target.life.dead)
+    {
         return;
+    }
     const int extra = resolved_damage(target, detail::DamageType::necrotic, roll(8));
     log(target.source.name + " takes " + std::to_string(extra) + " Necrotic damage from the curse.",
         {"{name} takes {damage} Necrotic damage from the curse.",
@@ -11208,7 +13156,9 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
     if (!standing || creature.source.id == swarm.caster || creature.life.dead ||
         creature.life.hp == 0 || absent(creature) || detail::has_effect(creature.effects, tested) ||
         sealed_off(creature))
+    {
         return;
+    }
     const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                      [&](const auto &a)
                                      {
@@ -11216,11 +13166,13 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
                                      });
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
+    {
         detail::apply_poisoned(creature.effects,
                                caster != actors_.end() ? effect_source(*caster)
                                                        : effect_source(creature),
                                caster != actors_.end() ? caster->source.name : creature.source.name,
                                rest_of_turn, tested);
+    }
     const auto &spell = *detail::find_spell(blades   ? "blade_barrier"
                                             : thorns ? "wall_of_thorns"
                                                      : "insect_plague");
@@ -11231,20 +13183,26 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
     const auto type = thorns ? detail::DamageType::slashing : spell.damage;
     const int amount = resolved_damage(creature, type, saved ? rolled / 2 : rolled);
     if (thorns)
+    {
         log(creature.source.name + " takes " + std::to_string(amount) +
                 " Slashing damage from the thorns.",
             {"{name} takes {damage} Slashing damage from the thorns.",
              {{"name", creature.source.name}, {"damage", std::to_string(amount)}}});
+    }
     else if (blades)
+    {
         log(creature.source.name + " takes " + std::to_string(amount) +
                 " Force damage from the blades.",
             {"{name} takes {damage} Force damage from the blades.",
              {{"name", creature.source.name}, {"damage", std::to_string(amount)}}});
+    }
     else
+    {
         log(creature.source.name + " takes " + std::to_string(amount) +
                 " Piercing damage from the swarm.",
             {"{name} takes {damage} Piercing damage from the swarm.",
              {{"name", creature.source.name}, {"damage", std::to_string(amount)}}});
+    }
     damage(creature, amount);
 }
 
@@ -11253,9 +13211,15 @@ std::vector<Cell> Session::pillar_cells(Cell center) const
     // A 10-foot radius around the centre, which comes first.
     std::vector<Cell> cells{center};
     for (int y = 0; y < board_.height; ++y)
+    {
         for (int x = 0; x < board_.width; ++x)
+        {
             if (const Cell cell{x, y}; cell != center && distance(center, cell) <= 10)
+            {
                 cells.push_back(cell);
+            }
+        }
+    }
     return cells;
 }
 
@@ -11277,11 +13241,15 @@ void Session::bathe(const Zone &pillar, Actor &creature)
     if (!standing || caster == actors_.end() || creature.life.dead || absent(creature) ||
         sealed_off(creature) || detail::has_effect(creature.effects, detail::EffectKind::bathed) ||
         !can_see(*caster, creature))
+    {
         return;
+    }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
+    {
         detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                                rest_of_turn, detail::EffectKind::bathed);
+    }
     const auto &spell = *detail::find_spell("conjure_celestial");
     const int more = static_cast<int>(pillar.slot - spell.level);
     // Healing Light for the caster's allies: 4d12 + the spellcasting modifier.
@@ -11330,8 +13298,12 @@ void Session::move_pillar(Actor &caster, const Actor &onto)
     log(caster.source.name + " moves the pillar of light.",
         {"{name} moves the pillar of light.", {{"name", caster.source.name}}});
     for (auto &other : actors_)
+    {
         if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+        {
             bathe(after, other);
+        }
+    }
 }
 
 void Session::divine_word(Actor &cleric, int dc)
@@ -11345,7 +13317,9 @@ void Session::divine_word(Actor &cleric, int dc)
             distance(cleric.source.cell, other.source.cell) > spell.range || sealed_off(other) ||
             saving_throw_succeeds(other, detail::Ability::charisma, dc, false,
                                   heightened_against(other, cleric, spell.id)))
+        {
             continue;
+        }
         const auto &type = def(other).creature_type;
         const bool sent_home =
             type == "celestial" || type == "elemental" || type == "fey" || type == "fiend";
@@ -11357,23 +13331,31 @@ void Session::divine_word(Actor &cleric, int dc)
             other.life.dead = true;
             other.life.recovery = {};
             if (sent_home)
+            {
                 log(other.source.name + " is sent back to its plane.",
                     {"{name} is sent back to its plane.", {{"name", other.source.name}}});
+            }
             else
+            {
                 log(other.source.name + " dies.", {"{name} dies.", {{"name", other.source.name}}});
+            }
             fall(other);
             continue;
         }
         if (other.life.hp > 40 || !detail::can_apply(other.effects))
+        {
             continue;
+        }
         // 21-30 Hit Points: Blinded and Stunned for an hour; 31-40: Blinded for
         // 10 minutes. Deafened is not modeled (DEAF-1).
         const bool stunned = other.life.hp <= 30;
         detail::apply_spell_benefit(other.effects, effect_source(cleric), cleric.source.name,
                                     detail::EffectKind::worded, stunned ? 1 : 2);
         if (stunned)
+        {
             log(other.source.name + " is Blinded and Stunned.",
                 {"{name} is Blinded and Stunned.", {{"name", other.source.name}}});
+        }
         else
         {
             other.effects.active.back().remaining_ms = 600000;
@@ -11391,7 +13373,9 @@ void Session::tremor(const Zone &quake)
                                          return a.source.id == quake.caster;
                                      });
     if (caster == actors_.end())
+    {
         return;
+    }
     const auto &spell = *detail::find_spell("earthquake");
     log("The ground shakes.", {"The ground shakes.", {}});
     for (auto &other : actors_)
@@ -11400,7 +13384,9 @@ void Session::tremor(const Zone &quake)
             sealed_off(other) ||
             saving_throw_succeeds(other, spell.save, quake.save_dc, false,
                                   heightened_against(other, *caster, spell.id)))
+        {
             continue;
+        }
         if (!other.effects.prone)
         {
             other.effects.prone = true;
@@ -11415,7 +13401,9 @@ void Session::tremor(const Zone &quake)
 void Session::finish_knitting(Actor &target, EntityId caster)
 {
     if (target.life.dead)
+    {
         return;
+    }
     const auto &spell = *detail::find_spell("regenerate");
     log("Regenerate takes hold of " + target.source.name + ".",
         {"{spell} takes hold of {name}.",
@@ -11427,16 +13415,22 @@ void Session::finish_knitting(Actor &target, EntityId caster)
                       return e.kind == detail::EffectKind::regenerating;
                   });
     if (detail::can_apply(target.effects))
+    {
         detail::apply_spell_benefit(target.effects, effect_source(actor(caster)),
                                     actor(caster).source.name, detail::EffectKind::regenerating, 0);
+    }
 }
 
 const Session::Zone *Session::holy_aura(const Actor &a) const
 {
     for (const auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::holy && actor(zone.caster).source.side == a.source.side &&
             in_emanation(zone, a.source.cell) && !in_antimagic(a.source.cell))
+        {
             return &zone;
+        }
+    }
     return nullptr;
 }
 
@@ -11452,6 +13446,7 @@ bool Session::in_antimagic(Cell cell) const
 void Session::suppress_spells()
 {
     for (auto &a : actors_)
+    {
         if (!a.life.dead && in_antimagic(a.source.cell))
         {
             const auto spells =
@@ -11468,6 +13463,7 @@ void Session::suppress_spells()
             a.effects = all_effects(a);
             a.suppressed.clear();
         }
+    }
 }
 
 void Session::place_storm_cube(Cell cell)
@@ -11487,7 +13483,9 @@ void Session::place_storm_cube(Cell cell)
             area_->center = cubes.back();
         }
         else
+        {
             area_->center = cube;
+        }
         return;
     }
     const bool touches =
@@ -11497,11 +13495,17 @@ void Session::place_storm_cube(Cell cell)
                         return std::abs(other.x - cube.x) <= 2 && std::abs(other.y - cube.y) <= 2;
                     });
     if (cubes.size() == 1 && !touches)
+    {
         cubes.front() = cube;
+    }
     else if (touches && cubes.size() < detail::find_spell(area_->verb)->storm)
+    {
         cubes.push_back(cube);
+    }
     else
+    {
         return;
+    }
     area_->center = cube;
 }
 
@@ -11509,10 +13513,16 @@ std::vector<Cell> Session::storm_cells(const std::vector<Cell> &cubes) const
 {
     std::vector<Cell> cells;
     for (const auto cube : cubes)
+    {
         for (const auto cell : {cube, Cell{cube.x + 1, cube.y}, Cell{cube.x, cube.y + 1},
                                 Cell{cube.x + 1, cube.y + 1}})
+        {
             if (board_.contains(cell))
+            {
                 cells.push_back(cell);
+            }
+        }
+    }
     return cells;
 }
 
@@ -11533,14 +13543,18 @@ void Session::grope(const Zone &tentacles, Actor &creature)
         absent(creature) || sealed_off(creature) ||
         detail::has_effect(creature.effects, detail::EffectKind::groped) ||
         !detail::can_apply(creature.effects))
+    {
         return;
+    }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                            rest_of_turn, detail::EffectKind::groped);
     const auto &spell = *detail::find_spell("black_tentacles");
     if (saving_throw_succeeds(creature, spell.save, tentacles.save_dc, false,
                               heightened_against(creature, *caster, spell.id)))
+    {
         return;
+    }
     const int amount =
         resolved_damage(creature, spell.damage,
                         dice({spell.dice.count + static_cast<int>(tentacles.slot - spell.level),
@@ -11552,7 +13566,9 @@ void Session::grope(const Zone &tentacles, Actor &creature)
     damage(creature, amount);
     if (creature.life.dead || detail::has_effect(creature.effects, detail::EffectKind::tentacled) ||
         !detail::can_apply(creature.effects))
+    {
         return;
+    }
     detail::apply_entangle(creature.effects, effect_source(*caster), caster->source.name,
                            tentacles.save_dc, detail::EffectKind::tentacled);
     log(creature.source.name + " is Restrained.",
@@ -11570,6 +13586,7 @@ std::vector<Cell> Session::burning_side(std::string_view verb, Cell center,
     const bool first = side % 2 == 0;
     std::vector<Cell> cells;
     for (int y = 0; y < board_.height; ++y)
+    {
         for (int x = 0; x < board_.width; ++x)
         {
             const Cell cell{x, y};
@@ -11579,10 +13596,14 @@ std::vector<Cell> Session::burning_side(std::string_view verb, Cell center,
                              {
                                  return distance(square, cell) <= 10;
                              }))
+            {
                 continue;
+            }
             bool burning = false;
             if (direction == 4)
+            {
                 burning = first == (distance(center, cell) < 10);
+            }
             else
             {
                 const auto step = steps[direction];
@@ -11591,8 +13612,11 @@ std::vector<Cell> Session::burning_side(std::string_view verb, Cell center,
                 burning = across != 0 && first == (direction == 1 ? across < 0 : across > 0);
             }
             if (burning)
+            {
                 cells.push_back(cell);
+            }
         }
+    }
     return cells;
 }
 
@@ -11611,7 +13635,9 @@ void Session::wall_burns(const Zone &fire, Actor &creature)
                     });
     if (!burning || caster == actors_.end() || creature.life.dead || absent(creature) ||
         sealed_off(creature))
+    {
         return;
+    }
     const auto &spell = *detail::find_spell("wall_of_fire");
     const int amount = resolved_damage(
         creature, spell.damage,
@@ -11656,7 +13682,9 @@ bool Session::confused_turn(Actor &a)
         {
             left -= board.at(next) == Terrain::difficult ? 10 : 5;
             if (left < 0)
+            {
                 break;
+            }
             a.source.cell = next;
         }
         log(a.source.name + " wanders in confusion.",
@@ -11672,10 +13700,14 @@ bool Session::confused_turn(Actor &a)
     // A melee attack against a random creature within reach, if there is one.
     std::vector<EntityId> near;
     for (const auto &other : actors_)
+    {
         if (other.source.id != a.source.id && !other.life.dead && other.life.hp > 0 &&
             !absent(other) && distance(a.source.cell, other.source.cell) <= def(a).reach &&
             def(a).melee.count)
+        {
             near.push_back(other.source.id);
+        }
+    }
     if (near.empty())
     {
         log(a.source.name + " stands confused and does nothing.",
@@ -11700,9 +13732,13 @@ Actor &Session::summon(const Actor &caster, std::string definition, std::string 
 {
     EntityId id = 1;
     for (const auto &a : actors_)
+    {
         id = std::max(id, a.source.id + 1);
+    }
     for (const auto &gone : fled_)
+    {
         id = std::max(id, gone.source.id + 1);
+    }
     Actor creature;
     creature.definition = content_->definitions.at(definition);
     creature.source.id = id;
@@ -11722,7 +13758,9 @@ Actor &Session::summon(const Actor &caster, std::string definition, std::string 
     // The room reserved for summons keeps every reference to an actor valid;
     // settle_dominated() puts it right after its summoner once the command ends.
     if (actors_.size() == actors_.capacity())
+    {
         throw std::runtime_error("No room for another creature");
+    }
     actors_.push_back(std::move(creature));
     return actors_.back();
 }
@@ -11732,7 +13770,9 @@ std::vector<Cell> Session::free_squares_near(Cell from) const
     std::vector<Cell> cells;
     const auto board = zoned_board();
     for (int y = 0; y < board_.height; ++y)
+    {
         for (int x = 0; x < board_.width; ++x)
+        {
             if (const Cell cell{x, y}; board.at(cell) != Terrain::obstacle &&
                                        !guarded_square(cell) &&
                                        std::none_of(actors_.begin(), actors_.end(),
@@ -11741,7 +13781,11 @@ std::vector<Cell> Session::free_squares_near(Cell from) const
                                                         return !other.life.dead && !absent(other) &&
                                                                other.source.cell == cell;
                                                     }))
+            {
                 cells.push_back(cell);
+            }
+        }
+    }
     std::stable_sort(cells.begin(), cells.end(),
                      [&](Cell x, Cell y)
                      {
@@ -11780,19 +13824,25 @@ void Session::engulf(const Zone &spirit, Actor &creature)
         creature.source.side == caster->source.side || creature.life.dead ||
         creature.life.hp == 0 || absent(creature) || sealed_off(creature) ||
         !can_see(*caster, creature))
+    {
         return;
+    }
     const auto type_of = std::find_if(caster->effects.active.begin(), caster->effects.active.end(),
                                       [](const auto &e)
                                       {
                                           return e.kind == detail::EffectKind::elemental_spirit;
                                       });
     if (type_of == caster->effects.active.end())
+    {
         return;
+    }
     const auto type = static_cast<detail::DamageType>(type_of->dc);
     const auto &spell = *detail::find_spell("conjure_elemental");
     if (saving_throw_succeeds(creature, spell.save, spirit.save_dc, false,
                               heightened_against(creature, *caster, spell.id)))
+    {
         return;
+    }
     const auto name = std::string(detail::damage_name(type));
     const int amount = resolved_damage(
         creature, type,
@@ -11805,7 +13855,9 @@ void Session::engulf(const Zone &spirit, Actor &creature)
           {"type", name, true}}});
     damage(creature, amount);
     if (creature.life.dead || !detail::can_apply(creature.effects))
+    {
         return;
+    }
     detail::apply_spell_benefit(creature.effects, effect_source(*caster), caster->source.name,
                                 detail::EffectKind::engulfed, static_cast<int>(type));
     log(creature.source.name + " is Restrained by the spirit.",
@@ -11829,7 +13881,9 @@ void Session::choke_cloud(const Zone &cloud, Actor &creature)
         absent(creature) || sealed_off(creature) ||
         detail::has_effect(creature.effects, detail::EffectKind::clouded) ||
         !detail::can_apply(creature.effects))
+    {
         return;
+    }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                            rest_of_turn, detail::EffectKind::clouded);
@@ -11878,7 +13932,9 @@ void Session::hurl(Actor &caster, Actor &creature, Cell to)
                             return other.source.id != creature.source.id && !other.life.dead &&
                                    !absent(other) && other.source.cell == next;
                         }))
+        {
             break;
+        }
         at = next;
         ++moved;
     }
@@ -11890,7 +13946,9 @@ void Session::hurl(Actor &caster, Actor &creature, Cell to)
           {"target", creature.source.name},
           {"feet", std::to_string(5 * moved)}}});
     if (moved < squares)
+    {
         slam(creature, 5 * (squares - moved));
+    }
 }
 
 bool Session::globe_wards(const Actor &caster, Cell cell, unsigned level) const
@@ -11911,7 +13969,9 @@ void Session::fire_contingency(Actor &a)
                                          return e.kind == detail::EffectKind::contingency;
                                      });
     if (stored == a.effects.active.end() || a.life.dead)
+    {
         return;
+    }
     const auto &spell = detail::spell_table.at(static_cast<std::size_t>(stored->dc / 4));
     a.effects.active.erase(stored);
     log("Contingency: " + std::string(spell.label) + " takes effect on " + a.source.name + ".",
@@ -11921,12 +13981,16 @@ void Session::fire_contingency(Actor &a)
     {
         auto rolled = spell.dice;
         if (spell.add_casting_modifier)
+        {
             rolled.bonus = casting_modifier(def(a), spell.id);
+        }
         heal(a, healing_roll(a, rolled) + disciple_of_life(a, spell.level));
         return;
     }
     if (spell.concentration)
+    {
         begin_concentration(a, spell);
+    }
     apply_rider(spell, spell.id, a, a, spell_dc(a, spell.id));
 }
 
@@ -11944,9 +14008,15 @@ void Session::prismatic_rays(Actor &caster, Actor &struck, bool saved, int dc, c
     // An 8 strikes with two rays, rerolling any 8.
     std::vector<int> rays{roll(8)};
     if (rays.front() == 8)
+    {
         for (rays.clear(); rays.size() < 2;)
+        {
             if (const int ray = roll(8); ray != 8)
+            {
                 rays.push_back(ray);
+            }
+        }
+    }
     constexpr std::array<std::string_view, 7> colors{"red",  "orange", "yellow", "green",
                                                      "blue", "indigo", "violet"};
     constexpr std::array types{detail::DamageType::fire, detail::DamageType::acid,
@@ -11955,7 +14025,9 @@ void Session::prismatic_rays(Actor &caster, Actor &struck, bool saved, int dc, c
     for (const int ray : rays)
     {
         if (struck.life.dead)
+        {
             return;
+        }
         const std::string color(colors[static_cast<std::size_t>(ray - 1)]);
         log(struck.source.name + " is struck by the " + color + " ray.",
             {"{name} is struck by the {color} ray.",
@@ -11976,7 +14048,9 @@ void Session::prismatic_rays(Actor &caster, Actor &struck, bool saved, int dc, c
             continue;
         }
         if (saved || !detail::can_apply(struck.effects))
+        {
             continue;
+        }
         // Indigo: Restrained, turning to stone after three failed saves.
         // Violet: Blinded, and sent away on a failed save at the caster's
         // next turn.
@@ -12036,7 +14110,9 @@ void Session::seek_maze_exit(Actor &a)
           {"roll", std::to_string(natural)},
           {"bonus", std::to_string(bonus)}}});
     if (!escaped)
+    {
         return;
+    }
     const auto lost = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                    [](const auto &e)
                                    {
@@ -12054,7 +14130,9 @@ void Session::seek_maze_exit(Actor &a)
                                             return other.source.id == caster;
                                         });
         found != actors_.end())
+    {
         end_concentration(*found);
+    }
 }
 
 void Session::take_overchannel(Actor &caster, const detail::SpellDef &spell, std::string_view verb)
@@ -12066,7 +14144,9 @@ void Session::take_overchannel(Actor &caster, const detail::SpellDef &spell, std
         slot > 5 || !spell.dice.count || spell.pattern == detail::SpellPattern::heal ||
         verb.ends_with(detail::initiate_suffix) || verb.ends_with(detail::intervention_suffix) ||
         !detail::on_class_list(CharacterClass::wizard, spell.id))
+    {
         return;
+    }
     std::erase_if(caster.effects.active,
                   [](const auto &e)
                   {
@@ -12081,8 +14161,10 @@ void Session::take_overchannel(Actor &caster, const detail::SpellDef &spell, std
                                    });
     // Each use after the first adds 1d12 per slot level to the 2d12.
     if (used == caster.effects.active.end())
+    {
         detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
                                     detail::EffectKind::overchanneled, 1);
+    }
     else
     {
         overchannel_dice_ = (used->dc + 1) * static_cast<int>(slot);
@@ -12095,7 +14177,9 @@ void Session::take_overchannel(Actor &caster, const detail::SpellDef &spell, std
 void Session::fey_frighten(Actor &caster, Actor &target)
 {
     if (target.life.dead || fearless(target) || !detail::can_apply(target.effects))
+    {
         return;
+    }
     detail::apply_poisoned(target.effects, effect_source(caster), caster.source.name,
                            next_turn_ms(caster), detail::EffectKind::fey_fright);
     log(target.source.name + " is Frightened.",
@@ -12105,23 +14189,31 @@ void Session::fey_frighten(Actor &caster, Actor &target)
 void Session::ward_nature()
 {
     for (auto &a : actors_)
+    {
         if (def(a).natures_ward)
+        {
             std::erase_if(a.effects.active,
                           [](const auto &e)
                           {
                               return gives_condition(e.kind, "poisoned");
                           });
+        }
+    }
 }
 
 void Session::overchannel_backlash()
 {
     if (!overchannel_dice_)
+    {
         return;
+    }
     auto &caster = actor(overchannel_caster_);
     const int count = overchannel_dice_;
     overchannel_dice_ = 0;
     if (caster.life.dead)
+    {
         return;
+    }
     // It ignores Resistance and Immunity.
     const int amount = dice({count, 12, 0});
     log(caster.source.name + " takes " + std::to_string(amount) +
@@ -12139,7 +14231,9 @@ void Session::end_polymorph(Actor &a)
                       return e.kind == detail::EffectKind::polymorphed;
                   });
     if (a.life.temporary_hp.source_id == "spell:polymorph")
+    {
         a.life.temporary_hp = {};
+    }
     const int form_speed = def(a).speed;
     refresh_form(a);
     change_speed(a, form_speed);
@@ -12150,7 +14244,9 @@ void Session::end_polymorph(Actor &a)
 void Session::tire(Actor &a)
 {
     if (a.life.dead || !detail::can_apply(a.effects))
+    {
         return;
+    }
     const auto index = index_of(a.source.id);
     const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
     detail::apply_poisoned(a.effects, effect_source(a), a.source.name, next_turn_ms(a) + slot,
@@ -12180,16 +14276,22 @@ void Session::enchant_area(Actor &caster, const detail::SpellDef &spell,
             (pattern && detail::has_effect(other.effects, detail::EffectKind::mind_blank)) ||
             charm_or_fear_save(other, spell.save, dc, false,
                                heightened_against(other, caster, spell.id)))
+        {
             continue;
+        }
         detail::apply_spell_benefit(
             other.effects, effect_source(caster), caster.source.name,
             pattern ? detail::EffectKind::entranced : detail::EffectKind::terrified, 0);
         if (pattern)
+        {
             log(other.source.name + " is entranced by the pattern.",
                 {"{name} is entranced by the pattern.", {{"name", other.source.name}}});
+        }
         else
+        {
             log(other.source.name + " is Frightened.",
                 {"{name} is Frightened.", {{"name", other.source.name}}});
+        }
     }
 }
 
@@ -12202,12 +14304,16 @@ void Session::slow_area(Actor &caster, const detail::SpellDef &spell,
     const int dc = area_dc(caster, spell);
     std::vector<EntityId> chosen;
     for (const auto &other : actors_)
+    {
         if (other.source.side != caster.source.side && !other.life.dead && other.life.hp > 0 &&
             !absent(other) && !sealed_off(other) &&
             std::find(cells.begin(), cells.end(), other.source.cell) != cells.end() &&
             !globe_wards(caster, other.source.cell, spell.level) &&
             !caged_apart(caster.source.cell, other.source.cell, false))
+        {
             chosen.push_back(other.source.id);
+        }
+    }
     std::stable_sort(chosen.begin(), chosen.end(),
                      [&](EntityId left, EntityId right)
                      {
@@ -12215,14 +14321,18 @@ void Session::slow_area(Actor &caster, const detail::SpellDef &spell,
                                 distance(center, actor(right).source.cell);
                      });
     if (chosen.size() > 6)
+    {
         chosen.resize(6);
+    }
     for (const auto id : chosen)
     {
         auto &other = actor(id);
         if (!detail::can_apply(other.effects) ||
             saving_throw_succeeds(other, spell.save, dc, false,
                                   heightened_against(other, caster, spell.id)))
+        {
             continue;
+        }
         detail::apply_repeating_condition(
             other.effects, detail::EffectKind::time_slowed, effect_source(caster),
             caster.source.name, detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(id)});
@@ -12247,14 +14357,20 @@ void Session::sleet_falls(const Zone &sleet, Actor &creature)
                     });
     if (!falling || caster == actors_.end() || creature.life.dead || absent(creature) ||
         sealed_off(creature) || detail::has_effect(creature.effects, detail::EffectKind::sleeted))
+    {
         return;
+    }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
+    {
         detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                                rest_of_turn, detail::EffectKind::sleeted);
+    }
     if (saving_throw_succeeds(creature, detail::Ability::dexterity, sleet.save_dc, false,
                               heightened_against(creature, *caster, "sleet_storm")))
+    {
         return;
+    }
     if (!creature.effects.prone)
     {
         creature.effects.prone = true;
@@ -12276,7 +14392,9 @@ void Session::choke(const Zone &cloud, Actor &creature)
         absent(creature) || sealed_off(creature) || !detail::can_apply(creature.effects) ||
         saving_throw_succeeds(creature, detail::Ability::constitution, cloud.save_dc, false,
                               heightened_against(creature, *caster, "stinking_cloud")))
+    {
         return;
+    }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                            rest_of_turn, detail::EffectKind::retching);
@@ -12303,10 +14421,14 @@ bool Session::countered(Actor &caster)
     for (auto &wizard : actors_)
     {
         if (!can_counter(wizard, caster))
+        {
             continue;
+        }
         ask_reaction(wizard, Asked::counter);
         if (answer_of(wizard.source.id, Asked::counter)->verb != "counterspell")
+        {
             continue;
+        }
         wizard.reaction = false;
         const auto &counter = *detail::find_spell("counterspell");
         pay_for_spell(wizard, cast_at(counter, lowest_slot(wizard, 3), "counterspell", "").first,
@@ -12316,7 +14438,9 @@ bool Session::countered(Actor &caster)
              {{"name", wizard.source.name}, {"spell", "Counterspell", true}}});
         if (saving_throw_succeeds(caster, detail::Ability::constitution,
                                   spell_dc(wizard, "counterspell")))
+        {
             continue;
+        }
         log(caster.source.name + "'s spell dissipates.",
             {"{name}'s spell dissipates.", {{"name", caster.source.name}}});
         return true;
@@ -12335,12 +14459,18 @@ bool Session::slowed_spell_fails(Actor &caster, std::string_view verb,
                                        return e.kind == detail::EffectKind::time_slowed;
                                    });
     if (slow == caster.effects.active.end())
+    {
         return false;
+    }
     const int dc = slow->dc;
     if (saving_throw_succeeds(caster, detail::Ability::wisdom, dc))
+    {
         return false;
+    }
     if (spell.level)
+    {
         pay_for_spell(caster, verb, spell);
+    }
     log(caster.source.name + "'s spell fails under Slow.",
         {"{name}'s spell fails under Slow.", {{"name", caster.source.name}}});
     return true;
@@ -12351,16 +14481,24 @@ bool Session::slowed_spell_fails(Actor &caster, std::string_view verb,
 void Session::limit_slowed_turn()
 {
     if (outcome_ != Outcome::ongoing || turn_ >= actors_.size())
+    {
         return;
+    }
     auto &a = actors_[turn_];
     if (!detail::has_effect(a.effects, detail::EffectKind::time_slowed))
+    {
         return;
+    }
     a.actions.extra_attacks = 0;
     a.actions.haste = a.actions.surge = false;
     if (!a.actions.normal)
+    {
         a.bonus = false;
+    }
     else if (!a.bonus)
+    {
         a.actions.normal = false;
+    }
 }
 
 void Session::vampiric_touch(Actor &caster, Actor &target, unsigned slot)
@@ -12390,7 +14528,9 @@ void Session::ready_vitality(Actor &caster, const detail::SpellDef &spell,
         !detail::on_class_list(CharacterClass::cleric, spell.id) ||
         damaged_before >= damage_taken_.size() || !detail::can_apply(caster.effects) ||
         detail::has_effect(caster.effects, detail::EffectKind::vitality))
+    {
         return;
+    }
     detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
                                 detail::EffectKind::vitality, 0);
 }
@@ -12410,9 +14550,13 @@ void Session::grant_vitality(Actor &cleric, Actor &target)
         {"{name} gives vitality to {target}.",
          {{"name", cleric.source.name}, {"target", target.source.name}}});
     if (target.life.temporary_hp.amount && target.source.id == cleric.source.id)
+    {
         temporary_offer_ = std::move(offered);
+    }
     else if (target.life.temporary_hp.amount < offered.amount)
+    {
         detail::grant_temporary_hp(target.life, offered, TemporaryHpChoice::use_new);
+    }
 }
 
 void Session::mass_cure(Actor &cleric, const detail::SpellDef &spell, std::string_view verb,
@@ -12422,17 +14566,23 @@ void Session::mass_cure(Actor &cleric, const detail::SpellDef &spell, std::strin
     // allies who can be healed, the most hurt first.
     std::vector<Actor *> hurt;
     for (auto &other : actors_)
+    {
         if (other.source.side == cleric.source.side && !other.life.dead && !absent(other) &&
             other.life.hp < max_hp(other) && !detail::healing_blocked(other.effects) &&
             std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+        {
             hurt.push_back(&other);
+        }
+    }
     std::sort(hurt.begin(), hurt.end(),
               [&](const Actor *x, const Actor *y)
               {
                   return x->life.hp * max_hp(*y) < y->life.hp * max_hp(*x);
               });
     if (hurt.size() > spell.instances)
+    {
         hurt.resize(spell.instances);
+    }
     auto rolled = spell.dice;
     rolled.count += static_cast<int>(upcast_steps(verb, spell) * spell.upcast.extra_dice);
     rolled.bonus = casting_modifier(def(cleric), spell.id);
@@ -12454,7 +14604,9 @@ void Session::contagion_save(Actor &a)
                                   return e.kind == detail::EffectKind::contagion;
                               });
     if (found == a.effects.active.end() || found->dc >= 300 || a.life.hp == 0)
+    {
         return;
+    }
     const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                      [&](const auto &other)
                                      {
@@ -12469,7 +14621,9 @@ void Session::contagion_save(Actor &a)
                              return e.kind == detail::EffectKind::contagion;
                          });
     if (found == a.effects.active.end())
+    {
         return;
+    }
     found->dc += saved ? 10 : 100;
     if ((found->dc / 10) % 10 >= 3)
     {
@@ -12478,8 +14632,10 @@ void Session::contagion_save(Actor &a)
             {"{name} shakes off the contagion.", {{"name", a.source.name}}});
     }
     else if (found->dc >= 300)
+    {
         log(a.source.name + "'s contagion takes hold for seven days.",
             {"{name}'s contagion takes hold for seven days.", {{"name", a.source.name}}});
+    }
 }
 
 bool Session::otherworldly(const Actor &a) const
@@ -12525,11 +14681,15 @@ void Session::hunters_defense(Actor &target, detail::DamageType type)
                                                answer.verb == "superior_defense";
                                     });
     if (found == reaction_answers_.end())
+    {
         return;
+    }
     found->verb = "defended";
     const auto name = std::string(detail::damage_name(type));
     if (!detail::can_apply(target.effects))
+    {
         return;
+    }
     detail::apply_spell_benefit(target.effects, effect_source(target), target.source.name,
                                 detail::EffectKind::defending, static_cast<int>(type));
     log(target.source.name + " uses Superior Hunter's Defense: Resistance to " + name +
@@ -12543,8 +14703,12 @@ std::vector<Cell> Session::beam_cells(Cell center) const
     // Moonbeam's 5-foot radius, its centre first so a moved beam keeps it.
     std::vector<Cell> cells{center};
     for (const auto cell : area_cells(*detail::find_spell("moonbeam"), "moonbeam", center, center))
+    {
         if (cell != center)
+        {
             cells.push_back(cell);
+        }
+    }
     return cells;
 }
 
@@ -12560,12 +14724,16 @@ void Session::moonbeam_burns(const Zone &beam, Actor &creature)
                     });
     if (!shining || creature.life.dead || creature.life.hp == 0 ||
         detail::has_effect(creature.effects, detail::EffectKind::moonlit) || sealed_off(creature))
+    {
         return;
+    }
     const auto &caster = actor(beam.caster);
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(creature.effects))
+    {
         detail::apply_poisoned(creature.effects, effect_source(caster), caster.source.name,
                                rest_of_turn, detail::EffectKind::moonlit);
+    }
     const auto &spell = *detail::find_spell("moonbeam");
     const bool saved = saving_throw_succeeds(creature, spell.save, spell_dc(caster), false,
                                              heightened_against(creature, caster, spell.id));
@@ -12602,13 +14770,17 @@ bool Session::spring_zone(const Zone &zone, Actor &creature)
         (grease ? creature.effects.prone
                 : detail::has_effect(creature.effects, detail::EffectKind::webbed) ||
                       !detail::can_apply(creature.effects)))
+    {
         return false;
+    }
     // Grease outlasts its caster, so its mark is found by the caster's id.
     const bool heightened = detail::heightened_against(creature.effects, scope_, zone.caster,
                                                        grease ? "grease" : "web");
     if (saving_throw_succeeds(creature, detail::Ability::dexterity, zone.save_dc, false,
                               heightened))
+    {
         return false;
+    }
     if (grease)
     {
         creature.effects.prone = true;
@@ -12630,8 +14802,12 @@ void Session::spring_zones(Actor &creature, ZoneKind kind)
     // Copies: a save can end a caster's Concentration and with it the zone.
     const auto zones = zones_;
     for (const auto &zone : zones)
+    {
         if (zone.kind == kind && in_zone(zone, creature.source.cell))
+        {
             (void)spring_zone(zone, creature);
+        }
+    }
 }
 
 void Session::ice_burst(Actor &caster, const Actor &target, unsigned steps)
@@ -12644,9 +14820,13 @@ void Session::ice_burst(Actor &caster, const Actor &target, unsigned steps)
     for (auto &other : actors_)
     {
         if (other.life.dead || distance(centre, other.source.cell) > 5)
+        {
             continue;
+        }
         if (saving_throw_succeeds(other, detail::Ability::dexterity, dc))
+        {
             continue;
+        }
         const int amount = resolved_damage(other, detail::DamageType::cold, total);
         log(other.source.name + " takes " + std::to_string(amount) + " Cold damage.",
             {"{name} takes {damage} {type} damage.",
@@ -12682,17 +14862,23 @@ void Session::push_along(Actor &target, Cell step, int squares)
                         {
                             return !other.life.dead && other.source.cell == next;
                         }))
+        {
             break;
+        }
         target.source.cell = next;
     }
     if (moved)
+    {
         log(target.source.name + " is pushed " + std::to_string(5 * moved) + " feet.",
             {"{name} is pushed {feet} feet.",
              {{"name", target.source.name}, {"feet", std::to_string(5 * moved)}}});
+    }
     // The battlefield's edge is open ground beyond, not a wall.
     if (const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
         moved < squares && (sx || sy) && board_.contains(next))
+    {
         slam(target, 5 * (squares - moved));
+    }
 }
 
 // Tsunami: at the start of its caster's turns the wall moves 50 feet away,
@@ -12706,7 +14892,9 @@ void Session::move_wave(EntityId caster)
                                         return zone.kind == ZoneKind::wave && zone.caster == caster;
                                     });
     if (found == zones_.end())
+    {
         return;
+    }
     const auto before = *found;
     const auto heading = wave_headings[static_cast<std::size_t>(before.dealt)];
     constexpr int squares = 10;
@@ -12716,23 +14904,35 @@ void Session::move_wave(EntityId caster)
     };
     std::vector<Cell> swept, ahead;
     for (int k = 0; k <= squares; ++k)
+    {
         for (const auto cell : before.cells)
+        {
             if (const auto moved = shifted(cell, k); board_.contains(moved))
             {
                 if (std::find(swept.begin(), swept.end(), moved) == swept.end())
+                {
                     swept.push_back(moved);
+                }
                 if (k == squares)
+                {
                     ahead.push_back(moved);
+                }
             }
+        }
+    }
     found->cells = ahead;
     --found->slot;
     log("The tsunami surges forward.", {"The tsunami surges forward.", {}});
     // The foremost first, so no one carried blocks another.
     std::vector<EntityId> caught;
     for (const auto &other : actors_)
+    {
         if (!other.life.dead && !absent(other) && !sealed_off(other) &&
             std::find(swept.begin(), swept.end(), other.source.cell) != swept.end())
+        {
             caught.push_back(other.source.id);
+        }
+    }
     std::stable_sort(caught.begin(), caught.end(),
                      [&](EntityId left, EntityId right)
                      {
@@ -12760,13 +14960,19 @@ void Session::move_wave(EntityId caster)
         int carry = 0;
         while (carry < squares && std::find(ahead.begin(), ahead.end(),
                                             shifted(other.source.cell, carry)) == ahead.end())
+        {
             ++carry;
+        }
         if (!other.life.dead && carry)
+        {
             push_along(other, heading, carry);
+        }
     }
     // Off the field, the wave is spent.
     if (ahead.empty())
+    {
         end_concentration(actor(caster));
+    }
 }
 
 // Tsunami: a creature in the wave moves only by swimming, after a Strength
@@ -12781,7 +14987,9 @@ bool Session::held_by_wave(Actor &a)
                          return zone.kind == ZoneKind::wave && in_zone(zone, a.source.cell);
                      });
     if (wave == zones_.end() || detail::has_effect(a.effects, detail::EffectKind::swum))
+    {
         return false;
+    }
     const int dc = wave->save_dc;
     const auto check = roll_athletics(a, dc);
     const std::string advantage_label = check.advantage ? " (advantage)" : "";
@@ -12804,8 +15012,10 @@ bool Session::held_by_wave(Actor &a)
     }
     const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     if (detail::can_apply(a.effects))
+    {
         detail::apply_poisoned(a.effects, effect_source(a), a.source.name, rest_of_turn,
                                detail::EffectKind::swum);
+    }
     return false;
 }
 
@@ -12824,11 +15034,15 @@ bool Session::blocks_push(Cell cell, EntityId pushed) const
 void Session::slam(Actor &target, int short_feet)
 {
     if (short_feet <= 0 || target.life.dead)
+    {
         return;
+    }
     const int dice = std::min(3, (short_feet + 9) / 10);
     int rolled = 0;
     for (int n = 0; n < dice; ++n)
+    {
         rolled += roll(6);
+    }
     const int amount = resolved_damage(target, detail::DamageType::bludgeoning, rolled);
     log(target.source.name + " slams into an obstacle and takes " + std::to_string(amount) +
             " Bludgeoning damage.",
@@ -12875,13 +15089,17 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
     };
     visits[at(target.source.cell, 0)].provoked = 0;
     for (int feet = 0; feet < budget; feet += 5)
+    {
         for (int square = 0; square < cells; ++square)
         {
             const Cell here{square % width, square / width};
             const auto &visit = visits[at(here, feet)];
             if (visit.provoked == unreached)
+            {
                 continue;
+            }
             for (int dy = -1; dy <= 1; ++dy)
+            {
                 for (int dx = -1; dx <= 1; ++dx)
                 {
                     const Cell next{here.x + dx, here.y + dy};
@@ -12889,7 +15107,9 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
                                           ? grid.step_cost(here, next)
                                           : std::nullopt;
                     if (!cost || feet + *cost > budget)
+                    {
                         continue;
+                    }
                     const auto provoked = static_cast<int>(
                         std::count_if(actors_.begin(), actors_.end(),
                                       [&](const auto &other)
@@ -12898,9 +15118,13 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
                                       }));
                     auto &reached = visits[at(next, feet + *cost)];
                     if (visit.provoked + provoked < reached.provoked)
+                    {
                         reached = {visit.provoked + provoked, static_cast<int>(at(here, feet))};
+                    }
                 }
+            }
         }
+    }
     // The farthest square it may stop on, then the safest route, then the shortest.
     std::size_t best = at(target.source.cell, 0);
     const auto better = [&](std::size_t candidate)
@@ -12908,17 +15132,25 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
         const auto a = cell_of(candidate), b = cell_of(best);
         const int far = distance(from.source.cell, a), best_far = distance(from.source.cell, b);
         if (far != best_far)
+        {
             return far > best_far;
+        }
         return visits[candidate].provoked < visits[best].provoked;
     };
     for (std::size_t visit = 0; visit < visits.size(); ++visit)
+    {
         if (visits[visit].provoked != unreached && grid.can_stop_at(cell_of(visit)) &&
             better(visit))
+        {
             best = visit;
+        }
+    }
     std::vector<Cell> route;
     for (auto visit = best; visits[visit].previous >= 0;
          visit = static_cast<std::size_t>(visits[visit].previous))
+    {
         route.push_back(cell_of(visit));
+    }
     std::reverse(route.begin(), route.end());
     return route;
 }
@@ -12941,8 +15173,12 @@ void Session::cast_area()
         {
             a.bonus = false;
             for (auto &zone : zones_)
+            {
                 if (zone.kind == ZoneKind::sanctuary && zone.caster == a.source.id)
+                {
                     zone.cells = std::move(cells);
+                }
+            }
             log("The spectral trees move.", {"The spectral trees move.", {}});
             return;
         }
@@ -12969,11 +15205,17 @@ void Session::cast_area()
     const bool was_invisible = invisible(a);
     const auto id = a.source.id;
     if (aimed.verb.starts_with("breath_weapon_"))
+    {
         breath_weapon(a, aimed);
+    }
     else
+    {
         cast_aimed_area(a, aimed);
+    }
     if (was_invisible)
+    {
         end_invisibility(id);
+    }
     end_hiding(id);
 }
 
@@ -12999,7 +15241,9 @@ std::optional<int> Session::heroic_reroll(Actor &a)
                                         {
                                             return e.kind == detail::EffectKind::heroic_inspiration;
                                         }))
+    {
         return std::nullopt;
+    }
     const int natural = roll(20);
     log(a.source.name +
             " uses Heroic Inspiration and rolls the d20 again: " + std::to_string(natural) + ".",
@@ -13011,11 +15255,13 @@ std::optional<int> Session::heroic_reroll(Actor &a)
 void Session::spend_trait_use(Actor &a)
 {
     for (auto &effect : a.effects.active)
+    {
         if (effect.kind == detail::EffectKind::trait_uses)
         {
             ++effect.dc;
             return;
         }
+    }
     detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                 detail::EffectKind::trait_uses, 1);
 }
@@ -13039,7 +15285,9 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     take_metamagic(a, spell);
     take_overchannel(a, spell, aimed.verb);
     if (spell.bonus_action || quickened)
+    {
         a.bonus = false;
+    }
     else
     {
         a.nick_origin = 0;
@@ -13051,25 +15299,41 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                        aimed.verb == "call_lightning_again";
     if (!again && spell.id != "dragons_breath_exhale" &&
         (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
+    {
         return;
+    }
     if (spell.level && !again)
+    {
         pay_for_spell(a, aimed.verb, spell);
+    }
     if (spell.id == "dragons_breath_exhale")
+    {
         log(a.source.name + " exhales Dragon's Breath.",
             {"{name} exhales Dragon's Breath.", {{"name", a.source.name}}});
+    }
     else
+    {
         log(a.source.name + " casts " + std::string(spell.label) + ".",
             {"{name} casts {spell}.",
              {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+    }
     // Heightened Spell takes the first enemy in the area.
     if (casting_with(Metamagic::heightened))
+    {
         for (const auto cell : spell.storm
                                    ? storm_cells(aimed.cubes)
                                    : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+        {
             for (const auto &other : actors_)
+            {
                 if (!heightened_target_ && !other.life.dead && other.source.cell == cell &&
                     other.source.side != a.source.side)
+                {
                     heightened_target_ = other.source.id;
+                }
+            }
+        }
+    }
     mark_heightened(a, spell);
     if (spell.rider == detail::Rider::flaming_sphere)
     {
@@ -13083,8 +15347,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::moonbeam, beam_cells(aimed.center)});
         const auto beam = zones_.back();
         for (auto &other : actors_)
+        {
             if (in_zone(beam, other.source.cell))
+            {
                 moonbeam_burns(beam, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::gust_of_wind)
@@ -13094,8 +15362,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::gust, cells});
         const auto line = zones_.back();
         for (auto &other : actors_)
+        {
             if (other.source.id != a.source.id && in_zone(line, other.source.cell))
+            {
                 blow(line, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::dispel_magic)
@@ -13153,8 +15425,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         swarm.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(swarm);
         for (auto &other : actors_)
+        {
             if (in_zone(swarm, other.source.cell))
+            {
                 swarm_strikes(swarm, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::tsunami)
@@ -13171,7 +15447,9 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         damage_area(a, spell, aimed.verb, wave.cells, wave.save_dc);
         // Caught in its own wave, the caster may lose Concentration at once.
         if (a.concentration.active())
+        {
             zones_.push_back(std::move(wave));
+        }
         return;
     }
     if (spell.rider == detail::Rider::wall_of_thorns)
@@ -13197,8 +15475,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         blades.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(blades);
         for (auto &other : actors_)
+        {
             if (in_zone(blades, other.source.cell))
+            {
                 swarm_strikes(blades, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::call_lightning)
@@ -13214,8 +15496,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         }
         auto bolt = spell;
         for (const auto &zone : zones_)
+        {
             if (zone.kind == ZoneKind::storm && zone.caster == a.source.id)
+            {
                 bolt.dice.count = 3 + static_cast<int>(zone.slot - spell.level);
+            }
+        }
         log("Lightning strikes from the storm cloud.",
             {"Lightning strikes from the storm cloud.", {}});
         damage_area(a, bolt, bolt.id, area_cells(bolt, bolt.id, a.source.cell, aimed.center),
@@ -13269,9 +15555,13 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         std::vector<Cell> grown;
         for (const auto cell : area_cells(spell, aimed.verb, a.source.cell, aimed.center))
+        {
             if (!board_.plants.empty() &&
                 board_.plants[static_cast<std::size_t>(cell.y * board_.width + cell.x)])
+            {
                 grown.push_back(cell);
+            }
+        }
         if (grown.empty())
         {
             log("No plants grow there.", {"No plants grow there.", {}});
@@ -13309,8 +15599,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         cloud.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(cloud);
         for (auto &other : actors_)
+        {
             if (in_zone(cloud, other.source.cell))
+            {
                 choke_cloud(cloud, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::conjure_elemental)
@@ -13327,8 +15621,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         for (const auto cell : {aimed.center, Cell{aimed.center.x + 1, aimed.center.y},
                                 Cell{aimed.center.x, aimed.center.y + 1},
                                 Cell{aimed.center.x + 1, aimed.center.y + 1}})
+        {
             if (board_.contains(cell))
+            {
                 cells.push_back(cell);
+            }
+        }
         Zone spirit{a.source.id, ZoneKind::elemental, std::move(cells)};
         spirit.save_dc = area_dc(a, spell);
         spirit.slot = slot_level_of(aimed.verb, spell);
@@ -13366,20 +15664,28 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
         std::vector<Cell> struck;
         for (const auto &other : actors_)
+        {
             if (!other.life.dead && other.source.id != a.source.id &&
                 std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            {
                 struck.push_back(other.source.cell);
+            }
+        }
         damage_area(a, spell, aimed.verb, struck, area_dc(a, spell));
         zones_.push_back({a.source.id, ZoneKind::ice_wall, cells});
         for (auto &other : actors_)
+        {
             if (!other.life.dead &&
                 std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            {
                 if (const auto squares = free_squares_near(other.source.cell); !squares.empty())
                 {
                     other.source.cell = squares.front();
                     log(other.source.name + " is pushed aside by the wall.",
                         {"{name} is pushed aside by the wall.", {{"name", other.source.name}}});
                 }
+            }
+        }
         log("A wall of ice rises.", {"A wall of ice rises.", {}});
         return;
     }
@@ -13391,6 +15697,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         const bool stone = spell.rider == detail::Rider::wall_of_stone;
         auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
         if (stone)
+        {
             std::erase_if(cells,
                           [&](Cell cell)
                           {
@@ -13401,16 +15708,21 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                                                             other.source.cell == cell;
                                                  });
                           });
+        }
         zones_.push_back({a.source.id, stone ? ZoneKind::stone_wall : ZoneKind::force_wall, cells});
         for (auto &other : actors_)
+        {
             if (!other.life.dead &&
                 std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+            {
                 if (const auto squares = free_squares_near(other.source.cell); !squares.empty())
                 {
                     other.source.cell = squares.front();
                     log(other.source.name + " is pushed aside by the wall.",
                         {"{name} is pushed aside by the wall.", {{"name", other.source.name}}});
                 }
+            }
+        }
         log(stone ? "A wall of stone rises." : "A wall of force springs up.",
             {stone ? "A wall of stone rises." : "A wall of force springs up.", {}});
         return;
@@ -13420,12 +15732,14 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         auto &target = actor(aimed.companion);
         // A new creature takes the place of the one held before.
         for (auto &other : actors_)
+        {
             std::erase_if(other.effects.active,
                           [&](const auto &e)
                           {
                               return e.kind == detail::EffectKind::lifted &&
                                      e.source_actor == a.source.id && e.source_scope == scope_;
                           });
+        }
         if (aimed.verb != "telekinesis_again")
         {
             begin_concentration(a, spell);
@@ -13438,7 +15752,9 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         if (sealed_off(target) ||
             saving_throw_succeeds(target, spell.save, area_dc(a, spell), false,
                                   heightened_against(target, a, spell.id)))
+        {
             return;
+        }
         hurl(a, target, aimed.center);
         if (!target.life.dead && detail::can_apply(target.effects))
         {
@@ -13470,8 +15786,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         tentacles.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(tentacles);
         for (auto &other : actors_)
+        {
             if (in_zone(tentacles, other.source.cell))
+            {
                 grope(tentacles, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::confusion)
@@ -13489,7 +15809,9 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                 !detail::can_apply(other.effects) ||
                 saving_throw_succeeds(other, spell.save, dc, false,
                                       heightened_against(other, a, spell.id)))
+            {
                 continue;
+            }
             detail::apply_repeating_condition(
                 other.effects, detail::EffectKind::confused, effect_source(a), a.source.name,
                 detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(other.source.id)});
@@ -13507,16 +15829,22 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     }
     // Forcecage: teleporting out takes a Charisma save, or the spell is wasted.
     if (spell.rider == detail::Rider::misty_step || spell.rider == detail::Rider::dimension_door)
+    {
         for (const auto &zone : zones_)
+        {
             if ((zone.kind == ZoneKind::cage || zone.kind == ZoneKind::box) &&
                 in_zone(zone, a.source.cell) && !in_zone(zone, aimed.center))
             {
                 if (saving_throw_succeeds(a, detail::Ability::charisma, zone.save_dc))
+                {
                     break;
+                }
                 log("The Forcecage holds " + a.source.name + ".",
                     {"The Forcecage holds {name}.", {{"name", a.source.name}}});
                 return;
             }
+        }
+    }
     if (spell.rider == detail::Rider::delayed_blast_fireball)
     {
         // The bead waits for the spell to end, growing as each of the
@@ -13542,9 +15870,13 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         prison.save_dc = area_dc(a, spell);
         zones_.push_back(std::move(prison));
         if (box)
+        {
             log("A box of force closes.", {"A box of force closes.", {}});
+        }
         else
+        {
             log("A cage of force closes.", {"A cage of force closes.", {}});
+        }
         return;
     }
     if (spell.rider == detail::Rider::reverse_gravity)
@@ -13555,6 +15887,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
         const int dc = area_dc(a, spell);
         for (auto &other : actors_)
+        {
             if (!other.life.dead && !absent(other) && !aloft(other) &&
                 std::find(cells.begin(), cells.end(), other.source.cell) != cells.end() &&
                 !sealed_off(other) && !caged_apart(a.source.cell, other.source.cell, false) &&
@@ -13569,6 +15902,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
                     {"{name} falls upward.", {{"name", other.source.name}}});
                 fall_hard(other);
             }
+        }
         return;
     }
     if (spell.rider == detail::Rider::dimension_door)
@@ -13604,7 +15938,9 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         side.slot = wall.slot;
         zones_.push_back(wall);
         if (!side.cells.empty())
+        {
             zones_.push_back(std::move(side));
+        }
         damage_area(a, spell, aimed.verb, cells, area_dc(a, spell));
         return;
     }
@@ -13646,8 +15982,12 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         pillar.slot = slot_level_of(aimed.verb, spell);
         zones_.push_back(pillar);
         for (auto &other : actors_)
+        {
             if (in_zone(pillar, other.source.cell))
+            {
                 bathe(pillar, other);
+            }
+        }
         return;
     }
     if (spell.rider == detail::Rider::earthquake)
@@ -13672,13 +16012,17 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         const auto cells = area_cells(spell, aimed.verb, a.source.cell, aimed.center);
         std::vector<EntityId> darkened;
         for (const auto &zone : zones_)
+        {
             if (zone.kind == ZoneKind::darkness &&
                 std::any_of(zone.cells.begin(), zone.cells.end(),
                             [&](Cell cell)
                             {
                                 return std::find(cells.begin(), cells.end(), cell) != cells.end();
                             }))
+            {
                 darkened.push_back(zone.caster);
+            }
+        }
         for (const auto id : darkened)
         {
             log("The sunlight ends the magical Darkness.",
@@ -13707,12 +16051,16 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         spell.rider == detail::Rider::faerie_fire)
     {
         if (spell.concentration)
+        {
             begin_concentration(a, spell);
+        }
         condition_area(a, spell, cells);
         return;
     }
     if (spell.concentration)
+    {
         begin_concentration(a, spell);
+    }
     const auto kind = spell.rider == detail::Rider::fog_cloud      ? ZoneKind::fog
                       : spell.rider == detail::Rider::darkness     ? ZoneKind::darkness
                       : spell.rider == detail::Rider::silence      ? ZoneKind::silence
@@ -13726,19 +16074,27 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         const auto zone = zones_.back();
         for (auto &other : actors_)
+        {
             if (other.source.id != a.source.id && in_zone(zone, other.source.cell))
+            {
                 (void)spring_zone(zone, other);
+            }
+        }
         return;
     }
     if (kind != ZoneKind::plants)
+    {
         return;
+    }
     const int dc = spell_dc(a, spell.id);
     for (auto &other : actors_)
     {
         if (other.life.dead || other.source.id == a.source.id ||
             std::find(cells.begin(), cells.end(), other.source.cell) == cells.end() ||
             !detail::can_apply(other.effects) || saving_throw_succeeds(other, spell.save, dc))
+        {
             continue;
+        }
         detail::apply_entangle(other.effects, effect_source(a), a.source.name, dc);
         log(other.source.name + " is Restrained.",
             {"{name} is Restrained.", {{"name", other.source.name}}});
@@ -13756,7 +16112,9 @@ void Session::blessed_healer(Actor &cleric, const detail::SpellDef &spell, std::
                      {
                          return id != cleric.source.id;
                      }))
+    {
         return;
+    }
     log("Blessed Healer: " + cleric.source.name + " is healed too.",
         {"Blessed Healer: {name} is healed too.", {{"name", cleric.source.name}}});
     heal(cleric, 2 + static_cast<int>(slot_level_of(verb, spell)));
@@ -13777,11 +16135,15 @@ void Session::preserve_life(Actor &cleric)
     int pool = 5 * def(cleric).level;
     std::vector<Actor *> bloodied;
     for (auto &other : actors_)
+    {
         if (other.source.side == cleric.source.side && !other.life.dead &&
             other.life.hp * 2 <= max_hp(other) &&
             distance(cleric.source.cell, other.source.cell) <= 30 &&
             def(other).creature_type != "undead" && def(other).creature_type != "construct")
+        {
             bloodied.push_back(&other);
+        }
+    }
     std::sort(bloodied.begin(), bloodied.end(),
               [&](const Actor *x, const Actor *y)
               {
@@ -13791,7 +16153,9 @@ void Session::preserve_life(Actor &cleric)
     {
         const int room = max_hp(*other) / 2 - other->life.hp;
         if (pool <= 0 || room <= 0)
+        {
             continue;
+        }
         pool -= heal(*other, std::min(pool, room));
     }
 }
@@ -13835,6 +16199,7 @@ void Session::turn_undead(Actor &cleric)
     const int seared =
         def(cleric).sear_undead ? dice({std::max(1, casting_modifier(def(cleric))), 8, 0}) : 0;
     for (auto &other : actors_)
+    {
         if (other.source.side != cleric.source.side && other.life.hp > 0 &&
             def(other).creature_type == "undead" &&
             distance(cleric.source.cell, other.source.cell) <= 30 &&
@@ -13850,13 +16215,16 @@ void Session::turn_undead(Actor &cleric)
                      {{"name", other.source.name}, {"damage", std::to_string(amount)}}});
                 damage(other, amount);
                 if (other.life.dead || other.life.hp == 0)
+                {
                     continue;
+                }
             }
             detail::apply_spell_benefit(other.effects, effect_source(cleric), cleric.source.name,
                                         detail::EffectKind::turned, 0);
             log(other.source.name + " is turned.",
                 {"{name} is turned.", {{"name", other.source.name}}});
         }
+    }
 }
 
 void Session::hold_still(std::vector<Command> &commands, const Actor &a) const
@@ -13864,16 +16232,20 @@ void Session::hold_still(std::vector<Command> &commands, const Actor &a) const
     // Resilient Sphere: the creature only rolls its sphere, with its action,
     // or ends its turn.
     if (detail::has_effect(a.effects, detail::EffectKind::sphered))
+    {
         std::erase_if(commands,
                       [&](const auto &offer)
                       {
                           return offer.verb != "end" &&
                                  (offer.verb != "move" || (!a.moved && !a.actions.available()));
                       });
+    }
     // Incapacitated (Paralyzed, Sleep, Hideous Laughter): it can only end its
     // turn. Adaptation: a Prone, laughing creature could otherwise crawl.
     if (!detail::incapacitated(a.effects))
+    {
         return;
+    }
     const auto end = std::find_if(commands.begin(), commands.end(),
                                   [](const auto &offer)
                                   {
@@ -13893,7 +16265,9 @@ void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
                                          return e.kind == detail::EffectKind::turned;
                                      });
     if (turned == a.effects.active.end())
+    {
         return;
+    }
     const auto cleric = std::find_if(actors_.begin(), actors_.end(),
                                      [&](const auto &other)
                                      {
@@ -13901,15 +16275,19 @@ void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
                                                 other.source.id == turned->source_actor;
                                      });
     if (cleric == actors_.end() || !conscious(*cleric))
+    {
         return;
+    }
     const Command *farthest = nullptr;
     int best = distance(a.source.cell, cleric->source.cell);
     for (const auto &offer : commands)
+    {
         if (offer.verb == "move" && distance(offer.destination, cleric->source.cell) > best)
         {
             farthest = &offer;
             best = distance(offer.destination, cleric->source.cell);
         }
+    }
     const auto end = std::find_if(commands.begin(), commands.end(),
                                   [](const auto &offer)
                                   {
@@ -13934,7 +16312,9 @@ void Session::resolve_ensnaring_strike(Actor &a, std::string_view verb)
     const int dc = spell_dc(a);
     if (target.life.hp == 0 || !detail::can_apply(target.effects) ||
         saving_throw_succeeds(target, detail::Ability::strength, dc, def(target).size >= 3))
+    {
         return;
+    }
     begin_concentration(a, spell);
     detail::apply_ensnaring_strike(target.effects, effect_source(a), a.source.name, dc);
     // The vines' dice live on the caster, ending with its Concentration.
@@ -13955,13 +16335,23 @@ void Session::squeeze_ensnared(Actor &a)
                                         return e.kind == detail::EffectKind::ensnaring_strike;
                                     });
     if (vines == a.effects.active.end() || a.life.hp == 0)
+    {
         return;
+    }
     int count = 1;
     for (const auto &caster : actors_)
+    {
         if (caster.source.id == vines->source_actor)
+        {
             for (const auto &e : caster.effects.active)
+            {
                 if (e.kind == detail::EffectKind::ensnaring)
+                {
                     count = e.dc;
+                }
+            }
+        }
+    }
     const int amount = resolved_damage(a, detail::DamageType::piercing, dice({count, 6, 0}));
     log(a.source.name + " takes " + std::to_string(amount) + " Piercing damage from the vines.",
         {"{name} takes {damage} Piercing damage from the vines.",
@@ -13979,7 +16369,9 @@ int Session::guidance_bonus(const Actor &a, std::string_view skill)
                                detail::guidance_skills[static_cast<std::size_t>(e.dc)] == skill;
                     });
     if (!guided)
+    {
         return 0;
+    }
     const int bonus = roll(4);
     log(a.source.name + "'s Guidance adds " + std::to_string(bonus) + ".",
         {"{name}'s Guidance adds {amount}.",
@@ -14007,8 +16399,12 @@ Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
         check.success = check.natural + check.bonus >= dc;
     }
     if (!check.success && check.bonus + 20 >= dc)
+    {
         if (const auto again = heroic_reroll(a))
+        {
             check.success = *again + check.bonus >= dc;
+        }
+    }
     return check;
 }
 
@@ -14048,15 +16444,25 @@ void Session::escape_ensnaring(Actor &a)
           {"bonus", std::to_string(bonus)},
           {"dc", std::to_string(vines.dc)}}});
     if (!escaped)
+    {
         escaped = rescue_athletics(a, check, vines.dc);
+    }
     if (!escaped)
+    {
         return;
+    }
     // Ensnaring Strike ends, and with it the caster's Concentration; Entangle
     // only lets this creature go.
     if (vines.kind == detail::EffectKind::ensnaring_strike)
+    {
         for (auto &caster : actors_)
+        {
             if (vines.source_scope == scope_ && caster.source.id == vines.source_actor)
+            {
                 end_concentration(caster);
+            }
+        }
+    }
     std::erase_if(a.effects.active,
                   [&](const auto &e)
                   {
@@ -14074,10 +16480,14 @@ unsigned Session::selection_maximum(const PendingSelection &selection) const
 {
     const auto &spell = *detail::find_spell(selection.verb);
     if (spell.rider == detail::Rider::abjure_foes)
+    {
         return static_cast<unsigned>(def(actor(selection.caster)).abjure_foes);
+    }
     // Eldritch Blast: a beam for each cantrip step.
     if (spell.id == "eldritch_blast")
+    {
         return static_cast<unsigned>(cantrip_tier(def(actor(selection.caster))));
+    }
     // Twinned Spell raises the spell's effective level by one.
     const bool twinned = readies(actor(selection.caster), Metamagic::twinned, spell);
     return spell.instances +
@@ -14099,11 +16509,17 @@ void Session::choose_target(const Command &command)
     auto &chosen = selection_->chosen;
     const auto found = std::find(chosen.begin(), chosen.end(), command.target);
     if (found != chosen.end() && !splits_among_targets(*detail::find_spell(selection_->verb)))
+    {
         chosen.erase(found);
+    }
     else
+    {
         chosen.push_back(command.target);
+    }
     if (chosen.size() == selection_maximum(*selection_))
+    {
         cast_on_selection();
+    }
 }
 
 void Session::cast_on_selection()
@@ -14122,7 +16538,9 @@ void Session::cast_on_selection()
     const auto id = a.source.id;
     cast_selected(a, selection);
     if (was_invisible)
+    {
         end_invisibility(id);
+    }
     end_hiding(id);
 }
 
@@ -14134,7 +16552,9 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
         spell.id == "chain_lightning")
     {
         if (quickened || spell.bonus_action)
+        {
             a.bonus = false;
+        }
         else
         {
             a.nick_origin = 0;
@@ -14148,10 +16568,14 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
     take_metamagic(a, spell);
     take_overchannel(a, spell, selection.verb);
     if (casting_with(Metamagic::heightened))
+    {
         heightened_target_ = selection.chosen.front();
+    }
     mark_heightened(a, spell);
     if (quickened)
+    {
         a.bonus = false;
+    }
     else
     {
         a.nick_origin = 0;
@@ -14162,16 +16586,22 @@ void Session::cast_selected(Actor &a, const PendingSelection &selection)
         {"{name} casts {spell}.",
          {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
     if (spell.concentration)
+    {
         begin_concentration(a, spell);
+    }
     const int dc = spell_dc(a, spell.id);
     for (const auto id : selection.chosen)
     {
         auto &target = actor(id);
         if (spell.humanoid_only && def(target).creature_type != "humanoid")
+        {
             continue;
+        }
         if (spell.pattern == detail::SpellPattern::save_condition &&
             saving_throw_succeeds(target, spell.save, dc, fought_advantage(spell)))
+        {
             continue;
+        }
         apply_rider(spell, selection.verb, a, target, dc);
     }
 }
@@ -14182,16 +16612,26 @@ std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
     // Aura of Courage: Frightened has no effect while the creature is in it;
     // Heroes' Feast makes it immune.
     if (aura_of_courage(a) || detail::has_effect(a.effects, detail::EffectKind::feasted))
+    {
         return result;
+    }
     for (const auto &e : a.effects.active)
+    {
         if ((e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
              e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::eye_panic ||
              e.kind == detail::EffectKind::fey_fright) &&
             e.source_scope == scope_)
+        {
             for (const auto &other : actors_)
+            {
                 if (other.source.id == e.source_actor && !other.life.dead &&
                     line_of_sight(a.source.cell, other.source.cell))
+                {
                     result.push_back(&other);
+                }
+            }
+        }
+    }
     return result;
 }
 
@@ -14208,9 +16648,13 @@ void Session::intimidate(const Actor &barbarian)
             !line_of_sight(barbarian.source.cell, other.source.cell) || fearless(other) ||
             detail::has_effect(other.effects, detail::EffectKind::frightened) ||
             !detail::can_apply(other.effects))
+        {
             continue;
+        }
         if (saving_throw_succeeds(other, detail::Ability::wisdom, dc, def(other).brave))
+        {
             continue;
+        }
         detail::apply_repeating_condition(
             other.effects, detail::EffectKind::frightened, effect_source(barbarian),
             barbarian.source.name,
@@ -14224,7 +16668,9 @@ bool Session::charmed_by(const Actor &a, EntityId other) const
 {
     // Aura of Devotion: a Charm has no effect while its target is in the aura.
     if (aura_of_devotion(a))
+    {
         return false;
+    }
     return std::any_of(a.effects.active.begin(), a.effects.active.end(),
                        [&](const auto &e)
                        {
@@ -14249,8 +16695,12 @@ int Session::aura_of_protection(const Actor &a) const
     // A creature in two auras benefits from one; the game takes the larger.
     int bonus = 0;
     for (const auto &paladin : actors_)
+    {
         if (aura_covers(paladin, a))
+        {
             bonus = std::max(bonus, def(paladin).aura_of_protection);
+        }
+    }
     return bonus;
 }
 
@@ -14275,11 +16725,15 @@ bool Session::aura_of_courage(const Actor &a) const
 void Session::fall(Actor &a)
 {
     if (a.source.side == Side::party && a.life.dead && detail::can_apply(a.effects))
+    {
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::fallen, 0);
+    }
     if (a.source.side == Side::party && a.life.dead && detail::can_apply(a.effects))
+    {
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::deceased, 0);
+    }
 }
 
 void Session::revivify(Actor &cleric, const Command &command)
@@ -14305,7 +16759,9 @@ void Session::revivify(Actor &cleric, const Command &command)
     target.life.hp = 1;
     target.effects.prone = true;
     if (shares_occupied_space(target))
+    {
         target.involuntary_overlap = true;
+    }
     log(cleric.source.name + " casts Revivify: " + target.source.name +
             " returns to life (an offering of " + std::to_string(offering) + " gp).",
         {"{name} casts Revivify: {target} returns to life (an offering of {gold} gp).",
@@ -14334,18 +16790,24 @@ void Session::guardian_tests(Actor &creature)
             absent(creature) ||
             detail::has_effect(creature.effects, detail::EffectKind::faith_tested) ||
             distance(guardian.cells.front(), creature.source.cell) > 10)
+        {
             continue;
+        }
         const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                          [&](const auto &a)
                                          {
                                              return a.source.id == guardian.caster;
                                          });
         if (caster == actors_.end() || caster->source.side == creature.source.side)
+        {
             continue;
+        }
         const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
         if (detail::can_apply(creature.effects))
+        {
             detail::apply_poisoned(creature.effects, effect_source(*caster), caster->source.name,
                                    rest_of_turn, detail::EffectKind::faith_tested);
+        }
         const bool saved =
             saving_throw_succeeds(creature, detail::Ability::dexterity, guardian.save_dc);
         const int amount = resolved_damage(creature, detail::DamageType::radiant, saved ? 10 : 20);
@@ -14381,10 +16843,16 @@ Cell Session::nearest_open(const Actor &a, std::optional<Cell> near) const
     };
     std::optional<Cell> best;
     for (int y = 0; y < board_.height; ++y)
+    {
         for (int x = 0; x < board_.width; ++x)
+        {
             if (const Cell cell{x, y};
                 open(cell) && (!best || distance(from, cell) < distance(from, *best)))
+            {
                 best = cell;
+            }
+        }
+    }
     return best.value_or(a.source.cell);
 }
 
@@ -14437,7 +16905,9 @@ void Session::restore_touch(Actor &paladin, Actor &target)
                                                 return std::find(kinds.begin(), kinds.end(),
                                                                  e.kind) != kinds.end();
                                             }))
+        {
             continue;
+        }
         paladin.lay_on_hands -= 5;
         log(target.source.name + " is no longer " + std::string(condition) + ".",
             {"{name} is no longer {condition}.",
@@ -14465,7 +16935,9 @@ void Session::abjure(Actor &paladin, std::span<const EntityId> targets)
         auto &target = actor(id);
         if (target.life.hp == 0 || fearless(target) || !detail::can_apply(target.effects) ||
             saving_throw_succeeds(target, detail::Ability::wisdom, dc, def(target).brave))
+        {
             continue;
+        }
         detail::apply_spell_benefit(target.effects, effect_source(paladin), paladin.source.name,
                                     detail::EffectKind::abjured, 0);
         log(target.source.name + " is Frightened.",
@@ -14480,7 +16952,9 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
     const auto ends = [&](unsigned level)
     {
         if (level <= slot_level)
+        {
             return true;
+        }
         const int natural = roll(20), bonus = casting_modifier(def(caster)),
                   dc = 10 + static_cast<int>(level);
         log(caster.source.name + " Dispel Magic check: d20 " + std::to_string(natural) + " + " +
@@ -14496,17 +16970,21 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
     const auto end_spell = [&](EntityId source)
     {
         for (auto &other : actors_)
+        {
             if (other.source.id == source && other.concentration.active())
             {
                 end_concentration(other);
                 return true;
             }
+        }
         return false;
     };
     for (auto &target : actors_)
     {
         if (target.life.dead || target.source.cell != cell)
+        {
             continue;
+        }
         const auto found = target.effects.active;
         for (const auto &effect : found)
         {
@@ -14520,16 +16998,20 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
                                    });
             };
             if (!level || !present() || !ends(*level))
+            {
                 continue;
+            }
             log("Dispel Magic ends a spell on " + target.source.name + ".",
                 {"Dispel Magic ends a spell on {name}.", {{"name", target.source.name}}});
             if (!concentration_effect(effect.kind) || effect.source_scope != scope_ ||
                 !end_spell(effect.source_actor))
+            {
                 std::erase_if(target.effects.active,
                               [&](const auto &e)
                               {
                                   return e.id == effect.id;
                               });
+            }
         }
     }
     // The spells whose areas cover the square: Entangle, Fog Cloud and Grease
@@ -14537,7 +17019,9 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
     for (std::size_t n = zones_.size(); n-- > 0;)
     {
         if (n >= zones_.size() || !in_zone(zones_[n], cell))
+        {
             continue;
+        }
         const auto zone = zones_[n];
         const unsigned level = zone.kind == ZoneKind::plants || zone.kind == ZoneKind::fog ||
                                        zone.kind == ZoneKind::grease
@@ -14546,10 +17030,14 @@ void Session::dispel(Actor &caster, Cell cell, unsigned slot_level)
                                : zone.kind == ZoneKind::circle   ? 3
                                                                  : 2;
         if (!ends(level))
+        {
             continue;
+        }
         log("Dispel Magic ends a spell's area.", {"Dispel Magic ends a spell's area.", {}});
         if (zone.ends_ms || !end_spell(zone.caster))
+        {
             zones_.erase(zones_.begin() + static_cast<std::ptrdiff_t>(n));
+        }
     }
 }
 
@@ -14557,7 +17045,9 @@ int Session::healing_roll(const Actor &target, detail::DamageDice rolled)
 {
     // Beacon of Hope: healing restores the most its dice can.
     if (!detail::has_effect(target.effects, detail::EffectKind::hopeful))
+    {
         return dice(rolled);
+    }
     log(target.source.name + "'s healing is maximized (Beacon of Hope).",
         {"{name}'s healing is maximized (Beacon of Hope).", {{"name", target.source.name}}});
     return rolled.count * rolled.sides + rolled.bonus;
@@ -14585,67 +17075,113 @@ Session::affinities(const Actor &target, std::vector<detail::DamageAffinity> &ad
     auto &result = added;
     result.clear();
     if (detail::has_effect(target.effects, detail::EffectKind::warding_bond))
+    {
         result.push_back({detail::AffinityKind::resistance, std::nullopt, "spell:warding_bond"});
+    }
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_poison))
+    {
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                           "spell:protection_from_poison"});
+    }
     for (const auto &e : target.effects.active)
+    {
         if (e.kind == detail::EffectKind::energy_ward)
+        {
             result.push_back({detail::AffinityKind::resistance,
                               static_cast<detail::DamageType>(e.dc),
                               "spell:protection_from_energy"});
+        }
         else if (e.kind == detail::EffectKind::defending)
+        {
             result.push_back({detail::AffinityKind::resistance,
                               static_cast<detail::DamageType>(e.dc),
                               "feature:superior_hunters_defense"});
+        }
+    }
     if (detail::has_effect(target.effects, detail::EffectKind::feasted))
+    {
         result.push_back(
             {detail::AffinityKind::resistance, detail::DamageType::poison, "spell:heroes_feast"});
+    }
     // Nature's Sanctuary: an ally among its trees shares the Druid's Nature's
     // Ward Resistance.
     for (const auto &zone : zones_)
+    {
         if (const auto *druid = find_actor(zone.caster);
             zone.kind == ZoneKind::sanctuary && druid && druid->source.side == target.source.side &&
             in_zone(zone, target.source.cell))
+        {
             for (const auto &ward : def(*druid).affinities)
+            {
                 if (ward.source_id == "feature:natures_ward")
+                {
                     result.push_back(
                         {detail::AffinityKind::resistance, ward.type, "feature:natures_sanctuary"});
+                }
+            }
+        }
+    }
     // Mind Blank: Immunity to Psychic damage.
     if (detail::has_effect(target.effects, detail::EffectKind::mind_blank))
+    {
         result.push_back(
             {detail::AffinityKind::immunity, detail::DamageType::psychic, "spell:mind_blank"});
+    }
     // Petrified: Resistance to every damage.
     if (detail::has_effect(target.effects, detail::EffectKind::petrified))
+    {
         result.push_back({detail::AffinityKind::resistance, std::nullopt, "condition:petrified"});
+    }
     // Summon Dragon's shared Resistance.
     for (const auto &e : target.effects.active)
+    {
         if (e.kind == detail::EffectKind::shared_resistance)
+        {
             result.push_back({detail::AffinityKind::resistance,
                               static_cast<detail::DamageType>(e.dc), "spell:summon_dragon"});
+        }
+    }
     // Fire Shield: the warm shield resists Cold, the chill one Fire.
     for (const auto &e : target.effects.active)
+    {
         if (e.kind == detail::EffectKind::fire_shield)
+        {
             result.push_back({detail::AffinityKind::resistance,
                               e.dc ? detail::DamageType::fire : detail::DamageType::cold,
                               "spell:fire_shield"});
+        }
+    }
     if (detail::has_effect(target.effects, detail::EffectKind::stoneskin))
+    {
         for (const auto type : {detail::DamageType::bludgeoning, detail::DamageType::piercing,
                                 detail::DamageType::slashing})
+        {
             result.push_back({detail::AffinityKind::resistance, type, "spell:stoneskin"});
+        }
+    }
     if (rage_of(target))
+    {
         for (const auto type : {detail::DamageType::bludgeoning, detail::DamageType::piercing,
                                 detail::DamageType::slashing})
+        {
             result.push_back({detail::AffinityKind::resistance, type, "feature:rage"});
+        }
+    }
     if (silenced(target.source.cell))
+    {
         result.push_back(
             {detail::AffinityKind::immunity, detail::DamageType::thunder, "spell:silence"});
+    }
     if (in_aura_of_life(target))
+    {
         result.push_back(
             {detail::AffinityKind::resistance, detail::DamageType::necrotic, "spell:aura_of_life"});
+    }
     const auto &own = def(target).affinities;
     if (result.empty())
+    {
         return own;
+    }
     // The creature's own first, as they always came.
     result.insert(result.begin(), own.begin(), own.end());
     return result;
@@ -14655,12 +17191,20 @@ std::vector<EntityId> Session::bonds_on(const Actor &target) const
 {
     std::vector<EntityId> casters;
     for (const auto &e : target.effects.active)
+    {
         if (e.kind == detail::EffectKind::warding_bond && e.source_scope == scope_)
+        {
             for (const auto &caster : actors_)
+            {
                 if (caster.source.id == e.source_actor && caster.life.hp > 0 && !caster.life.dead &&
                     caster.source.id != target.source.id &&
                     distance(caster.source.cell, target.source.cell) <= 60)
+                {
                     casters.push_back(caster.source.id);
+                }
+            }
+        }
+    }
     return casters;
 }
 
@@ -14683,8 +17227,12 @@ unsigned Session::rage_duration(const Actor &a) const
 void Session::extend_rage(Actor &a)
 {
     for (auto &e : a.effects.active)
+    {
         if (e.kind == detail::EffectKind::raging)
+        {
             e.remaining_ms = rage_duration(a);
+        }
+    }
 }
 
 bool Session::invisible(const Actor &a) noexcept
@@ -14702,14 +17250,18 @@ void Session::end_invisibility(EntityId id)
                       {
                           return e.kind == detail::EffectKind::invisible;
                       }))
+    {
         log(a.source.name + " is no longer Invisible.",
             {"{name} is no longer Invisible.", {{"name", a.source.name}}});
+    }
 }
 
 bool Session::can_hide(const Actor &a) const
 {
     if (hidden(a) || a.source.character_profile.empty())
+    {
         return false;
+    }
     // Naturally Stealthy: a creature at least one size larger also blocks
     // the view (the viewer itself aside).
     return std::none_of(
@@ -14718,15 +17270,23 @@ bool Session::can_hide(const Actor &a) const
         {
             if (enemy.source.side == a.source.side || !conscious(enemy) ||
                 obscured(enemy, enemy.source.cell) || obscured(enemy, a.source.cell))
+            {
                 return false;
+            }
             if (!def(a).naturally_stealthy)
+            {
                 return detail::has_line_of_sight(board_, enemy.source.cell, a.source.cell);
+            }
             auto board = board_;
             for (const auto &other : actors_)
+            {
                 if (!other.life.dead && other.source.id != a.source.id &&
                     other.source.id != enemy.source.id && def(other).size > def(a).size)
+                {
                     board.terrain[other.source.cell.y * board_.width + other.source.cell.x] =
                         Terrain::obstacle;
+                }
+            }
             return detail::has_line_of_sight(board, enemy.source.cell, a.source.cell);
         });
 }
@@ -14753,12 +17313,20 @@ void Session::hide(Actor &a)
           {"bonus", std::to_string(d.stealth)},
           {"dc", std::to_string(dc)}}});
     if (total < dc && d.stealth + 20 >= dc)
+    {
         if (const auto again = heroic_reroll(a))
+        {
             total = *again + d.stealth;
+        }
+    }
     if (total < dc)
+    {
         total += inspiration_roll(a, dc - total);
+    }
     if (total < dc)
+    {
         total += peerless_skill(a, dc - total);
+    }
     if (total < dc)
     {
         log(a.source.name + " fails to hide.",
@@ -14784,9 +17352,13 @@ void Session::search(Actor &searcher)
     // search would find hidden.
     int margin = 6;
     for (const auto &other : actors_)
+    {
         if (other.source.side != searcher.source.side && hidden(other) &&
             clear_view(searcher, other) && natural + bonus >= stealth_total(other))
+        {
             margin = std::min(margin, natural + bonus - stealth_total(other));
+        }
+    }
     bonus -= cutting_words(searcher, margin, CutRoll::check);
     const int total = natural + bonus;
     log(searcher.source.name + " searches: Perception d20 " + std::to_string(natural) + " + " +
@@ -14797,18 +17369,28 @@ void Session::search(Actor &searcher)
           {"bonus", std::to_string(bonus)},
           {"total", std::to_string(total)}}});
     for (auto &other : actors_)
+    {
         if (other.source.side != searcher.source.side && hidden(other) &&
             clear_view(searcher, other) && total >= stealth_total(other))
+        {
             find_hidden(other, searcher);
+        }
+    }
 }
 
 void Session::notice_hidden()
 {
     for (auto &hider : actors_)
+    {
         for (const auto &enemy : actors_)
+        {
             if (hidden(hider) && enemy.source.side != hider.source.side &&
                 clear_view(enemy, hider) && 10 + def(enemy).perception >= stealth_total(hider))
+            {
                 find_hidden(hider, enemy);
+            }
+        }
+    }
 }
 
 void Session::find_hidden(Actor &hider, const Actor &finder)
@@ -14830,8 +17412,10 @@ void Session::end_hiding(EntityId id)
                       {
                           return e.kind == detail::EffectKind::hidden;
                       }))
+    {
         log(a.source.name + " is no longer hidden.",
             {"{name} is no longer hidden.", {{"name", a.source.name}}});
+    }
 }
 
 void Session::end_sanctuary(Actor &a)
@@ -14853,7 +17437,9 @@ bool Session::sanctuary_stops(Actor &attacker, const Actor &target)
                                    });
     if (ward == target.effects.active.end() || attacker.source.side == target.source.side ||
         saving_throw_succeeds(attacker, detail::Ability::wisdom, ward->dc))
+    {
         return false;
+    }
     log(attacker.source.name + "'s attack on " + target.source.name + " is lost to Sanctuary.",
         {"{name}'s attack on {target} is lost to Sanctuary.",
          {{"name", attacker.source.name}, {"target", target.source.name}}});
@@ -14870,26 +17456,32 @@ void Session::begin_concentration(Actor &caster, const detail::SpellDef &spell)
         {{scope_, 1, caster.source.id},
          detail::benefit_duration_ms(rider_effect(spell.rider)) * (extended ? 2 : 1)});
     if (extended)
+    {
         detail::apply_spell_benefit(caster.effects, effect_source(caster), caster.source.name,
                                     detail::EffectKind::extended, 0);
+    }
 }
 
 void Session::end_concentration(Actor &caster)
 {
     if (caster.concentration.stop())
+    {
         drop_concentration_effects(caster);
+    }
 }
 
 void Session::end_incapacitated_effects(Actor &a)
 {
     end_concentration(a);
     for (auto &other : actors_)
+    {
         std::erase_if(other.effects.active,
                       [&](const auto &e)
                       {
                           return e.kind == detail::EffectKind::turned &&
                                  e.source_actor == a.source.id && e.source_scope == scope_;
                       });
+    }
 }
 
 void Session::drop_concentration_effects(const Actor &caster)
@@ -14909,6 +17501,7 @@ void Session::drop_concentration_effects(const Actor &caster)
     // A Magic Circle or Animate Dead whose casting is broken fails, but keeps
     // its slot.
     for (auto &e : actor(caster.source.id).effects.active)
+    {
         if (e.kind == detail::EffectKind::circling)
         {
             ++actor(caster.source.id).slots[static_cast<unsigned>(e.dc)];
@@ -14922,8 +17515,11 @@ void Session::drop_concentration_effects(const Actor &caster)
             log("The undead fail to rise; the spell slot is kept.",
                 {"The undead fail to rise; the spell slot is kept.", {}});
         }
+    }
     for (const auto &other : actors_)
+    {
         for (const auto &e : other.effects.active)
+        {
             if (e.kind == detail::EffectKind::knitting && e.source_actor == caster.source.id &&
                 e.source_scope == scope_)
             {
@@ -14931,35 +17527,61 @@ void Session::drop_concentration_effects(const Actor &caster)
                 log("Regenerate fails; the spell slot is kept.",
                     {"{spell} fails; the spell slot is kept.", {{"spell", "Regenerate", true}}});
             }
+        }
+    }
     // Banishment ends early: its creatures come back, as Maze's do. Reverse
     // Gravity's fall back down.
     std::vector<EntityId> banished, lost, lifted;
     for (const auto &other : actors_)
+    {
         for (const auto &e : other.effects.active)
+        {
             if (e.source_actor == caster.source.id && e.source_scope == scope_)
             {
                 if (e.kind == detail::EffectKind::banished)
+                {
                     banished.push_back(other.source.id);
+                }
                 else if (e.kind == detail::EffectKind::mazed)
+                {
                     lost.push_back(other.source.id);
+                }
                 else if (e.kind == detail::EffectKind::aloft)
+                {
                     lifted.push_back(other.source.id);
+                }
             }
+        }
+    }
     // Haste's end brings its lethargy; Polymorph's, the creature's own form.
     std::vector<EntityId> hastened, transformed;
     for (const auto &other : actors_)
+    {
         for (const auto &e : other.effects.active)
+        {
             if (e.kind == detail::EffectKind::polymorphed && e.source_actor == caster.source.id &&
                 e.source_scope == scope_)
+            {
                 transformed.push_back(other.source.id);
+            }
+        }
+    }
     for (const auto &other : actors_)
+    {
         for (const auto &e : other.effects.active)
+        {
             if (e.kind == detail::EffectKind::hasted && e.source_actor == caster.source.id &&
                 e.source_scope == scope_)
+            {
                 hastened.push_back(other.source.id);
+            }
+        }
+    }
     // A curse from a level-5 slot is not held by Concentration.
     for (auto &other : actors_)
+    {
         for (auto *effects : {&other.effects.active, &other.suppressed})
+        {
             std::erase_if(*effects,
                           [&](const auto &e)
                           {
@@ -14969,10 +17591,14 @@ void Session::drop_concentration_effects(const Actor &caster)
                                      !(e.kind == detail::EffectKind::cursed && e.dc >= 10) &&
                                      !(e.kind == detail::EffectKind::petrified && e.dc);
                           });
+        }
+    }
     log(caster.source.name + " loses Concentration.",
         {"{name} loses Concentration.", {{"name", caster.source.name}}});
     for (const auto id : banished)
+    {
         return_from_banishment(actor(id));
+    }
     for (const auto id : lost)
     {
         auto &returned = actor(id);
@@ -14981,18 +17607,26 @@ void Session::drop_concentration_effects(const Actor &caster)
             {"{name} returns from the maze.", {{"name", returned.source.name}}});
     }
     for (const auto id : lifted)
+    {
         if (!actor(id).life.dead)
         {
             log(actor(id).source.name + " falls back down.",
                 {"{name} falls back down.", {{"name", actor(id).source.name}}});
             fall_hard(actor(id));
         }
+    }
     for (const auto &bead : beads)
+    {
         explode_bead(actor(caster.source.id), bead);
+    }
     for (const auto id : hastened)
+    {
         tire(actor(id));
+    }
     for (const auto id : transformed)
+    {
         end_polymorph(actor(id));
+    }
     // An Antimagic Field that ended gives back what it held.
     suppress_spells();
 }
@@ -15003,7 +17637,9 @@ void Session::burn_searing_smites(Actor &a)
     for (std::size_t n = 0; n < a.effects.active.size() && a.life.hp > 0; ++n)
     {
         if (a.effects.active[n].kind != detail::EffectKind::searing_smite)
+        {
             continue;
+        }
         const int dc = a.effects.active[n].dc;
         const int amount = resolved_damage(a, detail::DamageType::fire, roll(6));
         log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
@@ -15011,7 +17647,9 @@ void Session::burn_searing_smites(Actor &a)
              {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
         damage(a, amount, false);
         if (a.life.hp > 0 && saving_throw_succeeds(a, detail::Ability::constitution, dc))
+        {
             a.effects.active[n].remaining_ms = 0;
+        }
     }
     std::erase_if(a.effects.active,
                   [](const auto &e)
@@ -15029,16 +17667,22 @@ detail::Mastery Session::weapon_mastery(const Actor &a, const Definition &d,
                                         AttackRange range) const
 {
     if (d.masteries.empty() || (range == AttackRange::melee && d.ranged_weapon))
+    {
         return detail::Mastery::none;
+    }
     for (const auto &key : d.equipment_keys)
+    {
         if (const auto *weapon = detail::weapon(key))
         {
             if (std::find(d.masteries.begin(), d.masteries.end(), key) == d.masteries.end())
+            {
                 return detail::Mastery::none;
+            }
             return tactical_mastery_ && tactical_mastery_->actor == a.source.id
                        ? tactical_mastery_->kind
                        : weapon->mastery;
         }
+    }
     return detail::Mastery::none;
 }
 
@@ -15047,7 +17691,9 @@ bool Session::mastery_capacity(const Actor &a, const Definition &d, const Actor 
 {
     const auto kind = weapon_mastery(a, d, range);
     if (kind != detail::Mastery::sap && kind != detail::Mastery::vex)
+    {
         return true;
+    }
     return detail::can_apply_attack_mastery(target.effects,
                                             kind == detail::Mastery::sap ? detail::EffectKind::sap
                                                                          : detail::EffectKind::vex,
@@ -15066,11 +17712,17 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     if (ranged)
     {
         if (!spell && distance(a.source.cell, target.source.cell) > d.range)
+        {
             disadvantaged = true;
+        }
         for (const auto &other : actors_)
+        {
             if (other.source.side != a.source.side && conscious(other) &&
                 distance(a.source.cell, other.source.cell) <= 5 && can_see(other, a))
+            {
                 disadvantaged = true;
+            }
+        }
     }
     // Fog hides either creature from the other, as Blinded would.
     const bool attacker_fogged = obscured(a, a.source.cell) || obscured(a, target.source.cell);
@@ -15086,36 +17738,52 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     const bool pack_tactics = !spell && d.pack_tactics && ally_beside(a, target);
     // A Boar's Bloodied Fury: Advantage at half its Hit Points or fewer.
     if (!spell && d.bloodied_fury && a.life.hp * 2 <= max_hp(a))
+    {
         result.advantage = true;
+    }
     if (helpless(target) || a.aim_ready || pack_tactics ||
         detail::vexed_by(target.effects, effect_source(a)) ||
         detail::studied_by(target.effects, effect_source(a)))
+    {
         result.advantage = true;
+    }
     // Phantasmal Killer: Disadvantage on attack rolls.
     if (detail::has_effect(a.effects, detail::EffectKind::haunted))
+    {
         result.disadvantage = true;
+    }
     if (detail::sapped(a.effects) ||
         ((detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
           detail::has_effect(a.effects, detail::EffectKind::contagion)) &&
          !detail::has_effect(a.effects, detail::EffectKind::feasted)) ||
         detail::has_effect(a.effects, detail::EffectKind::scorched) || !fears_in_sight(a).empty())
+    {
         result.disadvantage = true;
+    }
     // Ray of Enfeeblement: Disadvantage on Strength-based attack rolls, here
     // every melee weapon attack.
     if (!spell && !ranged && detail::has_effect(a.effects, detail::EffectKind::enfeebled))
+    {
         result.disadvantage = true;
+    }
     // Dispel Evil and Good: such creatures attack its caster with Disadvantage.
     if (detail::has_effect(target.effects, detail::EffectKind::dispel_evil) && otherworldly(a))
+    {
         result.disadvantage = true;
+    }
     // Bestow Curse: Disadvantage on attack rolls against its caster.
     if (const auto *curse = curse_on(a, 6); curse && curse->source_actor == target.source.id)
+    {
         result.disadvantage = true;
+    }
     // Reckless Attack: Advantage on the attacker's Strength attack rolls and on
     // attack rolls against it.
     if ((!spell && detail::has_effect(a.effects, detail::EffectKind::reckless) &&
          strength_attack(a, range)) ||
         detail::has_effect(target.effects, detail::EffectKind::reckless))
+    {
         result.advantage = true;
+    }
     // Magic Circle: its creature type attacks those within it with Disadvantage.
     if (std::any_of(zones_.begin(), zones_.end(),
                     [&](const auto &zone)
@@ -15124,7 +17792,9 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                                def(a).creature_type == detail::ward_types[zone.warded] &&
                                in_zone(zone, target.source.cell);
                     }))
+    {
         result.disadvantage = true;
+    }
     // Escape the Horde: Opportunity Attacks against the Ranger have
     // Disadvantage. Multiattack Defense: so do the other attacks this turn of
     // a creature that hit it.
@@ -15135,52 +17805,82 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
                         return e.kind == detail::EffectKind::defended &&
                                e.source_actor == a.source.id && e.source_scope == scope_;
                     }))
+    {
         result.disadvantage = true;
+    }
     // Faerie Fire: Advantage against an outlined creature the attacker sees.
     if (detail::has_effect(target.effects, detail::EffectKind::outlined) && can_see(a, target))
+    {
         result.advantage = true;
+    }
     // Shining Smite: Advantage against the shining creature.
     if (detail::has_effect(target.effects, detail::EffectKind::shining))
+    {
         result.advantage = true;
+    }
     // Innate Sorcery: Advantage on spell attack rolls.
     if (spell && detail::has_effect(a.effects, detail::EffectKind::innate_sorcery))
+    {
         result.advantage = true;
+    }
     // Blur: attack rolls against the creature have Disadvantage.
     if (detail::has_effect(target.effects, detail::EffectKind::blur))
+    {
         result.disadvantage = true;
+    }
     // Irresistible Dance: a dancer attacks with Disadvantage and is attacked
     // with Advantage; a Petrified creature is attacked with Advantage.
     if (detail::has_effect(a.effects, detail::EffectKind::dancing))
+    {
         result.disadvantage = true;
+    }
     if (detail::has_effect(target.effects, detail::EffectKind::dancing) ||
         detail::has_effect(target.effects, detail::EffectKind::petrified))
+    {
         result.advantage = true;
+    }
     // Holy Aura: attackers have Disadvantage against the creatures it wards.
     if (holy_aura(target))
+    {
         result.disadvantage = true;
+    }
     // Guiding Bolt: the next attack roll against the target has Advantage.
     if (detail::has_effect(target.effects, detail::EffectKind::guiding_bolt))
+    {
         result.advantage = true;
+    }
     // Stunned: attack rolls against it have Advantage.
     if (detail::stunned(target.effects))
+    {
         result.advantage = true;
+    }
     // Restrained: attacks against it have Advantage, its own have Disadvantage.
     if (detail::restrained(target.effects))
+    {
         result.advantage = true;
+    }
     if (detail::restrained(a.effects))
+    {
         result.disadvantage = true;
+    }
     // Protection from Evil and Good guards against these creature types.
     const auto &type = def(a).creature_type;
     if (detail::has_effect(target.effects, detail::EffectKind::protection_from_evil_and_good) &&
         (type == "aberration" || type == "celestial" || type == "elemental" || type == "fey" ||
          type == "fiend" || type == "undead"))
+    {
         result.disadvantage = true;
+    }
     if (target.effects.prone || target.life.hp == 0)
     {
         if (distance(a.source.cell, target.source.cell) <= 5)
+        {
             result.advantage = true;
+        }
         else
+        {
             result.disadvantage = true;
+        }
     }
     result.lucky = d.lucky;
     return result;
@@ -15201,7 +17901,9 @@ Dice Session::weapon_dice(const Actor &a, AttackRange range) const
     const auto &d = def(a);
     auto result = ranged ? d.ranged : d.melee;
     if (!ranged && d.versatile_sides && d.weapon_hands == 2)
+    {
         result.sides = d.versatile_sides;
+    }
     // Shillelagh: a d8 plus the spellcasting modifier; a d10 from level 5, a
     // d12 from 11 and 2d6 from 17.
     if (!ranged && shillelagh(a))
@@ -15212,7 +17914,9 @@ Dice Session::weapon_dice(const Actor &a, AttackRange range) const
         result.bonus = casting_modifier(d, "shillelagh");
     }
     if (a.cleave_damage || (a.light_damage && !d.two_weapon_fighting))
+    {
         result.bonus = std::min(0, result.bonus);
+    }
     return result;
 }
 
@@ -15220,7 +17924,9 @@ void Session::extend_run(Actor &a, Cell from, Cell to)
 {
     const Cell step{to.x - from.x, to.y - from.y};
     if (a.run_feet && a.run_end == from && a.run_step == step)
+    {
         a.run_feet += 5;
+    }
     else
     {
         a.run_start = from;
@@ -15279,15 +17985,21 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
              arguments});
         if (!spell && !ranged && weapon_mastery(a, AttackRange::melee) == detail::Mastery::graze &&
             graze_damage(a, target) > 0)
+        {
             graze_ = PendingGraze{a.source.id, target.source.id, natural};
+        }
         if (def(a).studied_attacks)
+        {
             study(a, target);
+        }
         return;
     }
     const bool critical = critical_hit(a, target, natural, spell);
     const bool helpless = unconscious(target) && distance(a.source.cell, target.source.cell) <= 5;
     if (savage)
+    {
         message += " (Savage Attacker)";
+    }
     const int amount = resolved_damage(target, resolved.type, resolved.damage);
     // The Versatile grip is chosen automatically, so the damage line names it.
     const std::string grip = spell || ranged || !def(a).versatile_sides ? ""
@@ -15311,8 +18023,10 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
                          return e.kind == detail::EffectKind::defended &&
                                 e.source_actor == a.source.id;
                      }))
+    {
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::defended, 0);
+    }
     // A Wolf's bite knocks a Medium or smaller target Prone.
     if (!spell && !ranged && def(a).prone_bite &&
         def(target).size <= (def(a).prone_large ? 3 : 2) && target.life.hp > 0 &&
@@ -15354,7 +18068,9 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
         }
     }
     if (!spell)
+    {
         offer_mastery(a, target, natural, range, amount, critical);
+    }
     if (critical && def(a).champion && conscious(a))
     {
         ChampionMove move{
@@ -15370,9 +18086,13 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
             move.target_origin = target.source.cell;
         }
         if (effect_waiting())
+        {
             champion_offers_.push_back(move);
+        }
         else
+        {
             champion_move_ = move;
+        }
     }
     if (pending() == a.source.id && mover().life.hp == 0 && (effect_waiting() || champion_move_))
     {
@@ -15388,7 +18108,9 @@ bool Session::sneak_eligible(const Actor &a, const Actor &target, AttackRange ra
 {
     const auto &d = def(a);
     if (!d.sneak_level || a.sneak_used)
+    {
         return false;
+    }
     const bool ally = std::any_of(actors_.begin(), actors_.end(),
                                   [&](const auto &other)
                                   {
@@ -15467,6 +18189,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // Mislead: an attack on the double passes through it (LEVELS-1), and foes
     // ignore it after.
     for (auto &e : target.effects.active)
+    {
         if (e.kind == detail::EffectKind::illusory)
         {
             e.dc = 1;
@@ -15474,12 +18197,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                 {"The attack passes through an illusory double.", {}});
             return false;
         }
+    }
     const bool ranged = range == AttackRange::ranged;
     const bool spell = spell_attack.has_value();
     if (target.source.cell.x != a.source.cell.x)
+    {
         a.facing_left = target.source.cell.x < a.source.cell.x;
+    }
     if (sanctuary_stops(a, target))
+    {
         return false;
+    }
     const auto &d = def(a);
     auto modifiers =
         attack_modifiers(a, target, range, spell ? AttackSource::spell : AttackSource::weapon);
@@ -15488,10 +18216,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     const bool brutal = brutal_ && brutal_->actor == a.source.id && !spell &&
                         range == AttackRange::melee && !modifiers.disadvantage;
     if (brutal)
+    {
         modifiers.advantage = false;
+    }
     a.aim_ready = false;
     if (actors_[turn_].source.id == a.source.id)
+    {
         a.attacked = true;
+    }
     // Guiding Bolt's and Studied Attacks' Advantage is spent on this attack roll.
     const auto attacker = effect_source(a);
     std::erase_if(target.effects.active,
@@ -15513,10 +18245,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     const bool stealthy =
         cunning_ && cunning_->actor == a.source.id && cunning_->has(CunningStrike::stealth);
     if (!stealthy)
+    {
         end_hiding(a.source.id);
+    }
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
+    {
         extend_rage(a);
+    }
     int bonus = (spell                      ? casting_bonus(d, spell_attack->spell)
                  : !ranged && shillelagh(a) ? casting_bonus(d, "shillelagh")
                  : ranged                   ? d.ranged_bonus
@@ -15547,8 +18283,12 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // Heroic Inspiration rolls a missed attack again.
     if (natural != 20 && !(!spell && natural >= d.critical_from) &&
         !attack_hits(natural, bonus, armor_class(target)))
+    {
         if (const auto again = heroic_reroll(a))
+        {
             natural = *again;
+        }
+    }
     const bool automatic = natural == 20 || (!spell && natural >= d.critical_from);
     bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
     // Bardic Inspiration may rescue a miss; Cutting Words may spoil a hit.
@@ -15579,13 +18319,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // Shield cannot turn a critical hit into a miss, but Deflect Attacks can
     // still lessen one.
     if (hit)
+    {
         ask_reaction(target, Asked::hit,
                      damage_type == detail::DamageType::bludgeoning ||
                          damage_type == detail::DamageType::piercing ||
                          damage_type == detail::DamageType::slashing,
                      automatic);
+    }
     if (hit && strikes_duplicate(a, target))
+    {
         return false;
+    }
     const bool sneak = hit && !spell && sneak_eligible(a, target, range, modifiers.mode());
     const auto roll_damage = [&]
     {
@@ -15612,9 +18356,13 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                                      : 0;
     const bool savage = hit && !spell && damage_dice.count && d.savage && !a.savage_used;
     if (savage)
+    {
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
+    }
     if (hit)
+    {
         weapon_damage += weapon_magic;
+    }
     // Rage Damage: Strength-based weapon and unarmed hits.
     if (hit && !spell && rage_of(a) && strength_attack(a, range))
     {
@@ -15624,7 +18372,9 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         weapon_damage += frenzy_damage(a, critical_hit(a, target, natural));
     }
     if (hit && !spell)
+    {
         weapon_damage = resized_damage(a, weapon_damage);
+    }
     if (hit && brutal)
     {
         const int extra = dice({1, 10, 0}, critical_hit(a, target, natural));
@@ -15652,14 +18402,20 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     const int enfeebled =
         hit && detail::has_effect(a.effects, detail::EffectKind::enfeebled) ? roll(8) : 0;
     if (enfeebled)
+    {
         log("Ray of Enfeeblement subtracts " + std::to_string(enfeebled) + " damage.",
             {"Ray of Enfeeblement subtracts {damage} damage.",
              {{"damage", std::to_string(enfeebled)}}});
+    }
     int rolled = std::max(0, weapon_damage + sneak_damage + advantage_damage - enfeebled);
     if (hit)
+    {
         rolled = std::max(0, rolled - cut_damage(a, target, rolled, damage_type));
+    }
     if (hit)
+    {
         hunters_defense(target, damage_type);
+    }
     const int amount = hit ? dodged(target, deflected(a, target, rolled, damage_type, ranged)) : 0;
     apply_hit(a, target,
               ResolvedAttack{.natural = natural,
@@ -15703,7 +18459,9 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                                           });
         hit && spirits != zones_.end() && !target.life.dead &&
         in_emanation(*spirits, target.source.cell))
+    {
         for (const auto &e : a.effects.active)
+        {
             if (e.kind == detail::EffectKind::minor_elementals)
             {
                 const auto type = static_cast<detail::DamageType>(e.dc);
@@ -15719,6 +18477,8 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                 damage(target, amount, false);
                 break;
             }
+        }
+    }
     // Fire Shield: a creature within 5 feet that hits in melee takes 2d8 Fire
     // from the warm shield or Cold from the chill one.
     if (const auto shield = std::find_if(target.effects.active.begin(), target.effects.active.end(),
@@ -15767,7 +18527,9 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         damage(target, extra, false);
     }
     if (hit)
+    {
         curse_strikes(a, target);
+    }
     // Hex: the caster's attack-roll hits deal 1d6 more Necrotic damage.
     if (hit && hexed_by(target, a) && !target.life.dead)
     {
@@ -15803,28 +18565,40 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         damage(target, extra, false);
     }
     if (hit && amount > 0 && target.life.hp > 0)
+    {
         giant_boon(a, target, critical_hit(a, target, natural, spell));
+    }
     if (hit && brutal && !target.life.dead)
+    {
         brutal_blow(a, target, brutal_->blow);
+    }
     if (cunning)
     {
         // Withdraw's move comes after the other effect.
         auto kinds = std::vector{cunning_->kind};
         if (cunning_->second)
+        {
             kinds.push_back(*cunning_->second);
+        }
         std::stable_partition(kinds.begin(), kinds.end(),
                               [](auto kind)
                               {
                                   return kind != CunningStrike::withdraw;
                               });
         for (const auto kind : kinds)
+        {
             cunning_effect(a, target, kind);
+        }
     }
     else if (stealthy)
+    {
         end_hiding(a.source.id);
+    }
     if (hit && stunning_ == a.source.id && !spell && !ranged && d.martial_arts && !a.stun_used &&
         a.surges > 0 && !target.life.dead && target.life.hp > 0)
+    {
         stunning_strike(a, target);
+    }
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
     answer_damage();
     return hit;
@@ -15835,13 +18609,17 @@ void Session::reveal_lore(const Actor &caster, const Actor &target)
     // Hunter's Lore: the marked creature's damage Immunities, Resistances and
     // Vulnerabilities become known.
     if (!def(caster).hunters_lore)
+    {
         return;
+    }
     const auto &affinities = def(target).affinities;
     if (affinities.empty())
+    {
         log("Hunter's Lore: " + target.source.name +
                 " has no damage Immunities, Resistances or Vulnerabilities.",
             {"Hunter's Lore: {name} has no damage Immunities, Resistances or Vulnerabilities.",
              {{"name", target.source.name}}});
+    }
     for (const auto &affinity : affinities)
     {
         const std::string kind = affinity.kind == detail::AffinityKind::resistance ? "Resistance"
@@ -15890,12 +18668,16 @@ bool Session::hex_can_move(const Actor &caster) const
     // Hex moves once its creature drops, while the caster concentrates on it.
     bool hexed = false;
     for (const auto &other : actors_)
+    {
         if (hexed_by(other, caster))
         {
             if (other.life.hp > 0 && !other.life.dead)
+            {
                 return false;
+            }
             hexed = true;
         }
+    }
     return hexed;
 }
 
@@ -15905,12 +18687,16 @@ bool Session::mark_can_move(const Actor &caster) const
     // caster still concentrates on it.
     bool marked = false;
     for (const auto &other : actors_)
+    {
         if (marked_by(other, caster))
         {
             if (other.life.hp > 0 && !other.life.dead)
+            {
                 return false;
+            }
             marked = true;
         }
+    }
     return marked;
 }
 
@@ -15947,7 +18733,9 @@ void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
     d.melee_ability = modifier;
     d.melee.bonus = modifier;
     if (choice == TrueStrikeDamage::radiant)
+    {
         d.melee_type = detail::DamageType::radiant;
+    }
     // From level 5 the strike adds Radiant damage: 1d6, 2d6 from 11, 3d6 from 17.
     if (cantrip_tier(d) > 1)
     {
@@ -15963,15 +18751,21 @@ std::vector<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
 {
     std::vector<ReadyMetamagic> result;
     for (const auto &e : a.effects.active)
+    {
         if (e.kind == detail::EffectKind::metamagic)
         {
             if (e.dc < 10)
+            {
                 result.push_back({static_cast<Metamagic>(e.dc), std::nullopt});
+            }
             else
+            {
                 result.push_back({Metamagic::transmuted,
                                   detail::damage_type(
                                       transmuted_types.at(static_cast<std::size_t>(e.dc - 10)))});
+            }
         }
+    }
     return result;
 }
 
@@ -15999,6 +18793,7 @@ void Session::mark_heightened(const Actor &caster, const detail::SpellDef &spell
     // A new cast of the spell replaces the old one's mark.
     const int index = detail::spell_index(spell.id);
     for (auto &other : actors_)
+    {
         std::erase_if(other.effects.active,
                       [&](const auto &e)
                       {
@@ -16006,12 +18801,17 @@ void Session::mark_heightened(const Actor &caster, const detail::SpellDef &spell
                                  e.source_scope == scope_ && e.source_actor == caster.source.id &&
                                  e.dc == index;
                       });
+    }
     if (!heightened_target_)
+    {
         return;
+    }
     auto &target = actor(heightened_target_);
     if (detail::can_apply(target.effects))
+    {
         detail::apply_spell_benefit(target.effects, effect_source(caster), caster.source.name,
                                     detail::EffectKind::heightened, index);
+    }
 }
 
 void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
@@ -16021,7 +18821,9 @@ void Session::take_metamagic(Actor &caster, const detail::SpellDef &spell)
     for (const auto &ready : readied_metamagic(caster))
     {
         if (!readies(caster, ready.option, spell))
+        {
             continue;
+        }
         caster.lay_on_hands -= metamagic_cost(ready.option);
         // Each option spent leaves; one that cannot change this spell waits.
         const int value =
@@ -16054,15 +18856,21 @@ int Session::spell_range(const Actor &caster, const detail::SpellDef &spell) con
         spell.range + (def(caster).eldritch_spear.contains(spell.id) ? 30 * def(caster).level : 0);
     // Distant Spell: double the range, or 30 feet for Touch.
     if (!readies(caster, Metamagic::distant, spell))
+    {
         return range;
+    }
     return range <= 5 ? 30 : 2 * range;
 }
 
 detail::DamageType Session::cast_damage_type(detail::DamageType type) const
 {
     for (const auto &ready : casting_metamagic_)
+    {
         if (ready.option == Metamagic::transmuted && transmutable(type))
+        {
             return *ready.type;
+        }
+    }
     return type;
 }
 
@@ -16070,22 +18878,32 @@ int Session::spell_dice(const Actor &caster, Dice dice, bool critical)
 {
     // Overchannel: the most the dice can show.
     if (overchanneling_ && caster.source.id == overchannel_caster_)
+    {
         return dice.count * (critical ? 2 : 1) * dice.sides + dice.bonus;
+    }
     // Empowered Spell rerolls the lowest dice below their average, up to the
     // Charisma modifier (at least one), and keeps the new rolls.
     if (!casting_with(Metamagic::empowered))
+    {
         return this->dice(dice, critical);
+    }
     std::vector<int> rolls;
     for (int n = 0; n < dice.count * (critical ? 2 : 1); ++n)
+    {
         rolls.push_back(roll(dice.sides));
+    }
     std::sort(rolls.begin(), rolls.end());
     const int rerolls = std::max(1, casting_modifier(def(caster)));
     for (int n = 0;
          n < rerolls && n < static_cast<int>(rolls.size()) && rolls[n] * 2 < dice.sides + 1; ++n)
+    {
         rolls[n] = roll(dice.sides);
+    }
     int total = dice.bonus;
     for (const int value : rolls)
+    {
         total += value;
+    }
     return total;
 }
 
@@ -16094,13 +18912,19 @@ std::vector<EntityId> Session::careful_allies(const Actor &caster,
 {
     std::vector<EntityId> spared;
     if (!casting_with(Metamagic::careful))
+    {
         return spared;
+    }
     const auto most = static_cast<std::size_t>(std::max(1, casting_modifier(def(caster))));
     for (const auto &other : actors_)
+    {
         if (spared.size() < most && other.source.side == caster.source.side &&
             other.source.id != caster.source.id && !other.life.dead &&
             std::find(cells.begin(), cells.end(), other.source.cell) != cells.end())
+        {
             spared.push_back(other.source.id);
+        }
+    }
     return spared;
 }
 
@@ -16115,7 +18939,9 @@ int Session::burst_damage(const SpellAttack &spell, bool critical)
         const int rolled = roll(dice.sides);
         total += rolled;
         if (rolled == dice.sides && extra < spell.bursts)
+        {
             ++extra;
+        }
     }
     return total;
 }
@@ -16145,8 +18971,11 @@ int Session::frenzy_damage(Actor &berserker, bool critical)
     // Frenzy: raging and reckless, the turn's first Strength-based hit deals a
     // d6 per point of Rage Damage. The Reckless effect records that it struck.
     if (!def(berserker).frenzy || actors_[turn_].source.id != berserker.source.id)
+    {
         return 0;
+    }
     for (auto &e : berserker.effects.active)
+    {
         if (e.kind == detail::EffectKind::reckless && !e.dc)
         {
             e.dc = 1;
@@ -16155,6 +18984,7 @@ int Session::frenzy_damage(Actor &berserker, bool critical)
                 {"Frenzy adds {damage} damage.", {{"damage", std::to_string(extra)}}});
             return extra;
         }
+    }
     return 0;
 }
 
@@ -16199,24 +19029,36 @@ Session::cunning_choice(std::string_view verb)
     for (const std::string_view base : {"melee_", "ranged_"})
     {
         if (!verb.starts_with(base))
+        {
             continue;
+        }
         const auto rest = verb.substr(base.size());
         const auto plus = rest.find('+');
         const auto named = [](std::string_view suffix) -> std::optional<CunningStrike>
         {
             for (const auto &option : cunning_strikes)
+            {
                 if (option.suffix == suffix)
+                {
                     return option.kind;
+                }
+            }
             return std::nullopt;
         };
         const auto first = named(rest.substr(0, plus));
         if (!first)
+        {
             return std::nullopt;
+        }
         if (plus == std::string_view::npos)
+        {
             return std::pair{*first, std::optional<CunningStrike>{}};
+        }
         const auto second = named(rest.substr(plus + 1));
         if (!second)
+        {
             return std::nullopt;
+        }
         return std::pair{*first, second};
     }
     return std::nullopt;
@@ -16237,7 +19079,9 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
     if (kind == CunningStrike::daze)
     {
         if (!standing || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+        {
             return;
+        }
         detail::apply_poisoned(target.effects, effect_source(rogue), rogue.source.name,
                                next_save_ms(target.source.id), detail::EffectKind::dazed);
         log(target.source.name + " is dazed.",
@@ -16247,7 +19091,9 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
     if (kind == CunningStrike::knock_out)
     {
         if (!standing || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+        {
             return;
+        }
         detail::apply_repeating_condition(
             target.effects, detail::EffectKind::knocked_out, effect_source(rogue),
             rogue.source.name,
@@ -16261,7 +19107,9 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
     if (kind == CunningStrike::obscure)
     {
         if (!standing || saving_throw_succeeds(target, detail::Ability::dexterity, dc))
+        {
             return;
+        }
         detail::apply_poisoned(target.effects, effect_source(rogue), rogue.source.name,
                                next_save_ms(target.source.id), detail::EffectKind::dazzled);
         log(target.source.name + " is Blinded.",
@@ -16272,9 +19120,13 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
     {
         // A Large or smaller creature saves or falls Prone.
         if (!standing || def(target).size > 3 || target.effects.prone)
+        {
             return;
+        }
         if (saving_throw_succeeds(target, detail::Ability::dexterity, dc))
+        {
             return;
+        }
         target.effects.prone = true;
         log(target.source.name + " is tripped and falls Prone.",
             {"{name} is tripped and falls Prone.", {{"name", target.source.name}}});
@@ -16306,11 +19158,15 @@ void Session::brutal_blow(Actor &barbarian, Actor &target, BrutalBlow blow)
             staggering ? detail::EffectKind::staggering : detail::EffectKind::sundered,
             effect_source(barbarian), barbarian.source.name, next_turn_ms(barbarian));
         if (staggering)
+        {
             log(target.source.name + " staggers (Staggering Blow).",
                 {"{name} staggers (Staggering Blow).", {{"name", target.source.name}}});
+        }
         else
+        {
             log(target.source.name + " is sundered (Sundering Blow).",
                 {"{name} is sundered (Sundering Blow).", {{"name", target.source.name}}});
+        }
         return;
     }
     if (blow == BrutalBlow::hamstring)
@@ -16326,17 +19182,21 @@ void Session::brutal_blow(Actor &barbarian, Actor &target, BrutalBlow blow)
     if (const int feet =
             std::max(0, def(barbarian).speed - detail::speed_penalty(barbarian.effects)) / 2;
         feet > 0 && conscious(barbarian) && !champion_move_ && !target.life.dead)
+    {
         champion_move_ = ChampionMove{.actor = barbarian.source.id,
                                       .target = target.source.id,
                                       .remaining = feet,
                                       .origin = barbarian.source.cell,
                                       .toward = target.source.id};
+    }
 }
 
 int Session::reliable(const Actor &a, std::string_view skill, int natural)
 {
     if (natural >= 10 || !def(a).reliable.contains(skill))
+    {
         return natural;
+    }
     log("Reliable Talent: " + a.source.name + "'s d20 of " + std::to_string(natural) +
             " counts as 10.",
         {"Reliable Talent: {name}'s d20 of {roll} counts as 10.",
@@ -16349,7 +19209,9 @@ int Session::evaded(const Actor &target, detail::Ability save, bool halves, bool
 {
     if (def(target).evasion && save == detail::Ability::dexterity && halves &&
         !detail::incapacitated(target.effects))
+    {
         return saved ? 0 : total / 2;
+    }
     return saved ? total / 2 : total;
 }
 
@@ -16364,7 +19226,9 @@ bool Session::strength_attack(const Actor &a, AttackRange range) const
     // a ranged one is Strength only when thrown.
     const auto &d = def(a);
     if (range == AttackRange::ranged)
+    {
         return !d.ranged_weapon && d.ranged_ability == d.strength;
+    }
     return !d.melee.count || d.melee_ability == d.strength;
 }
 
@@ -16377,8 +19241,12 @@ bool Session::shillelagh(const Actor &a) const
 int Session::magic_weapon_bonus(const Actor &a) const
 {
     for (const auto &effect : a.effects.active)
+    {
         if (effect.kind == detail::EffectKind::magic_weapon)
+        {
             return effect.dc;
+        }
+    }
     return 0;
 }
 
@@ -16392,18 +19260,26 @@ bool Session::strikes_duplicate(const Actor &attacker, Actor &target)
                                         return e.kind == detail::EffectKind::mirror_image;
                                     });
     if (image == target.effects.active.end() || detail::blinded(attacker.effects))
+    {
         return false;
+    }
     bool diverted = false;
     for (int duplicate = 0; duplicate < image->dc; ++duplicate)
+    {
         diverted = roll(6) >= 3 || diverted;
+    }
     if (!diverted)
+    {
         return false;
+    }
     log(attacker.source.name + " hits one of " + target.source.name +
             "'s duplicates, which vanishes.",
         {"{attacker} hits one of {name}'s duplicates, which vanishes.",
          {{"attacker", attacker.source.name}, {"name", target.source.name}}});
     if (--image->dc == 0)
+    {
         target.effects.active.erase(image);
+    }
     return true;
 }
 
@@ -16418,11 +19294,17 @@ int Session::sacred_weapon_bonus(const Actor &a) const
 detail::DamageType Session::sacred_damage_type(const Actor &a) const
 {
     if (pact_damage_)
+    {
         return *pact_damage_;
+    }
     // The damage the Paladin chose when imbuing the weapon.
     for (const auto &effect : a.effects.active)
+    {
         if (effect.kind == detail::EffectKind::sacred_weapon && effect.dc == 1)
+        {
             return detail::DamageType::radiant;
+        }
+    }
     return def(a).melee_type;
 }
 
@@ -16441,7 +19323,9 @@ void Session::finish_reaction()
             flight_.reset();
         }
         else if (!pending() && !stop_illegal_route())
+        {
             progress_movement();
+        }
     }
 }
 
@@ -16449,11 +19333,14 @@ void Session::update_outcome()
 {
     // Decided once: a later call must not announce the outcome again.
     if (outcome_ != Outcome::ongoing)
+    {
         return;
+    }
     // A dominated creature still counts for its own side.
     bool party = false, enemies = false;
     // Mislead's double is no one.
     for (const auto &a : actors_)
+    {
         if (a.life.hp > 0 && !a.life.dead && !a.fled &&
             !detail::has_effect(a.effects, detail::EffectKind::illusory) &&
             !std::any_of(a.effects.active.begin(), a.effects.active.end(),
@@ -16462,7 +19349,10 @@ void Session::update_outcome()
                              // Stone for good is out of the fight.
                              return e.kind == detail::EffectKind::petrified && e.dc;
                          }))
+        {
             ((a.source.side == Side::party) != a.turned ? party : enemies) = true;
+        }
+    }
     if (!party || !enemies)
     {
         // No member left on the field: it fled if anyone got away.
@@ -16487,9 +19377,12 @@ void Session::update_outcome()
             end_befuddlement(a);
         }
         for (auto &a : actors_)
+        {
             release(a);
+        }
         // Animate Dead's Zombies fall again with the fight (LEVELS-3).
         for (auto &a : actors_)
+        {
             if (detail::has_effect(a.effects, detail::EffectKind::raised))
             {
                 a.effects.active.clear();
@@ -16500,6 +19393,7 @@ void Session::update_outcome()
                 log(a.source.name + " falls again.",
                     {"{name} falls again.", {{"name", a.source.name}}});
             }
+        }
         champion_move_.reset();
         mastery_.reset();
         champion_offers_.clear();
@@ -16514,6 +19408,7 @@ void Session::update_outcome()
             // The original game ends the fight once every enemy is down; a
             // downed troll does not get up afterwards.
             for (auto &a : actors_)
+            {
                 if (a.source.side == Side::opposition && downed_riser(a))
                 {
                     a.life.dead = true;
@@ -16522,6 +19417,7 @@ void Session::update_outcome()
                     log(a.source.name + " stays down.",
                         {"{name} stays down.", {{"name", a.source.name}}});
                 }
+            }
             bandage_after_victory();
         }
     }
@@ -16532,12 +19428,14 @@ void Session::update_outcome()
 void Session::wake_resting_participants()
 {
     for (auto &a : actors_)
+    {
         if (a.source.resting && conscious(a))
         {
             a.effects.prone = true;
             log(a.source.name + " wakes up prone.",
                 {"{name} wakes up prone.", {{"name", a.source.name}}});
         }
+    }
 }
 
 // As in the original game, whoever is still dying when the fight is won has
@@ -16549,13 +19447,17 @@ void Session::bandage_after_victory()
     for (auto &a : actors_)
     {
         if (a.life.hp != 0 || a.life.dead || a.life.stable)
+        {
             continue;
+        }
         detail::stabilize(a.life, rng_);
         log(a.source.name + " is bandaged and stable.",
             {"{name} is bandaged and stable.", {{"name", a.source.name}}});
     }
     for (auto &a : actors_)
+    {
         a.effects.prone = false;
+    }
 }
 
 // Regeneration at the start of the creature's turn: Acid or Fire damage since its
@@ -16589,7 +19491,9 @@ void Session::regenerate(Actor &a)
     const int healed = detail::heal_life(a.life, def(a).regeneration, max_hp(a),
                                          !detail::healing_blocked(a.effects));
     if (!healed)
+    {
         return;
+    }
     log(a.source.name + " regenerates " + std::to_string(healed) + " Hit Points.",
         {"{name} regenerates {amount} Hit Points.",
          {{"name", a.source.name}, {"amount", std::to_string(healed)}}});
@@ -16608,23 +19512,33 @@ void Session::get_up(Actor &a)
                                                  other.source.cell == a.source.cell;
                                       });
     if (static_cast<int>(round_) < a.rises_on_round || stood_on)
+    {
         return;
+    }
     if (!detail::heal_life(a.life, max_hp(a), max_hp(a), !detail::healing_blocked(a.effects)))
+    {
         return;
+    }
     a.rises_on_round = 0;
     a.effects.prone = true;
     if (shares_occupied_space(a))
+    {
         a.involuntary_overlap = true;
+    }
     log(a.source.name + " gets back up.", {"{name} gets back up.", {{"name", a.source.name}}});
 }
 
 bool Session::begin_turn()
 {
     for (auto &other : actors_)
+    {
         release(other);
+    }
     auto &a = actors_[turn_];
     if (a.fled)
+    {
         return false;
+    }
     if (a.skips_turn)
     {
         a.skips_turn = false;
@@ -16634,7 +19548,9 @@ bool Session::begin_turn()
     {
         check_morale(a);
         if (a.fled)
+        {
             return false;
+        }
     }
     std::erase_if(a.effects.active,
                   [](const auto &effect)
@@ -16648,9 +19564,12 @@ bool Session::begin_turn()
         return false;
     }
     if (a.life.dead || absent(a))
+    {
         return false;
+    }
     // Finger of Death: the caster's slain Humanoids rise as its Zombies.
     for (auto &other : actors_)
+    {
         if (other.life.dead && std::any_of(other.effects.active.begin(), other.effects.active.end(),
                                            [&](const auto &e)
                                            {
@@ -16658,7 +19577,10 @@ bool Session::begin_turn()
                                                       e.source_actor == a.source.id &&
                                                       e.source_scope == scope_;
                                            }))
+        {
             raise_undead(a, other, "zombie");
+        }
+    }
     // Prismatic Spray's violet ray: a Wisdom save ends the blindness; a
     // failure sends the creature to another plane, which counts as defeated
     // (LEVELS-1).
@@ -16672,7 +19594,9 @@ bool Session::begin_turn()
                                                     e.source_scope == scope_;
                                          });
         if (violet == other.effects.active.end() || other.life.dead)
+        {
             continue;
+        }
         const int dc = violet->dc;
         other.effects.active.erase(violet);
         if (saving_throw_succeeds(other, detail::Ability::wisdom, dc))
@@ -16689,10 +19613,13 @@ bool Session::begin_turn()
     }
     // Mislead's double takes no turns of its own.
     if (detail::has_effect(a.effects, detail::EffectKind::illusory))
+    {
         return false;
+    }
     // Cloudkill and Incendiary Cloud drift 10 feet away from their caster as
     // the caster's turn starts.
     for (auto &zone : zones_)
+    {
         if ((zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers) &&
             zone.caster == a.source.id)
         {
@@ -16711,21 +19638,31 @@ bool Session::begin_turn()
             const auto after = zone;
             log("The cloud drifts.", {"The cloud drifts.", {}});
             for (auto &other : actors_)
+            {
                 if (in_zone(after, other.source.cell) && !in_zone(before, other.source.cell))
+                {
                     choke_cloud(after, other);
+                }
+            }
             break;
         }
+    }
     // Conjure Elemental: a creature starting its turn beside the spirit may be
     // seized; one it holds saves again, taking 4d8 on a failure.
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::elemental && std::any_of(zone.cells.begin(), zone.cells.end(),
                                                             [&](Cell cell)
                                                             {
                                                                 return distance(cell,
                                                                                 a.source.cell) <= 5;
                                                             }))
+        {
             engulf(zone, a);
+        }
+    }
     for (const auto &e : std::vector<detail::Effect>(a.effects.active))
+    {
         if (e.kind == detail::EffectKind::engulfed && e.source_scope == scope_)
         {
             const auto &caster = actor(e.source_actor);
@@ -16736,7 +19673,9 @@ bool Session::begin_turn()
                                                         zone.caster == caster.source.id;
                                              });
             if (spirit == zones_.end())
+            {
                 continue;
+            }
             const auto &spell = *detail::find_spell("conjure_elemental");
             if (saving_throw_succeeds(a, spell.save, spirit->save_dc))
             {
@@ -16761,8 +19700,11 @@ bool Session::begin_turn()
                   {"type", name, true}}});
             damage(a, amount);
         }
+    }
     if (a.life.dead)
+    {
         return false;
+    }
     // Warding Bond ends once its caster is down or more than 60 feet away.
     for (auto &other : actors_)
     {
@@ -16779,26 +19721,42 @@ bool Session::begin_turn()
     guardian_tests(a);
     // Wild Shape ends when it lapses or its Druid is Incapacitated.
     if (a.form && detail::incapacitated(a.effects))
+    {
         end_wild_shape(a);
+    }
     refresh_form(a);
     // Heat Metal may be repeated from the caster's next turn on.
     for (auto &other : actors_)
+    {
         for (auto &effect : other.effects.active)
+        {
             if (effect.kind == detail::EffectKind::heated && effect.source_actor == a.source.id)
+            {
                 effect.dc = 0;
+            }
+        }
+    }
     if (a.life.dead)
+    {
         return false;
+    }
     spring_zones(a, ZoneKind::web);
     // Heroism: Temporary HP at the start of each of the target's turns, kept
     // only when higher than what the target already has.
     for (const auto &effect : a.effects.active)
+    {
         if (effect.kind == detail::EffectKind::heroism && a.life.hp > 0 &&
             effect.dc > a.life.temporary_hp.amount)
+        {
             detail::grant_temporary_hp(a.life, {effect.dc, "spell:heroism"},
                                        TemporaryHpChoice::use_new);
+        }
+    }
     // Persistent Rage (Barbarian 15): the Rage needs no extending.
     if (def(a).persistent_rage && rage_of(a))
+    {
         extend_rage(a);
+    }
     // Heroic Warrior (Champion 10): Heroic Inspiration at the start of each
     // turn in a fight, when the Fighter lacks it.
     if (def(a).heroic_warrior && conscious(a) &&
@@ -16819,18 +19777,24 @@ bool Session::begin_turn()
              {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
         damage(a, amount, false);
         if (a.life.dead)
+        {
             a.burning = false;
+        }
     }
     if (def(a).regeneration)
     {
         regenerate(a);
         if (a.life.hp == 0)
+        {
             return false;
+        }
     }
     // Regenerate: 1 Hit Point at the start of each of its turns.
     if (detail::has_effect(a.effects, detail::EffectKind::regenerating) && !a.life.dead &&
         a.life.hp < max_hp(a) && !detail::healing_blocked(a.effects))
+    {
         heal(a, 1);
+    }
     // Aura of Life: an ally at 0 Hit Points regains 1 as its turn starts.
     if (a.life.hp == 0 && !a.life.dead && in_aura_of_life(a) && !detail::healing_blocked(a.effects))
     {
@@ -16849,27 +19813,37 @@ bool Session::begin_turn()
                 detail::has_effect(a.effects, detail::EffectKind::hopeful));
             fall(a);
             if (aura)
+            {
                 log(a.source.name + " death save: " + std::to_string(result) + " + " +
                         std::to_string(aura) + " (Aura of Protection)",
                     {"{name} death save: {roll} + {bonus} (Aura of Protection)",
                      {{"name", a.source.name},
                       {"roll", std::to_string(result)},
                       {"bonus", std::to_string(aura)}}});
+            }
             else
+            {
                 log(a.source.name + " death save: " + std::to_string(result),
                     {"{name} death save: {roll}",
                      {{"name", a.source.name}, {"roll", std::to_string(result)}}});
+            }
             if (a.life.hp > 0)
             {
                 a.effects.prone = true;
                 if (shares_occupied_space(a))
+                {
                     a.involuntary_overlap = true;
+                }
             }
             if (a.life.dead)
+            {
                 clear_departed_overlaps();
+            }
         }
         if (a.life.hp == 0)
+        {
             return false;
+        }
     }
     // One spell slot per turn, whoever's turn it is: a Reaction spell on
     // another creature's turn may spend a slot again.
@@ -16937,6 +19911,7 @@ bool Session::begin_turn()
             {"{name} keeps casting Magic Circle.", {{"name", a.source.name}}});
     }
     for (const auto &e : a.effects.active)
+    {
         if (e.kind == detail::EffectKind::animating)
         {
             // Create Undead's slot level is 10 more.
@@ -16947,6 +19922,7 @@ bool Session::begin_turn()
                  {{"name", a.source.name}, {"spell", spell, true}}});
             break;
         }
+    }
     // Regenerate: its caster keeps casting through the minute.
     if (std::any_of(actors_.begin(), actors_.end(),
                     [&](const auto &other)
@@ -16970,41 +19946,60 @@ bool Session::begin_turn()
     move_wave(a.source.id);
     // Faithful Hound: it bites the nearest enemy within 5 feet of it.
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::hound && zone.caster == a.source.id)
         {
             Actor *prey = nullptr; // Borrowed from actors_.
             for (auto &other : actors_)
+            {
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                     !absent(other) && !sealed_off(other) &&
                     distance(zone.cells.front(), other.source.cell) <= 5 && !prey)
+                {
                     prey = &other;
+                }
+            }
             if (!prey)
+            {
                 continue;
+            }
             const auto &spell = *detail::find_spell("faithful_hound");
             log("The hound bites at " + prey->source.name + ".",
                 {"The hound bites at {name}.", {{"name", prey->source.name}}});
             if (saving_throw_succeeds(*prey, spell.save, zone.save_dc, false,
                                       heightened_against(*prey, a, spell.id)))
+            {
                 continue;
+            }
             const int amount = resolved_damage(*prey, spell.damage, dice(spell.dice));
             log(prey->source.name + " takes " + std::to_string(amount) + " Force damage.",
                 {"{name} takes {damage} Force damage.",
                  {{"name", prey->source.name}, {"damage", std::to_string(amount)}}});
             damage(*prey, amount);
         }
+    }
     // Confusion: a d10 decides the turn.
     if (detail::has_effect(a.effects, detail::EffectKind::confused) && conscious(a) &&
         !confused_turn(a))
+    {
         return false;
+    }
     // Sleet Storm and Stinking Cloud act on a creature starting its turn in them.
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::sleet && in_zone(zone, a.source.cell))
+        {
             sleet_falls(zone, a);
+        }
         else if (zone.kind == ZoneKind::stench && in_zone(zone, a.source.cell))
+        {
             choke(zone, a);
+        }
+    }
 
     // Bestow Curse: a Wisdom save as its turn starts, or only the Dodge action.
     if (const auto *curse = curse_on(a, 7); curse && conscious(a))
+    {
         if (const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                              [&](const auto &other)
                                              {
@@ -17018,6 +20013,7 @@ bool Session::begin_turn()
             log(a.source.name + " is forced to take the Dodge action.",
                 {"{name} is forced to take the Dodge action.", {{"name", a.source.name}}});
         }
+    }
     // Command's Grovel and Halt take the whole turn; Approach and Flee limit
     // the turn's commands instead (obey_command).
     if (const auto *command = detail::command_effect(a.effects))
@@ -17058,8 +20054,10 @@ unsigned Session::next_save_ms(EntityId target) const
 void Session::log_luck(const Actor &a, bool rerolled)
 {
     if (rerolled)
+    {
         log(a.source.name + " rolls a 1 and rerolls it with Luck.",
             {"{name} rolls a 1 and rerolls it with Luck.", {{"name", a.source.name}}});
+    }
 }
 
 void Session::log_save(const Actor &target, const detail::SaveResult &result)
@@ -17219,12 +20217,14 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
     log_save(target, result);
     // Heroic Inspiration rolls a failed save again, if a 20 could pass it.
     if (!result.success && result.bonus + 20 >= dc)
+    {
         if (const auto again = heroic_reroll(actor(target.source.id)))
         {
             result.natural = *again;
             result.success = result.natural + result.bonus >= dc;
             log_save(target, result);
         }
+    }
     // Indomitable: the Fighter rerolls a failed save it could still pass,
     // adding its Fighter level, without asking, as Heroic Inspiration does.
     if (auto &fighter = actor(target.source.id); !result.success && def(fighter).indomitable &&
@@ -17255,11 +20255,17 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         log_save(target, result);
     }
     if (!result.success)
+    {
         dark_ones_luck(actor(target.source.id), result);
+    }
     // Bardic Inspiration may turn the failure into a success.
     if (!result.success)
+    {
         if (const int die = inspiration_roll(target, dc - result.natural - result.bonus))
+        {
             result.success = result.natural + result.bonus + die >= dc;
+        }
+    }
     return result.success;
 }
 
@@ -17277,10 +20283,13 @@ bool Session::charm_or_fear_save(const Actor &target, detail::Ability ability, i
                                  bool advantage, bool disadvantage)
 {
     if (saving_throw_succeeds(target, ability, dc, advantage, disadvantage))
+    {
         return true;
+    }
     // A Bard within 30 feet, the creature itself included, spends its
     // Reaction without asking, as roll effects are used.
     for (auto &bard : actors_)
+    {
         if (def(bard).countercharm && bard.source.side == target.source.side && conscious(bard) &&
             bard.reaction && !detail::incapacitated(bard.effects) && !absent(bard) &&
             distance(bard.source.cell, target.source.cell) <= 30)
@@ -17292,6 +20301,7 @@ bool Session::charm_or_fear_save(const Actor &target, detail::Ability ability, i
                  {{"name", bard.source.name}, {"target", target.source.name}}});
             return saving_throw_succeeds(target, ability, dc, true, disadvantage);
         }
+    }
     return false;
 }
 
@@ -17299,11 +20309,15 @@ int Session::peerless_skill(Actor &bard, int shortfall)
 {
     if (!def(bard).peerless_skill || bard.arcane < 1 || shortfall < 1 ||
         shortfall > def(bard).bardic_die || !conscious(bard))
+    {
         return 0;
+    }
     const int die = roll(def(bard).bardic_die);
     const bool fixed = die >= shortfall;
     if (fixed)
+    {
         --bard.arcane;
+    }
     const auto amount = std::to_string(die);
     log(bard.source.name + " adds " + amount + " with Peerless Skill" +
             (fixed ? ", turning the roll into a success." : ", not enough; the use is kept."),
@@ -17319,21 +20333,31 @@ void Session::dark_ones_luck(Actor &warlock, detail::SaveResult &result)
     // still pass, without asking, once a roll.
     if (!def(warlock).dark_luck || !conscious(warlock) ||
         result.natural + result.bonus + 10 < result.dc)
+    {
         return;
+    }
     const auto used = std::find_if(warlock.effects.active.begin(), warlock.effects.active.end(),
                                    [](const auto &e)
                                    {
                                        return e.kind == detail::EffectKind::luck_used;
                                    });
     if (used == warlock.effects.active.end() && !detail::can_apply(warlock.effects))
+    {
         return;
+    }
     if (used == warlock.effects.active.end())
+    {
         detail::apply_spell_benefit(warlock.effects, effect_source(warlock), warlock.source.name,
                                     detail::EffectKind::luck_used, 1);
+    }
     else if (used->dc >= def(warlock).dark_luck)
+    {
         return;
+    }
     else
+    {
         ++used->dc;
+    }
     const int die = roll(10);
     result.bonus += die;
     result.success = result.natural + result.bonus >= result.dc;
@@ -17351,7 +20375,9 @@ void Session::advance_turn_time()
     // Dead/unconscious slots still pass time; menus and repeated snapshots don't.
     const unsigned delta = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
     for (auto &a : actors_)
+    {
         detail::start_stable_recovery(a.life, rng_);
+    }
     std::vector<detail::RecoverySubject> subjects;
     std::vector<EntityId> unconscious;
     // Acid Arrow burns once its effect runs out, after the effects are walked.
@@ -17374,13 +20400,17 @@ void Session::advance_turn_time()
     {
         auto saves = def(a).saves;
         for (auto &save : saves)
+        {
             save += aura_of_protection(a);
+        }
         subjects.push_back(
             {{a.source.id, a.effects, saves, a.life.dead, def(a).str_dex_disadvantage, a.dodge,
               def(a).gnomish_cunning, def(a).lucky, def(a).brave},
              a.life});
         if (a.life.hp == 0)
+        {
             unconscious.push_back(a.source.id);
+        }
     }
     detail::elapse_recovery(
         subjects, delta, rng_, detail::RecoveryMode::combat,
@@ -17388,34 +20418,59 @@ void Session::advance_turn_time()
         {
             const auto &target = actor(event.target);
             if (event.save)
+            {
                 log_save(target, *event.save);
+            }
             if (event.inspiration)
+            {
                 log_inspiration(target, event.inspiration, event.save->success);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::banished)
+            {
                 unbanished.push_back(event.target);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::circling)
+            {
                 circled.push_back({event.target, static_cast<unsigned>(event.effect.dc)});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::animating)
+            {
                 animated.push_back({event.target, event.effect.dc >= 10});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::knitting)
+            {
                 knitted.push_back({event.target, event.effect.source_actor});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::hasted)
+            {
                 hastened.push_back(event.target);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::ethereal)
+            {
                 returned.push_back(event.target);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::hurled)
+            {
                 hurled.push_back(event.target);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::vitriol)
+            {
                 corroded.push_back(event.target);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::petrified &&
                 !event.effect.dc)
+            {
                 stoned.push_back(event.effect);
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::petrified &&
                 !event.effect.dc)
+            {
                 stoned_targets.push_back(event.target);
+            }
             if (event.removed && (event.effect.kind == detail::EffectKind::sap ||
                                   event.effect.kind == detail::EffectKind::vex ||
                                   event.effect.kind == detail::EffectKind::slow))
+            {
                 log(target.source.name + " loses a mastery effect.",
                     {"{name} loses {mastery} from {source}.",
                      {{"name", target.source.name},
@@ -17425,45 +20480,68 @@ void Session::advance_turn_time()
                                                                        : "Vex",
                        true},
                       {"source", event.effect.source_name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::chill_touch)
+            {
                 log(target.source.name + " loses a Chill Touch effect.",
                     {"{name} loses a Chill Touch effect.", {{"name", target.source.name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::shocking_grasp)
+            {
                 log(target.source.name + " loses a Shocking Grasp effect.",
                     {"{name} loses a Shocking Grasp effect.", {{"name", target.source.name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::ray_of_frost)
+            {
                 log(target.source.name + " loses a Ray of Frost effect.",
                     {"{name} loses a Ray of Frost effect.", {{"name", target.source.name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::blindness)
+            {
                 log(target.source.name + " recovers from a blindness effect.",
                     {"{name} recovers from a blindness effect.", {{"name", target.source.name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::hold_person)
+            {
                 log(target.source.name + " is no longer Paralyzed.",
                     {"{name} is no longer Paralyzed.", {{"name", target.source.name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::time_slowed)
+            {
                 log(target.source.name + " is no longer slowed.",
                     {"{name} is no longer slowed.", {{"name", target.source.name}}});
+            }
             if (event.removed && event.effect.kind == detail::EffectKind::acid_arrow)
+            {
                 burned.push_back(event.target);
+            }
         });
     // A Magic Circle cast for its full minute stands for an hour, and an hour
     // more for each slot level above 3.
     for (const auto &[id, level] : circled)
+    {
         for (auto &zone : zones_)
+        {
             if (zone.kind == ZoneKind::circle && zone.caster == id && !zone.ends_ms)
             {
                 zone.ends_ms = elapsed_ms_ + 3600000ull * (level - 2);
                 log("The Magic Circle is complete.", {"The Magic Circle is complete.", {}});
             }
+        }
+    }
     for (const auto &[id, ghouls] : animated)
+    {
         finish_animating(actor(id), ghouls ? "ghoul" : "zombie");
+    }
     for (const auto &[id, caster] : knitted)
     {
         finish_knitting(actor(id), caster);
         actor(caster).concentration.stop();
     }
     for (const auto id : hastened)
+    {
         tire(actor(id));
+    }
     for (std::size_t n = 0; n < stoned.size(); ++n)
     {
         auto &target = actor(stoned_targets[n]);
@@ -17479,7 +20557,9 @@ void Session::advance_turn_time()
     {
         auto &target = actor(id);
         if (target.life.dead)
+        {
             continue;
+        }
         const int amount = resolved_damage(target, detail::DamageType::acid, dice({5, 4, 0}));
         log(target.source.name + " takes " + std::to_string(amount) +
                 " Acid damage from the vitriol.",
@@ -17506,7 +20586,9 @@ void Session::advance_turn_time()
     for (auto &a : actors_)
     {
         for (auto &e : a.suppressed)
+        {
             e.remaining_ms -= std::min(e.remaining_ms, delta);
+        }
         std::erase_if(a.suppressed,
                       [](const auto &e)
                       {
@@ -17530,13 +20612,17 @@ void Session::advance_turn_time()
                 {"{name} does not return from its banishment.", {{"name", target.source.name}}});
         }
         else
+        {
             return_from_banishment(target);
+        }
     }
     for (const auto id : burned)
     {
         auto &target = actor(id);
         if (target.life.dead)
+        {
             continue;
+        }
         const int amount = resolved_damage(target, detail::DamageType::acid, dice({2, 4, 0}));
         log(target.source.name + " takes " + std::to_string(amount) +
                 " Acid damage from Acid Arrow.",
@@ -17545,29 +20631,43 @@ void Session::advance_turn_time()
         damage(target, amount, false);
     }
     for (auto &a : actors_)
+    {
         if (a.concentration.elapse(delta))
+        {
             drop_concentration_effects(a);
+        }
+    }
     // Rage ends early when the Barbarian is Incapacitated or falls.
     for (auto &a : actors_)
+    {
         if (rage_of(a) && (detail::incapacitated(a.effects) || a.life.hp == 0))
+        {
             std::erase_if(a.effects.active,
                           [](const auto &e)
                           {
                               return e.kind == detail::EffectKind::raging;
                           });
+        }
+    }
     // An ended Aid lowers the maximum, and Hit Points above it with it.
     for (auto &a : actors_)
+    {
         a.life.hp = std::min(a.life.hp, max_hp(a));
+    }
     for (auto &a : actors_)
+    {
         if (a.life.hp > 0 &&
             std::find(unconscious.begin(), unconscious.end(), a.source.id) != unconscious.end())
         {
             a.effects.prone = true;
             if (shares_occupied_space(a))
+            {
                 a.involuntary_overlap = true;
+            }
             log(a.source.name + " recovers 1 HP naturally.",
                 {"{name} recovers 1 HP naturally.", {{"name", a.source.name}}});
         }
+    }
     elapsed_ms_ +=
         std::min<std::uint64_t>(delta, std::numeric_limits<std::uint64_t>::max() - elapsed_ms_);
     std::erase_if(zones_,
@@ -17581,7 +20681,9 @@ void Session::restore_self(Actor &a)
 {
     // Self-Restoration (Monk 10): one of Charmed, Frightened or Poisoned ends.
     if (!def(a).self_restoration || !conscious(a))
+    {
         return;
+    }
     for (const auto &[kind, name] : {std::pair{detail::EffectKind::charmed, "Charmed"},
                                      std::pair{detail::EffectKind::frightened, "Frightened"},
                                      std::pair{detail::EffectKind::abjured, "Frightened"},
@@ -17595,7 +20697,9 @@ void Session::restore_self(Actor &a)
                                             return e.kind == kind;
                                         });
         if (found == a.effects.active.end())
+        {
             continue;
+        }
         a.effects.active.erase(found);
         log(a.source.name + " is no longer " + name + " (Self-Restoration).",
             {"{name} is no longer {condition} (Self-Restoration).",
@@ -17629,35 +20733,58 @@ void Session::end_turn()
         end_concentration(actors_[turn_]);
     }
     for (auto &zone : zones_)
+    {
         if (zone.kind == ZoneKind::bead && zone.caster == actors_[turn_].source.id)
+        {
             zone.dealt = std::min(zone.dealt + 1, 59);
+        }
         else if ((zone.kind == ZoneKind::sword || zone.kind == ZoneKind::fey) &&
                  zone.caster == actors_[turn_].source.id)
+        {
             zone.dealt = 0;
+        }
+    }
     restore_self(actors_[turn_]);
     contagion_save(actors_[turn_]);
     spring_zones(actors_[turn_], ZoneKind::grease);
     burn_beside_spheres(actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::moonbeam && in_zone(zone, actors_[turn_].source.cell))
+        {
             moonbeam_burns(zone, actors_[turn_]);
+        }
+    }
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
+        {
             blow(zone, actors_[turn_]);
+        }
+    }
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if ((zone.kind == ZoneKind::swarm || zone.kind == ZoneKind::blades ||
              zone.kind == ZoneKind::thorns) &&
             in_zone(zone, actors_[turn_].source.cell))
+        {
             swarm_strikes(zone, actors_[turn_]);
+        }
         else if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell)) ||
                  (emanates(zone) && zone.caster != actors_[turn_].source.id &&
                   in_emanation(zone, actors_[turn_].source.cell)))
+        {
             spirits_strike(zone, actors_[turn_]);
+        }
         else if (zone.kind == ZoneKind::pillar && in_zone(zone, actors_[turn_].source.cell))
+        {
             bathe(zone, actors_[turn_]);
+        }
+    }
     // Flesh to Stone: a Constitution save at the end of each of its turns;
     // three successes end it, three failures turn the creature to stone.
     for (auto &e : actors_[turn_].effects.active)
+    {
         if (e.kind == detail::EffectKind::stoning && e.source_scope == scope_ &&
             !actors_[turn_].life.dead)
         {
@@ -17680,6 +20807,7 @@ void Session::end_turn()
             }
             break;
         }
+    }
     // Prismatic Spray's indigo ray: the same three-and-three saves, against
     // the spray's DC.
     if (const auto indigo =
@@ -17728,7 +20856,9 @@ void Session::end_turn()
                   [&](const auto &e)
                   {
                       if (e.kind != detail::EffectKind::eye_panic || e.source_scope != scope_)
+                      {
                           return false;
+                      }
                       const auto caster = std::find_if(actors_.begin(), actors_.end(),
                                                        [&](const auto &other)
                                                        {
@@ -17741,6 +20871,7 @@ void Session::end_turn()
     // Phantasmal Killer: a Wisdom save at the end of each of its turns; a
     // failure deals the Psychic damage again, a success ends the spell.
     for (const auto &e : std::vector<detail::Effect>(actors_[turn_].effects.active))
+    {
         if (e.kind == detail::EffectKind::haunted && e.source_scope == scope_ &&
             !actors_[turn_].life.dead)
         {
@@ -17759,20 +20890,30 @@ void Session::end_turn()
                  {{"name", actors_[turn_].source.name}, {"damage", std::to_string(amount)}}});
             damage(actors_[turn_], amount);
         }
+    }
     // Black Tentacles, Cloudkill and Wall of Fire act on a creature ending its
     // turn in them.
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::tentacles && in_zone(zone, actors_[turn_].source.cell))
+        {
             grope(zone, actors_[turn_]);
+        }
         else if ((zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers) &&
                  in_zone(zone, actors_[turn_].source.cell))
+        {
             choke_cloud(zone, actors_[turn_]);
+        }
         else if ((zone.kind == ZoneKind::fire_wall || zone.kind == ZoneKind::fire_side) &&
                  in_zone(zone, actors_[turn_].source.cell))
+        {
             wall_burns(zone, actors_[turn_]);
+        }
+    }
     // Fear: out of the caster's sight at the end of its turn, the creature
     // saves to end it.
     for (const auto &e : std::vector<detail::Effect>(actors_[turn_].effects.active))
+    {
         if (e.kind == detail::EffectKind::terrified && e.source_scope == scope_ &&
             std::none_of(actors_.begin(), actors_.end(),
                          [&](const auto &other)
@@ -17791,6 +20932,7 @@ void Session::end_turn()
             log(actors_[turn_].source.name + " is no longer Frightened.",
                 {"{name} is no longer Frightened.", {{"name", actors_[turn_].source.name}}});
         }
+    }
     // Blink: a d6 at the end of each of its caster's turns; on 4-6 it slips
     // into the Ethereal Plane until its next turn.
     if (auto &blinker = actors_[turn_];
@@ -17808,14 +20950,20 @@ void Session::end_turn()
                  {{"name", blinker.source.name}, {"roll", std::to_string(rolled)}}});
         }
         else
+        {
             log(blinker.source.name + " stays (Blink d6 " + std::to_string(rolled) + ").",
                 {"{name} stays (Blink d6 {roll}).",
                  {{"name", blinker.source.name}, {"roll", std::to_string(rolled)}}});
+        }
     }
     // Earthquake: the tremor again at the end of each of its caster's turns.
     for (const auto &zone : std::vector<Zone>(zones_))
+    {
         if (zone.kind == ZoneKind::quake && zone.caster == actors_[turn_].source.id)
+        {
             tremor(zone);
+        }
+    }
     for (std::size_t checked = 0; checked <= actors_.size() * 2; ++checked)
     {
         advance_turn_time();
@@ -17823,9 +20971,13 @@ void Session::end_turn()
         // The round is a display counter. Saturation avoids wrapping it to
         // zero while keeping an extremely long (or edited) combat playable.
         if (turn_ == 0 && round_ < std::numeric_limits<unsigned>::max())
+        {
             ++round_;
+        }
         if (begin_turn())
+        {
             return;
+        }
     }
     update_outcome();
 }
@@ -17838,11 +20990,19 @@ void Session::progress_movement()
     {
         const auto destination = path_[path_index_];
         if (reactors_.empty() && !a.disengaged)
+        {
             for (const auto &other : actors_)
+            {
                 if (provokes(other, a, a.source.cell, destination))
+                {
                     reactors_.push_back(other.source.id);
+                }
+            }
+        }
         if (pending())
+        {
             return;
+        }
         if (!board_.contains(destination))
         {
             a.movement -= 5;
@@ -17854,13 +21014,17 @@ void Session::progress_movement()
         }
         const auto cost = grid.step_cost(a.source.cell, destination);
         if (!cost || *cost > mover_budget(a))
+        {
             throw std::logic_error("Invalid accepted movement path");
+        }
         const auto departed = a.source.cell;
         a.source.cell = destination;
         follow_carrier(a, departed);
         // A flight spends the Reaction, not the creature's own movement.
         if (flight_)
+        {
             flight_->remaining -= *cost;
+        }
         else
         {
             a.movement -= *cost;
@@ -17888,7 +21052,9 @@ void Session::progress_movement()
                                    (distance(departed, other.source.cell) <= 10) !=
                                        (distance(a.source.cell, other.source.cell) <= 10);
                         }))
+        {
             end_concentration(a);
+        }
         // Entering Grease or Web calls for a save; a creature caught stops.
         // Each square moved into or within Spike Growth pierces; entering a
         // Moonbeam burns.
@@ -17898,33 +21064,53 @@ void Session::progress_movement()
         {
             if ((zone.kind == ZoneKind::grease || zone.kind == ZoneKind::web) &&
                 in_zone(zone, destination) && !in_zone(zone, departed))
+            {
                 caught = spring_zone(zone, a) || caught;
+            }
             if (zone.kind == ZoneKind::spikes && in_zone(zone, destination))
+            {
                 spikes_pierce(a);
+            }
             if (zone.kind == ZoneKind::moonbeam && in_zone(zone, destination) &&
                 !in_zone(zone, departed))
+            {
                 moonbeam_burns(zone, a);
+            }
             if (zone.kind == ZoneKind::animals && near_pack(zone, destination) &&
                 !near_pack(zone, departed))
+            {
                 spirits_strike(zone, a);
+            }
             if ((zone.kind == ZoneKind::swarm || zone.kind == ZoneKind::blades) &&
                 in_zone(zone, destination) && !in_zone(zone, departed))
+            {
                 swarm_strikes(zone, a);
+            }
             if (zone.kind == ZoneKind::pillar && in_zone(zone, destination) &&
                 !in_zone(zone, departed))
+            {
                 bathe(zone, a);
+            }
             if (zone.kind == ZoneKind::sleet && in_zone(zone, destination) &&
                 !in_zone(zone, departed))
+            {
                 sleet_falls(zone, a);
+            }
             if (zone.kind == ZoneKind::tentacles && in_zone(zone, destination) &&
                 !in_zone(zone, departed))
+            {
                 grope(zone, a);
+            }
             if ((zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers) &&
                 in_zone(zone, destination) && !in_zone(zone, departed))
+            {
                 choke_cloud(zone, a);
+            }
             if (zone.kind == ZoneKind::elemental && in_zone(zone, destination) &&
                 !in_zone(zone, departed))
+            {
                 engulf(zone, a);
+            }
             // Wall of Fire burns a creature entering the wall, once a turn.
             if (zone.kind == ZoneKind::fire_wall && in_zone(zone, destination) &&
                 !in_zone(zone, departed) &&
@@ -17941,19 +21127,29 @@ void Session::progress_movement()
             // creatures its caster carries it onto.
             if (emanates(zone) && zone.caster != a.source.id && in_emanation(zone, destination) &&
                 !in_emanation(zone, departed))
+            {
                 spirits_strike(zone, a);
+            }
             if (emanates(zone) && zone.caster == a.source.id)
+            {
                 for (auto &other : actors_)
+                {
                     if (const int reach = zone.kind == ZoneKind::guardians ? 15 : 10;
                         other.source.id != a.source.id &&
                         distance(destination, other.source.cell) <= reach &&
                         distance(departed, other.source.cell) > reach)
+                    {
                         spirits_strike(zone, other);
+                    }
+                }
+            }
         }
         guardian_tests(a);
         suppress_spells();
         if (caught)
+        {
             break;
+        }
     }
     path_.clear();
     path_index_ = 0;
@@ -17970,7 +21166,9 @@ bool Session::submit(const Command &command)
                      {
                          return same_command(c, command);
                      }))
+    {
         return false;
+    }
     // A command applies completely or not at all: an exception part way
     // through restores the session as it was (Effective C++ Item 29). The
     // restore moves, so it cannot itself fail part way.
@@ -17981,21 +21179,31 @@ bool Session::submit(const Command &command)
     try
     {
         if (reaction_prompt_)
+        {
             answer_reaction(command);
+        }
         else
+        {
             perform(command);
+        }
         limit_slowed_turn();
         if (!reaction_prompt_)
+        {
             settle_dominated();
+        }
         notice_hidden();
         // Revisions are command tickets; zero is reserved for invalid commands.
         // Unsigned wrap is defined, but must skip that reserved value.
         if (++revision_ == 0)
+        {
             revision_ = 1;
+        }
         update_outcome();
         // One who ran off the field ends its turn and leaves the fight.
         if (outcome_ == Outcome::ongoing && !pending() && !reaction_prompt_ && actors_[turn_].fled)
+        {
             end_turn();
+        }
         remove_fled();
         update_outcome();
         if (initiative_choices_.empty() && outcome_ == Outcome::ongoing && !pending() &&
@@ -18008,7 +21216,9 @@ bool Session::submit(const Command &command)
             update_outcome();
         }
         if (outcome_ != Outcome::ongoing)
+        {
             advance_turn_time();
+        }
         suppress_spells();
     }
     catch (...)
@@ -18022,8 +21232,12 @@ bool Session::submit(const Command &command)
 const Session::ReactionAnswer *Session::answer_of(EntityId target, Asked asked) const
 {
     for (const auto &answer : reaction_answers_)
+    {
         if (answer.target == target && answer.asked == asked)
+        {
             return &answer;
+        }
+    }
     return nullptr;
 }
 
@@ -18063,7 +21277,9 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable, b
     // Unwinds the command to perform(), which asks the creature. A creature
     // asks once per command about the same kind of moment.
     if (answer_of(target.source.id, asked))
+    {
         return;
+    }
     const bool askable =
         asked == Asked::redirect || asked == Asked::rebuke || asked == Asked::boon ||
         asked == Asked::endure || asked == Asked::thunder || asked == Asked::retaliate ||
@@ -18071,7 +21287,9 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable, b
         (asked == Asked::hit &&
          (can_deflect(target, deflectable) || can_dodge(target) || can_defend(target)));
     if (askable)
+    {
         throw ReactionQuestion{target.source.id, asked, deflectable, critical};
+    }
 }
 
 int Session::dodged(Actor &target, int amount)
@@ -18084,7 +21302,9 @@ int Session::dodged(Actor &target, int amount)
                                                answer.verb == "uncanny_dodge";
                                     });
     if (found == reaction_answers_.end())
+    {
         return amount;
+    }
     // Spent once: a later hit in the same command is taken in full.
     found->verb = "dodged";
     log(target.source.name + " uses Uncanny Dodge and takes half the damage.",
@@ -18105,7 +21325,9 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
                                                answer.verb == "deflect";
                                     });
     if (found == reaction_answers_.end())
+    {
         return amount;
+    }
     // Spent once: a later hit in the same command is not deflected.
     found->verb = "deflected";
     const auto &d = def(target);
@@ -18117,10 +21339,14 @@ int Session::deflected(const Actor &attacker, Actor &target, int amount, detail:
     const int reach = ranged ? 60 : 5;
     if (left || target.surges <= 0 || attacker.life.hp <= 0 ||
         distance(target.source.cell, attacker.source.cell) > reach || !can_see(target, attacker))
+    {
         return left;
+    }
     ask_reaction(target, Asked::redirect);
     if (answer_of(target.source.id, Asked::redirect)->verb != "redirect")
+    {
         return left;
+    }
     --target.surges;
     auto &foe = actor(attacker.source.id);
     log(target.source.name + " redirects the attack at " + foe.source.name + ".",
@@ -18151,7 +21377,9 @@ void Session::bless_fiends(const Actor &fallen)
             warlock.source.side == fallen.source.side ||
             (by != warlock.source.id && distance(warlock.source.cell, fallen.source.cell) > 10) ||
             amount <= warlock.life.temporary_hp.amount)
+        {
             continue;
+        }
         detail::grant_temporary_hp(warlock.life, {amount, "feature:dark_ones_blessing"},
                                    TemporaryHpChoice::use_new);
         log("Dark One's Blessing: " + warlock.source.name + " gains " + std::to_string(amount) +
@@ -18172,7 +21400,9 @@ int Session::inspiration_roll(const Actor &creature, int shortfall)
                                         return e.kind == detail::EffectKind::inspired;
                                     });
     if (found == inspired.effects.active.end() || !conscious(inspired) || found->dc < shortfall)
+    {
         return 0;
+    }
     const int sides = found->dc;
     inspired.effects.active.erase(found);
     const int die = roll(sides);
@@ -18195,10 +21425,14 @@ Actor *Session::cutting_bard(const Actor &roller)
     // A Lore Bard who sees the roller within 60 feet spends a Reaction and a
     // Bardic Inspiration use to subtract the die from the roll.
     for (auto &bard : actors_)
+    {
         if (def(bard).cutting_words && bard.source.side != roller.source.side && conscious(bard) &&
             bard.reaction && !detail::incapacitated(bard.effects) && bard.arcane > 0 &&
             distance(bard.source.cell, roller.source.cell) <= 60 && can_see(bard, roller))
+        {
             return &bard;
+        }
+    }
     return nullptr;
 }
 
@@ -18208,7 +21442,9 @@ int Session::cutting_words(const Actor &roller, int margin, CutRoll cut)
     // into a failure.
     auto *const bard = cutting_bard(roller);
     if (!bard || margin >= def(*bard).bardic_die)
+    {
         return 0;
+    }
     bard->reaction = false;
     --bard->arcane;
     const int die = roll(def(*bard).bardic_die);
@@ -18245,7 +21481,9 @@ int Session::cut_damage(const Actor &roller, const Actor &target, int amount,
     auto *const bard = cutting_bard(roller);
     if (!bard || bard->source.side != target.source.side || target.life.hp <= 0 ||
         taken(amount) < standing || taken(amount - def(*bard).bardic_die) >= standing)
+    {
         return 0;
+    }
     bard->reaction = false;
     --bard->arcane;
     const int die = roll(def(*bard).bardic_die);
@@ -18277,17 +21515,23 @@ void Session::rebuke(const Actor &attacker, Actor &warlock)
     // Hellish Rebuke: the attacker saves against 2d10 Fire, 1d10 more for
     // each slot level above 1, taking half on a success.
     if (!can_rebuke(warlock, attacker))
+    {
         return;
+    }
     ask_reaction(warlock, Asked::rebuke);
     if (answer_of(warlock.source.id, Asked::rebuke)->verb != "rebuke")
+    {
         return;
+    }
     warlock.reaction = false;
     // The free cast first: it can pay for nothing else.
     const auto bit = initiate_bit(def(warlock), "hellish_rebuke");
     const bool free = (warlock.initiate_casts & bit) != 0;
     const unsigned level = free ? 1 : lowest_slot(warlock, 1);
     if (free)
+    {
         warlock.initiate_casts &= ~bit;
+    }
     else
     {
         warlock.spent_slot = true;
@@ -18322,7 +21566,9 @@ void Session::giant_boon(const Actor &attacker, Actor &target, bool critical)
     if ((boon != GiantBoon::fire && boon != GiantBoon::frost && boon != GiantBoon::hill) ||
         trait_uses_left(attacker) <= 0 ||
         (boon == GiantBoon::hill && (def(target).size > 3 || target.effects.prone)))
+    {
         return;
+    }
     ask_reaction(attacker, Asked::boon);
     const auto used = std::find_if(reaction_answers_.begin(), reaction_answers_.end(),
                                    [&](const auto &answer)
@@ -18332,7 +21578,9 @@ void Session::giant_boon(const Actor &attacker, Actor &target, bool critical)
                                               answer.verb == "giant_boon";
                                    });
     if (used == reaction_answers_.end())
+    {
         return;
+    }
     used->verb = "spent";
     auto &goliath = actor(attacker.source.id);
     spend_trait_use(goliath);
@@ -18368,10 +21616,14 @@ int Session::endured(Actor &goliath, int amount)
 {
     // Stone's Endurance: 1d12 + Constitution modifier less damage.
     if (amount <= 0 || !askable_ || !can_use_giant_reaction(goliath, GiantBoon::stone))
+    {
         return amount;
+    }
     ask_reaction(goliath, Asked::endure);
     if (answer_of(goliath.source.id, Asked::endure)->verb != "stones_endurance")
+    {
         return amount;
+    }
     goliath.reaction = false;
     spend_trait_use(goliath);
     const int left = std::max(0, amount - roll(12) - def(goliath).constitution);
@@ -18389,10 +21641,14 @@ void Session::storms_thunder(const Actor &attacker, Actor &goliath)
     if (attacker.source.side == goliath.source.side || attacker.life.dead ||
         attacker.life.hp <= 0 || distance(goliath.source.cell, attacker.source.cell) > 60 ||
         !can_use_giant_reaction(goliath, GiantBoon::storm))
+    {
         return;
+    }
     ask_reaction(goliath, Asked::thunder);
     if (answer_of(goliath.source.id, Asked::thunder)->verb != "storms_thunder")
+    {
         return;
+    }
     goliath.reaction = false;
     spend_trait_use(goliath);
     auto &foe = actor(attacker.source.id);
@@ -18414,10 +21670,14 @@ void Session::retaliate(const Actor &attacker, Actor &berserker)
         !conscious(berserker) || !berserker.reaction || detail::incapacitated(berserker.effects) ||
         attacker.life.dead || attacker.life.hp <= 0 ||
         distance(berserker.source.cell, attacker.source.cell) > 5)
+    {
         return;
+    }
     ask_reaction(berserker, Asked::retaliate);
     if (answer_of(berserker.source.id, Asked::retaliate)->verb != "retaliate")
+    {
         return;
+    }
     berserker.reaction = false;
     log(berserker.source.name + " retaliates.",
         {"{name} retaliates.", {{"name", berserker.source.name}}});
@@ -18521,17 +21781,23 @@ void Session::answer_reaction(const Command &command)
     }
     else if (command.verb == "deflect" || command.verb == "uncanny_dodge" ||
              command.verb == "superior_defense")
+    {
         defender.reaction = false;
+    }
     perform(prompt.command);
 }
 
 void Session::follow_carrier(const Actor &monk, Cell departed)
 {
     if (!monk.carried || flight_)
+    {
         return;
+    }
     auto &ally = actor(monk.carried);
     if (!ally.life.dead && distance(ally.source.cell, monk.source.cell) <= 10)
+    {
         ally.source.cell = departed;
+    }
 }
 
 void Session::dispatch_tracking_turn(const Command &command)
@@ -18574,12 +21840,16 @@ void Session::dispatch_tracking_turn(const Command &command)
         }
     }
     if (!had_bonus)
+    {
         return;
+    }
     // Fleet Step (Monk 11): a Bonus Action other than Step of the Wind leaves
     // Step of the Wind for right after it.
     auto &monk = actor(command.actor);
     if (!monk.bonus && def(monk).fleet_step && !command.verb.starts_with("step_of_the_wind"))
+    {
         monk.fleet_step = true;
+    }
 }
 
 void Session::dispatch(const Command &command)
@@ -18627,7 +21897,9 @@ void Session::dispatch(const Command &command)
     }
     // Tactical Master: Push, Sap or Slow in place of the weapon's mastery.
     for (const auto &option : tactical_masteries)
+    {
         for (const std::string_view base : {"melee", "ranged"})
+        {
             if (command.verb == std::string(base) + "_" + std::string(option.suffix))
             {
                 tactical_mastery_ = TacticalMastery{command.actor, option.kind};
@@ -18637,6 +21909,8 @@ void Session::dispatch(const Command &command)
                 tactical_mastery_.reset();
                 return;
             }
+        }
+    }
     if (command.verb == "melee_necrotic" || command.verb == "melee_psychic" ||
         command.verb == "melee_radiant")
     {
@@ -18650,7 +21924,9 @@ void Session::dispatch(const Command &command)
     auto &a = actor(command.actor);
     const auto &d = def(a);
     if (command.verb != "move" && command.verb != "melee")
+    {
         a.run_feet = 0;
+    }
     // Instinctive Pounce's movement belongs to entering the Rage; anything
     // else first gives up what is left of it.
     if (command.verb != "move" && a.pounce > 0)
@@ -18665,7 +21941,9 @@ void Session::dispatch(const Command &command)
         !command.verb.starts_with("lifedrinker_") &&
         !command.verb.starts_with("hurl_through_hell") &&
         !command.verb.starts_with("primal_strike_"))
+    {
         a.smite_target = 0;
+    }
     if (turns_to_attack(command.verb) && command.target)
     {
         const auto &target = actor(command.target);
@@ -18684,9 +21962,13 @@ void Session::dispatch(const Command &command)
         resolve_initiative(command);
     }
     else if (area_)
+    {
         aim_area(command);
+    }
     else if (selection_)
+    {
         choose_target(command);
+    }
     else if (!graze_ && !champion_move_ && effect_waiting())
     {
         use_effect(command);
@@ -18708,12 +21990,16 @@ void Session::dispatch(const Command &command)
             damage(target, amount, false);
         }
         if (pending())
+        {
             finish_reaction();
+        }
     }
     else if (champion_move_)
     {
         if (command.verb == "end")
+        {
             finish_champion_move();
+        }
         else
         {
             const auto grid = movement_grid(a);
@@ -18727,7 +22013,9 @@ void Session::dispatch(const Command &command)
             }
             clear_departed_overlaps();
             if (champion_move_->remaining == 0)
+            {
                 finish_champion_move();
+            }
         }
     }
     else if (command.verb == "mind_use" || command.verb == "mind_skip")
@@ -18736,7 +22024,9 @@ void Session::dispatch(const Command &command)
         check_choice_.reset();
         const int boost = command.verb == "mind_use" ? roll(10) : 0;
         if (boost && check.natural + d.medicine + check.guidance + boost >= 10)
+        {
             --a.winds;
+        }
         finish_check(check, boost);
     }
     else if (command.verb == "stabilize")
@@ -18750,9 +22040,13 @@ void Session::dispatch(const Command &command)
         a.nick_origin = 0;
         a.actions.spend();
         if (check.natural + d.medicine + check.guidance < 10 && d.tactical_mind && a.winds > 0)
+        {
             check_choice_ = check;
+        }
         else
+        {
             finish_check(check, 0);
+        }
     }
     else if (command.verb == "temp_hp_keep" || command.verb == "temp_hp_use")
     {
@@ -18771,11 +22065,17 @@ void Session::dispatch(const Command &command)
     {
         const bool nick = command.verb.starts_with("nick_");
         if (!nick)
+        {
             a.bonus = false;
+        }
         if (nick_active_)
+        {
             a.light_extra = nick ? 2 : 1;
+        }
         if (command.verb == "light_throw" || command.verb == "nick_throw")
+        {
             throw_weapon(a, actor(command.target), command.item, true);
+        }
         else
         {
             auto attacker = item_loadout(a, command.item);
@@ -18871,7 +22171,9 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " uses Flurry of Blows.",
             {"{name} uses Flurry of Blows.", {{"name", a.source.name}}});
         if (command.verb == "flurry_stun")
+        {
             stunning_ = a.source.id;
+        }
         // Heightened Focus (Monk 10): three strikes.
         const int strikes = d.heightened_focus ? 3 : 2;
         for (int strike = 0; strike < strikes && actor(command.target).life.hp > 0; ++strike)
@@ -18879,18 +22181,26 @@ void Session::dispatch(const Command &command)
             const bool hit =
                 attack_as(a, unarmed_loadout(a), actor(command.target), AttackRange::melee);
             if (hit && actor(command.target).life.hp > 0)
+            {
                 open_hand(a, actor(command.target), command.verb);
+            }
         }
         stunning_ = 0;
     }
     else if (command.verb.starts_with("patient_defense") ||
              command.verb.starts_with("step_of_the_wind"))
+    {
         use_focus_movement(a, command.verb,
                            command.verb == "step_of_the_wind_carry" ? command.target : 0);
+    }
     else if (command.verb.starts_with("create_slot_") || command.verb.starts_with("convert_slot_"))
+    {
         use_font_of_magic(a, command.verb);
+    }
     else if (command.verb.starts_with("metamagic_"))
+    {
         ready_metamagic(a, command.verb.substr(10));
+    }
     else if (command.verb == "armor_of_shadows" || command.verb == "fiendish_vigor")
     {
         a.nick_origin = 0;
@@ -18913,12 +22223,18 @@ void Session::dispatch(const Command &command)
                 {"{name} gains {spell}.",
                  {{"name", a.source.name}, {"spell", "False Life", true}}});
             if (a.life.temporary_hp.amount)
+            {
                 temporary_offer_ = std::move(offered);
+            }
             else
+            {
                 detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
+            }
         }
         if (was_invisible)
+        {
             end_invisibility(a.source.id);
+        }
         end_hiding(a.source.id);
     }
     else if (command.verb == "flame_blade_strike")
@@ -18953,9 +22269,13 @@ void Session::dispatch(const Command &command)
         // Temporary Hit Points equal to the Druid level.
         TemporaryHitPoints offered{def(a).level, "feature:wild_shape"};
         if (a.life.temporary_hp.amount)
+        {
             temporary_offer_ = std::move(offered);
+        }
         else
+        {
             detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
+        }
     }
     else if (command.verb == "leave_wild_shape")
     {
@@ -19009,10 +22329,14 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         if (command.verb == "dragon_wings")
+        {
             detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::wings_used, 0);
+        }
         else
+        {
             a.lay_on_hands -= 3;
+        }
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::dragon_wings, 0);
         log(a.source.name + " spreads dragon wings.",
@@ -19022,9 +22346,13 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         if (command.verb == "innate_sorcery")
+        {
             --a.free_casts;
+        }
         else
+        {
             a.lay_on_hands -= 2;
+        }
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::innate_sorcery, 0);
         log(a.source.name + " unleashes Innate Sorcery.",
@@ -19058,6 +22386,7 @@ void Session::dispatch(const Command &command)
         }
         // Mindless Rage: entering the Rage ends Charmed and Frightened.
         if (d.mindless_rage)
+        {
             std::erase_if(a.effects.active,
                           [](const auto &e)
                           {
@@ -19068,6 +22397,7 @@ void Session::dispatch(const Command &command)
                                      e.kind == detail::EffectKind::terrified ||
                                      e.kind == detail::EffectKind::entranced;
                           });
+        }
     }
     else if (command.verb == "intimidating_presence" ||
              command.verb == "intimidating_presence_rage")
@@ -19075,9 +22405,13 @@ void Session::dispatch(const Command &command)
         // A Rage use restores the once-per-Long-Rest use.
         a.bonus = false;
         if (command.verb == "intimidating_presence")
+        {
             --a.free_casts;
+        }
         else
+        {
             --a.channel_divinity;
+        }
         intimidate(a);
     }
     else if (command.verb == "extend_rage")
@@ -19132,13 +22466,19 @@ void Session::dispatch(const Command &command)
         // Fiend.
         a.hurl_used = true;
         if (command.verb == "hurl_through_hell")
+        {
             detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::hurl_used, 0);
+        }
         else
+        {
             --a.slots[pact_level(d.slots)];
+        }
         auto &target = actor(command.target);
         if (saving_throw_succeeds(target, detail::Ability::charisma, spell_dc(a, "")))
+        {
             return;
+        }
         if (def(target).creature_type != "fiend")
         {
             const int amount =
@@ -19150,7 +22490,9 @@ void Session::dispatch(const Command &command)
             damage(target, amount, false);
         }
         if (target.life.dead || !detail::can_apply(target.effects))
+        {
             return;
+        }
         const auto index = index_of(a.source.id);
         const unsigned slot = turn_end_ms(index) - (index ? turn_end_ms(index - 1) : 0);
         detail::apply_poisoned(target.effects, effect_source(a), a.source.name,
@@ -19188,7 +22530,9 @@ void Session::dispatch(const Command &command)
         auto rest = std::string_view(command.verb).substr(std::string_view("lifedrinker_").size());
         const bool heals = rest.ends_with("_heal");
         if (heals)
+        {
             rest.remove_suffix(std::string_view("_heal").size());
+        }
         const auto type = detail::damage_type(rest);
         const auto name = std::string(detail::damage_name(type));
         auto &target = actor(command.target);
@@ -19242,7 +22586,9 @@ void Session::dispatch(const Command &command)
         if (attack(a, target, AttackRange::melee,
                    SpellAttack{.dice = {count, 12, casting_modifier(d)},
                                .type = detail::DamageType::psychic}))
+        {
             fey_frighten(a, target);
+        }
     }
     else if (command.verb == "leave_animal_shape")
     {
@@ -19250,7 +22596,9 @@ void Session::dispatch(const Command &command)
         end_animal_shape(a);
     }
     else if (command.verb == "detonate")
+    {
         end_concentration(a);
+    }
     else if (command.verb == "overchannel")
     {
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
@@ -19324,9 +22672,13 @@ void Session::dispatch(const Command &command)
              {{"name", a.source.name}}});
     }
     else if (command.verb == "move_spirit_pack")
+    {
         move_spirit_pack(a, actor(command.target));
+    }
     else if (command.verb == "move_pillar")
+    {
         move_pillar(a, actor(command.target));
+    }
     else if (command.verb == "hand_fist" || command.verb == "hand_push")
     {
         if (!std::erase_if(a.effects.active,
@@ -19334,7 +22686,9 @@ void Session::dispatch(const Command &command)
                            {
                                return e.kind == detail::EffectKind::hand_ready;
                            }))
+        {
             a.bonus = false;
+        }
         auto &hand =
             *std::find_if(zones_.begin(), zones_.end(),
                           [&](const auto &zone)
@@ -19381,10 +22735,14 @@ void Session::dispatch(const Command &command)
             {"{name} turns its eyes on {target}.",
              {{"name", a.source.name}, {"target", target.source.name}}});
         if (!saving_throw_succeeds(target, spell.save, spell_dc(a, spell.id)))
+        {
             apply_rider(spell, effect, a, target, spell_dc(a, spell.id));
+        }
         else if (detail::can_apply(target.effects))
+        {
             detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                         detail::EffectKind::eye_resisted, 0);
+        }
     }
     else if (command.verb == "stop_dancing")
     {
@@ -19430,6 +22788,7 @@ void Session::dispatch(const Command &command)
         a.nick_origin = 0;
         (void)a.actions.spend(true);
         for (auto &twin : actors_)
+        {
             if (std::any_of(twin.effects.active.begin(), twin.effects.active.end(),
                             [&](const auto &e)
                             {
@@ -19441,6 +22800,7 @@ void Session::dispatch(const Command &command)
                 log(a.source.name + " moves the illusory double.",
                     {"{name} moves the illusory double.", {{"name", a.source.name}}});
             }
+        }
     }
     else if (command.verb == "move_hound")
     {
@@ -19470,7 +22830,9 @@ void Session::dispatch(const Command &command)
     }
 
     else if (command.verb == "potent_vitality")
+    {
         grant_vitality(a, actor(command.target));
+    }
     else if (command.verb == "superior_hunters_prey")
     {
         a.prey_used = true;
@@ -19490,9 +22852,13 @@ void Session::dispatch(const Command &command)
         log(a.source.name + " uses Tireless.",
             {"{name} uses Tireless.", {{"name", a.source.name}}});
         if (a.life.temporary_hp.amount)
+        {
             temporary_offer_ = std::move(offered);
+        }
         else
+        {
             detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
+        }
     }
     else if (command.verb == "horde_breaker")
     {
@@ -19518,12 +22884,14 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         for (auto &other : actors_)
+        {
             std::erase_if(other.effects.active,
                           [&](const auto &e)
                           {
                               return e.kind == detail::EffectKind::hex &&
                                      e.source_scope == scope_ && e.source_actor == a.source.id;
                           });
+        }
         auto &cursed = actor(command.target);
         detail::apply_spell_benefit(cursed.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::hex, 0);
@@ -19535,12 +22903,14 @@ void Session::dispatch(const Command &command)
     {
         a.bonus = false;
         for (auto &other : actors_)
+        {
             std::erase_if(other.effects.active,
                           [&](const auto &e)
                           {
                               return e.kind == detail::EffectKind::hunters_mark &&
                                      e.source_scope == scope_ && e.source_actor == a.source.id;
                           });
+        }
         auto &quarry = actor(command.target);
         detail::apply_spell_benefit(quarry.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::hunters_mark, 0);
@@ -19557,11 +22927,15 @@ void Session::dispatch(const Command &command)
         detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::sacred_weapon, radiant ? 1 : 0);
         if (radiant)
+        {
             log(a.source.name + " uses Sacred Weapon, dealing Radiant damage.",
                 {"{name} uses Sacred Weapon, dealing Radiant damage.", {{"name", a.source.name}}});
+        }
         else
+        {
             log(a.source.name + " uses Sacred Weapon.",
                 {"{name} uses Sacred Weapon.", {{"name", a.source.name}}});
+        }
     }
     else if (command.verb == "adrenaline_rush")
     {
@@ -19572,9 +22946,13 @@ void Session::dispatch(const Command &command)
         ++a.dashes;
         TemporaryHitPoints offered{d.rushes, std::string(rush_source)};
         if (a.life.temporary_hp.amount)
+        {
             temporary_offer_ = std::move(offered);
+        }
         else
+        {
             detail::grant_temporary_hp(a.life, offered, TemporaryHpChoice::use_new);
+        }
         log(a.source.name + " uses Adrenaline Rush.",
             {"{name} uses Adrenaline Rush.", {{"name", a.source.name}}});
     }
@@ -19584,21 +22962,29 @@ void Session::dispatch(const Command &command)
         {
             a.reaction = false;
             if (const auto *boss = controller(a))
+            {
                 actor(boss->source.id).reaction = false;
+            }
             opportunity_ = true;
             attack(a, actor(command.target), AttackRange::melee);
             opportunity_ = false;
         }
         if (!champion_move_ && !graze_ && !effect_waiting())
+        {
             finish_reaction();
+        }
     }
     else if (command.verb == "move")
     {
         if (held_by_wave(a))
+        {
             return;
+        }
         // Resilient Sphere: rolling the sphere takes the creature's action.
         if (detail::has_effect(a.effects, detail::EffectKind::sphered) && !a.moved)
+        {
             (void)a.actions.spend();
+        }
         path_ = path_to(a, command.destination);
         path_index_ = 0;
         progress_movement();
@@ -19606,14 +22992,18 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "flee")
     {
         if (held_by_wave(a))
+        {
             return;
+        }
         // One step off the field; leaving an enemy's reach provokes as any move.
         path_ = {command.destination};
         path_index_ = 0;
         progress_movement();
     }
     else if (command.verb == "end")
+    {
         end_turn();
+    }
     else if (command.verb == "wholeness_of_body")
     {
         a.bonus = false;
@@ -19643,7 +23033,9 @@ void Session::dispatch(const Command &command)
         }
     }
     else if (command.verb == "lay_on_hands_restore")
+    {
         restore_touch(a, actor(command.target));
+    }
     else if (command.verb == "lay_on_hands_cure")
     {
         auto &target = actor(command.target);
@@ -19679,7 +23071,9 @@ void Session::dispatch(const Command &command)
         area_->companion = command.target;
         // Telekinesis aims where its creature goes, from where it stands.
         if (aimed->rider == detail::Rider::telekinesis)
+        {
             area_->center = actor(command.target).source.cell;
+        }
         // Fire Storm's first cube holds the preview's square.
         if (aimed->storm)
         {
@@ -19689,10 +23083,14 @@ void Session::dispatch(const Command &command)
         }
     }
     else if (detail::without_cast_suffix(command.verb) == "revivify")
+    {
         revivify(a, command);
+    }
     else if (command.verb == "abjure_foes" &&
              selection_maximum({a.source.id, command.verb, {}}) == 1)
+    {
         abjure(a, std::array{command.target});
+    }
     else if (const auto *multi = detail::find_spell(command.verb);
              multi && selects_creatures(*multi) &&
              selection_maximum({a.source.id, command.verb, {}}) > 1)
@@ -19700,7 +23098,9 @@ void Session::dispatch(const Command &command)
         // The first creature starts the choice; nothing is spent until the cast.
         selection_ = PendingSelection{a.source.id, command.verb, {command.target}};
         if (selection_->chosen.size() == selection_maximum(*selection_))
+        {
             cast_on_selection();
+        }
     }
     else if (command.verb.starts_with("primal_strike_"))
     {
@@ -19756,7 +23156,9 @@ void Session::dispatch(const Command &command)
         damage(target, amount, false);
     }
     else if (is_smite(command.verb))
+    {
         resolve_smite(a, command.verb);
+    }
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
              bonus_spell && !command.verb.ends_with(detail::intervention_suffix) &&
              (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell)))
@@ -19789,9 +23191,11 @@ void Session::dispatch(const Command &command)
             (void)a.actions.spend(detail::find_spell(command.verb) != nullptr);
             // Thirsting Blade's Extra Attack follows a pact weapon's attack.
             if (attacking)
+            {
                 a.actions.extra_attacks = d.thirsting_blade && command.verb != "melee"
                                               ? 0u
                                               : static_cast<unsigned>(d.extra_attacks);
+            }
         }
         if (command.verb == "dash")
         {
@@ -19817,7 +23221,9 @@ void Session::dispatch(const Command &command)
                 {"{name} rolls on the ground and puts out the fire.", {{"name", a.source.name}}});
         }
         else if (command.verb == "torch")
+        {
             torch_attack(a, actor(command.target));
+        }
         else if (command.verb == "shoot")
         {
             attack_as(a, thrown_loadout(a, carried_ranged_weapon(a)), actor(command.target),
@@ -19827,35 +23233,49 @@ void Session::dispatch(const Command &command)
                      command.verb.starts_with("throw_")
                          ? detail::thrown_gear(std::string_view(command.verb).substr(6))
                          : nullptr)
+        {
             throw_gear(a, actor(command.target), *gear);
+        }
         else if (command.verb == "dodge")
         {
             a.dodge = true;
             log(a.source.name + " dodges.", {"{name} dodges.", {{"name", a.source.name}}});
         }
         else if (command.verb == "hide")
+        {
             hide(a);
+        }
         else if (command.verb == "search")
+        {
             search(a);
+        }
         else if (command.verb == "disengage")
         {
             a.disengaged = true;
             log(a.source.name + " disengages.", {"{name} disengages.", {{"name", a.source.name}}});
         }
         else if (command.verb == "true_strike" || command.verb == "true_strike_radiant")
+        {
             strike_true(a, actor(command.target),
                         command.verb == "true_strike_radiant" ? TrueStrikeDamage::radiant
                                                               : TrueStrikeDamage::weapon);
+        }
         else if (const auto *spell = detail::find_spell(command.verb))
+        {
             resolve_spell(*spell, command.verb, a, command.target);
+        }
         else if (command.verb == "throw")
         {
             const auto *w = detail::weapon(items_.at(command.item - 1).definition);
             if (w && w->light)
+            {
                 activate_light();
+            }
             throw_weapon(a, actor(command.target), command.item);
             if (light_active_)
+            {
                 qualify_light(a, command.item);
+            }
         }
         else
         {
@@ -19871,29 +23291,39 @@ void Session::dispatch(const Command &command)
                 weapon && weapon->light &&
                 (command.verb == "ranged" || (command.verb == "melee" && !weapon->ranged));
             if (qualifies)
+            {
                 activate_light();
+            }
             const auto token = held_weapon(a);
             if (physical_inventory_ && command.verb == "ranged" && weapon && weapon->thrown &&
                 token)
             {
                 throw_weapon(a, actor(command.target), token);
                 if (qualifies)
+                {
                     qualify_light(a, token);
+                }
             }
             else
             {
                 // Fire Bolt used to reach this fallthrough and borrow attack()'s
                 // default 1d10 fire arguments; it is now an explicit table row.
                 if (d.horde_breaker && !a.horde_origin)
+                {
                     a.horde_origin = command.target;
+                }
                 // Multiattack: a monster's melee attacks follow on the same
                 // target while it stands.
                 const int attacks = command.verb == "melee" ? d.multiattack : 1;
                 for (int n = 0; n < attacks && actor(command.target).life.hp > 0; ++n)
+                {
                     attack(a, actor(command.target),
                            command.verb == "melee" ? AttackRange::melee : AttackRange::ranged);
+                }
                 if (qualifies)
+                {
                     qualify_light(a, token);
+                }
             }
         }
     }
@@ -19908,10 +23338,14 @@ std::string Session::save() const
         << '\n';
     out << board_.width << ' ' << board_.height << '\n';
     for (auto cell : board_.terrain)
+    {
         out << static_cast<unsigned>(cell) << ' ';
+    }
     out << board_.plants.size() << ' ';
     for (const bool plant : board_.plants)
+    {
         out << plant;
+    }
     out << '\n';
     out << rng_ << ' ' << revision_ << ' ' << turn_ << ' ' << round_ << ' '
         << static_cast<int>(outcome_) << ' ' << actors_.size() << '\n';
@@ -19922,7 +23356,9 @@ std::string Session::save() const
             << a.source.cell.x << ' ' << a.source.cell.y << ' ' << a.life.hp << ' ' << a.initiative
             << ' ' << a.movement << ' ' << a.winds << ' ';
         for (unsigned level = 1; level <= highest_slot_level; ++level)
+        {
             out << a.slots[level] << ' ';
+        }
         out << a.life.successes << ' ' << a.life.failures << ' ' << a.actions.normal << ' '
             << a.actions.haste << ' ' << a.bonus << ' ' << a.reaction << ' ' << a.dodge << ' '
             << a.disengaged << ' ' << a.life.stable << ' ' << a.life.dead << ' '
@@ -19940,7 +23376,9 @@ std::string Session::save() const
             << a.fleet_step << ' ' << a.carried << ' ' << a.selected_weapon << ' '
             << a.light_origins.size();
         for (auto id : a.light_origins)
+        {
             out << ' ' << id;
+        }
         out << ' ' << a.light_extra << ' ' << a.nick_origin << ' ' << a.cleave_used << ' '
             << a.colossus_used << ' ' << a.horde_used << ' ' << a.horde_origin << ' ' << a.prey_used
             << ' ' << a.prey_origin << ' ' << a.turned << ' ' << a.skips_turn << ' '
@@ -19957,16 +23395,22 @@ std::string Session::save() const
     }
     out << path_.size() << ' ' << path_index_ << '\n';
     for (auto p : path_)
+    {
         out << p.x << ' ' << p.y << ' ';
+    }
     out << '\n';
     out << reactors_.size() << ' ' << reactor_index_ << '\n';
     for (auto id : reactors_)
+    {
         out << id << ' ';
+    }
     out << '\n';
     out << (flight_ ? flight_->actor : 0) << ' ' << (flight_ ? flight_->remaining : 0) << '\n';
     out << log_.size() << '\n';
     for (const auto &entry : log_)
+    {
         out << std::quoted(entry.english) << '\n';
+    }
     out << scope_ << ' ' << elapsed_ms_ << ' ' << morale_ << ' ' << gold_ << ' ' << offerings_gold_
         << ' ' << actors_.size() << '\n';
     for (const auto &a : actors_)
@@ -19976,16 +23420,20 @@ std::string Session::save() const
     }
     out << static_cast<bool>(temporary_offer_) << '\n';
     if (temporary_offer_)
+    {
         out << temporary_offer_->amount << ' ' << std::quoted(temporary_offer_->source_id) << '\n';
+    }
     out << frost_movement_ << ' ' << items_active_ << '\n';
     out << physical_inventory_ << '\n';
     if (items_active_)
     {
         out << items_.size() << '\n';
         for (const auto &item : items_)
+        {
             out << item.id << ' ' << item.origin << ' ' << item.equipment_index << ' '
                 << item.inventory_id << ' ' << std::quoted(item.definition) << ' ' << item.quantity
                 << ' ' << item.stowed << ' ' << item.holder << '\n';
+        }
     }
     out << static_cast<bool>(check_choice_) << '\n';
     if (check_choice_)
@@ -20032,17 +23480,23 @@ std::string Session::save() const
         extra(c);
     }
     if (champion_move_)
+    {
         extra(*champion_move_);
+    }
     out << static_cast<bool>(effect_reaction_origin_) << ' ';
     if (effect_reaction_origin_)
+    {
         out << effect_reaction_origin_->actor << ' ' << effect_reaction_origin_->source.x << ' '
             << effect_reaction_origin_->source.y << ' ' << effect_reaction_origin_->mover.x << ' '
             << effect_reaction_origin_->mover.y << ' ' << effect_reaction_origin_->movement << ' '
             << effect_reaction_origin_->prone;
+    }
     out << '\n';
     out << initiative_choices_.size();
     for (const auto id : initiative_choices_)
+    {
         out << ' ' << id;
+    }
     out << '\n';
     out << static_cast<bool>(selection_);
     if (selection_)
@@ -20050,7 +23504,9 @@ std::string Session::save() const
         out << ' ' << selection_->caster << ' ' << selection_->verb << ' '
             << selection_->chosen.size();
         for (const auto id : selection_->chosen)
+        {
             out << ' ' << id;
+        }
     }
     out << '\n';
     out << static_cast<bool>(area_);
@@ -20059,7 +23515,9 @@ std::string Session::save() const
         out << ' ' << area_->caster << ' ' << area_->verb << ' ' << area_->center.x << ' '
             << area_->center.y << ' ' << area_->cubes.size();
         for (const auto cube : area_->cubes)
+        {
             out << ' ' << cube.x << ' ' << cube.y;
+        }
         out << ' ' << area_->companion;
     }
     out << '\n' << zones_.size();
@@ -20069,7 +23527,9 @@ std::string Session::save() const
             << ' ' << zone.save_dc << ' ' << zone.dealt << ' ' << zone.warded << ' ' << zone.slot
             << ' ' << zone.cells.size();
         for (const auto cell : zone.cells)
+        {
             out << ' ' << cell.x << ' ' << cell.y;
+        }
     }
     out << '\n' << static_cast<bool>(reaction_prompt_);
     if (reaction_prompt_)
@@ -20082,8 +23542,10 @@ std::string Session::save() const
             << command.target << ' ' << std::quoted(command.verb) << ' ' << command.destination.x
             << ' ' << command.destination.y << ' ' << command.item << ' ' << prompt.answers.size();
         for (const auto &answer : prompt.answers)
+        {
             out << ' ' << answer.target << ' ' << static_cast<unsigned>(answer.asked) << ' '
                 << std::quoted(answer.verb);
+        }
     }
     out << '\n';
     // What each actor carries in (a Torch or bow to draw, thrown gear), one line
@@ -20092,8 +23554,10 @@ std::string Session::save() const
     {
         out << a.source.inventory.size();
         for (const auto &item : a.source.inventory)
+        {
             out << ' ' << item.inventory_id << ' ' << std::quoted(item.definition) << ' '
                 << item.quantity << ' ' << item.equipment_index;
+        }
         out << '\n';
     }
     // Members who ran off the field, with the vitals and flasks they left with.
@@ -20109,7 +23573,9 @@ std::string Session::save() const
             << std::quoted(gone.vitals.description) << ' ' << gone.surrendered << ' '
             << gone.thrown_gear_left.size();
         for (const auto &[gear, left] : gone.thrown_gear_left)
+        {
             out << ' ' << std::quoted(gear) << ' ' << left;
+        }
         out << '\n';
     }
     return out.str();
@@ -20125,7 +23591,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         source.cell.x >> source.cell.y >> actor.life.hp >> actor.initiative >> actor.movement >>
         actor.winds;
     for (unsigned level = 1; level <= highest_slot_level; ++level)
+    {
         input >> actor.slots[level];
+    }
     input >> actor.life.successes >> actor.life.failures >> actor.actions.normal >>
         actor.actions.haste >> actor.bonus >> actor.reaction >> actor.dodge >> actor.disengaged >>
         actor.life.stable >> actor.life.dead >> std::quoted(source.character_profile) >>
@@ -20140,10 +23608,14 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.moved >> actor.attacked >> actor.pounce >> actor.brutal_used >> actor.stun_used >>
         actor.fleet_step >> actor.carried >> actor.selected_weapon >> light_count;
     if (!input || light_count > 2)
+    {
         throw std::runtime_error("Invalid Light attack count");
+    }
     // The checkpoint stores a side as its enumerator's value.
     if (side > static_cast<unsigned>(Side::opposition))
+    {
         throw std::runtime_error("Invalid checkpoint side");
+    }
     source.side = static_cast<Side>(side);
     for (unsigned i = 0; i < light_count; ++i)
     {
@@ -20162,26 +23634,36 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
         actor.run_step.y >> actor.run_feet;
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
+    {
         throw std::runtime_error("Invalid checkpoint morale");
+    }
     if (actor.run_feet < 0 || actor.run_feet % 5 || actor.run_feet > 5 * 64 * 64 ||
         std::abs(actor.run_step.x) > 1 || std::abs(actor.run_step.y) > 1)
+    {
         throw std::runtime_error("Invalid checkpoint charge run");
+    }
     actor.concentration = detail::read_concentration(input);
     // Hunter's Mark, 1 hour, is the longest Concentration spell in the game.
     if (const auto &held = actor.concentration.active();
         held && (held->source.caster != source.id || held->remaining_ms > 3600000))
+    {
         throw std::runtime_error("Invalid checkpoint concentration");
+    }
     detail::decode_stable_recovery(actor.life.recovery);
     if (!input ||
         (source.character_profile.empty() && !content.definitions.contains(source.definition)))
+    {
         throw std::runtime_error("Invalid checkpoint actor");
+    }
     actor.definition = source.character_profile.empty()
                            ? content.definitions.at(source.definition)
                            : character_definition(source.character_profile);
     if (actor.shield_off)
     {
         if (source.character_profile.empty() || !wears_shield(actor.definition))
+        {
             throw std::runtime_error("Invalid shield removal");
+        }
         actor.definition = without_shield(source.character_profile, actor.definition);
     }
     const auto &definition = actor.definition;
@@ -20192,15 +23674,21 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
                                               return weapon &&
                                                      weapon->mastery == detail::Mastery::cleave;
                                           }))
+    {
         throw std::runtime_error("Invalid Cleave expenditure source");
+    }
     if ((actor.colossus_used && !definition.colossus_slayer) ||
         ((actor.horde_used || actor.horde_origin) && !definition.horde_breaker) ||
         ((actor.prey_used || actor.prey_origin) && !definition.superior_prey))
+    {
         throw std::runtime_error("Invalid Hunter's Prey state");
+    }
     if ((actor.sneak_used && !definition.sneak_level) ||
         (actor.aim_used && (definition.sneak_level < 3 || actor.bonus || actor.moved)) ||
         (actor.aim_ready && !actor.aim_used))
+    {
         throw std::runtime_error("Invalid Rogue attack expenditure");
+    }
     // Cunning Action, Aggressive, Step of the Wind and Expeditious Retreat
     // spend the bonus action on a Dash. Effects are read later, so knowing the
     // spell is enough here.
@@ -20211,17 +23699,27 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.dashes > static_cast<int>(!actor.actions.normal) +
                            static_cast<int>(actor.rush_used || bonus_dash) +
                            static_cast<int>(actor.surge_used && !actor.actions.surge))
+    {
         throw std::runtime_error("Invalid Dash allowance count");
+    }
     if (actor.pounce < 0 || actor.pounce > definition.speed || actor.pounce > actor.movement)
+    {
         throw std::runtime_error("Invalid Instinctive Pounce movement");
+    }
     // Extra Attack's attacks follow an Attack action already taken.
     if (actor.actions.extra_attacks > static_cast<unsigned>(definition.extra_attacks) ||
         (actor.actions.extra_attacks && actor.actions.normal && !actor.surge_used))
+    {
         throw std::runtime_error("Invalid Extra Attack count");
+    }
     if (actor.fleet_step && (!definition.fleet_step || actor.bonus))
+    {
         throw std::runtime_error("Invalid Fleet Step");
+    }
     if (actor.carried && (!definition.heightened_focus || actor.carried == actor.source.id))
+    {
         throw std::runtime_error("Invalid carried ally");
+    }
     // The upper bound waits for the effects, read later: Aid raises it.
     if (actor.life.hp < 0 || (actor.life.dead && actor.life.hp > 0) ||
         // Dash spends the action before adding a second movement allowance.
@@ -20242,7 +23740,9 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.free_casts < 0 || actor.free_casts > free_cast_capacity(definition) ||
         actor.channel_divinity < 0 || actor.channel_divinity > channel_capacity(definition) ||
         actor.initiate_casts < 0 || (actor.initiate_casts & ~initiate_capacity(definition)))
+    {
         throw std::runtime_error("Invalid checkpoint actor state");
+    }
     detail::validate_recovery(actor.life);
     detail::validate_temporary_hp(actor.life.temporary_hp);
     return actor;
@@ -20255,26 +23755,38 @@ Battlefield read_checkpoint_board(std::istream &input)
     // Bound dimensions before multiplication or allocation, even for truncated
     // input. No serialized count is allowed to control an unbounded allocation.
     if (!input || board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64)
+    {
         throw std::runtime_error("Invalid checkpoint board");
+    }
     for (int i = 0; i < board.width * board.height; ++i)
     {
         unsigned terrain{};
         input >> terrain;
         if (!input || terrain > 2)
+        {
             throw std::runtime_error("Invalid checkpoint terrain");
+        }
         board.terrain.push_back(static_cast<Terrain>(terrain));
     }
     std::size_t plants{};
     input >> plants;
     if (!input || (plants && plants != board.terrain.size()))
+    {
         throw std::runtime_error("Invalid checkpoint plants");
+    }
     std::string bits;
     if (plants)
+    {
         input >> bits;
+    }
     if (!input || bits.size() != plants || bits.find_first_not_of("01") != bits.npos)
+    {
         throw std::runtime_error("Invalid checkpoint plants");
+    }
     for (const char bit : bits)
+    {
         board.plants.push_back(bit == '1');
+    }
     return board;
 }
 
@@ -20283,18 +23795,24 @@ void Session::restore_movement(std::istream &input)
     std::size_t count{};
     input >> count >> path_index_;
     if (!input || count > 1024 || path_index_ > count)
+    {
         throw std::runtime_error("Invalid checkpoint path");
+    }
     for (std::size_t i = 0; i < count; ++i)
     {
         Cell cell;
         input >> cell.x >> cell.y;
         if (!input || board_.at(cell) == Terrain::obstacle)
+        {
             throw std::runtime_error("Invalid checkpoint path cell");
+        }
         path_.push_back(cell);
     }
     input >> count >> reactor_index_;
     if (!input || count > 64 || reactor_index_ > count)
+    {
         throw std::runtime_error("Invalid checkpoint reactions");
+    }
     std::set<EntityId> seen;
     for (std::size_t i = 0; i < count; ++i)
     {
@@ -20306,7 +23824,9 @@ void Session::restore_movement(std::istream &input)
                                             return actor.source.id == id;
                                         });
         if (!input || !seen.insert(id).second || !exists)
+        {
             throw std::runtime_error("Invalid checkpoint reactor");
+        }
         reactors_.push_back(id);
     }
     // A fleeing creature, paused on an Opportunity Attack.
@@ -20321,9 +23841,13 @@ void Session::restore_movement(std::istream &input)
         (flight.actor &&
          (!fleeing || flight.remaining < 0 || flight.remaining > 120 || path_.empty())) ||
         (!flight.actor && flight.remaining))
+    {
         throw std::runtime_error("Invalid checkpoint flight");
+    }
     if (flight.actor)
+    {
         flight_ = flight;
+    }
 }
 
 void Session::finish_check(const PendingCheck &check, int boost)
@@ -20348,18 +23872,26 @@ void Session::finish_check(const PendingCheck &check, int boost)
         message);
     // Bardic Inspiration follows the failed check in the log.
     if (!success)
+    {
         success = inspiration_roll(a, 10 - total) >= 10 - total;
+    }
     if (success)
+    {
         detail::stabilize(target.life, rng_);
+    }
 }
 
 void Session::finish_champion_move()
 {
     champion_move_.reset();
     if (mastery_ && !mastery_available(*mastery_) && champion_offers_.empty())
+    {
         mastery_.reset();
+    }
     if (effect_waiting())
+    {
         return;
+    }
     finish_effects();
 }
 
@@ -20367,18 +23899,24 @@ void Session::finish_effects()
 {
     effect_reaction_origin_.reset();
     if (!pending())
+    {
         return;
+    }
     // The critical mover can now occupy the interrupted route; never walk
     // through the newly occupied cell.
     if (stop_illegal_route())
+    {
         return;
+    }
     finish_reaction();
 }
 
 bool Session::stop_illegal_route()
 {
     if (path_index_ >= path_.size())
+    {
         return false;
+    }
     const auto &moving = mover();
     const auto grid = movement_grid(moving);
     auto cell = moving.source.cell;
@@ -20403,7 +23941,9 @@ bool Session::stop_illegal_route()
         cell = path_[i];
     }
     if (valid && (leaves_field || grid.can_stop_at(cell)))
+    {
         return false;
+    }
     path_.clear();
     path_index_ = 0;
     reactors_.clear();
@@ -20415,7 +23955,9 @@ bool Session::stop_illegal_route()
 void Session::validate_champion_move() const
 {
     if (!champion_move_)
+    {
         return;
+    }
     const auto &c = *champion_move_;
     const auto who = std::find_if(actors_.begin(), actors_.end(),
                                   [&](const auto &a)
@@ -20439,7 +23981,9 @@ void Session::validate_champion_move() const
                          {
                              return a.source.id == c.toward && !a.life.dead;
                          }))
+        {
             throw std::runtime_error("Invalid Forceful Blow movement");
+        }
         return;
     }
     if (c.withdraw)
@@ -20454,7 +23998,9 @@ void Session::validate_champion_move() const
             c.triggered || c.shift || c.toward || !who->sneak_used || pending() ||
             c.remaining < 0 || c.remaining > budget || !board_.contains(c.origin) ||
             distance(c.origin, who->source.cell) > budget - c.remaining)
+        {
             throw std::runtime_error("Invalid Withdraw movement");
+        }
         return;
     }
     if (c.shift)
@@ -20469,7 +24015,9 @@ void Session::validate_champion_move() const
             c.triggered || who->bonus || pending() || c.remaining < 0 || c.remaining > budget ||
             !board_.contains(c.origin) ||
             distance(c.origin, who->source.cell) > budget - c.remaining)
+        {
             throw std::runtime_error("Invalid Tactical Shift movement");
+        }
         return;
     }
     const auto target = std::find_if(actors_.begin(), actors_.end(),
@@ -20482,17 +24030,23 @@ void Session::validate_champion_move() const
         c.origin.x < 0 || c.origin.y < 0 || c.origin.x >= board_.width ||
         c.origin.y >= board_.height || board_.at(c.origin) == Terrain::obstacle || check_choice_ ||
         temporary_offer_ || outcome_ != Outcome::ongoing)
+    {
         throw std::runtime_error("Invalid Champion movement source");
+    }
     if (c.triggered)
     {
         if (!board_.contains(c.trigger_origin) ||
             board_.at(c.trigger_origin) == Terrain::obstacle || !board_.contains(c.target_origin) ||
             board_.at(c.target_origin) == Terrain::obstacle || (c.cleave && !who->cleave_used) ||
             (c.helpless && distance(c.trigger_origin, c.target_origin) > 5))
+        {
             throw std::runtime_error("Invalid Champion trigger positions");
+        }
     }
     else if (c.cleave || c.helpless || c.trigger_origin != Cell{} || c.target_origin != Cell{})
+    {
         throw std::runtime_error("Unexpected Champion trigger metadata");
+    }
     const int budget = std::max(0, def(*who).speed - detail::speed_penalty(who->effects)) / 2;
     if ((c.actor == actors_[turn_].source.id &&
          (who->actions.surge || (who->actions.normal && !who->surge_used))) ||
@@ -20508,13 +24062,17 @@ void Session::validate_champion_move() const
                       !((c.cleave ? actors_[turn_].life.hp == 0
                                   : c.target == actors_[turn_].source.id && target->life.hp == 0) &&
                         !who->reaction))))
+    {
         throw std::runtime_error("Invalid Champion movement allowance/trigger");
+    }
 }
 
 void Session::validate_check() const
 {
     if (!check_choice_)
+    {
         return;
+    }
     const auto &c = *check_choice_;
     const auto &a = actors_[turn_];
     const auto target = std::find_if(actors_.begin(), actors_.end(),
@@ -20529,7 +24087,9 @@ void Session::validate_check() const
         !line_of_sight(a.source.cell, target->source.cell) || pending() || temporary_offer_ ||
         outcome_ != Outcome::ongoing || a.actions.surge ||
         (c.surge_spent ? !a.surge_used : a.actions.normal))
+    {
         throw std::runtime_error("Invalid pending ability check");
+    }
 }
 
 #include "mastery_resolution_impl.h"
@@ -20537,7 +24097,9 @@ void Session::validate_check() const
 void Session::validate_graze() const
 {
     if (!graze_)
+    {
         return;
+    }
     const auto &g = *graze_;
     const auto a = std::find_if(actors_.begin(), actors_.end(),
                                 [&](const auto &a)
@@ -20559,24 +24121,32 @@ void Session::validate_graze() const
         (pending() ? (pending() != g.actor || a->reaction || g.target != mover().source.id)
                    : (g.actor != actors_[turn_].source.id ||
                       (a->actions.normal && (!a->surge_used || a->actions.surge)))))
+    {
         throw std::runtime_error("Invalid pending Graze");
+    }
 }
 
 void Session::validate_initiative() const
 {
     if (initiative_choices_.empty())
+    {
         return;
+    }
     if (round_ != 1 || turn_ != 0 || elapsed_ms_ || outcome_ != Outcome::ongoing || pending() ||
         !path_.empty() || temporary_offer_ || check_choice_ || champion_move_ || graze_ ||
         effect_waiting())
+    {
         throw std::runtime_error("Invalid pre-turn Initiative phase");
+    }
     std::set<EntityId> seen;
     for (const auto id : initiative_choices_)
     {
         const auto &a = actor(id);
         if (!seen.insert(id).second || a.source.side != Side::party ||
             (!def(a).alert && !metabolism_ready(a) && !persistent_ready(a)) || !conscious(a))
+        {
             throw std::runtime_error("Invalid Initiative holder");
+        }
     }
     for (std::size_t i = 0; i < actors_.size(); ++i)
     {
@@ -20584,46 +24154,68 @@ void Session::validate_initiative() const
         if (!a.actions.normal || a.actions.surge || !a.bonus || !a.reaction || a.dodge ||
             a.surge_used || a.rush_used || a.savage_used || a.sneak_used || a.aim_used || a.moved ||
             a.cleave_used || a.movement != def(a).speed)
+        {
             throw std::runtime_error("Spent action before Initiative decisions");
+        }
         if (i &&
             (actors_[i - 1].initiative < a.initiative ||
              (actors_[i - 1].initiative == a.initiative && actors_[i - 1].source.id > a.source.id)))
+        {
             throw std::runtime_error("Unsorted Initiative phase");
+        }
     }
 }
 
 void Session::validate_restored_state() const
 {
     for (const auto &a : actors_)
+    {
         if (a.life.hp > max_hp(a))
+        {
             throw std::runtime_error("Invalid checkpoint Hit Points");
+        }
+    }
     for (const auto &a : actors_)
+    {
         if ((a.turned != detail::has_effect(a.effects, detail::EffectKind::dominated)) ||
             (a.skips_turn && !a.turned &&
              !detail::has_effect(a.effects, detail::EffectKind::raised)))
+        {
             throw std::runtime_error("Invalid dominated creature");
+        }
+    }
     for (const auto &a : actors_)
+    {
         for (const auto origin : {a.horde_origin, a.prey_origin})
+        {
             if (origin && std::none_of(actors_.begin(), actors_.end(),
                                        [&](const auto &other)
                                        {
                                            return other.source.id == origin;
                                        }))
+            {
                 throw std::runtime_error("Invalid Hunter's Prey target");
+            }
+        }
+    }
     validate_initiative();
     validate_check();
     validate_champion_move();
     validate_graze();
     validate_mastery_state();
     if (pending() && path_index_ >= path_.size())
+    {
         throw std::runtime_error("Reaction without movement");
+    }
     const auto &mover = actors_[turn_];
     if (temporary_offer_ &&
         (outcome_ != Outcome::ongoing || pending() || !conscious(mover) || !mover.rush_used ||
          mover.bonus || mover.life.temporary_hp.amount <= 0 ||
          temporary_offer_->amount != mover.definition.rushes ||
          temporary_offer_->source_id != rush_source))
+    {
         throw std::runtime_error("Invalid pending Temporary HP replacement");
+    }
     bool party = false, enemies = false;
     for (const auto &actor : actors_)
     {
@@ -20631,19 +24223,31 @@ void Session::validate_restored_state() const
             (actor.source.id == mover.source.id
                  ? (actor.actions.normal && (!actor.surge_used || actor.actions.surge))
                  : actor.reaction))
+        {
             throw std::runtime_error("Cleave without a spent triggering attack");
+        }
         if (actor.aim_used && actor.source.id != mover.source.id)
+        {
             throw std::runtime_error("Steady Aim outside current turn");
+        }
         if (actor.actions.surge && actor.source.id != mover.source.id)
+        {
             throw std::runtime_error("Action Surge allowance outside its turn");
+        }
         if (actor.involuntary_overlap && (actor.life.dead || !shares_occupied_space(actor)))
+        {
             throw std::runtime_error("Invalid involuntary checkpoint overlap");
+        }
         if (actor.regeneration_blocked && !def(actor).regeneration)
+        {
             throw std::runtime_error("Regeneration blocked without Regeneration");
+        }
         // 3d6 rounds at most.
         if (actor.rises_on_round < 0 || actor.rises_on_round > static_cast<int>(round_) + 18 ||
             (actor.rises_on_round && !def(actor).regeneration))
+        {
             throw std::runtime_error("Invalid getting-up round");
+        }
         if ((actor.burning && actor.life.dead) || actor.oiled_until_round < 0 ||
             actor.oiled_until_round > static_cast<int>(round_) + 10 ||
             (actor.source.character_profile.empty() &&
@@ -20652,16 +24256,24 @@ void Session::validate_restored_state() const
                          {
                              return left > 0;
                          })))
+        {
             throw std::runtime_error("Invalid fire, oil or thrown gear state");
+        }
         if (actor.life.hp > 0 && !actor.life.dead)
+        {
             (actor.source.side == Side::party ? party : enemies) = true;
+        }
         if (actor.life.dead)
+        {
             continue;
+        }
         for (const auto &other : actors_)
         {
             if (other.source.id <= actor.source.id || other.life.dead ||
                 actor.source.cell != other.source.cell)
+            {
                 continue;
+            }
             const auto &moving = this->mover();
             const bool in_transit =
                 pending() && path_index_ > 0 && path_[path_index_ - 1] == moving.source.cell &&
@@ -20670,7 +24282,9 @@ void Session::validate_restored_state() const
                                 unconscious(other))) ||
                 actor.involuntary_overlap || other.involuntary_overlap || actor.life.hp == 0 ||
                 other.life.hp == 0)
+            {
                 continue;
+            }
             throw std::runtime_error("Invalid overlapping checkpoint actors");
         }
     }
@@ -20684,11 +24298,17 @@ void Session::validate_restored_state() const
                                      : Outcome::ongoing;
     if (outcome_ != expected || (initiative_choices_.empty() && expected == Outcome::ongoing &&
                                  mover.life.hp == 0 && !champion_move_ && !effect_waiting()))
+    {
         throw std::runtime_error("Invalid checkpoint outcome/turn");
+    }
     if (!pending() && (!path_.empty() || !reactors_.empty()))
+    {
         throw std::runtime_error("Unpaused checkpoint movement");
+    }
     if (pending())
+    {
         validate_pending_movement();
+    }
 }
 
 void Session::validate_pending_movement() const
@@ -20700,10 +24320,14 @@ void Session::validate_pending_movement() const
         moving.effects.prone = effect_reaction_origin_->prone;
     }
     if (outcome_ != Outcome::ongoing || moving.disengaged)
+    {
         throw std::runtime_error("Invalid pending movement");
+    }
     std::vector<detail::Occupant> occupants;
     for (const auto &other : actors_)
+    {
         if (!other.life.dead && !downed_riser(other) && other.source.id != moving.source.id)
+        {
             occupants.push_back({effect_reaction_origin_ && other.source.id == pending()
                                      ? effect_reaction_origin_->source
                                  : champion_move_ && other.source.id == champion_move_->actor
@@ -20711,6 +24335,8 @@ void Session::validate_pending_movement() const
                                      : other.source.cell,
                                  other.source.side != moving.source.side, unconscious(other),
                                  other.life.hp == 0});
+        }
+    }
     const detail::MovementGrid grid{board_, moving.source.cell, occupants, moving.effects.prone};
     auto cell = moving.source.cell;
     int remaining =
@@ -20722,12 +24348,16 @@ void Session::validate_pending_movement() const
         const auto next = path_[i];
         const auto cost = grid.step_cost(cell, next);
         if (!cost || *cost > remaining)
+        {
             throw std::runtime_error("Invalid checkpoint movement step/budget");
+        }
         remaining -= *cost;
         cell = next;
     }
     if (!grid.can_stop_at(cell))
+    {
         throw std::runtime_error("Invalid checkpoint movement destination");
+    }
     for (auto i = reactor_index_; i < reactors_.size(); ++i)
     {
         const auto reactor = std::find_if(actors_.begin(), actors_.end(),
@@ -20743,7 +24373,9 @@ void Session::validate_pending_movement() const
             original.source.cell = effect_reaction_origin_->source;
             if (actor.source.side == moving.source.side || actor.reaction ||
                 !has_weapon_reaction(original, moving.source.cell, path_[path_index_]))
+            {
                 throw std::runtime_error("Invalid mastery reaction trigger");
+            }
             continue;
         }
         if (champion_move_ && i == reactor_index_ && actor.source.id == champion_move_->actor)
@@ -20751,7 +24383,9 @@ void Session::validate_pending_movement() const
             if (actor.source.side == moving.source.side ||
                 distance(champion_move_->origin, moving.source.cell) > def(actor).reach ||
                 distance(champion_move_->origin, path_[path_index_]) <= def(actor).reach)
+            {
                 throw std::runtime_error("Invalid Champion reaction origin");
+            }
             continue;
         }
         if (detail::opportunity_blocked(actor.effects) || actor.life.hp == 0 ||
@@ -20760,7 +24394,9 @@ void Session::validate_pending_movement() const
             actor.source.side == moving.source.side ||
             !has_weapon_reaction(actor, moving.source.cell, path_[path_index_]) ||
             !can_see(actor, moving))
+        {
             throw std::runtime_error("Invalid checkpoint opportunity attack");
+        }
     }
 }
 
@@ -20769,14 +24405,18 @@ void Session::restore_log(std::istream &input)
     std::size_t count{};
     input >> count;
     if (!input || count > 80)
+    {
         throw std::runtime_error("Invalid checkpoint log");
+    }
     log_.clear();
     for (std::size_t i = 0; i < count; ++i)
     {
         std::string line;
         input >> std::quoted(line);
         if (!input || line.size() > 1000)
+        {
             throw std::runtime_error("Invalid checkpoint log line");
+        }
         Message message{line, {}};
         log_.push_back({std::move(line), std::move(message)});
     }
@@ -20786,7 +24426,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                                           std::string_view bytes)
 {
     if (bytes.size() > 4 * 1024 * 1024)
+    {
         throw std::runtime_error("Combat checkpoint exceeds limit");
+    }
     std::istringstream input{std::string(bytes)};
     std::string magic;
     unsigned version{};
@@ -20794,9 +24436,13 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     input >> magic >> version >> std::quoted(identity.module) >> std::quoted(identity.version) >>
         std::quoted(identity.content);
     if (!input || magic != "OGCOMBAT" || version > checkpoint_format)
+    {
         throw std::runtime_error("Combat checkpoint rules/content version mismatch");
+    }
     if (version < checkpoint_format || identity != content->identity)
+    {
         throw std::runtime_error(older_save_message);
+    }
     Encounter encounter;
     encounter.battlefield = read_checkpoint_board(input);
     std::uint64_t rng{}, revision{};
@@ -20804,7 +24450,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     input >> rng >> revision >> turn >> round >> outcome >> count;
     if (!input || count < 1 || count > 64 || turn >= count || round == 0 || outcome > 3 ||
         !revision)
+    {
         throw std::runtime_error("Invalid checkpoint header");
+    }
     std::vector<Actor> actors;
     for (unsigned i = 0; i < count; ++i)
     {
@@ -20829,14 +24477,20 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     input >> session->scope_ >> session->elapsed_ms_ >> session->morale_ >> session->gold_ >>
         session->offerings_gold_ >> effects_count;
     if (session->morale_ > 100 || session->offerings_gold_ > session->gold_)
+    {
         throw std::runtime_error("Invalid checkpoint morale");
+    }
     if (!input || !session->scope_ || effects_count != session->actors_.size())
+    {
         throw std::runtime_error("Invalid checkpoint effect header");
+    }
     for (auto &a : session->actors_)
     {
         a.effects = detail::read_effects(input);
         if (a.life.recovery.stable_recovery_due && !detail::healing_blocked(a.effects))
+        {
             throw std::runtime_error("Invalid earned recovery checkpoint");
+        }
     }
     bool pending_offer{};
     input >> pending_offer;
@@ -20848,18 +24502,24 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         session->temporary_offer_ = std::move(offer);
     }
     if (!input)
+    {
         throw std::runtime_error("Invalid Temporary HP choice checkpoint");
+    }
     bool has_items{};
     input >> session->frost_movement_ >> has_items >> session->physical_inventory_;
     if (!input || (session->physical_inventory_ && !has_items))
+    {
         throw std::runtime_error("Invalid recovery checkpoint flags");
+    }
     session->items_active_ = has_items;
     if (has_items)
     {
         std::size_t count{};
         input >> count;
         if (!input || count > 100000)
+        {
             throw std::runtime_error("Invalid held item count");
+        }
         session->items_.resize(count);
         for (unsigned index = 0; index < count; ++index)
         {
@@ -20877,27 +24537,39 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             if (!input || source == session->actors_.end() ||
                 source->source.character_profile.empty() ||
                 (!weapon && item.definition != "shield") || !item.quantity)
+            {
                 throw std::runtime_error("Invalid physical inventory source");
+            }
             const auto original = character_definition(source->source.character_profile);
             if (!item.inventory_id &&
                 (item.equipment_index >= original.equipment_keys.size() ||
                  original.equipment_keys[item.equipment_index] != item.definition))
+            {
                 throw std::runtime_error("Invalid physical equipment source");
+            }
             item.label = {weapon ? std::string(weapon->label) : "Shield", {}};
             input >> item.holder;
             if (!input || id != item.id)
+            {
                 throw std::runtime_error("Invalid held item identity");
+            }
             const auto holder = std::find_if(session->actors_.begin(), session->actors_.end(),
                                              [&](const auto &a)
                                              {
                                                  return a.source.id == item.holder;
                                              });
             if (holder == session->actors_.end() || holder->source.character_profile.empty())
+            {
                 throw std::runtime_error("Invalid held item holder");
+            }
         }
         for (auto &a : session->actors_)
+        {
             if (!a.source.character_profile.empty())
+            {
                 a.definition = session->equipped_definition(a, session->items_);
+            }
+        }
     }
     bool pending_check{};
     input >> pending_check;
@@ -20906,7 +24578,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         PendingCheck c;
         input >> c.actor >> c.target >> c.natural >> c.surge_spent >> c.guidance;
         if (!input || c.guidance < 0 || c.guidance > 4)
+        {
             throw std::runtime_error("Invalid ability-check checkpoint");
+        }
         session->check_choice_ = c;
     }
     bool pending_champion{};
@@ -20917,7 +24591,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         input >> c.actor >> c.target >> c.natural >> c.remaining >> c.spell >> c.origin.x >>
             c.origin.y >> c.shift >> c.toward >> c.withdraw;
         if (!input)
+        {
             throw std::runtime_error("Invalid Champion movement checkpoint");
+        }
         session->champion_move_ = c;
     }
     bool saved_graze{}, saved_light{}, saved_nick{};
@@ -20948,7 +24624,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     unsigned offers{};
     input >> offers;
     if (!input || offers > 2)
+    {
         throw std::runtime_error("Invalid queued effect count");
+    }
     for (unsigned i = 0; i < offers; ++i)
     {
         ChampionMove c;
@@ -20958,7 +24636,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         session->champion_offers_.push_back(c);
     }
     if (session->champion_move_)
+    {
         extra(*session->champion_move_);
+    }
     bool origin{};
     input >> origin;
     if (origin)
@@ -20971,7 +24651,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     unsigned choices{};
     input >> choices;
     if (!input || choices > session->actors_.size())
+    {
         throw std::runtime_error("Invalid Initiative choice count");
+    }
     for (unsigned i = 0; i < choices; ++i)
     {
         EntityId id{};
@@ -20987,7 +24669,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         input >> selection.caster >> selection.verb >> count;
         const auto *spell = detail::find_spell(selection.verb);
         if (!input || !spell || !selects_creatures(*spell) || !count || count > 8)
+        {
             throw std::runtime_error("Invalid spell target choice");
+        }
         for (std::size_t n = 0; n < count; ++n)
         {
             EntityId id{};
@@ -21005,7 +24689,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         if (!input || !known(selection.caster) ||
             !std::all_of(selection.chosen.begin(), selection.chosen.end(), known) ||
             count >= session->selection_maximum(selection))
+        {
             throw std::runtime_error("Invalid spell target choice");
+        }
         session->selection_ = std::move(selection);
     }
     const auto known_actor = [&](EntityId id)
@@ -21018,8 +24704,12 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     };
     // A smite chance names a creature in the fight.
     for (const auto &a : session->actors_)
+    {
         if (a.smite_target && !known_actor(a.smite_target))
+        {
             throw std::runtime_error("Invalid smite target");
+        }
+    }
     bool aiming{};
     input >> aiming;
     if (aiming)
@@ -21033,13 +24723,17 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
              spell->rider != detail::Rider::telekinesis) ||
             !known_actor(area.caster) || !session->board_.contains(area.center) ||
             session->selection_ || cubes > spell->storm || (spell->storm && !cubes))
+        {
             throw std::runtime_error("Invalid area aim");
+        }
         for (std::size_t n = 0; n < cubes; ++n)
         {
             Cell cube;
             input >> cube.x >> cube.y;
             if (!input || !session->board_.contains(cube) || cube.x % 2 || cube.y % 2)
+            {
                 throw std::runtime_error("Invalid area aim");
+            }
             area.cubes.push_back(cube);
         }
         input >> area.companion;
@@ -21048,13 +24742,17 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
              (!known_actor(area.companion) || (spell->rider != detail::Rider::dimension_door &&
                                                spell->rider != detail::Rider::telekinesis))) ||
             (spell->rider == detail::Rider::telekinesis && !area.companion))
+        {
             throw std::runtime_error("Invalid area aim");
+        }
         session->area_ = std::move(area);
     }
     std::size_t zones{};
     input >> zones;
     if (!input || zones > 4 * session->actors_.size())
+    {
         throw std::runtime_error("Invalid spell zones");
+    }
     for (std::size_t n = 0; n < zones; ++n)
     {
         Zone zone;
@@ -21105,14 +24803,18 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             (kind == static_cast<unsigned>(ZoneKind::wave) &&
              static_cast<std::size_t>(zone.dealt) >= wave_headings.size()) ||
             !cells || cells > session->board_.terrain.size())
+        {
             throw std::runtime_error("Invalid spell zone");
+        }
         zone.kind = static_cast<ZoneKind>(kind);
         for (std::size_t c = 0; c < cells; ++c)
         {
             Cell cell;
             input >> cell.x >> cell.y;
             if (!input || !session->board_.contains(cell))
+            {
                 throw std::runtime_error("Invalid spell zone");
+            }
             zone.cells.push_back(cell);
         }
         session->zones_.push_back(std::move(zone));
@@ -21133,7 +24835,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             asked > static_cast<unsigned>(Asked::counter) || !known_actor(command.actor) ||
             (command.target && !known_actor(command.target)) || command.verb.empty() ||
             answers > 3 * session->actors_.size())
+        {
             throw std::runtime_error("Invalid reaction prompt");
+        }
         question.asked = static_cast<Asked>(asked);
         for (std::size_t n = 0; n < answers; ++n)
         {
@@ -21147,7 +24851,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                  answer.verb != "stones_endurance" && answer.verb != "storms_thunder" &&
                  answer.verb != "retaliate" && answer.verb != "uncanny_dodge" &&
                  answer.verb != "superior_defense" && answer.verb != "decline"))
+            {
                 throw std::runtime_error("Invalid reaction prompt");
+            }
             answer.asked = static_cast<Asked>(kind);
             prompt.answers.push_back(std::move(answer));
         }
@@ -21158,16 +24864,22 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         std::size_t carried{};
         input >> carried;
         if (!input || carried > 64 || (carried && a.source.character_profile.empty()))
+        {
             throw std::runtime_error("Invalid checkpoint inventory");
+        }
         a.source.inventory.resize(carried);
         for (auto &item : a.source.inventory)
+        {
             input >> item.inventory_id >> std::quoted(item.definition) >> item.quantity >>
                 item.equipment_index;
+        }
     }
     std::size_t departed{};
     input >> departed;
     if (!input || departed > 8)
+    {
         throw std::runtime_error("Invalid checkpoint flight");
+    }
     for (std::size_t n = 0; n < departed; ++n)
     {
         Departed gone;
@@ -21181,21 +24893,31 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         std::size_t gear_count{};
         input >> gear_count;
         if (!input || side > static_cast<unsigned>(Side::opposition))
+        {
             throw std::runtime_error("Invalid checkpoint flight");
+        }
         gone.source.side = static_cast<Side>(side);
         if (gone.hp < (gone.surrendered ? 0 : 1) || gone.hp > gone.max_hp ||
             (gone.surrendered && (gone.hp || gone.source.side == Side::party)) ||
             gone.vitals.dead || gear_count > detail::thrown_gear_items.size())
+        {
             throw std::runtime_error("Invalid checkpoint flight");
+        }
         gone.thrown_gear_left.resize(gear_count);
         for (auto &[gear, left] : gone.thrown_gear_left)
+        {
             input >> std::quoted(gear) >> left;
+        }
         session->fled_.push_back(std::move(gone));
     }
     if (session->actors_.size() + session->fled_.size() < 2)
+    {
         throw std::runtime_error("Invalid checkpoint flight");
+    }
     if (!input)
+    {
         throw std::runtime_error("Invalid checkpoint continuation");
+    }
     for (auto &a : session->actors_)
     {
         refresh_form(a);
@@ -21203,7 +24925,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // once for each movement allowance the turn has had, and what is left of
         // Instinctive Pounce.
         if (a.movement > session->def(a).speed * (1 + a.dashes) + a.pounce)
+        {
             throw std::runtime_error("Invalid Dash allowance count");
+        }
     }
     session->light_active_ = saved_light;
     session->nick_active_ = saved_nick;
@@ -21211,7 +24935,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     session->validate_restored_state();
     input >> std::ws;
     if (!input.eof())
+    {
         throw std::runtime_error("Trailing checkpoint data");
+    }
     // A checkpoint keeps suppressed effects with the others.
     session->suppress_spells();
     return session;
@@ -21330,7 +25056,9 @@ class Module final : public RulesModule
                                                14000,  23000,  34000,  48000, 64000, 85000,
                                                100000, 120000, 140000, 165000};
         if (level < 1 || level > 15)
+        {
             throw std::runtime_error("Unsupported character level");
+        }
         return thresholds[level];
     }
 
@@ -21338,24 +25066,40 @@ class Module final : public RulesModule
     {
         const auto klass = detail::class_of(sheet);
         if (klass == CharacterClass::wizard && sheet.level >= 2)
+        {
             return {detail::scholar_options(sheet.grants)};
+        }
         if (klass == CharacterClass::fighter && sheet.level >= 4)
+        {
             return later_masteries(klass, sheet);
+        }
         if (klass == CharacterClass::sorcerer && sheet.level >= 2)
+        {
             return {detail::metamagic_options()};
+        }
         if (klass == CharacterClass::rogue && sheet.level >= 6)
+        {
             return {detail::expertise_options(detail::expertise_picks[0], sheet.grants)};
+        }
         if (klass == CharacterClass::ranger && sheet.level >= 9)
+        {
             return {detail::expertise_options(detail::expertise_picks[1], sheet.grants)};
+        }
         if (klass == CharacterClass::bard && sheet.level >= 3)
+        {
             return {detail::lore_options(sheet.grants)};
+        }
         if (klass == CharacterClass::druid && sheet.level >= 3)
+        {
             return {detail::land_options()};
+        }
         if (klass == CharacterClass::barbarian && sheet.level >= 3)
         {
             std::vector<TrainingChoiceGroup> groups{detail::primal_knowledge_options(sheet.grants)};
             for (auto &group : later_masteries(klass, sheet))
+            {
                 groups.push_back(std::move(group));
+            }
             return groups;
         }
         return {};
@@ -21369,18 +25113,32 @@ class Module final : public RulesModule
         // 46, 61).
         std::vector<TrainingReplacementOptions> result;
         if (kind == RestKind::long_rest)
+        {
             if (auto mastery = mastery_rest_choice(sheet))
+            {
                 result.push_back(std::move(*mastery));
+            }
+        }
         if (auto prey = subclass_rest_choice(sheet, detail::hunters_prey_options()))
+        {
             result.push_back(std::move(*prey));
+        }
         if (auto tactics = subclass_rest_choice(sheet, detail::defensive_tactics_options()))
+        {
             result.push_back(std::move(*tactics));
+        }
         // Fiendish Resilience's type changes after any rest too.
         if (auto resilience = subclass_rest_choice(sheet, detail::fiendish_resilience_options()))
+        {
             result.push_back(std::move(*resilience));
+        }
         if (kind == RestKind::long_rest)
+        {
             if (auto land = subclass_rest_choice(sheet, detail::land_options()))
+            {
                 result.push_back(std::move(*land));
+            }
+        }
         return result;
     }
 
@@ -21389,7 +25147,9 @@ class Module final : public RulesModule
     {
         std::vector<detail::CharacterClass> classes;
         for (const auto &id : class_ids)
+        {
             classes.push_back(detail::class_from_id(id));
+        }
         return detail::hall_training_options(sheet.grants, classes);
     }
 
@@ -21422,7 +25182,9 @@ class Module final : public RulesModule
         // A Long Rest offers every choice a rest can change.
         const auto offered = rest_training_options(sheet, RestKind::long_rest);
         if (offered.empty())
+        {
             throw std::runtime_error("No completed training choice to replace");
+        }
         const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         std::vector<std::string> unclaimed(selected.begin(), selected.end());
@@ -21440,20 +25202,30 @@ class Module final : public RulesModule
                                                                 return option.id == id;
                                                             });
                               if (mine)
+                              {
                                   picks.push_back(id);
+                              }
                               return mine;
                           });
             if (picks.empty())
+            {
                 continue;
+            }
             if (choice.group.id == "weapon_mastery")
+            {
                 candidate.grants =
                     detail::replace_masteries(candidate.grants, klass, candidate.level, picks);
+            }
             else
+            {
                 replace_subclass_choice(candidate, choice.group.id, picks);
+            }
             changed[choice.group.id] = std::move(picks);
         }
         if (!unclaimed.empty())
+        {
             throw std::runtime_error("Not a choice this rest can change");
+        }
         // A new land's Circle Spells are always prepared, so they leave the list.
         const auto always =
             detail::always_prepared_spells(klass, candidate.level, candidate.grants);
@@ -21476,7 +25248,9 @@ class Module final : public RulesModule
         // no class has.
         const auto klass = detail::class_of(sheet);
         if (static_cast<unsigned>(sheet.level) >= detail::level_cap(klass))
+        {
             return {};
+        }
         AdvancementOptions result;
         result.level = sheet.level + 1;
         if (klass == CharacterClass::fighter ||
@@ -21484,8 +25258,10 @@ class Module final : public RulesModule
              result.level == 2))
         {
             if (klass == CharacterClass::fighter)
+            {
                 result.fighting_styles.push_back(
                     {"keep", "Keep current", "Retain the class-granted Fighting Style."});
+            }
             for (auto style : detail::fighting_styles())
             {
                 style.available =
@@ -21504,23 +25280,35 @@ class Module final : public RulesModule
             }
             // SRD 5.2.1 p. 54: the Paladin's alternative to a Fighting Style feat.
             if (klass == CharacterClass::paladin)
+            {
                 result.fighting_styles.push_back(
                     {"blessed_warrior", "Blessed Warrior",
                      "Learn two Cleric cantrips; Charisma is your spellcasting ability for them."});
+            }
             // SRD 5.2.1 p. 59: the Ranger's alternative.
             if (klass == CharacterClass::ranger)
+            {
                 result.fighting_styles.push_back(
                     {"druidic_warrior", "Druidic Warrior",
                      "Learn two Druid cantrips; Wisdom is your spellcasting ability for them."});
+            }
         }
         if (klass == CharacterClass::wizard && result.level == 2)
+        {
             result.training = only(detail::scholar_options(sheet.grants));
+        }
         if (klass == CharacterClass::fighter && (result.level == 4 || result.level == 10))
+        {
             result.training =
                 only(detail::mastery_options(CharacterClass::fighter, result.level, sheet.grants));
+        }
         for (const auto &pick : detail::expertise_picks)
+        {
             if (klass == pick.klass && result.level == pick.level)
+            {
                 result.training = only(detail::expertise_options(pick, sheet.grants));
+            }
+        }
         // The Champion's Additional Fighting Style: a Fighting Style feat it
         // does not have yet.
         if (klass == CharacterClass::fighter && result.level == 7)
@@ -21531,433 +25319,736 @@ class Module final : public RulesModule
                                       {},
                                       TrainingChoiceControl::single_selection};
             for (const auto &style : detail::fighting_styles())
+            {
                 if (!detail::has_grant(sheet.grants, "feat:" + style.id))
+                {
                     group.options.push_back({style.id, style.label, style.description});
+                }
+            }
             result.training = only(std::move(group));
         }
         if (klass == CharacterClass::barbarian && result.level == 3)
+        {
             result.training = only(detail::primal_knowledge_options(sheet.grants));
+        }
         if (klass == CharacterClass::sorcerer && result.level == 2)
+        {
             result.training = only(detail::metamagic_options());
+        }
         if (klass == CharacterClass::sorcerer && result.level == 6)
+        {
             result.training = only(detail::elemental_affinity_options());
+        }
         if (klass == CharacterClass::warlock && result.level == 10)
+        {
             result.training = only(detail::fiendish_resilience_options());
+        }
         if (klass == CharacterClass::bard && result.level == 6)
+        {
             result.training = only(detail::discovery_options(sheet.grants));
+        }
         if (klass == CharacterClass::druid && result.level == 7)
+        {
             result.training = only(detail::elemental_fury_options());
+        }
         // Mystic Arcanum beside the level's invocations.
         if (klass == CharacterClass::warlock &&
             (result.level == 11 || result.level == 13 || result.level == 15))
+        {
             result.training.push_back(detail::arcanum_options(static_cast<unsigned>(result.level)));
+        }
         if (klass == CharacterClass::sorcerer && result.level == 10)
+        {
             result.training = only(detail::metamagic_options(10, sheet.grants));
+        }
         if (klass == CharacterClass::bard && result.level == 3)
+        {
             result.training = only(detail::lore_options(sheet.grants));
+        }
         if (klass == CharacterClass::druid && result.level == 3)
+        {
             result.training = only(detail::land_options());
+        }
         if (klass == CharacterClass::warlock && result.level >= 2 &&
             detail::new_invocations(static_cast<unsigned>(result.level)))
+        {
             result.training.push_back(detail::invocation_options(
                 static_cast<unsigned>(result.level), sheet.grants,
                 detail::invocations_source(static_cast<unsigned>(result.level))));
+        }
         if (klass == CharacterClass::barbarian && (result.level == 4 || result.level == 10))
+        {
             result.training = only(
                 detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants));
+        }
         if (klass == CharacterClass::ranger && result.level == 7)
+        {
             result.training = only(detail::defensive_tactics_options());
+        }
         if (klass == CharacterClass::cleric && result.level == 7)
+        {
             result.training = only(detail::blessed_strikes_options());
+        }
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
         if (klass == CharacterClass::ranger && result.level == 3)
+        {
             result.training = only({"subclass:ranger:hunter", "Hunter's Prey", 1,
                                     detail::hunters_prey_options().options,
                                     TrainingChoiceControl::single_selection});
+        }
         result.description =
             "Fixed-average HP growth. Resources gain only their new capacity;\nexisting expenditure remains.";
         if (klass == CharacterClass::cleric && result.level == 2)
+        {
             result.description =
                 "Channel Divinity: two uses, one back on a Short Rest, for Divine Spark (heal or harm 1d8 + Wisdom within 30 feet) or Turn Undead.";
+        }
         if (klass == CharacterClass::wizard && result.level == 3)
+        {
             result.description =
                 "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against.";
+        }
         if (klass == CharacterClass::wizard && result.level == 5)
+        {
             result.description =
                 "Level 3 spell slots and Wizard spells: Animate Dead, Bestow Curse, Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Magic Circle, Protection from Energy, Remove Curse, Sleet Storm, Slow, Stinking Cloud, Tiny Hut and Vampiric Touch.\nMemorize Spell: after a Short Rest, change one prepared spell for another in your spellbook.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::wizard && result.level == 6)
+        {
             result.description =
                 "Sculpt Spells: up to 1 + the spell's level allies you can see in your Evocation areas are spared.";
+        }
         if (klass == CharacterClass::wizard && result.level == 7)
+        {
             result.description =
                 "A level 4 spell slot and Wizard spells: Banishment, Black Tentacles, Blight, Charm Monster, Confusion, Dimension Door, Fire Shield, Greater Invisibility, Ice Storm, Phantasmal Killer, Polymorph, Resilient Sphere, Stoneskin, Vitriolic Sphere and Wall of Fire.";
+        }
         if (klass == CharacterClass::wizard && result.level == 8)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::wizard && result.level == 9)
+        {
             result.description =
                 "A level 5 spell slot and Wizard spells: Animate Objects, Arcane Hand, Cloudkill, Cone of Cold, Conjure Elemental, Dominate Person, Hold Monster, Mislead, Summon Dragon, Telekinesis, Wall of Force and Wall of Stone.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::wizard && result.level == 11)
+        {
             result.description =
                 "A level 6 spell slot and Wizard spells: Chain Lightning, Circle of Death, Contingency, Create Undead, Disintegrate, Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability, Irresistible Dance, Magic Jar, Sunbeam, True Seeing and Wall of Ice.";
+        }
         if (klass == CharacterClass::wizard && result.level == 12)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::warlock && result.level == 5)
+        {
             result.description =
                 "Two more Eldritch Invocations; Eldritch Smite and Thirsting Blade are open to Pact of the Blade.\nLevel 3 Pact Magic slots and Warlock spells: Counterspell, Dispel Magic, Fear, Hypnotic Pattern, Magic Circle, Remove Curse and Vampiric Touch; Fiend Spells: Fireball and Stinking Cloud are always prepared.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::warlock && result.level == 6)
+        {
             result.description =
                 "Dark One's Own Luck: a failed save you could still pass gains 1d10, as many times as your Charisma modifier (at least once) per Long Rest.";
+        }
         if (klass == CharacterClass::warlock && result.level == 7)
+        {
             result.description =
                 "One more Eldritch Invocation.\nLevel 4 Pact Magic slots and Warlock spells: Banishment, Blight, Charm Monster and Dimension Door; Fiend Spells: Fire Shield and Wall of Fire are always prepared.";
+        }
         if (klass == CharacterClass::warlock && result.level == 8)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::warlock && result.level == 9)
+        {
             result.description =
                 "One more Eldritch Invocation; Lifedrinker is open to Pact of the Blade, Gift of the Protectors to Pact of the Tome.\nLevel 5 Pact Magic slots and Warlock spells: Hold Monster and Mislead; Fiend Spells: Insect Plague is always prepared.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::warlock && result.level == 10)
+        {
             result.description =
                 "Fiendish Resilience: Resistance to a damage type you choose other than Force, changed after any rest.\nA fourth cantrip.";
+        }
         if (klass == CharacterClass::druid && result.level == 5)
+        {
             result.description =
                 "Wild Resurgence: with no Wild Shape use left, a spell slot (no action, once a turn) gives one; once per Long Rest, a Wild Shape use gives a level 1 spell slot.\nLevel 3 spell slots and Druid spells: Call Lightning, Conjure Animals, Dispel Magic, Plant Growth, Protection from Energy, Revivify, Sleet Storm and Wind Wall; your land's next Circle Spell.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::druid && result.level == 6)
+        {
             result.description =
                 "Natural Recovery: once per Long Rest, cast one of your levelled Circle Spells without a slot; after a Short Rest, recover spell slots of levels totalling half your Druid level.\nA third Wild Shape use.";
+        }
         if (klass == CharacterClass::druid && result.level == 7)
+        {
             result.description =
                 "Elemental Fury: Potent Spellcasting (your Wisdom modifier added to Druid cantrip damage) or Primal Strike (once a turn, 1d8 Cold, Fire, Lightning or Thunder on a weapon or Beast form hit).\nA level 4 spell slot and Druid spells: Blight, Charm Monster, Confusion, Conjure Minor Elementals, Conjure Woodland Beings, Dominate Beast, Fire Shield, Freedom of Movement, Giant Insect, Ice Storm, Polymorph, Stoneskin and Wall of Fire; your land's next Circle Spell.";
+        }
         if (klass == CharacterClass::druid && result.level == 8)
+        {
             result.description = "A feat or ability points.\nWild Shape: the Tiger.";
+        }
         if (klass == CharacterClass::druid && result.level == 9)
+        {
             result.description =
                 "A level 5 spell slot and Druid spells: Antilife Shell, Cone of Cold, Conjure Elemental, Contagion, Greater Restoration, Insect Plague, Mass Cure Wounds, Reincarnate and Wall of Stone; your land's next Circle Spell.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::druid && result.level == 10)
+        {
             result.description =
                 "Nature's Ward: you cannot be Poisoned, and you resist your land's element: Fire (arid), Cold (polar), Lightning (temperate) or Poison (tropical).\nLand's Aid deals and heals 3d6. A fourth cantrip.";
+        }
         if (klass == CharacterClass::druid && result.level == 11)
+        {
             result.description =
                 "A level 6 spell slot and Druid spells: Conjure Fey, Flesh to Stone, Heal, Heroes' Feast, Sunbeam and Wall of Thorns.";
+        }
         if (klass == CharacterClass::druid && result.level == 12)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::druid && result.level == 13)
+        {
             result.description =
                 "A level 7 spell slot and Druid spells: Fire Storm, Regenerate and Reverse Gravity.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::druid && result.level == 14)
+        {
             result.description =
                 "Nature's Sanctuary: a Magic action and a Wild Shape use raise a 15-foot cube of spectral trees for a minute; allies among them share your Nature's Ward Resistance, and a Bonus Action moves it 60 feet.\nLand's Aid deals and heals 4d6.";
+        }
         if (klass == CharacterClass::druid && result.level == 15)
+        {
             result.description =
                 "A level 8 spell slot and Druid spells: Befuddlement, Earthquake, Incendiary Cloud, Sunburst and Tsunami.\nImproved Elemental Fury: Primal Strike deals 2d8.";
+        }
         if (klass == CharacterClass::bard && result.level == 5)
+        {
             result.description =
                 "Font of Inspiration: Bardic Inspiration returns on a Short Rest, and a spell slot (no action) gives back a use. The Bardic Inspiration die is a d8.\nLevel 3 spell slots and Bard spells: Bestow Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant Growth, Slow, Stinking Cloud and Tiny Hut.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::bard && result.level == 6)
+        {
             result.description =
                 "Magical Discoveries: two Cleric, Druid or Wizard spells, cantrips or of level 1 to 3, always prepared.";
+        }
         if (klass == CharacterClass::bard && result.level == 7)
+        {
             result.description =
                 "Countercharm: when you or a creature within 30 feet fails a save against being Charmed or Frightened, your Reaction rerolls it with Advantage.\nA level 4 spell slot and Bard spells: Charm Monster, Confusion, Dimension Door, Freedom of Movement, Greater Invisibility, Phantasmal Killer and Polymorph.";
+        }
         if (klass == CharacterClass::bard && (result.level == 8 || result.level == 12))
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::bard && result.level == 9)
+        {
             result.description =
                 "Expertise in two more skills.\nA level 5 spell slot and Bard spells: Animate Objects, Dominate Person, Greater Restoration, Hold Monster, Mass Cure Wounds, Mislead and Raise Dead.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::bard && result.level == 10)
+        {
             result.description =
                 "Magical Secrets: your prepared spells may also come from the Cleric, Druid and Wizard lists.\nThe Bardic Inspiration die is a d10. A fourth cantrip.";
+        }
         if (klass == CharacterClass::bard && result.level == 11)
+        {
             result.description =
                 "A level 6 spell slot and Bard spells: Eyebite, Heroes' Feast, Irresistible Dance and True Seeing.";
+        }
         if (klass == CharacterClass::bard && result.level == 13)
+        {
             result.description =
                 "A level 7 spell slot and Bard spells: Arcane Sword, Forcecage, Prismatic Spray, Regenerate and Resurrection.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::bard && result.level == 14)
+        {
             result.description =
                 "Peerless Skill: when your own ability check or attack roll fails, the Bardic Inspiration die is added when it could fix the roll, spending a use only if it does.";
+        }
         if (klass == CharacterClass::bard && result.level == 15)
+        {
             result.description =
                 "A level 8 spell slot and Bard spells: Befuddlement, Dominate Monster, Mind Blank and Power Word Stun.\nThe Bardic Inspiration die is a d12.";
+        }
         if (klass == CharacterClass::warlock && result.level == 11)
+        {
             result.description =
                 "Mystic Arcanum: choose a level 6 Warlock spell to cast once per Long Rest without a spell slot.\nA third Pact Magic slot.";
+        }
         if (klass == CharacterClass::warlock && result.level == 12)
+        {
             result.description =
                 "A feat or ability points.\nOne more Eldritch Invocation; Devouring Blade is open to Thirsting Blade.";
+        }
         if (klass == CharacterClass::warlock && result.level == 13)
+        {
             result.description =
                 "Mystic Arcanum: choose a level 7 Warlock spell to cast once per Long Rest without a spell slot.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::warlock && result.level == 14)
+        {
             result.description =
                 "Hurl Through Hell: once per turn, after an attack roll hits, the creature makes a Charisma save or is gone until the end of your next turn, Incapacitated, taking 8d10 Psychic damage unless it is a Fiend. Once per Long Rest, or for a Pact Magic slot.";
+        }
         if (klass == CharacterClass::warlock && result.level == 15)
+        {
             result.description =
                 "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 5)
+        {
             result.description =
                 "Sorcerous Restoration: after a Short Rest, regain Sorcery Points up to half your Sorcerer level, once per Long Rest.\nLevel 3 spell slots and Sorcerer spells: Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Protection from Energy, Sleet Storm, Slow, Stinking Cloud and Vampiric Touch; Draconic Spells: Fear is always prepared. Font of Magic creates level-3 slots.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 6)
+        {
             result.description =
                 "Elemental Affinity: choose Acid, Cold, Fire, Lightning or Poison: Resistance to it, and your Charisma modifier added to the damage of your spells of that type.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 7)
+        {
             result.description =
                 "Sorcery Incarnate: with no Innate Sorcery use left, 2 Sorcery Points start it; while it is active, two Metamagic options can change one spell.\nA level 4 spell slot and Sorcerer spells: Banishment, Blight, Charm Monster, Confusion, Dimension Door, Dominate Beast, Fire Shield, Greater Invisibility, Ice Storm, Polymorph, Stoneskin, Vitriolic Sphere and Wall of Fire; Draconic Spells: Charm Monster is always prepared. Font of Magic creates level-4 slots.";
+        }
         if (klass == CharacterClass::sorcerer && (result.level == 8 || result.level == 12))
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 9)
+        {
             result.description =
                 "A level 5 spell slot and Sorcerer spells: Animate Objects, Arcane Hand, Cloudkill, Cone of Cold, Dominate Person, Hold Monster, Insect Plague, Telekinesis and Wall of Stone; Draconic Spells: Summon Dragon is always prepared. Font of Magic creates level-5 slots.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 10)
+        {
             result.description = "Two more Metamagic options.\nA sixth cantrip.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 11)
+        {
             result.description =
                 "A level 6 spell slot and Sorcerer spells: Chain Lightning, Circle of Death, Disintegrate, Eyebite, Flesh to Stone, Freezing Sphere, Globe of Invulnerability, Sunbeam and True Seeing.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 13)
+        {
             result.description =
                 "A level 7 spell slot and Sorcerer spells: Delayed Blast Fireball, Finger of Death, Fire Storm, Prismatic Spray and Reverse Gravity.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 14)
+        {
             result.description =
                 "Dragon Wings: a Bonus Action spreads wings for an hour: you ignore Difficult Terrain and may move through enemies' squares. Once per Long Rest, or for 3 Sorcery Points.";
+        }
         if (klass == CharacterClass::sorcerer && result.level == 15)
+        {
             result.description =
                 "A level 8 spell slot and Sorcerer spells: Dominate Monster, Earthquake, Incendiary Cloud, Power Word Stun and Sunburst.";
+        }
         if (klass == CharacterClass::wizard && result.level == 13)
+        {
             result.description =
                 "A level 7 spell slot and Wizard spells: Arcane Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray, Reverse Gravity and Simulacrum.";
+        }
         if (klass == CharacterClass::wizard && result.level == 14)
+        {
             result.description =
                 "Overchannel: a damaging Wizard spell cast with a level 1-5 slot deals its maximum damage. Free once per Long Rest; each later use deals you Necrotic damage, more each time.";
+        }
         if (klass == CharacterClass::wizard && result.level == 15)
+        {
             result.description =
                 "A level 8 spell slot and Wizard spells: Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud, Maze, Mind Blank, Power Word Stun and Sunburst.";
+        }
         if (klass == CharacterClass::wizard && result.level == 10)
+        {
             result.description =
                 "Empowered Evocation: your Intelligence modifier is added to the damage of your Wizard Evocation spells.\nA fifth cantrip.";
+        }
         if (klass == CharacterClass::cleric && result.level == 5)
+        {
             result.description =
                 "Sear Undead: Turn Undead also deals Radiant damage, a d8 for each point of your Wisdom modifier, to each Undead that fails.\nLevel 3 spell slots and Cleric spells: Animate Dead, Beacon of Hope, Bestow Curse, Dispel Magic, Magic Circle, Protection from Energy, Remove Curse and Spirit Guardians; Life Domain: Mass Healing Word and Revivify are always prepared.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::cleric && result.level == 7)
+        {
             result.description =
                 "Blessed Strikes: Divine Strike (once on each of your turns a weapon hit deals 1d8 more Radiant or Necrotic damage) or Potent Spellcasting (your Wisdom modifier added to your Cleric cantrips' damage).\nDivine Spark rolls 2d8. A level 4 spell slot and Cleric spells: Aura of Life, Banishment, Death Ward, Freedom of Movement and Guardian of Faith; Life Domain: Aura of Life and Death Ward are always prepared.";
+        }
         if (klass == CharacterClass::cleric && result.level == 8)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::cleric && result.level == 9)
+        {
             result.description =
                 "Level 5 spell slots and Cleric spells: Contagion, Dispel Evil and Good, Flame Strike, Insect Plague and Raise Dead; Life Domain: Greater Restoration and Mass Cure Wounds are always prepared.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::cleric && result.level == 11)
+        {
             result.description =
                 "A level 6 spell slot and Cleric spells: Blade Barrier, Create Undead, Harm, Heal, Heroes' Feast, Sunbeam, True Seeing and Word of Recall.\nCantrips deal more damage.";
+        }
         if (klass == CharacterClass::cleric && result.level == 12)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::cleric && result.level == 13)
+        {
             result.description =
                 "A level 7 spell slot and Cleric spells: Conjure Celestial, Divine Word, Fire Storm, Regenerate and Resurrection.\nDivine Spark rolls 3d8.";
+        }
         if (klass == CharacterClass::cleric && result.level == 14)
+        {
             result.description =
                 "Improved Blessed Strikes: Divine Strike deals 2d8; Potent Spellcasting also lets a Cleric cantrip that deals damage give you or a creature within 60 feet Temporary Hit Points equal to twice your Wisdom modifier.";
+        }
         if (klass == CharacterClass::cleric && result.level == 15)
+        {
             result.description =
                 "A level 8 spell slot and Cleric spells: Antimagic Field, Earthquake, Holy Aura and Sunburst.";
+        }
         if (klass == CharacterClass::cleric && result.level == 10)
+        {
             result.description =
                 "Divine Intervention: once per Long Rest, a Magic action casts any Cleric spell of level 5 or lower without a spell slot.\nA fifth cantrip.";
+        }
         if (klass == CharacterClass::cleric && result.level == 6)
+        {
             result.description =
                 "Life Domain: Blessed Healer. When a spell slot's healing restores Hit Points to another creature, you regain 2 + the slot's level.\nA third Channel Divinity use.";
+        }
         if (klass == CharacterClass::cleric && result.level == 3)
+        {
             result.description =
                 "Life Domain: Disciple of Life adds 2 + the slot level to healing spells; Preserve Life (Channel Divinity) restores five times your level among Bloodied allies within 30 feet; Bless, Cure Wounds and Lesser Restoration are always prepared.";
+        }
         if (klass == CharacterClass::fighter && result.level == 3)
+        {
             result.description =
                 "Champion: weapon/unarmed criticals on 19–20.\nAdvantage on Initiative and Strength (Athletics).\nCritical hit: optional half-Speed move, no opportunity attacks.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 5)
+        {
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nFast Movement: Speed +10 feet without Heavy armor.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 6)
+        {
             result.description =
                 "Berserker: Mindless Rage. While raging you cannot be Charmed or Frightened, and entering a Rage ends both.\nA fourth Rage.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 7)
+        {
             result.description =
                 "Feral Instinct: Advantage on Initiative.\nInstinctive Pounce: move up to half your Speed as part of entering a Rage.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 9)
+        {
             result.description =
                 "Brutal Strike: after Reckless Attack, one Strength attack a turn may give up its Advantage; on a hit it deals 1d10 more damage and a Forceful Blow (a 15-foot push you may follow) or a Hamstring Blow (Speed 15 feet lower).\nRage Damage +3; Proficiency Bonus +4.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 10)
+        {
             result.description =
                 "Berserker: Retaliation. When a creature within 5 feet damages you, your Reaction makes a melee attack against it.\nA fourth Weapon Mastery.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 11)
+        {
             result.description =
                 "Relentless Rage: dropping to 0 Hit Points while raging without dying, a Constitution save (DC 10, 5 higher for each try since your last rest) leaves you twice your Barbarian level in Hit Points.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 12)
+        {
             result.description = "A feat or ability points.\nA fifth Rage.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 13)
+        {
             result.description =
                 "Improved Brutal Strike: two more blows. Staggering Blow: Disadvantage on the target's next saving throw, and no Opportunity Attacks. Sundering Blow: +5 to the next attack roll another creature makes against it.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 14)
+        {
             result.description =
                 "Berserker: Intimidating Presence. A Bonus Action: each enemy within 30 feet makes a Wisdom save or is Frightened for up to a minute. Once per Long Rest, or for a Rage use.";
+        }
         if (klass == CharacterClass::barbarian && result.level == 15)
+        {
             result.description =
                 "Persistent Rage: when Initiative is rolled, regain every Rage use, once per Long Rest. Your Rage needs no extending.";
+        }
         if (klass == CharacterClass::rogue && result.level == 5)
+        {
             result.description =
                 "Cunning Strike: when an attack would deal Sneak Attack damage, give up a die to Trip the target (Dexterity save or Prone) or Withdraw (half your Speed without provoking).\nUncanny Dodge: your Reaction halves the damage of a hit.\nSneak Attack 3d6; Proficiency Bonus +3.";
+        }
         if (klass == CharacterClass::rogue && result.level == 6)
+        {
             result.description = "Expertise in two more skills.";
+        }
         if (klass == CharacterClass::rogue && result.level == 7)
+        {
             result.description =
                 "Evasion: a Dexterity save against half damage takes none on a success and half on a failure.\nReliable Talent: a d20 below 10 on a proficient skill check counts as 10.\nSneak Attack 4d6.";
+        }
         if (klass == CharacterClass::rogue && result.level == 9)
+        {
             result.description =
                 "Thief: Supreme Sneak. A hidden Rogue's Stealth Attack (a Cunning Strike) leaves it hidden.\nSneak Attack 5d6; Proficiency Bonus +4.";
+        }
         if (klass == CharacterClass::rogue && (result.level == 10 || result.level == 12))
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::rogue && result.level == 11)
+        {
             result.description =
                 "Improved Cunning Strike: one Sneak Attack may carry two Cunning Strike effects, paying for both.\nSneak Attack 6d6.";
+        }
         if (klass == CharacterClass::rogue && result.level == 13)
+        {
             result.description =
                 "Thief: Use Magic Device, which waits for magic items.\nSneak Attack 7d6; Proficiency Bonus +5.";
+        }
         if (klass == CharacterClass::rogue && result.level == 14)
+        {
             result.description =
                 "Devious Strikes: three more Cunning Strike effects. Daze (2 dice): a Constitution save or only one of moving, an action or a Bonus Action on its next turn. Knock Out (6 dice): a Constitution save or Unconscious for up to a minute, until damaged or shaken awake. Obscure (3 dice): a Dexterity save or Blinded until the end of its next turn.";
+        }
         if (klass == CharacterClass::rogue && result.level == 15)
+        {
             result.description =
                 "Slippery Mind: proficiency in Wisdom and Charisma saving throws.\nSneak Attack 8d6.";
+        }
         if (klass == CharacterClass::monk && result.level == 5)
+        {
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nStunning Strike: once a turn, a hit with a Monk weapon or an Unarmed Strike may spend 1 Focus: Constitution save or Stunned until your next turn.\nMartial Arts d8; Proficiency Bonus +3.";
+        }
         if (klass == CharacterClass::monk && result.level == 6)
+        {
             result.description =
                 "Empowered Strikes: Unarmed Strikes deal Force damage.\nOpen Hand: Wholeness of Body, a Bonus Action that heals the Martial Arts die + Wisdom, Wisdom modifier times per Long Rest.\nUnarmored Movement +15 feet.";
+        }
         if (klass == CharacterClass::monk && result.level == 7)
+        {
             result.description =
                 "Evasion: a Dexterity save against half damage takes none on a success and half on a failure.";
+        }
         if (klass == CharacterClass::monk && result.level == 9)
+        {
             result.description = "Proficiency Bonus +4.";
+        }
         if (klass == CharacterClass::monk && result.level == 10)
+        {
             result.description =
                 "Heightened Focus: Flurry of Blows makes three strikes, and Patient Defense with Focus gives two Martial Arts dice of Temporary Hit Points.\nSelf-Restoration: at the end of each of your turns, Charmed, Frightened or Poisoned ends.\nUnarmored Movement +20 feet.";
+        }
         if (klass == CharacterClass::monk && result.level == 11)
+        {
             result.description =
                 "Open Hand: Fleet Step. After another Bonus Action, you may also use Step of the Wind.\nMartial Arts d10.";
+        }
         if (klass == CharacterClass::monk && result.level == 13)
+        {
             result.description =
                 "Deflect Energy: Deflect Attacks works against any damage type.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::monk && result.level == 14)
+        {
             result.description =
                 "Disciplined Survivor: proficiency in every saving throw.\nUnarmored Movement +25 feet.";
+        }
         if (klass == CharacterClass::monk && result.level == 15)
+        {
             result.description =
                 "Perfect Focus: you start each fight with at least 4 Focus Points.";
+        }
         if (klass == CharacterClass::fighter && result.level == 5)
+        {
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nTactical Shift: after Second Wind, move up to half Speed without provoking Opportunity Attacks.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::fighter && result.level == 7)
+        {
             result.description = "Champion: a second Fighting Style feat.";
+        }
         if (klass == CharacterClass::fighter && result.level == 9)
+        {
             result.description =
                 "Indomitable: once per Long Rest, reroll a failed saving throw, adding your Fighter level.\nTactical Master: an attack may use Push, Sap or Slow instead of its weapon's mastery.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::fighter && result.level == 10)
+        {
             result.description =
                 "Champion: Heroic Inspiration at the start of each of your turns in a fight, when you lack it.\nA fifth Weapon Mastery, and a fourth Second Wind.";
+        }
         if (klass == CharacterClass::fighter && result.level == 11)
+        {
             result.description = "Two Extra Attacks: three attacks with each Attack action.";
+        }
         if (klass == CharacterClass::fighter && result.level == 13)
+        {
             result.description =
                 "Indomitable: two uses per Long Rest.\nStudied Attacks: after you miss a creature, your next attack roll against it before the end of your next turn has Advantage.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::fighter && result.level == 15)
+        {
             result.description =
                 "Champion: Superior Critical. Weapon and Unarmed Strike criticals on 18–20.";
+        }
         if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
+        {
             result.description =
                 "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
+        }
         if (klass == CharacterClass::paladin && result.level <= 4)
+        {
             result.description =
                 "Prepared spells, Lay On Hands and fixed HP advancement; Fighting Style or Blessed Warrior and Paladin's Smite at level two; Channel Divinity, the Oath of Devotion and Sacred Weapon at level three. Level four grants an available feat or ability points.";
+        }
         if (klass == CharacterClass::ranger && result.level == 5)
+        {
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nLevel 2 spell slots and Ranger spells; Ensnaring Strike from a level 2 slot deals 2d6 a turn.\nA third free Hunter's Mark (Favored Enemy); Proficiency Bonus +3.";
+        }
         if (klass == CharacterClass::ranger && result.level == 6)
+        {
             result.description = "Roving: Speed +10 feet without Heavy armor.";
+        }
         if (klass == CharacterClass::ranger && result.level == 7)
+        {
             result.description =
                 "Hunter: Defensive Tactics. Escape the Horde gives Opportunity Attacks against you Disadvantage; Multiattack Defense gives a creature that hits you Disadvantage on its other attacks against you this turn. You can switch after a rest.\nA third level 2 spell slot.";
+        }
         if (klass == CharacterClass::ranger && result.level == 8)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::ranger && result.level == 9)
+        {
             result.description =
                 "Expertise in two more skills.\nLevel 3 spell slots and Ranger spells: Conjure Animals, Dispel Magic, Plant Growth, Protection from Energy, Revivify and Wind Wall.\nA fourth free Hunter's Mark (Favored Enemy); Proficiency Bonus +4.";
+        }
         if (klass == CharacterClass::ranger && result.level == 10)
+        {
             result.description =
                 "Tireless: a Magic action gives you 1d8 + your Wisdom modifier in Temporary Hit Points, as many times as your Wisdom modifier per Long Rest.";
+        }
         if (klass == CharacterClass::ranger && result.level == 11)
+        {
             result.description =
                 "Hunter: Superior Hunter's Prey. Once a turn, after you damage the creature your Hunter's Mark marks, the mark's damage can also strike another creature within 30 feet of it.\nA second level 3 spell slot.";
+        }
         if (klass == CharacterClass::ranger && result.level == 12)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::ranger && result.level == 13)
+        {
             result.description =
                 "Relentless Hunter: taking damage cannot break your Concentration on Hunter's Mark.\nA level 4 spell slot and Ranger spells: Conjure Woodland Beings, Dominate Beast, Freedom of Movement and Stoneskin.\nA fifth free Hunter's Mark (Favored Enemy); Proficiency Bonus +5.";
+        }
         if (klass == CharacterClass::ranger && result.level == 14)
+        {
             result.description =
                 "Nature's Veil: a Bonus Action makes you Invisible until the end of your next turn, as many times as your Wisdom modifier per Long Rest.";
+        }
         if (klass == CharacterClass::ranger && result.level == 15)
+        {
             result.description =
                 "Hunter: Superior Hunter's Defense. When an attack hits you, your Reaction gives you Resistance to its damage type for the rest of the turn.\nA second level 4 spell slot.";
+        }
         if (klass == CharacterClass::paladin && result.level == 5)
+        {
             result.description =
                 "Extra Attack: two attacks with each Attack action.\nLevel 2 spell slots and Paladin spells, among them Shining Smite; Divine Smite from a level 2 slot deals 3d8. Aid is always prepared.\nProficiency Bonus +3.";
+        }
         if (klass == CharacterClass::paladin && result.level == 6)
+        {
             result.description =
                 "Aura of Protection: you and allies within 10 feet add your Charisma modifier (at least +1) to saving throws, unless you are Incapacitated.";
+        }
         if (klass == CharacterClass::paladin && result.level == 7)
+        {
             result.description =
                 "Oath of Devotion: Aura of Devotion. You and allies in your Aura of Protection cannot be Charmed.\nA third level 2 spell slot.";
+        }
         if (klass == CharacterClass::paladin && result.level == 8)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::paladin && result.level == 9)
+        {
             result.description =
                 "Abjure Foes: a Magic action and a Channel Divinity use; up to your Charisma modifier (at least 1) of creatures you see within 60 feet make a Wisdom save or are Frightened for a minute or until damaged, doing only one of moving, an action or a Bonus Action on their turns.\nLevel 3 spell slots and Paladin spells; Oath of Devotion: Beacon of Hope and Dispel Magic are always prepared.\nProficiency Bonus +4.";
+        }
         if (klass == CharacterClass::paladin && result.level == 10)
+        {
             result.description =
                 "Aura of Courage: you and allies in your Aura of Protection cannot be Frightened.";
+        }
         if (klass == CharacterClass::paladin && result.level == 11)
+        {
             result.description =
                 "Radiant Strikes: your hits with a Melee weapon or an Unarmed Strike deal an extra 1d8 Radiant damage.\nA third Channel Divinity use and a third level 3 spell slot.";
+        }
         if (klass == CharacterClass::paladin && result.level == 12)
+        {
             result.description = "A feat or ability points.";
+        }
         if (klass == CharacterClass::paladin && result.level == 13)
+        {
             result.description =
                 "A level 4 spell slot and Paladin spells: Aura of Life, Banishment and Death Ward. Oath of Devotion: Freedom of Movement and Guardian of Faith are always prepared.\nProficiency Bonus +5.";
+        }
         if (klass == CharacterClass::paladin && result.level == 14)
+        {
             result.description =
                 "Restoring Touch: Lay On Hands can also end Blinded, Charmed, Frightened, Paralyzed or Stunned, 5 points from the pool each.";
+        }
         if (klass == CharacterClass::paladin && result.level == 15)
+        {
             result.description =
                 "Oath of Devotion: Smite of Protection. When you cast Divine Smite, you and allies in your Aura of Protection gain +2 AC and +2 to Dexterity saves until your next turn.\nA second level 4 spell slot.";
+        }
         if (klass == CharacterClass::druid && result.level <= 4)
+        {
             result.description =
                 "Prepared Druid spells and a Primal Order: Magician (an extra cantrip) or Warden (Martial weapons and Medium armor); the Circle of the Land at level three with its land's Circle Spells always prepared. Level four grants a third cantrip and an available feat or ability points.";
+        }
         if (klass == CharacterClass::bard && result.level <= 4)
+        {
             result.description =
                 "Bardic spellcasting with prepared Bard spells; Jack of All Trades at level two; the College of Lore at level three with three more skills. Level four grants a third cantrip and an available feat or ability points.";
+        }
         if (klass == CharacterClass::warlock && result.level <= 4)
+        {
             result.description =
                 "Pact Magic: prepared Warlock spells cast from slots of one level that return on a Short Rest; Magical Cunning at level two; the Fiend Patron at level three: Dark One's Blessing and Burning Hands, Command and Scorching Ray always prepared. Level four grants a third cantrip and an available feat or ability points.";
+        }
         if (klass == CharacterClass::sorcerer && result.level <= 4)
+        {
             result.description =
                 "Prepared Sorcerer spells and Innate Sorcery; Font of Magic's Sorcery Points at level two; Draconic Sorcery at level three: Draconic Resilience (Hit Points and unarmored AC 10 + Dexterity + Charisma) and Chromatic Orb, Command and Dragon's Breath always prepared. Level four grants a fifth cantrip and an available feat or ability points.";
+        }
         if (klass == CharacterClass::monk && result.level <= 4)
+        {
             result.description =
                 "Martial Arts and Unarmored Defense; Monk's Focus (Flurry of Blows, Patient Defense, Step of the Wind), Unarmored Movement and Uncanny Metabolism at level two; Deflect Attacks and the Warrior of the Open Hand at level three. Level four grants an available feat or ability points.";
+        }
         if (klass == CharacterClass::barbarian && result.level <= 4)
+        {
             result.description =
                 "Rage, Unarmored Defense and Weapon Mastery; Danger Sense and Reckless Attack at level two; the Berserker with Frenzy, Primal Knowledge and a third Rage at level three. Level four grants an available feat or ability points and a third Weapon Mastery.";
+        }
         if (klass == CharacterClass::ranger && result.level <= 4)
+        {
             result.description =
                 "Prepared spells with Favored Enemy and fixed HP advancement; Fighting Style or Druidic Warrior at level two; the Hunter with Hunter's Lore and Hunter's Prey at level three. Level four grants an available feat or ability points.";
+        }
         if (detail::gains_feat(klass, result.level))
+        {
             result.feats = {
                 {"ability_score_improvement", "Ability points",
                  "Add 2 to one ability or 1 to two abilities; maximum 20."},
@@ -21993,6 +26084,7 @@ class Module final : public RulesModule
                                   return g.id == "feat:skilled" &&
                                          g.source_id.ends_with(":ability_score_improvement");
                               })}};
+        }
         if (detail::gains_feat(klass, result.level))
         {
             // After Savage Attacker, where the single Magic Initiate entry stood.
@@ -22000,13 +26092,16 @@ class Module final : public RulesModule
             result.feats.insert(result.feats.begin() + 3, initiate.begin(), initiate.end());
         }
         if (klass == CharacterClass::paladin)
+        {
             result.spells = {
                 {"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Charisma modifier."},
                 {"divine_smite", "Divine Smite",
                  "Bonus Action right after a melee hit: 2d8 Radiant damage, 3d8 against a Fiend or an Undead."},
                 {"searing_smite", "Searing Smite",
                  "Bonus Action right after a melee hit: 1d6 Fire damage, then 1d6 at the start of each of the target's turns until it succeeds on a Constitution save."}};
+        }
         if (klass == CharacterClass::cleric)
+        {
             result.spells = {
                 {"cure_wounds", "Cure Wounds", "Action; touch; heals 2d8 + Wisdom modifier."},
                 {"healing_word", "Healing Word",
@@ -22020,7 +26115,9 @@ class Module final : public RulesModule
                  "Action; 30 feet; up to three creatures add 1d4 to attack rolls and saving throws. Concentration, up to 1 minute."},
                 {"protection_from_evil_and_good", "Protection from Evil and Good",
                  "Action; touch; Aberrations, Celestials, Elementals, Fey, Fiends and Undead attack the creature with Disadvantage. Concentration, up to 10 minutes."}};
+        }
         if (klass == CharacterClass::wizard)
+        {
             result.spells = {
                 {"magic_missile", "Magic Missile", "Action; 120 feet; three darts at one target."},
                 {"scorching_ray", "Scorching Ray",
@@ -22030,6 +26127,7 @@ class Module final : public RulesModule
                  "Blindness/Deafness (blindness option): Constitution save; repeat at end of turn; up to 1 minute. Level 2 slot.",
                  result.level >= 3},
                 {"shield", "Shield", "Unavailable: spell reactions are not implemented.", false}};
+        }
         return result;
     }
 
@@ -22047,18 +26145,24 @@ class Module final : public RulesModule
         // so switching away from it drops the group and its unconfirmed picks.
         if (choice.feat == "skilled" && options.level &&
             detail::gains_feat(detail::class_of(sheet), options.level))
+        {
             options.training.push_back(detail::skilled_options(sheet.grants));
+        }
         // Lessons of the First Ones' Skilled asks for its skills when it is
         // taken, as a new invocation or a replacement.
         if (options.level && takes_lessons_skilled(choice))
+        {
             options.training.push_back(
                 detail::lessons_skilled_options(sheet.grants, options.level));
+        }
         if (choice.fighting_style && detail::class_of(sheet) == CharacterClass::fighter)
         {
             constexpr std::string_view source = "class:fighter:fighting_style";
             for (auto &feat : options.feats)
+            {
                 if (feat.id == "defense" || feat.id == "archery" ||
                     feat.id == "great_weapon_fighting" || feat.id == "two_weapon_fighting")
+                {
                     feat.available =
                         feat.id != *choice.fighting_style &&
                         std::none_of(sheet.grants.begin(), sheet.grants.end(),
@@ -22066,6 +26170,8 @@ class Module final : public RulesModule
                                      {
                                          return g.id == "feat:" + feat.id && g.source_id != source;
                                      });
+                }
+            }
         }
         return options;
     }
@@ -22076,17 +26182,29 @@ class Module final : public RulesModule
         AdvancementChoice choice;
         const auto options = advancement_options(sheet);
         if (!options.level)
+        {
             return choice;
+        }
         if (options.level == 2 &&
             (klass == CharacterClass::paladin || klass == CharacterClass::ranger))
+        {
             choice.fighting_style = "defense";
+        }
         choice.spells = sheet.prepared_spells;
         for (const auto &group : options.training)
+        {
             for (const auto &option : group.options)
+            {
                 if (choice.training[group.id].size() < group.count)
+                {
                     choice.training[group.id].push_back(option.id);
+                }
+            }
+        }
         if (choice.spells.empty() && klass == CharacterClass::wizard)
+        {
             choice.spells = {"magic_missile"};
+        }
         if (detail::prepares_spells(klass))
         {
             auto next = sheet;
@@ -22099,7 +26217,9 @@ class Module final : public RulesModule
                 for (const auto &option : group.options)
                 {
                     if (values.size() == group.count)
+                    {
                         break;
+                    }
                     values.push_back(option.id);
                 }
             }
@@ -22110,10 +26230,14 @@ class Module final : public RulesModule
                 detail::spell_choice_options(next, SpellChoiceContext::advancement);
             choice.spells = preparation.locked_prepared;
             for (const auto &spell : preparation.preparation)
+            {
                 if (choice.spells.size() < preparation.prepared_count &&
                     std::find(choice.spells.begin(), choice.spells.end(), spell.id) ==
                         choice.spells.end())
+                {
                     choice.spells.push_back(spell.id);
+                }
+            }
         }
         if (detail::gains_feat(klass, options.level))
         {
@@ -22152,8 +26276,10 @@ class Module final : public RulesModule
         ++next.level;
         if ((klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
             next.level == 2)
+        {
             next.grants.push_back(
                 {"feature:fighting_style", "class:" + std::string(detail::class_id(klass)), 2, {}});
+        }
         if (choice.fighting_style)
         {
             const auto source = "class:" + std::string(detail::class_id(klass)) + ":fighting_style";
@@ -22182,23 +26308,37 @@ class Module final : public RulesModule
         };
         // A blast invocation needs the cantrip it improves.
         for (const auto &g : next.grants)
+        {
             for (const std::string_view blast :
                  {"invocation:agonizing_blast:", "invocation:eldritch_spear:",
                   "invocation:repelling_blast:"})
+            {
                 if (g.id.starts_with(blast) && !held("spell:" + g.id.substr(blast.size())))
+                {
                     throw std::runtime_error("A blast invocation needs the cantrip it improves.");
+                }
+            }
+        }
         // Magic Initiate's spells are chosen with the level's other spells,
         // whether the feat comes at level four or from Lessons of the First Ones.
         if (choice.feat.starts_with("magic_initiate_") &&
             detail::gains_feat(klass, static_cast<unsigned>(next.level)))
+        {
             next.grants.push_back(detail::advancement_grant(klass, next.level, choice));
+        }
         const auto invocations = detail::invocations_source(static_cast<unsigned>(next.level));
         if (const auto lessons = choice.training.find(invocations);
             lessons != choice.training.end())
+        {
             for (const auto &id : lessons->second)
+            {
                 if (id.starts_with("lessons_magic_initiate_"))
+                {
                     next.grants.push_back(
                         {"invocation:" + id, invocations, static_cast<unsigned>(next.level), {}});
+                }
+            }
+        }
         return next;
     }
 
@@ -22208,25 +26348,33 @@ class Module final : public RulesModule
         const auto klass = detail::class_of(sheet);
         const auto options = advancement_options(sheet, choice);
         if (!options.level)
+        {
             return false;
+        }
         const bool half_style =
             (klass == CharacterClass::paladin || klass == CharacterClass::ranger) &&
             options.level == 2;
         if (half_style && !choice.fighting_style)
+        {
             throw std::runtime_error("Choose a Fighting Style");
+        }
         if (choice.fighting_style &&
             std::none_of(options.fighting_styles.begin(), options.fighting_styles.end(),
                          [&](const auto &f)
                          {
                              return f.id == *choice.fighting_style && f.id != "keep" && f.available;
                          }))
+        {
             throw std::runtime_error("Choose an eligible Fighting Style");
+        }
         const auto old = character_definition(character_profile(sheet, {}).data);
         unsigned points = 0;
         for (auto n : choice.abilities)
         {
             if (n > 2)
+            {
                 throw std::runtime_error("An ability increase cannot exceed 2");
+            }
             points += n;
         }
         if (detail::gains_feat(klass, options.level))
@@ -22237,17 +26385,25 @@ class Module final : public RulesModule
                                                return f.id == choice.feat && f.available;
                                            });
             if (feat == options.feats.end())
+            {
                 throw std::runtime_error("Choose an available feat or ability points");
+            }
             if (points != (choice.feat == "ability_score_improvement" ? 2u : 0u))
+            {
                 throw std::runtime_error("Assign exactly two ability points, or choose a feat");
+            }
             // The training loop below checks the count only when the group is
             // present, so require the picks rather than granting Skilled empty.
             if (choice.feat == "skilled" && !choice.training.contains("feat:skilled"))
+            {
                 throw std::runtime_error("Choose exactly three Skilled proficiencies");
+            }
         }
         else if (!choice.feat.empty() || points)
+        {
             throw std::runtime_error(
                 "Feats and ability points come only at the class's feat levels");
+        }
         // Classes that prepare spells validate their choices through
         // apply_spell_choices below, against the whole class list.
         std::set<std::string> selected;
@@ -22260,20 +26416,28 @@ class Module final : public RulesModule
                               {
                                   return s.id == spell && s.available;
                               })))
+            {
                 throw std::runtime_error("Choose only available, distinct spells");
+            }
         }
         if (!options.spells.empty() && choice.spells.empty())
+        {
             throw std::runtime_error("Choose at least one supported spell");
+        }
         if (takes_lessons_skilled(choice) &&
             !choice.training.contains("invocation:lessons_skilled"))
+        {
             throw std::runtime_error("Choose exactly three Skilled proficiencies");
+        }
         // A swapped-in invocation cannot also be one of the level's new picks.
         if (const auto picks = choice.training.find(
                 detail::invocations_source(static_cast<unsigned>(sheet.level + 1)));
             picks != choice.training.end() && !choice.option_swap.replacement.empty() &&
             std::find(picks->second.begin(), picks->second.end(), choice.option_swap.replacement) !=
                 picks->second.end())
+        {
             throw std::runtime_error("An invocation cannot be both swapped in and chosen");
+        }
         auto actor = actor_from(old, state);
         auto next = spell_choice_sheet(sheet, choice);
         // The list after a spell swap; the level's choices then add to it.
@@ -22296,7 +26460,9 @@ class Module final : public RulesModule
                                                         return o.id == value;
                                                     });
                             }))
+            {
                 throw std::runtime_error("Invalid advancement training choice");
+            }
             for (const auto &value : values)
             {
                 FeatureGrant grant{
@@ -22325,16 +26491,24 @@ class Module final : public RulesModule
                     {}};
                 // spell_choice_sheet already granted Lessons' Magic Initiate.
                 if (std::find(next.grants.begin(), next.grants.end(), grant) == next.grants.end())
+                {
                     next.grants.push_back(std::move(grant));
+                }
             }
         }
         if (klass == CharacterClass::warlock && next.level == 2)
+        {
             next.grants.push_back({"feature:magical_cunning", "class:warlock", 2, {}});
+        }
         if (klass == CharacterClass::bard && next.level == 2)
+        {
             next.grants.push_back({"feature:jack_of_all_trades", "class:bard", 2, {}});
+        }
         // The Circle of the Land is the SRD's only Druid subclass.
         if (klass == CharacterClass::druid && next.level == 2)
+        {
             next.grants.push_back({"feature:wild_shape", "class:druid", 2, {}});
+        }
         if (klass == CharacterClass::druid && next.level == 3)
         {
             next.grants.push_back({"subclass:land", "class:druid", 3, {}});
@@ -22403,16 +26577,22 @@ class Module final : public RulesModule
             next.grants.push_back({"feature:fast_hands", "subclass:rogue:thief", 3, {}});
         }
         if (klass == CharacterClass::rogue && next.level == 2)
+        {
             next.grants.push_back({"feature:cunning_action", "class:rogue", 2, {}});
+        }
         for (auto &grant : detail::higher_level_features(klass, static_cast<unsigned>(next.level)))
+        {
             next.grants.push_back(std::move(grant));
+        }
         if (klass == CharacterClass::fighter && next.level == 2)
         {
             next.grants.push_back({"feature:action_surge", "class:fighter", 2, {}});
             next.grants.push_back({"feature:tactical_mind", "class:fighter", 2, {}});
         }
         if (klass == CharacterClass::cleric && next.level == 2)
+        {
             next.grants.push_back({"feature:channel_divinity", "class:cleric", 2, {}});
+        }
         // The Life Domain is the SRD's only Cleric subclass.
         if (klass == CharacterClass::cleric && next.level == 3)
         {
@@ -22447,14 +26627,18 @@ class Module final : public RulesModule
                 {"feature:remarkable_athlete", "subclass:fighter:champion", 3, {}});
         }
         for (const auto ability : all_abilities)
+        {
             next.save_proficiencies[ability] =
                 detail::save_proficient(klass, static_cast<unsigned>(next.level), ability);
+        }
         for (const auto ability : all_abilities)
         {
             next.scores[ability] += choice.abilities[ability];
             next.bonuses[ability] += choice.abilities[ability];
             if (next.scores[ability] > 20)
+            {
                 throw std::runtime_error("Ability scores cannot exceed 20");
+            }
             next.modifiers[ability] = ability_modifier(next.scores[ability]);
             next.saving_throws[ability] =
                 next.modifiers[ability] +
@@ -22467,7 +26651,9 @@ class Module final : public RulesModule
                                              " Ability Score Improvement",
                                          static_cast<unsigned>(next.level)};
             for (const auto ability : all_abilities)
+            {
                 adjustment.bonuses[ability] = static_cast<int>(choice.abilities[ability]);
+            }
             adjustment.label_message = {"Level {level} Ability Score Improvement",
                                         {{"level", std::to_string(next.level)}}};
             next.ability_adjustments.push_back(std::move(adjustment));
@@ -22478,7 +26664,9 @@ class Module final : public RulesModule
         if (auto feat = detail::advancement_grant(klass, next.level, choice);
             !choice.feat.empty() &&
             std::find(next.grants.begin(), next.grants.end(), feat) == next.grants.end())
+        {
             next.grants.push_back(std::move(feat));
+        }
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
         {
@@ -22493,7 +26681,9 @@ class Module final : public RulesModule
         else if (detail::prepares_spells(klass) ||
                  !detail::spell_choice_options(next, SpellChoiceContext::advancement)
                       .learning.empty())
+        {
             throw std::runtime_error("Independent spell learning choices are required");
+        }
         next.training = detail::training_profile(next.grants, klass, next.race,
                                                  detail::background_id(next.background), next.level,
                                                  next.scores);
@@ -22507,8 +26697,12 @@ class Module final : public RulesModule
                                           "Dwarven Toughness: +" + std::to_string(next.level) +
                                               " maximum HP.");
             for (auto &message : next.racial_messages)
+            {
                 if (message.source == "Dwarven Toughness: +{hp} maximum HP.")
+                {
                     message.arguments = {{"hp", std::to_string(next.level)}};
+                }
+            }
         }
         const int growth = next.hit_points - sheet.hit_points;
         next.hp_explanation =
@@ -22579,7 +26773,9 @@ class Module final : public RulesModule
         }
         actor.definition = character_definition(character_profile(next, {}).data);
         if (actor.life.hp > 0)
+        {
             actor.life.hp += growth;
+        }
         // Pact Magic's slots rise a level together (level 2 at Warlock level
         // 3); the slots already spent stay spent.
         const int spent_slots = slot_total(old.slots) - slot_total(actor.slots);
@@ -22591,8 +26787,12 @@ class Module final : public RulesModule
             actor.slots[level] = std::max(0, actor.definition.slots[level] - spent_slots);
         }
         else
+        {
             for (unsigned level = 1; level <= highest_slot_level; ++level)
+            {
                 actor.slots[level] += actor.definition.slots[level] - old.slots[level];
+            }
+        }
         actor.winds += actor.definition.winds - old.winds;
         actor.rushes += actor.definition.rushes - old.rushes;
         actor.surges += surge_capacity(actor.definition) - surge_capacity(old);
@@ -22630,7 +26830,9 @@ class Module final : public RulesModule
                 RandomState &random_state) const override
     {
         if (elapsed < std::chrono::milliseconds::zero())
+        {
             throw std::invalid_argument("Time cannot run backwards");
+        }
         const auto milliseconds = static_cast<std::uint64_t>(elapsed.count());
         // Work on owned candidates so malformed state cannot partly advance a
         // party or consume its RNG. No Godot or campaign data enters the rules.
@@ -22647,33 +26849,47 @@ class Module final : public RulesModule
             a.slots = a.definition.slots;
             a.hit_dice = a.definition.hit_die ? a.definition.level : 0;
             if (p.state)
+            {
                 restore_vitals(a, *p.state);
+            }
             actors.push_back(std::move(a));
         }
         std::vector<detail::RecoverySubject> subjects;
         for (auto &a : actors)
+        {
             subjects.push_back(
                 {{a.source.id, a.effects, a.definition.saves, a.life.dead,
                   a.definition.str_dex_disadvantage, false, a.definition.gnomish_cunning,
                   a.definition.lucky, a.definition.brave},
                  a.life});
+        }
         auto rng = random_state.value;
         detail::elapse_recovery(subjects, milliseconds, rng);
         // An ended Aid lowers the maximum, and Hit Points above it with it.
         for (auto &a : actors)
+        {
             a.life.hp = std::min(a.life.hp, max_hp(a));
+        }
         if (!milliseconds)
+        {
             return;
+        }
         std::vector<VitalState> next;
         next.reserve(actors.size());
         for (const auto &a : actors)
+        {
             next.push_back(vitals(a));
+        }
         for (std::size_t i = 0; i < participants.size(); ++i)
+        {
             if (participants[i].state &&
                 // A fresh character's empty state stays empty unless dying.
                 ((participants[i].state->hit_points == 0 && !participants[i].state->dead) ||
                  !participants[i].state->resources.empty()))
+            {
                 participants[i].state = std::move(next[i]);
+            }
+        }
         random_state.value = rng;
     }
 
@@ -22682,10 +26898,14 @@ class Module final : public RulesModule
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1)
+        {
             throw std::runtime_error("Long rest requires at least one HP at its start");
+        }
         // A simulacrum takes no rests.
         if (detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+        {
             return;
+        }
         (void)detail::heal_life(actor.life, max_hp(actor), max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
         // A Long Rest makes Prayer of Healing able to help the creature again,
@@ -22709,8 +26929,12 @@ class Module final : public RulesModule
                       });
         // Back from the dead: the penalty eases by 1 with each Long Rest.
         for (auto &e : actor.effects.active)
+        {
             if (e.kind == detail::EffectKind::returned)
+            {
                 --e.dc;
+            }
+        }
         std::erase_if(actor.effects.active,
                       [](const auto &e)
                       {
@@ -22718,9 +26942,11 @@ class Module final : public RulesModule
                       });
         // Resourceful: a Human finishes the Long Rest with Heroic Inspiration.
         if (d.resourceful && detail::can_apply(actor.effects))
+        {
             // Camp effects carry scope 1: there is no encounter to source them.
             detail::apply_spell_benefit(actor.effects, detail::EffectSource{.scope = 1, .actor = 1},
                                         sheet.name, detail::EffectKind::heroic_inspiration, 0);
+        }
         actor.winds = d.winds;
         actor.slots = d.slots;
         actor.hit_dice = d.hit_die ? d.level : 0;
@@ -22751,22 +26977,32 @@ class Module final : public RulesModule
                             {},
                             actor.life.temporary_hp};
         for (const auto &descriptor : resource_descriptors)
+        {
             if (capacity_of(descriptor, d))
+            {
                 result.resources.push_back(resource_pool(descriptor, actor, d));
+            }
+        }
         add_initiate_pools(result.resources, actor, d);
         add_trait_pool(result.resources, actor, d);
         for (const auto &choice : arcane_allocations(static_cast<unsigned>(d.level + 1) / 2))
+        {
             if (can_recover(actor, choice) && !simulacrum)
+            {
                 result.choices.push_back({choice.id, choice.label});
+            }
+        }
         // Sorcerous Restoration (Sorcerer 5): Sorcery Points up to half the
         // Sorcerer level, once per Long Rest.
         if (d.sorcerous_restoration && actor.arcane > 0 && actor.lay_on_hands < d.sorcery_points &&
             !simulacrum)
+        {
             result.choices.push_back(
                 {"sorcerous_restoration",
                  {"Sorcerous Restoration: regain {points} Sorcery Points",
                   {{"points", std::to_string(std::min(d.level / 2,
                                                       d.sorcery_points - actor.lay_on_hands))}}}});
+        }
         return result;
     }
 
@@ -22786,19 +27022,27 @@ class Module final : public RulesModule
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1)
+        {
             throw std::runtime_error("Short rest requires at least one HP at its start");
+        }
         if (detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+        {
             return;
+        }
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
         actor.channel_divinity = std::min(channel_capacity(d), actor.channel_divinity + 1);
         // Font of Inspiration (Bard 5): Bardic Inspiration returns on a Short Rest.
         if (d.font_of_inspiration)
+        {
             actor.arcane = arcane_capacity(d);
+        }
         // Pact Magic slots all return on a Short Rest.
         if (d.pact_magic)
+        {
             actor.slots = d.slots;
+        }
         state = vitals(actor);
     }
 
@@ -22811,7 +27055,9 @@ class Module final : public RulesModule
         {
             if (!d.sorcerous_restoration || actor.arcane < 1 ||
                 actor.lay_on_hands >= d.sorcery_points)
+            {
                 throw std::runtime_error("This rest recovery choice is unavailable");
+            }
             const int regained = std::min(d.level / 2, d.sorcery_points - actor.lay_on_hands);
             actor.lay_on_hands += regained;
             --actor.arcane;
@@ -22826,9 +27072,13 @@ class Module final : public RulesModule
                                              return value.id == choice_id;
                                          });
         if (choice == choices.end() || !can_recover(actor, *choice))
+        {
             throw std::runtime_error("This rest recovery choice is unavailable");
+        }
         for (unsigned level = 1; level <= 5; ++level)
+        {
             actor.slots[level] += static_cast<int>(choice->slots[level - 1]);
+        }
         --actor.arcane;
         auto next = vitals(actor);
         const bool small = choice->slots[2] + choice->slots[3] + choice->slots[4] == 0;
@@ -22854,7 +27104,9 @@ class Module final : public RulesModule
         auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1 || actor.hit_dice < 1 ||
             detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+        {
             throw std::runtime_error("No Hit Die can be spent by this character");
+        }
         auto rng = random_state.value;
         const int rolled = roll_die(rng, d.hit_die);
         const int healing =
@@ -22872,11 +27124,15 @@ class Module final : public RulesModule
     void set_hit_points(VitalState &state, const CharacterSheet &sheet, int hp) const override
     {
         if (hp < 0 || hp > sheet.hit_points || (state.dead && hp))
+        {
             throw std::runtime_error("Unsupported script HP change");
+        }
         auto actor = camp_actor(sheet, state);
         if (hp == state.hit_points ||
             (hp > state.hit_points && detail::healing_blocked(actor.effects)))
+        {
             return;
+        }
         detail::set_life_hit_points(actor.life, hp, max_hp(actor));
         state = vitals(actor);
     }
@@ -22887,7 +27143,9 @@ class Module final : public RulesModule
     {
         auto actor = actor_from(character_definition(character_profile(sheet, gear).data), state);
         if (actor.life.dead || actor.life.hp < 1)
+        {
             throw std::runtime_error("A hazard attacks a conscious member");
+        }
         auto rng = random_state.value;
         HazardAttackResult result;
         result.natural = roll_die(rng, 20);
@@ -22899,7 +27157,9 @@ class Module final : public RulesModule
         {
             int rolled = attack.damage_bonus;
             for (unsigned n = 0; n < attack.dice * (result.critical ? 2 : 1); ++n)
+            {
                 rolled += roll_die(rng, static_cast<int>(attack.sides));
+            }
             const detail::DamagePart part{detail::damage_type(attack.damage_type),
                                           std::max(0, rolled)};
             const auto &d = actor.form ? *actor.form : actor.definition;
@@ -22907,9 +27167,11 @@ class Module final : public RulesModule
             detail::damage_life(actor.life, result.damage, max_hp(actor));
             // As after a victory, the dying member's saves are rolled at once.
             while (actor.life.hp == 0 && !actor.life.dead && !actor.life.stable)
+            {
                 result.death_saves.push_back(
                     detail::death_save(actor.life, rng, !detail::healing_blocked(actor.effects),
                                        actor.definition.lucky));
+            }
         }
         state = vitals(actor);
         random_state.value = rng;
@@ -22937,7 +27199,9 @@ class Module final : public RulesModule
     {
         // A simulacrum's repair: 100 gp for each Hit Point it lacks.
         if (action != "simulacrum_repair")
+        {
             return camp_action_gold(target, action);
+        }
         const auto patient = camp_actor(target, state);
         return 100u * static_cast<unsigned>(std::max(0, max_hp(patient) - patient.life.hp));
     }
@@ -22951,7 +27215,9 @@ class Module final : public RulesModule
         auto rng = random_state.value;
         int rolled = 1;
         while (rolled == 1)
+        {
             rolled = roll_die(rng, 10);
+        }
         random_state.value = rng;
         return std::string(species[static_cast<std::size_t>(rolled - 2)]);
     }
@@ -22989,12 +27255,20 @@ class Module final : public RulesModule
     {
         std::set<std::string_view> warded;
         for (const auto &member : party)
+        {
             for (const auto &e : camp_actor(member.sheet, member.state).effects.active)
+            {
                 if (e.kind == detail::EffectKind::circle_ward)
+                {
                     warded.insert(detail::ward_types.at(static_cast<std::size_t>(e.dc)));
+                }
                 // Tiny Hut keeps every creature out.
                 else if (e.kind == detail::EffectKind::sheltered)
+                {
                     return !definitions.empty();
+                }
+            }
+        }
         return !definitions.empty() &&
                std::all_of(definitions.begin(), definitions.end(),
                            [&](const auto &key)
@@ -23011,12 +27285,16 @@ class Module final : public RulesModule
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp >= max_hp(actor))
+        {
             throw std::runtime_error("Cure Wounds requires a wounded living member");
+        }
         // Authored temple caster: Cure Wounds, Wisdom +3. Same SplitMix64 as combat.
         auto rng = random_state.value;
         int amount = 3;
         for (int i = 0; i < 2; ++i)
+        {
             amount += roll_die(rng, 8);
+        }
         (void)detail::heal_life(actor.life, amount, max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
         auto next = vitals(actor);
@@ -23047,31 +27325,45 @@ class Module final : public RulesModule
         const auto &d = actor.definition;
         std::vector<CampAction> actions;
         if (actor.life.dead || actor.life.hp == 0)
+        {
             return actions;
+        }
         if (d.lay_on_hands && actor.lay_on_hands > 0)
+        {
             actions.push_back({"lay_on_hands", {"Lay On Hands", {}}});
+        }
         if (d.lay_on_hands && actor.lay_on_hands >= 5)
+        {
             actions.push_back({"lay_on_hands_cure", {"Lay On Hands: cure Poisoned (5)", {}}});
+        }
         // Magical Cunning: a one-minute rite, so a camp action; it needs no
         // target and so takes the whole-party path.
         if (d.magical_cunning && actor.arcane > 0 && slot_total(actor.slots) < slot_total(d.slots))
+        {
             actions.push_back({"magical_cunning", {"Magical Cunning", {}}, true});
+        }
         if (d.str_dex_disadvantage)
+        {
             return actions;
+        }
         // Revivify in camp, right after a fight, on a member dead less than a
         // minute; the target list holds the dead.
         if (const auto &raise = *detail::find_spell("revivify");
             detail::knows_spell(d.spells, raise.id))
+        {
             for (const unsigned level : cast_levels(actor, raise))
             {
                 auto [verb, label] = cast_at(raise, level, "revivify", "Revivify");
                 actions.push_back({std::move(verb), {std::move(label), {}}});
             }
+        }
         // Magic Circle in camp: a ward against one creature type, an hour and
         // one more for each slot level above 3, for the whole party's rest.
         if (const auto &circle = *detail::find_spell("magic_circle");
             detail::knows_spell(d.spells, circle.id))
+        {
             for (const unsigned level : cast_levels(actor, circle))
+            {
                 for (std::size_t type = 0; type < detail::ward_types.size(); ++type)
                 {
                     auto [verb, label] = cast_at(
@@ -23079,6 +27371,8 @@ class Module final : public RulesModule
                         "Magic Circle: " + ward_label(type));
                     actions.push_back({std::move(verb), {std::move(label), {}}, true});
                 }
+            }
+        }
         for (const auto &spell : detail::spell_table)
         {
             // Aid's and Death Ward's eight hours outlast a fight, so they are
@@ -23088,21 +27382,28 @@ class Module final : public RulesModule
                  spell.rider != detail::Rider::death_ward &&
                  spell.rider != detail::Rider::regenerate) ||
                 !detail::knows_spell(d.spells, spell.id))
+            {
                 continue;
+            }
             // Contingency: each spell of level 5 or lower the caster can cast
             // on itself with an action, with each trigger (LEVELS-3).
             if (spell.id == "contingency")
             {
                 if (!lowest_slot(actor, 6))
+                {
                     continue;
+                }
                 // A slot for Contingency, and another for the stored spell.
                 auto after = actor;
                 --after.slots[lowest_slot(actor, 6)];
                 for (const auto &stored : detail::spell_table)
+                {
                     if (contingent(stored) && detail::knows_spell(d.spells, stored.id) &&
                         lowest_slot(after, stored.level))
+                    {
                         for (std::size_t trigger = 0; trigger < detail::contingency_triggers.size();
                              ++trigger)
+                        {
                             actions.push_back(
                                 {"contingency_" + std::string(stored.id) + "_" +
                                      std::string(detail::contingency_triggers[trigger]),
@@ -23110,6 +27411,9 @@ class Module final : public RulesModule
                                   {{"spell", std::string(stored.label), true},
                                    {"trigger", std::string(contingency_label(trigger)), true}}},
                                  true});
+                        }
+                    }
+                }
                 continue;
             }
             // Simulacrum: a copy of a member, and the repair of one; a
@@ -23117,7 +27421,9 @@ class Module final : public RulesModule
             if (spell.id == "simulacrum")
             {
                 if (detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+                {
                     continue;
+                }
                 actions.push_back(
                     {"simulacrum_repair", {"Repair a simulacrum (100 gp per Hit Point)", {}}});
             }
@@ -23130,9 +27436,11 @@ class Module final : public RulesModule
             }
             const std::string label(spell.label);
             if (actor.initiate_casts & initiate_bit(d, spell.id))
+            {
                 actions.push_back({std::string(spell.id) + std::string(detail::initiate_suffix),
                                    {label + " (Magic Initiate)", {}},
                                    party});
+            }
         }
         return actions;
     }
@@ -23147,7 +27455,9 @@ class Module final : public RulesModule
                          {
                              return a.id == action && !a.whole_party;
                          }))
+        {
             throw std::runtime_error("That spell or feature cannot be used now");
+        }
         const bool self = &user_state == &target_state;
         auto caster = camp_actor(user, user_state);
         auto healed = self ? caster : camp_actor(target, target_state);
@@ -23156,7 +27466,9 @@ class Module final : public RulesModule
         {
             // 5 points end Poisoned on a living member (SRD 5.2.1 p. 61).
             if (patient.life.dead || !has_condition(patient, "poisoned"))
+            {
                 throw std::runtime_error("Lay On Hands cures only a Poisoned member");
+            }
             caster.lay_on_hands -= 5;
             std::erase_if(patient.effects.active,
                           [](const auto &e)
@@ -23165,7 +27477,9 @@ class Module final : public RulesModule
                           });
             user_state = vitals(caster);
             if (!self)
+            {
                 target_state = vitals(healed);
+            }
             return;
         }
         if (const auto *raise = detail::find_spell(action);
@@ -23174,7 +27488,9 @@ class Module final : public RulesModule
             if (self || !patient.life.dead ||
                 !detail::has_effect(patient.effects, detail::EffectKind::fallen) ||
                 detail::has_effect(patient.effects, detail::EffectKind::dust))
+            {
                 throw std::runtime_error("Revivify needs a member dead less than a minute");
+            }
             pay_for_spell(caster, action, *raise);
             std::erase_if(patient.effects.active,
                           [](const auto &e)
@@ -23196,7 +27512,9 @@ class Module final : public RulesModule
         {
             if (patient.life.dead ||
                 detail::has_effect(patient.effects, detail::EffectKind::simulacrum))
+            {
                 throw std::runtime_error("Simulacrum copies a living member that is no simulacrum");
+            }
             pay_for_spell(caster, action, *copy);
             user_state = vitals(caster);
             return;
@@ -23206,7 +27524,9 @@ class Module final : public RulesModule
         {
             if (!detail::has_effect(patient.effects, detail::EffectKind::simulacrum) ||
                 patient.life.dead || patient.life.hp >= max_hp(patient))
+            {
                 throw std::runtime_error("Only a damaged simulacrum can be repaired");
+            }
             patient.life.hp = max_hp(patient);
             target_state = vitals(healed);
             return;
@@ -23226,10 +27546,12 @@ class Module final : public RulesModule
                   detail::has_effect(patient.effects, detail::EffectKind::dust))) ||
                 (reincarnation &&
                  detail::has_effect(patient.effects, detail::EffectKind::simulacrum)))
+            {
                 throw std::runtime_error(resurrection ? "Resurrection needs a dead member"
                                          : reincarnation
                                              ? "Reincarnate needs a Humanoid dead up to ten days"
                                              : "Raise Dead needs a member dead up to ten days");
+            }
             pay_for_spell(caster, action, *raise);
             std::erase_if(patient.effects.active,
                           [](const auto &e)
@@ -23252,9 +27574,11 @@ class Module final : public RulesModule
             }
             // Camp effects carry scope 1: there is no encounter to source them.
             if (detail::can_apply(patient.effects))
+            {
                 detail::apply_spell_benefit(patient.effects,
                                             detail::EffectSource{.scope = 1, .actor = 1}, user.name,
                                             detail::EffectKind::returned, 4);
+            }
             user_state = vitals(caster);
             target_state = vitals(healed);
             return;
@@ -23265,7 +27589,9 @@ class Module final : public RulesModule
             if (patient.life.dead ||
                 detail::has_effect(patient.effects, detail::EffectKind::death_ward) ||
                 !detail::can_apply(patient.effects))
+            {
                 throw std::runtime_error("Death Ward needs a living member without it");
+            }
             pay_for_spell(caster, action, *ward);
             // Camp effects carry scope 1: there is no encounter to source them.
             detail::apply_spell_benefit(patient.effects,
@@ -23273,14 +27599,20 @@ class Module final : public RulesModule
                                         detail::EffectKind::death_ward, 0);
             user_state = vitals(caster);
             if (!self)
+            {
                 target_state = vitals(healed);
+            }
             return;
         }
         const int maximum = max_hp(patient);
         if (patient.life.dead || patient.life.hp >= maximum)
+        {
             throw std::runtime_error("Healing requires a wounded living member");
+        }
         if (detail::has_effect(patient.effects, detail::EffectKind::simulacrum))
+        {
             throw std::runtime_error("Only a repair restores a simulacrum's Hit Points");
+        }
         const bool can_heal = !detail::healing_blocked(patient.effects);
         if (const auto *regenerate = detail::find_spell(action);
             regenerate && regenerate->rider == detail::Rider::regenerate)
@@ -23290,7 +27622,9 @@ class Module final : public RulesModule
             (void)detail::heal_life(patient.life, maximum - patient.life.hp, maximum, can_heal);
             user_state = vitals(caster);
             if (!self)
+            {
                 target_state = vitals(healed);
+            }
             return;
         }
         auto rng = random_state.value;
@@ -23318,12 +27652,16 @@ class Module final : public RulesModule
             const int count = spell.dice.count + static_cast<int>(upcast_steps(action, spell) *
                                                                   spell.upcast.extra_dice);
             for (int n = 0; n < count; ++n)
+            {
                 amount += roll_die(rng, spell.dice.sides);
+            }
             (void)detail::heal_life(patient.life, std::max(0, amount), maximum, can_heal);
         }
         user_state = vitals(caster);
         if (!self)
+        {
             target_state = vitals(healed);
+        }
         random_state.value = rng;
     }
 
@@ -23342,7 +27680,9 @@ class Module final : public RulesModule
                                 std::string_view id) const override
     {
         if (!can_cast_exploration_spell(sheet, state, id))
+        {
             throw std::runtime_error("That spell cannot be cast now");
+        }
         auto caster = camp_actor(sheet, state);
         --caster.slots[detail::find_spell(id)->level >= 2 ? 2 : 1];
         state = vitals(caster);
@@ -23361,14 +27701,18 @@ class Module final : public RulesModule
                                  !detail::can_apply(a->effects);
                       });
         if (members.empty())
+        {
             throw std::runtime_error("No member can be helped by it now");
+        }
         std::stable_sort(members.begin(), members.end(),
                          [](const Actor *x, const Actor *y)
                          {
                              return max_hp(*x) < max_hp(*y);
                          });
         if (members.size() > 3)
+        {
             members.resize(3);
+        }
         for (auto *member : members)
         {
             // Camp effects carry scope 1: there is no encounter to source them.
@@ -23392,7 +27736,9 @@ class Module final : public RulesModule
                          {
                              return a.id == action && a.whole_party;
                          }))
+        {
             throw std::runtime_error("That spell or feature cannot be used now");
+        }
         auto caster = camp_actor(user, user_state);
         if (action.starts_with("magic_circle_"))
         {
@@ -23427,17 +27773,25 @@ class Module final : public RulesModule
         }
         std::vector<std::pair<Actor, VitalState *>> members;
         for (const auto &member : party)
+        {
             if (&member.state.get() != &user_state)
+            {
                 members.emplace_back(camp_actor(member.sheet, member.state), &member.state.get());
+            }
+        }
         std::vector<Actor *> chosen{&caster};
         for (auto &[actor, state] : members)
+        {
             chosen.push_back(&actor);
+        }
         if (std::none_of(party.begin(), party.end(),
                          [&](const auto &member)
                          {
                              return &member.state.get() == &user_state;
                          }))
+        {
             chosen.erase(chosen.begin());
+        }
         const auto &spell = *detail::find_spell(action);
         if (spell.id == "word_of_recall")
         {
@@ -23456,7 +27810,9 @@ class Module final : public RulesModule
                 std::find(detail::contingency_triggers.begin(), detail::contingency_triggers.end(),
                           rest.substr(split + 1));
             if (!stored || !contingent(*stored) || trigger == detail::contingency_triggers.end())
+            {
                 throw std::runtime_error("That contingency cannot be set");
+            }
             pay_for_spell(caster, cast_at(spell, lowest_slot(caster, 6), "contingency", "").first,
                           spell);
             pay_for_spell(
@@ -23471,11 +27827,13 @@ class Module final : public RulesModule
                           });
             // Camp effects carry scope 1: there is no encounter to source them.
             if (detail::can_apply(caster.effects))
+            {
                 detail::apply_spell_benefit(
                     caster.effects, detail::EffectSource{.scope = 1, .actor = 1}, user.name,
                     detail::EffectKind::contingency,
                     static_cast<int>(stored - detail::spell_table.data()) * 4 +
                         static_cast<int>(trigger - detail::contingency_triggers.begin()));
+            }
             user_state = vitals(caster);
             return;
         }
@@ -23490,9 +27848,11 @@ class Module final : public RulesModule
                           });
             // Camp effects carry scope 1: there is no encounter to source them.
             if (detail::can_apply(caster.effects))
+            {
                 detail::apply_spell_benefit(caster.effects,
                                             detail::EffectSource{.scope = 1, .actor = 1}, user.name,
                                             detail::EffectKind::sheltered, 0);
+            }
             user_state = vitals(caster);
             return;
         }
@@ -23507,7 +27867,9 @@ class Module final : public RulesModule
                               return a->life.dead || !detail::can_apply(a->effects);
                           });
             if (chosen.empty())
+            {
                 throw std::runtime_error("No member can partake of the feast now");
+            }
             pay_for_spell(caster, action, spell);
             auto rng = random_state.value;
             for (auto *member : chosen)
@@ -23528,7 +27890,9 @@ class Module final : public RulesModule
             }
             user_state = vitals(caster);
             for (auto &[actor, state] : members)
+            {
                 *state = vitals(actor);
+            }
             random_state.value = rng;
             return;
         }
@@ -23538,7 +27902,9 @@ class Module final : public RulesModule
             pay_for_spell(caster, action, spell);
             user_state = vitals(caster);
             for (auto &[actor, state] : members)
+            {
                 *state = vitals(actor);
+            }
             return;
         }
         std::erase_if(chosen,
@@ -23549,14 +27915,18 @@ class Module final : public RulesModule
                                                     detail::EffectKind::prayer_of_healing);
                       });
         if (chosen.empty())
+        {
             throw std::runtime_error("No member can be healed by it now");
+        }
         std::sort(chosen.begin(), chosen.end(),
                   [](const Actor *x, const Actor *y)
                   {
                       return x->life.hp * max_hp(*y) < y->life.hp * max_hp(*x);
                   });
         if (chosen.size() > 5)
+        {
             chosen.resize(5);
+        }
         pay_for_spell(caster, action, spell);
         auto rng = random_state.value;
         for (auto *patient : chosen)
@@ -23569,7 +27939,9 @@ class Module final : public RulesModule
             const int count = spell.dice.count + static_cast<int>(upcast_steps(action, spell) *
                                                                   spell.upcast.extra_dice);
             for (int n = 0; n < count; ++n)
+            {
                 amount += roll_die(rng, spell.dice.sides);
+            }
             (void)detail::heal_life(patient->life, std::max(0, amount), max_hp(*patient),
                                     !detail::healing_blocked(patient->effects));
             // Camp effects carry scope 1: there is no encounter to source them.
@@ -23579,7 +27951,9 @@ class Module final : public RulesModule
         }
         user_state = vitals(caster);
         for (auto &[actor, state] : members)
+        {
             *state = vitals(actor);
+        }
         random_state.value = rng;
     }
 
@@ -23605,13 +27979,21 @@ class Module final : public RulesModule
     EquipmentInfo equipment_info(std::string_view key) const override
     {
         if (detail::ammunition(key) || detail::thrown_gear(key))
+        {
             return {EquipmentSlot::carried, 0};
+        }
         if (const auto *item = detail::weapon(key))
+        {
             return {EquipmentSlot::weapon, item->hands};
+        }
         if (key == "shield")
+        {
             return {EquipmentSlot::shield, 1};
+        }
         if (detail::armor(key))
+        {
             return {EquipmentSlot::armor, 0};
+        }
         return {};
     }
 
@@ -23620,16 +28002,26 @@ class Module final : public RulesModule
                                                    unsigned selected) const override
     {
         if (selected >= candidates.size())
+        {
             throw std::runtime_error("Unknown equipment candidate");
+        }
         const auto *chosen = detail::weapon(candidates[selected]);
         if (!chosen || chosen->hands != 1)
+        {
             return {};
+        }
         std::vector<unsigned> held;
         for (unsigned i = 0; i < candidates.size(); ++i)
+        {
             if (i != selected && detail::weapon(candidates[i]))
+            {
                 held.push_back(i);
+            }
+        }
         if (held.empty())
+        {
             return {};
+        }
         std::vector<EquipmentChoice> result;
         for (unsigned n = 0; n < 2; ++n)
         {
@@ -23661,10 +28053,14 @@ class Module final : public RulesModule
                                      EquipmentOperation operation) const override
     {
         if (selected >= candidates.size())
+        {
             throw std::runtime_error("Unknown equipment candidate");
+        }
         const auto slot = equipment_info(candidates[selected]).slot;
         if (operation != EquipmentOperation::unequip && slot == EquipmentSlot::carried)
+        {
             throw std::runtime_error("This item is carried, not equipped");
+        }
         EquipmentChange result;
         const bool hand = operation == EquipmentOperation::equip_main ||
                           operation == EquipmentOperation::equip_other;
@@ -23672,39 +28068,61 @@ class Module final : public RulesModule
         {
             const auto *weapon = detail::weapon(candidates[selected]);
             if (!weapon || weapon->hands != 1)
+            {
                 throw std::runtime_error("Choose a one-handed weapon");
+            }
             std::vector<unsigned> held;
             for (unsigned i = 0; i < candidates.size(); ++i)
+            {
                 if (i != selected)
                 {
                     if (detail::weapon(candidates[i]))
+                    {
                         held.push_back(i);
+                    }
                     else
+                    {
                         result.indices.push_back(i);
+                    }
                 }
+            }
             if (held.empty() || held.size() > 2)
+            {
                 throw std::runtime_error("Invalid equipped hand selection");
+            }
             result.indices.push_back(operation == EquipmentOperation::equip_main ? selected
                                                                                  : held[0]);
             if (operation == EquipmentOperation::equip_other)
+            {
                 result.indices.push_back(selected);
+            }
             else if (held.size() > 1)
+            {
                 result.indices.push_back(held[1]);
+            }
             result.separate_selected_unit = true;
         }
         else
+        {
             for (unsigned i = 0; i < candidates.size(); ++i)
             {
                 if (operation == EquipmentOperation::unequip && i == selected)
+                {
                     continue;
+                }
                 if (operation == EquipmentOperation::equip && slot == EquipmentSlot::weapon &&
                     i != selected && equipment_info(candidates[i]).slot == EquipmentSlot::weapon)
+                {
                     continue;
+                }
                 result.indices.push_back(i);
             }
+        }
         std::vector<std::string> gear;
         for (auto i : result.indices)
+        {
             gear.push_back(candidates[i]);
+        }
         (void)character_profile(sheet, gear);
         return result;
     }
@@ -23736,7 +28154,9 @@ class Module final : public RulesModule
         // Reliable Talent: a proficient check's d20 counts as at least 10.
         if (detail::class_of(sheet) == CharacterClass::rogue && sheet.level >= 7 &&
             modifier.proficiency > 0)
+        {
             die = std::max(die, 10);
+        }
         random_state.value = rng;
         return {die, die + modifier.total};
     }
@@ -23745,10 +28165,14 @@ class Module final : public RulesModule
                                        std::span<const std::string> gear) const override
     {
         if (sheet.identity != detail::creation_rules().identity() || sheet.level < 1)
+        {
             throw std::runtime_error("Unsupported character rules identity or level");
+        }
         const auto klass = detail::class_of(sheet);
         if (static_cast<unsigned>(sheet.level) > detail::level_cap(klass))
+        {
             throw std::runtime_error("Unsupported character rules identity or level");
+        }
         (void)detail::training_profile(sheet.grants, klass, sheet.race,
                                        detail::background_id(sheet.background), sheet.level,
                                        sheet.scores);
@@ -23760,42 +28184,60 @@ class Module final : public RulesModule
                                     detail::background_id(sheet.background), sheet.level);
         const unsigned features = effects.feats;
         if (std::cmp_not_equal(sheet.hit_point_modifiers.size(), sheet.level))
+        {
             throw std::runtime_error("HP history does not match character advancement");
+        }
         // After the background's, one adjustment for each Ability Score
         // Improvement, in level order, together adding what the grants record.
         std::vector<unsigned> asi_levels;
         for (const auto &g : sheet.grants)
+        {
             if (g.id == "feat:ability_score_improvement")
+            {
                 asi_levels.push_back(g.level);
+            }
+        }
         std::sort(asi_levels.begin(), asi_levels.end());
         if (sheet.ability_adjustments.size() != 1 + asi_levels.size())
+        {
             throw std::runtime_error("Ability sources disagree with acquired grants");
+        }
         AbilityArray<int> raised{};
         for (std::size_t i = 0; i < asi_levels.size(); ++i)
         {
             const auto &adjustment = sheet.ability_adjustments[i + 1];
             if (adjustment.source_id != "feat:ability_score_improvement" ||
                 adjustment.level != asi_levels[i])
+            {
                 throw std::runtime_error("Ability sources disagree with acquired choices");
+            }
             for (const auto ability : all_abilities)
+            {
                 raised[ability] += adjustment.bonuses[ability];
+            }
         }
         if (raised != effects.abilities)
+        {
             throw std::runtime_error("Ability sources disagree with acquired choices");
+        }
         for (const auto ability : all_abilities)
         {
             const auto bonuses =
                 sheet.ability_adjustments.front().bonuses[ability] + effects.abilities[ability];
             if (sheet.bonuses[ability] != bonuses ||
                 sheet.scores[ability] != sheet.base[ability] + bonuses)
+            {
                 throw std::runtime_error("Ability totals disagree with acquired choices");
+            }
         }
         auto spells = detail::casting_ids(access);
         std::set<std::string> selected;
         const auto record = [&](std::string id)
         {
             if (!detail::knows_spell(spells, id))
+            {
                 spells.push_back(std::move(id));
+            }
         };
         // Preparable spells come from the eligibility table. Cantrips are
         // filtered out: they are known, never prepared.
@@ -23803,24 +28245,36 @@ class Module final : public RulesModule
         for (const auto &spell : sheet.prepared_spells)
         {
             if (!selected.insert(spell).second)
+            {
                 throw std::runtime_error("Duplicate prepared spell");
+            }
             if (!detail::knows_spell(preparable, spell) &&
                 !bard_secret(klass, static_cast<unsigned>(sheet.level), sheet.grants, spell))
+            {
                 throw std::runtime_error("Unsupported prepared spell");
+            }
             record(spell);
         }
         std::ostringstream out;
         out << profile_magic << ' ' << sheet.level << ' ' << features << ' ' << spells.size();
         for (const auto &id : spells)
+        {
             out << ' ' << id;
+        }
         out << ' ' << std::quoted(sheet.character_class) << ' ' << std::quoted(sheet.race);
         for (auto score : sheet.scores)
+        {
             out << ' ' << score;
+        }
         for (auto modifier : sheet.hit_point_modifiers)
+        {
             out << ' ' << modifier;
+        }
         out << ' ' << gear.size();
         for (const auto &item : gear)
+        {
             out << ' ' << std::quoted(item);
+        }
         out << ' ' << std::quoted(detail::background_id(sheet.background));
         detail::write_grants(out, sheet.grants);
         out << ' ' << std::quoted(sheet.alignment);
@@ -23829,7 +28283,9 @@ class Module final : public RulesModule
         const int proficiency = 2 + (static_cast<int>(sheet.level) - 1) / 4;
         const auto bonus = std::to_string(proficiency);
         if (d.hp != sheet.hit_points)
+        {
             throw std::runtime_error("Character HP does not match rules profile");
+        }
         CharacterProfile result{
             std::move(data),
             d.hp,
@@ -23841,9 +28297,11 @@ class Module final : public RulesModule
         result.weapon_hands = d.weapon_hands;
         unsigned hand_index = 0;
         for (const auto &key : gear)
+        {
             result.equipment_positions.push_back(
                 {detail::weapon(key) ? (hand_index++ ? "Other hand" : "Main hand") : "Equipped",
                  {}});
+        }
         if (d.versatile_sides)
         {
             const auto sides = d.weapon_hands == 2 ? d.versatile_sides : d.melee.sides;
@@ -23857,20 +28315,27 @@ class Module final : public RulesModule
         for (const auto &key : gear)
         {
             if (key == "shield")
+            {
                 result.item_modifiers += trained(klass, sheet.grants, key)
                                              ? "Source: equipped Shield: +2 AC.\n"
                                              : "Source: equipped Shield: +0 AC (untrained).\n";
+            }
             else if (key == "leather")
+            {
                 result.item_modifiers += "Source: equipped Leather armor and Dexterity score " +
                                          std::to_string(sheet.scores[Ability::dexterity]) +
                                          ". AC becomes 11 + Dexterity modifier (" +
                                          std::to_string(sheet.modifiers[Ability::dexterity]) +
                                          ").\n";
+            }
             else if (key == "chain_mail")
+            {
                 result.item_modifiers +=
                     "Source: equipped Chain mail. AC becomes 16; speed -10 feet below Strength 13 (current Strength " +
                     std::to_string(sheet.scores[Ability::strength]) + ").\n";
+            }
             else if (const auto *item = detail::armor(key))
+            {
                 result.item_modifiers +=
                     "Source: equipped " + std::string(item->label) + " (" +
                     std::string(detail::armor_category_label(item->category)) + "). Base AC " +
@@ -23881,10 +28346,14 @@ class Module final : public RulesModule
                     std::to_string(item->base_ac + item->dexterity_contribution(
                                                        sheet.modifiers[Ability::dexterity])) +
                     ".\n";
+            }
             else if (key == "wand")
+            {
                 result.item_modifiers +=
                     "Source: equipped Wand. Held focus; melee uses unarmed strike.\n";
+            }
             else if (const auto *item = detail::weapon(key); item && item->fixed_damage)
+            {
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + ". Attack uses " +
                     attack_ability(key) + " modifier" +
@@ -23892,69 +28361,97 @@ class Module final : public RulesModule
                                                        : std::string(" without proficiency")) +
                     "; damage is fixed at " + std::to_string(item->fixed_damage) +
                     " without an ability modifier.\n";
+            }
             else
+            {
                 result.item_modifiers +=
                     "Source: equipped " + weapon_label(key) + " and " + sheet.character_class +
                     " weapon proficiency. Weapon attack uses " + attack_ability(key) + " modifier" +
                     (trained(klass, sheet.grants, key) ? " +" + bonus + " class proficiency"
                                                        : std::string(" without proficiency")) +
                     "; damage adds that ability modifier.\n";
+            }
         }
         for (const auto &key : gear)
+        {
             result.item_modifiers +=
                 "Source: equipped " + weapon_label(key) + ". " + equipment_note(sheet, key) + "\n";
+        }
         if (features & 1)
+        {
             result.item_modifiers += "Defense feat: +1 AC while wearing armor.\n";
+        }
         if (features & 8)
+        {
             result.item_modifiers +=
                 "Great Weapon Fighting: eligible Melee weapon damage dice showing 1 or 2 count as 3 while held in two hands.\n";
+        }
         if (features & 32)
+        {
             result.item_modifiers +=
                 "Alert: add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn.\n";
+        }
         if (features & 2)
+        {
             result.item_modifiers +=
                 "Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically.\n";
+        }
         if (gear.empty())
+        {
             result.item_modifiers =
                 "No equipment modifiers. Source: unarmed strike rules and Strength score " +
                 std::to_string(sheet.scores[Ability::strength]) +
                 ". Attack uses Strength modifier +" + bonus +
                 " proficiency; damage is 1 + Strength modifier (minimum 0).";
+        }
         result.spell_modifiers = "Active conditions are shown in the character status.";
         if (klass == CharacterClass::wizard)
+        {
             result.spell_modifiers =
                 "Source: Fire Bolt and Wizard spellcasting, Intelligence score " +
                 std::to_string(sheet.scores[Ability::intelligence]) +
                 ". Attack: Intelligence modifier +" + bonus +
                 " proficiency = " + std::to_string(d.casting) +
                 ". Magic Missile has no ability modifier to damage.\n" + result.spell_modifiers;
+        }
         if (klass == CharacterClass::cleric)
+        {
             result.spell_modifiers = "Source: Cure Wounds and Cleric spellcasting, Wisdom score " +
                                      std::to_string(sheet.scores[Ability::wisdom]) +
                                      ". Healing: 2d8 + Wisdom modifier (" +
                                      std::to_string(d.casting - proficiency) + ").\n" +
                                      result.spell_modifiers;
+        }
         if (d.str_dex_disadvantage)
+        {
             result.spell_modifiers =
                 "Cannot cast spells while wearing untrained armor.\n" + result.spell_modifiers;
+        }
         // Language-independent presentation of the same computed rule results.
         for (const auto &key : gear)
         {
             if (key == "shield")
+            {
                 result.item_messages.push_back({trained(klass, sheet.grants, key)
                                                     ? "Source: equipped Shield: +2 AC."
                                                     : "Source: equipped Shield: +0 AC (untrained).",
                                                 {}});
+            }
             else if (key == "leather")
+            {
                 result.item_messages.push_back(
                     {"Source: equipped Leather armor and Dexterity score {score}. AC becomes 11 + Dexterity modifier ({modifier}).",
                      {{"score", std::to_string(sheet.scores[Ability::dexterity])},
                       {"modifier", std::to_string(sheet.modifiers[Ability::dexterity])}}});
+            }
             else if (key == "chain_mail")
+            {
                 result.item_messages.push_back(
                     {"Source: equipped Chain mail. AC becomes 16; speed -10 feet below Strength 13 (current Strength {score}).",
                      {{"score", std::to_string(sheet.scores[Ability::strength])}}});
+            }
             else if (const auto *item = detail::armor(key))
+            {
                 result.item_messages.push_back(
                     {"Source: equipped {item} ({category}). Base AC {base}; applied Dexterity modifier {dexterity}; armor AC {ac}.",
                      {{"item", std::string(item->label), true},
@@ -23965,10 +28462,14 @@ class Module final : public RulesModule
                       {"ac",
                        std::to_string(item->base_ac + item->dexterity_contribution(
                                                           sheet.modifiers[Ability::dexterity]))}}});
+            }
             else if (key == "wand")
+            {
                 result.item_messages.push_back(
                     {"Source: equipped Wand. Held focus; melee uses unarmed strike.", {}});
+            }
             else if (const auto *item = detail::weapon(key); item && item->fixed_damage)
+            {
                 result.item_messages.push_back(
                     {trained(klass, sheet.grants, key)
                          ? "Source: equipped {item}. Attack uses {ability} modifier +{bonus} class proficiency; damage is fixed at {damage} without an ability modifier."
@@ -23977,7 +28478,9 @@ class Module final : public RulesModule
                       {"ability", attack_ability(key), true},
                       {"bonus", bonus},
                       {"damage", std::to_string(item->fixed_damage)}}});
+            }
             else
+            {
                 result.item_messages.push_back(
                     {trained(klass, sheet.grants, key)
                          ? "Source: equipped {item} and {class} weapon proficiency. Weapon attack uses {ability} modifier +{bonus} class proficiency; damage adds that ability modifier."
@@ -23986,6 +28489,7 @@ class Module final : public RulesModule
                       {"class", sheet.character_class, true},
                       {"ability", attack_ability(key), true},
                       {"bonus", bonus}}});
+            }
             result.item_messages.push_back({equipment_note(sheet, key), {}});
             if (const auto *item = detail::armor(key))
             {
@@ -23995,12 +28499,18 @@ class Module final : public RulesModule
                     result.item_messages.push_back({std::move(text), {}});
                 };
                 if (item->category == detail::ArmorCategory::medium)
+                {
                     note(
                         "Medium armor limits the Dexterity modifier added to AC to +2; negative modifiers still apply.");
+                }
                 if (item->category == detail::ArmorCategory::heavy)
+                {
                     note("Heavy armor ignores the Dexterity modifier when calculating AC.");
+                }
                 if (item->stealth_disadvantage)
+                {
                     note("This armor imposes Disadvantage on Dexterity (Stealth) checks.");
+                }
                 if (item->strength && key != "chain_mail")
                 {
                     const bool penalty = sheet.scores[Ability::strength] < item->strength;
@@ -24039,37 +28549,53 @@ class Module final : public RulesModule
             }
         }
         if (features & 1)
+        {
             result.item_messages.push_back({"Defense feat: +1 AC while wearing armor.", {}});
+        }
         if (features & 8)
+        {
             result.item_messages.push_back(
                 {"Great Weapon Fighting: eligible Melee weapon damage dice showing 1 or 2 count as 3 while held in two hands.",
                  {}});
+        }
         if (features & 32)
+        {
             result.item_messages.push_back(
                 {"Alert: add proficiency to Initiative; optionally swap Initiative with an eligible ally before the first turn.",
                  {}});
+        }
         if (features & 2)
+        {
             result.item_messages.push_back(
                 {"Savage Attacker: once per turn on a weapon hit, weapon damage is rolled twice and the higher result is kept automatically.",
                  {}});
+        }
         if (gear.empty())
+        {
             result.item_messages.push_back(
                 {"No equipment modifiers. Source: unarmed strike rules and Strength score {score}. Attack uses Strength modifier +{bonus} proficiency; damage is 1 + Strength modifier (minimum 0).",
                  {{"score", std::to_string(sheet.scores[Ability::strength])}, {"bonus", bonus}}});
+        }
         if (d.str_dex_disadvantage)
+        {
             result.spell_messages.push_back(
                 {"Cannot cast spells while wearing untrained armor.", {}});
+        }
         if (klass == CharacterClass::wizard)
+        {
             result.spell_messages.push_back(
                 {"Source: Fire Bolt and Wizard spellcasting, Intelligence score {score}. Attack: Intelligence modifier +{bonus} proficiency = {attack}. Magic Missile has no ability modifier to damage.",
                  {{"score", std::to_string(sheet.scores[Ability::intelligence])},
                   {"bonus", bonus},
                   {"attack", std::to_string(d.casting)}}});
+        }
         if (klass == CharacterClass::cleric)
+        {
             result.spell_messages.push_back(
                 {"Source: Cure Wounds and Cleric spellcasting, Wisdom score {score}. Healing: 2d8 + Wisdom modifier ({modifier}).",
                  {{"score", std::to_string(sheet.scores[Ability::wisdom])},
                   {"modifier", std::to_string(d.casting - proficiency)}}});
+        }
         if (access.cantrip_choices)
         {
             for (const auto &spell : access.cantrips)
@@ -24192,10 +28718,16 @@ class Module final : public RulesModule
     {
         std::vector<TrainingChoiceGroup> groups;
         for (const auto acquired : detail::mastery_levels)
+        {
             if (acquired > 1 && acquired <= static_cast<unsigned>(sheet.level))
+            {
                 if (auto group = detail::mastery_options(klass, acquired, sheet.grants);
                     group.count)
+                {
                     groups.push_back(std::move(group));
+                }
+            }
+        }
         return groups;
     }
 
@@ -24206,16 +28738,26 @@ class Module final : public RulesModule
         const auto klass = detail::class_of(sheet);
         auto group = detail::mastery_options(klass, 1);
         if (!group.count)
+        {
             return {};
+        }
         for (const auto acquired : detail::mastery_levels)
+        {
             if (acquired > 1 && acquired <= static_cast<unsigned>(sheet.level))
+            {
                 group.count += detail::mastery_options(klass, acquired).count;
+            }
+        }
         const auto choices = detail::mastery_choices(sheet.grants, klass, sheet.level);
         std::vector<std::string> selected;
         for (const auto &[source, values] : choices)
+        {
             selected.insert(selected.end(), values.begin(), values.end());
+        }
         if (selected.size() != group.count)
+        {
             return {}; // Nothing to replace until every mastery is chosen.
+        }
         group.id = "weapon_mastery";
         return TrainingReplacementOptions{std::move(group), std::move(selected),
                                           detail::mastery_replacements(klass)};
@@ -24242,7 +28784,9 @@ class Module final : public RulesModule
                              return g.source_id == group.id && g.id.starts_with(prefix);
                          });
         if (made == sheet.grants.end())
+        {
             return {};
+        }
         std::vector<std::string> selected{made->id.substr(prefix.size())};
         return TrainingReplacementOptions{std::move(group), std::move(selected), 1};
     }
@@ -24251,11 +28795,17 @@ class Module final : public RulesModule
                                         const std::vector<std::string> &picks)
     {
         if (picks.size() != 1)
+        {
             throw std::runtime_error("Choose one option");
+        }
         const auto prefix = subclass_choice_prefix(group);
         for (auto &g : sheet.grants)
+        {
             if (g.source_id == group && g.id.starts_with(prefix))
+            {
                 g.id = std::string(prefix) + picks.front();
+            }
+        }
     }
 };
 } // namespace
@@ -24263,20 +28813,28 @@ class Module final : public RulesModule
 std::unique_ptr<RulesModule> load(const std::filesystem::path &file)
 {
     if (std::filesystem::file_size(file) > 65536)
+    {
         throw std::runtime_error("Rules content exceeds size limit");
+    }
     std::ifstream input(file, std::ios::binary);
     if (!input)
+    {
         throw std::runtime_error("Cannot open rules content: " + file.string());
+    }
     std::string bytes{std::istreambuf_iterator<char>(input), {}};
     if (bytes.size() > 65536 || input.bad())
+    {
         throw std::runtime_error("Invalid rules content size/read");
+    }
     return parse_content(bytes);
 }
 
 std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
 {
     if (content_bytes.size() > 65536)
+    {
         throw std::runtime_error("Rules content exceeds size limit");
+    }
     std::string bytes(content_bytes);
     // Git may translate line endings; identical content must keep its identity.
     bytes.erase(std::remove(bytes.begin(), bytes.end(), '\r'), bytes.end());
@@ -24293,10 +28851,14 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     std::istringstream header(line);
     header >> magic >> version >> revision;
     if (!header || magic != "OPENGOLD_SRD5" || version != 1)
+    {
         throw std::runtime_error("Unsupported rules content format");
+    }
     header >> std::ws;
     if (!header.eof() || revision.empty() || revision.size() > 80)
+    {
         throw std::runtime_error("Invalid rules content header");
+    }
     Content content;
     content.identity = {"opengold.srd5", "0.6.240", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
@@ -24304,7 +28866,9 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     while (std::getline(lines, line))
     {
         if (line.empty() || line[0] == '#' || line == "\r")
+        {
             continue;
+        }
         std::istringstream row(line);
         std::string tag, key;
         Definition d;
@@ -24313,14 +28877,18 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end())
+            {
                 throw std::runtime_error("Unknown damage profile: " + key);
+            }
             auto &definition = found->second;
             std::string first, second;
             row >> first >> second;
             if (tag == "damage_types")
             {
                 if (!damage_rows.insert(key).second)
+                {
                     throw std::runtime_error("Duplicate damage type row");
+                }
                 definition.melee_type = detail::damage_type(first);
                 definition.ranged_type = detail::damage_type(second);
             }
@@ -24334,26 +28902,42 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                                 {
                                     return a.source_id == first;
                                 }))
+                {
                     throw std::runtime_error("Invalid damage affinity source");
+                }
                 detail::DamageAffinity affinity;
                 affinity.source_id = first;
                 if (second == "resistance")
+                {
                     affinity.kind = detail::AffinityKind::resistance;
+                }
                 else if (second == "vulnerability")
+                {
                     affinity.kind = detail::AffinityKind::vulnerability;
+                }
                 else if (second == "immunity")
+                {
                     affinity.kind = detail::AffinityKind::immunity;
+                }
                 else
+                {
                     throw std::runtime_error("Unknown damage affinity");
+                }
                 if (type != "all")
+                {
                     affinity.type = detail::damage_type(type);
+                }
                 definition.affinities.push_back(std::move(affinity));
             }
             if (!row)
+            {
                 throw std::runtime_error("Truncated damage profile");
+            }
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown damage profile fields");
+            }
             continue;
         }
         if (tag == "size")
@@ -24365,11 +28949,15 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             const auto found = std::find(names.begin(), names.end(), size);
             if (!row || !content.definitions.contains(key) || found == names.end() ||
                 !size_rows.insert(key).second)
+            {
                 throw std::runtime_error("Invalid creature size");
+            }
             content.definitions.at(key).size = static_cast<int>(found - names.begin());
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown creature size fields");
+            }
             continue;
         }
         if (tag == "type")
@@ -24383,11 +28971,15 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             if (!row || !content.definitions.contains(key) ||
                 std::find(types.begin(), types.end(), type) == types.end() ||
                 !type_rows.insert(key).second)
+            {
                 throw std::runtime_error("Invalid creature type");
+            }
             content.definitions.at(key).creature_type = type;
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown creature type fields");
+            }
             continue;
         }
         // "equipment <creature> metal_armor <source record> <armor>": the source
@@ -24399,11 +28991,15 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             const auto found = content.definitions.find(key);
             if (!row || found == content.definitions.end() || fact != "metal_armor" ||
                 !equipment_rows.insert(key).second)
+            {
                 throw std::runtime_error("Invalid creature equipment: " + key);
+            }
             found->second.metal_armor = true;
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown creature equipment fields: " + key);
+            }
             continue;
         }
         // regeneration: Hit Points the creature regains at the start of each turn.
@@ -24414,11 +29010,15 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> value;
             if (!row || found == content.definitions.end() || value <= 0 || value > 50 ||
                 !trait_rows.insert(tag + " " + key).second)
+            {
                 throw std::runtime_error("Invalid regeneration: " + key);
+            }
             found->second.regeneration = value;
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown regeneration fields: " + key);
+            }
             continue;
         }
         // ranged_extra_damage or melee_extra_damage creature count sides type:
@@ -24434,13 +29034,17 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 !(ranged ? found->second.ranged.count : found->second.melee.count) ||
                 extra.count < 1 || extra.count > 10 || extra.sides < 2 || extra.sides > 20 ||
                 !trait_rows.insert(tag + " " + key).second)
+            {
                 throw std::runtime_error("Invalid extra damage: " + key);
+            }
             (ranged ? found->second.ranged_extra : found->second.melee_extra) = extra;
             (ranged ? found->second.ranged_extra_type : found->second.melee_extra_type) =
                 detail::damage_type(type);
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown ranged extra damage fields: " + key);
+            }
             continue;
         }
         if (tag == "perception")
@@ -24450,11 +29054,15 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> bonus;
             if (!row || found == content.definitions.end() || bonus < -5 || bonus > 20 ||
                 !trait_rows.insert(tag + " " + key).second)
+            {
                 throw std::runtime_error("Invalid Perception: " + key);
+            }
             found->second.perception = bonus;
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown Perception fields: " + key);
+            }
             continue;
         }
         if (tag == "multiattack")
@@ -24464,11 +29072,15 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             row >> attacks;
             if (!row || found == content.definitions.end() || attacks < 2 || attacks > 4 ||
                 !trait_rows.insert(tag + " " + key).second)
+            {
                 throw std::runtime_error("Invalid Multiattack: " + key);
+            }
             found->second.multiattack = attacks;
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown Multiattack fields: " + key);
+            }
             continue;
         }
         if (tag == "pack_tactics" || tag == "aggressive" || tag == "advantage_damage" ||
@@ -24476,25 +29088,37 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         {
             const auto found = content.definitions.find(key);
             if (found == content.definitions.end() || !trait_rows.insert(tag + " " + key).second)
+            {
                 throw std::runtime_error("Invalid creature trait: " + key);
+            }
             auto &definition = found->second;
             if (tag == "pack_tactics")
+            {
                 definition.pack_tactics = true;
+            }
             else if (tag == "aggressive")
+            {
                 definition.aggressive = true;
+            }
             else if (tag == "undead_fortitude")
+            {
                 definition.undead_fortitude = true;
+            }
             else
             {
                 auto &extra = definition.advantage_damage;
                 row >> extra.count >> extra.sides;
                 if (!row || extra.count < 1 || extra.count > 10 || extra.sides < 2 ||
                     extra.sides > 20)
+                {
                     throw std::runtime_error("Invalid Advantage damage: " + key);
+                }
             }
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown creature trait fields: " + key);
+            }
             continue;
         }
         if (tag == "saves" || tag == "spellcasting")
@@ -24502,18 +29126,24 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             const auto found = content.definitions.find(key);
             auto &seen = tag == "saves" ? save_rows : casting_rows;
             if (found == content.definitions.end() || !seen.insert(key).second)
+            {
                 throw std::runtime_error("Invalid supplemental creature definition: " + key);
+            }
             auto &definition = found->second;
             if (tag == "saves")
             {
                 for (auto &bonus : definition.saves)
+                {
                     row >> bonus;
+                }
                 if (std::any_of(definition.saves.begin(), definition.saves.end(),
                                 [](int n)
                                 {
                                     return n < -10 || n > 30;
                                 }))
+                {
                     throw std::runtime_error("Invalid saving throw bonus");
+                }
             }
             else
             {
@@ -24525,18 +29155,26 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
                 row >> definition.slots[2] >> casting_spells;
                 if (definition.level < 3 || definition.slots[2] < 0 || definition.slots[2] > 20 ||
                     casting_spells < 0 || casting_spells > 63)
+                {
                     throw std::runtime_error("Invalid supplemental spellcasting");
+                }
                 definition.spells = detail::spells_from_mask(static_cast<unsigned>(casting_spells));
                 definition.known_cantrips = detail::spells_of_level(definition.spells, true);
                 if (detail::mask_from_spells(definition.spells) !=
                     static_cast<unsigned>(casting_spells))
+                {
                     throw std::runtime_error("Invalid supplemental spellcasting");
+                }
             }
             if (!row)
+            {
                 throw std::runtime_error("Truncated supplemental creature definition");
+            }
             row >> std::ws;
             if (!row.eof())
+            {
                 throw std::runtime_error("Unknown supplemental creature fields");
+            }
             continue;
         }
         int creature_spells{};
@@ -24560,23 +29198,35 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
             d.slots[1] > 20 || d.level < 1 || d.level > 4 || creature_spells < 0 ||
             creature_spells > 7 || d.melee_bonus < -10 || d.melee_bonus > 30 || d.casting < -10 ||
             d.casting > 30 || d.melee.bonus < -10 || d.melee.bonus > 30)
+        {
             throw std::runtime_error("Invalid or unsupported creature definition: " + key);
+        }
         d.spells = detail::spells_from_mask(static_cast<unsigned>(creature_spells));
         d.known_cantrips = detail::spells_of_level(d.spells, true);
         if (detail::mask_from_spells(d.spells) != static_cast<unsigned>(creature_spells))
+        {
             throw std::runtime_error("Invalid or unsupported creature definition: " + key);
+        }
         row >> std::ws;
         if (!row.eof())
+        {
             throw std::runtime_error("Unknown creature fields: " + key);
+        }
         content.definitions.emplace(std::move(key), std::move(d));
     }
     if (content.definitions.empty())
+    {
         throw std::runtime_error("Empty rules content");
+    }
     // A creature without the Perception skill uses its Wisdom save, which is
     // its Wisdom modifier unless it is proficient.
     for (auto &[key, definition] : content.definitions)
+    {
         if (!trait_rows.contains("perception " + key))
+        {
             definition.perception = definition.saves[4];
+        }
+    }
     return std::make_unique<Module>(std::move(content));
 }
 } // namespace opengold::srd5

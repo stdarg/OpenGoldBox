@@ -29,7 +29,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -57,7 +59,9 @@ CharacterDraft draft()
     d.name = "Druid";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[4] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:druid", {"nature", "medicine"}},
                   {"class:druid:primal_order", {"warden"}}};
@@ -81,12 +85,18 @@ Character druid(unsigned level, const std::string &spell = {}, std::string fury 
     {
         auto choice = rules->default_advancement(hero.sheet());
         if (hero.sheet().level + 1 == 3)
+        {
             choice.training["subclass:druid:land"] = {"arid"};
+        }
         if (hero.sheet().level + 1 == 7)
+        {
             choice.training["class:druid:elemental_fury"] = {fury};
+        }
         if (!spell.empty() && hero.sheet().level + 1 == static_cast<int>(level) &&
             std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+        {
             choice.spells.back() = spell;
+        }
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
     return hero;
@@ -118,16 +128,24 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
 bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -144,15 +162,21 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 void to_turn(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
     check(c.snapshot().actor == id, "Reach the turn");
 }
 
@@ -190,13 +214,17 @@ void progression_checks()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto sheet = party.member(id).character.sheet();
     check(sheet.level == 15, "A Druid reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{
              {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}})
+    {
         check(rules->spell_access(druid(level).sheet()).prepared_choices == count,
               "Prepared spells: 9 at 5 to 15 at 10");
+    }
     check(granted(sheet, "feature:wild_resurgence") && granted(sheet, "feature:natural_recovery") &&
               granted(sheet, "feature:natures_ward") &&
               std::any_of(sheet.grants.begin(), sheet.grants.end(),
@@ -384,13 +412,21 @@ void reincarnate_checks()
           {98, "brute", "Foe", Side::opposition, {2, 2}}}},
         1);
     for (unsigned turns = 0; turns < 40 && !unit(*c, 5).dead; ++turns)
+    {
         if (!(c->snapshot().actor == 98 && submit(*c, "melee", 5)))
+        {
             check(submit(*c, "end") || submit(*c, "decline"), "Pass the turn");
+        }
+    }
     check(unit(*c, 5).dead, "The brute kills the Fallen");
     auto state = party.state();
     for (auto &m : state.roster)
+    {
         if (m.id == fallen)
+        {
             m.vitals = unit(*c, 5).persistent;
+        }
+    }
     coins(state.wealth, Coin::gold) = 1000;
     party.restore(std::move(state));
     check_throws(
@@ -413,8 +449,10 @@ void reincarnate_checks()
     {
         check(group.id.starts_with("feat:magic_initiate_cleric:"), "Only Magic Initiate's spells");
         for (unsigned n = 0; n < group.count; ++n)
+        {
             human.spell_choice(
                 {.group = group.id, .option = group.options[n].id, .selected = true});
+        }
     }
     human.next();
     check(human.step() == CreationStep::combat_icon, "Then the combat icon");
@@ -427,7 +465,9 @@ void reincarnate_checks()
     CharacterCreator pages(srd5::character_rules(), party.rule_module(),
                            party.member(fallen).character, species);
     while (pages.step() != CreationStep::sheet)
+    {
         pages.next();
+    }
     party.reincarnate(*srd5::character_rules(), healer, fallen, "reincarnate",
                       pages.reincarnation_choices(), pages.appearance());
     const auto &body = party.member(fallen);

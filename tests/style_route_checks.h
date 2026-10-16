@@ -9,7 +9,9 @@ Character starter(std::string klass, std::string style = "defense")
     auto d = draft(klass, "soldier");
     choose_first_options(d);
     if (klass == "fighter")
+    {
         d.training["class:fighter:fighting_style"] = {style};
+    }
     return hero(d);
 }
 
@@ -21,7 +23,9 @@ Character leveled(const RulesModule &rules, std::string klass, std::string style
     {
         auto choice = rules.default_advancement(h.sheet());
         if (klass != "fighter" && n == 2)
+        {
             choice.fighting_style = style;
+        }
         check(h.advance(rules, v, choice), "Ordinary style-source advancement");
         check(v.hit_points == h.sheet().hit_points - 2, "Style advancement preserves wounds");
     }
@@ -38,7 +42,9 @@ auto combat(const RulesModule &r, const Character &h, std::vector<std::string> g
                    {99, "target", "Target", Side::opposition, ranged ? Cell{5, 1} : Cell{2, 1}}}},
                  seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -56,7 +62,9 @@ std::uint64_t random_state(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (int i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t rng{};
     in >> rng;
     return rng;
@@ -67,6 +75,7 @@ void run()
     auto rules = rogue_attack_checks::rules_module();
     const auto creation = srd5::character_rules();
     for (const auto *klass : {"fighter", "paladin", "ranger"})
+    {
         for (const auto *style : {"archery", "defense", "great_weapon_fighting"})
         {
             for (unsigned level = 1; level <= 4; ++level)
@@ -85,9 +94,15 @@ void run()
                     rules->character_profile(h.sheet(), std::array<std::string, 1>{"breastplate"});
                 auto no_style = h.sheet();
                 if (entitled)
+                {
                     for (auto &g : no_style.grants)
+                    {
                         if (g.source_id == source)
+                        {
                             g.id = "feat:great_weapon_fighting";
+                        }
+                    }
+                }
                 check(armor.armor_class ==
                           rules->character_profile(no_style,
                                                    std::array<std::string, 1>{"breastplate"})
@@ -103,8 +118,11 @@ void run()
                 act(*c, "ranged");
                 bool attack = false;
                 for (const auto &m : c->snapshot().log_messages())
+                {
                     if (m.source.starts_with("{actor} -> {target}: d20"))
+                    {
                         for (const auto &a : m.arguments)
+                        {
                             if (a.name == "bonus")
                             {
                                 check(std::stoi(a.value) ==
@@ -115,6 +133,9 @@ void run()
                                       "Archery is sourced at every attained level");
                                 attack = true;
                             }
+                        }
+                    }
+                }
                 check(attack, "Actual ranged attack checked");
                 check(rules->restore(c->save())->save() == c->save(),
                       "Style combat continuation exact");
@@ -133,6 +154,7 @@ void run()
                 }
             }
         }
+    }
 
     // Exact die oracle covers all eligible two-hand shapes, grip changes, criticals and Savage.
     struct Weapon
@@ -151,6 +173,7 @@ void run()
         Weapon{"dagger", 1, 4, false, false},    Weapon{"shortbow", 1, 6, false, false, true},
         Weapon{"dart", 1, 4, false, false, true}};
     for (const auto *klass : {"fighter", "paladin", "ranger"})
+    {
         for (unsigned level = std::string_view(klass) == "fighter" ? 1 : 2; level <= 4; ++level)
         {
             auto h = leveled(*rules, klass, "great_weapon_fighting", level);
@@ -161,7 +184,9 @@ void run()
                 {
                     std::vector<std::string> gear{w.id};
                     if (w.shield)
+                    {
                         gear.emplace_back("shield");
+                    }
                     auto c = combat(*rules, h, gear, seed, w.ranged);
                     auto rng = random_state(*c);
                     const int natural = die(rng, 20);
@@ -196,10 +221,12 @@ void run()
                                         std::to_string(std::max(first, second)) + ".";
                     if (!test::logged(*c, savage) ||
                         (rogue_attack_checks::last_hit(*c) == "CRITICAL") != critical)
+                    {
                         std::cerr << klass << " level=" << level << " weapon=" << w.id
                                   << " seed=" << seed << " natural=" << natural
                                   << " expected=" << savage << " log=" << c->snapshot().log().back()
                                   << "\n";
+                    }
                     check(test::logged(*c, savage) &&
                               (rogue_attack_checks::last_hit(*c) == "CRITICAL") == critical,
                           "Both GWF rolls match independent dice without extra RNG");
@@ -216,6 +243,7 @@ void run()
                 check(critical_seen, "Actual critical GWF roll exercised");
             }
         }
+    }
     for (const auto *klass : {"fighter", "paladin", "ranger"})
     {
         auto h = leveled(*rules, klass, "great_weapon_fighting",
@@ -227,11 +255,17 @@ void run()
             {
                 auto c = combat(*rules, h, {"greatsword"}, seed);
                 while (c->snapshot().actor != 99)
+                {
                     act(*c, "end");
+                }
                 Command move;
                 for (const auto &cmd : c->legal_commands())
+                {
                     if (cmd.verb == "move" && cmd.destination == Cell{3, 1})
+                    {
                         move = cmd;
+                    }
+                }
                 check(move.actor == 99 && c->submit(move) && c->snapshot().reaction_pending,
                       "Movement provokes actual style reaction");
                 auto rng = random_state(*c);
@@ -241,7 +275,9 @@ void run()
                 {
                     int expected = h.sheet().modifiers[Ability::strength];
                     for (int i = 0; i < (natural == 20 ? 4 : 2); ++i)
+                    {
                         expected += std::max(3, die(rng, 6));
+                    }
                     check(test::logged(*c,
                                        "(Savage Attacker): " + std::to_string(expected) + " and "),
                           "GWF applies once to actual opportunity damage");
@@ -263,7 +299,9 @@ void run()
                 actors.push_back({99, "target", "Target", Side::opposition, {4, 1}});
                 auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
                 while (c->snapshot().actor != 1)
+                {
                     act(*c, "end");
+                }
                 auto rng = random_state(*c);
                 const auto natural = die(rng, 20);
                 act(*c, "throw");
@@ -271,7 +309,9 @@ void run()
                 {
                     int expected = h.sheet().modifiers[Ability::strength];
                     for (int i = 0; i < (natural == 20 ? 2 : 1); ++i)
+                    {
                         expected += die(rng, 6);
+                    }
                     check(
                         test::logged(*c,
                                      "(Savage Attacker): " + std::to_string(expected) + " and "),
@@ -285,6 +325,7 @@ void run()
         check(reacted && threw, "Every source class exercises reaction and thrown exclusion");
     }
     for (const auto *klass : {"fighter", "paladin", "ranger"})
+    {
         for (const auto *feat : {"defense", "great_weapon_fighting"})
         {
             auto h = leveled(*rules, klass, "archery", 3);
@@ -313,6 +354,7 @@ void run()
                               }),
                   "Style feat has its actual independent acquisition source");
         }
+    }
     // Replacement frees only the class entitlement, even alongside the level-four feat.
     {
         auto h = leveled(*rules, "fighter", "defense", 3);
@@ -332,7 +374,9 @@ void run()
               "No duplicate Defense effect");
     }
     for (const auto *klass : {"fighter", "paladin", "ranger"})
+    {
         for (bool npc : {false, true})
+        {
             for (const auto *style : {"archery", "defense", "great_weapon_fighting"})
             {
                 CampaignParty p(rogue_attack_checks::rules_module());
@@ -346,20 +390,26 @@ void run()
                 {
                     auto choice = p.default_advancement(id);
                     if (level == 2)
+                    {
                         choice.fighting_style = std::string_view(klass) == "fighter" &&
                                                         std::string_view(style) == "defense"
                                                     ? "archery"
                                                     : style;
+                    }
                     p.advance(id, choice);
                     auto actors = p.participants();
                     actors.front().cell = {1, 1};
                     actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
                     auto fight = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
                     while (fight->snapshot().actor != id)
+                    {
                         act(*fight, "end");
+                    }
                     act(*fight, "melee");
                     if (fight->snapshot().free_movement)
+                    {
                         act(*fight, "end");
+                    }
                     p.begin_combat();
                     p.apply_combat(fight->snapshot());
                     p.end_combat();
@@ -382,10 +432,14 @@ void run()
                     const auto ticket = restored.state().training_rest->ticket;
                     const auto members = restored.state().training_rest->members;
                     for (const auto member : members)
+                    {
                         restored.keep_rest_training(ticket, member);
+                    }
                 }
                 check(bool(restored.rest(RestKind::long_rest)), "Style character Long Rest");
             }
+        }
+    }
 
     for (const auto *klass : {"paladin", "ranger"})
     {
@@ -403,6 +457,7 @@ void run()
             });
     }
     if (const auto *directory = std::getenv("OPENGOLD_GAME_DIR"); directory && *directory)
+    {
         for (const auto *klass : {"fighter", "paladin", "ranger"})
         {
             CampaignParty ui(module());
@@ -415,6 +470,7 @@ void run()
                                     (std::string("style-") + klass + "-ui.ogs"),
                                 encode_campaign(ui, nullptr, campaign_asset_identity(directory)));
         }
+    }
 }
 
 void verify_ui(const char *klass, const char *file, bool light = false)
@@ -434,9 +490,13 @@ void verify_ui(const char *klass, const char *file, bool light = false)
     {
         auto choice = expected.default_advancement(1);
         if (level == 2)
+        {
             choice.fighting_style = light ? "two_weapon_fighting" : "great_weapon_fighting";
+        }
         if (std::string_view(klass) == "fighter" && level == 3)
+        {
             choice.fighting_style = "archery";
+        }
         if (std::string_view(klass) == "fighter" && level == 4)
         {
             choice.fighting_style = light ? "two_weapon_fighting" : "defense";

@@ -114,11 +114,17 @@ Character create(const Member &member, std::uint64_t seed)
                          return rolls[a].total() > rolls[b].total();
                      });
     for (unsigned i = 0; i < 6; ++i)
+    {
         creator.assign_roll(best[i], member.priority[i]);
+    }
     for (const auto *spell : member.cantrips)
+    {
         creator.cantrip_choice(spell, true);
+    }
     for (const auto *spell : member.prepared)
+    {
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
+    }
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }
 
@@ -132,17 +138,25 @@ std::shared_ptr<CampaignParty> party_of(bool mixed, unsigned level)
         auto person = create(member, seed++);
         std::vector<std::uint64_t> items;
         for (const auto *key : member.gear)
+        {
             items.push_back(person.add_item({.definition_id = key, .name = key}));
+        }
         const auto id = party->add_pc(std::move(person));
         for (const auto item : items)
+        {
             party->equip(id, item);
+        }
     }
     if (level == 2)
     {
         party->award_experience(300, "balance:level-two");
         for (const auto id : party->state().slots)
+        {
             if (id)
+            {
                 party->advance(id, party->default_advancement(id));
+            }
+        }
     }
     return party;
 }
@@ -182,9 +196,13 @@ std::vector<Group> encounter(unsigned record, unsigned strength, bool rope_guild
     const unsigned leader_threshold = record == 4 ? 14 : 8;
     const unsigned xp = record == 0 ? 25 : record == 2 ? 50 : 100;
     if (scaled >= leader_threshold)
+    {
         groups.push_back({definition(record + 1), record < 1 ? 3u : 4u, xp});
+    }
     if (scaled > 18)
+    {
         groups.push_back({definition(63), 1, 200});
+    }
     groups.push_back({definition(record), scaled, xp});
     return groups;
 }
@@ -196,12 +214,16 @@ std::vector<Group> fitted(std::vector<Group> groups, unsigned level, unsigned me
 {
     std::vector<EncounterGroup> sizes;
     for (const auto &group : groups)
+    {
         sizes.push_back({group.xp, group.count});
+    }
     const std::vector<unsigned> levels(members, level);
     const auto counts =
         fit_encounter_to_budget(sizes, encounter_xp_budget(levels, challenge), members);
     for (std::size_t n = 0; n < groups.size(); ++n)
+    {
         groups[n].count = counts[n];
+    }
     return groups;
 }
 
@@ -229,12 +251,16 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         fight.field = por::dungeon_battlefield(map, cell.x, cell.y);
         rules::EntityId next = 1000;
         for (const auto &group : groups)
+        {
             for (unsigned n = 0; n < group.count; ++n, ++next)
+            {
                 fight.enemies.push_back({next,
                                          group.definition,
                                          group.definition + " " + std::to_string(next),
                                          rules::Side::opposition,
                                          {}});
+            }
+        }
         CombatDemo combat(module());
         combat.campaign_party(party);
         combat.encounter(fight, seed);
@@ -243,15 +269,20 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
         {
             const auto state = combat.combat().snapshot();
             if (state.outcome != rules::Outcome::ongoing)
+            {
                 break;
+            }
             if (!combat.submit(choose_demo_command(state, combat.combat().legal_commands())))
+            {
                 throw std::runtime_error("Combat refused the demo command");
+            }
         }
         const auto result = combat.combat().snapshot();
         ++tally.fights;
         tally.wins += result.outcome == rules::Outcome::victory;
         int hp = 0, max_hp = 0;
         for (const auto &unit : result.combatants)
+        {
             if (unit.side == rules::Side::party)
             {
                 tally.deaths += unit.dead;
@@ -259,6 +290,7 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
                 hp += unit.hit_points;
                 max_hp += unit.max_hit_points;
             }
+        }
         tally.hp_left += static_cast<double>(hp) / max_hp;
     }
     return tally;
@@ -276,14 +308,19 @@ int main(int argc, char **argv)
         }
         const unsigned seeds = argc > 2 ? static_cast<unsigned>(std::stoul(argv[2])) : 40;
         if (argc > 3)
+        {
             content_pack = argv[3];
+        }
         const auto maps = MapCatalog::load(argv[1]);
         const auto slums = maps.find({"GEO2.DAX", 20});
         if (!slums)
+        {
             throw std::runtime_error("Missing GEO2:20");
+        }
         std::printf("level party    context  monsters challenge strength  enemies"
                     "                              win%%  deaths down  hp_left%%\n");
         for (const unsigned level : {1u, 2u})
+        {
             for (const bool mixed : {false, true})
             {
                 const unsigned members = 6;
@@ -291,14 +328,18 @@ int main(int argc, char **argv)
                 const auto start = party->checkpoint();
                 const unsigned strength = por::party_strength(*party);
                 for (const bool rope_guild : {false, true})
+                {
                     for (const unsigned record : {0u, 2u, 4u})
+                    {
                         for (const unsigned challenge : {25u, 33u, 50u, 67u, 100u})
                         {
                             const auto groups = fitted(encounter(record, strength, rope_guild),
                                                        level, members, challenge);
                             std::string mix;
                             for (const auto &g : groups)
+                            {
                                 mix += std::to_string(g.count) + " " + g.definition.substr(6) + " ";
+                            }
                             // Where the route met each kind of fight.
                             const Place cell = rope_guild ? Place{6, 14} : Place{14, 7};
                             const auto t = play(start, groups, slums->get(), cell, seeds);
@@ -312,7 +353,10 @@ int main(int argc, char **argv)
                                         100.0 * t.hp_left / t.fights);
                             std::fflush(stdout);
                         }
+                    }
+                }
             }
+        }
         return 0;
     }
     catch (const std::exception &e)

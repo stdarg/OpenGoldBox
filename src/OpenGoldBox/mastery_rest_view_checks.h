@@ -12,7 +12,9 @@ void RolfTourView::check_mastery_rest_controls()
         const auto check = [](bool ok, const char *message)
         {
             if (!ok)
+            {
                 throw std::runtime_error(message);
+            }
         };
         auto *w = &presentation::required_node<Window>(*this, "RestTraining");
         if (rest_check_stage_ == 0)
@@ -41,9 +43,13 @@ void RolfTourView::check_mastery_rest_controls()
                                                       });
                     auto &selected = draft.training[group.id];
                     for (const auto &o : group.options)
+                    {
                         if (selected.size() < group.count &&
                             std::find(selected.begin(), selected.end(), o.id) == selected.end())
+                        {
                             selected.push_back(o.id);
+                        }
+                    }
                 }
                 // Wizards, Paladins and Rangers choose spells at creation, and a
                 // Long Rest asks each of them to keep or change those spells.
@@ -52,8 +58,12 @@ void RolfTourView::check_mastery_rest_controls()
                 {
                     draft.cantrips.emplace();
                     for (const auto &o : cantrips.options)
+                    {
                         if (draft.cantrips->size() < cantrips.count)
+                        {
                             draft.cantrips->push_back(o.id);
+                        }
+                    }
                 }
                 if (rules->spell_choice_options(draft).may_prepare)
                 {
@@ -62,15 +72,23 @@ void RolfTourView::check_mastery_rest_controls()
                     {
                         auto &learned = draft.spells->learning[group.id];
                         for (const auto &o : group.options)
+                        {
                             if (learned.size() < group.count)
+                            {
                                 learned.push_back(o.id);
+                            }
+                        }
                     }
                     // A Wizard prepares from the spellbook just chosen.
                     const auto preparation = rules->spell_choice_options(draft);
                     draft.spells->prepared.emplace();
                     for (const auto &o : preparation.preparation)
+                    {
                         if (draft.spells->prepared->size() < preparation.prepared_count)
+                        {
                             draft.spells->prepared->push_back(o.id);
+                        }
+                    }
                 }
                 opengold::Character h(*rules, draft, {});
                 const auto id = index == 3 || index == 4
@@ -80,13 +98,17 @@ void RolfTourView::check_mastery_rest_controls()
                 {
                     campaign_->award_experience(2700, "mastery-ui-levels");
                     while (campaign_->member(id).character.sheet().level < 4)
+                    {
                         campaign_->advance(id, campaign_->default_advancement(id));
+                    }
                 }
                 ++index;
             }
             std::vector<std::uint8_t> bytes{0, 0};
             for (int n = 0; n < 5; ++n)
+            {
                 bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+            }
             bytes.insert(bytes.end(), {0, 0});
             auto program = std::make_shared<const opengold::por::EclProgram>(
                 opengold::por::EclProgram::decode(bytes, "mastery rest controls"));
@@ -174,6 +196,7 @@ void RolfTourView::check_mastery_rest_controls()
                             opengold::RestKind::long_rest)
                         .front();
                 for (const auto &o : options.group.options)
+                {
                     if (std::find(options.selected.begin(), options.selected.end(), o.id) ==
                         options.selected.end())
                     {
@@ -182,12 +205,14 @@ void RolfTourView::check_mastery_rest_controls()
                         other->set_pressed(true);
                         break;
                     }
+                }
                 check(!presentation::required_node<Button>(*w, "Apply").is_disabled(),
                       "A legal replacement enables Apply");
             }
             else if (phase == 4)
             {
                 for (const auto &arg : OS::get_singleton()->get_cmdline_user_args())
+                {
                     if (String(arg).begins_with("--mastery-rest-captures="))
                     {
                         const auto dir = String(arg).trim_prefix("--mastery-rest-captures=");
@@ -199,6 +224,7 @@ void RolfTourView::check_mastery_rest_controls()
                                       String::num_uint64(rest_check_stage_) + ".png")) == OK,
                               "Mastery rest capture saved");
                     }
+                }
             }
             else if (phase == 5)
             {

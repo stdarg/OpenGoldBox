@@ -8,7 +8,9 @@ fx::EffectState slow(bool frost = false)
     fx::EffectState e;
     fx::apply_attack_mastery(e, fx::EffectKind::slow, {.scope = 777, .actor = 99}, "Master", 6000);
     if (frost)
+    {
         fx::apply_ray_of_frost(e, {.scope = 777, .actor = 98}, "Caster", 4000);
+    }
     return e;
 }
 
@@ -54,10 +56,12 @@ void lifecycle()
           "Chunked Slow expiry is exact and consumes no RNG");
     auto full = slow();
     while (full.active.size() < fx::effect_limit)
+    {
         fx::apply_attack_mastery(
             full, fx::EffectKind::slow,
             {.scope = 777, .actor = static_cast<rules::EntityId>(full.active.size() + 100)},
             "Source", 6000);
+    }
     check(!fx::can_apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 999}) &&
               fx::can_apply_attack_mastery(full, fx::EffectKind::slow, {.scope = 777, .actor = 99}),
           "Full store permits same-source Slow refresh only");
@@ -78,12 +82,14 @@ void lifecycle()
     for (const auto bytes :
          {"FX8 2 1 1 7 777 99 \"Master\" 1 6000 0 0", "FX8 2 1 1 7 777 99 \"Master\" 0 6001 0 0",
           "FX8 2 1 1 7 777 99 \"Master\" 0 6000 1 0"})
+    {
         rejects(
             [&]
             {
                 std::istringstream input(bytes);
                 (void)fx::read_effects(input);
             });
+    }
 }
 
 void consumers()
@@ -91,7 +97,9 @@ void consumers()
     auto p = nick_attack_checks::party("dagger", false, false, false, "rogue");
     p.award_experience(900, "slow-consumers");
     while (p.member(1).character.sheet().level < 3)
+    {
         p.advance(1, p.default_advancement(1));
+    }
     auto actors = p.participants();
     actors.front().cell = {1, 1};
     actors.push_back({99, "mastery_target", "Target", Side::opposition, {5, 1}});
@@ -161,7 +169,9 @@ void consumers()
           "Campaign Slow continuation retains exact resources and clocks");
     p.advance_time(std::chrono::milliseconds(6000));
     for (unsigned n = 0; n < 6; ++n)
+    {
         copy.advance_time(std::chrono::milliseconds(1000));
+    }
     check(encode_campaign(copy, nullptr, "slow-consumers") ==
               encode_campaign(p, nullptr, "slow-consumers"),
           "Campaign chunking preserves Slow/Frost expiry and random state");

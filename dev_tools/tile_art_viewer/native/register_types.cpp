@@ -6,7 +6,9 @@ namespace
 void initialize(godot::ModuleInitializationLevel level)
 {
     if (level == godot::MODULE_INITIALIZATION_LEVEL_SCENE)
+    {
         godot::ClassDB::register_class<WallArtCatalog>();
+    }
 }
 
 void terminate(godot::ModuleInitializationLevel)

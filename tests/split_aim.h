@@ -15,19 +15,27 @@ inline bool finish_aiming(opengold::rules::CombatSession &c)
         if (state.reaction_pending || !targeting || targeting->chosen.empty() ||
             !(targeting->verb.starts_with("magic_missile") ||
               targeting->verb.starts_with("scorching_ray")))
+        {
             return true;
+        }
         const auto target = targeting->chosen.back();
         bool aimed = false;
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == targeting->verb && command.target == target)
             {
                 if (!c.submit(command))
+                {
                     return false;
+                }
                 aimed = true;
                 break;
             }
+        }
         if (!aimed)
+        {
             return false;
+        }
     }
     return false;
 }

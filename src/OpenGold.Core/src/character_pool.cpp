@@ -17,12 +17,15 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
 {
     std::array<unsigned, 16> counts{};
     for (unsigned y = first_row; y < std::min<unsigned>(last_row, image.height); ++y)
+    {
         for (unsigned x = 8; x + 8 < image.width; ++x)
         {
             const auto p = (y * image.width + x) * 4;
             if (image.rgba[p + 3] < 128 ||
                 std::max({image.rgba[p], image.rgba[p + 1], image.rgba[p + 2]}) < 40)
+            {
                 continue;
+            }
             unsigned nearest = 0;
             int distance = 200000;
             for (unsigned c = 1; c < 16; ++c)
@@ -41,8 +44,11 @@ unsigned dominant(const Image &image, unsigned first_row, unsigned last_row, uns
                 }
             }
             if (nearest)
+            {
                 ++counts[nearest];
+            }
         }
+    }
     std::array<unsigned, 16> order{};
     std::iota(order.begin(), order.end(), 0);
     std::stable_sort(order.begin(), order.end(),
@@ -59,7 +65,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
 {
     using namespace rules;
     if (art.bodies().empty() || art.heads().empty())
+    {
         throw std::runtime_error("Load character art before opening the pool");
+    }
     const auto classes = rules.choices(CreationField::character_class);
     const auto alignments = rules.choices(CreationField::alignment);
     // Every pool member has a distinct given name and surname.
@@ -82,9 +90,12 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
     const std::array<const char *, 5> races{"gnome", "orc", "goliath", "tiefling", "dragonborn"};
     std::vector<unsigned> bodies;
     for (const auto &[id, body] : art.bodies())
+    {
         bodies.push_back(id);
+    }
     std::vector<Character> result;
     for (unsigned c = 0; c < classes.size(); ++c)
+    {
         for (unsigned variant = 0; variant < 4; ++variant)
         {
             CharacterDraft d;
@@ -110,12 +121,16 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                                               : "acolyte";
             const auto bonuses = rules.adjustments(d.background);
             for (unsigned a = 0; a < bonuses.size(); ++a)
+            {
                 if (bonuses[a].bonuses[primary] == 2)
                 {
                     d.adjustment = a;
                     if (bonuses[a].bonuses[secondary])
+                    {
                         break;
+                    }
                 }
+            }
             // Presets include deterministic authored choices. Refresh each group's
             // options after its prerequisites, including skills before Expertise.
             const auto groups = rules.training_options(d);
@@ -128,10 +143,14 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                                     return g.id == requested.id;
                                                 });
                 if (group == current.end() || group->options.size() < group->count)
+                {
                     throw std::runtime_error("Incomplete preset training options");
+                }
                 for (unsigned n = 0; n < group->count; ++n)
+                {
                     d.training[group->id].push_back(
                         group->options[(name_index + n) % group->options.size()].id);
+                }
             }
             const auto cantrips = rules.cantrip_options(d);
             if (cantrips.count)
@@ -140,7 +159,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                 for (const auto &option : cantrips.options)
                 {
                     if (d.cantrips->size() == cantrips.count)
+                    {
                         break;
+                    }
                     d.cantrips->push_back(option.id);
                 }
             }
@@ -154,7 +175,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                 {
                     if (d.cantrips &&
                         std::find(d.cantrips->begin(), d.cantrips->end(), id) != d.cantrips->end())
+                    {
                         return true;
+                    }
                     return std::any_of(d.spells->learning.begin(), d.spells->learning.end(),
                                        [&](const auto &picks)
                                        {
@@ -164,14 +187,20 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                                        });
                 };
                 for (const auto &group : spell_options.learning)
+                {
                     for (const auto &option : group.options)
                     {
                         auto &values = d.spells->learning[group.id];
                         if (values.size() == group.count)
+                        {
                             break;
+                        }
                         if (!chosen(option.id))
+                        {
                             values.push_back(option.id);
+                        }
                     }
+                }
             }
             if (spell_options.may_prepare)
             {
@@ -179,7 +208,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
                 for (const auto &option : rules.spell_choice_options(d).preparation)
                 {
                     if (d.spells->prepared->size() == spell_options.prepared_count)
+                    {
                         break;
+                    }
                     d.spells->prepared->push_back(option.id);
                 }
             }
@@ -187,7 +218,9 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             appearance.portrait_head =
                 por::matching_portrait_head(d.race, d.gender).value_or(art.heads().begin()->first);
             if (!art.heads().contains(appearance.portrait_head))
+            {
                 appearance.portrait_head = art.heads().begin()->first;
+            }
             appearance.portrait_body = bodies[(c * 3 + variant) % bodies.size()];
             appearance.combat_head = (c + variant * 3) % 14;
             appearance.combat_body = (c * 2 + variant * 5) % 32;
@@ -203,6 +236,7 @@ std::vector<Character> character_pool(const rules::CharacterRules &rules,
             art.validate(appearance);
             result.emplace_back(rules, std::move(d), std::move(appearance));
         }
+    }
     return result;
 }
 
@@ -250,7 +284,9 @@ StartingKit starting_kit(std::string_view character_class)
                                       return entry.first == character_class;
                                   });
     if (kit == kits.end())
+    {
         throw std::runtime_error("No starting kit for class " + std::string(character_class));
+    }
     return kit->second;
 }
 } // namespace
@@ -261,13 +297,17 @@ void outfit_pool_member(CampaignParty &party, MemberId member)
     const auto add = [&](std::uint8_t type, std::uint8_t quantity, bool equip)
     {
         if (type == item_type::none)
+        {
             return;
+        }
         por::Equipment item;
         item.stored.type = type;
         item.stored.stack_size = quantity;
         party.purchase(member, item); // Zero value: the starting kit is free.
         if (equip)
+        {
             party.equip(member, party.member(member).character.inventory().items().back().id);
+        }
     };
     add(kit.armor, 1, true);
     add(kit.melee, 1, true);
@@ -287,7 +327,9 @@ MemberId add_pool_member(CampaignParty &party, const Character &character, unsig
         auto state = party.checkpoint();
         std::uint32_t gold = 0;
         for (int die = 0; die < 3; ++die)
+        {
             gold += static_cast<std::uint32_t>(roll_die(state.random_state, 6) * 10);
+        }
         state.roster.back().creation_source = "pool:v1:" + std::to_string(pool_index);
         party.restore(std::move(state));
         party.add_coins(Coin::gold, gold);

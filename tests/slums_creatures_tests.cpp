@@ -20,7 +20,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -77,8 +79,12 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId actor, Enti
 bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.actor == actor && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -106,8 +112,10 @@ void creatures_join()
 {
     const auto module = rules();
     for (const auto *creature : {"slums-hobgoblin", "ogre", "troll", "slums-magic-user"})
+    {
         check(fight(*module, creature, "target")->snapshot().combatants.size() == 2,
               std::string(creature) + " joins a fight");
+    }
 }
 
 // As in the original game the Troll's melee reaches adjacent squares only
@@ -216,8 +224,12 @@ void troll_burns()
 bool move_to(CombatSession &c, EntityId id, Cell destination)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.actor == id && command.verb == "move" && command.destination == destination)
+        {
             return c.submit(command) && unit(c, id).cell == destination;
+        }
+    }
     return false;
 }
 
@@ -237,7 +249,9 @@ void troll_held_down()
     // Longer than the most a 3d6 delay can last.
     const auto stood_from = c->snapshot().round;
     while (c->snapshot().round < stood_from + 20)
+    {
         check(submit(*c, "end", c->snapshot().actor), "End the turn");
+    }
     check(unit(*c, 1).hit_points == 0 && !unit(*c, 1).dead,
           "A Troll with a hero on it stays down without dying");
     turn_of(*c, second);
@@ -271,7 +285,9 @@ void downed_square_stood_on()
                               "creature frail 1 2 0 30 0 1 2 0 0 0 0 0 0 0 0 0 0 1 0\n");
     std::vector<Terrain> corridor(30, Terrain::obstacle);
     for (int x = 0; x < 10; ++x)
+    {
         corridor[static_cast<std::size_t>(10 + x)] = Terrain::open;
+    }
     auto c = module->create({{10, 3, corridor},
                              {{1, "poker", "Monster", Side::opposition, {1, 1}},
                               {2, "frail", "Hero", Side::party, {2, 1}},

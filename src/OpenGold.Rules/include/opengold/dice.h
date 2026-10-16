@@ -14,7 +14,9 @@ inline int roll_die(std::uint64_t &state, int sides)
     // A die needs a side; zero would divide by zero below. Original game
     // scripts supply some dice, so bad data must be refused, not rolled.
     if (sides < 1)
+    {
         throw std::invalid_argument("A die needs at least one side");
+    }
     const auto count = static_cast<std::uint64_t>(sides);
     const auto threshold = (-count) % count;
     std::uint64_t value;

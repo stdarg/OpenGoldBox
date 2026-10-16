@@ -698,7 +698,9 @@ struct Snapshot
         std::vector<std::string> lines;
         lines.reserve(log_entries.size());
         for (const auto &entry : log_entries)
+        {
             lines.push_back(entry.english);
+        }
         return lines;
     }
 
@@ -708,7 +710,9 @@ struct Snapshot
         std::vector<Message> messages;
         messages.reserve(log_entries.size());
         for (const auto &entry : log_entries)
+        {
             messages.push_back(entry.message);
+        }
         return messages;
     }
 };

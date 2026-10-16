@@ -15,7 +15,9 @@ namespace
 void check(bool value, const char *message)
 {
     if (!value)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 // Literal-only DAX encoding keeps malformed sprite fixtures independent of files.

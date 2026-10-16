@@ -15,7 +15,9 @@ std::string critical_before(std::string_view weapon)
     p.equip(1, 1);
     p.award_experience(900, "choice-baseline");
     while (p.member(1).character.sheet().level < 3)
+    {
         p.advance(1, p.default_advancement(1));
+    }
     auto actors = p.participants();
     actors.front().cell = {1, 1};
     const bool ranged = weapon == "longbow";
@@ -27,7 +29,9 @@ std::string critical_before(std::string_view weapon)
         const auto before = c->save();
         act(*c, ranged ? "ranged" : "melee", 99);
         if (arg(result(*c), "hit") == "CRITICAL")
+        {
             return before;
+        }
     }
     throw std::runtime_error("No critical hit for an optional mastery weapon");
 }

@@ -30,13 +30,17 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
 {
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
         !creator_->draft().rolled || index < 0 || index >= 12)
+    {
         return {};
+    }
     const auto &d = creator_->draft();
     // Indices 0-5 are the dice boxes, 6-11 the score boxes of each ability.
     const unsigned roll = index < 6 ? index : d.assignment[static_cast<rules::Ability>(index - 6)];
     if (roll >= 6 || (index < 6 && std::find(d.assignment.begin(), d.assignment.end(), roll) !=
                                        d.assignment.end()))
+    {
         return {};
+    }
     auto preview = presentation::make_node<Label>();
     preview->set_text(gs(std::to_string(d.rolls[roll].total())));
     required_node<Control>(
@@ -45,7 +49,9 @@ Variant CharacterCreationView::drag_roll(Vector2, int index)
     // Godot adopts the preview only while a drag can show it; one it refused
     // stays with NodeOwner and is freed (Effective C++ Item 13).
     if (preview->get_parent())
+    {
         (void)preview.release();
+    }
     Dictionary data;
     data["opengold_ability_roll"] = roll;
     return data;
@@ -56,7 +62,9 @@ bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int inde
     if (!creator_ || party_open_ || creator_->step() != CreationStep::attributes ||
         !creator_->draft().rolled || index < 0 || index >= 6 ||
         data.get_type() != Variant::DICTIONARY)
+    {
         return false;
+    }
     const Dictionary payload = data;
     const Variant roll = payload.get("opengold_ability_roll", Variant());
     return roll.get_type() == Variant::INT && static_cast<int>(roll) >= 0 &&
@@ -66,7 +74,9 @@ bool CharacterCreationView::can_drop_roll(Vector2, const Variant &data, int inde
 void CharacterCreationView::drop_roll(Vector2 position, const Variant &data, int index)
 {
     if (!can_drop_roll(position, data, index))
+    {
         return;
+    }
     const Dictionary payload = data;
     const unsigned roll = static_cast<int>(payload["opengold_ability_roll"]);
     perform(
@@ -81,9 +91,13 @@ void CharacterCreationView::show_modifiers()
 {
     const PartyMember *member = nullptr; // Borrowed only for this synchronous rendering.
     if (party_open_ && !campaign_->state().roster.empty())
+    {
         member = &campaign_->state().roster.at(roster_index_);
+    }
     if (!member && !completed_)
+    {
         return;
+    }
     const auto &s = member ? member->character.sheet() : completed_->sheet();
     std::string text =
         "[theme_emphasis]" + i18n::utf8("Ability score adjustments") + "[/theme_emphasis]\n";
@@ -91,15 +105,21 @@ void CharacterCreationView::show_modifiers()
     {
         const auto ability = rules::all_abilities[i];
         if (s.bonuses[ability] == 0)
+        {
             continue;
+        }
         text += "[theme_emphasis]" + i18n::utf8(i18n::ability_names[i]) + "[/theme_emphasis]\n" +
                 i18n::formatted("Rolled score: {score}", {{"score", s.base[ability]}}) + "\n";
         for (const auto &source : s.ability_adjustments)
+        {
             if (source.bonuses[ability])
+            {
                 text += i18n::formatted("{source} ({bonus})",
                                         {{"source", i18n::render(source.label_message)},
                                          {"bonus", gs(signed_number(source.bonuses[ability]))}}) +
                         "\n";
+            }
+        }
         text += i18n::formatted("Final score: {score}", {{"score", s.scores[ability]}}) + "\n\n";
     }
     text += "\n[theme_emphasis]" +
@@ -158,9 +178,13 @@ void CharacterCreationView::update_saving_throws(String value)
 {
     const PartyMember *member = nullptr; // Borrowed for synchronous rendering.
     if (party_open_ && !campaign_->state().roster.empty())
+    {
         member = &campaign_->state().roster.at(roster_index_);
+    }
     if (!member && !completed_)
+    {
         return;
+    }
     const auto &s = member ? member->character.sheet() : completed_->sheet();
     required_node<Label>(*this, "SavingThrowsModal/Title")
         .set_text(i18n::format("{name} / Saving Throws", {{"name", gs(s.name)}}));
@@ -200,9 +224,11 @@ void CharacterCreationView::update_saving_throws(String value)
                           "+0 proficiency: {class} does not grant proficiency in this save.",
                           {{"class", i18n::text(s.character_class)}});
         if (disadvantage && i < 2)
+        {
             text += "\n" +
                     i18n::utf8(
                         "Disadvantage from untrained armor: roll two d20s and use the lower roll.");
+        }
         text += "\n\n";
     }
     text += i18n::utf8(

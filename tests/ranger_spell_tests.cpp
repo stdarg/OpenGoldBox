@@ -24,7 +24,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -56,18 +58,26 @@ Character ranger(std::vector<std::string> prepared, std::vector<std::string> mas
     d.name = "Ranger";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     if (!masteries.empty())
+    {
         d.training["class:ranger:weapon_mastery"] = std::move(masteries);
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -75,8 +85,12 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     const auto offered = c.legal_commands();
     for (const auto &command : offered)
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -103,8 +117,12 @@ int slots(const CombatSession &c)
 unsigned remaining(const CombatSession &c, std::string_view pool)
 {
     for (const auto &resource : unit(c, 1).resources)
+    {
         if (resource.id == pool)
+        {
             return resource.remaining;
+        }
+    }
     return 0;
 }
 
@@ -121,7 +139,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {99, std::move(sturdy), "Target", Side::opposition, {2, 2}}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Ranger's turn");
+    }
     check(c->snapshot().actor == 1, "The Ranger acts");
     return c;
 }
@@ -131,7 +151,9 @@ void next_turn(CombatSession &c)
 {
     check(submit(c, "end"), "End the Ranger's turn");
     for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(c, "end"), "Back to the Ranger");
+    }
 }
 
 void favored_enemy_checks()
@@ -213,7 +235,9 @@ void write_ui_fixture()
                               {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
                             2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Ranger's turn");
+    }
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "ranger-fixtures";
     std::filesystem::create_directories(path);
     std::ofstream out(path / "ranger.save", std::ios::binary);
@@ -232,7 +256,9 @@ void write_ui_fixture()
                          {99, "vanguard", "Second", Side::opposition, {2, 2}}}},
                        2);
     for (unsigned turns = 0; h->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*h, "end"), "Reach the Hunter's turn");
+    }
     std::ofstream hunter_out(path / "hunter.save", std::ios::binary);
     hunter_out << h->save();
     check(bool(hunter_out), "Write the Hunter UI fixture");
@@ -251,7 +277,9 @@ void write_ui_fixture()
               {99, "vanguard", "Target", Side::opposition, {2, 1}}}},
             seed);
         for (unsigned turns = 0; e->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*e, "end"), "Reach the Ranger's turn");
+        }
         const auto offered = [&]
         {
             const auto commands = e->legal_commands();
@@ -262,7 +290,9 @@ void write_ui_fixture()
                                });
         };
         if (!submit(*e, "melee", 99) || !offered())
+        {
             continue;
+        }
         std::ofstream ensnare_out(path / "ensnare.save", std::ios::binary);
         ensnare_out << e->save();
         check(bool(ensnare_out), "Write the Ensnaring Strike UI fixture");
@@ -286,7 +316,9 @@ void write_entangle_fixture()
                               {99, "vanguard", "Second", Side::opposition, {6, 2}}}},
                             2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Ranger's turn");
+    }
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "ranger-fixtures";
     std::ofstream out(path / "entangle.save", std::ios::binary);
     out << c->save();
@@ -366,7 +398,9 @@ std::unique_ptr<CombatSession> ensnared(const RulesModule &module)
         auto c = battle(module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed);
         if (submit(*c, "melee", 99) && submit(*c, "ensnaring_strike", 99) &&
             logged(*c, "Target is Restrained."))
+        {
             return c;
+        }
     }
     throw std::runtime_error("No seed fails the Strength save");
 }
@@ -393,7 +427,9 @@ void ensnaring_strike_checks()
     check(module->restore(saved)->save() == saved, "Restrained survives a checkpoint");
     check(submit(*c, "end"), "End the Ranger's turn");
     while (c->snapshot().actor != 99)
+    {
         check(submit(*c, "end"), "Reach the Restrained creature");
+    }
     check(logged(*c, "Target takes") && logged(*c, "Piercing damage from the vines") &&
               unit(*c, 99).movement_feet == 0,
           "The vines deal Piercing damage at the start of its turn and hold it in place");
@@ -401,22 +437,30 @@ void ensnaring_strike_checks()
           "A Restrained creature attacks with Disadvantage");
     next_turn(*c);
     if (restrained(*c, 99))
+    {
         check(submit(*c, "melee", 99) && logged(*c, "(advantage)"),
               "Attacks against a Restrained creature have Advantage");
+    }
 
     auto breaking = ensnared(*module);
     check(submit(*breaking, "end"), "End the Ranger's turn");
     while (breaking->snapshot().actor != 99)
+    {
         check(submit(*breaking, "end"), "Reach the Restrained creature");
+    }
     for (unsigned round = 0; round < 20 && restrained(*breaking, 99); ++round)
     {
         check(submit(*breaking, "escape", 99) && logged(*breaking, "Athletics check"),
               "The creature spends its Action on an Athletics check");
         if (!restrained(*breaking, 99))
+        {
             break;
+        }
         check(submit(*breaking, "end"), "End the creature's turn");
         while (breaking->snapshot().actor != 99)
+        {
             check(submit(*breaking, "end"), "Back to the creature");
+        }
     }
     check(!restrained(*breaking, 99) && logged(*breaking, "(escapes)"),
           "A successful check ends Ensnaring Strike");
@@ -432,7 +476,9 @@ void ranged_smite_window_checks()
             battle(*module, ranger({"cure_wounds", "ensnaring_strike"}), "target", seed, "longbow");
         check(submit(*c, "ranged", 99), "The Ranger shoots");
         if (!logged(*c, "hits") && !logged(*c, "CRITICAL"))
+        {
             continue;
+        }
         check(submit(*c, "ensnaring_strike", 99), "Ensnaring Strike follows a Ranged weapon hit");
         return;
     }
@@ -442,8 +488,12 @@ void ranged_smite_window_checks()
 bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -486,7 +536,9 @@ std::unique_ptr<CombatSession> entangled(const RulesModule &module, std::size_t 
                   submit(*c, "area_cast"),
               "Aim and cast Entangle");
         if (restrained(*c, 98) || restrained(*c, 99))
+        {
             return c;
+        }
     }
     throw std::runtime_error("No seed fails a Strength save");
 }
@@ -596,7 +648,9 @@ void hunters_prey_rest_checks()
     party.advance_time(std::chrono::hours{24});
     check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
     if (party.state().spell_rest)
+    {
         party.keep_rest_spells(id);
+    }
     const auto both =
         rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest);
     check(both.size() == 2 && both[0].group.id == "weapon_mastery" &&

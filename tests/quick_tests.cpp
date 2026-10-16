@@ -23,7 +23,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -43,7 +45,9 @@ Character druid()
     d.name = "Druid";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[4] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:druid", {"nature", "medicine"}},
                   {"class:druid:primal_order", {"warden"}}};
@@ -60,13 +64,17 @@ bool casts(const CombatSession &fight, const Command &command)
 {
     const auto state = fight.snapshot();
     for (const auto &a : state.combatants)
+    {
         if (a.id == state.actor)
+        {
             return std::any_of(a.spells.begin(), a.spells.end(),
                                [&](const auto &spell)
                                {
                                    return command.verb == spell ||
                                           command.verb.starts_with(spell + "_");
                                });
+        }
+    }
     return false;
 }
 
@@ -98,12 +106,16 @@ void magic_off_casts_nothing()
                                  {98, "bandit", "Enemy", Side::opposition, {6, 1}}}},
                                5);
     for (unsigned turns = 0; fight->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         for (const auto &command : fight->legal_commands())
+        {
             if (command.verb == "end" || command.verb == "initiative_keep")
             {
                 check(fight->submit(command), "Reach the Druid's turn");
                 break;
             }
+        }
+    }
     check(fight->snapshot().actor == 1, "The Druid acts");
     check(casts(*fight, choose_quick_command(*fight, true)),
           "With Quick magic on, the computer casts for the Druid");

@@ -21,7 +21,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -50,7 +52,9 @@ Character monk(unsigned level = 1)
     d.name = "Monk";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{3, 3, 3, 1}, 3};
     d.rolls[1] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:monk", {"acrobatics", "stealth"}}};
@@ -58,23 +62,33 @@ Character monk(unsigned level = 1)
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "monk-xp");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -92,8 +106,12 @@ std::vector<std::string> attack_lines(const CombatSession &c)
 {
     std::vector<std::string> lines;
     for (const auto &line : c.snapshot().log())
+    {
         if (line.starts_with("Monk -> Enemy: d20 "))
+        {
             lines.push_back(line);
+        }
+    }
     return lines;
 }
 
@@ -114,7 +132,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {98, "target", "Enemy", Side::opposition, {2, 1}}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Monk's turn");
+    }
     check(c->snapshot().actor == 1, "The Monk acts");
     return c;
 }
@@ -129,11 +149,13 @@ void martial_arts_checks()
               number_after(lines[1], " + ") == 6,
           "Unarmed Strikes use Dexterity: +2 Proficiency and +4");
     for (const auto &line : lines)
+    {
         if (line.find(" hits for ") != std::string::npos)
         {
             const int damage = number_after(line, " hits for ");
             check(damage >= 5 && damage <= 10, "An Unarmed Strike deals 1d6 + 4");
         }
+    }
     check(!unit(*c, 1).bonus_action, "The second Unarmed Strike spent the Bonus Action");
 
     auto dagger = battle(*module, monk(), {"dagger"});
@@ -155,8 +177,12 @@ int highest_hit(const RulesModule &module, const Character &hero,
         auto c = battle(module, hero, equipment, seed);
         check(submit(*c, "melee", 98), "The Monk attacks");
         for (const auto &line : attack_lines(*c))
+        {
             if (line.find(" hits for ") != std::string::npos)
+            {
                 highest = std::max(highest, number_after(line, " hits for "));
+            }
+        }
     }
     return highest;
 }
@@ -200,8 +226,12 @@ bool logged(const CombatSession &c, std::string_view text)
 unsigned focus_left(const CombatSession &c)
 {
     for (const auto &pool : unit(c, 1).resources)
+    {
         if (pool.id == "focus")
+        {
             return pool.remaining;
+        }
+    }
     throw std::runtime_error("No Focus pool");
 }
 
@@ -292,7 +322,9 @@ std::unique_ptr<CombatSession> deflect_question(const RulesModule &module, std::
         check(submit(*c, "end"), "End the Monk's turn");
         check(submit(*c, "melee", 1), "The enemy attacks");
         if (!c->snapshot().reaction_pending)
+        {
             continue;
+        }
         check(c->snapshot().actor == 1 && offered(*c, "deflect") && offered(*c, "decline") &&
                   !offered(*c, "shield"),
               "A hit Monk is asked about Deflect Attacks");
@@ -338,7 +370,9 @@ void open_hand_checks()
                   submit(*c, "flurry_topple", 98),
               "Open Hand Technique is chosen with the Flurry");
         if (!logged(*c, "Enemy is knocked Prone."))
+        {
             continue;
+        }
         check(logged(*c, "Enemy Dexterity save"), "Topple calls for a Dexterity save");
         return;
     }
@@ -350,7 +384,9 @@ void next_monk_turn(CombatSession &c)
 {
     check(submit(c, "end"), "End the Monk's turn");
     for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
     check(c.snapshot().actor == 1, "The Monk acts again");
 }
 
@@ -375,8 +411,12 @@ void focus_option_checks()
               "Step of the Wind with a Focus Point Dashes");
         Command away;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{0, 1})
+            {
                 away = command;
+            }
+        }
         check(c->submit(away) && !c->snapshot().reaction_pending && attack_lines(*c).empty(),
               "and Disengages: leaving the enemy's reach provokes nothing");
     }
@@ -424,8 +464,12 @@ void open_hand_option_checks()
     const auto leave = [](CombatSession &c)
     {
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{0, 1})
+            {
                 return c.submit(command);
+            }
+        }
         return false;
     };
     bool addled = false, pushed = false;

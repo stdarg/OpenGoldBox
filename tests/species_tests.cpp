@@ -28,7 +28,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -45,8 +47,12 @@ std::string read_rules()
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -63,11 +69,15 @@ Character fighter(std::string race, std::map<std::string, std::string> species =
     d.name = "Target";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.training = {{"class:fighter", {"acrobatics", "history"}},
                   {"class:fighter:fighting_style", {"defense"}}};
     for (const auto &[group, pick] : species)
+    {
         d.training[group] = {pick};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -84,7 +94,9 @@ int wisdom_save(const RulesModule &rules, const Character &target, std::uint64_t
     d.name = "Foe";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = {"sacred_flame"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"command"}, {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
@@ -105,11 +117,17 @@ int wisdom_save(const RulesModule &rules, const Character &target, std::uint64_t
                              rules.character_profile(foe.sheet(), {}).data}}},
                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     check(submit(*c, "command_halt", 1), "The Cleric commands the target to halt");
     for (const auto &line : c->snapshot().log())
+    {
         if (const auto at = line.find("Target Wisdom save: d20 "); at != std::string::npos)
+        {
             return std::stoi(line.substr(at + 24));
+        }
+    }
     throw std::runtime_error("No Wisdom save in the log");
 }
 
@@ -141,16 +159,24 @@ void gnome_checks()
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool logged(const CombatSession &c, std::string_view text)
 {
     for (const auto &line : c.snapshot().log())
+    {
         if (line.find(text) != std::string::npos)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -158,7 +184,9 @@ std::size_t count_logged(const CombatSession &c, std::string_view text)
 {
     std::size_t count = 0;
     for (const auto &line : c.snapshot().log())
+    {
         count += line.find(text) != std::string::npos;
+    }
     return count;
 }
 
@@ -178,15 +206,21 @@ bool hit_orc(CombatSession &c)
                                                            });
         };
         for (unsigned turns = 0; !can_attack() && turns < 6; ++turns)
+        {
             check(submit(c, "end"), "Reach the bandit's next attack");
+        }
         const int before = unit(c, 1).hit_points;
         const auto endured = count_logged(c, "Relentless Endurance");
         if (!submit(c, "melee", 1))
+        {
             throw std::runtime_error("The bandit cannot attack the Orc (HP " +
                                      std::to_string(before) + ", actor " +
                                      std::to_string(c.snapshot().actor) + ")");
+        }
         if (unit(c, 1).hit_points < before || count_logged(c, "Relentless Endurance") > endured)
+        {
             return true;
+        }
         check(submit(c, "end"), "The bandit missed; end its turn");
     }
     return false;
@@ -245,7 +279,9 @@ void halfling_checks()
     {
         auto probe = seed;
         if (opengold::roll_die(probe, 20) == 1)
+        {
             break;
+        }
     }
     auto plain = seed, lucky = seed;
     bool rerolled = false;
@@ -267,7 +303,9 @@ void halfling_checks()
               {98, "bandit", "Bandit", Side::opposition, {2, 1}}}},
             fight);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the hero's turn");
+        }
         check(submit(*c, "melee", 98), "The hero attacks");
         return c;
     };
@@ -290,7 +328,9 @@ void nimbleness_checks()
     const auto rules = module();
     std::vector<Terrain> corridor(36, Terrain::obstacle);
     for (int x = 0; x < 12; ++x)
+    {
         corridor[12 + x] = Terrain::open;
+    }
     const auto offers_move = [&](const Character &hero, const std::string &blocker, Cell to)
     {
         auto c = rules->create({{12, 3, corridor},
@@ -303,7 +343,9 @@ void nimbleness_checks()
                                  {98, blocker, "Blocker", Side::opposition, {2, 1}}}},
                                3);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the hero's turn");
+        }
         const auto commands = c->legal_commands();
         return std::any_of(commands.begin(), commands.end(),
                            [&](const auto &command)
@@ -331,8 +373,12 @@ void species_choice_checks()
         d.race = std::move(race);
         std::vector<std::string> ids;
         for (const auto &g : srd5::character_rules()->training_options(d))
+        {
             if (g.id.starts_with("species:"))
+            {
                 ids.push_back(g.id);
+            }
+        }
         return ids;
     };
     check(groups("elf") == std::vector<std::string>{"species:elf:lineage",
@@ -380,7 +426,9 @@ void species_choice_checks()
                                   {98, "burner", "Burner", Side::opposition, {2, 1}}}},
                                 3);
         for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the burner's turn");
+        }
         const int before = unit(*c, 1).hit_points;
         check(submit(*c, "melee", 1), "The burner attacks");
         return before - unit(*c, 1).hit_points;
@@ -425,7 +473,9 @@ void lineage_spell_checks()
               {98, "bandit", "Bandit", Side::opposition, {2, 1}}}},
             3);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the hero's turn");
+        }
         return c;
     };
     const std::map<std::string, std::string> infernal{{"species:tiefling:legacy", "infernal"},
@@ -471,11 +521,15 @@ void lineage_spell_checks()
     for (unsigned attempt = 0; attempt < 12 && !asked; ++attempt)
     {
         for (unsigned turns = 0; rebuke->snapshot().actor != 98 && turns < 6; ++turns)
+        {
             check(submit(*rebuke, "end"), "Reach the bandit's turn");
+        }
         check(submit(*rebuke, "melee", 1), "The bandit attacks");
         asked = offered(*rebuke, "rebuke");
         if (!asked)
+        {
             check(submit(*rebuke, "end"), "The bandit ends its turn");
+        }
     }
     check(asked && submit(*rebuke, "rebuke") && logged(*rebuke, "casts Hellish Rebuke at Bandit"),
           "A hit asks about Hellish Rebuke, paid by the free cast");
@@ -520,14 +574,20 @@ void breath_weapon_checks()
     const auto aim = [&](Cell cell)
     {
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "area_move" && command.destination == cell)
+            {
                 return c->submit(command);
+            }
+        }
         return false;
     };
     const auto breathe = [&]
     {
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the hero's turn");
+        }
         return offered("breath_weapon_cone") && submit(*c, "breath_weapon_line") &&
                aim(Cell{7, 1}) && submit(*c, "area_cast");
     };
@@ -540,17 +600,27 @@ void breath_weapon_checks()
     check(submit(*c, "end") && breathe(), "A second use on the next turn");
     check(submit(*c, "end"), "The hero ends the turn");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the hero's turn");
+    }
     check(!offered("breath_weapon_cone") && offered("melee"), "Both uses are spent");
     VitalState state;
     for (const auto &unit : c->snapshot().combatants)
+    {
         if (unit.id == 1)
+        {
             state = unit.persistent;
+        }
+    }
     const auto uses_left = [&]
     {
         for (const auto &pool : rules->recovery_info(hero.sheet(), state).resources)
+        {
             if (pool.id == "breath_weapon")
+            {
                 return pool.remaining;
+            }
+        }
         throw std::runtime_error("No Breath Weapon pool");
     };
     check(uses_left() == 0, "The spent uses outlast the fight");
@@ -570,9 +640,15 @@ void versatile_checks()
         d.background = std::move(background);
         std::vector<std::string> ids;
         for (const auto &g : creation->training_options(d))
+        {
             if (g.id == "species:human:versatile")
+            {
                 for (const auto &o : g.options)
+                {
                     ids.push_back(o.id);
+                }
+            }
+        }
         return ids;
     };
     const auto soldier = offered("soldier"), criminal = offered("criminal");
@@ -614,7 +690,9 @@ void versatile_checks()
     skilled.name = "Skilled";
     skilled.rolled = true;
     for (auto &r : skilled.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     skilled.training = {{"class:fighter", {"acrobatics", "history"}},
                         {"class:fighter:fighting_style", {"defense"}},
                         {"species:human:versatile", {"skilled"}},
@@ -672,8 +750,12 @@ void heroic_inspiration_checks()
     const auto inspired = [&](const VitalState &state)
     {
         for (const auto &pool : rules->recovery_info(hero.sheet(), state).resources)
+        {
             if (pool.id == "heroic_inspiration")
+            {
                 return pool.remaining;
+            }
+        }
         throw std::runtime_error("No Heroic Inspiration pool");
     };
     VitalState state;
@@ -694,14 +776,20 @@ void heroic_inspiration_checks()
                         {98, "wall", "Wall", Side::opposition, {2, 1}}}},
                       3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the hero's turn");
+    }
     check(submit(*c, "melee", 98) &&
               logged(*c, "Hero uses Heroic Inspiration and rolls the d20 again: "),
           "The first miss is rolled again");
     VitalState after;
     for (const auto &unit : c->snapshot().combatants)
+    {
         if (unit.id == 1)
+        {
             after = unit.persistent;
+        }
+    }
     check(inspired(after) == 0, "Heroic Inspiration is spent");
 }
 
@@ -747,7 +835,9 @@ struct GoliathFight
     void reach(EntityId actor)
     {
         for (unsigned turns = 0; c->snapshot().actor != actor && turns < 6; ++turns)
+        {
             check(submit(*c, "end"), "Reach the next turn");
+        }
         check(c->snapshot().actor == actor, "The actor's turn");
     }
 
@@ -759,7 +849,9 @@ struct GoliathFight
             reach(1);
             check(submit(*c, "melee", target), "The hero attacks");
             if (c->snapshot().reaction_pending)
+            {
                 return;
+            }
             check(submit(*c, "end"), "The hero missed; end the turn");
         }
         throw std::runtime_error("The hero never hits");
@@ -773,7 +865,9 @@ struct GoliathFight
             reach(98);
             check(submit(*c, "melee", 1), "Near attacks the hero");
             if (c->snapshot().reaction_pending)
+            {
                 return;
+            }
             check(submit(*c, "end"), "Near missed; end its turn");
         }
         throw std::runtime_error("Near never hits");
@@ -782,11 +876,19 @@ struct GoliathFight
     unsigned uses_left() const
     {
         for (const auto &unit : c->snapshot().combatants)
+        {
             if (unit.id == 1)
+            {
                 for (const auto &pool :
                      rules->recovery_info(hero.sheet(), unit.persistent).resources)
+                {
                     if (pool.id == "giant_ancestry")
+                    {
                         return pool.remaining;
+                    }
+                }
+            }
+        }
         throw std::runtime_error("No Giant Ancestry pool");
     }
 };
@@ -832,13 +934,17 @@ void giant_ancestry_checks()
     const auto chilled = [&]
     {
         for (const auto &unit : frost.c->snapshot().combatants)
+        {
             if (unit.id == 98)
+            {
                 return std::any_of(unit.conditions.begin(), unit.conditions.end(),
                                    [](const auto &m)
                                    {
                                        return m.source ==
                                               "Frost's Chill: Speed reduced by 10 feet.";
                                    });
+            }
+        }
         return false;
     };
     check(chilled(), "Near shows the chill");
@@ -862,17 +968,25 @@ void giant_ancestry_checks()
     const int before = [&]
     {
         for (const auto &unit : stone.c->snapshot().combatants)
+        {
             if (unit.id == 1)
+            {
                 return unit.hit_points;
+            }
+        }
         return 0;
     }();
     check(submit(*stone.c, "stones_endurance") &&
               logged(*stone.c, "Hero uses Stone's Endurance: ") && stone.uses_left() == 1,
           "Stone's Endurance lessens the damage");
     for (const auto &unit : stone.c->snapshot().combatants)
+    {
         if (unit.id == 1)
+        {
             check(unit.hit_points == before && !unit.reaction,
                   "1d4 is fully absorbed; the Reaction is spent");
+        }
+    }
 
     GoliathFight storm("storm");
     storm.struck();
@@ -884,7 +998,9 @@ void giant_ancestry_checks()
     GoliathFight darts("stone", "caster");
     darts.reach(98);
     for (unsigned dart = 0; dart < 3 && !darts.c->snapshot().reaction_pending; ++dart)
+    {
         check(submit(*darts.c, "magic_missile", 1), "Near aims a dart at the hero");
+    }
     check(darts.offered("stones_endurance") && submit(*darts.c, "stones_endurance") &&
               logged(*darts.c, "Hero uses Stone's Endurance: "),
           "Stone's Endurance lessens a Magic Missile dart");
@@ -894,14 +1010,22 @@ void giant_ancestry_checks()
     check(submit(*cloud.c, "clouds_jaunt"), "Cloud's Jaunt is a Bonus Action");
     bool aimed = false;
     for (const auto &command : cloud.c->legal_commands())
+    {
         if (command.verb == "area_move" && command.destination == Cell{7, 1})
+        {
             aimed = cloud.c->submit(command);
+        }
+    }
     check(aimed && submit(*cloud.c, "area_cast") && logged(*cloud.c, "Hero uses Cloud's Jaunt."),
           "The Goliath teleports 30 feet");
     for (const auto &unit : cloud.c->snapshot().combatants)
+    {
         if (unit.id == 1)
+        {
             check(unit.cell == Cell{7, 1} && !unit.bonus_action && unit.action,
                   "It lands on the square, its Action left");
+        }
+    }
     check(cloud.uses_left() == 1 && !cloud.offered("clouds_jaunt"),
           "A use and the Bonus Action are spent");
 }

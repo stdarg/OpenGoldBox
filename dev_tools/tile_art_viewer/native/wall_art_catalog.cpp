@@ -41,7 +41,9 @@ DaxDecodeResult read_archive(const std::filesystem::path &directory, const std::
         "Incomplete archive read: " + name);
     auto decoded = decode_dax_archive(bytes);
     if (!decoded)
+    {
         throw std::runtime_error("Invalid DAX archive: " + name);
+    }
     return decoded;
 }
 
@@ -49,8 +51,12 @@ const std::vector<std::uint8_t> &record(const DaxDecodeResult &archive, unsigned
                                         const std::string &name)
 {
     for (const auto &item : archive.records)
+    {
         if (item.id == id)
+        {
             return item.bytes;
+        }
+    }
     throw std::runtime_error("Missing record " + name + ":" + std::to_string(id));
 }
 
@@ -68,14 +74,18 @@ void append_tiles(WallTiles &destination, const DaxDecodeResult &archive, unsign
 {
     auto decoded = decode_wall_tiles(record(archive, id, name));
     if (!decoded || decoded->size() != expected)
+    {
         throw std::runtime_error("Invalid wall tiles " + name + ":" + std::to_string(id));
+    }
     destination.insert(destination.end(), decoded->begin(), decoded->end());
 }
 
 Ref<godot::Image> godot_image(const opengold::Image &source)
 {
     if (!consistent(source))
+    {
         return {};
+    }
     PackedByteArray pixels;
     pixels.resize(source.rgba.size());
     std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
@@ -110,7 +120,9 @@ String WallArtCatalog::load_directory(const String &directory)
     {
         const auto path = std::filesystem::path(std::string(directory.utf8().get_data()));
         if (!std::filesystem::is_directory(path))
+        {
             throw std::runtime_error("Game directory does not exist: " + path.string());
+        }
         const auto shared_name = std::string("8X8D1.DAX");
         const auto shared = read_archive(path, shared_name);
         std::vector<Entry> loaded;
@@ -132,10 +144,14 @@ String WallArtCatalog::load_directory(const String &directory)
                 {
                     // Phlan's fifteen appearances use three consecutive 70-tile banks.
                     for (unsigned part = 101; part <= 103; ++part)
+                    {
                         append_tiles(wall_tiles, tiles, part, tile_name, 70);
+                    }
                 }
                 else if (has_record(tiles, id))
+                {
                     append_tiles(wall_tiles, tiles, id, tile_name, 70);
+                }
                 else if (id * 10 + 2 <= 255 && has_record(tiles, id * 10 + 1) &&
                          has_record(tiles, id * 10 + 2))
                 {
@@ -144,12 +160,16 @@ String WallArtCatalog::load_directory(const String &directory)
                     append_tiles(wall_tiles, tiles, id * 10 + 2, tile_name, 70);
                 }
                 else
+                {
                     throw std::runtime_error("No tile bank for " + definition_name + ":" +
                                              std::to_string(id));
+                }
                 const auto art = decode_wall_art(definition.bytes, wall_tiles);
                 if (!art)
+                {
                     throw std::runtime_error("Invalid wall definitions " + definition_name + ":" +
                                              std::to_string(id));
+                }
                 auto &indices = art_indices[{bank, id}];
                 for (unsigned appearance = 0; appearance < art->appearances.size(); ++appearance)
                 {
@@ -177,7 +197,9 @@ String WallArtCatalog::load_directory(const String &directory)
             for (const auto &spec : map_art_profiles())
             {
                 if (spec.bank != bank || spec.map_record != id.record)
+                {
                     continue;
+                }
                 map.name = spec.name;
                 Profile profile;
                 profile.label = spec.label;
@@ -185,30 +207,44 @@ String WallArtCatalog::load_directory(const String &directory)
                 for (const int record_id : spec.wall_records)
                 {
                     if (record_id < 0)
+                    {
                         break;
+                    }
                     const auto found = art_indices.find({bank, static_cast<unsigned>(record_id)});
                     if (found == art_indices.end())
+                    {
                         throw std::runtime_error("Missing wall set for " + id.archive + ":" +
                                                  std::to_string(id.record));
+                    }
                     for (const auto &views : found->second)
                     {
                         profile.appearance_entries.push_back(views);
                         std::array<opengold::Image, 10> pieces;
                         for (unsigned view = 0; view < 10; ++view)
+                        {
                             pieces[view] = loaded[views[view]].image;
+                        }
                         profile.art.appearances.push_back(std::move(pieces));
                     }
                 }
                 for (const auto &cell : geometry.cells)
+                {
                     for (const auto wall : cell.walls)
+                    {
                         if (wall > profile.art.appearances.size())
+                        {
                             throw std::runtime_error("Wall ID exceeds selected artwork in " +
                                                      id.archive + ":" + std::to_string(id.record));
+                        }
+                    }
+                }
                 map.profiles.push_back(std::move(profile));
             }
             if (map.profiles.empty())
+            {
                 throw std::runtime_error("No wall-art profile for " + id.archive + ":" +
                                          std::to_string(id.record));
+            }
             loaded_maps.push_back(std::move(map));
         }
         entries_ = std::move(loaded);
@@ -241,7 +277,9 @@ Array WallArtCatalog::entries() const
 Ref<godot::Image> WallArtCatalog::image_at(int index) const
 {
     if (index < 0 || static_cast<std::size_t>(index) >= entries_.size())
+    {
         return {};
+    }
     return godot_image(entries_[index].image);
 }
 
@@ -273,10 +311,14 @@ Dictionary WallArtCatalog::map_cell(int map_index, int profile_index, int x, int
 {
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
         y < 0 || y >= 16 || view < 0 || view >= 10)
+    {
         return {};
+    }
     const auto &map = maps_[map_index];
     if (profile_index < 0 || static_cast<std::size_t>(profile_index) >= map.profiles.size())
+    {
         return {};
+    }
     const auto &profile = map.profiles[profile_index];
     const auto &cell = map.geometry.at(x, y);
     Dictionary result;
@@ -305,10 +347,14 @@ Ref<godot::Image> WallArtCatalog::map_view(int map_index, int profile_index, int
 {
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
         y < 0 || y >= 16 || facing < 0 || facing >= 4)
+    {
         return {};
+    }
     const auto &map = maps_[map_index];
     if (profile_index < 0 || static_cast<std::size_t>(profile_index) >= map.profiles.size())
+    {
         return {};
+    }
     const auto direction = MapDirection{static_cast<std::size_t>(facing)};
     return godot_image(
         compose_exploration_view(map.geometry, map.profiles[profile_index].art, x, y, direction));
@@ -320,16 +366,22 @@ Dictionary WallArtCatalog::map_pick(int map_index, int profile_index, int x, int
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
         y < 0 || y >= 16 || facing < 0 || facing >= 4 || pixel_x < 0 || pixel_x >= 88 ||
         pixel_y < 0 || pixel_y >= 88)
+    {
         return {};
+    }
     const auto &map = maps_[map_index];
     if (profile_index < 0 || static_cast<std::size_t>(profile_index) >= map.profiles.size())
+    {
         return {};
+    }
     const auto &profile = map.profiles[profile_index];
     const auto rendered = render_exploration_view(map.geometry, profile.art, x, y,
                                                   MapDirection{static_cast<std::size_t>(facing)});
     const auto &hit = rendered.wall_hits[pixel_y * 88 + pixel_x];
     if (hit.cell < 0)
+    {
         return {};
+    }
     const auto &cell = map.geometry.cells[hit.cell];
     const auto face = index(hit.face);
     const auto wall = cell.walls[face];
@@ -352,22 +404,29 @@ Array WallArtCatalog::map_visible_pieces(int map_index, int profile_index, int x
     Array result;
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
         y < 0 || y >= 16 || facing < 0 || facing >= 4)
+    {
         return result;
+    }
     const auto &map = maps_[map_index];
     if (profile_index < 0 || static_cast<std::size_t>(profile_index) >= map.profiles.size())
+    {
         return result;
+    }
     const auto rendered =
         render_exploration_view(map.geometry, map.profiles[profile_index].art, x, y,
                                 MapDirection{static_cast<std::size_t>(facing)});
     std::set<std::tuple<int, std::size_t, unsigned>> seen;
     for (int py = 0; py < 88; ++py)
+    {
         for (int px = 0; px < 88; ++px)
         {
             const auto &hit = rendered.wall_hits[py * 88 + px];
             if (hit.cell < 0 ||
                 !seen.insert({hit.cell, index(hit.face), static_cast<unsigned>(hit.perspective)})
                      .second)
+            {
                 continue;
+            }
             Dictionary piece;
             piece["pixel_x"] = px;
             piece["pixel_y"] = py;
@@ -377,5 +436,6 @@ Array WallArtCatalog::map_visible_pieces(int map_index, int profile_index, int x
             piece["view"] = static_cast<unsigned>(hit.perspective);
             result.push_back(piece);
         }
+    }
     return result;
 }

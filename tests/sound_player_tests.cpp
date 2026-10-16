@@ -20,7 +20,9 @@ namespace
 void require(bool condition, const char *message)
 {
     if (!condition)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 using opengold::test::rejects;
@@ -64,7 +66,9 @@ class FakeOutput final : public SoundOutput
     {
         ++state_.prepares;
         for (const auto &clip : sounds.clips())
+        {
             state_.prepared_ids.push_back(clip.id);
+        }
         if (state_.fail_prepare)
         {
             state_.playing = true;
@@ -78,7 +82,9 @@ class FakeOutput final : public SoundOutput
         ++state_.starts;
         state_.playing = true;
         if (state_.fail_play)
+        {
             throw std::runtime_error("Simulated device failure after starting");
+        }
     }
 
     void stop() noexcept override

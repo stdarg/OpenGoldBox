@@ -34,8 +34,12 @@ static_assert(
     []
     {
         for (std::size_t row = 0; row < class_names.size(); ++row)
+        {
             if (static_cast<std::size_t>(class_names[row].character_class) != row)
+            {
                 return false;
+            }
+        }
         return true;
     }());
 
@@ -63,7 +67,9 @@ std::optional<CharacterClass> class_from_label(std::string_view label)
                                         return names.label == label;
                                     });
     if (found == class_names.end())
+    {
         return std::nullopt;
+    }
     return found->character_class;
 }
 
@@ -75,14 +81,18 @@ CharacterClass class_from_id(std::string_view id)
                                         return names.id == id;
                                     });
     if (found == class_names.end())
+    {
         throw std::runtime_error("Unknown class");
+    }
     return found->character_class;
 }
 
 std::optional<CharacterClass> draft_class(const rules::CharacterDraft &draft)
 {
     if (draft.character_class.empty())
+    {
         return std::nullopt;
+    }
     return class_from_id(draft.character_class);
 }
 
@@ -90,7 +100,9 @@ CharacterClass class_of(const rules::CharacterSheet &sheet)
 {
     const auto character_class = class_from_label(sheet.character_class);
     if (!character_class)
+    {
         throw std::runtime_error("Unknown class");
+    }
     return *character_class;
 }
 
@@ -123,7 +135,9 @@ unsigned feats_by(CharacterClass character_class, unsigned level)
 {
     unsigned count = 0;
     for (unsigned n = 1; n <= level; ++n)
+    {
         count += gains_feat(character_class, n) ? 1 : 0;
+    }
     return count;
 }
 } // namespace opengold::srd5::detail

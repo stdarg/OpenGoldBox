@@ -51,8 +51,10 @@ void CharacterPoolDialog::connect_host(std::unique_ptr<const rules::CharacterRul
                                        FailureReport report)
 {
     if (!rules || !campaign || !member_added || !report)
+    {
         throw std::logic_error(
             "The character pool needs its rules, campaign, a follow-up and a report");
+    }
     rules_ = std::move(rules);
     art_ = &art;
     portraits_ = &portraits;
@@ -86,8 +88,10 @@ void CharacterPoolDialog::open()
     auto *list = &required_node<ItemList>(*this, "List");
     list->clear();
     for (const auto &character : pool_)
+    {
         list->add_item(i18n::text(character.sheet().character_class) + " / " +
                        gs(character.sheet().name));
+    }
     list->select(pool_index_);
     select(pool_index_);
     popup_centered();
@@ -97,15 +101,23 @@ void CharacterPoolDialog::mark_added(const CampaignParty &campaign)
 {
     pool_added_.clear();
     for (unsigned i = 0; i < 48; ++i)
+    {
         for (const auto &m : campaign.state().roster)
+        {
             if (m.creation_source == "pool:v1:" + std::to_string(i))
+            {
                 pool_added_.push_back(i);
+            }
+        }
+    }
 }
 
 void CharacterPoolDialog::select(std::int64_t index)
 {
     if (index < 0 || static_cast<std::size_t>(index) >= pool_.size())
+    {
         return;
+    }
     pool_index_ = static_cast<unsigned>(index);
     const auto &character = pool_[pool_index_];
     required_node<RichTextLabel>(*this, "Text").call("render", presentation::sheet_text(character));
@@ -142,7 +154,9 @@ void CharacterPoolDialog::add()
     try
     {
         if (std::find(pool_added_.begin(), pool_added_.end(), pool_index_) != pool_added_.end())
+        {
             return;
+        }
         (void)add_pool_member(campaign_(), pool_.at(pool_index_), pool_index_);
         pool_added_.push_back(pool_index_);
         member_added_();

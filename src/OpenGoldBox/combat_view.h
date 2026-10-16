@@ -76,7 +76,9 @@ class CombatView : public godot::Control
     [[nodiscard]] std::optional<opengold::rules::Snapshot> completed_outcome() const
     {
         if (!demo_ || !demo_->has_combat())
+        {
             return {};
+        }
         const auto &s = demo_.snapshot();
         return s.outcome == opengold::rules::Outcome::ongoing ? std::nullopt : std::optional{s};
     }

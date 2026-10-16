@@ -18,7 +18,9 @@ std::vector<std::string> option_ids(const std::vector<CreationChoice> &options)
 {
     std::vector<std::string> result;
     for (const auto &o : options)
+    {
         result.push_back(o.id);
+    }
     std::sort(result.begin(), result.end());
     return result;
 }
@@ -52,12 +54,14 @@ void cleric_creation_checks()
              {"magic_missile"},
              {"cure_wounds", "cure_wounds"},
              {"cure_wounds", "healing_word", "inflict_wounds", "blindness", "magic_missile"}})
+    {
         rejects(
             [&]
             {
                 (void)creation_rules->evaluate(cleric_draft("protector", bad),
                                                NameRequirement::required);
             });
+    }
 
     // Without preparation a Cleric no longer silently knows Cure Wounds.
     auto unprepared = draft;
@@ -95,10 +99,12 @@ void divine_order_checks()
           "Other Clerics keep their Medium armor and Simple weapon training");
     const auto wisdom = std::max(1, thaumaturge.sheet().modifiers[Ability::wisdom]);
     for (const auto *skill : {"arcana", "religion"})
+    {
         check(rules->ability_check(thaumaturge.sheet(), {}, Ability::intelligence, skill).total ==
                   rules->ability_check(protector.sheet(), {}, Ability::intelligence, skill).total +
                       wisdom,
               "Thaumaturge adds Wisdom to Arcana and Religion checks");
+    }
     check(rules->ability_check(thaumaturge.sheet(), {}, Ability::intelligence, "history").total ==
               rules->ability_check(protector.sheet(), {}, Ability::intelligence, "history").total,
           "Thaumaturge adds nothing to other Intelligence checks");
@@ -171,11 +177,13 @@ void cleric_advancement_checks()
     SpellChoices too_few;
     too_few.prepared = std::vector<std::string>{"cure_wounds"};
     for (const auto &bad : {replace, too_few})
+    {
         rejects(
             [&]
             {
                 party.choose_spells(id, bad);
             });
+    }
     check(saved(party) == after_rest, "Rejected rest choices change nothing");
     auto round = decode_campaign(after_rest, *creation_rules, *rules, "spell-access", nullptr);
     CampaignParty restored(module());
@@ -204,7 +212,9 @@ void write_cleric_ui_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
     if (!directory || !*directory)
+    {
         return;
+    }
     CampaignParty party(module());
     (void)party.add_pc(Character(*srd5::character_rules(),
                                  cleric_draft("protector", level_one_cleric_spells), {}));

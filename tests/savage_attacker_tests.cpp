@@ -28,7 +28,9 @@ auto module(bool target = true, std::string affinity = {})
 {
     auto text = read(root / "data/rules/srd-5.2.1/combat.rules");
     if (target)
+    {
         text += "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
+    }
     return srd5::parse_content(text + affinity);
 }
 
@@ -43,15 +45,21 @@ Character hero(std::string klass = "fighter", std::string background = "soldier"
     d.name = "Savage tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -63,8 +71,12 @@ void act(CombatSession &c, std::string_view verb)
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -73,7 +85,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (int n = 0; n < 3; ++n)
+    {
         std::getline(in, row);
+    }
     std::uint64_t r{};
     in >> r;
     return r;
@@ -84,7 +98,9 @@ auto battle(const RulesModule &rules, const Character &h, std::string gear = "gr
 {
     std::vector<std::string> equipment;
     if (!gear.empty())
+    {
         equipment.push_back(gear);
+    }
     return rules.create(
         {{8, 8, std::vector<Terrain>(64)},
          {{1,
@@ -179,8 +195,10 @@ void exceptions_and_turns()
             check(!rerolled(*close), "Unarmed Strike has no weapon dice to reroll");
         }
         else
+        {
             check(!rerolled(*c) && unit(*c, 99).hit_points == 999,
                   "Fixed Blowgun damage has no damage dice");
+        }
     }
     auto c = battle(*rules, h, "greatsword", 40);
     const auto before = rng(*c);
@@ -238,14 +256,18 @@ void lethal_and_queues()
                                   VitalState{lethal ? 1 : 1000, false, {}}}}},
                                13);
         while (c->snapshot().actor != 99)
+        {
             act(*c, "end");
+        }
         bool moved = false;
         for (const auto &a : c->legal_commands())
+        {
             if (a.verb == "move" && a.destination == Cell{3, 2})
             {
                 moved = c->submit(a);
                 break;
             }
+        }
         check(moved && c->snapshot().reaction_pending, "Multiple reactors are queued");
         act(*c, "opportunity");
         check(rerolled(*c), "First reactor rerolls automatically");
@@ -300,7 +322,9 @@ void grants_and_campaign()
         const auto id = party.add_pc(hero(klass, "sage"));
         party.award_experience(2700, "savage-xp");
         for (int n = 2; n <= 3; ++n)
+        {
             party.advance(id, party.default_advancement(id));
+        }
         auto choice = party.default_advancement(id);
         choice.feat = "savage_attacker";
         choice.abilities = {};

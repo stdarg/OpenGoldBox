@@ -20,9 +20,11 @@ String equipment_message(const opengold::rules::Message &message)
 {
     auto text = i18n::text(message.source);
     for (const auto &argument : message.arguments)
+    {
         text = text.replace(String::utf8(("{" + argument.name + "}").c_str()),
                             argument.translate ? i18n::text(argument.value)
                                                : String::utf8(argument.value.c_str()));
+    }
     return text;
 }
 } // namespace
@@ -45,7 +47,9 @@ void EquipmentChoiceDialog::connect_host(CampaignAccess campaign, std::function<
                                          std::function<void()> equipped, FailureReport report)
 {
     if (!campaign || !closed || !equipped || !report)
+    {
         throw std::logic_error("Equipment choice needs a campaign, two follow-ups and a report");
+    }
     campaign_ = std::move(campaign);
     closed_ = std::move(closed);
     equipped_ = std::move(equipped);
@@ -94,7 +98,9 @@ void EquipmentChoiceDialog::open(opengold::MemberId member, std::uint64_t item,
         hand->set_item_disabled(i, !choices_[i].available);
         hand->set_item_tooltip(i, equipment_message(choices_[i].explanation));
         if (first < 0 && choices_[i].available)
+        {
             first = i;
+        }
     }
     hand->select(first < 0 ? 0 : first);
     choice_selected(first < 0 ? 0 : first);
@@ -105,7 +111,9 @@ void EquipmentChoiceDialog::open(opengold::MemberId member, std::uint64_t item,
 void EquipmentChoiceDialog::choice_selected(std::int64_t index)
 {
     if (index < 0 || static_cast<std::size_t>(index) >= choices_.size())
+    {
         return;
+    }
     const auto &choice = choices_[index];
     required_node<Label>(*this, "Explanation").set_text(equipment_message(choice.explanation));
     required_node<Button>(*this, "Equip")
@@ -117,7 +125,9 @@ void EquipmentChoiceDialog::apply()
     const auto selected = required_node<OptionButton>(*this, "Hand").get_selected();
     if (selected < 0 || static_cast<std::size_t>(selected) >= choices_.size() ||
         !choices_[selected].available)
+    {
         return;
+    }
     try
     {
         campaign_().equip(member_, item_, choices_[selected].operation);

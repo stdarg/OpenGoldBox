@@ -33,7 +33,9 @@ Character character(std::string klass)
     d.name = "Advancement " + klass;
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -55,16 +57,24 @@ bool offers(const CombatSession &s, std::string_view verb)
 Command command(const CombatSession &s, std::string_view verb)
 {
     for (const auto &c : s.legal_commands())
+    {
         if (c.verb == verb)
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 CombatantView unit(const CombatSession &s, EntityId id)
 {
     for (const auto &c : s.snapshot().combatants)
+    {
         if (c.id == id)
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -78,7 +88,9 @@ auto duel(const RulesModule &rules, const CampaignParty &party)
     {
         auto combat = rules.create(encounter, seed);
         if (combat->snapshot().actor == participants[0].id)
+        {
             return combat;
+        }
     }
     throw std::runtime_error("No first initiative seed");
 }
@@ -103,11 +115,13 @@ void dwarf_class_sources()
         draft.rolls[2] = {{6, 4, 4, 1}, 3};
         const auto adjustments = srd5::character_rules()->adjustments("sage");
         for (unsigned i = 0; i < adjustments.size(); ++i)
+        {
             if (adjustments[i].bonuses[Ability::constitution] == 0)
             {
                 draft.adjustment = i;
                 break;
             }
+        }
         CampaignParty party(module());
         auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
         party.award_experience(2700, "dwarf-source");
@@ -153,8 +167,10 @@ void class_identity()
 {
     const auto rules = module();
     for (const auto &choice : srd5::character_rules()->choices(CreationField::character_class))
+    {
         check(rules->advancement_options(character(choice.id).sheet()).level == 2,
               "Every class is recognised by its rules");
+    }
     auto misspelt = character("wizard").sheet();
     misspelt.character_class = "Wizzard";
     rejects(
@@ -268,11 +284,15 @@ void progression()
     CampaignParty capped(module());
     auto high = character("fighter").creation_data();
     for (auto &roll : high.rolls)
+    {
         roll = {{6, 6, 6, 1}, 3};
+    }
     const auto cap = capped.add_pc(Character(*srd5::character_rules(), high, {}));
     capped.award_experience(2700, "cap");
     for (unsigned level = 2; level <= 3; ++level)
+    {
         capped.advance(cap, capped.default_advancement(cap));
+    }
     auto invalid = capped.default_advancement(cap);
     invalid.abilities = {};
     invalid.abilities[Ability::constitution] = 2;
@@ -299,7 +319,9 @@ void hp_history()
     for (const auto example : {Example{3, 2, {2, 3, 4, 9}}, Example{3, 1, {2, 3, 4, 9}},
                                Example{4, 1, {3, 4, 5, 6}}, Example{4, 2, {3, 4, 5, 10}},
                                Example{5, 2, {3, 4, 5, 10}}, Example{14, 2, {8, 14, 20, 30}}})
+    {
         for (const bool dwarf : {false, true})
+        {
             for (const bool unconscious : {false, true})
             {
                 auto draft = character("wizard").creation_data();
@@ -310,11 +332,13 @@ void hp_history()
                                      : AbilityRoll{{example.constitution - 2, 1, 1, 1}, 3};
                 const auto adjustments = srd5::character_rules()->adjustments("sage");
                 for (unsigned i = 0; i < adjustments.size(); ++i)
+                {
                     if (adjustments[i].bonuses[Ability::constitution] == 0)
                     {
                         draft.adjustment = i;
                         break;
                     }
+                }
                 CampaignParty party(module());
                 const auto id = party.add_pc(Character(*srd5::character_rules(), draft, {}));
                 party.award_experience(2700, "hp-history");
@@ -357,9 +381,11 @@ void hp_history()
                                         correct_source) == int(dwarf),
                           "Species explanation gives total Toughness at the attained level");
                     if (dwarf)
+                    {
                         check(sheet.racial_modifiers.starts_with(
                                   "Dwarven Toughness: +" + std::to_string(level) + " maximum HP."),
                               "Plain-text source agrees with localized source");
+                    }
                     const auto bytes = saved(party);
                     auto loaded = decode_campaign(bytes, *srd5::character_rules(), *module(),
                                                   "advancement-fixture", nullptr);
@@ -424,6 +450,8 @@ void hp_history()
                           "HP history survives a combat checkpoint");
                 }
             }
+        }
+    }
 }
 
 void ability_sources()
@@ -461,7 +489,9 @@ void ability_sources()
             {
                 int total = 0;
                 for (const auto &source : sheet.ability_adjustments)
+                {
                     total += source.bonuses[each];
+                }
                 check(total == sheet.bonuses[each] &&
                           sheet.base[each] + total == sheet.scores[each],
                       "Separate sources sum exactly to the displayed final scores");
@@ -528,6 +558,7 @@ void asi_conformance()
               "All twelve classes reject a level-one ASI entitlement atomically");
     }
     for (const auto ability : all_abilities)
+    {
         for (unsigned bonus : {1u, 2u})
         {
             auto d = character("fighter").creation_data();
@@ -540,18 +571,22 @@ void asi_conformance()
             const auto adjustments = srd5::character_rules()->adjustments(d.background);
             bool found = false;
             for (unsigned i = 0; i < adjustments.size(); ++i)
+            {
                 if (adjustments[i].bonuses[ability] == int(bonus))
                 {
                     d.adjustment = i;
                     found = true;
                     break;
                 }
+            }
             check(found, "Independent cap fixture has requested background allocation");
             CampaignParty capped(module());
             const auto id = capped.add_pc(Character(*srd5::character_rules(), d, {}));
             capped.award_experience(2700, "asi-cap");
             for (unsigned level = 2; level <= 3; ++level)
+            {
                 capped.advance(id, capped.default_advancement(id));
+            }
             check(capped.member(id).character.sheet().scores[ability] == 18 + int(bonus),
                   "Cap fixture begins at19 or20");
             auto choice = capped.default_advancement(id);
@@ -575,7 +610,9 @@ void asi_conformance()
                       "Every ability can legally reach20");
             }
         }
+    }
     for (const char *klass : {"fighter", "cleric", "wizard", "rogue", "paladin", "ranger"})
+    {
         for (bool npc : {false, true})
         {
             CampaignParty baseline(module());
@@ -586,19 +623,26 @@ void asi_conformance()
             baseline.equip(id, 1);
             baseline.award_experience(2700, "asi-matrix");
             for (unsigned level = 2; level <= 3; ++level)
+            {
                 baseline.advance(id, baseline.default_advancement(id));
+            }
             auto wounded = baseline.checkpoint();
             wounded.roster.front().vitals.hit_points -= 3;
             baseline.restore(std::move(wounded));
             const auto original = baseline.member(id);
             const auto initial = saved(baseline);
             if (!npc)
+            {
                 if (const auto *dir = std::getenv("OPENGOLD_GAME_DIR"); dir && *dir)
+                {
                     write_campaign_file(
                         std::filesystem::path(OPENGOLD_BINARY_DIR) /
                             ("asi-" + std::string(klass) + "-ui.ogs"),
                         encode_campaign(baseline, nullptr, campaign_asset_identity(dir)));
+                }
+            }
             for (std::size_t first_index = 0; first_index < 6; ++first_index)
+            {
                 for (std::size_t second_index = first_index; second_index < 6; ++second_index)
                 {
                     const auto first = all_abilities[first_index];
@@ -647,11 +691,13 @@ void asi_conformance()
                             "ASI updates each score, modifier and trained/untrained saving throw exactly once");
                     }
                     for (const auto &skill : sheet.training.skills)
+                    {
                         check(skill.bonus == sheet.scores[skill.ability] / 2 - 5 +
                                                  (skill.expertise    ? 4
                                                   : skill.proficient ? 2
                                                                      : 0),
                               "Skill totals use final ability and unchanged training");
+                    }
                     const int old_con =
                         original.character.sheet().scores[Ability::constitution] / 2 - 5;
                     const int new_con = sheet.scores[Ability::constitution] / 2 - 5;
@@ -666,8 +712,12 @@ void asi_conformance()
                           "Advancement preserves physical equipment");
                     std::map<std::string, std::string> selections;
                     for (const auto ability : all_abilities)
+                    {
                         if (choice.abilities[ability])
+                        {
                             selections[names[ability]] = std::to_string(choice.abilities[ability]);
+                        }
+                    }
                     const FeatureGrant expected{"feat:ability_score_improvement",
                                                 "class:" + std::string(klass) +
                                                     ":ability_score_improvement",
@@ -683,8 +733,12 @@ void asi_conformance()
                         });
                     forged = sheet;
                     for (auto &grant : forged.grants)
+                    {
                         if (grant == expected)
+                        {
                             grant.level = 3;
+                        }
+                    }
                     rejects(
                         [&]
                         {
@@ -717,14 +771,18 @@ void asi_conformance()
                         restored.finish_short_rest(restored.state().short_rest->ticket);
                         // A Hunter Ranger may change its Hunter's Prey.
                         if (restored.state().training_rest)
+                        {
                             restored.keep_rest_training(restored.state().training_rest->ticket, id);
+                        }
                         check(bool(restored.rest(RestKind::long_rest)),
                               "Advanced character can Long Rest");
                         check(restored.member(id).character.sheet().grants == sheet.grants,
                               "Rests do not consume or repeat ASI");
                     }
                 }
+            }
         }
+    }
 }
 
 void verify_asi_ui(const char *klass, const char *file)
@@ -762,7 +820,9 @@ void feats()
         const auto id = party.add_pc(character("fighter"));
         party.award_experience(2700, "xp");
         for (unsigned level = 2; level <= 3; ++level)
+        {
             party.advance(id, party.default_advancement(id));
+        }
         party.set_wealth({0, 0, 0, 100, 0, 0, 0});
         for (unsigned type : {36, 55})
         {
@@ -800,13 +860,19 @@ void feats()
             {
                 auto combat = rules->create(e, seed);
                 if (combat->snapshot().actor != id)
+                {
                     continue;
+                }
                 combat->submit(command(*combat, "melee"));
                 for (const auto &log : combat->snapshot().log())
+                {
                     hit |= log.find("Savage Attacker") != std::string::npos;
+                }
                 if (hit)
+                {
                     check(rules->restore(combat->save())->save() == combat->save(),
                           "Spent Savage Attacker state survives checkpoint");
+                }
             }
             check(hit, "Selected Savage Attacker modifies actual weapon damage");
         }
@@ -825,11 +891,17 @@ void spells()
             // A Cleric's default prepares every available spell up to its count.
             auto choice = party.default_advancement(id);
             if (std::string_view(klass) == "wizard" && level >= 3)
+            {
                 // Earlier preparations stay; the level-two spells join them.
                 for (const auto *spell : {"scorching_ray", "blindness"})
+                {
                     if (std::find(choice.spells.begin(), choice.spells.end(), spell) ==
                         choice.spells.end())
+                    {
                         choice.spells.push_back(spell);
+                    }
+                }
+            }
             party.advance(id, choice);
         }
         auto state = party.checkpoint();

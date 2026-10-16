@@ -151,7 +151,9 @@ void write_wizard_ui_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
     if (!directory || !*directory)
+    {
         return;
+    }
     auto draft = hero().creation_data();
     draft.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
     draft.spells = SpellChoices{

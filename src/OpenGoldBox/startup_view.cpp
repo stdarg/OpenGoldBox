@@ -74,7 +74,9 @@ void StartupView::choose_game_path()
     const auto saved = settings::saved_game_path();
     pending_path_ = settings::game_path();
     if (pending_path_.is_empty())
+    {
         pending_path_ = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
+    }
     if (settings::flag("--reset-game-path") || saved.is_empty() ||
         !settings::validate_game_path(saved).usable)
     {
@@ -166,9 +168,13 @@ void StartupView::check_path()
         String message = result.error.is_empty() ? i18n::text("Missing or unreadable game files:")
                                                  : i18n::text(result.error.utf8().get_data());
         for (int i = 0; i < std::min(static_cast<int>(result.missing.size()), 5); ++i)
+        {
             message += " " + result.missing[i];
+        }
         if (result.missing.size() > 5)
+        {
             message += " ...";
+        }
         show_path(message);
         return;
     }
@@ -215,12 +221,16 @@ void StartupView::begin_startup()
 void StartupView::accept_language()
 {
     if (!choosing_language_ || finishing_)
+    {
         return;
+    }
     auto *dialog = &required_node<Window>(*this, "LanguageDialog");
     auto *choices = &required_node<ItemList>(*dialog, "Choices");
     const auto selected = choices->get_selected_items();
     if (selected.is_empty())
+    {
         return;
+    }
     const String locale = choices->get_item_metadata(selected[0]);
     if (!i18n::select_language(locale))
     {
@@ -245,7 +255,9 @@ void StartupView::preview_language(std::int64_t index)
     auto *dialog = &required_node<Window>(*this, "LanguageDialog");
     auto *choices = &required_node<ItemList>(*dialog, "Choices");
     if (index < 0 || index >= choices->get_item_count())
+    {
         return;
+    }
 
     // Preview does not change the active or saved language until
     // confirmation: the guard puts the locale back however this ends
@@ -334,10 +346,14 @@ void StartupView::respond_to_input(const Ref<InputEvent> &event)
     const Ref<InputEventKey> key = event;
     if (finishing_ || choosing_language_ || choosing_path_ || key.is_null() || !key->is_pressed() ||
         key->is_echo())
+    {
         return;
+    }
     // Application shortcuts must not advance a splash.
     if (key->is_ctrl_pressed() && (key->get_keycode() == KEY_X || key->get_keycode() == KEY_S))
+    {
         return;
+    }
     get_viewport()->set_input_as_handled();
     if (key->get_keycode() == KEY_ESCAPE || screen_ == 1)
     {
@@ -353,7 +369,9 @@ void StartupView::respond_to_input(const Ref<InputEvent> &event)
 void StartupView::finish()
 {
     if (finishing_)
+    {
         return;
+    }
     finishing_ = true;
     required_node<TextureRect>(*this, "ImageFit/Image/Text").call("cancel");
     // Scene changes must occur after ready/input dispatch has completed.

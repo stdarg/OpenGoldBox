@@ -11,13 +11,19 @@ void *operator new(std::size_t size)
     {
         opengold::test::failure_happened = true;
         if (!opengold::test::keep_failing)
+        {
             opengold::test::allocations_until_failure = -1;
+        }
         throw std::bad_alloc();
     }
     if (left > 0)
+    {
         --opengold::test::allocations_until_failure;
+    }
     if (void *memory = std::malloc(size == 0 ? 1 : size))
+    {
         return memory;
+    }
     throw std::bad_alloc();
 }
 

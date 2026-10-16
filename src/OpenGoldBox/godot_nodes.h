@@ -32,10 +32,14 @@ template <class T> [[nodiscard]] NodeOwner<T> make_node()
 template <class T> T *attach_child(godot::Node &parent, NodeOwner<T> child)
 {
     if (!child || child->get_parent())
+    {
         throw std::logic_error("Expected a detached child");
+    }
     parent.add_child(child.get());
     if (child->get_parent() != &parent)
+    {
         throw std::runtime_error("Cannot attach child node");
+    }
     return child.release();
 }
 
@@ -45,7 +49,9 @@ template <class T> T *attach_child(godot::Node &parent, NodeOwner<T> child)
 template <class T> [[nodiscard]] NodeOwner<T> detach_child(godot::Node &parent, T &child)
 {
     if (child.get_parent() != &parent)
+    {
         throw std::logic_error("Expected a child of this parent");
+    }
     parent.remove_child(&child);
     return NodeOwner<T>(&child);
 }
@@ -59,8 +65,10 @@ template <class T>
 {
     auto *node = godot::Object::cast_to<T>(parent.get_node_or_null(path));
     if (!node)
+    {
         throw std::runtime_error("Missing or mistyped node: " +
                                  std::string(godot::String(path).utf8().get_data()));
+    }
     return *node;
 }
 
@@ -68,10 +76,14 @@ template <class T>
 {
     godot::Ref<godot::PackedScene> packed = godot::ResourceLoader::get_singleton()->load(path);
     if (packed.is_null())
+    {
         throw std::runtime_error(std::string("Missing scene: ") + path);
+    }
     NodeOwner<> scene(packed->instantiate());
     if (!scene)
+    {
         throw std::runtime_error(std::string("Cannot instantiate scene: ") + path);
+    }
     return scene;
 }
 
@@ -80,7 +92,9 @@ template <class T> [[nodiscard]] NodeOwner<T> instantiate_control(const char *pa
     auto scene = instantiate_scene(path);
     auto *control = godot::Object::cast_to<T>(scene.get());
     if (!control)
+    {
         throw std::runtime_error(std::string("Invalid control scene: ") + path);
+    }
     scene.release();
     return NodeOwner<T>(control);
 }
@@ -99,8 +113,10 @@ template <class T> [[nodiscard]] NodeOwner<T> instantiate_control(const char *pa
     }
     godot::Ref<godot::PackedScene> packed = godot::ResourceLoader::get_singleton()->load(path);
     if (packed.is_null())
+    {
         throw std::runtime_error("Cannot load dialog layout scene: " +
                                  std::string(path.utf8().get_data()));
+    }
     return NodeOwner<>(packed->instantiate());
 }
 
@@ -109,7 +125,9 @@ inline void attach_dialog_layout(godot::Window &window, const godot::String &gro
     auto scene = dialog_layout_scene(group);
     auto *layout = godot::Object::cast_to<godot::Control>(scene.get());
     if (!layout)
+    {
         throw std::runtime_error("Invalid dialog layout root");
+    }
     layout->call("apply_window", &window);
     while (layout->get_child_count() > 0)
     {
@@ -152,7 +170,9 @@ class SignalsBlocked
     void unblock() noexcept
     {
         if (!object_)
+        {
             return;
+        }
         object_->set_block_signals(previous_);
         object_ = nullptr;
     }

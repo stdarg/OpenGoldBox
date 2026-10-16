@@ -26,7 +26,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 // The SRD rules plus a test creature with 1000 Hit Points, so no heal is capped.
@@ -53,8 +55,12 @@ CharacterDraft pool_draft(std::string_view klass)
     art.set_original_head(1, por::PortraitPart{"fixture", head});
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     for (const auto &preset : character_pool(*srd5::character_rules(), art))
+    {
         if (preset.creation_data().character_class == klass)
+        {
             return preset.creation_data();
+        }
+    }
     throw std::runtime_error("No pool character of the class");
 }
 
@@ -68,13 +74,17 @@ Character caster(std::string_view klass, const std::string &spell, Ability abili
     auto &prepared = d.spells->prepared;
     check(prepared && !prepared->empty(), std::string(klass) + " prepares level-one spells");
     if (std::find(prepared->begin(), prepared->end(), spell) == prepared->end())
+    {
         prepared->back() = spell;
+    }
     d.rolls[static_cast<std::size_t>(ability)] = {{best, best, best, 1}, 3};
     CampaignParty party(rules());
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "healing:levels");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character;
 }
 
@@ -86,8 +96,12 @@ int modifier(const Character &c, Ability ability)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -104,8 +118,12 @@ bool offers(const CombatSession &c, std::string_view verb, EntityId target)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -124,7 +142,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
     // Alert first offers to swap initiative; keep it.
     (void)submit(*c, "initiative_keep");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the healer's turn");
+    }
     check(c->snapshot().actor == 1, "The healer acts");
     return c;
 }
@@ -179,7 +199,9 @@ void routes()
               label + (touch ? ": takes the Action" : ": takes the Bonus Action"));
 
         if (!route.second_slot)
+        {
             continue;
+        }
         // A level-2 slot rolls two more dice after the same first two.
         const auto third = caster(route.klass, route.spell, route.ability, 6, 3);
         const int die = touch ? 8 : 4;

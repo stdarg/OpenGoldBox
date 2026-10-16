@@ -54,7 +54,9 @@ inline bool initiative_command(godot::Node &root, const opengold::rules::Command
 {
     if (command.verb != "initiative_keep" && command.verb != "initiative_swap" &&
         command.verb != "uncanny_metabolism" && command.verb != "persistent_rage")
+    {
         return true;
+    }
     const auto owner =
         required_node<godot::OptionButton>(root, "InitiativeChoice/Resolve").get_selected_id();
     const auto ally =
@@ -101,7 +103,9 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     {
         owners->add_item(label(id), id);
         if (static_cast<int>(id) == prior)
+        {
             selected = owners->get_item_count() - 1;
+        }
     }
     owners->select(selected);
     owners_quiet.unblock();
@@ -114,12 +118,16 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     allies->add_item(text(N_("Choose an ally")), 0);
     selected = 0;
     for (const auto &c : commands)
+    {
         if (c.verb == "initiative_swap" && c.actor == static_cast<unsigned>(owner))
         {
             allies->add_item(label(c.target), c.target);
             if (owner == prior && static_cast<int>(c.target) == prior_ally)
+            {
                 selected = allies->get_item_count() - 1;
+            }
         }
+    }
     allies->select(selected);
     allies_quiet.unblock();
     // Alert offers the swap; a Monk's Uncanny Metabolism or a Barbarian's
@@ -135,7 +143,9 @@ void refresh_initiative(godot::Node &root, const opengold::rules::Snapshot &stat
     };
     const bool persistent = offered("persistent_rage");
     for (const char *name : {"AllyLabel", "Ally", "Swap"})
+    {
         required_node<Control>(*w, name).set_visible(swaps);
+    }
     auto &feature = required_node<Button>(*w, "Metabolism");
     feature.set_visible(persistent || offered("uncanny_metabolism"));
     feature.set_text(persistent ? text(N_("Persistent Rage")) : text(N_("Uncanny Metabolism")));

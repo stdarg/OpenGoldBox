@@ -50,7 +50,9 @@ class CachedCombat
     [[nodiscard]] const opengold::rules::Snapshot &snapshot() const
     {
         if (!snapshot_)
+        {
             snapshot_ = demo_->combat().snapshot();
+        }
         return *snapshot_;
     }
 
@@ -59,7 +61,9 @@ class CachedCombat
     [[nodiscard]] const std::vector<opengold::rules::Command> &legal_commands() const
     {
         if (!legal_)
+        {
             legal_ = demo_->combat().legal_commands();
+        }
         return *legal_;
     }
 

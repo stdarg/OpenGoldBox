@@ -45,15 +45,21 @@ Character hero(std::string klass = "fighter", unsigned level = 2, bool trained =
     d.name = "Temporary HP tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     if (trained)
+    {
         d.training = {{"class:fighter:fighting_style", {"archery"}},
                       {"class:fighter:weapon_mastery", {"dagger", "longsword", "shortbow"}},
                       {"class:fighter", {"perception", "history"}}};
+    }
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned i = 1; i < level; ++i)
+    {
         check(result.advance(*module(), scratch), "Fixture can advance");
+    }
     return result;
 }
 
@@ -227,16 +233,24 @@ void rule_operations()
 CombatantView unit(const CombatSession &combat, EntityId id)
 {
     for (const auto &a : combat.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : combat.legal_commands())
+    {
         if (c.verb == verb && (!target || c.target == target))
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing command");
 }
 
@@ -260,21 +274,31 @@ void actual_combat()
                          {2, "toxin", "Poison attacker", Side::opposition, {3, 2}}}};
     auto combat = rules->create(encounter, 42);
     while (combat->snapshot().actor != 2)
+    {
         check(combat->submit(command(*combat, "end")), "Wait for attacker");
+    }
     auto copy = rules->restore(combat->save());
     const auto attack = command(*combat, "melee", 1);
     check(combat->submit(attack) && copy->submit(attack) && combat->save() == copy->save(),
           "Sourced buffer survives checkpoint and deterministic damage continuation");
     int raw = 0, resisted = 0;
     for (const auto &m : combat->snapshot().log_messages())
+    {
         if (m.source == "{name}: {type} damage {before} -> {after}.")
+        {
             for (const auto &a : m.arguments)
             {
                 if (a.name == "before")
+                {
                     raw = std::stoi(a.value);
+                }
                 if (a.name == "after")
+                {
                     resisted = std::stoi(a.value);
+                }
             }
+        }
+    }
     check(raw >= 4 && resisted == raw / 2 &&
               unit(*combat, 1).hit_points == c.sheet().hit_points - (resisted - 1) &&
               unit(*combat, 1).temporary_hp.amount == 0,
@@ -336,8 +360,10 @@ void campaign()
     (void)party.heal_with_hit_dice(*short_rest->spending, active);
     party.finish_short_rest(party.state().short_rest->ticket);
     for (auto id : {active, reserve, npc})
+    {
         check(pool(party.member(id).character, party.member(id).vitals).amount == 8,
               "Short Rest time and spending retain all pools");
+    }
     const auto rest = party.rest(RestKind::long_rest);
     check(rest && rest->members == std::vector<MemberId>{active, npc},
           "Only active eligible members finish the Long Rest");
@@ -355,8 +381,10 @@ void campaign()
                 copy.begin_combat();
             });
         while (copy.state().training_rest)
+        {
             copy.keep_rest_training(copy.state().training_rest->ticket,
                                     copy.state().training_rest->members.front());
+        }
     }
     auto actors = copy.participants();
     actors.push_back({99, "bandit", "Enemy", Side::opposition, {7, 7}});

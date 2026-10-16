@@ -23,7 +23,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -62,7 +64,9 @@ Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_woun
     d.name = "Cleric";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
@@ -71,23 +75,33 @@ Character cleric(unsigned level, std::vector<std::string> prepared = {"cure_woun
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(900, "cleric-xp");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -104,8 +118,12 @@ bool logged(const CombatSession &c, std::string_view text)
 unsigned channel(const CombatSession &c)
 {
     for (const auto &resource : unit(c, 1).resources)
+    {
         if (resource.id == "channel_divinity")
+        {
             return resource.remaining;
+        }
+    }
     return 0;
 }
 
@@ -128,7 +146,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {99, std::move(enemy), "Enemy", Side::opposition, {3, 1}}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     check(c->snapshot().actor == 1, "The Cleric acts");
     return c;
 }
@@ -166,7 +186,9 @@ std::unique_ptr<CombatSession> turned(const RulesModule &module)
         auto c = battle(module, cleric(2), "walker", seed);
         check(submit(*c, "turn_undead", 1) && channel(*c) == 1, "Turn Undead spends a use");
         if (logged(*c, "Enemy is turned."))
+        {
             return c;
+        }
     }
     throw std::runtime_error("No seed fails the Wisdom save");
 }
@@ -175,7 +197,9 @@ std::vector<std::string> verbs(const CombatSession &c)
 {
     std::vector<std::string> result;
     for (const auto &command : c.legal_commands())
+    {
         result.push_back(command.verb);
+    }
     return result;
 }
 
@@ -187,7 +211,9 @@ void turn_undead_checks()
     check(module->restore(saved)->save() == saved, "Turned survives a checkpoint");
     check(submit(*c, "end"), "End the Cleric's turn");
     while (c->snapshot().actor != 99)
+    {
         check(submit(*c, "end"), "Reach the zombie");
+    }
     check(verbs(*c) == std::vector<std::string>{"move"}, "A turned Undead can only flee");
     check(submit(*c, "move") && verbs(*c) == std::vector<std::string>{"end"},
           "It flees as far as it can, then its turn ends");
@@ -196,13 +222,17 @@ void turn_undead_checks()
     check(submit(*damaged, "end"), "End the Cleric's turn");
     // The fleeing zombie must move before it may end its turn.
     while (damaged->snapshot().actor != 1)
+    {
         check(submit(*damaged, "end") || submit(*damaged, "move"), "Back to the Cleric");
+    }
     // Sacred Flame reaches the fled zombie; this seed's save fails.
     check(submit(*damaged, "sacred_flame", 99) && unit(*damaged, 99).hit_points < 1000,
           "Sacred Flame harms the turned zombie");
     check(submit(*damaged, "end"), "End the Cleric's turn");
     while (damaged->snapshot().actor != 99)
+    {
         check(submit(*damaged, "end"), "Reach the zombie");
+    }
     check(verbs(*damaged).size() > 2, "Damage ends the turning");
 }
 
@@ -218,7 +248,9 @@ Character laughing_wizard()
     d.name = "Foe";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = {"fire_bolt", "ray_of_frost", "chill_touch"};
     const std::vector<std::string> spells{"magic_missile", "hideous_laughter"};
     d.spells = SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
@@ -247,16 +279,22 @@ void incapacitated_turning_checks()
         const auto reach = [&](EntityId id)
         {
             while (c->snapshot().actor != id)
+            {
                 check(submit(*c, "end") || submit(*c, "move"), "Pass the turn");
+            }
         };
         reach(1);
         check(submit(*c, "turn_undead", 1), "The Cleric uses Turn Undead");
         if (!logged(*c, "Enemy is turned."))
+        {
             continue;
+        }
         reach(98);
         check(submit(*c, "hideous_laughter", 1), "The Foe casts Hideous Laughter");
         if (!logged(*c, "Cleric falls Prone, laughing."))
+        {
             continue;
+        }
         reach(99);
         check(verbs(*c).size() > 2, "The laughing Cleric's Turn Undead ends");
         return;
@@ -278,7 +316,9 @@ void write_ui_fixture()
                          {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
                        2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "cleric-fixtures";
     std::filesystem::create_directories(path);
     std::ofstream out(path / "spark.save", std::ios::binary);
@@ -291,8 +331,12 @@ int recovered(const CombatSession &c)
 {
     const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
+    {
         if (const auto at = line->find(" recovers "); at != std::string::npos)
+        {
             return std::stoi(line->substr(at + 10));
+        }
+    }
     throw std::runtime_error("No healing in the log");
 }
 
@@ -332,8 +376,12 @@ void lesser_restoration_checks()
     auto c = battle(*module, cleric(3), "target", 5, afflicted);
     std::vector<std::string> choices;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb.starts_with("lesser_restoration") && command.target == 2)
+        {
             choices.push_back(command.label);
+        }
+    }
     check(choices == std::vector<std::string>{"Lesser Restoration: Blinded",
                                               "Lesser Restoration: Paralyzed",
                                               "Lesser Restoration: Poisoned"},
@@ -389,9 +437,13 @@ int logged_bonus(const CombatSession &c)
 {
     const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
+    {
         if (const auto at = line->find(" + ");
             at != std::string::npos && line->find(" vs AC ") != std::string::npos)
+        {
             return std::stoi(line->substr(at + 3));
+        }
+    }
     throw std::runtime_error("No attack in the log");
 }
 
@@ -405,7 +457,9 @@ void guiding_bolt_checks()
     check(submit(*c, "end"), "End the Cleric's turn");
     // The enemy's own attack is not against itself; the mark waits.
     while (c->snapshot().actor != 1)
+    {
         check(submit(*c, "end"), "Back to the Cleric");
+    }
     check(c->submit({c->snapshot().revision, 1, 0, "move", "Move", Cell{2, 1}}) &&
               submit(*c, "melee", 99) && logged(*c, "(advantage)") &&
               unit(*c, 99).conditions.empty(),
@@ -421,10 +475,14 @@ void bane_checks()
         check(submit(*c, "bane", 99) && c->snapshot().spell_targeting && submit(*c, "spell_cast"),
               "Bane is cast on the chosen creature");
         if (!logged(*c, "Enemy is weakened by Bane."))
+        {
             continue;
+        }
         check(submit(*c, "end"), "End the Cleric's turn");
         while (c->snapshot().actor != 99)
+        {
             check(submit(*c, "end"), "Reach the enemy");
+        }
         check(c->submit({c->snapshot().revision, 99, 0, "move", "Move", Cell{2, 1}}) &&
                   submit(*c, "melee", 1) && logged_bonus(*c) < 20 && logged_bonus(*c) >= 16,
               "Bane subtracts 1d4 from the creature's attack roll");
@@ -446,7 +504,9 @@ void spare_the_dying_checks()
                          {99, "target", "Enemy", Side::opposition, {9, 1}}}},
                        5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     check(submit(*c, "spare_the_dying", 2) &&
               logged(*c, "Cleric casts Spare the Dying: Ally is Stable."),
           "Spare the Dying stabilizes a dying ally within 15 feet");
@@ -477,21 +537,29 @@ void hold_person_checks()
         auto c = battle(*module, hero, "target", seed);
         check(submit(*c, "hold_person", 99), "Hold Person is cast");
         if (!logged(*c, "Enemy is Paralyzed."))
+        {
             continue;
+        }
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved, "Paralyzed survives a checkpoint");
         check(submit(*c, "end"), "End the Cleric's turn");
         while (c->snapshot().actor != 99)
+        {
             check(submit(*c, "end"), "Reach the held creature");
+        }
         const auto offered = c->legal_commands();
         check(offered.size() == 1 && offered.front().verb == "end",
               "A Paralyzed creature can only end its turn");
         check(submit(*c, "end") && logged(*c, "Enemy Wisdom save"),
               "It repeats the Wisdom save at the end of its turn");
         while (c->snapshot().actor != 1)
+        {
             check(submit(*c, "end"), "Back to the Cleric");
+        }
         if (logged(*c, "Enemy is no longer Paralyzed."))
+        {
             continue;
+        }
         check(submit(*c, "sacred_flame", 99) &&
                   logged(*c, "Enemy automatically fails the Dexterity save while Paralyzed."),
               "A Paralyzed creature fails Dexterity saves");
@@ -518,7 +586,9 @@ void enemy_attacks_ally(CombatSession &c)
 {
     check(submit(c, "end"), "End the Cleric's turn");
     while (c.snapshot().actor != 99)
+    {
         check(submit(c, "end"), "Reach the enemy");
+    }
     check(c.submit({c.snapshot().revision, 99, 0, "move", "Move", Cell{2, 2}}) &&
               submit(c, "melee", 2),
           "The enemy attacks the ally");
@@ -536,7 +606,9 @@ void sanctuary_checks()
         enemy_attacks_ally(*c);
         check(logged(*c, "Enemy Wisdom save"), "Attacking the warded ally calls for a Wisdom save");
         if (!logged(*c, "Enemy's attack on Ally is lost to Sanctuary."))
+        {
             continue;
+        }
         check(unit(*c, 2).hit_points == hp, "A failed save loses the attack");
         return;
     }
@@ -577,8 +649,12 @@ void resistance_checks()
     auto c = battle(*module, cleric(1), "viper");
     std::vector<std::string> labels;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb.starts_with("resistance_") && command.target == 2)
+        {
             labels.push_back(command.label);
+        }
+    }
     check(labels.size() == 11 && labels.front() == "Resistance: Acid",
           "Resistance is offered once per damage type");
     check(submit(*c, "resistance_poison", 2) &&
@@ -604,11 +680,17 @@ void guidance_checks()
                          {99, "target", "Enemy", Side::opposition, {9, 1}}}},
                        5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     std::vector<std::string> labels;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb.starts_with("guidance_") && command.target == 2)
+        {
             labels.push_back(command.label);
+        }
+    }
     check(labels == std::vector<std::string>{"Guidance: Athletics", "Guidance: Medicine"},
           "Guidance is offered for Athletics and Medicine");
     check(submit(*c, "guidance_medicine", 2) &&
@@ -618,7 +700,9 @@ void guidance_checks()
     check(module->restore(saved)->save() == saved, "Guidance survives a checkpoint");
     check(submit(*c, "end"), "End the Cleric's turn");
     for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Healer's turn");
+    }
     check(submit(*c, "stabilize", 3) && logged(*c, "Healer's Guidance adds ") &&
               logged(*c, "Healer Medicine: "),
           "The guided creature adds 1d4 to its Medicine check");
@@ -637,7 +721,9 @@ void silence_checks()
           "The sphere is shown as silenced");
     check(submit(*c, "end"), "End the Cleric's turn");
     while (c->snapshot().actor != 1)
+    {
         check(submit(*c, "end") || submit(*c, "move"), "Back to the Cleric");
+    }
     check(submit(*c, "sacred_flame", 99),
           "Spells have no components (CLASS-11), so Silence does not stop casting");
 }
@@ -660,7 +746,9 @@ void spiritual_weapon_checks()
           "Its later attack waits for a new Bonus Action");
     check(submit(*c, "end"), "End the Cleric's turn");
     while (c->snapshot().actor != 1)
+    {
         check(submit(*c, "end"), "Back to the Cleric");
+    }
     check(submit(*c, "spiritual_weapon_strike", 99) &&
               logged(*c, "Cleric's Spiritual Weapon strikes."),
           "A Bonus Action strikes again");
@@ -680,8 +768,12 @@ void channel_divinity_rest_checks()
         const auto &m = p.member(member);
         for (const auto &pool :
              p.rule_module().recovery_info(m.character.sheet(), m.vitals).resources)
+        {
             if (pool.id == "channel_divinity")
+            {
                 return static_cast<int>(pool.remaining);
+            }
+        }
         return -1;
     };
     check(uses(party, id) == 2, "A level-two Cleric has two Channel Divinity uses");
@@ -692,7 +784,9 @@ void channel_divinity_rest_checks()
         e.participants.push_back({99, "bandit", "Enemy", Side::opposition, {3, 1}});
         auto c = party.rule_module().create(e, 5);
         for (unsigned turns = 0; c->snapshot().actor != id && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Cleric's turn");
+        }
         check(submit(*c, "divine_spark", 99), "Divine Spark at the enemy");
         party.begin_combat();
         party.apply_combat(c->snapshot());
@@ -708,7 +802,9 @@ void channel_divinity_rest_checks()
     check(bool(copy.rest(RestKind::short_rest)) && uses(copy, id) == 1,
           "A Short Rest restores one use");
     if (copy.state().short_rest)
+    {
         copy.finish_short_rest(copy.state().short_rest->ticket);
+    }
     copy.advance_time(std::chrono::hours{24});
     check(bool(copy.rest(RestKind::long_rest)) && uses(copy, id) == 2,
           "A Long Rest restores all of them");

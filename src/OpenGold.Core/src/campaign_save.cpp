@@ -21,7 +21,9 @@ constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 void require(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::uint64_t fingerprint(std::string_view data)
@@ -111,18 +113,26 @@ template <bool Reading> struct SaveCodec
             }
         }
         else if constexpr (std::is_signed_v<T>)
+        {
             stream << static_cast<std::int64_t>(value) << ' ';
+        }
         else
+        {
             stream << static_cast<std::uint64_t>(value) << ' ';
+        }
         require(static_cast<bool>(stream), "Truncated or invalid campaign save");
     }
 
     void field(Visited<std::string> value)
     {
         if constexpr (reading)
+        {
             stream >> std::quoted(value);
+        }
         else
+        {
             stream << std::quoted(value) << ' ';
+        }
         require(static_cast<bool>(stream) && value.size() <= limit, "Invalid save string");
     }
 
@@ -131,7 +141,9 @@ template <bool Reading> struct SaveCodec
     void field(Array &values)
     {
         for (auto &v : values)
+        {
             field(v);
+        }
     }
 
     template <class Vector>
@@ -152,8 +164,12 @@ template <bool Reading> struct SaveCodec
             }
         }
         else
+        {
             for (auto &v : values)
+            {
                 field(v);
+            }
+        }
     }
 
     template <class Map>
@@ -175,8 +191,12 @@ template <bool Reading> struct SaveCodec
             }
         }
         else
+        {
             for (const auto &[key, v] : values)
+            {
                 fields(key, v);
+            }
+        }
     }
 
     template <class Optional>
@@ -188,12 +208,18 @@ template <bool Reading> struct SaveCodec
         if constexpr (reading)
         {
             if (present)
+            {
                 value.emplace();
+            }
             else
+            {
                 value.reset();
+            }
         }
         if (present)
+        {
             field(*value);
+        }
     }
 
     void field(Visited<PartySlot> v)
@@ -280,9 +306,11 @@ template <bool Reading> struct SaveCodec
             std::set<std::uint64_t> ids;
             require(v.next_id_ != 0, "Invalid next inventory ID");
             for (const auto &i : v.items_)
+            {
                 require(i.id && i.id < v.next_id_ && ids.insert(i.id).second && i.quantity &&
                             !i.definition_id.empty() && !i.name.empty(),
                         "Invalid inventory entry");
+            }
         }
     }
 
@@ -355,9 +383,15 @@ template <bool Reading> struct SaveCodec
                v.time_minutes, v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if constexpr (!reading)
+        {
             for (const auto &member : v.roster)
+            {
                 if (member.last_rest_subminute_milliseconds)
+                {
                     rest_offsets.emplace(member.id, member.last_rest_subminute_milliseconds);
+                }
+            }
+        }
         fields(v.subminute_milliseconds, v.next_combat_scope, rest_offsets);
         std::uint64_t count = v.roster.size();
         field(count);
@@ -422,6 +456,7 @@ template <bool Reading> struct SaveCodec
             }
         }
         else
+        {
             for (const auto &m : v.roster)
             {
                 const auto &draft = m.character.creation_data();
@@ -436,7 +471,9 @@ template <bool Reading> struct SaveCodec
                 field(m.character.inventory());
                 member(m);
             }
+        }
         if constexpr (reading)
+        {
             for (const auto &[id, offset] : rest_offsets)
             {
                 auto member = std::find_if(v.roster.begin(), v.roster.end(),
@@ -448,6 +485,7 @@ template <bool Reading> struct SaveCodec
                         "Invalid rest time offset");
                 member->last_rest_subminute_milliseconds = offset;
             }
+        }
     }
 
     // A script's variables, written as a map's entries are (the count, then
@@ -476,8 +514,12 @@ template <bool Reading> struct SaveCodec
                     "Duplicate save map key");
         }
         else
+        {
             for (const auto &[address, value] : table)
+            {
                 fields(address, value);
+            }
+        }
     }
 
     void machine(Visited<por::EclMachine> v)
@@ -527,7 +569,9 @@ template <bool Reading> struct SaveCodec
         if constexpr (!reading)
         {
             for (const auto &[id, cells] : v.visited_areas_)
+            {
                 explored[id] = cells.to_string();
+            }
             explored[v.current_area_] = v.snapshot_.visited.to_string();
         }
         field(explored);
@@ -574,16 +618,20 @@ template <bool Reading> struct SaveCodec
                     "Invalid saved sanctuary");
             v.sanctuary_.reset();
             if (sanctuary)
+            {
                 v.sanctuary_ = por::RolfTourSession::Sanctuary{
                     sanctuary_script,
                     {sanctuary_x, sanctuary_y,
                      *por::map_direction(static_cast<std::uint16_t>(sanctuary_facing))}};
+            }
         }
         std::uint64_t pending = v.pending_loot_.size();
         field(pending);
         require(pending <= 1024, "Too many pending rewards");
         if constexpr (reading)
+        {
             v.pending_loot_.clear();
+        }
         for (std::uint64_t index = 0; index < pending; ++index)
         {
             std::vector<unsigned> records;
@@ -606,7 +654,9 @@ template <bool Reading> struct SaveCodec
                 // Script treasure has no creature records; its generated items are saved.
                 std::vector<por::Equipment> generated;
                 if constexpr (!reading)
+                {
                     generated = v.pending_loot_[index].items;
+                }
                 field(generated);
                 if constexpr (reading)
                 {
@@ -632,7 +682,9 @@ template <bool Reading> struct SaveCodec
                     "Unsupported saved town context");
             v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
             for (const std::uint8_t op : {12, 13, 14, 45, 49, 58})
+            {
                 v.machine_.enable_host(op);
+            }
             v.configure_town();
         }
         machine(v.machine_);
@@ -662,7 +714,9 @@ template <bool Reading> struct SaveCodec
         if constexpr (!reading)
         {
             for (const auto &[id, cells] : v.seen_areas_)
+            {
                 known[id] = cells.to_string();
+            }
             known[v.current_area_] = s.seen.to_string();
         }
         field(known);
@@ -680,8 +734,10 @@ template <bool Reading> struct SaveCodec
             s.seen = v.seen_areas_.at(v.current_area_);
             require((s.visited & ~s.seen).none(), "Visited cells must be known");
             for (const auto &[id, cells] : v.visited_areas_)
+            {
                 require(v.seen_areas_.contains(id) && (cells & ~v.seen_areas_.at(id)).none(),
                         "Missing visited district knowledge");
+            }
         }
         if constexpr (reading)
         {
@@ -745,7 +801,9 @@ std::string encode_campaign(const CampaignParty &party, const por::RolfTourSessi
     bool has_town = town != nullptr;
     out.field(has_town);
     if (town)
+    {
         out.town(*town);
+    }
     out.rest(state);
     auto body = out.stream.str();
     require(body.size() <= limit, "Campaign save too large");
@@ -777,16 +835,22 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
                 "Saved item provenance mismatch");
     }
     for (const auto &item : member.character.inventory().items())
+    {
         if (!member.item_sources.contains(item.id))
         {
             if (module.equipment_info(item.definition_id).slot == rules::EquipmentSlot::carried)
+            {
                 continue;
+            }
             const std::array<std::string, 1> definition{item.definition_id};
             (void)module.character_profile(member.character.sheet(), definition);
         }
+    }
     std::vector<std::string> gear;
     for (auto id : member.equipped)
+    {
         gear.push_back(member.character.inventory().find(id)->get().definition_id);
+    }
     (void)module.character_profile(member.character.sheet(), gear);
 }
 } // namespace
@@ -797,10 +861,12 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
 {
     std::function<por::RolfTourSession()> make_town;
     if (town_template)
+    {
         make_town = [town_template]
         {
             return town_template->detached_copy();
         };
+    }
     return decode_campaign(bytes, creation, module, assets, make_town);
 }
 
@@ -815,7 +881,9 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     const auto version =
         saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
     if (version < campaign_format)
+    {
         throw std::runtime_error(rules::older_save_message);
+    }
     require(version == campaign_format, "Unsupported campaign save version");
     const auto end = bytes.find('\n', header_end + 1);
     require(end != bytes.npos, "Truncated campaign save");
@@ -829,13 +897,17 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     std::string asset;
     in.fields(identity, asset);
     if (identity != module.identity())
+    {
         throw std::runtime_error(rules::older_save_message);
+    }
     require(asset == assets, "Campaign original asset identity mismatch");
     SavedCampaign result;
     in.field(result.party);
     CampaignParty::validate(result.party);
     for (const auto &m : result.party.roster)
+    {
         validate_saved_member(m, module);
+    }
     bool has_town{};
     in.field(has_town);
     if (has_town)
@@ -863,11 +935,17 @@ std::string campaign_asset_identity(const std::filesystem::path &directory)
     for (const auto &entry : std::filesystem::directory_iterator(directory))
     {
         if (!entry.is_regular_file())
+        {
             continue;
+        }
         auto name = entry.path().filename().string();
         for (auto &c : name)
+        {
             if (c >= 'a' && c <= 'z')
+            {
                 c -= 32;
+            }
+        }
         if (name.ends_with(".DAX") || name == "ITEMS")
         {
             require(!files.contains(name), "Ambiguous original asset filename");
@@ -878,7 +956,9 @@ std::string campaign_asset_identity(const std::filesystem::path &directory)
             "Missing campaign assets");
     std::ostringstream out;
     for (auto &[name, hash] : files)
+    {
         out << name << ':' << hash << ';';
+    }
     return out.str();
 }
 

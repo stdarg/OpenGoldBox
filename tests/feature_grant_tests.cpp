@@ -30,12 +30,16 @@ Character hero(std::string klass = "fighter", std::string background = "soldier"
     draft.character_class = klass;
     draft.background = background;
     if (klass == "wizard")
+    {
         draft.training["class:wizard"] = {"medicine", "nature"};
+    }
     draft.alignment = "neutral_good";
     draft.name = "Grant tester";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), draft, {});
 }
 
@@ -147,21 +151,28 @@ void creation()
 void advancement()
 {
     for (const auto &klass : {"fighter", "cleric", "wizard"})
+    {
         for (const auto &background : {"soldier", "sage"})
         {
             CampaignParty party(module());
             const auto id = party.add_pc(hero(klass, background));
             party.award_experience(2700, "grant-xp");
             for (unsigned level = 2; level <= 3; ++level)
+            {
                 party.advance(id, party.default_advancement(id));
+            }
             const auto before = saved(party);
             const auto sheet = party.member(id).character.sheet();
             const auto options = module()->advancement_options(sheet);
             const auto available = [&](const char *feat)
             {
                 for (const auto &option : options.feats)
+                {
                     if (option.id == feat)
+                    {
                         return option.available;
+                    }
+                }
                 return false;
             };
             check(available("savage_attacker") == (std::string_view(background) != "soldier"),
@@ -250,6 +261,7 @@ void advancement()
                 });
             check(saved(party) == bytes, "Malformed saved choices do not affect the live campaign");
         }
+    }
 }
 
 // A sheet stores race and background labels. Their grant sources are the
@@ -261,10 +273,14 @@ void origin_ids()
     namespace detail = srd5::detail;
     const auto rules = srd5::character_rules();
     for (const auto &race : rules->choices(CreationField::race))
+    {
         check(detail::race_id(race.label) == race.id, "Every race label names its ID");
+    }
     for (const auto &background : rules->choices(CreationField::background))
+    {
         check(detail::background_id(background.label) == background.id,
               "Every background label names its ID");
+    }
     rejects(
         []
         {
@@ -284,7 +300,9 @@ void profiles()
     const auto id = party.add_pc(hero());
     party.award_experience(2700, "grant-xp");
     for (unsigned level = 2; level <= 3; ++level)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     auto choice = party.default_advancement(id);
     choice.abilities = {};
     choice.abilities[Ability::constitution] = 2;
@@ -294,12 +312,14 @@ void profiles()
          {mutate_save(bytes, "\"background:soldier\" 1", "\"background:soldier\" 4"),
           mutate_save(bytes, "\"feat:savage_attacker\"", "\"feat:unknown\""),
           mutate_save(bytes, "\"constitution\" \"2\"", "\"strength\" \"2\"")})
+    {
         rejects(
             [&]
             {
                 (void)decode_campaign(bad, *srd5::character_rules(), *rules, "grant-fixture",
                                       nullptr);
             });
+    }
     const auto encounter = [&](std::string profile)
     {
         return Encounter{{8, 8, std::vector<Terrain>(64)},

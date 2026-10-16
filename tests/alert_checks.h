@@ -8,9 +8,13 @@ CampaignParty party()
     {
         auto d = draft(klass, "criminal");
         if (d.character_class == "rogue")
+        {
             d.training = choices();
+        }
         else
+        {
             choose_first_options(d);
+        }
         auto h = hero(d);
         h.add_item({.definition_id = "dagger", .name = "Dagger", .quantity = 2});
         const auto id = p.add_pc(std::move(h));
@@ -18,11 +22,17 @@ CampaignParty party()
     }
     p.award_experience(2700, "alert-baseline");
     for (unsigned id : {1, 2})
+    {
         for (unsigned level = 2; level <= 4; ++level)
+        {
             p.advance(id, p.default_advancement(id));
+        }
+    }
     auto state = p.checkpoint();
     for (auto &m : state.roster)
+    {
         m.vitals.hit_points -= 2;
+    }
     p.restore(std::move(state));
     return p;
 }
@@ -39,8 +49,12 @@ auto battle(CampaignParty &p, unsigned seed = 37)
 Command command(const CombatSession &c, std::string_view verb, unsigned owner, unsigned ally = 0)
 {
     for (const auto &cmd : c.legal_commands())
+    {
         if (cmd.verb == verb && cmd.actor == owner && cmd.target == ally)
+        {
             return cmd;
+        }
+    }
     throw std::runtime_error("Missing Alert command: " + std::string(verb));
 }
 
@@ -53,14 +67,20 @@ void decide(CombatSession &c, unsigned owner, unsigned ally = 0)
 void decline(CombatSession &c)
 {
     while (!c.snapshot().initiative_choices.empty())
+    {
         decide(c, c.snapshot().initiative_choices.front());
+    }
 }
 
 CombatantView unit(const CombatSession &c, unsigned id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing Alert actor");
 }
 
@@ -83,6 +103,7 @@ void grants()
         (void)rules->character_profile(h.sheet(), {});
     }
     for (const auto klass : {"fighter", "rogue", "cleric", "wizard", "paladin", "ranger"})
+    {
         for (bool criminal : {false, true})
         {
             auto d = draft(klass, criminal ? "criminal" : "sage");
@@ -91,7 +112,9 @@ void grants()
             const auto id = p.add_pc(hero(d));
             p.award_experience(2700, "alert-feat");
             for (unsigned level = 2; level <= 3; ++level)
+            {
                 p.advance(id, p.default_advancement(id));
+            }
             const auto options = rules->advancement_options(p.member(id).character.sheet());
             const auto found = std::find_if(options.feats.begin(), options.feats.end(),
                                             [](const auto &f)
@@ -127,6 +150,7 @@ void grants()
                       "Alert retains actual feat entitlement");
             }
         }
+    }
     auto invalid = hero(draft("fighter", "criminal")).sheet();
     invalid.grants.push_back({"feat:alert", "background:criminal", 1, {}});
     rejects(
@@ -189,9 +213,11 @@ void run()
           "Later holder can exchange updated totals");
     exact(*c);
     for (unsigned id : {1, 2})
+    {
         check(unit(*c, id).action && unit(*c, id).bonus_action && unit(*c, id).reaction &&
                   unit(*c, id).hit_points == p.member(id).vitals.hit_points,
               "Choice spends no action, reaction or HP");
+    }
     // Decisions can be resolved in either order, including choosing Keep first.
     c = battle(p);
     decide(*c, 2);
@@ -253,8 +279,10 @@ void run()
             down_first = true;
             check(unit(*pending, 2).hit_points == 0, "No recovery before opening choice");
             for (const auto &line : state.log())
+            {
                 check(line.find("death save") == line.npos,
                       "First-turn processing waits for choice");
+            }
         }
         decline(*pending);
         exact(*pending);

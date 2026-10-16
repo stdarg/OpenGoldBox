@@ -27,7 +27,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -46,20 +48,26 @@ CharacterDraft draft(std::string klass)
     d.name = "Veteran";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 6, 6, 1}, 3};
     const auto rules = srd5::character_rules();
     for (bool filled = true; filled;)
     {
         filled = false;
         for (const auto &group : rules->training_options(d))
+        {
             if (!d.training.contains(group.id))
             {
                 for (unsigned i = 0; i < group.count; ++i)
+                {
                     d.training[group.id].push_back(group.options.at(i).id);
+                }
                 filled = true;
                 break;
             }
+        }
     }
     return d;
 }
@@ -71,7 +79,9 @@ Character barbarian(unsigned level)
     VitalState life;
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life), "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -88,8 +98,12 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -125,15 +139,21 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
                        {98, std::move(kind), "Dummy", Side::opposition, foe}}},
                      seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Barbarian's turn");
+    }
     return c;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -144,7 +164,9 @@ void progression_checks()
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft("barbarian"), {}));
         party.award_experience(165000, "levels-xp");
         while (party.can_advance(id))
+        {
             party.advance(id, party.default_advancement(id));
+        }
         check(party.member(id).character.sheet().level == 15,
               "In the campaign a Barbarian reaches the hall's level 15");
     }
@@ -152,8 +174,12 @@ void progression_checks()
     const auto rages = [&](unsigned level)
     {
         for (const auto &pool : rules->recovery_info(barbarian(level).sheet(), {}).resources)
+        {
             if (pool.id == "rage")
+            {
                 return pool.capacity;
+            }
+        }
         return 0u;
     };
     check(rages(5) == 3 && rages(6) == 4 && rages(12) == 5, "A fourth Rage at 6, a fifth at 12");
@@ -177,10 +203,14 @@ void progression_checks()
           "The level 11-15 features arrive at their levels");
     unsigned found = 0;
     for (const auto &pool : rules->recovery_info(fifteen.sheet(), {}).resources)
+    {
         if ((pool.id == "relentless_rage" && pool.capacity == 5) ||
             (pool.id == "intimidating_presence" && pool.capacity == 1) ||
             (pool.id == "persistent_rage" && pool.capacity == 1))
+        {
             ++found;
+        }
+    }
     check(found == 3, "Relentless Rage, Intimidating Presence and Persistent Rage are resources");
 }
 
@@ -199,11 +229,15 @@ void relentless_checks()
         {
             const auto now = c->snapshot();
             if (now.outcome != Outcome::ongoing || (now.actor != 98 && !now.reaction_pending))
+            {
                 break;
+            }
             check(submit(*c, "decline") || c->submit(choose_demo_command(*c)), "The brute acts");
         }
         if (!logged(*c, "Berserker tries Relentless Rage."))
+        {
             continue;
+        }
         tried = true;
         saved = logged(*c, "Berserker fights on with 22 Hit Points (Relentless Rage).") &&
                 unit(*c, 1).hit_points == 22;
@@ -247,6 +281,7 @@ void brutal_checks()
     const auto rules = dummy_rules();
     bool hamstrung = false, forceful = false;
     for (std::uint64_t seed = 1; seed < 40 && !(hamstrung && forceful); ++seed)
+    {
         for (const bool push : {false, true})
         {
             auto c = duel(*rules, barbarian(9), seed);
@@ -257,7 +292,9 @@ void brutal_checks()
             check(submit(*c, push ? "brutal_forceful" : "brutal_hamstring", 98),
                   "The Brutal Strike attack");
             if (!logged(*c, "Brutal Strike adds "))
+            {
                 continue;
+            }
             if (!push)
             {
                 hamstrung = logged(*c, "Dummy's Speed drops by 15 feet (Hamstring Blow).");
@@ -268,10 +305,15 @@ void brutal_checks()
             const auto saved = c->save();
             check(rules->restore(saved)->save() == saved, "A checkpoint keeps the follow-up move");
             for (const auto &command : c->legal_commands())
+            {
                 if (command.verb == "move")
+                {
                     check(command.destination.x > 1,
                           "The follow-up move only closes on the target");
+                }
+            }
         }
+    }
     check(hamstrung && forceful, "Both blows land on some seed");
 }
 
@@ -291,7 +333,9 @@ void improved_brutal_checks()
                   submit(*c, "brutal_staggering", 98),
               "A Staggering Blow");
         if (!logged(*c, "Dummy staggers (Staggering Blow)."))
+        {
             continue;
+        }
         staggered = true;
         const auto conditions = unit(*c, 98).conditions;
         check(std::any_of(conditions.begin(), conditions.end(),
@@ -317,18 +361,28 @@ void improved_brutal_checks()
                             {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
                           seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Barbarian's turn");
+        }
         check(submit(*c, "reckless", 98) && submit(*c, "brutal_sundering", 98), "A Sundering Blow");
         if (!logged(*c, "Dummy is sundered (Sundering Blow)."))
+        {
             continue;
+        }
         if (offered(*c, "melee"))
+        {
             check(submit(*c, "melee", 98), "The Barbarian's second attack");
+        }
         check(!logged(*c, "Sundering Blow adds 5"), "Not to the Barbarian's own attack");
         check(submit(*c, "end"), "The Barbarian ends its turn");
         for (unsigned steps = 0; steps < 6 && c->snapshot().actor != 2; ++steps)
+        {
             check(c->submit(choose_demo_command(*c)), "The dummy acts");
+        }
         if (c->snapshot().actor != 2)
+        {
             continue;
+        }
         check(submit(*c, "melee", 98) && logged(*c, "Sundering Blow adds 5 to the attack roll."),
               "The ally's attack roll gains +5");
         return;
@@ -348,15 +402,19 @@ void intimidating_checks()
                   logged(*c, "Berserker uses Intimidating Presence."),
               "Intimidating Presence");
         if (!logged(*c, "Dummy is Frightened."))
+        {
             continue;
+        }
         check(!offered(*c, "intimidating_presence"), "One use, and the Bonus Action is spent");
         const auto checkpoint = c->save();
         check(rules->restore(checkpoint)->save() == checkpoint, "A checkpoint keeps the fear");
         const auto reach = c->movement_reach(98);
         check(!reach.empty(), "The frightened dummy can still move");
         for (const auto cell : reach)
+        {
             check(std::max(std::abs(cell.x - 1), std::abs(cell.y - 1)) >= 3,
                   "The frightened dummy cannot come closer");
+        }
         return;
     }
     throw std::runtime_error("No seed's dummy fails the Wisdom save");
@@ -381,8 +439,12 @@ void persistent_checks()
           "Persistent Rage is offered at Initiative");
     bool full = false;
     for (const auto &pool : unit(*c, 1).resources)
+    {
         if (pool.id == "rage")
+        {
             full = pool.remaining == pool.capacity;
+        }
+    }
     check(full, "Every Rage use is back");
 }
 
@@ -397,9 +459,13 @@ void retaliation_checks()
         check(submit(*c, "end"), "The Barbarian waits");
         for (unsigned steps = 0;
              steps < 6 && c->snapshot().actor == 98 && !offered(*c, "retaliate"); ++steps)
+        {
             check(c->submit(choose_demo_command(*c)), "The dummy acts");
+        }
         if (!offered(*c, "retaliate"))
+        {
             continue;
+        }
         check(submit(*c, "retaliate") && logged(*c, "Berserker retaliates.") &&
                   logged(*c, "Berserker -> Dummy: d20") && !unit(*c, 1).reaction,
               "Retaliation's melee attack spends the Reaction");

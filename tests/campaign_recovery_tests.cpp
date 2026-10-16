@@ -32,7 +32,9 @@ Character hero()
     d.name = "Recovery tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     check(result.advance(*module(), scratch), "Fixture has two levels");
@@ -164,9 +166,11 @@ void partitions_and_rejection()
         rules->elapse(split, std::chrono::milliseconds(remaining), small_rng);
         std::reverse(split.begin(), split.end());
         for (std::size_t i = 0; i < whole.size(); ++i)
+        {
             check(
                 whole[i].state == split[i].state,
                 "Arbitrary time partitions and roster order retain identical vitality and effects");
+        }
         check(big_rng == small_rng, "Partitions cannot reorder recovery RNG draws");
     }
     auto bad = initial;
@@ -232,10 +236,12 @@ void campaign_continuation()
               party.member(reserve).vitals.hit_points == 1,
           "An eight-hour rest advances natural recovery for ineligible companions and reserves");
     for (auto id : {npc, reserve})
+    {
         check(!party.member(id).last_rest_minutes &&
                   party.member(id).vitals.resources ==
                       "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0",
               "Natural recovery grants neither recharge, Hit Dice nor a rest completion timestamp");
+    }
     state = party.checkpoint();
     state.time_minutes = std::numeric_limits<std::uint64_t>::max();
     state.roster[1].vitals = unstable();
@@ -252,8 +258,12 @@ void campaign_continuation()
 Command end(const CombatSession &combat)
 {
     for (const auto &c : combat.legal_commands())
+    {
         if (c.verb == "end")
+        {
             return c;
+        }
+    }
     throw std::runtime_error("No conscious turn available");
 }
 
@@ -297,14 +307,22 @@ void combat_handoff()
                   party.state().random_state == direct.state().random_state,
               "Reserve mortality advances exactly once during combat");
         for (const auto &a : snap.combatants)
+        {
             if (a.id == npc)
+            {
                 check(party.member(npc).vitals == a.persistent,
                       "Combat participant receives only its combat-owned continuation");
+            }
+        }
         auto bad = snap;
         bad.elapsed_milliseconds += 6000;
         for (auto &a : bad.combatants)
+        {
             if (a.id == pc)
+            {
                 a.max_hit_points += 1;
+            }
+        }
         rejects(
             [&]
             {
@@ -346,7 +364,9 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
 {
     Bytes bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     bytes.push_back(0);
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "recovery host"));
@@ -355,7 +375,9 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
 void settle(por::RolfTourSession &town)
 {
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+    {
         town.advance(.5);
+    }
     check(town.snapshot().phase != por::TourPhase::faulted, "Recovery fixture script fault");
 }
 

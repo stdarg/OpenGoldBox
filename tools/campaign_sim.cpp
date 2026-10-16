@@ -57,7 +57,9 @@ std::vector<PartyPlan> party_plans(const rules::CharacterRules &rules)
         {"casters", {"wizard", "sorcerer", "warlock", "cleric", "druid", "bard"}},
         {"no-fire", std::vector<std::string>(6, "fighter"), false}};
     for (const auto &klass : rules.choices(rules::CreationField::character_class))
+    {
         plans.push_back({"six-" + klass.id, std::vector<std::string>(6, klass.id)});
+    }
     return plans;
 }
 
@@ -118,9 +120,13 @@ Creature creature(unsigned record)
 unsigned original_xp(unsigned record)
 {
     if (record == 7)
+    {
         return 200;
+    }
     if (record == 6 || record == 8 || record == 31 || (record >= 32 && record != 63))
+    {
         return creature(record).fit_xp;
+    }
     return record == 63                                 ? 200
            : record == 0                                ? 25
            : record == 1 || record == 2 || record == 11 ? 50
@@ -177,7 +183,9 @@ Fight kutos_roaming(unsigned record, unsigned strength)
     const unsigned divisor = record == 73 ? 3 : record == 0 ? 2 : 4;
     Fight fight{{}, record == 73 ? 75u : record == 0 ? 50u : 90u};
     if (record == 0)
+    {
         fight.groups.push_back({creature(1), 3});
+    }
     fight.groups.push_back({creature(record), std::max(1u, strength / divisor)});
     return fight;
 }
@@ -366,18 +374,24 @@ rules::AdvancementChoice advancement(const CampaignParty &party, MemberId id)
                                         return p.class_id == class_id;
                                     });
     if (found == preferred_spells.end())
+    {
         return choice;
+    }
     const auto &spells = found->spells;
     for (const auto spell : spells)
     {
         if (spell.empty() ||
             std::find(choice.spells.begin(), choice.spells.end(), spell) != choice.spells.end())
+        {
             continue;
+        }
         for (auto slot = choice.spells.rbegin(); slot != choice.spells.rend(); ++slot)
         {
             const bool preferred = std::find(spells.begin(), spells.end(), *slot) != spells.end();
             if (preferred)
+            {
                 continue;
+            }
             auto trial = choice;
             trial.spells[static_cast<std::size_t>(choice.spells.rend() - slot - 1)] = spell;
             try
@@ -417,9 +431,13 @@ using Usage = std::map<std::pair<std::string, std::string>, unsigned>;
 std::string usage_verb(std::string verb)
 {
     if (verb.ends_with("_2"))
+    {
         verb.resize(verb.size() - 2);
+    }
     if (verb.starts_with("sorcerous_burst_"))
+    {
         verb = "sorcerous_burst";
+    }
     return verb;
 }
 
@@ -427,16 +445,24 @@ std::vector<MemberId> living(const CampaignParty &party)
 {
     std::vector<MemberId> result;
     for (const auto id : party.state().slots)
+    {
         if (id && !party.member(id).vitals.dead)
+        {
             result.push_back(id);
+        }
+    }
     return result;
 }
 
 bool wounded(const CampaignParty &party, double fraction)
 {
     for (const auto id : living(party))
+    {
         if (party.member(id).vitals.hit_points < fraction * party.hit_point_maximum(id))
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -446,12 +472,16 @@ bool out_of_spells(const CampaignParty &party, double fraction)
 {
     unsigned remaining = 0, capacity = 0;
     for (const auto &info : party.rest_info(rules::RestKind::long_rest))
+    {
         for (const auto &resource : info.recovery.resources)
+        {
             if (resource.id.starts_with("spell_slot:"))
             {
                 remaining += resource.remaining;
                 capacity += resource.capacity;
             }
+        }
+    }
     return remaining < fraction * capacity;
 }
 
@@ -460,26 +490,40 @@ void settle_rest_choices(CampaignParty &party)
 {
     // Copies: each choice removes its member from the window.
     if (const auto window = party.state().spell_rest)
+    {
         for (const auto id : window->members)
+        {
             party.keep_rest_spells(id);
+        }
+    }
     if (const auto window = party.state().training_rest)
+    {
         for (const auto id : window->members)
+        {
             party.keep_rest_training(window->ticket, id);
+        }
+    }
 }
 
 void short_rest(CampaignParty &party, RunResult &result)
 {
     const auto rest = party.rest(rules::RestKind::short_rest);
     if (!rest)
+    {
         return;
+    }
     ++result.short_rests;
     if (rest->spending)
     {
         // Each spending refreshes the rest's ticket.
         for (const auto id : rest->members)
+        {
             if (party.member(id).vitals.hit_points < party.hit_point_maximum(id) &&
                 party.recovery_info(id).hit_dice > 0)
+            {
                 (void)party.heal_with_hit_dice(party.state().short_rest->ticket, id);
+            }
+        }
         party.finish_short_rest(party.state().short_rest->ticket);
     }
     settle_rest_choices(party);
@@ -490,13 +534,21 @@ void long_rest(CampaignParty &party, RunResult &result)
     // A Long Rest needs a day since the last; wait it out.
     std::uint64_t wait = 0;
     for (const auto &info : party.rest_info(rules::RestKind::long_rest))
+    {
         if (info.denial == RestDenial::cooldown)
+        {
             wait = std::max(wait, info.wait_milliseconds);
+        }
+    }
     if (wait)
+    {
         party.advance_time(
             std::chrono::milliseconds{static_cast<std::chrono::milliseconds::rep>(wait)});
+    }
     if (party.rest(rules::RestKind::long_rest))
+    {
         ++result.long_rests;
+    }
     settle_rest_choices(party);
 }
 
@@ -519,11 +571,19 @@ por::DungeonBattlefield battlefield(const ArcMaps &maps, Place place)
 bool take_arrows(CampaignParty &party, unsigned arrows)
 {
     for (unsigned n = 0; n < arrows; ++n)
+    {
         if (!party.hazard_attack({4, 1, 6, 0, "piercing"}))
+        {
             return false;
+        }
+    }
     for (const auto id : living(party))
+    {
         if (party.member(id).vitals.hit_points > 0)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -537,8 +597,12 @@ std::vector<Character> plan_members(const PartyPlan &plan, const std::vector<Cha
     {
         std::vector<const Character *> of_class;
         for (const auto &c : pool)
+        {
             if (c.creation_data().character_class == klass)
+            {
                 of_class.push_back(&c);
+            }
+        }
         members.push_back(*of_class.at(used[klass]++ % of_class.size()));
     }
     return members;
@@ -563,6 +627,7 @@ void carry_flasks(CampaignParty &party, MemberId id, std::uint8_t oil, std::uint
 {
     for (const auto &[type, count] : {std::pair{original_item::flask_of_oil, oil},
                                       std::pair{authored_item::alchemists_fire, fire}})
+    {
         if (count)
         {
             por::Equipment flask;
@@ -570,6 +635,7 @@ void carry_flasks(CampaignParty &party, MemberId id, std::uint8_t oil, std::uint
             flask.stored.stack_size = count;
             party.purchase(id, flask);
         }
+    }
 }
 
 // Takes away the Torch every starting kit carries.
@@ -579,14 +645,18 @@ void drop_torch(CampaignParty &party, MemberId id)
     for (auto &member : state.roster)
     {
         if (member.id != id)
+        {
             continue;
+        }
         auto inventory = member.character.inventory();
         for (const auto &item : member.character.inventory().items())
+        {
             if (item.definition_id == "torch")
             {
                 inventory.remove(item.id, item.quantity);
                 member.item_sources.erase(item.id);
             }
+        }
         member.character.replace_inventory(std::move(inventory));
     }
     party.restore(std::move(state));
@@ -599,9 +669,13 @@ void outfit(CampaignParty &party, MemberId id, const PartyPlan &plan, std::uint8
 {
     outfit_pool_member(party, id);
     if (plan.fire)
+    {
         carry_flasks(party, id, oil, fire);
+    }
     else
+    {
         drop_torch(party, id);
+    }
 }
 
 std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
@@ -610,11 +684,17 @@ std::shared_ptr<CampaignParty> level_four_party(const PartyPlan &plan,
 {
     auto party = std::make_shared<CampaignParty>(module());
     for (const auto &member : members)
+    {
         outfit(*party, party->add_pc(member), plan, loadout.oil, loadout.fire);
+    }
     party->award_experience(party->rule_module().experience_for_level(4), "arena");
     for (const auto id : living(*party))
+    {
         while (party->can_advance(id))
+        {
             party->advance(id, advancement(*party, id));
+        }
+    }
     return party;
 }
 
@@ -623,6 +703,7 @@ void add_enemies(CampaignEncounter &encounter, const Fight &fight)
 {
     rules::EntityId next = 1000;
     for (const auto &group : fight.groups)
+    {
         for (unsigned c = 0; c < group.count; ++c, ++next)
         {
             encounter.enemies.push_back(
@@ -633,6 +714,7 @@ void add_enemies(CampaignEncounter &encounter, const Fight &fight)
                  {}});
             encounter.enemies.back().intelligence = group.kind.intelligence;
         }
+    }
     encounter.morale = fight.morale;
 }
 
@@ -643,7 +725,9 @@ unsigned enemy_record(const Fight &fight, rules::EntityId id)
     for (const auto &group : fight.groups)
     {
         if (index < group.count)
+        {
             return group.kind.record;
+        }
         index -= group.count;
     }
     throw std::out_of_range("No such enemy");
@@ -659,9 +743,11 @@ CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_
     arena.field.geometry = {length, height,
                             std::vector<rules::Terrain>(static_cast<std::size_t>(length * height))};
     for (int x = 0; x < length; ++x)
+    {
         arena.field.geometry.terrain[static_cast<std::size_t>(x)] =
             arena.field.geometry.terrain[static_cast<std::size_t>((height - 1) * length + x)] =
                 rules::Terrain::obstacle;
+    }
     arena.field.tiles.resize(static_cast<std::size_t>(length * height), 7);
     const auto place = [&](std::size_t n, int front, int step)
     {
@@ -669,10 +755,14 @@ CampaignEncounter arena_encounter(unsigned width, const Fight &fight, std::size_
                            1 + static_cast<int>(n % width)};
     };
     for (std::size_t n = 0; n < members; ++n)
+    {
         arena.positions.push_back(place(n, 6, -1));
+    }
     add_enemies(arena, fight);
     for (std::size_t n = 0; n < arena.enemies.size(); ++n)
+    {
         arena.positions.push_back(place(n, 20, 1));
+    }
     return arena;
 }
 
@@ -687,18 +777,26 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
     std::vector<unsigned> levels;
     std::vector<EncounterGroup> sizes;
     for (const auto id : living(*party))
+    {
         levels.push_back(party->member(id).character.sheet().level);
+    }
     for (const auto &group : fight.groups)
+    {
         sizes.push_back({group.kind.fit_xp, group.count});
+    }
     const auto counts =
         fit_encounter_to_budget(sizes, encounter_xp_budget(levels, default_encounter_challenge),
                                 static_cast<unsigned>(levels.size()));
     for (std::size_t g = 0; g < fight.groups.size(); ++g)
+    {
         fight.groups[g].count = counts[g];
+    }
     CombatDemo combat(module());
     combat.campaign_party(party);
     if (width)
+    {
         combat.encounter(arena_encounter(width, fight, members.size()), seed);
+    }
     else
     {
         CampaignEncounter room;
@@ -711,9 +809,13 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
     {
         const auto state = combat.combat().snapshot();
         if (state.outcome != rules::Outcome::ongoing)
+        {
             break;
+        }
         if (!combat.submit(choose_demo_command(state, combat.combat().legal_commands())))
+        {
             throw std::runtime_error("Combat refused the demo command");
+        }
     }
     return combat.combat().snapshot().outcome == rules::Outcome::victory;
 }
@@ -727,24 +829,32 @@ void troll_arena(const std::vector<PartyPlan> &plans, const std::vector<Characte
     csv << "party,loadout,width,runs,wins\n";
     std::printf("%-14s %-9s", "party", "loadout");
     for (const auto width : arena_widths)
+    {
         std::printf(" %5u", width);
+    }
     std::printf("  room   (win%% by area width in squares; room: the Slums' own)\n");
     for (const auto &plan : plans)
     {
         if (!only.empty() && plan.name != only)
+        {
             continue;
+        }
         const auto members = plan_members(plan, pool);
         for (const auto &loadout : loadouts)
         {
             if (!plan.fire && (loadout.oil || loadout.fire))
+            {
                 continue;
+            }
             std::printf("%-14s %-9s", plan.name.c_str(), loadout.name);
             for (const auto width : std::array{arena_widths[0], arena_widths[1], arena_widths[2],
                                                arena_widths[3], arena_widths[4], 0u})
             {
                 unsigned wins = 0;
                 for (unsigned run = 1; run <= runs; ++run)
+                {
                     wins += arena_fight(plan, members, loadout, width, slums, run);
+                }
                 csv << plan.name << ',' << loadout.name << ',' << width << ',' << runs << ','
                     << wins << '\n';
                 std::printf(" %5.0f", 100.0 * wins / runs);
@@ -761,7 +871,9 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
     auto party = std::make_shared<CampaignParty>(module());
     // The flasks as if bought at New Phlan's general store before setting out.
     for (const auto &member : members)
+    {
         outfit(*party, party->add_pc(member), plan, 2, 2);
+    }
     RunResult result;
     unsigned since_long_rest = 0;
     for (std::size_t n = 0; n < arc.size(); ++n)
@@ -781,21 +893,29 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
         // Experience is the original encounter's, however many fight.
         std::vector<unsigned> paying;
         for (const auto &group : fight.groups)
+        {
             paying.insert(paying.end(), group.count, group.kind.record);
+        }
         // The session fits every encounter, the four-orc search too, to the XP
         // budget and to one creature per living character.
         {
             std::vector<unsigned> levels;
             std::vector<EncounterGroup> sizes;
             for (const auto id : living(*party))
+            {
                 levels.push_back(party->member(id).character.sheet().level);
+            }
             for (const auto &group : fight.groups)
+            {
                 sizes.push_back({group.kind.fit_xp, group.count});
+            }
             const auto counts = fit_encounter_to_budget(
                 sizes, encounter_xp_budget(levels, default_encounter_challenge),
                 static_cast<unsigned>(levels.size()));
             for (std::size_t g = 0; g < fight.groups.size(); ++g)
+            {
                 fight.groups[g].count = counts[g];
+            }
         }
         CampaignEncounter encounter;
         encounter.field = battlefield(maps, step.place);
@@ -811,32 +931,48 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
             {
                 const auto state = combat.combat().snapshot();
                 if (state.outcome != rules::Outcome::ongoing)
+                {
                     break;
+                }
                 const auto command = choose_demo_command(state, combat.combat().legal_commands());
                 if (command.actor < 1000 && command.verb != "move" && command.verb != "end" &&
                     command.verb != "area_move")
+                {
                     for (const auto id : party->state().slots)
+                    {
                         if (id && party->member(id).id == command.actor)
+                        {
                             ++usage[{party->member(id).character.creation_data().character_class,
                                      usage_verb(command.verb)}];
+                        }
+                    }
+                }
                 if (!combat.submit(command))
+                {
                     throw std::runtime_error("Combat refused the demo command");
+                }
             }
             const auto result_snapshot = combat.combat().snapshot();
             outcome = result_snapshot.outcome;
             // As in the session, a monster that ran off the field takes its
             // record's experience with it.
             for (const auto &unit : result_snapshot.combatants)
+            {
                 if (unit.side == rules::Side::opposition && unit.fled && unit.hit_points > 0)
                 {
                     const auto record = enemy_record(fight, unit.id);
                     if (const auto it = std::find(paying.begin(), paying.end(), record);
                         it != paying.end())
+                    {
                         paying.erase(it);
+                    }
                     ++result.escaped;
                 }
                 else if (unit.side == rules::Side::opposition && unit.surrendered)
+                {
                     ++result.surrendered;
+                }
+            }
             // ...and one the original placement had no room for (PLACE-1) never
             // fought and is worth nothing.
             for (const auto &enemy : encounter.enemies)
@@ -848,11 +984,15 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
                                                     return unit.id == enemy.id;
                                                 });
                 if (fought)
+                {
                     continue;
+                }
                 const auto record = enemy_record(fight, enemy.id);
                 if (const auto it = std::find(paying.begin(), paying.end(), record);
                     it != paying.end())
+                {
                     paying.erase(it);
+                }
             }
         }
         if (outcome != rules::Outcome::victory)
@@ -865,20 +1005,32 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
         result.cleared_slums |= n + 1 == kutos_well_start;
         unsigned experience = 0;
         for (const auto record : paying)
+        {
             experience += original_xp(record);
+        }
         party->award_experience(experience, "sim:" + std::to_string(n));
         // The fight bandaged the dying; the Stable regain 1 HP in hours.
         party->advance_time(std::chrono::minutes{10});
         bool down = false;
         for (const auto id : living(*party))
+        {
             down |= party->member(id).vitals.hit_points == 0;
+        }
         if (down)
+        {
             party->advance_time(std::chrono::minutes{240});
+        }
         for (const auto id : living(*party))
+        {
             while (party->can_advance(id))
+            {
                 party->advance(id, advancement(*party, id));
+            }
+        }
         if (wounded(*party, 0.5))
+        {
             short_rest(*party, result);
+        }
         // A party low on spells rests too, as a player would before going on.
         if (++since_long_rest >= 3 || wounded(*party, 0.5) || out_of_spells(*party, 0.5))
         {
@@ -887,15 +1039,21 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
         }
     }
     if (result.outcome.empty())
+    {
         result.outcome = "complete";
+    }
     for (const auto id : party->state().slots)
+    {
         if (id)
         {
             result.deaths += party->member(id).vitals.dead;
             if (party->member(id).vitals.dead)
+            {
                 result.dead.push_back(party->member(id).character.creation_data().character_class);
+            }
             result.levels.push_back(party->member(id).character.sheet().level);
         }
+    }
     return result;
 }
 } // namespace
@@ -931,7 +1089,9 @@ int main(int argc, char **argv)
         const auto plaza = catalog.find({"GEO8.DAX", 29});
         const auto catacombs = catalog.find({"GEO8.DAX", 32});
         if (!slums || !plaza || !catacombs)
+        {
             throw std::runtime_error("Missing GEO2:20, GEO8:29 or GEO8:32");
+        }
         const ArcMaps maps{slums->get(), plaza->get(), catacombs->get()};
         const auto characters = srd5::character_rules();
         const auto pool = character_pool(*characters, por::CharacterArt::load(game));
@@ -953,7 +1113,9 @@ int main(int argc, char **argv)
         for (const auto &plan : party_plans(*characters))
         {
             if (!only.empty() && plan.name != only)
+            {
                 continue;
+            }
             const auto members = plan_members(plan, pool);
             unsigned cleared = 0, complete = 0, flawless = 0, fights = 0, deaths = 0, levels = 0,
                      people = 0, escaped = 0, surrendered = 0;
@@ -977,15 +1139,19 @@ int main(int argc, char **argv)
                 }
                 std::string dead_list;
                 for (const auto &klass : r.dead)
+                {
                     dead_list += (dead_list.empty() ? "" : " ") + klass;
+                }
                 detail << plan.name << ',' << run << ',' << r.outcome << ',' << r.fights_won << ','
                        << r.lost_at << ',' << r.deaths << ',' << dead_list << ',' << r.short_rests
                        << ',' << r.long_rests << ',' << level_list << ',' << r.escaped << ','
                        << r.surrendered << '\n';
             }
             for (const auto &[key, count] : usage)
+            {
                 usage_csv << plan.name << ',' << key.first << ',' << key.second << ',' << count
                           << '\n';
+            }
             const double success = 100.0 * complete / runs;
             const double slums_success = 100.0 * cleared / runs;
             summary << plan.name << ',' << runs << ',' << slums_success << ',' << success << ','

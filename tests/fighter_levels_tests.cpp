@@ -26,7 +26,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -45,20 +47,26 @@ CharacterDraft draft(std::string klass)
     d.name = "Veteran";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 6, 6, 1}, 3};
     const auto rules = srd5::character_rules();
     for (bool filled = true; filled;)
     {
         filled = false;
         for (const auto &group : rules->training_options(d))
+        {
             if (!d.training.contains(group.id))
             {
                 for (unsigned i = 0; i < group.count; ++i)
+                {
                     d.training[group.id].push_back(group.options.at(i).id);
+                }
                 filled = true;
                 break;
             }
+        }
     }
     return d;
 }
@@ -84,8 +92,12 @@ unsigned count_of(const CharacterSheet &sheet, std::string_view prefix)
 unsigned capacity(const CampaignParty &party, MemberId id, std::string_view pool)
 {
     for (const auto &resource : party.recovery_info(id).resources)
+    {
         if (resource.id == pool)
+        {
             return resource.capacity;
+        }
+    }
     return 0;
 }
 
@@ -97,7 +109,9 @@ Character fighter(unsigned level)
     VitalState life;
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life), "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -109,7 +123,9 @@ void fighter_checks()
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft("fighter"), {}));
         party.award_experience(165000, "levels-xp");
         while (party.can_advance(id))
+        {
             party.advance(id, party.default_advancement(id));
+        }
         check(party.member(id).character.sheet().level == 15,
               "In the campaign a Fighter reaches the hall's level 15");
     }
@@ -178,8 +194,12 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -207,7 +227,9 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
                        {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
                      3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
+    }
     return c;
 }
 
@@ -244,7 +266,9 @@ void extra_attack_checks()
                                  {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
                                3);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
+        }
         check(submit(*c, "melee", 98) && attack_lines(*c) == 1, "The first attack");
         if (level == 4)
         {
@@ -260,12 +284,16 @@ void extra_attack_checks()
         const std::size_t attacks = level >= 11 ? 3 : 2;
         check(submit(*c, "melee", 98) && attack_lines(*c) == 2, "The second attack");
         if (level >= 11)
+        {
             check(offered(*c, "melee") && submit(*c, "melee", 98) && attack_lines(*c) == 3,
                   "Two Extra Attacks make a third");
+        }
         check(!offered(*c, "melee"), "The last attack ends the Attack action");
         check(submit(*c, "action_surge"), "Action Surge");
         for (std::size_t n = 0; n < attacks; ++n)
+        {
             check(submit(*c, "melee", 98), "Action Surge's attacks");
+        }
         check(attack_lines(*c) == 2 * attacks && !offered(*c, "melee"),
               "Action Surge's Attack action makes as many attacks");
     }
@@ -286,8 +314,12 @@ void tactical_shift_checks()
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the shift");
     bool moved = false;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb == "move" && command.destination == Cell{3, 1})
+        {
             moved = c->submit(command);
+        }
+    }
     check(moved && !c->snapshot().reaction_pending && !logged(*c, "Dummy -> Veteran"),
           "Leaving the dummy's reach provokes nothing");
     check(submit(*c, "end") && !c->snapshot().free_movement && c->snapshot().actor == 1 &&
@@ -303,8 +335,12 @@ void tactical_master_checks()
     const auto hero = fighter(9);
     std::string weapon;
     for (const auto &g : hero.sheet().grants)
+    {
         if (g.id.starts_with("mastery:") && weapon.empty())
+        {
             weapon = g.id.substr(8);
+        }
+    }
     auto c = duel(*rules, hero, {weapon});
     const bool push = offered(*c, "melee_push"), sap = offered(*c, "melee_sap"),
                slow = offered(*c, "melee_slow");
@@ -316,7 +352,9 @@ void tactical_master_checks()
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps a pending replaced mastery");
     // A hit's Push or Slow is asked about; skipping it leaves the second attack.
     if (offered(*c, "effect_skip"))
+    {
         check(submit(*c, "effect_skip"), "Skip the replaced mastery");
+    }
     check(!offered(*c, "dodge") && offered(*c, verb),
           "Extra Attack's second attack may replace the mastery too");
 }
@@ -344,7 +382,9 @@ void studied_attacks_checks()
                                  {98, "wall", "Dummy", Side::opposition, {2, 1}}}},
                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Fighter's turn");
+        }
         check(submit(*c, "melee", 98), "The first attack");
         return c;
     };
@@ -353,7 +393,9 @@ void studied_attacks_checks()
     {
         auto c = fight(13, seed);
         if (!logged(*c, "Veteran studies Dummy."))
+        {
             continue;
+        }
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the mark");
         check(submit(*c, "melee", 98), "The second attack");
@@ -386,16 +428,20 @@ void superior_critical_checks()
                                 {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
                               seed);
             for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            {
                 check(submit(*c, "initiative_keep") || submit(*c, "end"),
                       "Reach the Fighter's turn");
+            }
             check(submit(*c, "melee", 98), "An attack");
             for (const auto &line : c->snapshot().log())
+            {
                 if (line.starts_with("Veteran -> Dummy: d20 18 "))
                 {
                     found = true;
                     check((line.find("CRITICAL") != std::string::npos) == (level == 15),
                           "An 18 is a Critical Hit only from level 15");
                 }
+            }
         }
         check(found, "Some seed rolls an 18");
     }
@@ -414,19 +460,35 @@ void indomitable_checks()
                                  {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}}},
                                seed);
         for (unsigned turns = 0; turns < 8 && !logged(*c, "uses Indomitable"); ++turns)
+        {
             if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+            {
                 check(submit(*c, "initiative_keep") || submit(*c, "decline") || submit(*c, "end"),
                       "The Fighter waits");
+            }
             else
+            {
                 check(c->submit(choose_demo_command(*c)), "The adept acts");
+            }
+        }
         if (!logged(*c, "Veteran uses Indomitable and rolls the save again."))
+        {
             continue;
+        }
         unsigned left = 1;
         for (const auto &unit : c->snapshot().combatants)
+        {
             if (unit.id == 1)
+            {
                 for (const auto &pool : unit.resources)
+                {
                     if (pool.id == "indomitable")
+                    {
                         left = pool.remaining;
+                    }
+                }
+            }
+        }
         check(left == 0, "Indomitable's one use is spent");
         return;
     }

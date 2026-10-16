@@ -19,7 +19,9 @@ unsigned number(std::string_view s, unsigned max)
     }
     const auto [end, ec] = std::from_chars(s.data(), s.data() + s.size(), n, base);
     if (ec != std::errc{} || end != s.data() + s.size() || n > max)
+    {
         throw EclError("Invalid numeric argument");
+    }
     return n;
 }
 
@@ -27,7 +29,9 @@ std::shared_ptr<const EclProgram> demo()
 {
     std::vector<std::uint8_t> bytes{0, 0};
     for (int i = 0; i < 5; ++i)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x14, 0x99});
+    }
     // Compute 12, display it, then prompt for a choice and display the script result.
     std::vector<std::uint8_t> body{9, 0,    7,  1, 0, 0x97, 4,  0, 5, 1,    0, 0x97, 1,
                                    0, 0x97, 17, 1, 0, 0x97, 43, 1, 0, 0x97, 0, 2};
@@ -46,7 +50,9 @@ std::shared_ptr<const EclProgram> demo()
             }
         }
         if (bits)
+        {
             packed.push_back(static_cast<std::uint8_t>(buffer << (8 - bits)));
+        }
         body.push_back(128);
         body.push_back(static_cast<std::uint8_t>(packed.size()));
         body.insert(body.end(), packed.begin(), packed.end());
@@ -61,7 +67,9 @@ int inspect(const EclProgram &p)
     using Edge = std::pair<std::uint32_t, std::optional<std::uint16_t>>;
     std::deque<Edge> queue;
     for (auto entry : p.entries())
+    {
         queue.emplace_back(entry, std::nullopt);
+    }
     std::set<std::uint32_t> seen;
     std::map<std::uint32_t, std::uint32_t> spans;
     bool failed = false;
@@ -70,47 +78,75 @@ int inspect(const EclProgram &p)
         const auto [pc, speculative] = queue.front();
         queue.pop_front();
         if (!seen.insert(pc).second)
+        {
             continue;
+        }
         try
         {
             if (pc < p.body_start())
+            {
                 throw EclError("Target in entry table");
+            }
             const auto i = p.instruction(pc);
             for (const auto &[start, end] : spans)
+            {
                 if (pc < end && i.next > start)
+                {
                     throw EclError("Overlapping instructions");
+                }
+            }
             spans[pc] = i.next;
             const auto &spec = ecl_opcode(i.opcode);
             std::cout << "0x" << std::hex << pc << std::dec << " " << spec.name;
             for (const auto &a : i.operands)
             {
                 if (a.tag == 128)
+                {
                     std::cout << " \"" << a.text << '"';
+                }
                 else
+                {
                     std::cout << " {tag=" << static_cast<unsigned>(a.tag) << ",value=" << a.value
                               << '}';
+                }
             }
             if (!spec.executable)
+            {
                 std::cout << " [execution unsupported]";
+            }
             else if (spec.requires_host)
+            {
                 std::cout << " [host required]";
+            }
             std::cout << '\n';
             if (i.opcode == 1 || i.opcode == 2)
+            {
                 queue.emplace_back(i.operands[0].value, speculative);
+            }
             if (i.opcode == 37 || i.opcode == 38)
+            {
                 for (std::size_t n = 2; n < i.operands.size(); ++n)
+                {
                     queue.emplace_back(i.operands[n].value, speculative);
+                }
+            }
             if (i.opcode >= 22 && i.opcode <= 27)
+            {
                 queue.emplace_back(p.instruction(i.next).next, speculative);
+            }
             if (i.opcode != 0 && i.opcode != 1 && i.opcode != 19 && i.opcode != 32)
+            {
                 queue.emplace_back(i.next, i.opcode == 37 ? std::optional(i.address) : speculative);
+            }
         }
         catch (const EclError &e)
         {
             failed = true;
             std::cerr << p.source() << " @ 0x" << std::hex << pc;
             if (speculative)
+            {
                 std::cerr << " (possible ON GOTO fallthrough from 0x" << *speculative << ")";
+            }
             std::cerr << std::dec << ": " << e.what() << '\n';
         }
     }
@@ -131,7 +167,9 @@ int run(EclMachine &vm)
         {
             std::cerr << result.diagnostic << "\nRecent addresses:";
             for (const auto pc : vm.trace())
+            {
                 std::cerr << " 0x" << std::hex << pc;
+            }
             std::cerr << std::dec << '\n';
             return 1;
         }
@@ -139,10 +177,14 @@ int run(EclMachine &vm)
         {
             const auto &r = *result.request;
             if (r.clear)
+            {
                 std::cout << "[clear text]\n";
+            }
             std::cout << r.text;
             if (!r.instruction || r.instruction->opcode != 51)
+            {
                 std::cout << '\n';
+            }
             if (r.kind == EclRequestKind::text)
             {
                 (void)vm.resume(r.id);
@@ -155,15 +197,21 @@ int run(EclMachine &vm)
                 return 2;
             }
             for (std::size_t i = 0; i < r.choices.size(); ++i)
+            {
                 std::cout << i + 1 << ") " << r.choices[i] << '\n';
+            }
             while (true)
             {
                 if (r.kind == EclRequestKind::menu)
+                {
                     std::cout << "Choice (1-" << r.choices.size() << "): ";
+                }
                 else
+                {
                     std::cout << "Input (up to " << r.input_limit
                               << (r.kind == EclRequestKind::input_number ? " digits): "
                                                                          : " characters): ");
+                }
                 std::cout << std::flush;
                 std::string input;
                 if (!std::getline(std::cin, input))
@@ -174,26 +222,36 @@ int run(EclMachine &vm)
                 // PowerShell/.NET redirected UTF-8 input may include a BOM.
                 std::string_view selection = input;
                 if (selection.starts_with("\xEF\xBB\xBF"))
+                {
                     selection.remove_prefix(3);
+                }
                 if (r.kind == EclRequestKind::input_string ||
                     r.kind == EclRequestKind::input_number)
                 {
                     if (vm.resume_input(r.id, selection))
+                    {
                         break;
+                    }
                     std::cout << "Invalid input or unbound destination buffer.\n";
                     continue;
                 }
                 while (!selection.empty() &&
                        (selection.front() == ' ' || selection.front() == '\t'))
+                {
                     selection.remove_prefix(1);
+                }
                 while (!selection.empty() && (selection.back() == ' ' || selection.back() == '\t' ||
                                               selection.back() == '\r'))
+                {
                     selection.remove_suffix(1);
+                }
                 try
                 {
                     const auto n = number(selection, static_cast<unsigned>(r.choices.size()));
                     if (n && vm.resume(r.id, n - 1))
+                    {
                         break;
+                    }
                 }
                 catch (const EclError &)
                 {
@@ -218,14 +276,20 @@ int main(int argc, char **argv)
             return run(vm);
         }
         if (argc < 3)
+        {
             throw EclError(
                 "Usage: opengold_scripts --demo | --list GAME_DIR | --inspect GAME_DIR ARCHIVE RECORD | --run GAME_DIR ARCHIVE RECORD ENTRY [ADDRESS=VALUE ...]\nNumbers are decimal or 0x-prefixed hex. Entry slots are 0..4; startup is slot 4 (reference role).");
+        }
         const std::string mode = argv[1];
         if (mode != "--list" && mode != "--inspect" && mode != "--run")
+        {
             throw EclError("Unknown mode");
+        }
         if ((mode == "--list" && argc != 3) || (mode == "--inspect" && argc != 5) ||
             (mode == "--run" && argc < 6))
+        {
             throw EclError("Incorrect argument count");
+        }
         const auto catalog = EclCatalog::load(argv[2]);
         if (mode == "--list")
         {
@@ -233,7 +297,9 @@ int main(int argc, char **argv)
             {
                 std::cout << p->source() << " bytes=" << p->raw().size() << " entries:";
                 for (auto entry : p->entries())
+                {
                     std::cout << " 0x" << std::hex << entry;
+                }
                 std::cout << std::dec << '\n';
             }
             std::cout << catalog.all().size()
@@ -242,21 +308,31 @@ int main(int argc, char **argv)
         }
         std::string archive = argv[3];
         for (auto &c : archive)
+        {
             if (c >= 'a' && c <= 'z')
+            {
                 c -= 'a' - 'A';
+            }
+        }
         const auto program =
             catalog.find({archive, static_cast<std::uint8_t>(number(argv[4], 255))});
         if (!program)
+        {
             throw EclError("Script not found");
+        }
         if (mode == "--inspect")
+        {
             return inspect(*program);
+        }
         EclMachine vm(program);
         for (int i = 6; i < argc; ++i)
         {
             const std::string_view binding = argv[i];
             const auto equal = binding.find('=');
             if (equal == std::string_view::npos)
+            {
                 throw EclError("Expected ADDRESS=VALUE");
+            }
             const EclAddress address(
                 static_cast<std::uint16_t>(number(binding.substr(0, equal), 65535)));
             vm.bind_variable(address,

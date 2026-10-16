@@ -25,7 +25,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 // The game's rules with three test creatures that do not fight back: one
@@ -58,6 +60,7 @@ Character pool_character(std::string_view klass, unsigned level)
     art.set_original_head(1, por::PortraitPart{"fixture", head});
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     for (const auto &preset : character_pool(*srd5::character_rules(), art))
+    {
         if (preset.creation_data().character_class == klass)
         {
             CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
@@ -65,9 +68,12 @@ Character pool_character(std::string_view klass, unsigned level)
                 party.add_pc(Character(*srd5::character_rules(), preset.creation_data(), {}));
             party.award_experience(level == 2 ? 300 : 0, "hide-xp");
             if (level == 2)
+            {
                 party.advance(id, party.default_advancement(id));
+            }
             return party.member(id).character;
         }
+    }
     throw std::runtime_error("No pool character of the class");
 }
 
@@ -83,7 +89,9 @@ std::vector<Terrain> walled()
 {
     std::vector<Terrain> terrain(72);
     for (int y = 0; y <= 2; ++y)
+    {
         terrain[y * 12 + 4] = Terrain::obstacle;
+    }
     return terrain;
 }
 
@@ -100,16 +108,24 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
 bool move_to(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -139,15 +155,21 @@ std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &
     // The Rogue's Alert offers an initiative swap first; it keeps its place.
     for (unsigned turns = 0;
          turns < 6 && (c->snapshot().actor != 1 || offered(*c, "initiative_keep")); ++turns)
+    {
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
+    }
     return c;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -160,7 +182,9 @@ std::unique_ptr<CombatSession> hidden_rogue(const RulesModule &rules, const Char
         auto c = fight(rules, hero, foe, foe_cell, seed);
         check(submit(*c, "cunning_hide"), "The Rogue hides as a Bonus Action");
         if (unit(*c, 1).hidden)
+        {
             return c;
+        }
     }
     throw std::runtime_error("No seed hides the Rogue");
 }
@@ -232,7 +256,9 @@ void search_checks()
     {
         auto c = fight(*rules, hero, "dull", {8, 1}, seed);
         if (!submit(*c, "cunning_hide") || !unit(*c, 1).hidden)
+        {
             continue;
+        }
         check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
                   submit(*c, "end"),
               "The Rogue steps into view and ends its turn");
@@ -242,9 +268,13 @@ void search_checks()
         check(c->submit(choice) && logged(*c, "Foe searches: Perception d20 "),
               "The search is logged");
         if (unit(*c, 1).hidden)
+        {
             missed = true;
+        }
         else
+        {
             found = logged(*c, "Foe finds Rogue.");
+        }
     }
     check(found && missed, "A search finds the Rogue on a high enough roll only");
 }
@@ -259,11 +289,17 @@ void spell_checks()
     {
         auto c = fight(*rules, cleric, "dull", {6, 1}, seed);
         if (!submit(*c, "hide") || !unit(*c, 1).hidden || !submit(*c, "end"))
+        {
             continue;
+        }
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(c->submit(choose_demo_command(*c)), "The monster acts");
+        }
         if (!unit(*c, 1).hidden)
+        {
             continue;
+        }
         check(move_to(*c, {3, 2}) && move_to(*c, {3, 3}) && move_to(*c, {3, 4}) &&
                   unit(*c, 1).hidden,
               "The Cleric steps into view, still hidden");

@@ -21,9 +21,13 @@ combat_sprite_draw_order(std::span<const opengold::rules::CombatantView> actors)
                   const auto &a = actors[left];
                   const auto &b = actors[right];
                   if (a.cell.y != b.cell.y)
+                  {
                       return a.cell.y > b.cell.y;
+                  }
                   if (a.cell.x != b.cell.x)
+                  {
                       return a.cell.x < b.cell.x;
+                  }
                   return a.id < b.id;
               });
     return order;

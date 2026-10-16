@@ -55,14 +55,19 @@ void combat_body_assignments()
                                                     folder / "combat-weapon-options.tsv");
     check(saved.options().size() == 48, "Options contain ordinary shop weapons, wand and unarmed");
     for (const auto &option : saved.options())
+    {
         for (const bool shield : {false, true})
         {
             const auto combination = option.id + (shield ? "_shield" : "");
             std::vector<por::CombatEquipment> gear;
             if (option.original_type)
+            {
                 gear.push_back({option.original_type, option.label, {}});
+            }
             if (shield)
+            {
                 gear.push_back({59, "Shield", "shield"});
+            }
             const auto selected = saved.choose(gear, 10);
             check(selected.combination == combination,
                   "Every catalog option resolves its exact equipment key");
@@ -83,6 +88,7 @@ void combat_body_assignments()
                              : 10u),
                 "Catalog selection prefers the saved body, then first assignment, otherwise fallback");
         }
+    }
     const std::vector<por::CombatEquipment> shield_only{{59, "Shield", "shield"}};
     por::CombatBodyCatalog catalog = saved;
     catalog.clear_assignments();
@@ -152,12 +158,14 @@ void combat_body_assignments()
     {
         std::ofstream out(path, std::ios::binary);
         for (unsigned id = 0; id < 33; ++id)
+        {
             out << id << '\t'
                 << (id == 1   ? "type_43,type_44"
                     : id == 4 ? "silver_23_shield,type_23_shield"
                     : id == 7 ? "silver_23"
                               : "unreviewed")
                 << '\n';
+        }
     }
     const auto migrated = por::CombatBodyCatalog::load(path, folder / "combat-weapon-options.tsv");
     check(migrated.bodies()[1].size() == 2 &&
@@ -191,7 +199,9 @@ Character character(std::string klass = "fighter", std::string name = "Ada")
     creator.roll();
     creator.name(std::move(name));
     for (unsigned i = 0; i < 6; ++i)
+    {
         creator.assign_roll(i, static_cast<Ability>(i));
+    }
     // Authored fixtures may have scores below the creator's optional starting-class minimums.
     return Character(creator.rules(), creator.draft(), creator.appearance());
 }
@@ -237,15 +247,25 @@ class AlternateEquipmentRules final : public test::ForwardingModule
                                      unsigned selected, EquipmentOperation operation) const override
     {
         if (gear[selected] == "bad_index")
+        {
             return {{unsigned(gear.size())}};
+        }
         if (gear[selected] == "duplicate_index")
+        {
             return {{selected, selected}};
+        }
         if (gear[selected] == "rejected")
+        {
             throw std::runtime_error("Alternate rules reject this equipment");
+        }
         EquipmentChange result;
         for (auto n = static_cast<unsigned>(gear.size()); n > 0; --n)
+        {
             if (operation != EquipmentOperation::unequip || n - 1 != selected)
+            {
                 result.indices.push_back(n - 1);
+            }
+        }
         return result;
     }
 };
@@ -258,7 +278,9 @@ void equipment_rule_boundary()
     const auto dagger = person.add_item({.definition_id = "dagger", .name = "Dagger"});
     std::vector<std::uint64_t> invalid;
     for (const char *key : {"bad_index", "duplicate_index", "rejected"})
+    {
         invalid.push_back(person.add_item({.definition_id = key, .name = key}));
+    }
     const auto id = party.add_pc(std::move(person));
     const auto vitals = party.member(id).vitals;
     party.equip(id, sword);
@@ -408,7 +430,9 @@ void party_combat_appearance()
                   "Resolution never overwrites saved appearance");
         };
         for (const auto type : {36u, 8u, 59u, 55u})
+        {
             party.purchase(id, item(type, 0));
+        }
         // A copy: equipping may replace the inventory the items live in.
         const auto items = party.member(id).character.inventory().items();
         const std::vector<InventoryItem> gear(items.begin(), items.end());
@@ -485,11 +509,15 @@ void all_weapon_equipment()
                                                       folder / "combat-weapon-options.tsv");
     auto hero = character();
     for (const auto &option : catalog.options())
+    {
         if (option.original_type)
+        {
             hero.add_item({.definition_id = equipment_conversion(item(option.original_type)),
                            .name = option.label,
                            .quantity = 1,
                            .original_type = option.original_type});
+        }
+    }
     const auto shield = hero.add_item(
         {.definition_id = "shield", .name = "Shield", .quantity = 1, .original_type = 59});
     CampaignParty party(module());
@@ -501,6 +529,7 @@ void all_weapon_equipment()
           "Every reviewer weapon plus shield uses a real campaign inventory");
     const auto original = party.member(id).character.appearance();
     for (const auto &weapon : inventory)
+    {
         if (weapon.id != shield)
         {
             party.equip(id, weapon.id);
@@ -512,7 +541,9 @@ void all_weapon_equipment()
             if (weapon.original_type == 1 || weapon.original_type == 31 ||
                 weapon.original_type == 6 || weapon.original_type == 22 ||
                 weapon.original_type == 33 || weapon.original_type == 39)
+            {
                 check(info.hands == 1, "Versatile conversions permit one hand and a shield");
+            }
             check(party.profile(id).hit_points > 0,
                   "Every weapon produces an actual rules profile");
             check(por::resolve_combat_appearance(party.member(id), catalog).appearance == original,
@@ -598,6 +629,7 @@ void all_weapon_equipment()
             check(decoded.party.roster[0].equipped == party.member(id).equipped,
                   "Every equipped weapon survives campaign save/load");
         }
+    }
 }
 
 void goliath_occupancy()
@@ -646,10 +678,14 @@ void goliath_occupancy()
     for (const auto &actor : snapshot.combatants)
     {
         if (actor.id == id)
+        {
             check(actor.cell == Cell{2, 2}, "Goliath remains in the lower square");
+        }
         if (actor.id == 1000)
+        {
             check(actor.cell == Cell{2, 1},
                   "Monster independently occupies the upper square after save/restore");
+        }
     }
 }
 
@@ -661,7 +697,9 @@ void roster_and_equipment()
     original.add_item({.definition_id = "other", .name = "External item"});
     check(party.member(pc).character.inventory().empty(), "Party owns character independently");
     for (unsigned i = 1; i < 6; ++i)
+    {
         party.add_pc(character());
+    }
     rejects(
         [&]
         {
@@ -754,8 +792,12 @@ void party_leader()
           "Another member can be made leader");
     auto down = party.checkpoint();
     for (auto &member : down.roster)
+    {
         if (member.id == second)
+        {
             member.vitals.hit_points = 0;
+        }
+    }
     party.restore(down);
     check(party.leader() == second && party.spokesman() == first,
           "The next conscious member speaks while the leader is down");
@@ -797,7 +839,9 @@ void class_weapon_proficiency()
         draft.name = klass;
         draft.rolled = true;
         for (auto &roll : draft.rolls)
+        {
             roll = {{6, 5, 4, 1}, 3};
+        }
         draft.rolls[0] = {{4, 4, 4, 1}, 3}; // Soldier produces STR 14, DEX 16.
         return Character(*srd5::character_rules(), draft, {});
     };
@@ -847,6 +891,7 @@ void class_weapon_proficiency()
               "Every starting class retains simple weapon proficiency");
     }
     for (const std::string klass : {"rogue", "monk"})
+    {
         for (const std::string weapon : {"shortsword", "scimitar"})
         {
             auto pc = make_character(klass);
@@ -909,6 +954,7 @@ void class_weapon_proficiency()
                               }),
                   "Actual combat uses +5 for the Dexterity-16 Rogue/Monk weapon attack");
         }
+    }
 }
 
 void stabilization_handoff()
@@ -939,7 +985,9 @@ void stabilization_handoff()
                                             });
             check(actor != snapshot.combatants.end(), "Campaign actor remains in combat");
             if (actor->hit_points > 0 || actor->dead)
+            {
                 break;
+            }
             if (actor->persistent.resources.starts_with("SRD13 1 0 0 0 0 0 0 0 0 0 0 0 1 1 0 "))
             {
                 stable = std::move(candidate);
@@ -987,7 +1035,9 @@ void remaining_turn_handoff()
     {
         auto candidate = rules->create({{8, 5, std::vector<Terrain>(40)}, participants}, seed);
         if (candidate->snapshot().actor == hero)
+        {
             combat = std::move(candidate);
+        }
     }
     check(bool(combat), "Find a campaign character's initial turn");
     party.begin_combat();
@@ -1079,7 +1129,9 @@ void untrained_equipment()
     {
         auto combat = rules->create(e, seed);
         if (combat->snapshot().actor != 1)
+        {
             continue;
+        }
         const auto commands = combat->legal_commands();
         check(std::none_of(commands.begin(), commands.end(),
                            [](const auto &c)
@@ -1111,7 +1163,9 @@ void untrained_equipment()
 void finish(CombatDemo &fight)
 {
     for (unsigned n = 0; n < 2000 && fight.combat().snapshot().outcome == Outcome::ongoing; ++n)
+    {
         check(fight.submit(choose_demo_command(fight.combat())), "Accepted combat command");
+    }
     check(fight.combat().snapshot().outcome != Outcome::ongoing, "Fight terminates");
 }
 
@@ -1142,6 +1196,7 @@ void combat_handoff()
     finish(fight);
     check(!party->in_combat(), "Combat releases party edits on finish");
     for (const auto &actor : fight.combat().snapshot().combatants)
+    {
         if (actor.side == Side::party)
         {
             const auto &member = party->member(actor.id);
@@ -1152,6 +1207,7 @@ void combat_handoff()
                     member.vitals.dead == actor.dead,
                 "Victory applies combat HP followed by rules advancement without reviving anyone");
         }
+    }
     const auto finished = fight.combat().snapshot();
     check(std::find_if(
               finished.combatants.begin(), finished.combatants.end(),
@@ -1219,7 +1275,9 @@ CampaignEncounter encounter_fixture()
     CampaignEncounter encounter;
     encounter.field.geometry = {40, 26, std::vector<Terrain>(40 * 26)};
     for (int y = 0; y < 26; ++y)
+    {
         encounter.field.geometry.terrain[y * 40 + 10] = Terrain::obstacle;
+    }
     encounter.field.geometry.terrain[13 * 40 + 25] = Terrain::difficult;
     encounter.field.tiles.resize(40 * 26, 7);
     encounter.enemies = {{1000, "bandit", "First enemy", Side::opposition, {}},
@@ -1358,12 +1416,16 @@ void camp_ambush_encounter()
     ambush.party_resting = true;
     fight.encounter(ambush, 1234);
     for (const auto &participant : observed->encounter.participants)
+    {
         check(participant.resting == (participant.side == Side::party),
               "Every party member, and no enemy, starts the camp ambush resting");
+    }
     const auto log = fight.combat().snapshot().log();
     for (const auto *line : {"Sleeping mage wakes up prone.", "Sleeping guard wakes up prone."})
+    {
         check(std::count(log.begin(), log.end(), line) == 1,
               "Each interrupted sleeper wakes up Prone, once");
+    }
 }
 
 // The party's exploration square walled in on every side, in an open arena:
@@ -1376,8 +1438,10 @@ CampaignEncounter walled_in_band(std::size_t monsters)
     encounter.field.tiles.resize(50 * 25, 7);
     encounter.field.walled[2][6] = {true, true, true, true};
     for (std::size_t n = 0; n < monsters; ++n)
+    {
         encounter.enemies.push_back(
             {static_cast<EntityId>(1000 + n), "bandit", "Bandit", Side::opposition, {}});
+    }
     return encounter;
 }
 
@@ -1386,8 +1450,12 @@ std::vector<EntityId> placed_monsters(const Encounter &encounter)
 {
     std::vector<EntityId> ids;
     for (const auto &participant : encounter.participants)
+    {
         if (participant.side == Side::opposition)
+        {
             ids.push_back(participant.id);
+        }
+    }
     return ids;
 }
 
@@ -1408,8 +1476,12 @@ void crowded_band_leaves_monsters_out()
     }
     auto rubble = walled_in_band(3);
     for (int y = 10; y <= 12; ++y)
+    {
         for (int x = 16; x <= 30; ++x)
+        {
             rubble.field.geometry.terrain[y * 50 + x] = Terrain::obstacle;
+        }
+    }
     {
         CombatDemo fight(std::make_unique<ObservedModule>(observed));
         fight.campaign_party(party);
@@ -1428,7 +1500,9 @@ void allied_campaign_movement()
     CampaignEncounter encounter;
     encounter.field.geometry = {7, 3, std::vector<Terrain>(21, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
+    {
         encounter.field.geometry.terrain[7 + x] = Terrain::open;
+    }
     encounter.enemies = {{1000, "bandit", "Enemy", Side::opposition, {6, 1}}};
     encounter.positions = {{0, 1}, {1, 1}, {2, 1}, {6, 1}};
     std::unique_ptr<CombatDemo> fight;
@@ -1438,7 +1512,9 @@ void allied_campaign_movement()
         candidate->campaign_party(party);
         candidate->encounter(encounter, seed);
         if (candidate->combat().snapshot().actor == mover)
+        {
             fight = std::move(candidate);
+        }
     }
     check(bool(fight), "Find an initial turn for a normally created campaign member");
     const auto before = party->member(mover).vitals;
@@ -1811,7 +1887,9 @@ void combat_demo_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
     if (!directory || !*directory)
+    {
         return;
+    }
     auto characters = srd5::character_rules();
     auto scene = make_combat_demo(module(), *characters, directory);
     {
@@ -1925,7 +2003,9 @@ void combat_demo_fixture()
               has_gear(chief->get(), "Arrows") && !has_gear(sword_chief->get(), "Short bow"),
           "Only original Kobold leader record 1 carries a bow and arrows");
     for (const auto &cell : std::array<Cell, 5>{{{9, 4}, {9, 7}, {7, 8}, {4, 8}, {4, 5}}})
+    {
         check(!kobolds.contains(cell), "Removed Kobolds leave six openings in the ring");
+    }
     CombatDemo fight(module());
     fight.campaign_party(scene.party);
     auto invalid = scene.encounter;
@@ -1960,7 +2040,9 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
 {
     Bytes bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     bytes.push_back(0);
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const por::EclProgram>(
@@ -1970,7 +2052,9 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
 void settle(por::RolfTourSession &town)
 {
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+    {
         town.advance(.5);
+    }
     check(town.snapshot().phase != por::TourPhase::faulted, "Town script fault");
 }
 
@@ -2164,8 +2248,12 @@ void victory_beside_dead_member()
           "The dead member does not fight");
     result.outcome = Outcome::victory;
     for (auto &unit : result.combatants)
+    {
         if (unit.side == Side::opposition)
+        {
             unit.hit_points = 0;
+        }
+    }
     check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
           "The victory resolves although a dead member sat it out");
 }
@@ -2182,8 +2270,12 @@ void victory_when_every_monster_fled()
     const auto before = party->checkpoint();
     result.outcome = Outcome::victory;
     for (auto &unit : result.combatants)
+    {
         if (unit.side == Side::opposition)
+        {
             unit.fled = true;
+        }
+    }
     check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
           "A victory over monsters that all fled ends the fight");
     check(party->state().claimed_rewards == before.claimed_rewards &&
@@ -2215,15 +2307,21 @@ void victory_with_a_monster_left_out()
                             }) == 2,
               "Both orcs are staged for the fight");
         if (leave_one_out)
+        {
             std::erase_if(result.combatants,
                           [](const auto &unit)
                           {
                               return unit.id == 1001;
                           });
+        }
         result.outcome = Outcome::victory;
         for (auto &unit : result.combatants)
+        {
             if (unit.side == Side::opposition)
+            {
                 unit.hit_points = 0;
+            }
+        }
         check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::combat,
               "The victory resolves whether or not every monster fought");
         return party->state().roster[0].experience;
@@ -2248,8 +2346,12 @@ void failed_combat_result_rolls_back()
         auto result = start_orc_encounter(town, party);
         result.outcome = Outcome::victory;
         for (auto &unit : result.combatants)
+        {
             if (unit.side == Side::opposition)
+            {
                 unit.hit_points = 0;
+            }
+        }
         const auto before_result = encode_campaign(*party, nullptr, "rollback");
         bool failed = false;
         bool escaped = false;
@@ -2274,13 +2376,19 @@ void failed_combat_result_rolls_back()
         }
         const auto after = encode_campaign(*party, nullptr, "rollback");
         if (escaped)
+        {
             check(after == before_result, "A failure that escapes leaves the party untouched");
+        }
         else if (!town.script_diagnostics().empty())
+        {
             check(after == before_event,
                   "A failed result rolls the party back to the event's start");
+        }
         else
+        {
             check(party->member(fighter).experience > 0,
                   "A failure survived on the way still pays");
+        }
     }
 }
 
@@ -2301,7 +2409,9 @@ Bytes packed_text(std::string_view text)
         }
     }
     if (bits)
+    {
         bytes.push_back(static_cast<std::uint8_t>(held << (8 - bits)));
+    }
     return bytes;
 }
 
@@ -2418,7 +2528,9 @@ void recovery_hosts()
     // Slot 2 arms a guaranteed five-minute interruption. Slot 3 records execution.
     Bytes bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     bytes.push_back(0);
     Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
     const unsigned interrupt = 0x9915 + static_cast<unsigned>(pre.size());
@@ -2483,10 +2595,12 @@ void recovery_hosts()
     settle(rollback);
     if (party->state().wealth[3] != 100 || party->member(pc).vitals.hit_points != 1 ||
         party->state().random_state != state.random_state)
+    {
         throw std::runtime_error(
             "Failed service rollback: gold=" + std::to_string(party->state().wealth[3]) +
             ", HP=" + std::to_string(party->member(pc).vitals.hit_points) + ", " +
             rollback.snapshot().dialogue);
+    }
     check(rollback.choose(rollback.snapshot().continue_ticket, 0) && rollback.can_leave(),
           "Rollback clears pending temple ticket");
 }
@@ -2676,7 +2790,9 @@ void party_strength()
     {
         auto state = party.checkpoint();
         for (auto &member : state.roster)
+        {
             member.vitals.hit_points = hit_points.at(member.id);
+        }
         party.restore(std::move(state));
     };
 
@@ -2693,8 +2809,12 @@ void party_strength()
 
     party.award_experience(900, "strength-levels");
     for (const auto id : {fighter, wizard})
+    {
         for (unsigned level = 2; level <= 3; ++level)
+        {
             party.advance(id, party.default_advancement(id));
+        }
+    }
     // Fighter level 3 is THAC0 18: (5 + 15) / 10 = 2. Wizard level 3: (5 + 24) / 10 = 2.
     set_hit_points({{fighter, 5}, {cleric, 5}, {wizard, 5}, {rogue, 4}});
     check(por::party_strength(party) == 5,

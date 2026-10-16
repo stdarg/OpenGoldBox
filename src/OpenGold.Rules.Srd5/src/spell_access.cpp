@@ -475,22 +475,32 @@ constexpr std::array always_prepared_table{
 const PreparedCaster *prepared_caster(CharacterClass klass)
 {
     for (const auto &caster : prepared_casters)
+    {
         if (caster.klass == klass)
+        {
             return &caster;
+        }
+    }
     return nullptr;
 }
 
 void require(bool ok)
 {
     if (!ok)
+    {
         throw std::runtime_error("Invalid spell grant, spellbook entry or preparation");
+    }
 }
 
 const Spell &find(std::string_view id)
 {
     for (const auto &spell : spells)
+    {
         if (spell.id == id)
+        {
             return spell;
+        }
+    }
     throw std::runtime_error("Unsupported spell knowledge");
 }
 
@@ -577,13 +587,21 @@ constexpr std::array<std::pair<std::string_view, std::string_view>, 3> initiate_
 const InitiateList *initiate_list(std::string_view feat)
 {
     if (feat == tome_id)
+    {
         return &tome;
+    }
     if (!feat.starts_with(initiate_prefix))
+    {
         return nullptr;
+    }
     feat.remove_prefix(initiate_prefix.size());
     for (const auto &list : initiate_lists)
+    {
         if (list.id == feat)
+        {
             return &list;
+        }
+    }
     return nullptr;
 }
 
@@ -602,10 +620,16 @@ std::vector<std::pair<std::string, unsigned>> initiate_feats(std::span<const Fea
     constexpr std::string_view lessons = "invocation:lessons_";
     std::vector<std::pair<std::string, unsigned>> result;
     for (const auto &g : grants)
+    {
         if (initiate_list(g.id))
+        {
             result.emplace_back(g.id, g.level);
+        }
         else if (g.id.starts_with(lessons) && initiate_list("feat:" + g.id.substr(lessons.size())))
+        {
             result.emplace_back("feat:" + g.id.substr(lessons.size()), g.level);
+        }
+    }
     return result;
 }
 
@@ -622,16 +646,24 @@ void add_initiate_access(SpellAccess &result, std::span<const FeatureGrant> gran
 {
     std::set<std::string> known;
     for (const auto &g : grants)
+    {
         if (is_spell_grant(g))
+        {
             require(known.insert(g.id).second);
+        }
+    }
     const auto feats = initiate_feats(grants);
     std::set<std::string> lists;
     for (const auto &feat : feats)
+    {
         require(lists.insert(feat.first).second);
+    }
     for (const auto &g : grants)
     {
         if (!is_initiate_grant(g))
+        {
             continue;
+        }
         const auto feat = std::find_if(feats.begin(), feats.end(),
                                        [&](const auto &f)
                                        {
@@ -657,21 +689,31 @@ void add_initiate_access(SpellAccess &result, std::span<const FeatureGrant> gran
             {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
         if (spell.level && std::find(result.always_prepared.begin(), result.always_prepared.end(),
                                      spell.id) == result.always_prepared.end())
+        {
             result.always_prepared.emplace_back(spell.id);
+        }
     }
     for (const auto &[feat, acquired] : feats)
     {
         unsigned abilities = 0, cantrips = 0, leveled = 0;
         for (const auto &g : grants)
+        {
             if (g.source_id == feat)
             {
                 if (g.id.starts_with(ability_prefix))
+                {
                     ++abilities;
+                }
                 else if (find(std::string_view(g.id).substr(6)).level)
+                {
                     ++leveled;
+                }
                 else
+                {
                     ++cantrips;
+                }
             }
+        }
         const auto &list = *initiate_list(feat);
         require(abilities <= (list.ability ? 0u : 1u) && cantrips <= list.cantrips &&
                 leveled <= list.spells);
@@ -684,7 +726,9 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
     for (const auto &[feat, acquired] : initiate_feats(sheet.grants))
     {
         if (acquired != static_cast<unsigned>(sheet.level))
+        {
             continue;
+        }
         const auto &list = *initiate_list(feat);
         const auto name = list.ability ? std::string(list.label)
                                        : "Magic Initiate (" + std::string(list.label) + ")";
@@ -730,8 +774,10 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
                                       return a.first == first;
                                   });
             for (const auto &[id, label] : abilities)
+            {
                 group.options.push_back({std::string(id), std::string(label),
                                          "Spell attacks and save DCs for these spells."});
+            }
             result.learning.push_back(std::move(group));
         }
         for (const unsigned spell_level : {0u, 1u})
@@ -744,7 +790,9 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
                            find(std::string_view(g.id).substr(6)).level == spell_level;
                 });
             if (have >= owed)
+            {
                 continue;
+            }
             TrainingChoiceGroup group{
                 feat + (spell_level ? ":spell" : ":cantrips"),
                 name + (spell_level ? list.spells > 1 ? " level 1 spells" : " level 1 spell"
@@ -753,13 +801,19 @@ void add_initiate_learning(SpellChoiceOptions &result, const CharacterSheet &she
                 {}};
             group.acquired_level = acquired;
             for (const auto &spell : spells)
+            {
                 if ((spell.lists & list.list) && spell.level == spell_level && !known(spell.id))
+                {
                     group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
+                }
+            }
             // A character who knows all but one of the list's cantrips in the
             // game learns only that one (INITIATE-1).
             group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
             if (group.count)
+            {
                 result.learning.push_back(std::move(group));
+            }
         }
     }
 }
@@ -770,13 +824,17 @@ std::optional<FeatureGrant> initiate_choice_grant(const TrainingChoiceGroup &gro
 {
     const auto split = group.id.rfind(':');
     if (split == std::string::npos || !initiate_list(std::string_view(group.id).substr(0, split)))
+    {
         return std::nullopt;
+    }
     auto feat = group.id.substr(0, split);
     if (group.id.ends_with(":ability"))
+    {
         return FeatureGrant{std::string(ability_prefix) + std::string(value),
                             std::move(feat),
                             group.acquired_level,
                             {}};
+    }
     return initiate_spell_grant(feat, value, group.acquired_level);
 }
 
@@ -809,6 +867,7 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
     std::set<std::string> known;
     std::array<unsigned, 16> learned{};
     for (const auto &g : grants)
+    {
         if (class_spell_grant(g))
         {
             const auto &spell = find(std::string_view(g.id).substr(6));
@@ -824,9 +883,12 @@ SpellAccess prepared_access(const PreparedCaster &caster, std::span<const Featur
                 {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
             ++learned[g.level];
         }
+    }
     require(learned[1] <= cantrips_at(caster, grants, 1));
     for (unsigned n = 2; n <= level; ++n)
+    {
         require(learned[n] <= cantrips_at(caster, grants, n) - cantrips_at(caster, grants, n - 1));
+    }
     std::set<std::string> selected;
     for (const auto &id : prepared)
     {
@@ -877,8 +939,12 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
                                       {}};
             group.acquired_level = level;
             for (const auto &spell : spells)
+            {
                 if ((spell.lists & caster.cantrip_list) && spell.level == 0 && !known(spell.id))
+                {
                     group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
+                }
+            }
             result.learning.push_back(std::move(group));
         }
     }
@@ -888,17 +954,27 @@ SpellChoiceOptions prepared_choice_options(const PreparedCaster &caster,
                          (context == SpellChoiceContext::long_rest &&
                           caster.rest_change != PreparedCaster::RestChange::none);
     for (const auto &spell : spells)
+    {
         if ((spell.lists & prepared_list(caster, level)) && spell.level >= 1 &&
             spell.level <= caster.highest_slot[level - 1] &&
             std::find(access.always_prepared.begin(), access.always_prepared.end(), spell.id) ==
                 access.always_prepared.end())
+        {
             result.preparation.push_back({std::string(spell.id), std::string(spell.label), {}});
+        }
+    }
     // A spell that becomes always prepared at this level frees its place.
     if (context == SpellChoiceContext::advancement)
+    {
         for (const auto &id : sheet.prepared_spells)
+        {
             if (std::find(access.always_prepared.begin(), access.always_prepared.end(), id) ==
                 access.always_prepared.end())
+            {
                 result.locked_prepared.push_back(id);
+            }
+        }
+    }
     return result;
 }
 } // namespace
@@ -917,14 +993,19 @@ std::vector<FeatureGrant> without_spell_grants(std::span<const FeatureGrant> gra
 {
     std::vector<FeatureGrant> result;
     for (const auto &g : grants)
+    {
         if (!is_spell_grant(g) && !is_initiate_grant(g))
+        {
             result.push_back(g);
+        }
+    }
     return result;
 }
 
 TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
 {
     if (klass == CharacterClass::warlock)
+    {
         return {
             "class:warlock:pact_magic",
             "Warlock cantrips",
@@ -936,7 +1017,9 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
               "Melee spell attack: 1d10 Necrotic damage, Touch; prevents healing until the end of your next turn."},
              {"true_strike", "True Strike",
               "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."}}};
+    }
     if (klass == CharacterClass::druid)
+    {
         return {
             "class:druid:spellcasting",
             "Druid cantrips",
@@ -955,7 +1038,9 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
              // Last, so ready-made Druids keep the cantrips they had before it (GUIDE-1).
              {"guidance", "Guidance",
               "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."}}};
+    }
     if (klass == CharacterClass::bard)
+    {
         return {
             "class:bard:spellcasting",
             "Bard cantrips",
@@ -966,7 +1051,9 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
               "Ranged spell attack: 1d8 Radiant damage, 60 feet; the target cannot be Invisible until the end of your next turn."},
              {"true_strike", "True Strike",
               "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."}}};
+    }
     if (klass == CharacterClass::cleric)
+    {
         return {
             "class:cleric:spellcasting",
             "Cleric cantrips",
@@ -979,8 +1066,11 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
               "Touch: once per turn the creature takes 1d4 less damage of a chosen type; Concentration."},
              {"guidance", "Guidance",
               "Touch: the creature adds 1d4 to Athletics or Medicine checks, as chosen; Concentration."}}};
+    }
     if (klass != CharacterClass::wizard && klass != CharacterClass::sorcerer)
+    {
         return {};
+    }
     TrainingChoiceGroup group{
         klass == CharacterClass::sorcerer ? "class:sorcerer:spellcasting" : std::string(source),
         klass == CharacterClass::sorcerer ? "Sorcerer cantrips" : "Wizard cantrips",
@@ -998,9 +1088,11 @@ TrainingChoiceGroup starting_cantrip_options(CharacterClass klass)
          {"true_strike", "True Strike",
           "Melee weapon attack using your spellcasting ability; Radiant or the weapon's damage type."}}};
     if (klass == CharacterClass::sorcerer)
+    {
         group.options.push_back(
             {"sorcerous_burst", "Sorcerous Burst",
              "Ranged spell attack: 1d8 damage of a chosen type, 120 feet; an 8 rolls another d8."});
+    }
     return group;
 }
 
@@ -1140,18 +1232,24 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass kl
                    result.prepared.end();
     };
     for (const auto &lineage : lineage_spells(grants, level))
+    {
         for (const auto &id : lineage.spells)
         {
             if (known(id))
+            {
                 continue;
+            }
             const auto &spell = find(id);
             result.initiate.push_back({std::string(spell.id), std::string(spell.label),
                                        lineage.feat, spell.level ? 3u : 1u});
             if (spell.level &&
                 std::find(result.always_prepared.begin(), result.always_prepared.end(), id) ==
                     result.always_prepared.end())
+            {
                 result.always_prepared.emplace_back(spell.id);
+            }
         }
+    }
     return result;
 }
 
@@ -1160,7 +1258,9 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
 {
     SpellAccess result;
     if (const auto *caster = prepared_caster(klass))
+    {
         return prepared_access(*caster, grants, level, prepared);
+    }
     if (klass != CharacterClass::wizard)
     {
         require(std::none_of(grants.begin(), grants.end(), class_spell_grant));
@@ -1178,6 +1278,7 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
     std::set<std::string> known;
     std::array<unsigned, 16> books{}, cantrips{};
     for (const auto &g : grants)
+    {
         if (class_spell_grant(g))
         {
             require(g.source_id == source && g.level >= 1 && g.level <= level &&
@@ -1192,11 +1293,13 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
                 require(spell.level == 0);
                 bool valid = false;
                 for (unsigned n = g.level; n <= level; ++n)
+                {
                     if (replacement->second == std::to_string(n))
                     {
                         learned = n;
                         valid = true;
                     }
+                }
                 require(valid);
                 expected.choices.emplace("learned_at", replacement->second);
             }
@@ -1206,13 +1309,20 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
             auto &list = spell.level ? result.spellbook : result.cantrips;
             list.push_back({std::string(spell.id), std::string(spell.label), g.source_id, learned});
             if (spell.level)
+            {
                 ++books[g.level];
+            }
             else
+            {
                 ++cantrips[g.level];
+            }
         }
+    }
     require(books[1] <= 6 && cantrips[1] <= 3);
     for (unsigned n = 2; n <= level; ++n)
+    {
         require(books[n] <= 2 && cantrips[n] <= (n == 4 || n == 10 ? 1u : 0u));
+    }
     std::set<std::string> selected;
     for (const auto &id : prepared)
     {
@@ -1232,7 +1342,9 @@ SpellChoiceOptions spell_choice_options(const CharacterSheet &sheet, SpellChoice
 {
     auto result = class_spell_choice_options(sheet, context);
     if (context == SpellChoiceContext::advancement)
+    {
         add_initiate_learning(result, sheet);
+    }
     return result;
 }
 
@@ -1242,12 +1354,18 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
     SpellChoiceOptions result;
     const auto klass = class_of(sheet);
     if (const auto *caster = prepared_caster(klass))
+    {
         return prepared_choice_options(*caster, sheet, context);
+    }
     if (klass != CharacterClass::wizard)
+    {
         return result;
+    }
     // Memorize Spell: from Wizard 5, a Short Rest changes one prepared spell.
     if (context == SpellChoiceContext::short_rest && sheet.level < 5)
+    {
         return result;
+    }
     const auto access = spell_access(sheet.grants, klass, sheet.level, sheet.prepared_spells);
     auto known = [&](std::string_view id)
     {
@@ -1276,35 +1394,51 @@ SpellChoiceOptions class_spell_choice_options(const CharacterSheet &sheet,
                            (find(std::string_view(g.id).substr(6)).level == 0) == cantrip;
                 }));
             if (capacity == used)
+            {
                 continue;
+            }
             TrainingChoiceGroup group;
             group.id = std::string(cantrip ? "cantrips:" : "spellbook:") + std::to_string(level);
             group.label = cantrip ? "Wizard cantrips" : "Spellbook";
             group.count = capacity - used;
             group.acquired_level = level;
             for (const auto &spell : spells)
+            {
                 // A spell of a level the Wizard has slots for: half its level,
                 // rounded up.
                 if ((spell.level == 0) == cantrip && (spell.lists & wizard_list) &&
                     spell.level <= (level + 1) / 2 && !known(spell.id))
+                {
                     group.options.push_back({std::string(spell.id), std::string(spell.label), {}});
+                }
+            }
             result.learning.push_back(std::move(group));
         }
     }
     result.prepared_count = access.prepared_choices;
     result.may_prepare = true;
     for (const auto &spell : access.spellbook)
+    {
         result.preparation.push_back({spell.id, spell.label, {}});
+    }
     if (context == SpellChoiceContext::advancement)
+    {
         result.locked_prepared = sheet.prepared_spells;
+    }
     result.may_replace = context == SpellChoiceContext::long_rest;
     if (result.may_replace)
     {
         for (const auto &spell : access.cantrips)
+        {
             result.replaceable.push_back({spell.id, spell.label, {}});
+        }
         for (const auto &choice : starting_cantrip_options(CharacterClass::wizard).options)
+        {
             if (!known(choice.id))
+            {
                 result.replacements.push_back(choice);
+            }
+        }
     }
     return result;
 }
@@ -1334,9 +1468,13 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
                                     return o.id == value;
                                 }));
             if (auto initiate = initiate_choice_grant(*group, value))
+            {
                 candidate.grants.push_back(std::move(*initiate));
+            }
             else
+            {
                 candidate.grants.push_back(grant(value, group->acquired_level, origin));
+            }
         }
     }
     require(choices.replace_cantrip.empty() == choices.replacement.empty());
@@ -1365,11 +1503,14 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     {
         require(options.may_prepare);
         for (const auto &id : options.locked_prepared)
+        {
             require(std::find(choices.prepared->begin(), choices.prepared->end(), id) !=
                     choices.prepared->end());
+        }
         if ((caster && caster->rest_change == PreparedCaster::RestChange::one &&
              context == SpellChoiceContext::long_rest) ||
             context == SpellChoiceContext::short_rest)
+        {
             require(std::count_if(sheet.prepared_spells.begin(), sheet.prepared_spells.end(),
                                   [&](const auto &id)
                                   {
@@ -1377,9 +1518,12 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
                                                        choices.prepared->end(),
                                                        id) == choices.prepared->end();
                                   }) <= 1);
+        }
         const auto always = always_prepared_spells(klass, sheet.level, sheet.grants);
         for (const auto &id : *choices.prepared)
+        {
             require(std::find(always.begin(), always.end(), id) == always.end());
+        }
         candidate.prepared_spells = *choices.prepared;
     }
     const auto access =
@@ -1388,13 +1532,19 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
     {
         const auto remaining = spell_choice_options(candidate, context);
         for (const auto &group : remaining.learning)
+        {
             if (!group.options.empty() && group.count)
+            {
                 throw std::runtime_error("Complete the available spell choices.");
+            }
+        }
         // A place left open, such as one a swap freed, is a choice to finish.
         if (options.may_prepare &&
             candidate.prepared_spells.size() !=
                 std::min<std::size_t>(access.prepared_choices, remaining.preparation.size()))
+        {
             throw std::runtime_error("Complete the available spell choices.");
+        }
     }
     sheet = std::move(candidate);
 }
@@ -1403,8 +1553,12 @@ std::vector<std::string> circle_spells(unsigned level, std::string_view land)
 {
     std::vector<std::string> result;
     for (const auto &entry : always_prepared_table)
+    {
         if (entry.klass == CharacterClass::druid && level >= entry.level && entry.land == land)
+        {
             result.emplace_back(entry.spell);
+        }
+    }
     return result;
 }
 
@@ -1413,30 +1567,46 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
 {
     std::vector<std::string> result;
     for (const auto &entry : always_prepared_table)
+    {
         if (entry.klass == klass && level >= entry.level &&
             (entry.land.empty() || std::any_of(grants.begin(), grants.end(),
                                                [&](const auto &g)
                                                {
                                                    return g.id == "land:" + std::string(entry.land);
                                                })))
+        {
             result.emplace_back(entry.spell);
+        }
+    }
     // Magic Initiate's level-one spell is always prepared too.
     for (const auto &g : grants)
+    {
         if (is_initiate_grant(g) && is_spell_grant(g))
         {
             const auto id = std::string_view(g.id).substr(6);
             if (find(id).level && std::find(result.begin(), result.end(), id) == result.end())
+            {
                 result.emplace_back(id);
+            }
         }
+    }
     // So are a Lore Bard's Magical Discoveries.
     for (const auto &g : grants)
+    {
         if (g.id.starts_with("discovery:"))
+        {
             result.emplace_back(std::string_view(g.id).substr(10));
+        }
+    }
     // So is a lineage's, from level 3.
     for (const auto &lineage : lineage_spells(grants, level))
+    {
         if (!lineage.free_spell.empty() &&
             std::find(result.begin(), result.end(), lineage.free_spell) == result.end())
+        {
             result.push_back(lineage.free_spell);
+        }
+    }
     return result;
 }
 
@@ -1448,11 +1618,15 @@ std::vector<InitiateSpells> magic_initiate_spells(std::span<const FeatureGrant> 
         InitiateSpells entry{feat};
         const auto &list = *initiate_list(feat);
         if (list.ability)
+        {
             entry.ability = *list.ability;
+        }
         for (const auto &g : grants)
         {
             if (g.source_id != feat)
+            {
                 continue;
+            }
             if (g.id.starts_with(ability_prefix))
             {
                 const auto ability = std::string_view(g.id).substr(ability_prefix.size());
@@ -1464,7 +1638,9 @@ std::vector<InitiateSpells> magic_initiate_spells(std::span<const FeatureGrant> 
             const auto id = std::string_view(g.id).substr(6);
             entry.spells.emplace_back(id);
             if (find(id).level && list.free_cast)
+            {
                 entry.free_spell = id;
+            }
         }
         result.push_back(std::move(entry));
     }
@@ -1520,8 +1696,12 @@ std::vector<std::string> known_cantrip_ids(const SpellAccess &access)
         result.push_back(s.id);
     }
     for (const auto &s : access.initiate)
+    {
         if (!find(s.id).level)
+        {
             result.push_back(s.id);
+        }
+    }
     return result;
 }
 
@@ -1535,8 +1715,12 @@ std::vector<std::string> casting_ids(const SpellAccess &access)
     }
     // A spell prepared before a feature made it always prepared appears once.
     for (const auto &id : access.always_prepared)
+    {
         if (std::find(result.begin(), result.end(), id) == result.end())
+        {
             result.push_back(id);
+        }
+    }
     return result;
 }
 
@@ -1555,9 +1739,13 @@ bool offers(std::span<const AdvancementOption> options, std::string_view id)
 bool swap_allowed(const LevelSwap &swap, const SwapOffer &offer)
 {
     if (swap.replaced.empty() && swap.replacement.empty())
+    {
         return false;
+    }
     if (!offers(offer.replaceable, swap.replaced) || !offers(offer.replacements, swap.replacement))
+    {
         throw std::runtime_error("Choose a listed replacement");
+    }
     return true;
 }
 } // namespace
@@ -1567,7 +1755,9 @@ SwapOffer cantrip_swap_offer(const CharacterSheet &sheet)
     SwapOffer offer{"Cantrip", {}, {}};
     const auto *caster = prepared_caster(class_of(sheet));
     if (!caster || sheet.level >= static_cast<int>(level_cap(class_of(sheet))))
+    {
         return offer;
+    }
     const auto known = [&](std::string_view id)
     {
         return std::any_of(sheet.grants.begin(), sheet.grants.end(),
@@ -1577,17 +1767,27 @@ SwapOffer cantrip_swap_offer(const CharacterSheet &sheet)
                            });
     };
     for (const auto &g : sheet.grants)
+    {
         if (g.source_id == caster->source && is_spell_grant(g))
         {
             const auto &spell = find(std::string_view(g.id).substr(6));
             if (!spell.level)
+            {
                 offer.replaceable.push_back({std::string(spell.id), std::string(spell.label), {}});
+            }
         }
+    }
     if (offer.replaceable.empty())
+    {
         return offer;
+    }
     for (const auto &spell : spells)
+    {
         if (!spell.level && (spell.lists & caster->cantrip_list) && !known(spell.id))
+        {
             offer.replacements.push_back({std::string(spell.id), std::string(spell.label), {}});
+        }
+    }
     return offer;
 }
 
@@ -1598,7 +1798,9 @@ SwapOffer spell_swap_offer(const CharacterSheet &sheet)
     const auto *caster = prepared_caster(klass);
     if (!caster || caster->rest_change != PreparedCaster::RestChange::none ||
         sheet.level >= static_cast<int>(level_cap(klass)))
+    {
         return offer;
+    }
     const auto next = sheet.level + 1u;
     const auto always = always_prepared_spells(klass, next, sheet.grants);
     const auto taken = [&](std::string_view id)
@@ -1613,39 +1815,57 @@ SwapOffer spell_swap_offer(const CharacterSheet &sheet)
                            });
     };
     for (const auto &id : sheet.prepared_spells)
+    {
         if (std::find(always.begin(), always.end(), id) == always.end())
+        {
             offer.replaceable.push_back({id, std::string(find(id).label), {}});
+        }
+    }
     if (offer.replaceable.empty())
+    {
         return offer;
+    }
     for (const auto &spell : spells)
+    {
         if (spell.level >= 1 && spell.level <= caster->highest_slot[next - 1] &&
             (spell.lists & prepared_list(*caster, next)) && !taken(spell.id))
+        {
             offer.replacements.push_back({std::string(spell.id), std::string(spell.label), {}});
+        }
+    }
     return offer;
 }
 
 void apply_cantrip_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOffer &offer)
 {
     if (!swap_allowed(swap, offer))
+    {
         return;
+    }
     // The replacement takes the replaced cantrip's place and acquisition level.
     for (auto &g : sheet.grants)
+    {
         if (g.id == "spell:" + swap.replaced && is_spell_grant(g) && !is_initiate_grant(g))
         {
             g.id = "spell:" + swap.replacement;
             return;
         }
+    }
     throw std::runtime_error("No such cantrip to replace");
 }
 
 void apply_spell_swap(CharacterSheet &sheet, const LevelSwap &swap, const SwapOffer &offer)
 {
     if (!swap_allowed(swap, offer))
+    {
         return;
+    }
     const auto found =
         std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), swap.replaced);
     if (found == sheet.prepared_spells.end())
+    {
         throw std::runtime_error("No such spell to replace");
+    }
     *found = swap.replacement;
 }
 
@@ -1665,9 +1885,13 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
         for (const auto &[id, value] :
              {std::pair{"intelligence", Ability::intelligence},
               std::pair{"wisdom", Ability::wisdom}, std::pair{"charisma", Ability::charisma}})
+        {
             if (const auto *g = chose("spellcasting_ability:" + std::string(id));
                 g && g->source_id == "species:" + std::string(species) + ":ability")
+            {
                 return value;
+            }
+        }
         return fallback;
     };
 
@@ -1681,6 +1905,7 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
                                   Legacy{"legacy:infernal", "fire_bolt", "hellish_rebuke"}};
     std::vector<InitiateSpells> result;
     for (const auto &legacy : legacies)
+    {
         if (chose(legacy.choice))
         {
             InitiateSpells entry{"species:tiefling",
@@ -1694,18 +1919,27 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
             }
             result.push_back(std::move(entry));
         }
+    }
     if (chose("lineage:high_elf"))
+    {
         for (const auto &g : grants)
+        {
             if (g.source_id == "species:elf:cantrip" && g.id.starts_with("cantrip:"))
+            {
                 result.push_back({"species:elf",
                                   ability_of("elf", Ability::intelligence),
                                   {g.id.substr(8)},
                                   {}});
+            }
+        }
+    }
     if (chose("lineage:wood_elf") && level >= 3)
+    {
         result.push_back({"species:elf",
                           ability_of("elf", Ability::intelligence),
                           {"longstrider"},
                           "longstrider"});
+    }
     return result;
 }
 

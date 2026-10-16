@@ -30,13 +30,19 @@ Character hero(std::string klass = "fighter", unsigned level = 1, int constituti
     d.name = "Rest tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     if (constitution == 3)
+    {
         d.rolls[2] = {{1, 1, 1, 1}, 3};
+    }
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 2; n <= level; ++n)
+    {
         check(result.advance(*module(), scratch), "Fixture level is supported");
+    }
     return result;
 }
 
@@ -54,8 +60,12 @@ const ResourcePool &pool(const RecoveryInfo &info, std::string_view id)
 Command command(const CombatSession &combat, std::string_view verb)
 {
     for (const auto &c : combat.legal_commands())
+    {
         if (c.verb == verb)
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing combat command");
 }
 
@@ -124,7 +134,9 @@ void class_dice_and_recharge()
     check(state.hit_points == 1 && pool(info, "second_wind").remaining == 1,
           "A Short Rest returns exactly one spent Second Wind");
     for (unsigned n = 0; n < 4; ++n)
+    {
         rules->recover_short_rest(state, sheet);
+    }
     check(pool(rules->recovery_info(sheet, state), "second_wind").remaining == 3,
           "Repeated completed rests never exceed capacity");
     state = {1, false, "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"};
@@ -337,24 +349,32 @@ void persistence_and_advancement()
     std::istringstream in(checkpoint);
     std::vector<std::string> rows;
     for (std::string row; std::getline(in, row);)
+    {
         rows.push_back(row);
+    }
     for (unsigned i = 4; i < 6; ++i)
+    {
         if (rows[i].starts_with("1 "))
         {
             // Published actor field 34 is Hit Dice, before clocks and feature pools.
             std::istringstream fields(rows[i]);
             std::string field;
             for (unsigned n = 0; n < 34; ++n)
+            {
                 fields >> std::quoted(field);
+            }
             fields >> std::ws;
             const auto begin = static_cast<std::size_t>(fields.tellg());
             fields >> field;
             check(field == "1", "Mutation targets the actual spent Hit Dice field");
             rows[i].replace(begin, static_cast<std::size_t>(fields.tellg()) - begin, "3");
         }
+    }
     std::string bad;
     for (const auto &row : rows)
+    {
         bad += row + '\n';
+    }
     rejects(
         [&]
         {

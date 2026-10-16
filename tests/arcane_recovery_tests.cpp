@@ -19,7 +19,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool value, const char *message)
 {
     if (!value)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &path)
@@ -47,18 +49,22 @@ Character wizard()
     draft.name = "Arcane Recovery baseline";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), draft, {});
 }
 
 void act(CombatSession &combat, std::string_view verb)
 {
     for (const auto &command : combat.legal_commands())
+    {
         if (command.verb == verb)
         {
             check(submit_aimed(combat, command), "Accept baseline command");
             return;
         }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -66,13 +72,17 @@ void next_player(CombatSession &combat)
 {
     act(combat, "end");
     while (combat.snapshot().actor != 1)
+    {
         act(combat, "end");
+    }
 }
 
 void spend_slots(CampaignParty &party, CombatSession &combat)
 {
     while (combat.snapshot().actor != 1)
+    {
         act(combat, "end");
+    }
     act(combat, "magic_missile");
     party.apply_combat(combat.snapshot());
     next_player(combat);
@@ -89,7 +99,9 @@ PartyState baseline(unsigned level)
     const auto id = party.add_pc(wizard());
     party.award_experience(2700, "arcane-baseline");
     for (unsigned n = 2; n <= level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
 
     auto participants = party.participants();
     participants.front().cell = {1, 1};
@@ -130,24 +142,36 @@ void baseline_spending()
               "Attained Wizard level and pending Short Rest eligibility survive");
         const auto resources = party.recovery_info(1).resources;
         for (const auto &pool : resources)
+        {
             if (pool.id == "spell_slot:1")
+            {
                 check(pool.remaining == (level == 1   ? 0u
                                          : level == 2 ? 1u
                                          : level == 3 ? 2u
                                                       : 1u),
                       "Spent first-level slots remain spent");
+            }
+        }
         for (const auto &pool : resources)
+        {
             if (pool.id == "spell_slot:2")
+            {
                 check(pool.remaining == (level == 3 ? 1u : 2u),
                       "Spent second-level slot remains spent");
+            }
+        }
     }
 }
 
 unsigned remaining(const RecoveryInfo &info, std::string_view id)
 {
     for (const auto &pool : info.resources)
+    {
         if (pool.id == id)
+        {
             return pool.remaining;
+        }
+    }
     throw std::runtime_error("Missing recovery pool: " + std::string(id));
 }
 
@@ -181,6 +205,7 @@ void recovery_transactions()
                               Expected{"arcane_recovery:2:0", 2, 0},
                               Expected{"arcane_recovery:0:1", 0, 1}};
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (const auto &choice : expected)
         {
             CampaignParty party(module());
@@ -230,10 +255,12 @@ void recovery_transactions()
                         remaining(info, "spell_slot:1") + choice.first,
                 "A legal nonempty choice restores exactly its first-level slots and spends the entire use");
             if (level >= 3)
+            {
                 check(
                     remaining(after, "spell_slot:2") ==
                         remaining(info, "spell_slot:2") + choice.second,
                     "Second-level allocation is exact and mutually exclusive with first-level recovery");
+            }
             check(party.state().random_state == before.random_state &&
                       party.state().time_minutes == before.time_minutes &&
                       party.state().subminute_milliseconds == before.subminute_milliseconds &&
@@ -286,6 +313,7 @@ void recovery_transactions()
             check(remaining(party.recovery_info(1), "arcane_recovery") == 1,
                   "Full pools reject under a fresh valid rest ticket without spending the use");
         }
+    }
 }
 
 void eligibility_and_effects()
@@ -382,7 +410,9 @@ void combat_and_advancement()
         for (auto *session : {combat.get(), copy.get()})
         {
             while (session->snapshot().actor != 1)
+            {
                 act(*session, "end");
+            }
             act(*session, "magic_missile");
         }
         check(combat->save() == copy->save(),

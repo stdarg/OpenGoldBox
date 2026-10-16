@@ -14,14 +14,20 @@ std::vector<EntityId> Session::cleave_targets(const PendingMastery &m,
     const auto &a = actor(m.actor);
     const auto &first = actor(m.target);
     if (a.cleave_used)
+    {
         return result;
+    }
     const auto reach = mastery_definition(m).reach;
     for (const auto &target : actors_)
+    {
         if (target.source.id != m.actor && target.source.id != m.target && !target.life.dead &&
             distance(first.source.cell, target.source.cell) <= 5 &&
             distance(from.value_or(a.source.cell), target.source.cell) <= reach &&
             line_of_sight(from.value_or(a.source.cell), target.source.cell))
+        {
             result.push_back(target.source.id);
+        }
+    }
     std::stable_sort(result.begin(), result.end(),
                      [&](auto x, auto y)
                      {
@@ -37,29 +43,41 @@ std::vector<Cell> Session::push_cells(const PendingMastery &m, std::optional<Cel
     const auto &a = actor(m.actor);
     const auto &target = actor(m.target);
     if (target.life.dead || def(target).size > 3)
+    {
         return result;
+    }
     const auto start = target.source.cell, origin = from.value_or(a.source.cell);
     const int dx = start.x - origin.x, dy = start.y - origin.y;
     if (!dx && !dy)
+    {
         return result;
+    }
     auto obstacles = board_;
     for (const auto &other : actors_)
+    {
         if (!other.life.dead && other.source.id != target.source.id)
         {
             const auto cell = other.source.id == a.source.id ? origin : other.source.cell;
             obstacles.terrain[cell.y * board_.width + cell.x] = Terrain::obstacle;
         }
+    }
     for (int y = std::max(0, start.y - 2); y <= std::min(board_.height - 1, start.y + 2); ++y)
+    {
         for (int x = std::max(0, start.x - 2); x <= std::min(board_.width - 1, start.x + 2); ++x)
         {
             const int step_x = x - start.x, step_y = y - start.y;
             const Cell cell{x, y};
             if (step_x * dy != step_y * dx || step_x * dx + step_y * dy <= 0 ||
                 obstacles.at(cell) == Terrain::obstacle)
+            {
                 continue;
+            }
             if (detail::has_line_of_sight(obstacles, start, cell))
+            {
                 result.push_back(cell);
+            }
         }
+    }
     return result;
 }
 
@@ -68,19 +86,31 @@ bool Session::mastery_available(const PendingMastery &m) const
     const auto &target = actor(m.target);
     const auto &source = actor(m.actor);
     if (!conscious(source))
+    {
         return false;
+    }
     if (m.kind == detail::Mastery::cleave)
+    {
         return !cleave_targets(m).empty();
+    }
     if (target.life.dead)
+    {
         return false;
+    }
     if (m.kind == detail::Mastery::push)
+    {
         return !push_cells(m).empty();
+    }
     if (m.kind == detail::Mastery::topple)
+    {
         return !target.effects.prone;
+    }
     if (m.kind != detail::Mastery::slow ||
         !detail::can_apply_attack_mastery(target.effects, detail::EffectKind::slow,
                                           effect_source(source)))
+    {
         return false;
+    }
     const auto duration = next_turn_ms(source);
     if (std::any_of(target.effects.active.begin(), target.effects.active.end(),
                     [&](const auto &effect)
@@ -88,7 +118,9 @@ bool Session::mastery_available(const PendingMastery &m) const
                         return effect.kind == detail::EffectKind::slow &&
                                effect.remaining_ms >= duration;
                     }))
+    {
         return false;
+    }
     auto after = target.effects;
     detail::apply_attack_mastery(after, detail::EffectKind::slow, effect_source(source),
                                  source.source.name, next_turn_ms(source));
@@ -102,19 +134,25 @@ void Session::offer_mastery(const Actor &a, const Actor &target, int natural, At
     const auto kind = weapon_mastery(a, range);
     if (kind != detail::Mastery::slow && kind != detail::Mastery::topple &&
         kind != detail::Mastery::cleave && kind != detail::Mastery::push)
+    {
         return;
+    }
     if ((kind == detail::Mastery::slow && damage <= 0) ||
         (kind == detail::Mastery::cleave && (ranged || actor(a.source.id).cleave_used)) ||
         (kind != detail::Mastery::cleave && target.life.dead) ||
         (kind == detail::Mastery::push && def(target).size > 3))
+    {
         return;
+    }
     std::string key;
     for (const auto &candidate : def(a).equipment_keys)
+    {
         if (detail::weapon(candidate))
         {
             key = candidate;
             break;
         }
+    }
     PendingMastery m{a.source.id, target.source.id, kind, natural, ranged, false,
                      key,         a.source.cell};
     m.tactical = tactical_mastery_ && tactical_mastery_->actor == a.source.id;
@@ -128,20 +166,30 @@ void Session::offer_mastery(const Actor &a, const Actor &target, int natural, At
                 movement_grid(actor(a.source.id))
                     .reachable(std::max(0, def(a).speed - detail::speed_penalty(a.effects)) / 2);
             for (int y = 0; y < board_.height && !possible; ++y)
+            {
                 for (int x = 0; x < board_.width && !possible; ++x)
+                {
                     if (reachable.cost_to({x, y}))
+                    {
                         possible = kind == detail::Mastery::cleave
                                        ? !cleave_targets(m, Cell{x, y}).empty()
                                        : !push_cells(m, Cell{x, y}).empty();
+                    }
+                }
+            }
         }
         if (!possible)
+        {
             return;
+        }
     }
     mastery_ = std::move(m);
     if (pending() && !effect_reaction_origin_)
+    {
         effect_reaction_origin_ =
             EffectReaction{a.source.id, a.source.cell, actors_[turn_].source.cell,
                            movement_left(actors_[turn_]), actors_[turn_].effects.prone};
+    }
 }
 
 OptionalEffectChoice Session::effect_choices() const
@@ -164,6 +212,7 @@ OptionalEffectChoice Session::effect_choices() const
                 {{"target", actor(m.target).source.name}, {"dc", std::to_string(dc)}}};
         }
         else
+        {
             description = {
                 m.kind == detail::Mastery::slow
                     ? "Target: {target}\nReduce Speed by 10 feet until your next turn starts.\nThe triggering Action or Reaction is already spent."
@@ -171,10 +220,12 @@ OptionalEffectChoice Session::effect_choices() const
                     ? "Target: {target}\nMake one extra attack against another creature within 5 feet of this target and your reach.\nThe triggering Action or Reaction is already spent."
                     : "Target: {target}\nPush up to 10 feet straight away from you.\nThe triggering Action or Reaction is already spent.",
                 {{"target", actor(m.target).source.name}}};
+        }
         choice.options.push_back({1, {label, {}}, description, mastery_available(m)});
     }
     // On an enemy turn, the predetermined order is mastery before movement.
     if (!mastery_ || actors_[turn_].source.side == Side::party)
+    {
         for (unsigned i = 0; i < champion_offers_.size(); ++i)
         {
             const auto &move = champion_offers_[i];
@@ -190,6 +241,7 @@ OptionalEffectChoice Session::effect_choices() const
                   {{"feet", std::to_string(move.remaining)}}},
                  true});
         }
+    }
     if (!choice.options.empty())
     {
         choice.title = choice.options.front().title;
@@ -236,7 +288,9 @@ bool Session::use_effect(const Command &command)
         log(target.source.name + " is pushed.",
             {"{name} is pushed.", {{"name", target.source.name}}});
         if (blocked && moved < 10)
+        {
             slam(target, 10 - moved);
+        }
     }
     else if (command.item >= 2)
     {
@@ -280,25 +334,37 @@ bool Session::use_effect(const Command &command)
                 if (!saving_throw_succeeds(target, detail::Ability::constitution,
                                            8 + 2 + (d.level - 1) / 4 +
                                                (m.ranged ? d.ranged_ability : d.melee_ability)))
+                {
                     target.effects.prone = true;
+                }
             }
         }
     }
     if (mastery_ && !mastery_available(*mastery_) && champion_offers_.empty() && !champion_move_)
+    {
         mastery_.reset();
+    }
     if (!effect_waiting() && !champion_move_)
+    {
         finish_effects();
+    }
     return true;
 }
 
 void Session::validate_mastery_state() const
 {
     if (champion_offers_.size() > 2)
+    {
         throw std::runtime_error("Too many pending Champion effects");
+    }
     if (!effect_waiting() && !effect_reaction_origin_)
+    {
         return;
+    }
     if (outcome_ != Outcome::ongoing || graze_ || check_choice_ || temporary_offer_)
+    {
         throw std::runtime_error("Conflicting pending mastery effects");
+    }
     if (mastery_)
     {
         const auto &m = *mastery_;
@@ -320,7 +386,9 @@ void Session::validate_mastery_state() const
             m.origin.x >= board_.width || m.origin.y >= board_.height ||
             board_.at(m.origin) == Terrain::obstacle ||
             (m.targeting && m.kind != detail::Mastery::cleave && m.kind != detail::Mastery::push))
+        {
             throw std::runtime_error("Invalid pending mastery source");
+        }
         const auto d = mastery_definition(m);
         const auto range = m.ranged ? AttackRange::ranged : AttackRange::melee;
         // Tactical Master's Push or Slow replaced a mastery the weapon has.
@@ -341,7 +409,9 @@ void Session::validate_mastery_state() const
                  : (a->reaction || (pending() ? pending() != m.actor
                                               : (m.target != actors_[turn_].source.id ||
                                                  actors_[turn_].life.hp > 0)))))
+        {
             throw std::runtime_error("Invalid pending mastery trigger");
+        }
         if (!m.thrown_item)
         {
             const bool owned =
@@ -355,16 +425,22 @@ void Session::validate_mastery_state() const
                     : std::find(def(*a).equipment_keys.begin(), def(*a).equipment_keys.end(),
                                 m.weapon) != def(*a).equipment_keys.end();
             if (!owned)
+            {
                 throw std::runtime_error("Pending mastery weapon is not held");
+            }
         }
         if (m.thrown_item)
         {
             if (!m.ranged || m.thrown_item > items_.size())
+            {
                 throw std::runtime_error("Invalid mastery thrown item");
+            }
             const auto &item = items_[m.thrown_item - 1];
             if (item.holder != m.actor || item.definition != m.weapon ||
                 !detail::weapon(m.weapon)->thrown)
+            {
                 throw std::runtime_error("Invalid mastery thrown provenance");
+            }
         }
     }
     std::set<EntityId> targets;
@@ -399,7 +475,9 @@ void Session::validate_mastery_state() const
                  ? (who->actions.normal && (!who->surge_used || who->actions.surge))
                  : (who->reaction ||
                     (pending() ? pending() != c.actor : actors_[turn_].life.hp > 0))))
+        {
             throw std::runtime_error("Invalid queued Champion effect");
+        }
     }
     if (effect_reaction_origin_)
     {
@@ -410,6 +488,8 @@ void Session::validate_mastery_state() const
             r.movement > actors_[turn_].movement || r.actor == actors_[turn_].source.id ||
             (pending() && pending() != r.actor) || (!pending() && actors_[turn_].life.hp > 0) ||
             (!effect_waiting() && !champion_move_))
+        {
             throw std::runtime_error("Invalid mastery reaction origin");
+        }
     }
 }

@@ -21,7 +21,9 @@ template <class T> void unsigned_field(std::istream &input, T &value)
     input >> token;
     const auto result = std::from_chars(token.data(), token.data() + token.size(), value);
     if (!input || result.ec != std::errc{} || result.ptr != token.data() + token.size())
+    {
         throw std::runtime_error("Invalid unsigned effect field");
+    }
 }
 
 // Every effect records who imposed it, by scoped ID and by a name to show.
@@ -37,14 +39,20 @@ int d20(RollModifiers modifiers, std::uint64_t &rng, bool *lucky_reroll)
     {
         const int rolled = roll_die(rng, 20);
         if (!modifiers.lucky || rolled != 1)
+        {
             return rolled;
+        }
         if (lucky_reroll)
+        {
             *lucky_reroll = true;
+        }
         return roll_die(rng, 20);
     };
     const int first = die(), mode = modifiers.mode();
     if (!mode)
+    {
         return first;
+    }
     const int second = die();
     return mode > 0 ? std::max(first, second) : std::min(first, second);
 }
@@ -105,7 +113,9 @@ void apply_chill_touch(EffectState &effects, EffectSource source, std::string na
 {
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms ||
         duration_ms > 2 * round_ms)
+    {
         throw std::runtime_error("Invalid Chill Touch application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::chill_touch, 0, duration_ms, 0});
 }
@@ -115,7 +125,9 @@ void apply_guiding_bolt(EffectState &effects, EffectSource source, std::string n
 {
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms ||
         duration_ms > 2 * round_ms)
+    {
         throw std::runtime_error("Invalid Guiding Bolt application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::guiding_bolt, 0, duration_ms, 0});
 }
@@ -142,7 +154,9 @@ void apply_poisoned(EffectState &effects, EffectSource source, std::string name,
          kind != EffectKind::rooted && kind != EffectKind::jigging) ||
         !can_apply(effects) || !recorded(source, name) || !duration_ms ||
         duration_ms > 2 * round_ms)
+    {
         throw std::runtime_error("Invalid timed condition");
+    }
     effects.active.push_back(
         {effects.next_id++, source.scope, source.actor, std::move(name), kind, 0, duration_ms, 0});
 }
@@ -162,7 +176,9 @@ void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource sourc
 {
     if ((kind != EffectKind::staggering && kind != EffectKind::sundered) || !can_apply(effects) ||
         !recorded(source, name) || !duration_ms || duration_ms > round_ms)
+    {
         throw std::runtime_error("Invalid Brutal Strike blow");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
                               kind == EffectKind::staggering ? 1 : 0, duration_ms, 0});
 }
@@ -170,11 +186,13 @@ void apply_brutal_blow(EffectState &effects, EffectKind kind, EffectSource sourc
 bool spend_staggering(EffectState &effects)
 {
     for (auto &e : effects.active)
+    {
         if (e.kind == EffectKind::staggering && e.dc == 1)
         {
             e.dc = 0;
             return true;
         }
+    }
     return false;
 }
 
@@ -188,7 +206,9 @@ bool spend_sundering(EffectState &effects, EffectSource attacker)
                                                  e.source_actor == attacker.actor);
                                     });
     if (found == effects.active.end())
+    {
         return false;
+    }
     effects.active.erase(found);
     return true;
 }
@@ -197,7 +217,9 @@ void apply_shocking_grasp(EffectState &effects, EffectSource source, std::string
                           unsigned duration_ms)
 {
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms || duration_ms > round_ms)
+    {
         throw std::runtime_error("Invalid Shocking Grasp application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::shocking_grasp, 0, duration_ms, 0});
 }
@@ -211,7 +233,9 @@ int speed_penalty(const EffectState &effects) noexcept
         has_effect(effects, EffectKind::jarred) || has_effect(effects, EffectKind::rooted) ||
         has_effect(effects, EffectKind::dancing) || has_effect(effects, EffectKind::jigging) ||
         has_effect(effects, EffectKind::aloft))
+    {
         return 1000;
+    }
     // Freedom of Movement: magic (Ray of Frost) cannot lower its Speed.
     const bool free = has_effect(effects, EffectKind::free_moving);
     return (frosted(effects) && !free ? 10 : 0) + (slowed(effects) ? 10 : 0) +
@@ -242,7 +266,9 @@ void apply_ray_of_frost(EffectState &effects, EffectSource source, std::string n
                         unsigned duration_ms)
 {
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms || duration_ms > round_ms)
+    {
         throw std::runtime_error("Invalid Ray of Frost application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::ray_of_frost, 0, duration_ms, 0});
 }
@@ -289,7 +315,9 @@ void apply_hamstring(EffectState &effects, EffectSource source, std::string name
                      unsigned duration_ms)
 {
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms || duration_ms > round_ms)
+    {
         throw std::runtime_error("Invalid Hamstring Blow application");
+    }
     std::erase_if(effects.active,
                   [](const auto &e)
                   {
@@ -303,7 +331,9 @@ void apply_frosts_chill(EffectState &effects, EffectSource source, std::string n
                         unsigned duration_ms)
 {
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms || duration_ms > round_ms)
+    {
         throw std::runtime_error("Invalid Frost's Chill application");
+    }
     // A second chill renews the first rather than slowing further.
     std::erase_if(effects.active,
                   [](const auto &e)
@@ -354,7 +384,9 @@ void apply_studied(EffectState &effects, EffectSource source, std::string name,
                   });
     if (!can_apply(effects) || !recorded(source, name) || !duration_ms ||
         duration_ms > 2 * round_ms)
+    {
         throw std::runtime_error("Invalid Studied Attacks application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::studied, 0, duration_ms, 0});
 }
@@ -372,7 +404,9 @@ bool has_attack_mastery(const EffectState &effects) noexcept
 bool can_apply_attack_mastery(const EffectState &effects, EffectKind kind, EffectSource source)
 {
     if (kind != EffectKind::sap && kind != EffectKind::vex && kind != EffectKind::slow)
+    {
         return false;
+    }
     // The triggering roll consumes this source's earlier Vex. Repeated Sap from
     // one source replaces its application rather than filling the bounded store.
     return effects.next_id < std::numeric_limits<std::uint64_t>::max() &&
@@ -392,7 +426,9 @@ void apply_attack_mastery(EffectState &effects, EffectKind kind, EffectSource so
     if ((kind != EffectKind::sap && kind != EffectKind::vex && kind != EffectKind::slow) ||
         !recorded(source, name) || !duration ||
         duration > (kind == EffectKind::vex ? 2 * round_ms : round_ms))
+    {
         throw std::runtime_error("Invalid attack mastery effect");
+    }
     const auto existing = std::find_if(effects.active.begin(), effects.active.end(),
                                        [&](const auto &e)
                                        {
@@ -407,7 +443,9 @@ void apply_attack_mastery(EffectState &effects, EffectKind kind, EffectSource so
         return;
     }
     if (!can_apply(effects))
+    {
         throw std::runtime_error("Attack mastery effect storage exhausted");
+    }
     effects.active.push_back(
         {effects.next_id++, source.scope, source.actor, std::move(name), kind, 0, duration, 0});
 }
@@ -449,7 +487,9 @@ bool stunned(const EffectState &effects) noexcept
 void apply_asleep(EffectState &effects, EffectSource source, std::string name)
 {
     if (!can_apply(effects) || !recorded(source, name))
+    {
         throw std::runtime_error("Invalid sleep");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::asleep, 0, 60000, 0});
     effects.prone = true;
@@ -475,7 +515,9 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSour
          kind != EffectKind::time_slowed) ||
         !can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
         !save.first_save_ms || save.first_save_ms > round_ms)
+    {
         throw std::runtime_error("Invalid repeated condition");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name), kind,
                               save.dc, 60000, save.first_save_ms});
 }
@@ -485,7 +527,9 @@ void apply_hold_person(EffectState &effects, EffectSource source, std::string na
 {
     if (!can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
         !save.first_save_ms || save.first_save_ms > round_ms)
+    {
         throw std::runtime_error("Invalid Hold Person application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::hold_person, save.dc, 60000, save.first_save_ms});
 }
@@ -493,7 +537,9 @@ void apply_hold_person(EffectState &effects, EffectSource source, std::string na
 void apply_sanctuary(EffectState &effects, EffectSource source, std::string name, int dc)
 {
     if (!can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
+    {
         throw std::runtime_error("Invalid Sanctuary application");
+    }
     std::erase_if(effects.active,
                   [](const auto &e)
                   {
@@ -519,7 +565,9 @@ void apply_entangle(EffectState &effects, EffectSource source, std::string name,
     if ((kind != EffectKind::entangle && kind != EffectKind::webbed &&
          kind != EffectKind::tentacled) ||
         !can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
+    {
         throw std::runtime_error("Invalid Entangle application");
+    }
     effects.active.push_back(
         {effects.next_id++, source.scope, source.actor, std::move(name), kind, dc, 60000, 0});
 }
@@ -527,7 +575,9 @@ void apply_entangle(EffectState &effects, EffectSource source, std::string name,
 void apply_ensnaring_strike(EffectState &effects, EffectSource source, std::string name, int dc)
 {
     if (!can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
+    {
         throw std::runtime_error("Invalid Ensnaring Strike application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::ensnaring_strike, dc, 60000, 0});
 }
@@ -554,7 +604,9 @@ void apply_blindness(EffectState &effects, EffectSource source, std::string name
 {
     if (!can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
         !save.first_save_ms || save.first_save_ms > round_ms)
+    {
         throw std::runtime_error("Invalid blindness application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::blindness, save.dc, 60000, save.first_save_ms});
 }
@@ -562,7 +614,9 @@ void apply_blindness(EffectState &effects, EffectSource source, std::string name
 void apply_searing_smite(EffectState &effects, EffectSource source, std::string name, int dc)
 {
     if (!can_apply(effects) || !recorded(source, name) || dc < -2 || dc > 38)
+    {
         throw std::runtime_error("Invalid Searing Smite application");
+    }
     effects.active.push_back({effects.next_id++, source.scope, source.actor, std::move(name),
                               EffectKind::searing_smite, dc, 60000, 0});
 }
@@ -768,7 +822,9 @@ void apply_spell_benefit(EffectState &effects, EffectSource source, std::string 
     const auto duration = benefit_duration_ms(kind);
     if (!duration || !can_apply(effects) || !recorded(source, name) || value < 0 ||
         value > benefit_value_limit(kind))
+    {
         throw std::runtime_error("Invalid spell benefit");
+    }
     effects.active.push_back(
         {effects.next_id++, source.scope, source.actor, std::move(name), kind, value, duration, 0});
 }
@@ -779,7 +835,9 @@ void apply_command(EffectState &effects, EffectSource source, std::string name,
     const int stored = static_cast<int>(option);
     if (!can_apply(effects) || !recorded(source, name) || stored < 1 || stored > 4 ||
         !duration_ms || duration_ms > 2 * round_ms)
+    {
         throw std::runtime_error("Invalid Command application");
+    }
     // A newer Command replaces an earlier one.
     std::erase_if(effects.active,
                   [](const auto &e)
@@ -805,12 +863,20 @@ int hit_point_bonus(const EffectState &effects)
     // Aid and Heroes' Feast each add their most; Harm's lowering subtracts.
     int aid = 0, feast = 0, drained = 0;
     for (const auto &e : effects.active)
+    {
         if (e.kind == EffectKind::aid)
+        {
             aid = std::max(aid, e.dc);
+        }
         else if (e.kind == EffectKind::feasted)
+        {
             feast = std::max(feast, e.dc);
+        }
         else if (e.kind == EffectKind::drained || e.kind == EffectKind::simulacrum)
+        {
             drained += e.dc;
+        }
+    }
     return aid + feast - drained;
 }
 
@@ -853,7 +919,9 @@ int inspiration_die(const std::vector<Effect> &effects, const SaveResult &failed
                                         return e.kind == EffectKind::inspired && e.remaining_ms;
                                     });
     if (found == effects.end() || found->dc < failed.dc - failed.natural - failed.bonus)
+    {
         return 0;
+    }
     return roll_die(rng, found->dc);
 }
 
@@ -865,7 +933,9 @@ void spend_inspiration(EffectState &effects)
                                         return e.kind == EffectKind::inspired;
                                     });
     if (found != effects.active.end())
+    {
         effects.active.erase(found);
+    }
 }
 
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,
@@ -884,15 +954,21 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
         std::uint64_t step = milliseconds;
         bool any = false;
         for (const auto &subject : ordered)
+        {
             for (const auto &e : subject.effects.get().active)
             {
                 any = true;
                 step = std::min(step, static_cast<std::uint64_t>(e.remaining_ms));
                 if (e.save_in_ms)
+                {
                     step = std::min(step, static_cast<std::uint64_t>(e.save_in_ms));
+                }
             }
+        }
         if (!any)
+        {
             return;
+        }
         milliseconds -= step;
         for (auto &subject : ordered)
         {
@@ -903,9 +979,13 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
             {
                 // A simulacrum lasts until it is destroyed.
                 if (e.kind != EffectKind::simulacrum)
+                {
                     e.remaining_ms -= static_cast<unsigned>(step);
+                }
                 if (e.save_in_ms)
+                {
                     e.save_in_ms -= static_cast<unsigned>(step);
+                }
                 // The effect as this step found it, for an event built only
                 // when an observer hears of a save or a removal.
                 const auto kind = e.kind;
@@ -936,24 +1016,32 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                                         ? roll_die(rng, 4)
                                         : 0;
                         if (has_effect(subject.effects.get(), EffectKind::bane))
+                        {
                             bless -= roll_die(rng, 4);
+                        }
                         auto modifiers = mental_save_modifiers(ability, subject);
                         // Beacon of Hope: Advantage on Wisdom saves.
                         modifiers.advantage |=
                             ability == Ability::wisdom &&
                             has_effect(subject.effects.get(), EffectKind::hopeful);
                         if (e.kind == EffectKind::frightened)
+                        {
                             modifiers.advantage |= subject.brave;
+                        }
                         else if (e.kind != EffectKind::knocked_out)
+                        {
                             modifiers.disadvantage |=
                                 heightened_against(subject.effects.get(), e.source_scope,
                                                    e.source_actor, repeated_save_spell(e.kind));
+                        }
                         modifiers.disadvantage |= spend_staggering(subject.effects.get());
                         save = saving_throw(ability,
                                             subject.saves[static_cast<unsigned>(ability)] + bless,
                                             e.dc, modifiers, rng);
                         if (!save->success && !inspiration_spent)
+                        {
                             inspiration = inspiration_die(effects, *save, rng);
+                        }
                         if (inspiration)
                         {
                             inspiration_spent = true;
@@ -970,7 +1058,9 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                     }
                 }
                 if (removed)
+                {
                     e.remaining_ms = 0;
+                }
                 if (observe && (save || removed))
                 {
                     EffectEvent event{subject.id, e, save, inspiration, removed};
@@ -986,7 +1076,9 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                               return !e.remaining_ms;
                           });
             if (inspiration_spent)
+            {
                 spend_inspiration(subject.effects.get());
+            }
         }
     }
 }
@@ -999,9 +1091,11 @@ void write_effects(std::ostream &out, const EffectState &effects)
 {
     out << effects_magic << ' ' << effects.next_id << ' ' << effects.active.size();
     for (const auto &e : effects.active)
+    {
         out << ' ' << e.id << ' ' << static_cast<unsigned>(e.kind) << ' ' << e.source_scope << ' '
             << e.source_actor << ' ' << std::quoted(e.source_name) << ' ' << e.dc << ' '
             << e.remaining_ms << ' ' << e.save_in_ms;
+    }
     out << ' ' << effects.prone;
 }
 
@@ -1013,7 +1107,9 @@ namespace
 EffectKind saved_effect_kind(unsigned value)
 {
     if (value > static_cast<unsigned>(EffectKind::last))
+    {
         throw std::runtime_error("Invalid active effect");
+    }
     return static_cast<EffectKind>(value);
 }
 } // namespace
@@ -1027,7 +1123,9 @@ EffectState read_effects(std::istream &in)
     unsigned_field(in, result.next_id);
     unsigned_field(in, count);
     if (!in || magic != effects_magic || !result.next_id || count > effect_limit)
+    {
         throw std::runtime_error("Invalid effect state");
+    }
     std::uint64_t previous{};
     for (std::size_t n = 0; n < count; ++n)
     {
@@ -1081,7 +1179,9 @@ EffectState read_effects(std::istream &in)
             if (e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
                 e.source_name.empty() || e.source_name.size() > 160 || e.dc < 1 || e.dc > 4 ||
                 !e.remaining_ms || e.remaining_ms > 2 * round_ms || e.save_in_ms)
+            {
                 throw std::runtime_error("Invalid active effect");
+            }
             e.kind = EffectKind::command;
             previous = e.id;
             result.active.push_back(std::move(e));
@@ -1093,7 +1193,9 @@ EffectState read_effects(std::istream &in)
                 e.source_name.empty() || e.source_name.size() > 160 || e.dc < 0 ||
                 e.dc > benefit_value_limit(kind) || !e.remaining_ms || e.remaining_ms > benefit ||
                 e.save_in_ms)
+            {
                 throw std::runtime_error("Invalid active effect");
+            }
             e.kind = kind;
             previous = e.id;
             result.active.push_back(std::move(e));
@@ -1125,7 +1227,9 @@ EffectState read_effects(std::istream &in)
                                  kind == EffectKind::hurled)
                                     ? 2 * round_ms
                                     : round_ms))))
+        {
             throw std::runtime_error("Invalid active effect");
+        }
         e.kind = kind;
         previous = e.id;
         result.active.push_back(std::move(e));
@@ -1133,7 +1237,9 @@ EffectState read_effects(std::istream &in)
     unsigned prone{};
     unsigned_field(in, prone);
     if (!in || prone > 1)
+    {
         throw std::runtime_error("Invalid posture state");
+    }
     result.prone = prone;
     return result;
 }

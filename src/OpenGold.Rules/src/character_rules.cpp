@@ -22,11 +22,17 @@ AbilityArray<bool> unmet_targets(const CharacterRules &rules, const CharacterDra
     for (const auto &id : d.target_classes)
     {
         if (class_eligible(rules, d, id))
+        {
             continue;
+        }
         const auto r = rules.class_requirements(id);
         for (auto ability : r.abilities)
+        {
             if (rules.ability_score(d, ability).value_or(0) < r.minimum)
+            {
                 result[ability] = true;
+            }
+        }
     }
     return result;
 }
@@ -40,7 +46,9 @@ int AbilityRoll::total() const
                         return n < 1 || n > 6;
                     }) ||
         dice[discarded] != *std::min_element(dice.begin(), dice.end()))
+    {
         throw std::runtime_error("Invalid 4d6 roll");
+    }
     return std::accumulate(dice.begin(), dice.end(), 0) - dice[discarded];
 }
 } // namespace opengold::rules

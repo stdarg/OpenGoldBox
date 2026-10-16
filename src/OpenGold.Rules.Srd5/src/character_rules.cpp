@@ -45,7 +45,9 @@ SpellChoiceOptions without_other_picks(SpellChoiceOptions options, const Charact
                       });
         // Magic Initiate learns only the cantrips the class's picks leave (INITIATE-1).
         if (group.id.starts_with("feat:magic_initiate_"))
+        {
             group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
+        }
     }
     std::erase_if(options.learning,
                   [](const auto &group)
@@ -110,8 +112,12 @@ class CreatorRules final : public CharacterRules
         std::vector<Ability> priority{primary, secondary};
         for (const auto ability : {Ability::constitution, Ability::dexterity, Ability::wisdom,
                                    Ability::strength, Ability::intelligence, Ability::charisma})
+        {
             if (std::find(priority.begin(), priority.end(), ability) == priority.end())
+            {
                 priority.push_back(ability);
+            }
+        }
         std::array<Ability, 6> result{};
         std::copy(priority.begin(), priority.end(), result.begin());
         return result;
@@ -140,7 +146,9 @@ class CreatorRules final : public CharacterRules
         using enum detail::CharacterClass;
         const auto klass = detail::draft_class(draft);
         if (!klass)
+        {
             return {};
+        }
         // At creation only Magic Initiate, from an Acolyte's or a Sage's
         // background or a Human's Versatile, brings spells to a class without
         // its own.
@@ -153,14 +161,18 @@ class CreatorRules final : public CharacterRules
                                                return feat.starts_with("magic_initiate_");
                                            }));
         if (!detail::prepares_spells(*klass) && !initiate)
+        {
             return {};
+        }
         // The options come from the evaluated sheet, which needs every score.
         if (!draft.rolled || std::any_of(draft.assignment.begin(), draft.assignment.end(),
                                          [](unsigned roll)
                                          {
                                              return roll >= 6;
                                          }))
+        {
             return {};
+        }
         if (klass != wizard)
         {
             // These classes prepare from the class list, or learn only Magic
@@ -191,18 +203,24 @@ class CreatorRules final : public CharacterRules
     {
         const auto klass = detail::draft_class(draft);
         if (!klass)
+        {
             return {};
+        }
         auto group = detail::starting_cantrip_options(*klass);
         // The Thaumaturge Divine Order adds one Cleric cantrip.
         const auto order = draft.training.find("class:cleric:divine_order");
         if (klass == detail::CharacterClass::cleric && order != draft.training.end() &&
             order->second == std::vector<std::string>{"thaumaturge"})
+        {
             ++group.count;
+        }
         // So does the Druid's Magician Primal Order.
         const auto primal = draft.training.find("class:druid:primal_order");
         if (klass == detail::CharacterClass::druid && primal != draft.training.end() &&
             primal->second == std::vector<std::string>{"magician"})
+        {
             ++group.count;
+        }
         // A cantrip Magic Initiate already teaches is not learned twice, and
         // the class learns only the cantrips left (INITIATE-1).
         std::erase_if(group.options,
@@ -260,8 +278,10 @@ std::vector<CreationChoice> CreatorRules::choices(CreationField field) const
     {
         std::vector<CreationChoice> result;
         for (const auto &c : classes)
+        {
             result.push_back({std::string(detail::class_id(c.character_class)),
                               std::string(detail::class_label(c.character_class)), c.description});
+        }
         return result;
     }
     case CreationField::alignment:
@@ -293,18 +313,30 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
     using enum Ability;
     std::array<Ability, 3> allowed;
     if (background == "acolyte")
+    {
         allowed = {intelligence, wisdom, charisma};
+    }
     else if (background == "criminal")
+    {
         allowed = {dexterity, constitution, intelligence};
+    }
     else if (background == "sage")
+    {
         allowed = {constitution, intelligence, wisdom};
+    }
     else if (background == "soldier")
+    {
         allowed = {strength, dexterity, constitution};
+    }
     else
+    {
         throw std::runtime_error("Unknown background");
+    }
     std::vector<ScoreAdjustment> result;
     for (auto first : allowed)
+    {
         for (auto second : allowed)
+        {
             if (first != second)
             {
                 ScoreAdjustment a;
@@ -313,11 +345,15 @@ std::vector<ScoreAdjustment> CreatorRules::adjustments(std::string_view backgrou
                 a.bonuses[second] = 1;
                 result.push_back(std::move(a));
             }
+        }
+    }
     ScoreAdjustment a;
     a.label = "+1 to " + ability_names[allowed[0]] + ", " + ability_names[allowed[1]] + ", " +
               ability_names[allowed[2]];
     for (auto ability : allowed)
+    {
         a.bonuses[ability] = 1;
+    }
     result.push_back(std::move(a));
     return result;
 }
@@ -343,7 +379,9 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
                                         return detail::class_id(c.character_class) == id;
                                     });
     if (found == classes.end())
+    {
         throw std::runtime_error("Unknown class prerequisite");
+    }
     ClassRequirements result{primary.at(found - classes.begin()),
                              found->character_class == detail::CharacterClass::fighter,
                              13,
@@ -351,7 +389,9 @@ ClassRequirements CreatorRules::class_requirements(std::string_view id) const
     for (auto ability : result.abilities)
     {
         if (!result.description.empty())
+        {
             result.description += result.any ? " or " : " and ";
+        }
         result.description += ability_names[ability] + " 13";
     }
     return result;
@@ -363,7 +403,9 @@ std::array<AbilityRoll, 6> CreatorRules::roll(RandomState &state) const
     for (auto &r : result)
     {
         for (auto &n : r.dice)
+        {
             n = roll_die(state, 6);
+        }
         r.discarded =
             static_cast<unsigned>(std::min_element(r.dice.begin(), r.dice.end()) - r.dice.begin());
     }
@@ -373,16 +415,24 @@ std::array<AbilityRoll, 6> CreatorRules::roll(RandomState &state) const
 std::optional<int> CreatorRules::ability_score(const CharacterDraft &d, Ability ability) const
 {
     if (ability_index(ability) >= d.assignment.size() || d.assignment[ability] > 6)
+    {
         throw std::runtime_error("Invalid ability assignment");
+    }
     if (!d.rolled || d.assignment[ability] == 6)
+    {
         return std::nullopt;
+    }
     const auto options = adjustments(d.background);
     if (d.adjustment >= options.size())
+    {
         throw std::runtime_error("Invalid background bonuses");
+    }
     const auto score =
         d.rolls[d.assignment[ability]].total() + options[d.adjustment].bonuses[ability];
     if (score > 20)
+    {
         throw std::runtime_error("Background bonuses cannot raise a score above 20");
+    }
     return score;
 }
 
@@ -397,7 +447,9 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                                             return c.id == id;
                                         });
         if (found == options.end())
+        {
             throw std::runtime_error("Invalid character selection: " + id);
+        }
         return found->label;
     };
     CharacterSheet s;
@@ -421,12 +473,18 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                      {
                          return c < 32 || c == 127;
                      })))
+    {
         throw std::runtime_error("Enter a name before finishing your character.");
+    }
     if (!d.rolled)
+    {
         throw std::runtime_error("Roll your six attribute scores first.");
+    }
     const auto options = adjustments(d.background);
     if (d.adjustment >= options.size())
+    {
         throw std::runtime_error("Invalid background bonuses");
+    }
     s.bonuses = options[d.adjustment].bonuses;
     s.ability_adjustments.push_back(
         {"background:" + d.background,
@@ -438,7 +496,9 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     for (const auto ability : all_abilities)
     {
         if (d.assignment[ability] >= 6 || !used.insert(d.assignment[ability]).second)
+        {
             throw std::runtime_error("Each roll must be assigned exactly once");
+        }
         s.base[ability] = d.rolls[d.assignment[ability]].total();
         s.scores[ability] = *ability_score(d, ability);
         s.modifiers[ability] = ability_modifier(s.scores[ability]);
@@ -497,16 +557,24 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
              {}});
     }
     if (racial_hp)
+    {
         s.racial_messages.push_back({"Dwarven Toughness: +{hp} maximum HP.", {{"hp", "1"}}});
+    }
     else if (d.race == "goliath")
+    {
         s.racial_messages.push_back(
             {"Source: Goliath / Speed trait. Speed is 35 feet (5 feet above the default).", {}});
+    }
     else if (d.race == "orc")
+    {
         s.racial_messages.push_back(
             {"Orc / Adrenaline Rush: Bonus Action Dash and Temporary HP equal to proficiency bonus. Uses equal to proficiency bonus; all recover on a Short or Long Rest.",
              {}});
+    }
     else
+    {
         s.racial_messages.push_back({"No numeric racial modifiers are currently applied.", {}});
+    }
     if (d.race == "dwarf")
     {
         s.racial_modifiers +=
@@ -520,10 +588,14 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     s.background_messages.push_back({"Source: {background} background, selected ability increases.",
                                      {{"background", s.background, true}}});
     for (const auto ability : all_abilities)
+    {
         if (s.bonuses[ability])
+        {
             s.background_messages.push_back({"{ability} +{bonus}",
                                              {{"ability", ability_names[ability], true},
                                               {"bonus", std::to_string(s.bonuses[ability])}}});
+        }
+    }
     s.background_messages.push_back({"Other background features are not implemented.", {}});
     s.hp_messages.push_back(
         {"{die} (maximum d{die}) {modifier} (Constitution) + {racial} (racial bonus) = {hp} HP",
@@ -543,7 +615,9 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                     std::make_move_iterator(spells.end()));
     using enum detail::CharacterClass;
     if (klass == wizard)
+    {
         s.prepared_spells = {"magic_missile"};
+    }
     if (d.spells && klass == wizard)
     {
         std::erase_if(s.grants,
@@ -555,8 +629,10 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     }
     // Any class may learn Magic Initiate's spells; only casters prepare.
     if (d.spells)
+    {
         detail::apply_spell_choices(s, *d.spells, SpellChoiceContext::advancement,
                                     ChoiceCompleteness::partial);
+    }
     return s;
 }
 } // namespace

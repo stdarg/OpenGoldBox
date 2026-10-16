@@ -32,7 +32,9 @@ inline godot::String hp_hint(int hp, int maximum, bool dead,
     if (hp < maximum)
     {
         if (!hint.is_empty())
+        {
             hint += "\n";
+        }
         hint += i18n::format(
             "Missing HP: {amount}. Damage and other HP losses are not individually recorded.",
             {{"amount", maximum - hp}});
@@ -40,11 +42,15 @@ inline godot::String hp_hint(int hp, int maximum, bool dead,
     if (dead || hp == 0)
     {
         if (!hint.is_empty())
+        {
             hint += "\n";
+        }
         hint += i18n::text(dead ? "Dead" : "Unconscious");
     }
     if (hint.is_empty())
+    {
         hint = i18n::text("Full hit points.");
+    }
     return hint;
 }
 

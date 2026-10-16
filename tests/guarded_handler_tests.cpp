@@ -15,7 +15,9 @@ namespace
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 void scoped_flag_clears_however_the_scope_ends()
@@ -47,10 +49,14 @@ void every_handler_is_guarded()
     {
         const auto extension = entry.path().extension();
         if (extension != ".cpp" && extension != ".h")
+        {
             continue;
+        }
         ++sources;
         if (entry.path().filename() == "guarded_handlers.h")
+        {
             continue;
+        }
         std::ifstream in(entry.path());
         const std::string text{std::istreambuf_iterator<char>(in), {}};
         check(text.find("callable_mp(") == std::string::npos,
@@ -82,7 +88,9 @@ void headers_keep_to_themselves()
     for (const auto &entry : std::filesystem::directory_iterator(game))
     {
         if (entry.path().extension() != ".h")
+        {
             continue;
+        }
         ++headers;
         std::ifstream in(entry.path());
         const std::string text{std::istreambuf_iterator<char>(in), {}};

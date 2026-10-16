@@ -45,7 +45,9 @@ unsigned rolled(const DieRoller &roll, unsigned sides)
 {
     const auto value = roll(sides);
     if (value < 1 || value > sides)
+    {
         throw std::runtime_error("Treasure die roll out of range");
+    }
     return value;
 }
 
@@ -56,7 +58,9 @@ unsigned random_item_type(const DieRoller &roll)
     {
         const auto weapon = rolled(roll, 100);
         if ((weapon >= 1 && weapon <= 47) || (weapon >= 50 && weapon <= 59))
+        {
             return weapon == heavy_crossbow ? shield : weapon;
+        }
         if (weapon >= 60 && weapon <= 90)
         {
             const auto sword = rolled(roll, 10);
@@ -67,17 +71,27 @@ unsigned random_item_type(const DieRoller &roll)
                                 : two_handed_sword;
         }
         if (weapon >= 91 && weapon <= 94)
+        {
             return arrow;
+        }
         if (weapon >= 95 && weapon <= 97)
+        {
             return ring_of_protection;
+        }
         if (weapon >= 98)
+        {
             return bracers;
+        }
         return shield; // 48 and 49.
     }
     if (kind <= 85)
+    {
         return magic_user_scroll;
+    }
     if (kind <= 92)
+    {
         return cleric_scroll;
+    }
     if (kind <= 98)
     {
         const auto charged = rolled(roll, 15);
@@ -199,7 +213,9 @@ std::optional<unsigned> enchant(GeneratedItem &item, const DieRoller &roll)
     if (item.type == javelin)
     {
         if (rolled(roll, 5) == 5)
+        {
             preset = 6;
+        }
         item.name3 = 0x15;
         item.name2 = plus_name;
     }
@@ -271,17 +287,29 @@ ItemRecord generate_item(unsigned type, const DieRoller &roll)
     std::optional<unsigned> preset;
     if ((type >= 1 && type <= shield) || type == arrow || type == bracers ||
         type == ring_of_protection)
+    {
         preset = enchant(item, roll);
+    }
     else if (type == magic_user_scroll || type == cleric_scroll)
+    {
         write_scroll(item, roll);
+    }
     else if (type == gauntlets || type == type_67)
+    {
         preset = 5;
+    }
     else if (type == wand_a || type == wand_b)
+    {
         preset = 4;
+    }
     else if (type == type_89 || type == cloak)
+    {
         preset = 1;
+    }
     else if (type == potion)
+    {
         preset = rolled(roll, 8) <= 5 ? 2 : 0;
+    }
     if (preset)
     {
         const auto &p = presets[*preset];
@@ -310,10 +338,14 @@ ItemRecord generate_item(unsigned type, const DieRoller &roll)
     raw[58] = static_cast<std::uint8_t>(item.value & 255);
     raw[59] = static_cast<std::uint8_t>((item.value >> 8) & 255);
     for (unsigned n = 0; n < 3; ++n)
+    {
         raw[60 + n] = static_cast<std::uint8_t>(item.effects[n]);
+    }
     auto decoded = decode_items(raw);
     if (!decoded || decoded->size() != 1)
+    {
         throw std::runtime_error("Generated treasure item is not a valid record");
+    }
     return std::move(decoded->front());
 }
 } // namespace
@@ -321,10 +353,14 @@ ItemRecord generate_item(unsigned type, const DieRoller &roll)
 std::vector<ItemRecord> random_treasure_items(unsigned count, const DieRoller &roll)
 {
     if (count > 127)
+    {
         throw std::runtime_error("Too many random treasure items");
+    }
     std::vector<ItemRecord> items;
     for (unsigned n = 0; n < count; ++n)
+    {
         items.push_back(generate_item(random_item_type(roll), roll));
+    }
     return items;
 }
 } // namespace opengold::por

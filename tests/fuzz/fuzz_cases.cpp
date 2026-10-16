@@ -17,7 +17,9 @@ void require(bool condition, const char *message)
     // Parser runtime_errors are expected rejections. Invariant failures use a
     // different exception type so the harness cannot accidentally swallow them.
     if (!condition)
+    {
         throw std::logic_error(message);
+    }
 }
 
 void check_image(const ImageDecodeResult &result)
@@ -32,7 +34,9 @@ void check_image(const ImageDecodeResult &result)
     require(image.rgba.size() == std::size_t(image.width) * image.height * 4,
             "Image buffer size mismatch");
     for (std::size_t i = 3; i < image.rgba.size(); i += 4)
+    {
         require(image.rgba[i] == 0 || image.rgba[i] == 255, "EGA alpha must be binary");
+    }
 }
 
 const rules::RulesModule &module()
@@ -62,7 +66,9 @@ FuzzSeed format_seed(std::string name, std::uint8_t mode, std::vector<std::uint8
 void exercise_formats(std::span<const std::uint8_t> bytes)
 {
     if (bytes.empty() || bytes.size() > 4096)
+    {
         return;
+    }
     const auto mode = bytes.front() % 5;
     const auto data = bytes.subspan(1);
     switch (mode)
@@ -71,7 +77,9 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
     {
         const auto archive = decode_dax_archive(data);
         if (!archive)
+        {
             require(archive.records.empty(), "Rejected DAX leaked partial records");
+        }
         std::set<unsigned> ids;
         for (const auto &record : archive.records)
         {
@@ -161,10 +169,14 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
     case 4:
     {
         if (data.size() < 8)
+        {
             return;
+        }
         std::array<std::uint16_t, 4> entries{};
         for (unsigned i = 0; i < entries.size(); ++i)
+        {
             entries[i] = data[2 * i] | (data[2 * i + 1] << 8);
+        }
         std::vector<por::SpeakerTick> ticks;
         try
         {
@@ -183,7 +195,9 @@ void exercise_formats(std::span<const std::uint8_t> bytes)
 void exercise_checkpoint(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() > 4 * 1024 * 1024 + 1)
+    {
         return;
+    }
     const std::string text(bytes.begin(), bytes.end());
     std::unique_ptr<rules::CombatSession> session;
     try
@@ -205,12 +219,16 @@ void exercise_checkpoint(std::span<const std::uint8_t> bytes)
         const auto commands = session->legal_commands();
         rules::Command invalid;
         if (!commands.empty())
+        {
             invalid = commands.back();
+        }
         invalid.revision = 0; // Valid session revisions are nonzero.
         require(!session->submit(invalid) && session->save() == saved,
                 "Rejected command changed state/RNG");
         if (commands.empty())
+        {
             break;
+        }
         const auto index = (formats_checksum(bytes) + step) % commands.size();
         const auto command = commands[index];
         require(session->submit(command) && copy->submit(command), "Offered command was rejected");
@@ -227,7 +245,9 @@ std::vector<FuzzSeed> format_seeds()
     word(icon, 2, 3);
     icon[8] = 1;
     for (std::size_t i = 17; i < icon.size(); ++i)
+    {
         icon[i] = i;
+    }
     seeds.push_back(format_seed("character-icon", 1, icon));
     seeds.push_back(format_seed("combat-dax", 0, literal_dax({{0, icon}})));
     seeds.push_back(format_seed("two-records", 0, literal_dax({{0, icon}, {1, {1, 2, 3}}})));
@@ -242,7 +262,9 @@ std::vector<FuzzSeed> format_seeds()
     seeds.push_back(format_seed("rle-128", 0, {9, 0, 0, 0, 0, 0, 0, 128, 0, 2, 0, 128, 85}));
     std::vector<std::uint8_t> ecl{0, 0};
     for (unsigned entry = 0; entry < 5; ++entry)
+    {
         ecl.insert(ecl.end(), {1, 1, 0x14, 0x99});
+    }
     ecl.push_back(0); // Five jumps to EXIT.
     seeds.push_back(format_seed("ecl-exit", 2, ecl));
     ecl.back() = 1;

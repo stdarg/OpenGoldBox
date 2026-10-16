@@ -57,11 +57,15 @@ Character hero(std::string race = "dwarf", std::string klass = "fighter", unsign
     d.name = "Damage tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned i = 1; i < level; ++i)
+    {
         check(result.advance(*module(), scratch), "Fixture level is supported");
+    }
     return result;
 }
 
@@ -83,7 +87,9 @@ void sneak_attack_foundation()
         const bool suitable =
             std::find(eligible.begin(), eligible.end(), weapon.key) != eligible.end();
         for (int mode : {-1, 0, 1})
+        {
             for (bool ally : {false, true})
+            {
                 for (bool is_weapon : {false, true})
                 {
                     const bool circumstances = mode == 1 || (mode == 0 && ally);
@@ -92,6 +98,8 @@ void sneak_attack_foundation()
                               (suitable && circumstances && is_weapon),
                           "Independent catalog and net roll circumstances determine eligibility");
                 }
+            }
+        }
     }
     check(!damage::sneak_attack_eligible({true, false, false, 1, true}),
           "Thrown non-Finesse Melee weapons remain ineligible despite range");
@@ -201,23 +209,33 @@ void arithmetic()
 CombatantView unit(const CombatSession &combat, EntityId id)
 {
     for (const auto &a : combat.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : combat.legal_commands())
+    {
         if (c.verb == verb && (!target || c.target == target))
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 void turn(CombatSession &combat, EntityId id)
 {
     for (unsigned n = 0; n < 8 && combat.snapshot().actor != id; ++n)
+    {
         check(combat.submit(command(combat, "end")), "Wait for actor");
+    }
     check(combat.snapshot().actor == id, "Actor gets a turn");
 }
 
@@ -226,7 +244,9 @@ std::uint64_t rng(const CombatSession &combat)
     std::istringstream in(combat.save());
     std::string line;
     for (unsigned n = 0; n < 3; ++n)
+    {
         std::getline(in, line);
+    }
     std::uint64_t value{};
     in >> value;
     return value;
@@ -344,7 +364,9 @@ void weapons_and_spells()
     for (const auto &weapon : damage::weapons)
     {
         if (weapon.key == "wand")
+        {
             continue;
+        }
         check(weapon.type == expected_types.at(weapon.key),
               "Weapon metadata agrees with the independent SRD damage-type table");
         const auto kind = damage::damage_name(expected_types.at(weapon.key));
@@ -417,13 +439,19 @@ void weapons_and_spells()
           "Dart resistance preserves the established per-dart RNG sequence");
     int expected = 0, instances = 0;
     for (const auto &m : resisted->snapshot().log_messages())
+    {
         if (m.source == "{name}: {type} damage {before} -> {after}.")
         {
             for (const auto &a : m.arguments)
+            {
                 if (a.name == "before")
+                {
                     expected += std::stoi(a.value) / 2;
+                }
+            }
             ++instances;
         }
+    }
     check(instances == 3 && 1000 - unit(*resisted, 2).hit_points == expected,
           "Each Magic Missile dart rounds separately before summing HP loss");
 }
@@ -452,12 +480,14 @@ void malformed()
           "affinity toxin s resistance unknown\n", "affinity toxin s immunity all extra\n",
           "affinity toxin s immunity\n",
           "affinity toxin s immunity all\naffinity toxin s resistance fire\n"})
+    {
         rejects(
             [&]
             {
                 (void)srd5::parse_content(
                     content() + attacker().substr(0, attacker().find("damage_types")) + row);
             });
+    }
     auto sheet = hero().sheet();
     auto grant = std::find_if(sheet.grants.begin(), sheet.grants.end(),
                               [](const auto &g)

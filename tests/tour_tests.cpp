@@ -25,14 +25,18 @@ using Bytes = std::vector<std::uint8_t>;
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::shared_ptr<const EclProgram> program(Bytes body)
 {
     Bytes record{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         record.insert(record.end(), {1, 1, 0x14, 0x99});
+    }
     record.insert(record.end(), body.begin(), body.end());
     return std::make_shared<const EclProgram>(EclProgram::decode(record, "synthetic tour"));
 }
@@ -40,7 +44,9 @@ std::shared_ptr<const EclProgram> program(Bytes body)
 void step_to_prompt(RolfTourSession &tour)
 {
     for (int n = 0; n < 500 && tour.snapshot().phase == TourPhase::running; ++n)
+    {
         tour.advance(0.3);
+    }
     check(tour.snapshot().phase != TourPhase::faulted, tour.snapshot().diagnostic.c_str());
     check(tour.snapshot().phase != TourPhase::running, "Host must yield a prompt or finish");
 }
@@ -195,7 +201,9 @@ void fog_visibility_tests()
     auto art = *decoded;
     GeoMap corridor;
     for (auto &cell : corridor.cells)
+    {
         cell.walls.fill(1);
+    }
     corridor.cells[8 * 16 + 8].walls[0] = 0;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
     auto view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
@@ -222,8 +230,12 @@ void fog_visibility_tests()
     art.appearances.push_back(art.appearances.front());
     auto &front = art.appearances.back()[static_cast<unsigned>(WallView::near_front)];
     for (unsigned y = 32; y < 56; ++y)
+    {
         for (unsigned x = 24; x < 32; ++x)
+        {
             front.rgba[(y * front.width + x) * 4 + 3] = 0;
+        }
+    }
     corridor.cells[8 * 16 + 8].walls[0] = 2;
     corridor.cells[7 * 16 + 8].walls[0] = 0;
     view = render_exploration_view(corridor, art, 8, 8, MapDirection::north);
@@ -243,7 +255,9 @@ void fog_visibility_tests()
         const auto rotated = render_exploration_view({}, {}, 8, 8, MapDirection{facing});
         std::bitset<256> expected;
         for (unsigned y = 0; y < 16; ++y)
+        {
             for (unsigned x = 0; x < 16; ++x)
+            {
                 if (open.visible.test(y * 16 + x))
                 {
                     int dx = int(x) - 8, dy = int(y) - 8;
@@ -255,16 +269,22 @@ void fog_visibility_tests()
                     }
                     expected.set((8 + dy) * 16 + 8 + dx);
                 }
+            }
+        }
         check(rotated.visible == expected, "Visibility rotates with all four facings");
     }
     for (unsigned x : {0u, 15u})
+    {
         for (unsigned y : {0u, 15u})
+        {
             for (unsigned facing = 0; facing < 4; ++facing)
             {
                 const auto edge = render_exploration_view({}, {}, x, y, MapDirection{facing});
                 check(edge.visible.test(y * 16 + x) && !edge.visible.test((15 - y) * 16 + (15 - x)),
                       "Viewport clipping never wraps visibility to the other map edge");
             }
+        }
+    }
 
     const auto start = program({9, 0, 8, 1, 0x4b, 0xc0, 9, 0, 8, 1, 0x4c, 0xc0, 0});
     RolfTourSession tour({}, start, {}, 0x9914);
@@ -294,7 +314,9 @@ void shopping_tests()
     // Tour exits at 9914; every normal entry invokes a generated shop event.
     Bytes bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     const Bytes body{0, 39, 0, 0, 0,  0, 0, 0, 0, 0,    0,    0,  0,
                      0, 0,  0, 0, 54, 9, 0, 1, 1, 0x6c, 0x6e, 36, 0};
     bytes.insert(bytes.end(), body.begin(), body.end());
@@ -324,7 +346,9 @@ void shopping_tests()
               town.party().inventory.size() == 1,
           "Purchase charges actual price and adds inventory");
     for (int i = 1; i < 16; ++i)
+    {
         check(town.buy(ticket, 0), "Separate purchased instances fit inventory");
+    }
     check(!town.buy(ticket, 0) && town.party().wealth[3] == 9839, "Full inventory does not charge");
     check(town.leave_shop(ticket) && !town.leave_shop(ticket), "Shop reply completes once");
     step_to_prompt(town);
@@ -343,7 +367,9 @@ void shopping_tests()
 
     Bytes failing_bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         failing_bytes.insert(failing_bytes.end(), {1, 1, 0x15, 0x99});
+    }
     const Bytes failing_body{0,    9,  0, 5, 1, 0xc1,
                              0x6b, 56, 0, 0, 0}; // Purse write, then unimplemented training.
     failing_bytes.insert(failing_bytes.end(), failing_body.begin(), failing_body.end());
@@ -366,9 +392,15 @@ void shopping_tests()
 std::size_t peaceful_choice(const TourSnapshot &s)
 {
     for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"})
+    {
         for (std::size_t n = 0; n < s.choices.size(); ++n)
+        {
             if (s.choices[n] == safe)
+            {
                 return n;
+            }
+        }
+    }
     return s.choices.size() - 1;
 }
 
@@ -379,30 +411,42 @@ void settle_town(RolfTourSession &town, unsigned shop_x = 16, unsigned shop_y = 
     {
         const auto s = town.snapshot();
         if (reached && s.pose.x == visit_x && s.pose.y == visit_y)
+        {
             *reached = true;
+        }
         if (s.phase == TourPhase::completed)
+        {
             return;
+        }
         check(s.phase != TourPhase::faulted, s.diagnostic.c_str());
         if (s.phase == TourPhase::awaiting_continue)
         {
             if (s.pose.x == shop_x && s.pose.y == shop_y && s.dialogue.starts_with("THE SHOP"))
+            {
                 check(!opengold::phlan_shopkeeper_portrait(s).empty(),
                       "The shopkeeper portrait appears for the greeting");
+            }
             town.choose(s.continue_ticket, s.pose.x == shop_x && s.pose.y == shop_y &&
                                                    s.dialogue.find("SHOP") != std::string::npos
                                                ? 0
                                                : peaceful_choice(s));
         }
         else if (s.phase == TourPhase::awaiting_input)
+        {
             town.input(s.continue_ticket, "0");
+        }
         else if (s.phase == TourPhase::shopping)
         {
             if (s.pose.x == shop_x && s.pose.y == shop_y)
+            {
                 return;
+            }
             town.leave_shop(s.continue_ticket);
         }
         else
+        {
             town.advance(.3);
+        }
     }
     check(false, "Town event exceeded bounded continuation count");
 }
@@ -415,7 +459,9 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
     {
         const auto p = town.snapshot().pose;
         if (p.x == tx && p.y == ty)
+        {
             return true;
+        }
         std::array<int, 256> previous;
         previous.fill(-1);
         std::queue<int> cells;
@@ -430,25 +476,35 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
             {
                 const int x = cell % 16 + dx[d], y = cell / 16 + dy[d];
                 if (x < 0 || y < 0 || x >= 16 || y >= 16)
+                {
                     continue;
+                }
                 const auto &a = town.map().at(cell % 16, cell / 16);
                 const auto &b = town.map().at(x, y);
                 const unsigned reverse = (d + 2) % 4;
                 if (a.doors[d] > 1 || b.doors[reverse] > 1 || (a.walls[d] && !a.doors[d]) ||
                     (b.walls[reverse] && !b.doors[reverse]))
+                {
                     continue;
+                }
                 const int next = y * 16 + x;
                 if (previous[next] >= 0 || refused_edges.contains({cell, next}))
+                {
                     continue;
+                }
                 previous[next] = cell;
                 cells.push(next);
             }
         }
         int next = ty * 16 + tx;
         if (previous[next] < 0)
+        {
             return false;
+        }
         while (previous[next] != origin)
+        {
             next = previous[next];
+        }
         const unsigned facing = next % 16 > int(p.x)   ? 1
                                 : next % 16 < int(p.x) ? 3
                                 : next / 16 > int(p.y) ? 2
@@ -458,9 +514,13 @@ bool walk_to(RolfTourSession &town, unsigned tx, unsigned ty, bool shop = false)
         bool reached = false;
         settle_town(town, shop ? tx : 16, shop ? ty : 16, tx, ty, &reached);
         if (reached)
+        {
             return true;
+        }
         if (forward && town.snapshot().pose.x * 1 + town.snapshot().pose.y * 16 != unsigned(next))
+        {
             refused_edges.insert({origin, next});
+        }
     }
     return false;
 }
@@ -473,18 +533,23 @@ void installed_town(const RolfTourSession &finished)
     std::set<std::string> limitations;
     unsigned reached = 0;
     for (unsigned y = 0; y < 16; ++y)
+    {
         for (unsigned x = 0; x < 16; ++x)
         {
             const auto event = finished.map().at(x, y).event_number();
             if (!event)
+            {
                 continue;
+            }
             auto town = finished.detached_copy();
             if (!walk_to(town, x, y))
             {
                 std::cout << "Town route unavailable " << x << ',' << y << " event " << event
                           << '\n';
                 for (const auto &d : town.script_diagnostics())
+                {
                     limitations.insert(d);
+                }
                 continue;
             }
             ++reached;
@@ -493,14 +558,19 @@ void installed_town(const RolfTourSession &finished)
             town.explore(ExplorationCommand::look);
             settle_town(town);
             for (const auto &d : town.script_diagnostics())
+            {
                 limitations.insert(d);
+            }
             check(town.party().wealth[3] == 9999,
                   "Exploration without purchases preserves starting gold");
         }
+    }
     std::cout << "Town coverage: " << reached << " event cells, " << events.size() << " event IDs, "
               << scripts.size() << " programs.\n";
     for (const auto &d : limitations)
+    {
         std::cout << "Town unsupported branch: " << d << '\n';
+    }
     check(events.size() >= 30 && scripts == std::set<unsigned>{0, 8, 11},
           "Walkable town includes City Hall and training scripts");
 
@@ -612,7 +682,9 @@ void synthetic()
     check(!tour.explore(ExplorationCommand::forward), "Neighbor wall blocks westward movement");
     tour.explore(ExplorationCommand::turn_right);
     for (unsigned i = 0; i < 4; ++i)
+    {
         check(tour.explore(ExplorationCommand::forward), "Northward steps stay in the map");
+    }
     check(!tour.explore(ExplorationCommand::forward), "Boundary prevents wrapping");
     tour.restart();
     step_to_prompt(tour);
@@ -642,7 +714,9 @@ void installed_monster_picture(const char *directory)
     check(animation && animation.frames.size() == 4, "Orc close-up has four frames");
     std::vector<std::uint32_t> delays;
     for (const auto &frame : animation.frames)
+    {
         delays.push_back(frame.delay);
+    }
     check(delays == std::vector<std::uint32_t>{15, 0, 7, 0}, "Orc close-up keeps its timing");
     check(animation.frames[0].image.width == 88 && animation.frames[0].image.height == 88,
           "Orc close-up fills the 88x88 view");
@@ -665,7 +739,9 @@ void installed(const char *directory)
     {
         step_to_prompt(tour);
         if (tour.snapshot().phase == TourPhase::completed)
+        {
             break;
+        }
         const auto &s = tour.snapshot();
         ++prompts;
         std::cout << "Prompt " << prompts << " at " << s.pose.x << ',' << s.pose.y << " facing "
@@ -702,7 +778,9 @@ int main()
         shopping_tests();
         synthetic();
         if (const auto directory = std::getenv("OPENGOLD_GAME_DIR"))
+        {
             installed(directory);
+        }
         std::cout << "Tour tests passed.\n";
     }
     catch (const std::exception &error)

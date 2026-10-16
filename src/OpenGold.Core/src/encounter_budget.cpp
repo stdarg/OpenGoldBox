@@ -16,12 +16,16 @@ constexpr std::array<unsigned, 20> moderate_budgets{75,   150,  225,  375,  750,
 unsigned encounter_xp_budget(std::span<const unsigned> character_levels, unsigned challenge)
 {
     if (challenge > max_encounter_challenge)
+    {
         throw std::invalid_argument("Encounter challenge is 0-200");
+    }
     unsigned total = 0;
     for (const auto level : character_levels)
     {
         if (level < 1 || level > moderate_budgets.size())
+        {
             throw std::invalid_argument("Character level is 1-20");
+        }
         total += moderate_budgets[level - 1];
     }
     return total * challenge / 100;
@@ -51,10 +55,12 @@ std::vector<unsigned> fit_encounter_to_budget(std::span<const EncounterGroup> gr
     }
     std::vector<unsigned> counts;
     for (const auto &group : groups)
+    {
         counts.push_back(
             numerator == denominator
                 ? group.count
                 : std::max(1U, static_cast<unsigned>(group.count * numerator / denominator)));
+    }
     return counts;
 }
 } // namespace opengold

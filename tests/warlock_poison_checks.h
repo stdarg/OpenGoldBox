@@ -34,8 +34,12 @@ void access()
     }
     auto bad = h.sheet();
     for (auto &g : bad.grants)
+    {
         if (g.id == "spell:poison_spray")
+        {
             g.source_id = "class:wizard:spellcasting";
+        }
+    }
     rejects(
         [&]
         {
@@ -61,6 +65,7 @@ void access()
 void rolls()
 {
     for (unsigned seed : {0u, 3u, 13u, 40u})
+    {
         for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
         {
             auto rules =
@@ -97,6 +102,7 @@ void rolls()
             const auto saved = c->save();
             check(!c->submit(ticket) && c->save() == saved, "Spent Action rejects atomically");
         }
+    }
 }
 
 void eligibility()
@@ -116,8 +122,10 @@ void eligibility()
     // Full hands block nothing (CLASS-11); untrained armor does.
     for (const auto &gear :
          std::vector<std::vector<std::string>>{{"quarterstaff", "shield"}, {"wand", "shield"}})
+    {
         check(has(*battle(*rules, selected(), 13, {3, 1}, gear), "poison_spray"),
               "Full hands do not block the Warlock grant");
+    }
     {
         auto c = battle(*rules, selected(), 13, {3, 1}, {"plate"});
         const auto before = c->save();
@@ -170,7 +178,9 @@ void campaign()
         {
             check(bool(restored.rest(kind)), "Camp/inn rest");
             if (restored.state().short_rest)
+            {
                 restored.finish_short_rest(restored.state().short_rest->ticket);
+            }
             saved = encode_campaign(restored, nullptr, "warlock-poison");
             CampaignParty again(module());
             again.restore(

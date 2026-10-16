@@ -21,16 +21,22 @@ unsigned index_field(std::string_view field, unsigned limit)
     const auto end = field.data() + field.size();
     const auto [stop, error] = std::from_chars(field.data(), end, value);
     if (field.empty() || stop != end || error == std::errc::invalid_argument)
+    {
         throw std::runtime_error("Invalid combat catalog number");
+    }
     if (error != std::errc{} || value >= limit)
+    {
         throw std::runtime_error("Combat catalog number out of range");
+    }
     return value;
 }
 
 std::string strip_cr(std::string text)
 {
     if (!text.empty() && text.back() == '\r')
+    {
         text.pop_back();
+    }
     return text;
 }
 
@@ -42,19 +48,25 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
     CombatBodyCatalog result;
     std::ifstream options(options_file);
     if (!options)
+    {
         throw std::runtime_error("Cannot open combat look options: " + options_file.string());
+    }
     std::set<std::string> keys{"unreviewed"};
     std::string line;
     std::set<int> item_types;
     while (std::getline(options, line))
     {
         if (line.empty() || line[0] == '#')
+        {
             continue;
+        }
         const auto first = line.find('\t'), second = line.find('\t', first + 1),
                    third = line.find('\t', second + 1);
         if (first == std::string::npos || second == std::string::npos ||
             third == std::string::npos || line.find('\t', third + 1) != std::string::npos)
+        {
             throw std::runtime_error("Invalid combat look option row");
+        }
         const auto variant = strip_cr(line.substr(third + 1));
         CombatLookOption option{
             line.substr(0, first), line.substr(first + 1, second - first - 1),
@@ -63,48 +75,70 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
         if (variant != "ordinary" || option.id.empty() || option.label.empty() ||
             !keys.insert(option.id).second || !keys.insert(option.id + "_shield").second ||
             !item_types.emplace(option.original_type).second)
+        {
             throw std::runtime_error("Duplicate or invalid combat look option");
+        }
         result.options_.push_back(std::move(option));
     }
     if (!options.eof() || result.options_.empty())
+    {
         throw std::runtime_error("Invalid combat look options file");
+    }
     std::ifstream in(assignments);
     if (!in)
+    {
         throw std::runtime_error("Cannot open combat body catalog: " + assignments.string());
+    }
     std::array<bool, 35> seen{};
     unsigned count = 0;
     while (std::getline(in, line))
     {
         if (line.empty() || line[0] == '#')
+        {
             continue;
+        }
         const auto tab = line.find('\t');
         if (tab == std::string::npos || line.find('\t', tab + 1) != std::string::npos)
+        {
             throw std::runtime_error("Invalid combat body catalog row");
+        }
         if (line.substr(0, tab) == "deleted")
         {
             const auto key = strip_cr(line.substr(tab + 1));
             if (key == "unreviewed" || !keys.contains(key) || !result.deleted_.insert(key).second)
+            {
                 throw std::runtime_error("Invalid deleted combat combination");
+            }
             continue;
         }
         const auto index = index_field(std::string_view(line).substr(0, tab), 35);
         auto values = strip_cr(line.substr(tab + 1));
         if (seen[index] || values.empty())
+        {
             throw std::runtime_error("Invalid or duplicate combat body assignment");
+        }
         if (values != "unreviewed")
+        {
             for (std::size_t begin = 0;;)
             {
                 const auto end = values.find(',', begin);
                 auto key = values.substr(begin, end == std::string::npos ? end : end - begin);
                 if (key.starts_with("silver_"))
+                {
                     key = "type_" + key.substr(7);
+                }
                 if (key == "unreviewed" || !keys.contains(key))
+                {
                     throw std::runtime_error("Unknown combat body assignment");
+                }
                 result.bodies_[index].insert(std::move(key));
                 if (end == std::string::npos)
+                {
                     break;
+                }
                 begin = end + 1;
             }
+        }
         seen[index] = true;
         ++count;
     }
@@ -115,20 +149,32 @@ CombatBodyCatalog CombatBodyCatalog::load(const std::filesystem::path &assignmen
             {
                 return present;
             }))
+    {
         throw std::runtime_error("Combat body catalog must contain all original 33 bodies");
+    }
     for (auto &body : result.bodies_)
+    {
         for (const auto &key : result.deleted_)
+        {
             body.erase(key);
+        }
+    }
     return result;
 }
 
 void CombatBodyCatalog::assign_body(unsigned body, std::set<std::string> combinations)
 {
     if (body >= bodies_.size())
+    {
         throw std::out_of_range("Combat body out of range");
+    }
     for (const auto &combination : combinations)
+    {
         if (!names_option(combination) || deleted_.contains(combination))
+        {
             throw std::invalid_argument("Unknown or deleted combat combination: " + combination);
+        }
+    }
     bodies_[body] = std::move(combinations);
 }
 
@@ -136,16 +182,22 @@ void CombatBodyCatalog::assign_body(unsigned body, std::set<std::string> combina
 void CombatBodyCatalog::delete_combination(const std::string &combination)
 {
     if (!names_option(combination))
+    {
         throw std::invalid_argument("Unknown combat combination: " + combination);
+    }
     deleted_.insert(combination);
     for (auto &body : bodies_)
+    {
         body.erase(combination);
+    }
 }
 
 void CombatBodyCatalog::clear_assignments()
 {
     for (auto &body : bodies_)
+    {
         body.clear();
+    }
     deleted_.clear();
 }
 
@@ -167,7 +219,9 @@ ResolvedCombatAppearance resolve_combat_appearance(const PartyMember &member,
     {
         const auto item = member.character.inventory().find(id);
         if (!item)
+        {
             throw std::runtime_error("Equipped item is missing");
+        }
         equipped.push_back(
             {item->get().original_type, item->get().name, item->get().definition_id});
     }
@@ -191,24 +245,38 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
     for (const auto &item : equipped)
     {
         if (item.original_type == 59 || item.definition_id == "shield")
+        {
             shield = true;
+        }
         else
         {
             int type = item.original_type;
             if (type < 0)
             {
                 if (item.definition_id == "dagger")
+                {
                     type = 8;
+                }
                 else if (item.definition_id == "mace")
+                {
                     type = 23;
+                }
                 else if (item.definition_id == "quarterstaff")
+                {
                     type = 33;
+                }
                 else if (item.definition_id == "longsword")
+                {
                     type = 36;
+                }
                 else if (item.definition_id == "longbow")
+                {
                     type = 43;
+                }
                 else if (item.definition_id == "shortbow")
+                {
                     type = 44;
+                }
             }
             if (!weapon && std::any_of(options_.begin(), options_.end(),
                                        [&](const auto &option)
@@ -232,12 +300,20 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
     const auto label =
         (option == options_.end() ? "Unknown weapon" : option->label) + (shield ? " & Shield" : "");
     if (deleted_.contains(key))
+    {
         return {fallback, false, key, label};
+    }
     if (fallback < bodies_.size() && bodies_[fallback].contains(key))
+    {
         return {fallback, true, key, label};
+    }
     for (unsigned id = 0; id < bodies_.size(); ++id)
+    {
         if (bodies_[id].contains(key))
+        {
             return {id, true, key, label};
+        }
+    }
     return {fallback, false, key, label};
 }
 } // namespace opengold::por

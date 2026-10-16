@@ -38,18 +38,28 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     const auto &draft = character.creation_data();
     const auto options = srd5::character_rules()->choices(rules::CreationField::character_class);
     for (const auto &id : draft.target_classes)
+    {
         for (const auto &option : options)
+        {
             if (option.id == id && id != draft.character_class)
             {
                 if (!goals.is_empty())
+                {
                     goals += ", ";
+                }
                 goals += i18n::text(option.label);
             }
+        }
+    }
     if (!goals.is_empty())
+    {
         text += i18n::formatted("Future class goals: {classes}\n\n", {{"classes", goals}});
+    }
     rules::TemporaryHitPoints temporary;
     if (member)
+    {
         temporary = party->recovery_info(member->id).temporary_hp;
+    }
     text += "[theme_emphasis]" +
             std::string(presentation::hp_text(member ? member->vitals.hit_points : s.hit_points,
                                               s.hit_points, member && member->vitals.dead,
@@ -59,32 +69,48 @@ String formatted_sheet(const Character &character, const PartyMember *member,
             "[/theme_emphasis]";
     text += i18n::formatted("   Hit Dice: {level}d{die}", {{"level", s.level}, {"die", s.hit_die}});
     if (member)
+    {
         text += i18n::formatted(
             "   Party gold {gold}   XP {xp}",
             {{"gold", coins(party->state().wealth, Coin::gold)}, {"xp", member->experience}});
+    }
     if (member && member->vitals.dead)
+    {
         text += "   " + i18n::utf8("Dead");
+    }
     if (member && party->can_advance(member->id))
+    {
         text += "   [theme_emphasis]" + i18n::utf8("Ready to level up") + "[/theme_emphasis]";
+    }
     const auto display = [](const std::string &id)
     {
         if (id == "archery")
+        {
             return i18n::utf8(N_("archery"));
+        }
         std::string label = id;
         std::replace(label.begin(), label.end(), '_', ' ');
         return i18n::utf8(label);
     };
     String feats;
     for (const auto &grant : s.grants)
+    {
         if (grant.id.starts_with("feat:"))
+        {
             feats += gs(display(grant.id.substr(5))) + "  ";
+        }
+    }
     if (!feats.is_empty())
+    {
         text += "\n" + i18n::formatted("Feat: {feats}", {{"feats", feats}});
+    }
     if (!s.prepared_spells.empty())
     {
         String spells;
         for (const auto &spell : s.prepared_spells)
+        {
             spells += gs(display(spell)) + "  ";
+        }
         text += "\n" + i18n::formatted("Prepared spells: {spells}", {{"spells", spells}});
     }
     text += "\n[theme_font=sheet_note]" +
@@ -120,14 +146,20 @@ String formatted_sheet(const Character &character, const PartyMember *member,
             text += "\n\n" + rich_text_literal(e.what());
         }
         if (!member->vitals.description.empty())
+        {
             text += "\n" + rich_text_literal(member->vitals.description);
+        }
     }
     text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
     if (character.inventory().empty())
+    {
         text += "\n" + i18n::utf8("Empty");
+    }
     std::vector<rules::Message> positions;
     if (member)
+    {
         positions = party->profile(member->id).equipment_positions;
+    }
     for (const auto &item : character.inventory().items())
     {
         text +=
@@ -136,7 +168,9 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         {
             const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);
             if (held != member->equipped.end())
+            {
                 text += " / " + i18n::utf8(positions.at(held - member->equipped.begin()).source);
+            }
         }
     }
     text += presentation::training_summary(s.training, i18n::text).utf8().get_data();

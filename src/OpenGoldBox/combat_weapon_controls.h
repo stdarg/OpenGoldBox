@@ -33,6 +33,7 @@ bool refresh_weapons(godot::Node &root, const opengold::rules::CombatantView *ac
     choices->clear();
     bool enabled = false;
     if (actor)
+    {
         for (const auto &weapon : actor->weapons)
         {
             const auto index = choices->get_item_count();
@@ -42,8 +43,11 @@ bool refresh_weapons(godot::Node &root, const opengold::rules::CombatantView *ac
             choices->set_item_disabled(index, !weapon.available);
             enabled |= weapon.available && weapon.item != actor->selected_weapon;
             if (weapon.item == actor->selected_weapon)
+            {
                 choices->select(index);
+            }
         }
+    }
     choices->set_disabled(!player || !enabled);
     return changed;
 }
@@ -63,10 +67,16 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         {
             std::string form = verb.substr(11);
             for (std::size_t i = 0; i < form.size(); ++i)
+            {
                 if (form[i] == '_')
+                {
                     form[i] = ' ';
+                }
                 else if (i == 0 || form[i - 1] == ' ')
+                {
                     form[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(form[i])));
+                }
+            }
             return "Wild Shape: " + form;
         };
         // Metamagic and Wild Shape labels carry their option, cost or form, so
@@ -75,11 +85,16 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
                                        const std::string &fallback) -> std::string
         {
             for (const auto &c : offered)
+            {
                 if (c.actor == actor->id && c.verb == verb)
+                {
                     return c.label;
+                }
+            }
             return fallback;
         };
         for (const auto &verb : actor->bonus_actions)
+        {
             options.push_back({0,
                                verb,
         {
@@ -131,12 +146,15 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         {
             return c.actor == actor->id && c.verb == verb;
         })});
+        }
         options.insert(options.end(), actor->light_attacks.begin(), actor->light_attacks.end());
     }
     auto *choices = &required_node<godot::OptionButton>(root, "CunningAction");
     const bool changed = choices->is_visible() != !options.empty();
     for (const char *name : {"CunningActionLabel", "CunningAction", "UseCunningAction"})
+    {
         required_node<godot::Control>(root, name).set_visible(!options.empty());
+    }
     required_node<godot::Label>(root, "CunningActionLabel").set_text(text("Bonus Action"));
     required_node<godot::Button>(root, "UseCunningAction").set_text(text("Use Bonus Action"));
     const godot::String previous =
@@ -158,18 +176,24 @@ bool refresh_bonus_attacks(godot::Node &root, const opengold::rules::CombatantVi
         choices->set_item_disabled(index, !option.available);
         any |= option.available;
         if (key == previous)
+        {
             previous_index = index;
+        }
     }
     // Select after filling: while no listed item is enabled, Godot's add_item
     // selects each new item, which would replace the choice kept above.
     choices->select(previous_index);
     if (any && (choices->get_selected() < 0 || choices->is_item_disabled(choices->get_selected())))
+    {
         for (int i = 0; i < choices->get_item_count(); ++i)
+        {
             if (!choices->is_item_disabled(i))
             {
                 choices->select(i);
                 break;
             }
+        }
+    }
     choices->set_disabled(!player || !any);
     const auto selected = choices->get_selected();
     choices->set_tooltip_text(selected >= 0 ? choices->get_item_text(selected) : godot::String());

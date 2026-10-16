@@ -14,7 +14,9 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
                           state.choices.size() == 2 && state.dialogue.starts_with("THE SHOP");
     if (state.area_id != 0 || !state.tour_finished ||
         (state.phase != por::TourPhase::shopping && !greeting))
+    {
         return {};
+    }
 
     struct Shop
     {
@@ -31,8 +33,12 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
         Shop{10, 13, "NPCs/phlan-silver-10-13.png"},  Shop{8, 10, "NPCs/phlan-jeweler-08-10.png"},
     };
     for (const auto &shop : shops)
+    {
         if (state.pose.x == shop.x && state.pose.y == shop.y)
+        {
             return shop.portrait;
+        }
+    }
     return {};
 }
 
@@ -44,16 +50,26 @@ std::string_view phlan_shopkeeper_portrait(const por::TourSnapshot &state)
 std::string_view speaking_npc_portrait(const por::TourSnapshot &state)
 {
     if (const auto shopkeeper = phlan_shopkeeper_portrait(state); !shopkeeper.empty())
+    {
         return shopkeeper;
+    }
     if (state.dialogue.empty())
+    {
         return {};
+    }
     if (!state.tour_finished)
+    {
         return state.sprite_frame == 0 ? "NPCs/rolf.png" : std::string_view{};
+    }
     // Kuto's Well (ECL8:29) shows sprite 16 only for Norris the Gray's ambush.
     if (state.script_id == 29 && state.sprite_id == 16 && state.sprite_frame == 0)
+    {
         return "NPCs/norris-the-gray.png";
+    }
     if (state.sprite_frame > 0)
+    {
         return {};
+    }
 
     struct Cue
     {
@@ -96,8 +112,12 @@ std::string_view speaking_npc_portrait(const por::TourSnapshot &state)
     };
     const std::string_view dialogue{state.dialogue};
     for (const auto &cue : cues)
+    {
         if (state.script_id == cue.script && dialogue.starts_with(cue.opening))
+        {
             return cue.portrait;
+        }
+    }
     return {};
 }
 } // namespace opengold

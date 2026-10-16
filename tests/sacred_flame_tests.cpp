@@ -40,15 +40,21 @@ CharacterDraft draft()
     d.name = "Sacred Flame tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return d;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -64,16 +70,24 @@ using opengold::test::rejects;
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -82,7 +96,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (unsigned i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t n{};
     in >> n;
     return n;
@@ -91,8 +107,12 @@ std::uint64_t rng(const CombatSession &c)
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == name)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing message argument");
 }
 
@@ -104,7 +124,9 @@ Character hero(unsigned level = 1, bool learned = true)
     Character h(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), scratch), "Advance real Cleric choices");
+    }
     return h;
 }
 
@@ -126,7 +148,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                           seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
+    {
         check(c->submit(command(*c, "end")), "Reach caster");
+    }
     check(c->snapshot().actor == 1, "Independent seed reaches caster");
     return c;
 }
@@ -166,6 +190,7 @@ void access()
             });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
+    {
         if (klass.id != "cleric")
         {
             d = draft();
@@ -177,6 +202,7 @@ void access()
                     (void)creation->evaluate(d, NameRequirement::required);
                 });
         }
+    }
     const auto profile = rules->character_profile(h.sheet(), {}).data;
     const std::string spells = "PC43 1 0 2 sacred_flame cure_wounds ";
     check(profile.starts_with(spells), "The recipe lists the selected cantrip");
@@ -196,8 +222,12 @@ void access()
     rejects_recipe("PC43 1 0 1 cure_wounds " + profile.substr(spells.size()));
     auto invalid = h.sheet();
     for (auto &g : invalid.grants)
+    {
         if (g.id == "spell:sacred_flame")
+        {
             g.source_id = "class:wizard:spellcasting";
+        }
+    }
     rejects(
         [&]
         {
@@ -216,6 +246,7 @@ void access()
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned clerics = 0;
     for (const auto &preset : character_pool(*creation, art))
+    {
         if (preset.sheet().character_class == "Cleric")
         {
             ++clerics;
@@ -224,14 +255,19 @@ void access()
             check(access.cantrips.size() == access.cantrip_choices,
                   "Preset Clerics have pre-generated supported selections");
         }
+    }
     check(clerics == 4, "All Cleric presets verified");
 }
 
 Message save_message(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{name} Dexterity save:"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing Dexterity save");
 }
 
@@ -241,7 +277,9 @@ void rolls()
     // seed 40 -> save 1, d8 5; seed 0 -> save 20, d8 5;
     // seed 2 -> save 12, d8 5. Ordinary saves have no automatic 1/20 result.
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (unsigned seed : {0u, 2u, 40u})
+        {
             for (const auto &defense :
                  std::vector<std::string>{"", "resistance", "vulnerability", "immunity"})
             {
@@ -281,6 +319,8 @@ void rolls()
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Stale cast is atomic");
             }
+        }
+    }
     for (const auto [seed, bonus, success] :
          std::vector<std::tuple<unsigned, int, bool>>{{40, 20, true}, {0, -10, false}})
     {
@@ -353,12 +393,15 @@ void targets()
     auto c = battle(*rules, h, 40);
     const auto before = c->save();
     for (EntityId id : {0u, 999u})
+    {
         check(!c->submit({c->snapshot().revision, 1, id, "sacred_flame"}) && c->save() == before,
               "Unknown and noncreature targets reject atomically");
+    }
     const auto hp = unit(*c).hit_points;
     check(c->submit(command(*c, "sacred_flame", 1)) && unit(*c).hit_points == hp - 5,
           "Self-target resolves a Dexterity save and actual damage");
     for (bool down : {false, true})
+    {
         for (bool dead : {false, true})
         {
             auto c = rules->create(
@@ -396,6 +439,7 @@ void targets()
                     "Saving-throw damage at zero HP adds one death failure, never a close-range critical");
             }
         }
+    }
 }
 
 void modifiers()
@@ -435,10 +479,14 @@ void modifiers()
                             {2, "blindness-adept", "Enemy", Side::opposition, {3, 1}}}},
                           seed);
         if (blinded->snapshot().actor == 1)
+        {
             check(blinded->submit(command(*blinded, "end")), "Reach enemy caster");
+        }
         check(blinded->submit(command(*blinded, "blindness", 1)), "Actual Blindness source casts");
         if (unit(*blinded).conditions.empty())
+        {
             continue;
+        }
         check(blinded->submit(command(*blinded, "end")), "Reach blinded Cleric");
         check(!has(*blinded, "sacred_flame"),
               "Blindness blocks every sight-required target including self");
@@ -456,6 +504,7 @@ void campaign()
     auto rules = module();
     auto creation = srd5::character_rules();
     for (bool npc : {false, true})
+    {
         for (unsigned level = 1; level <= 4; ++level)
         {
             CampaignParty p(module());
@@ -488,6 +537,7 @@ void campaign()
                       restored.profile(id).data == p.profile(id).data,
                   "Campaign replay preserves explicit choices and all resources exactly");
         }
+    }
 }
 
 void ui_fixtures()
@@ -511,12 +561,16 @@ void ui_fixtures()
             2);
         // Untrained armor's initiative Disadvantage may put the caster later.
         for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+        {
             for (const auto &end : c->legal_commands())
+            {
                 if (end.verb == "end")
                 {
                     (void)c->submit(end);
                     break;
                 }
+            }
+        }
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

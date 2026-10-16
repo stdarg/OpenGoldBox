@@ -53,8 +53,12 @@ auto module()
 Command command(const CombatSession &s, std::string_view verb, EntityId target = 0)
 {
     for (const auto &c : s.legal_commands())
+    {
         if (c.verb == verb && (!target || c.target == target))
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -71,8 +75,12 @@ bool offers(const CombatSession &s, std::string_view verb)
 CombatantView unit(const CombatSession &s, EntityId id)
 {
     for (const auto &a : s.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -80,7 +88,9 @@ fx::EffectState effects(const VitalState &state)
 {
     const auto where = state.resources.find("FX8");
     if (where == std::string::npos)
+    {
         return {};
+    }
     std::istringstream input(state.resources.substr(where));
     return fx::read_effects(input);
 }
@@ -124,7 +134,9 @@ Character character(std::string klass, std::string name)
     d.name = std::move(name);
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -170,8 +182,11 @@ void saving_throws()
     check(fx::saving_modifiers(fx::Ability::strength, true, true).mode() == -1,
           "Dodge does not improve Strength saves");
     for (bool a : {false, true})
+    {
         for (bool t : {false, true})
+        {
             for (bool dodge : {false, true})
+            {
                 for (bool other : {false, true})
                 {
                     const auto actual =
@@ -182,6 +197,9 @@ void saving_throws()
                     check(actual.mode() == int(t) - int(a || (dodge && !t) || other),
                           "Complete attack modifier truth table");
                 }
+            }
+        }
+    }
 }
 
 void lifecycle()
@@ -202,11 +220,13 @@ void lifecycle()
                            ++events_a;
                        });
     for (unsigned i = 0; i < 19; ++i)
+    {
         fx::elapse_effects(subjects_b, 1000, b,
                            [&](const auto &)
                            {
                                ++events_b;
                            });
+    }
     check(one == many && a == b && events_a == events_b,
           "Time chunking preserves effects, recovery rolls and notifications");
     check(one.active.size() == 1 && fx::blinded(one),
@@ -251,22 +271,26 @@ void codec()
           "FX8 2 1 1 1 77 99 \"Caster\" 13 60001 6000 0",
           "FX8 2 1 1 1 77 99 \"Caster\" 13 60000 0 0",
           "FX8 2 1 2 1 77 99 \"Caster\" 13 60000 6000 0"})
+    {
         rejects(
             [&]
             {
                 std::istringstream in(bad);
                 (void)fx::read_effects(in);
             });
+    }
     for (std::size_t n = 0; n < output.str().size() - 1; ++n)
     {
         // Only require failure where truncation removes a whole required field.
         if (output.str()[n] == ' ')
+        {
             rejects(
                 [&]
                 {
                     std::istringstream in(output.str().substr(0, n));
                     (void)fx::read_effects(in);
                 });
+        }
     }
 }
 
@@ -334,8 +358,12 @@ void combat()
     s = rules->create(e, 3);
     auto movement = command(*s, "move");
     for (const auto &c : s->legal_commands())
+    {
         if (c.verb == "move" && c.destination == Cell{1, 4})
+        {
             movement = c;
+        }
+    }
     s->submit(movement);
     check(!s->snapshot().reaction_pending, "Blind enemy cannot make an opportunity attack");
     // Attacks against blinded targets gain advantage; their Dodge cannot see us.
@@ -358,10 +386,14 @@ void combat()
     // Non-divisor actor counts must still telescope to exactly six seconds.
     e = encounter();
     for (unsigned i = 3; i <= 7; ++i)
+    {
         e.participants.push_back({i, "bandit", "Extra", Side::opposition, {int(i), 1}});
+    }
     s = rules->create(e, 3);
     for (unsigned i = 0; i < 7; ++i)
+    {
         s->submit(command(*s, "end"));
+    }
     check(s->snapshot().elapsed_milliseconds == 6000,
           "Seven initiative slots still equal six seconds");
     // Class-trained saves reach combat for both created characters and recruited
@@ -398,17 +430,23 @@ void campaign()
     party.remove(reserve);
     party.award_experience(900, "condition-test");
     for (auto id : {pc, npc})
+    {
         for (unsigned level = 2; level <= 3; ++level)
         {
             auto choice = party.default_advancement(id);
             if (level == 3 && !choice.spell_learning)
+            {
                 choice.spells = {"blindness"};
+            }
             party.advance(id, choice);
         }
+    }
     auto actors = party.participants();
     check(actors.size() == 2, "PC and recruited NPC share participants");
     for (std::size_t i = 0; i < actors.size(); ++i)
+    {
         actors[i].cell = {int(i), 0};
+    }
     actors.push_back({999, "bandit", "Enemy", Side::opposition, {10, 0}});
     auto session = rules->create({{12, 9, std::vector<Terrain>(108)}, actors}, 3);
     auto state = party.checkpoint();
@@ -426,7 +464,9 @@ void campaign()
             vitals = unit(*fixture, reserve).persistent;
         }
         else
+        {
             vitals = unit(*session, member.id).persistent;
+        }
         member.vitals = with_effects(vitals, blind());
     }
     party.restore(std::move(state));
@@ -443,8 +483,10 @@ void campaign()
               encode_campaign(restored, nullptr, "conditions"),
           "Exploration recovery continues deterministically");
     for (const auto &m : party.state().roster)
+    {
         check(effects(m.vitals).active.empty(),
               "PC, NPC and reserve effects expire on elapsed time");
+    }
     // Begin a later encounter without changing the persistent source provenance.
     restored.restore(loaded.party);
     actors = restored.participants();
@@ -490,7 +532,9 @@ void campaign()
     check(encode_campaign(rested_copy, nullptr, "conditions") == rest_save,
           "Fractional rest completion survives saving");
     while (restored.state().spell_rest)
+    {
         restored.keep_rest_spells(restored.state().spell_rest->members.front());
+    }
     restored.advance_time(std::chrono::milliseconds(960ULL * 60000 - 1));
     check(!restored.rest(), "Rest cannot become eligible one millisecond early");
     restored.advance_time(std::chrono::milliseconds(1));
@@ -506,7 +550,9 @@ void original_encounter_scope()
     {
         auto choice = party->default_advancement(id);
         if (level == 3 && !choice.spell_learning)
+        {
             choice.spells = {"blindness"};
+        }
         party->advance(id, choice);
     }
     auto state = party->checkpoint();
@@ -533,8 +579,10 @@ void checkpoint_capacity()
     auto full = blind();
     full.active.front().source_name = std::string(160, '"');
     while (fx::can_apply(full))
+    {
         fx::apply_blindness(full, {.scope = 77, .actor = 99}, std::string(160, '"'),
                             {.dc = 13, .first_save_ms = 6000});
+    }
     check(full.active.size() == fx::effect_limit, "Application count is bounded");
     const auto bandit = unit(*rules->create(encounter(), 3), 2).persistent;
     Encounter e{{12, 9, std::vector<Terrain>(108)}, {}};

@@ -12,10 +12,16 @@ Character hero_for(bool feat = false, bool negative = false, std::string klass =
 {
     auto d = draft(klass, "soldier");
     if (negative)
+    {
         for (auto &roll : d.rolls)
+        {
             roll = {{2, 2, 1, 1}, 3};
+        }
+    }
     if (klass == "wizard")
+    {
         d.cantrips = std::vector<std::string>{"fire_bolt"};
+    }
     choose_first_options(d);
     if (klass == "rogue")
     {
@@ -23,7 +29,9 @@ Character hero_for(bool feat = false, bool negative = false, std::string klass =
         d.training["class:rogue:expertise"] = {"investigation", "perception"};
     }
     if (klass == "fighter")
+    {
         d.training["class:fighter:fighting_style"] = {feat ? "two_weapon_fighting" : "defense"};
+    }
     return hero(d);
 }
 
@@ -50,7 +58,9 @@ auto battle(CampaignParty &p, unsigned seed = 13, Cell target = {2, 1}, int targ
     actors.push_back({99, "target", "Target", Side::opposition, target, {}, VitalState{target_hp}});
     auto c = p.rule_module().create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
     for (unsigned n = 0; c->snapshot().actor != 1 && n < 5; ++n)
+    {
         cunning_checks::act(*c, "end");
+    }
     check(c->snapshot().actor == 1, "Ordinary actor turn");
     return c;
 }
@@ -58,19 +68,25 @@ auto battle(CampaignParty &p, unsigned seed = 13, Cell target = {2, 1}, int targ
 void act(CombatSession &c, std::string_view verb, unsigned item = 0)
 {
     for (const auto &cmd : c.legal_commands())
+    {
         if (cmd.verb == verb && (!item || cmd.item == item))
         {
             check(c.submit(cmd), "Legal Light command executes");
             return;
         }
+    }
     throw std::runtime_error("Missing Light command: " + std::string(verb));
 }
 
 bool offered(const CombatSession &c, std::string_view verb, unsigned item = 0)
 {
     for (const auto &cmd : c.legal_commands())
+    {
         if (cmd.verb == verb && (!item || cmd.item == item))
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -80,9 +96,13 @@ void settle(CombatSession &c)
     {
         const auto s = c.snapshot();
         if (s.free_movement)
+        {
             act(c, "end");
+        }
         else
+        {
             return;
+        }
     }
     throw std::runtime_error("Unfinished Light damage choice");
 }
@@ -94,14 +114,20 @@ bool dagger_damage_within(const CombatSession &c, int modifier)
     const int count = hit == "CRITICAL" ? 2 : 1;
     const auto messages = c.snapshot().log_messages();
     for (auto m = messages.rbegin(); m != messages.rend(); ++m)
+    {
         if (m->source.starts_with("{actor} -> {target}: d20"))
+        {
             for (const auto &a : m->arguments)
+            {
                 if (a.name == "damage")
                 {
                     const int damage = std::stoi(a.value);
                     return damage >= std::max(0, count + modifier) &&
                            damage <= std::max(0, count * 4 + modifier);
                 }
+            }
+        }
+    }
     return false;
 }
 
@@ -129,7 +155,9 @@ void ui_fixtures()
     };
     auto c = rules->create({{12, 8, std::vector<Terrain>(96)}, actors}, 13);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     write("before.save", *c);
     act(*c, "weapon_select", 2);
     write("selected.save", *c);
@@ -146,7 +174,9 @@ void run()
     ui_fixtures();
     unsigned hits = 0, criticals = 0;
     for (bool feat : {false, true})
+    {
         for (bool negative : {false, true})
+        {
             for (unsigned seed = 1; seed <= 32; ++seed)
             {
                 auto p = party(feat, negative, seed % 2);
@@ -154,8 +184,10 @@ void run()
                 check(!offered(*c, "light_melee"), "Light cannot precede an Attack action");
                 act(*c, "melee");
                 if (!rogue_attack_checks::last_hit(*c).empty())
+                {
                     check(dagger_damage_within(*c, negative ? -2 : 3),
                           "Style does not double normal attack modifiers");
+                }
                 settle(*c);
                 check(!unit(*c).action && unit(*c).bonus_action && offered(*c, "light_melee", 2) &&
                           !offered(*c, "light_melee", 1),
@@ -184,9 +216,13 @@ void run()
                 exact_restore(*c);
                 act(*c, "end");
                 if (c->snapshot().actor != 1)
+                {
                     act(*c, "end");
+                }
                 check(!offered(*c, "light_melee"), "Qualification expires at next turn");
             }
+        }
+    }
     check(hits > 40 && criticals > 0,
           "Exercise normal hits, critical hits and misses with both modifier signs");
     {
@@ -214,12 +250,16 @@ void run()
         settle(*c);
         unsigned total = 0, ground = 0;
         for (const auto &item : c->snapshot().held_items)
+        {
             if (item.definition == "dagger")
             {
                 total += item.quantity;
                 if (!item.holder)
+                {
                     ++ground;
+                }
             }
+        }
         check(total == 5 && ground == 0,
               "Throwing two distinct Light weapons keeps both, like ammunition");
         exact_restore(*c);
@@ -257,12 +297,14 @@ void run()
         check(c->snapshot().actor == 99, "Enemy turn permits reaction test");
         bool moved = false;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{3, 1})
             {
                 check(c->submit(command), "Move out of melee reach");
                 moved = true;
                 break;
             }
+        }
         check(moved && c->snapshot().reaction_pending && offered(*c, "opportunity"),
               "Leaving the adjacent square provokes with the selected Whip");
         exact_restore(*c);
@@ -302,14 +344,20 @@ void run()
         {
             auto c = rules()->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
             while (c->snapshot().actor != 1)
+            {
                 act(*c, "end");
+            }
             act(*c, "melee");
             settle(*c);
             if (rogue_attack_checks::sneaked(*c))
+            {
                 continue;
+            }
             act(*c, "light_melee", 2);
             if (!rogue_attack_checks::sneaked(*c))
+            {
                 continue;
+            }
             check(rogue_attack_checks::sneak_damage(*c) > 0,
                   "A Light attack after a miss applies the unused Sneak Attack automatically");
             exact_restore(*c);
@@ -333,7 +381,9 @@ void run()
                 settle(*c);
             }
             else
+            {
                 act(*c, "end");
+            }
         }
         check(c->snapshot().outcome == Outcome::victory, "Actual victory ends the Light battle");
         p.begin_combat();
@@ -348,8 +398,12 @@ void run()
               "PC/recruited physical inventory and TWF survive campaign reload");
         unsigned count = 0;
         for (const auto &item : restored.member(1).character.inventory().items())
+        {
             if (item.definition_id == "dagger")
+            {
                 count += item.quantity;
+            }
+        }
         check(count == 5, "Throwing never removes a weapon from inventory");
         check(bool(restored.rest(RestKind::short_rest)), "Light user can Short Rest");
         restored.finish_short_rest(restored.state().short_rest->ticket);
@@ -384,6 +438,7 @@ void run()
               "Fighter replaces class TWF and independently retains it as level-four feat");
     }
     for (const auto *klass : {"fighter", "paladin", "ranger"})
+    {
         for (unsigned level = 2; level <= 4; ++level)
         {
             auto h = style_route_checks::leveled(*rules(), klass, "two_weapon_fighting", level);
@@ -398,5 +453,6 @@ void run()
                       .data.starts_with("PC43 "),
                   "TWF and mastery have versioned sourced profiles");
         }
+    }
 }
 } // namespace light_attack_checks

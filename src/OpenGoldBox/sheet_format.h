@@ -15,7 +15,9 @@ inline std::string rich_text_literal(std::string_view value)
 {
     std::string text;
     for (char c : value)
+    {
         text += c == '[' ? "[lb]" : std::string(1, c);
+    }
     return text;
 }
 } // namespace presentation

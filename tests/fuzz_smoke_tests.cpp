@@ -19,7 +19,9 @@ void corpus(const std::filesystem::path &directory, const std::vector<FuzzSeed> 
         std::ofstream output(directory / seed.name, std::ios::binary);
         output.write(reinterpret_cast<const char *>(seed.bytes.data()), seed.bytes.size());
         if (!output)
+        {
             throw std::runtime_error("Could not write synthetic corpus");
+        }
     }
 }
 
@@ -88,7 +90,9 @@ int main(int argc, char **argv)
         {
             std::ifstream input(argv[2], std::ios::binary);
             if (!input)
+            {
                 throw std::runtime_error("Could not read replay input");
+            }
             const std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
             (std::string_view(argv[1]) == "--replay-formats" ? exercise_formats
                                                              : exercise_checkpoint)(bytes);
@@ -96,8 +100,10 @@ int main(int argc, char **argv)
             return 0;
         }
         if (argc != 1)
+        {
             throw std::runtime_error(
                 "Use --write-corpus DIR or --replay-{formats,checkpoint} FILE");
+        }
         // mt19937 output and modulo selection are reproducible across standard
         // libraries; uniform_int_distribution does not promise that property.
         std::mt19937 random(0x4f474246);

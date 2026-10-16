@@ -24,11 +24,17 @@ enum class AdndGroup
 AdndGroup adnd_group(std::string_view class_id)
 {
     if (class_id == "cleric" || class_id == "druid" || class_id == "monk")
+    {
         return AdndGroup::cleric;
+    }
     if (class_id == "wizard" || class_id == "sorcerer" || class_id == "warlock")
+    {
         return AdndGroup::magic_user;
+    }
     if (class_id == "rogue" || class_id == "bard")
+    {
         return AdndGroup::thief;
+    }
     return AdndGroup::fighter;
 }
 
@@ -68,7 +74,9 @@ std::optional<int> adnd_armor(std::string_view definition)
                                         return suit.first == definition;
                                     });
     if (found == suits.end())
+    {
         return std::nullopt;
+    }
     return found->second;
 }
 
@@ -89,16 +97,24 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
     {
         const auto item = m.character.inventory().find(equipped);
         if (!item)
+        {
             throw std::runtime_error("Equipped item is missing");
+        }
         const auto source = m.item_sources.find(equipped);
         const int magic = source == m.item_sources.end() ? 0 : source->second.stored.magic_bonus;
         const auto &definition = item->get().definition_id;
         if (definition == "shield")
+        {
             values.armor_class -= 1 + magic;
+        }
         else if (const auto suit = adnd_armor(definition))
+        {
             values.armor_class -= 10 - *suit + magic;
+        }
         else
+        {
             weapon_bonus = std::max(weapon_bonus, magic);
+        }
     }
     values.thac0 -= weapon_bonus;
     return values;
@@ -108,10 +124,18 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
 bool party_has_item(const CampaignParty &party, unsigned type)
 {
     for (auto id : party.state().slots)
+    {
         if (id)
+        {
             for (const auto &item : party.member(id).character.inventory().items())
+            {
                 if (std::cmp_equal(item.original_type, type))
+                {
                     return true;
+                }
+            }
+        }
+    }
     return false;
 }
 
@@ -119,11 +143,14 @@ unsigned party_strength(const CampaignParty &party)
 {
     unsigned result = 0;
     for (auto id : party.state().slots)
+    {
         if (id)
         {
             const auto &m = party.member(id);
             if (m.vitals.dead)
+            {
                 continue;
+            }
             // The original per-member term (coab CMD_PartyStrength): Cleric level x 4,
             // magic-user level x 8, current HP, 5 per point of AC below 0 and
             // 5 per point of THAC0 below 21.
@@ -140,6 +167,7 @@ unsigned party_strength(const CampaignParty &party)
                                       5 * std::max(0, 21 - adnd.thac0) + magic_user_levels * 8) /
                 10;
         }
+    }
     return result & 255;
 }
 
@@ -147,9 +175,12 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
                                     unsigned effect)
 {
     if (attribute != EclAddress{0x6C1B} || effect)
+    {
         throw std::runtime_error("Unsupported CHECK PARTY attribute/effect conversion");
+    }
     unsigned count = 0, low = 255, high = 0, total = 0;
     for (auto id : party.state().slots)
+    {
         if (id)
         {
             const auto &m = party.member(id);
@@ -161,6 +192,7 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
             total += move;
             ++count;
         }
+    }
     // The fourth output is not recoverable from the scripts; the Slums' Run after
     // a parley compares it with the monsters' speed, as the encounter menu's
     // Flee compares the slowest member, so it is the slowest member too.
@@ -171,7 +203,9 @@ std::array<unsigned, 4> check_party(const CampaignParty &party, EclAddress attri
 EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
 {
     if (slot.index >= 8)
+    {
         throw std::runtime_error("Invalid ECL party position");
+    }
     std::array<std::uint16_t, 285> fields{};
     EclHostReply reply;
     if (const auto id = party.state().slots[slot.index])
@@ -180,19 +214,25 @@ EclHostReply party_character_reply(const CampaignParty &party, PartySlot slot)
         const auto &sheet = m.character.sheet();
         const auto &name = sheet.name;
         for (std::size_t n = 0; n < name.size() && n < 15; ++n)
+        {
             fields[n] = static_cast<unsigned char>(name[n]);
+        }
         fields[0x18] = sheet.scores[rules::Ability::constitution];
         fields[0x100] = m.vitals.dead ? 0 : 1;
         fields[0x119] = m.vitals.hit_points;
         // Every member shows the party's money: the party owns it all.
         const auto coins = script_coins(party.state().wealth);
         for (unsigned n = 0; n < 7; ++n)
+        {
             fields[ecl_coin_addresses[n].location - ecl_character_record.location] =
                 static_cast<std::uint16_t>(coins[n]);
+        }
     }
     for (unsigned n = 0; n < fields.size(); ++n)
+    {
         reply.writes.push_back(
             {EclAddress(static_cast<std::uint16_t>(ecl_character_record.location + n)), fields[n]});
+    }
     reply.writes.push_back({EclAddress{0x6DB1}, static_cast<std::uint16_t>(slot.index)});
     reply.writes.push_back({EclAddress{0x6DB4}, static_cast<std::uint16_t>(slot.index)});
     return reply;

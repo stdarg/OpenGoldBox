@@ -34,7 +34,9 @@ Character hero()
     d.name = "Recovery tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     check(result.advance(*module(), scratch), "Fixture has two levels");
@@ -129,11 +131,13 @@ void validation()
                                                             {0, 0, 0, true, false, {1, 1}},
                                                             {0, 0, 0, false, false, {0, 1}},
                                                             {0, 0, 0, true, false, {0, 14400001}}})
+    {
         rejects(
             [&]
             {
                 life::validate_recovery(invalid);
             });
+    }
 }
 
 std::vector<std::string> rows(std::string_view bytes)
@@ -141,7 +145,9 @@ std::vector<std::string> rows(std::string_view bytes)
     std::istringstream in{std::string(bytes)};
     std::vector<std::string> result;
     for (std::string line; std::getline(in, line);)
+    {
         result.push_back(line);
+    }
     return result;
 }
 
@@ -149,7 +155,9 @@ std::string join(const std::vector<std::string> &lines)
 {
     std::string result;
     for (const auto &line : lines)
+    {
         result += line + '\n';
+    }
     return result;
 }
 
@@ -159,7 +167,9 @@ std::string with_field(const std::string &row, unsigned index, std::string_view 
     std::istringstream fields(row);
     std::string field;
     for (unsigned n = 0; n < index; ++n)
+    {
         fields >> std::quoted(field);
+    }
     fields >> std::ws;
     const auto begin = static_cast<std::size_t>(fields.tellg());
     fields >> field;
@@ -170,8 +180,12 @@ CombatantView actor(const CombatSession &combat, EntityId id)
 {
     const auto s = combat.snapshot();
     for (const auto &a : s.combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -250,11 +264,13 @@ void combat_and_campaign()
           "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 6001 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0",
           "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0",
           "SRD13 1 0 0 0 0 0 0 0 0 0 0 0 0 1 -1 0 0 \"\" 0 1 0 0 0 0 0 FX8 1 0 0"})
+    {
         rejects(
             [&]
             {
                 rules->validate_character_state(character.sheet(), {0, false, invalid});
             });
+    }
     rejects(
         [&]
         {
@@ -264,8 +280,12 @@ void combat_and_campaign()
     // cannot carry one.
     auto bad = rows(combat->save());
     for (unsigned i = 4; i < 7; ++i)
+    {
         if (bad[i].starts_with("1 "))
+        {
             bad[i] = with_field(bad[i], 28, "1");
+        }
+    }
     rejects(
         [&]
         {

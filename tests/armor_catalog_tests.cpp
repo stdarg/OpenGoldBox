@@ -33,7 +33,9 @@ auto module(bool target = false)
     auto content =
         read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules");
     if (target)
+    {
         content += "\ncreature target 1 1000 -10 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
+    }
     return srd5::parse_content(content);
 }
 
@@ -53,7 +55,9 @@ std::vector<Expected> expectations()
     while (std::getline(in, row))
     {
         if (row.empty() || row[0] == '#')
+        {
             continue;
+        }
         std::istringstream fields(row);
         Expected e;
         fields >> e.key >> e.category >> e.ac >> e.strength >> e.stealth >> e.weight >> e.cost >>
@@ -76,11 +80,15 @@ Character hero(std::string klass = "fighter", int strength = 15, int dexterity =
     d.name = "Armor tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     const auto roll = [](int score)
     {
         if (score == 3)
+        {
             return AbilityRoll{{1, 1, 1, 1}, 3};
+        }
         return AbilityRoll{{score - 12, 6, 6, 1}, 3};
     };
     // Low Strength uses three ordinary dice; Dexterity 3 is the negative-modifier boundary.
@@ -93,40 +101,60 @@ Character hero(std::string klass = "fighter", int strength = 15, int dexterity =
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &u : c.snapshot().combatants)
+    {
         if (u.id == id)
+        {
             return u;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
 std::string argument(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == key)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing argument");
 }
 
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack");
 }
 
@@ -218,8 +246,10 @@ void all_classes()
             check(c->snapshot().actor == 1 && unit(*c).initiative == (penalty ? 10 : 14),
                   "Actual initiative uses seed-2 rolls 11/7 once for untrained armor");
             if (klass == "wizard")
+            {
                 check(has(*c, "fire_bolt") == !penalty && has(*c, "magic_missile") == !penalty,
                       "Untrained armor blocks casting; a dagger and shield do not (CLASS-11)");
+            }
             auto copy = rules->restore(c->save());
             const auto before = unit(*c);
             const auto ticket = command(*c, "melee");
@@ -246,6 +276,7 @@ void boundaries()
 {
     auto rules = module();
     for (const auto &e : expectations())
+    {
         if (e.category != "shield")
         {
             for (int dex : {3, 10, 14, 18})
@@ -263,6 +294,7 @@ void boundaries()
                     "Light/full Dexterity, Medium capped positive/uncapped negative, Heavy ignores both");
             }
             for (const auto race : {"human", "dwarf", "goliath"})
+            {
                 for (int strength : {12, 13, 14, 15})
                 {
                     const auto h = hero("fighter", strength, 16, race);
@@ -271,6 +303,7 @@ void boundaries()
                               speed - (strength < e.strength ? 10 : 0),
                           "Strength thresholds apply once to every species, including Dwarf");
                 }
+            }
             const auto h = hero();
             const std::array<std::string, 2> guarded{e.key, "shield"};
             check(rules->character_profile(h.sheet(), guarded).armor_class ==
@@ -287,6 +320,7 @@ void boundaries()
                                                    std::array<std::string, 2>{e.key, e.key});
                 });
         }
+    }
     const auto h = hero();
     rejects(
         [&]

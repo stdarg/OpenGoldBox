@@ -18,7 +18,9 @@ inline godot::String requirements(const opengold::rules::ClassRequirements &requ
     for (const auto ability : requirement.abilities)
     {
         if (!result.is_empty())
+        {
             result += requirement.any ? i18n::text(" or ") : i18n::text(" and ");
+        }
         const auto name = text(ability_short.at(opengold::rules::ability_index(ability)));
         result += i18n::format("{ability} {minimum}",
                                {{"ability", name}, {"minimum", requirement.minimum}});
@@ -30,14 +32,18 @@ inline godot::String adjustment(const opengold::rules::ScoreAdjustment &adjustme
 {
     godot::String result;
     for (const auto ability : opengold::rules::all_abilities)
+    {
         if (adjustment.bonuses[ability])
         {
             if (!result.is_empty())
+            {
                 result += ", ";
+            }
             const auto name = text(ability_short.at(opengold::rules::ability_index(ability)));
             result += i18n::format("{ability} +{bonus}",
                                    {{"ability", name}, {"bonus", adjustment.bonuses[ability]}});
         }
+    }
     return result;
 }
 } // namespace i18n

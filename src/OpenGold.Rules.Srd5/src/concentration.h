@@ -47,7 +47,9 @@ class ConcentrationState
     {
         if (!next.source.scope || !next.source.application || !next.source.caster ||
             !next.remaining_ms || incapacitated_or_dead)
+        {
             throw std::runtime_error("Invalid concentration start");
+        }
         auto old = stop();
         active_ = next;
         return old;
@@ -56,9 +58,13 @@ class ConcentrationState
     std::optional<ConcentrationSource> elapse(std::uint64_t milliseconds)
     {
         if (!active_)
+        {
             return std::nullopt;
+        }
         if (milliseconds >= active_->remaining_ms)
+        {
             return stop();
+        }
         active_->remaining_ms -= milliseconds;
         return std::nullopt;
     }
@@ -78,13 +84,21 @@ class ConcentrationState
                         const std::vector<Effect> &effects = {})
     {
         if (damage_taken < 0)
+        {
             throw std::runtime_error("Invalid concentration damage");
+        }
         if (!active_)
+        {
             return {};
+        }
         if (incapacitated_or_dead)
+        {
             return {std::nullopt, stop()};
+        }
         if (!damage_taken)
+        {
             return {};
+        }
         auto save = saving_throw(Ability::constitution, constitution_save,
                                  std::clamp(damage_taken / 2, 10, 30), modifiers, rng);
         const int inspiration = save.success ? 0 : inspiration_die(effects, save, rng);
@@ -107,8 +121,10 @@ inline void write_concentration(std::ostream &out, const ConcentrationState &sta
 {
     out << "CN1 " << static_cast<int>(state.active().has_value());
     if (const auto &value = state.active())
+    {
         out << ' ' << value->source.scope << ' ' << value->source.application << ' '
             << value->source.caster << ' ' << value->remaining_ms;
+    }
 }
 
 // Parse into a fresh value; malformed fields cannot partially replace an owner.
@@ -122,14 +138,18 @@ inline ConcentrationState read_concentration(std::istream &in)
         in >> token;
         const auto parsed = std::from_chars(token.data(), token.data() + token.size(), value);
         if (!in || parsed.ec != std::errc{} || parsed.ptr != token.data() + token.size())
+        {
             throw std::runtime_error("Invalid concentration field");
+        }
     };
     std::string magic;
     in >> magic;
     unsigned present{};
     number(present);
     if (magic != "CN1" || present > 1)
+    {
         throw std::runtime_error("Invalid concentration record");
+    }
     ConcentrationState result;
     if (present)
     {

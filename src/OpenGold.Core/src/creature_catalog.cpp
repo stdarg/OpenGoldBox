@@ -15,7 +15,9 @@ namespace
 std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 {
     if (!std::filesystem::exists(path))
+    {
         throw CatalogError("Cannot open " + path.string());
+    }
     return detail::read_archive_bytes<CatalogError>(
         path, "Asset exceeds size limit: " + path.string(), "Cannot open " + path.string(),
         "Cannot read " + path.string());
@@ -27,10 +29,14 @@ Archive read_archive(const std::filesystem::path &path)
 {
     auto decoded = decode_dax_archive(read_file(path));
     if (!decoded)
+    {
         throw CatalogError("Invalid DAX archive: " + path.string());
+    }
     Archive records;
     for (auto &record : decoded.records)
+    {
         records.emplace(record.id, std::move(record.bytes));
+    }
     return records;
 }
 
@@ -73,13 +79,21 @@ namespace
 std::string_view item_type_name(std::uint8_t type)
 {
     if (type == 73)
+    {
         return "Arrows";
+    }
     if (type == authored_item::torch)
+    {
         return "Torch";
+    }
     if (type == authored_item::acid)
+    {
         return "Acid";
+    }
     if (type == authored_item::alchemists_fire)
+    {
         return "Alchemist's Fire";
+    }
     // Type IDs, not names of particular enchanted items. Name components remain exposed.
     constexpr std::string_view names[] = {"Unarmed",
                                           "Battle axe",
@@ -242,7 +256,9 @@ AbilityModifiers ability_modifiers(const CharacterRecord &c)
             ac = 7 - a.dexterity;
         }
         else if (a.dexterity == 15)
+        {
             ac = -1;
+        }
         else if (a.dexterity >= 16)
         {
             missile = std::min(3, a.dexterity - 15);
@@ -258,30 +274,42 @@ AbilityModifiers ability_modifiers(const CharacterRecord &c)
                        : a.constitution <= 14 ? 0
                                               : a.constitution - 14;
         for (std::size_t cls = 0; cls < 8; ++cls)
+        {
             result.constitution_hp_per_hit_die_by_class[cls] =
                 cls >= 2 && cls <= 4 ? hp : std::min(hp, 2);
+        }
         if (c.character_class < 8)
+        {
             result.constitution_hp_per_hit_die =
                 result.constitution_hp_per_hit_die_by_class[c.character_class];
+        }
         else if (c.character_class == 17)
+        {
             result.constitution_hp_per_hit_die =
                 std::min(hp, 2); // Non-warrior reference only, not monster HP generation.
+        }
     }
     if (c.strength_bonus_flag_raw <= 1)
+    {
         result.strength_bonus_allowed_hint = c.strength_bonus_flag_raw != 0;
+    }
     return result;
 }
 
 std::string Equipment::label() const
 {
     if (!stored.stored_name.empty())
+    {
         return stored.stored_name;
+    }
     const auto type_name = item_type_name(stored.type);
     std::string name =
         type_name.empty() ? "Item type " + std::to_string(stored.type) : std::string(type_name);
     // Do not label charges on wands, scrolls, or potions as +N enchantments.
     if ((bonuses.weapon_to_hit || bonuses.ac_adjustment) && stored.magic_bonus != 0)
+    {
         name += (stored.magic_bonus > 0 ? " +" : " ") + std::to_string(stored.magic_bonus);
+    }
     return name;
 }
 
@@ -294,23 +322,33 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
         for (const auto &entry : std::filesystem::directory_iterator(directory))
         {
             if (!entry.is_regular_file())
+            {
                 continue;
+            }
             const auto name = detail::upper_ascii(entry.path().filename().string());
             if (name != "ITEMS" && !(name.starts_with("MON") && name.ends_with(".DAX")))
+            {
                 continue;
+            }
             if (!files.emplace(name, entry.path()).second)
+            {
                 throw CatalogError("Ambiguous asset filename: " + name);
+            }
         }
         const auto required = [&](const std::string &name) -> const std::filesystem::path &
         {
             const auto file = files.find(name);
             if (file == files.end())
+            {
                 throw CatalogError("Missing required asset " + name + " in " + directory.string());
+            }
             return file->second;
         };
         const auto templates = decode_item_templates(read_file(required("ITEMS")));
         if (!templates)
+        {
             throw CatalogError("Invalid ITEMS template file");
+        }
         CreatureCatalog catalog;
         for (std::uint8_t bank = 1; bank <= 8; ++bank)
         {
@@ -320,36 +358,52 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
             Archive effects;
             const auto spc_name = prefix + "SPC.DAX";
             if (files.contains(spc_name) || (bank != 1 && bank != 3))
+            {
                 effects = read_archive(required(spc_name));
+            }
             for (const auto &[id, bytes] : items)
+            {
                 if (!characters.contains(id))
+                {
                     throw CatalogError(prefix + "ITM.DAX:" + std::to_string(id) +
                                        " has no matching character");
+                }
+            }
             for (const auto &[id, bytes] : effects)
+            {
                 if (!characters.contains(id))
+                {
                     throw CatalogError(spc_name + ":" + std::to_string(id) +
                                        " has no matching character");
+                }
+            }
             for (const auto &[id, bytes] : characters)
             {
                 Creature creature;
                 creature.id = {bank, id};
                 auto character = decode_character(bytes);
                 if (!character)
+                {
                     throw CatalogError("Invalid character " + creature.id.key());
+                }
                 creature.stored = std::move(*character);
                 creature.abilities = ability_modifiers(creature.stored);
                 if (const auto entry = items.find(id); entry != items.end())
                 {
                     auto decoded = decode_items(entry->second);
                     if (!decoded)
+                    {
                         throw CatalogError("Invalid items " + prefix +
                                            "ITM.DAX:" + std::to_string(id));
+                    }
                     for (auto &item : *decoded)
                     {
                         if (item.type >= templates->size())
+                        {
                             throw CatalogError("Missing item template " +
                                                std::to_string(item.type) + " for " +
                                                creature.id.key());
+                        }
                         Equipment equipment;
                         equipment.index = creature.equipment.size();
                         equipment.base = (*templates)[item.type];
@@ -359,33 +413,43 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
                     }
                 }
                 if (creature.equipment.size() != creature.stored.item_count)
+                {
                     creature.interpretation_notes.emplace_back(
                         "CHA item count differs from the associated ITM record; all ITM items retained.");
+                }
                 if (const auto entry = effects.find(id); entry != effects.end())
                 {
                     auto decoded = decode_effects(entry->second);
                     if (!decoded)
+                    {
                         throw CatalogError("Invalid effects " + spc_name + ":" +
                                            std::to_string(id));
+                    }
                     for (auto &effect : *decoded)
                     {
                         const auto definition = describe_effect(effect.code);
                         if (definition.kind == EffectKind::unknown)
+                        {
                             creature.interpretation_notes.push_back("Unknown SPC effect " +
                                                                     std::to_string(effect.code));
+                        }
                         creature.effects.push_back({std::move(effect), definition});
                     }
                 }
                 if (!creature.abilities.strength_to_hit ||
                     !creature.abilities.dexterity_ac_adjustment ||
                     !creature.abilities.constitution_hp_per_hit_die_by_class[0])
+                {
                     creature.interpretation_notes.emplace_back(
                         "An ability score is outside the supported reference modifier tables.");
+                }
                 catalog.creatures_.emplace(creature.id, std::move(creature));
             }
         }
         if (catalog.creatures_.empty())
+        {
             throw CatalogError("No monster/NPC records found");
+        }
         return catalog;
     }
     catch (const std::filesystem::filesystem_error &error)
@@ -399,7 +463,9 @@ CreatureCatalog::find(CreatureId id) const noexcept
 {
     const auto found = creatures_.find(id);
     if (found == creatures_.end())
+    {
         return std::nullopt;
+    }
     return std::cref(found->second);
 }
 
@@ -409,8 +475,12 @@ CreatureCatalog::find_by_name(std::string_view name) const
     const auto wanted = detail::upper_ascii(name);
     std::vector<std::reference_wrapper<const Creature>> found;
     for (const auto &[id, creature] : creatures_)
+    {
         if (detail::upper_ascii(creature.stored.name) == wanted)
+        {
             found.push_back(std::cref(creature));
+        }
+    }
     return found;
 }
 } // namespace opengold::por

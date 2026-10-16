@@ -62,7 +62,9 @@ Character preview_guard()
     draft.name = "Preview guard";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     return Character(*rules, std::move(draft), {});
 }
 
@@ -83,11 +85,15 @@ presentation::NodeOwner<> combat_scene(const std::shared_ptr<CampaignParty> &par
     auto owned = presentation::instantiate_scene("res://scenes/combat_demo.tscn");
     auto *combat = Object::cast_to<CombatView>(owned.get());
     if (!combat)
+    {
         throw std::runtime_error("Invalid combat scene");
+    }
     combat->set_name("CampaignCombat");
     combat->campaign_party(party, std::move(images));
     if (encounter)
+    {
         combat->campaign_encounter(std::move(*encounter));
+    }
     combat->prepare_combat();
     return owned;
 }
@@ -175,14 +181,20 @@ void CharacterCreationView::setup_party()
 void CharacterCreationView::reincarnate_check()
 {
     if (++reincarnate_frames_ > 4000)
+    {
         throw std::runtime_error("Reincarnation check timed out");
+    }
     // Room for each page to draw before it is captured.
     if (reincarnate_frames_ % 30)
+    {
         return;
+    }
     const auto check = [](bool ok, const char *message)
     {
         if (!ok)
+        {
             throw std::runtime_error(message);
+        }
     };
     const auto press = [&](const char *path)
     {
@@ -212,7 +224,9 @@ void CharacterCreationView::reincarnate_check()
         druid.name = "Druid";
         druid.rolled = true;
         for (auto &roll : druid.rolls)
+        {
             roll = {{6, 5, 4, 1}, 3};
+        }
         druid.training = {{"class:druid", {"nature", "medicine"}},
                           {"class:druid:primal_order", {"warden"}}};
         const auto caster = campaign_->add_pc(Character(*srd5::character_rules(), druid, {}));
@@ -223,7 +237,9 @@ void CharacterCreationView::reincarnate_check()
             if (campaign_->member(caster).character.sheet().level == 8 &&
                 std::find(choice.spells.begin(), choice.spells.end(), "reincarnate") ==
                     choice.spells.end())
+            {
                 choice.spells.back() = "reincarnate";
+            }
             campaign_->advance(caster, choice);
         }
         auto guard = preview_guard();
@@ -232,7 +248,9 @@ void CharacterCreationView::reincarnate_check()
         campaign_->add_coins(Coin::gold, 5000);
         auto state = campaign_->checkpoint();
         for (auto &m : state.roster)
+        {
             if (m.id == fallen)
+            {
                 m.vitals = {
                     0, true,
                     presentation::srd_vitals(
@@ -241,6 +259,8 @@ void CharacterCreationView::reincarnate_check()
                          .hit_dice = 1,
                          .effects = "FX8 2 1 1 113 1 1 \"Fallen companion\" 0 864000000 0 0"}),
                     "Dead"};
+            }
+        }
         campaign_->restore(std::move(state));
         party_action(PartyAction::explore);
         break;
@@ -261,9 +281,13 @@ void CharacterCreationView::reincarnate_check()
         {
             capture("reincarnate-spells.png");
             for (const auto &group : creator_->spell_choice_options().learning)
+            {
                 for (unsigned n = 0; n < group.count; ++n)
+                {
                     creator_->spell_choice(
                         {.group = group.id, .option = group.options[n].id, .selected = true});
+                }
+            }
             press("Next");
         }
         check(creator_->step() == CreationStep::combat_icon, "The combat icon follows");
@@ -366,12 +390,18 @@ void CharacterCreationView::party_layout()
 void CharacterCreationView::party_selected(std::int64_t index)
 {
     if (index < 0 || static_cast<std::size_t>(index) >= campaign_->state().roster.size())
+    {
         return;
+    }
     roster_index_ = index;
     const auto id = campaign_->state().roster[index].id;
     for (unsigned slot = 0; slot < 8; ++slot)
+    {
         if (campaign_->state().slots[slot] == id)
+        {
             campaign_->select(PartySlot{slot});
+        }
+    }
     refresh_party();
 }
 
@@ -394,7 +424,9 @@ void CharacterCreationView::refresh_party()
         members.push_back(PackedStringArray({title, i18n::text(sheet.character_class),
                                              i18n::text(sheet.race), i18n::text(sheet.gender)}));
         if (leader)
+        {
             list->call("mark_leader", list->get_item_count() - 1);
+        }
     }
     list->call("show_members", members);
     auto *items = &required_node<ItemList>(*this, "PartyPanel/Inventory");
@@ -413,9 +445,11 @@ void CharacterCreationView::refresh_party()
             const auto found = std::find(m.equipped.begin(), m.equipped.end(), item.id);
             String prefix;
             if (found != m.equipped.end())
+            {
                 prefix =
                     i18n::text(profile.equipment_positions.at(found - m.equipped.begin()).source) +
                     " / ";
+            }
             items->add_item(prefix + i18n::text(item.name) + " x" +
                             gs(std::to_string(item.quantity)));
         }
@@ -433,9 +467,13 @@ void CharacterCreationView::refresh_party()
         }
     }
     if (state.roster.empty())
+    {
         for (const char *name :
              {"PartyPanel/Portrait", "PartyPanel/ReadySprite", "PartyPanel/ActionSprite"})
+        {
             required_node<TextureRect>(*this, name).set_texture({});
+        }
+    }
     required_node<RichTextLabel>(*this, "PartyPanel/Sheet").call("render", gs(sheet));
     required_node<Label>(*this, "PartyPanel/Status")
         .set_text(
@@ -444,11 +482,15 @@ void CharacterCreationView::refresh_party()
                       "New PCs start with 3d6 × 10 gp / Save game stores this campaign on disk.")
                 : error_);
     for (const char *name : {"Remove", "Rejoin", "Equip"})
+    {
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow1/") + name))
             .set_disabled(state.roster.empty());
+    }
     for (const char *name : {"Unequip", "Explore", "Combat", "Modifiers", "SavingThrows"})
+    {
         required_node<Button>(*this, gs(std::string("PartyPanel/ActionRow2/") + name))
             .set_disabled(state.roster.empty());
+    }
     // Only an active member who is not already the leader can be made leader.
     const auto chosen = state.roster.empty() ? MemberId{} : state.roster[roster_index_].id;
     required_node<Button>(*this, "PartyPanel/MakeLeader")
@@ -461,7 +503,9 @@ void CharacterCreationView::make_roster_leader()
 {
     const auto &roster = campaign_->state().roster;
     if (roster_index_ >= roster.size())
+    {
         return;
+    }
     campaign_->make_leader(roster[roster_index_].id);
     show_leader_change();
 }
@@ -471,7 +515,9 @@ void CharacterCreationView::show_leader_change()
 {
     refresh_party();
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
         town->refresh();
+    }
 }
 
 // Original-data integration check, also runnable in the packaged executable.
@@ -481,13 +527,17 @@ void CharacterCreationView::equipment_art_check()
     const auto require = [](bool ok, const char *message)
     {
         if (!ok)
+        {
             throw std::runtime_error(message);
+        }
     };
     const auto press = [&](const char *path)
     {
         required_node<Button>(*this, path).emit_signal("pressed");
         if (!error_.is_empty())
+        {
             throw std::runtime_error(error_.utf8().get_data());
+        }
     };
     const auto gear = [&](unsigned index, bool equip)
     {
@@ -529,6 +579,7 @@ void CharacterCreationView::equipment_art_check()
     {
         auto *combat = &required_node<CombatView>(*this, "CampaignCombat");
         for (unsigned member = 0; member < 2; ++member)
+        {
             for (bool action : {false, true})
             {
                 const auto texture =
@@ -538,6 +589,7 @@ void CharacterCreationView::equipment_art_check()
                             texture->get_image()->get_data() == expected(member, 34, action),
                         "Combat textures differ from the equipment shown in party previews");
             }
+        }
     };
     if (check_stage_ == 0)
     {
@@ -622,8 +674,10 @@ void CharacterCreationView::equipment_art_check()
             break;
         }
         if (step < 7)
+        {
             verify_preview(member,
                            bodies[step + 1]); // Refresh is synchronous with each control action.
+        }
     }
     else if (check_stage_ == 17)
     {
@@ -701,6 +755,7 @@ void CharacterCreationView::equipment_art_check()
         appearance.combat_body = 24;
         character.appearance(appearance);
         for (const auto &option : body_catalog_->options())
+        {
             if (option.original_type)
             {
                 por::Equipment item;
@@ -711,6 +766,7 @@ void CharacterCreationView::equipment_art_check()
                                     .quantity = 1,
                                     .original_type = option.original_type});
             }
+        }
         character.add_item(
             {.definition_id = "shield", .name = "Shield", .quantity = 1, .original_type = 59});
         const auto id = campaign_->add_pc(std::move(character));
@@ -727,6 +783,7 @@ void CharacterCreationView::equipment_art_check()
                 por::resolve_combat_appearance(campaign_->member(id), *body_catalog_);
             require(resolved.appearance == appearance, "Game equipment changed character anatomy");
             for (bool action : {false, true})
+            {
                 require(required_node<TextureRect>(*this, action ? "PartyPanel/ActionSprite"
                                                                  : "PartyPanel/ReadySprite")
                                 .get_texture()
@@ -737,6 +794,7 @@ void CharacterCreationView::equipment_art_check()
                                                             : por::IconPose::ready))
                                 ->get_data(),
                         "Game preview differs from shared compositor");
+            }
         }
         require(inventory.size() == 48, "Game integration fixture missed reviewer weapons");
     }
@@ -753,10 +811,14 @@ void CharacterCreationView::equipment_art_check()
 bool CharacterCreationView::open_equipment_choice(MemberId member, std::uint64_t item)
 {
     if (campaign_->in_combat())
+    {
         throw std::runtime_error("Equipment cannot change during combat");
+    }
     auto choices = campaign_->equipment_choices(member, item);
     if (choices.empty())
+    {
         return false;
+    }
     // Made the first time an item offers a choice of hands, then kept.
     auto *dialog = Object::cast_to<EquipmentChoiceDialog>(get_node_or_null("EquipmentChoice"));
     if (!dialog)
@@ -790,7 +852,9 @@ void CharacterCreationView::open_reincarnation(std::int64_t caster, std::int64_t
                                                String action)
 {
     if (!campaign_)
+    {
         return;
+    }
     begin_reincarnation(
         {static_cast<MemberId>(caster), static_cast<MemberId>(target), action.utf8().get_data()},
         campaign_->reincarnation_species());
@@ -800,7 +864,9 @@ void CharacterCreationView::begin_reincarnation(Reincarnation spell, const std::
 {
     auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
     if (!town)
+    {
         return;
+    }
     creator_ =
         std::make_unique<CharacterCreator>(srd5::character_rules(), campaign_->rule_module(),
                                            campaign_->member(spell.target).character, species);
@@ -823,7 +889,9 @@ void CharacterCreationView::begin_reincarnation(Reincarnation spell, const std::
 void CharacterCreationView::finish_reincarnation()
 {
     if (!reincarnation_ || !completed_)
+    {
         return;
+    }
     campaign_->reincarnate(*srd5::character_rules(), reincarnation_->caster, reincarnation_->target,
                            reincarnation_->action, creator_->reincarnation_choices(),
                            creator_->appearance());
@@ -849,7 +917,9 @@ void CharacterCreationView::leave_reincarnation()
 void CharacterCreationView::end_reincarnation()
 {
     if (!reincarnation_)
+    {
         return;
+    }
     reincarnation_.reset();
     creator_ = std::make_unique<CharacterCreator>(
         srd5::character_rules(),
@@ -888,7 +958,9 @@ void CharacterCreationView::party_action(PartyAction action)
     try
     {
         if (campaign_defeated_)
+        {
             return;
+        }
         error_ = "";
         String equipment_notice;
         const auto id =
@@ -901,7 +973,9 @@ void CharacterCreationView::party_action(PartyAction action)
         if (action == PartyAction::add_created)
         {
             if (!completed_ || added_to_party_)
+            {
                 return;
+            }
             (void)campaign_->add_pc(*completed_);
             campaign_->add_coins(Coin::gold, creator_->starting_gold());
             added_to_party_ = true;
@@ -913,13 +987,19 @@ void CharacterCreationView::party_action(PartyAction action)
             party_open_ = false;
             required_node<Control>(*this, "PartyPanel").hide();
             if (action == PartyAction::create)
+            {
                 restart();
+            }
             return;
         }
         if (action == PartyAction::remove)
+        {
             campaign_->remove(id);
+        }
         if (action == PartyAction::rejoin)
+        {
             campaign_->rejoin(id);
+        }
         if (action == PartyAction::recruit)
         {
             const auto recruited = campaign_->recruit("preview:guard", preview_guard());
@@ -936,30 +1016,40 @@ void CharacterCreationView::party_action(PartyAction action)
             const auto selection =
                 required_node<ItemList>(*this, "PartyPanel/Inventory").get_selected_items();
             if (selection.is_empty())
+            {
                 throw std::runtime_error("Select an inventory item first");
+            }
             // Copies: equipping can replace the member's inventory, and with it
             // anything still pointing into it (Effective C++ Item 28).
             const auto items = campaign_->member(id).character.inventory().items();
             if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+            {
                 throw std::runtime_error("Select an existing item");
+            }
             const auto selected = items[selection[0]].id;
             const std::string definition = items[selection[0]].definition_id;
             if (action == PartyAction::equip)
             {
                 if (open_equipment_choice(id, selected))
+                {
                     return;
+                }
                 campaign_->equip(id, selected);
                 equipment_notice = i18n::text("Equipped.") + " " +
                                    i18n::text(srd5::equipment_note(
                                        campaign_->member(id).character.sheet(), definition));
             }
             else
+            {
                 campaign_->unequip(id, selected);
+            }
         }
         if (action == PartyAction::explore || action == PartyAction::combat)
         {
             if (!campaign_->selected())
+            {
                 throw std::runtime_error("Add a party member first");
+            }
             if (action == PartyAction::explore)
             {
                 auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
@@ -968,15 +1058,19 @@ void CharacterCreationView::party_action(PartyAction action)
                     auto owned = presentation::instantiate_scene("res://scenes/rolf_tour.tscn");
                     town = Object::cast_to<RolfTourView>(owned.get());
                     if (!town)
+                    {
                         throw std::runtime_error("Invalid exploration scene");
+                    }
                     town->set_name("CampaignTown");
                     town->campaign_party(campaign_);
                     if (OS::get_singleton()->get_cmdline_user_args().has("--save-check-write"))
+                    {
                         town->enable_save_check(
                             [this](const auto &name)
                             {
                                 save_checkpoint_check(name);
                             });
+                    }
                     town->connect("save_requested",
                                   presentation::guarded(this, &CharacterCreationView::open_saves));
                     auto *sheet = &required_node<TownSheetDialog>(*this, "TownSheet");
@@ -1011,13 +1105,17 @@ void CharacterCreationView::party_action(PartyAction action)
             if (auto *combat = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
             {
                 if (!combat->can_leave())
+                {
                     throw std::runtime_error("Finish the fight before returning to the party");
+                }
                 presentation::detach_child(*this, *combat).reset();
             }
             if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
             {
                 if (town->is_visible() && !town->can_leave())
+                {
                     throw std::runtime_error("Finish the dialogue or leave the shop first");
+                }
                 town->hide();
                 town->set_process(false);
                 town->set_process_input(false);
@@ -1030,7 +1128,9 @@ void CharacterCreationView::party_action(PartyAction action)
         panel->show();
         refresh_party();
         if (!equipment_notice.is_empty())
+        {
             required_node<Label>(*this, "PartyPanel/Status").set_text(equipment_notice);
+        }
     }
     catch (const std::exception &e)
     {
@@ -1047,7 +1147,9 @@ void CharacterCreationView::party_check()
     {
         required_node<Button>(*this, node).emit_signal("pressed");
         if (!error_.is_empty())
+        {
             throw std::runtime_error(error_.utf8().get_data());
+        }
     };
     auto *pool = &required_node<CharacterPoolDialog>(*this, "PoolModal");
     if (pool_check_stage_ < 3)
@@ -1056,7 +1158,9 @@ void CharacterCreationView::party_check()
         {
             show_pool();
             if (pool->characters().size() != 48)
+            {
                 throw std::runtime_error("Pool must contain four characters per class");
+            }
         }
         else if (pool_check_stage_ == 1)
         {
@@ -1070,9 +1174,13 @@ void CharacterCreationView::party_check()
                 names.insert(s.name);
                 if (s.level != 1 || *std::min_element(s.scores.begin(), s.scores.end()) < 13 ||
                     *std::max_element(s.scores.begin(), s.scores.end()) > 20)
+                {
                     throw std::runtime_error("Invalid pool ability range");
+                }
                 if (!s.training.complete)
+                {
                     throw std::runtime_error("Preset training must be complete");
+                }
                 art_->validate(c.appearance());
                 pool->select(i);
             }
@@ -1082,7 +1190,9 @@ void CharacterCreationView::party_check()
                             {
                                 return c.second != 4;
                             }))
+            {
                 throw std::runtime_error("Pool class counts or names invalid");
+            }
             pool->select(19);
             required_node<ItemList>(*this, "PoolModal/List").select(19);
         }
@@ -1093,14 +1203,18 @@ void CharacterCreationView::party_check()
                 const auto image =
                     required_node<Window>(*this, "PoolModal").get_texture()->get_image();
                 if (image.is_valid())
+                {
                     image->save_png(ProjectSettings::get_singleton()->globalize_path(
                         "user://checks/character-pool.png"));
+                }
             }
             const auto state = campaign_->checkpoint();
             pool->add();
             pool->add();
             if (campaign_->state().roster.size() != state.roster.size() + 1)
+            {
                 throw std::runtime_error("Pool add or duplicate guard failed");
+            }
             campaign_->restore(state);
             pool->mark_added(*campaign_);
             roster_index_ = 0;
@@ -1124,15 +1238,21 @@ void CharacterCreationView::party_check()
                            ? "Party check Orc fighter"
                            : "Party check Dwarf fighter");
         for (unsigned i = 0; i < 6; ++i)
+        {
             creator_->assign_roll(i, static_cast<rules::Ability>(i));
+        }
         for (unsigned attempt = 0;
              !rules::class_eligible(creator_->rules(), creator_->draft(), "fighter"); ++attempt)
         {
             if (attempt == 100)
+            {
                 throw std::runtime_error("Could not roll qualified party-check fixture");
+            }
             creator_->roll();
             for (unsigned i = 0; i < 6; ++i)
+            {
                 creator_->assign_roll(i, static_cast<rules::Ability>(i));
+            }
         }
         while (creator_->step() != CreationStep::portrait)
         {
@@ -1142,47 +1262,67 @@ void CharacterCreationView::party_check()
                 required_node<CheckBox>(*this, "Training/Rows/Group1/athletics").set_pressed(true);
                 required_node<CheckBox>(*this, "Training/Rows/Group1/history").set_pressed(true);
                 for (const char *mastery : {"longsword", "handaxe", "javelin"})
+                {
                     required_node<CheckBox>(*this, String("Training/Rows/Group2/") + mastery)
                         .set_pressed(true);
+                }
                 required_node<CheckBox>(*this, "Training/Rows/Group0/archery").set_pressed(true);
             }
             // The default Acolyte background brings Magic Initiate (Cleric): its
             // ability, cantrips and spell, each the first one offered.
             if (before == CreationStep::spell_choices)
+            {
                 for (const auto &group :
                      creator_->rules().spell_choice_options(creator_->draft()).learning)
                 {
                     const auto section = String("SpellChoices/Rows/BookChoices/") +
                                          String::utf8(group.id.c_str()).replace(":", "_") + "/";
                     for (unsigned n = 0; n < group.count && n < group.options.size(); ++n)
+                    {
                         required_node<CheckBox>(*this,
                                                 section + String::utf8(group.options[n].id.c_str()))
                             .set_pressed(true);
+                    }
                 }
+            }
             next();
             if (creator_->step() == before)
+            {
                 throw std::runtime_error("Party-check creation did not advance");
+            }
         }
         portrait_part(1);
         next();
         if (creator_->step() != CreationStep::sheet)
+        {
             throw std::runtime_error("Portrait must advance to the character sheet");
+        }
         const auto chosen = completed_->appearance();
         press("AddParty");
         if (campaign_->state().slots[0] == 0)
+        {
             throw std::runtime_error("Add party callback failed");
+        }
         const auto gold = coins(campaign_->state().wealth, Coin::gold);
         if (gold != creator_->starting_gold() || gold < 30 || gold > 180)
+        {
             throw std::runtime_error("A new PC must bring its rolled 3d6 x 10 gp");
+        }
         if (bool(required_node<Control>(*this, "PortraitScroll/PortraitSheet").get("enabled")))
+        {
             throw std::runtime_error("Added portrait controls remained enabled");
+        }
         portrait_part(1);
         if (completed_->appearance() != chosen ||
             campaign_->member(campaign_->state().slots[0]).character.appearance() != chosen)
+        {
             throw std::runtime_error("Party portrait changed after adding");
+        }
         press("PartyPanel/ActionRow1/Recruit");
         if (!campaign_->state().slots[6])
+        {
             throw std::runtime_error("Recruit callback failed");
+        }
         press("PartyPanel/ActionRow1/Remove");
         press("PartyPanel/ActionRow1/Rejoin");
         party_selected(0);
@@ -1196,11 +1336,15 @@ void CharacterCreationView::party_check()
         break;
     case 2:
         if (!required_node<RolfTourView>(*this, "CampaignTown").party_route_checked())
+        {
             return;
+        }
         press("ReturnParty");
         party_selected(0);
         if (campaign_->member(campaign_->selected()).character.inventory().items().size() != 1)
+        {
             throw std::runtime_error("Town purchase missing from party inventory");
+        }
         required_node<ItemList>(*this, "PartyPanel/Inventory").select(0);
         press("PartyPanel/ActionRow1/Equip");
         ++party_check_stage_;
@@ -1209,18 +1353,24 @@ void CharacterCreationView::party_check()
         if (!required_node<RichTextLabel>(*this, "PartyPanel/Sheet")
                  .get_text()
                  .contains("Saving throw"))
+        {
             throw std::runtime_error("Party selection did not display the character sheet");
+        }
         press("PartyPanel/ActionRow2/Modifiers");
         if (!required_node<RichTextLabel>(*this, "ModifiersModal/Text")
                  .get_text()
                  .contains("Shield: +2 AC"))
+        {
             throw std::runtime_error("Party modifiers omitted equipped shield");
+        }
         if (!required_node<RichTextLabel>(*this, "ModifiersModal/Text")
                  .get_text()
                  .contains(OS::get_singleton()->get_cmdline_user_args().has("--adrenaline-check")
                                ? "Adrenaline Rush"
                                : "Resistance to Poison damage"))
+        {
             throw std::runtime_error("Created Dwarf is missing its sourced damage resistance");
+        }
         press("ModifiersModal/Close");
         press("PartyPanel/ActionRow2/SavingThrows");
         if (!required_node<Label>(*this, "SavingThrowsModal/Title")
@@ -1230,7 +1380,9 @@ void CharacterCreationView::party_check()
             !required_node<RichTextLabel>(*this, "SavingThrowsModal/Text")
                  .get_text()
                  .contains("saving throw proficiency"))
+        {
             throw std::runtime_error("Party saving throws did not use selected character");
+        }
         press("SavingThrowsModal/Close");
         capture("party-equipped.png");
         press("PartyPanel/ActionRow2/Combat");
@@ -1240,37 +1392,53 @@ void CharacterCreationView::party_check()
     {
         auto *fight = &required_node<CombatView>(*this, "CampaignCombat");
         if (!fight->can_leave())
+        {
             return;
+        }
         press("ReturnParty");
         capture("party-after-combat.png");
         if (campaign_->in_combat() ||
             campaign_->member(campaign_->state().slots[0]).vitals.resources.empty())
+        {
             throw std::runtime_error("Combat state was not returned");
+        }
         const auto id = campaign_->state().slots[0];
         if (campaign_->member(id).character.sheet().level != 1 || !campaign_->can_advance(id))
+        {
             throw std::runtime_error("XP must wait for explicit level-up confirmation");
+        }
         refresh_advancement_arrows();
         const auto path = "PartyPanel/Roster/Advance" + std::to_string(id);
         press(path.c_str());
         if (!required_node<Window>(*this, "LevelUp").is_visible())
+        {
             throw std::runtime_error("Level-up arrow did not open choices");
+        }
         press("LevelUp/Cancel");
         if (campaign_->member(id).character.sheet().level != 1)
+        {
             throw std::runtime_error("Cancel applied advancement");
+        }
         press(path.c_str());
         press("LevelUp/Confirm");
         const auto slots = campaign_->state().slots;
         for (const auto other : slots)
+        {
             if (other && other != id && campaign_->can_advance(other))
             {
                 open_advancement(other);
                 press("LevelUp/Confirm");
             }
+        }
         const auto sheet = required_node<RichTextLabel>(*this, "PartyPanel/Sheet").get_text();
         if (!sheet.contains("Level 2") || !sheet.contains("XP 300"))
+        {
             throw std::runtime_error("Victory advancement is missing from character sheet");
+        }
         if (OS::get_singleton()->get_cmdline_user_args().has("--save-check-write"))
+        {
             save_checkpoint_check("advancement");
+        }
         ++party_check_stage_;
         break;
     }
@@ -1281,7 +1449,9 @@ void CharacterCreationView::party_check()
         break;
     case 6:
         if (!required_node<RolfTourView>(*this, "CampaignTown").recovery_checked())
+        {
             return;
+        }
         press("ReturnParty");
         ++party_check_stage_;
         break;
@@ -1292,12 +1462,18 @@ void CharacterCreationView::party_check()
         break;
     case 8:
         if (!required_node<CombatView>(*this, "CampaignCombat").can_leave())
+        {
             return;
+        }
         press("ReturnParty");
         if (campaign_->state().roster.at(0).experience != 300)
+        {
             throw std::runtime_error("Reopening party combat duplicated XP");
+        }
         if (OS::get_singleton()->get_cmdline_user_args().has("--save-check-write"))
+        {
             save_checkpoint_check("final");
+        }
         UtilityFunctions::print(
             "Godot party check passed: creation, shops, combat, level-two sheet, recovery services, subsequent combat and exactly-once XP");
         party_check_ = false;
@@ -1322,7 +1498,9 @@ void CharacterCreationView::update_party_navigation()
         catch (const std::exception &e)
         {
             if (!town->reject_combat(e.what()))
+            {
                 throw;
+            }
             return;
         }
         fight = Object::cast_to<CombatView>(owned.get());
@@ -1335,10 +1513,13 @@ void CharacterCreationView::update_party_navigation()
     if (fight)
     {
         if (fight->expedition() && !campaign_defeated_)
+        {
             if (const auto outcome = fight->completed_outcome())
             {
                 if (!town || !town->resolve_combat(*outcome))
+                {
                     throw std::runtime_error("Exploration rejected the combat result");
+                }
                 // After a victory or a flight, exploration resumes.
                 if (outcome->outcome == rules::Outcome::victory ||
                     outcome->outcome == rules::Outcome::fled)
@@ -1351,18 +1532,27 @@ void CharacterCreationView::update_party_navigation()
                     town->resume_party();
                 }
             }
+        }
         if (fight)
         {
             allowed = fight->can_leave();
             if (fight->defeated() && !campaign_defeated_)
+            {
                 show_defeat();
+            }
         }
     }
     if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
         if (town->is_visible())
+        {
             allowed = town->can_leave();
+        }
+    }
     if (campaign_defeated_)
+    {
         allowed = false;
+    }
     auto *button = &required_node<Button>(*this, "ReturnParty");
     button->set_disabled(!allowed);
     button->set_tooltip_text(i18n::text(
@@ -1373,7 +1563,9 @@ void CharacterCreationView::update_party_navigation()
 void CharacterCreationView::expedition_check()
 {
     if (++expedition_frames_ > 20000)
+    {
         throw std::runtime_error("Expedition check timed out");
+    }
     if (!expedition_started_)
     {
         for (unsigned i = 0; i < 6; ++i)
@@ -1394,7 +1586,9 @@ void CharacterCreationView::expedition_check()
         campaign_->award_experience(2700, "fixture:experienced-party");
         const auto slots = campaign_->state().slots;
         for (const auto id : slots)
+        {
             if (id)
+            {
                 for (unsigned level = 2; level <= 4; ++level)
                 {
                     auto choice = campaign_->default_advancement(id);
@@ -1405,14 +1599,20 @@ void CharacterCreationView::expedition_check()
                     }
                     campaign_->advance(id, choice);
                 }
+            }
+        }
         expedition_started_ = true;
         party_action(PartyAction::explore);
         return;
     }
     if (campaign_defeated_)
+    {
         throw std::runtime_error("Expedition fixture was defeated");
+    }
     if (get_node_or_null("CampaignCombat"))
+    {
         return;
+    }
     auto *town = &required_node<RolfTourView>(*this, "CampaignTown");
     if (const auto *state = town->saved_session();
         state && state->can_leave() && state->snapshot().area_id == 20 && !expedition_saved_)
@@ -1423,19 +1623,27 @@ void CharacterCreationView::expedition_check()
                                       "expedition-fixture", state);
         loaded.town->attach_restored_party(campaign_);
         if (encode_campaign(*campaign_, &*loaded.town, "expedition-fixture") != saved)
+        {
             throw std::runtime_error("Slums district save round trip differs");
+        }
         town->restore_campaign(campaign_, std::move(*loaded.town));
         expedition_saved_ = true;
         return;
     }
     if (!town->check_expedition_step())
+    {
         return;
+    }
     const auto *session = town->saved_session();
     if (!session || session->script_variable(por::ecl_slums_orc_victory) != 255)
+    {
         throw std::runtime_error("Four-orc victory flag missing");
+    }
     const auto &rewards = campaign_->state().claimed_rewards;
     if (std::count(rewards.begin(), rewards.end(), "por:ECL2:20:search1:orcs:v1") != 1)
+    {
         throw std::runtime_error("Four-orc XP reward missing or repeated");
+    }
     UtilityFunctions::print(
         "Godot expedition passed: gate, roaming encounter, original arena, four-orc victory, automatic exploration return and town gate.");
     expedition_check_ = false;
@@ -1475,17 +1683,23 @@ void CharacterCreationView::show_defeat()
     campaign_defeated_ = true;
     required_node<Button>(*this, "ReturnParty").hide();
     if (auto *fight = Object::cast_to<CombatView>(get_node_or_null("CampaignCombat")))
+    {
         fight->set_process_input(false);
+    }
     auto *dialog = &required_node<Window>(*this, "Defeat");
     if (!dialog->is_visible())
+    {
         dialog->popup_centered();
+    }
     required_node<Button>(*dialog, "Reload").grab_focus();
 }
 
 void CharacterCreationView::reload_after_defeat()
 {
     if (!campaign_defeated_)
+    {
         return;
+    }
     required_node<Window>(*this, "Defeat").hide();
     open_saves(false);
 }
@@ -1499,13 +1713,17 @@ void CharacterCreationView::save_dialog_visibility_changed()
 void CharacterCreationView::restore_defeat_dialog()
 {
     if (campaign_defeated_ && !required_node<SaveSlots>(*this, "SaveSlots").is_visible())
+    {
         show_defeat();
+    }
 }
 
 void CharacterCreationView::exit_after_defeat()
 {
     if (campaign_defeated_)
+    {
         get_tree()->quit(0);
+    }
 }
 
 void CharacterCreationView::defeat_check()
@@ -1513,7 +1731,9 @@ void CharacterCreationView::defeat_check()
     auto *dialog = &required_node<Window>(*this, "Defeat");
     auto *saves = &required_node<SaveSlots>(*this, "SaveSlots");
     if (++defeat_check_frames_ > 4000)
+    {
         throw std::runtime_error("Defeat check timed out");
+    }
     if (defeat_check_stage_ == 0)
     {
         (void)campaign_->add_pc(preview_guard());
@@ -1522,9 +1742,13 @@ void CharacterCreationView::defeat_check()
         required_node<LineEdit>(*saves, "Name").set_text(i18n::text(N_("Defeat test")));
         required_node<Button>(*saves, "Action").emit_signal("pressed");
         if (saves->is_visible())
+        {
             required_node<Button>(*saves, "Action").emit_signal("pressed");
+        }
         if (saves->is_visible())
+        {
             throw std::runtime_error("Defeat fixture save failed");
+        }
         party_action(PartyAction::combat);
         ++defeat_check_stage_;
         return;
@@ -1532,17 +1756,25 @@ void CharacterCreationView::defeat_check()
     if (defeat_check_stage_ == 1)
     {
         if (!campaign_defeated_)
+        {
             return;
+        }
         auto *fight = &required_node<CombatView>(*this, "CampaignCombat");
         if (!dialog->is_visible() || fight->can_leave() || campaign_->in_combat() ||
             campaign_->state().roster.at(0).vitals.hit_points)
+        {
             throw std::runtime_error("Defeat did not lock gameplay with persisted zero HP");
+        }
         party_action(PartyAction::return_to_party);
         if (!get_node_or_null("CampaignCombat") || !dialog->is_visible())
+        {
             throw std::runtime_error("Return to party bypassed defeat");
+        }
         required_node<Button>(*dialog, "Reload").emit_signal("pressed");
         if (!saves->is_visible() || dialog->is_visible())
+        {
             throw std::runtime_error("Defeat reload did not open save slots");
+        }
         required_node<Button>(*saves, "Cancel").emit_signal("pressed");
         ++defeat_check_stage_;
         return;
@@ -1550,7 +1782,9 @@ void CharacterCreationView::defeat_check()
     if (defeat_check_stage_ == 2)
     {
         if (!dialog->is_visible())
+        {
             throw std::runtime_error("Cancel bypassed defeat");
+        }
         auto *fight = &required_node<CombatView>(*this, "CampaignCombat");
         const auto broken =
             presentation::path_from_godot(ProjectSettings::get_singleton()->globalize_path(
@@ -1567,7 +1801,9 @@ void CharacterCreationView::defeat_check()
             rejected = true;
         }
         if (!rejected || campaign_ != original || !fight->defeated() || !dialog->is_visible())
+        {
             throw std::runtime_error("Rejected defeat load changed campaign");
+        }
         ++defeat_check_stage_;
         defeat_check_frames_ = 0;
         return;
@@ -1575,32 +1811,46 @@ void CharacterCreationView::defeat_check()
     if (defeat_check_stage_ == 3)
     {
         if (defeat_check_frames_ < 4)
+        {
             return;
+        }
         if (capture_)
         {
             const auto image = dialog->get_texture()->get_image();
             if (image.is_null() || image->save_png(ProjectSettings::get_singleton()->globalize_path(
                                        "user://checks/party-defeat.png")) != OK)
+            {
                 throw std::runtime_error("Cannot capture defeat screen");
+            }
         }
         required_node<Button>(*dialog, "Reload").emit_signal("pressed");
         auto *slots = &required_node<ItemList>(*saves, "Slots");
         int selected = -1;
         for (int i = 0; i < slots->get_item_count(); ++i)
+        {
             if (slots->get_item_text(i) == "Defeat test")
+            {
                 selected = i;
+            }
+        }
         if (selected < 0)
+        {
             throw std::runtime_error("Defeat save slot missing");
+        }
         slots->select(selected);
         slots->emit_signal("item_selected", selected);
         required_node<Button>(*saves, "Action").emit_signal("pressed");
         if (!campaign_defeated_ || !saves->is_visible())
+        {
             throw std::runtime_error("Defeat load skipped confirmation");
+        }
         required_node<Button>(*saves, "Action").emit_signal("pressed");
         if (campaign_defeated_ || dialog->is_visible() || saves->is_visible() ||
             get_node_or_null("CampaignCombat") ||
             campaign_->state().roster.at(0).vitals.hit_points == 0)
+        {
             throw std::runtime_error("Confirmed reload did not replace defeated campaign");
+        }
         party_action(PartyAction::combat);
         ++defeat_check_stage_;
         return;

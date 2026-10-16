@@ -18,19 +18,27 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
         for (const auto &entry : std::filesystem::directory_iterator(directory))
         {
             if (!entry.is_regular_file())
+            {
                 continue;
+            }
             auto name = detail::upper_ascii(entry.path().filename().string());
             if (!name.starts_with("ECL") || !name.ends_with(".DAX"))
+            {
                 continue;
+            }
             const auto digits = name.substr(3, name.size() - 7);
             if (!std::all_of(digits.begin(), digits.end(),
                              [](char c)
                              {
                                  return c >= '0' && c <= '9';
                              }))
+            {
                 continue;
+            }
             if (!files.emplace(name, entry.path()).second)
+            {
                 throw EclError("Ambiguous script archive " + name);
+            }
         }
         EclCatalog catalog;
         for (const auto &[name, path] : files)
@@ -40,7 +48,9 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
                                                      "Cannot open " + name, "Cannot read " + name);
             auto dax = decode_dax_archive(bytes);
             if (!dax)
+            {
                 throw EclError("Invalid DAX archive " + name);
+            }
             for (const auto &record : dax.records)
             {
                 auto program =
@@ -50,7 +60,9 @@ EclCatalog EclCatalog::load(const std::filesystem::path &directory)
             }
         }
         if (catalog.programs_.empty())
+        {
             throw EclError("No ECL programs found in " + directory.string());
+        }
         return catalog;
     }
     catch (const std::filesystem::filesystem_error &e)
@@ -84,21 +96,27 @@ auto bound_variable(Table &table, std::uint16_t location) noexcept -> decltype(&
 std::shared_ptr<const EclProgram> required_program(std::shared_ptr<const EclProgram> program)
 {
     if (!program)
+    {
         throw EclError("EclMachine requires a program");
+    }
     return program;
 }
 
 std::uint16_t encoded_address(const EclOperand &arg)
 {
     if (arg.tag >= 128)
+    {
         throw EclError("Expected encoded address");
+    }
     return arg.value;
 }
 
 EclAddress indexed_address(EclAddress base, std::size_t index)
 {
     if (index > 65535U - base.location)
+    {
         throw EclError("Address calculation overflow");
+    }
     return EclAddress(static_cast<std::uint16_t>(base.location + index));
 }
 
@@ -125,7 +143,9 @@ EclConditions equality(bool equal)
 void validate_string(EclAddress address, std::string_view value)
 {
     if (value.size() > 255 || value.find('\0') != std::string_view::npos)
+    {
         throw EclError("ECL string exceeds 255 characters or contains NUL");
+    }
     (void)indexed_address(address, value.size());
 }
 } // namespace
@@ -138,7 +158,9 @@ EclMachine::EclMachine(std::shared_ptr<const EclProgram> program)
 void EclMachine::require_configurable() const
 {
     if (state_ != EclState::idle && state_ != EclState::completed)
+    {
         throw EclError("Cannot configure machine during execution");
+    }
 }
 
 void EclMachine::seed_random(std::uint32_t seed)
@@ -151,7 +173,9 @@ void EclMachine::enable_host(std::uint8_t opcode)
 {
     require_configurable();
     if (!ecl_opcode(opcode).requires_host)
+    {
         throw EclError("Opcode is not a host operation");
+    }
     host_opcodes_.insert(opcode);
 }
 
@@ -159,7 +183,9 @@ void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
 {
     require_configurable();
     if (program_address(address))
+    {
         throw EclError("Program addresses cannot be bound as variables");
+    }
     const std::uint16_t value = byte_address(address) ? v & 255 : v;
     const auto found = std::lower_bound(variables_.begin(), variables_.end(), address.location,
                                         [](const auto &entry, std::uint16_t key)
@@ -167,9 +193,13 @@ void EclMachine::bind_variable(EclAddress address, std::uint16_t v)
                                             return entry.first < key;
                                         });
     if (found != variables_.end() && found->first == address.location)
+    {
         found->second = value;
+    }
     else
+    {
         variables_.insert(found, {address.location, value});
+    }
 }
 
 void EclMachine::bind_string(EclAddress address, std::string_view v)
@@ -180,11 +210,15 @@ void EclMachine::bind_string(EclAddress address, std::string_view v)
     for (std::size_t n = 0; n <= v.size(); ++n)
     {
         if (program_address(indexed_address(address, n)))
+        {
             throw EclError("Program addresses cannot be bound as strings");
+        }
     }
     for (std::size_t n = 0; n <= v.size(); ++n)
+    {
         bind_variable(indexed_address(address, n),
                       n == v.size() ? 0 : static_cast<unsigned char>(v[n]));
+    }
 }
 
 std::uint16_t EclMachine::variable(EclAddress address) const
@@ -193,12 +227,16 @@ std::uint16_t EclMachine::variable(EclAddress address) const
     {
         const auto offset = address.location - EclProgram::origin + 2;
         if (offset >= image_.size())
+        {
             throw EclError("Read beyond loaded script image");
+        }
         return image_[offset];
     }
     const auto *bound = bound_variable(variables_, address.location);
     if (!bound)
+    {
         throw EclError("Unbound variable address " + std::to_string(address.location));
+    }
     return bound->second;
 }
 
@@ -209,9 +247,13 @@ std::string EclMachine::string(EclAddress address) const
     {
         const auto ch = variable(indexed_address(address, n)) & 255;
         if (!ch)
+        {
             return result;
+        }
         if (n == 255)
+        {
             break;
+        }
         result.push_back(static_cast<char>(ch));
     }
     throw EclError("Unterminated ECL string");
@@ -228,39 +270,55 @@ void EclMachine::write(EclAddress address, std::uint16_t v)
         for (auto it = instruction_spans_.begin(); it != instruction_spans_.end();)
         {
             if (address.location >= it->first && address.location < it->second)
+            {
                 it = instruction_spans_.erase(it);
+            }
             else
+            {
                 ++it;
+            }
         }
     }
     else
+    {
         // variable() above has checked the address is bound.
         bound_variable(variables_, address.location)->second = byte_address(address) ? v & 255 : v;
+    }
 }
 
 void EclMachine::write_string(EclAddress address, std::string_view v)
 {
     validate_string(address, v);
     for (std::size_t n = 0; n <= v.size(); ++n)
+    {
         (void)variable(indexed_address(address, n));
+    }
     for (std::size_t n = 0; n <= v.size(); ++n)
+    {
         write(indexed_address(address, n), n == v.size() ? 0 : static_cast<unsigned char>(v[n]));
+    }
 }
 
 std::uint16_t EclMachine::value(const EclOperand &a) const
 {
     // GetEclVariable returns the encoded length/address for strings in numeric roles.
     if (a.tag == 0 || a.tag == 2 || a.tag == 128 || a.tag == 129)
+    {
         return a.value;
+    }
     if (a.tag == 1 || a.tag == 3)
+    {
         return variable(EclAddress{a.value});
+    }
     throw EclError("Numeric operand required");
 }
 
 EclAddress EclMachine::destination(const EclOperand &a) const
 {
     if (a.tag == 128)
+    {
         throw EclError("Inline text is not a destination");
+    }
     // String destinations in real scripts use tag 129 as well as numeric address tags.
     const EclAddress address{a.value};
     (void)variable(address); // Validate before any mutation or request.
@@ -270,20 +328,30 @@ EclAddress EclMachine::destination(const EclOperand &a) const
 std::string EclMachine::text(const EclOperand &a) const
 {
     if (a.tag == 128)
+    {
         return a.text;
+    }
     if (a.tag == 129)
+    {
         return string(EclAddress{a.value});
+    }
     return std::to_string(value(a));
 }
 
 EclInstruction EclMachine::decode(std::uint32_t address)
 {
     if (address < program_->body_start())
+    {
         throw EclError("Target points into the entry table");
+    }
     auto result = program_->instruction(address, image_);
     for (const auto &[start, end] : instruction_spans_)
+    {
         if (start != address && address < end && result.next > start)
+        {
             throw EclError("Overlapping instruction or target inside operand data");
+        }
+    }
     instruction_spans_[address] = result.next;
     return result;
 }
@@ -298,7 +366,9 @@ bool EclMachine::start(std::size_t slot)
 {
     if (slot >= program_->entries().size() ||
         (state_ != EclState::idle && state_ != EclState::completed))
+    {
         return false;
+    }
     pc_ = program_->entries()[slot];
     state_ = EclState::running;
     stack_.clear();
@@ -316,7 +386,9 @@ bool EclMachine::start(std::size_t slot)
         {
             const auto entry = program_->instruction(cursor, image_);
             if (entry.opcode != 1)
+            {
                 throw EclError("Modified entry is not GOTO");
+            }
             pc_ = encoded_address(entry.operands[0]);
             cursor = entry.next;
         }
@@ -333,7 +405,9 @@ bool EclMachine::start(std::size_t slot)
 bool EclMachine::start_at_for_inspection(std::uint32_t address)
 {
     if (state_ != EclState::idle && state_ != EclState::completed)
+    {
         return false;
+    }
     try
     {
         (void)decode(address);
@@ -359,7 +433,9 @@ void EclMachine::execute(const EclInstruction &i)
 {
     const auto &spec = ecl_opcode(i.opcode);
     if (!spec.executable)
+    {
         throw EclError("Unsupported execution: " + std::string(spec.name));
+    }
     const auto &a = i.operands;
     // These are explicit no-ops in PoR PC, unlike later games. Never call a DOS pointer.
     if (i.opcode == 59)
@@ -403,13 +479,17 @@ void EclMachine::execute(const EclInstruction &i)
         return;
     case 2:
         if (stack_.size() >= 256)
+        {
             throw EclError("Subroutine stack limit exceeded");
+        }
         jump(encoded_address(a[0]));
         stack_.push_back(i.next);
         return;
     case 19:
         if (stack_.empty())
+        {
             break; // PoR ignores an empty return stack.
+        }
         jump(stack_.back());
         stack_.pop_back();
         return;
@@ -432,7 +512,9 @@ void EclMachine::execute(const EclInstruction &i)
         const auto equals = [&](std::size_t n)
         {
             if (a[n].tag >= 128 && a[n + 1].tag >= 128)
+            {
                 return text(a[n]) == text(a[n + 1]);
+            }
             return value(a[n]) == value(a[n + 1]);
         };
         const bool first = equals(0), second = equals(2);
@@ -450,24 +532,38 @@ void EclMachine::execute(const EclInstruction &i)
         const auto dest = destination(a[2]);
         std::uint32_t v = 0;
         if (i.opcode == 4)
+        {
             v = lhs + rhs;
+        }
         if (i.opcode == 5)
+        {
             v = rhs - lhs; // Reference SUBTRACT operand order.
+        }
         if (i.opcode == 6)
         {
             if (!rhs)
+            {
                 throw EclError("Division by zero");
+            }
             v = lhs / rhs; // PoR does not save the remainder.
         }
         if (i.opcode == 7)
+        {
             v = lhs * rhs;
+        }
         if (i.opcode == 47)
+        {
             v = lhs & rhs;
+        }
         if (i.opcode == 48)
+        {
             v = lhs | rhs;
+        }
         write(dest, static_cast<std::uint16_t>(v & 65535));
         if (i.opcode == 47 || i.opcode == 48)
+        {
             conditions_ = equality(v == 0);
+        }
         break;
     }
     case 8:
@@ -489,9 +585,13 @@ void EclMachine::execute(const EclInstruction &i)
     {
         const auto dest = destination(a[1]);
         if (a[0].tag == 128 || (a[0].tag == 129 && a[1].tag == 129))
+        {
             write_string(dest, text(a[0]));
+        }
         else
+        {
             write(dest, a[0].tag == 129 ? a[0].value : value(a[0]));
+        }
         break;
     }
     case 42:
@@ -532,9 +632,13 @@ void EclMachine::execute(const EclInstruction &i)
         EclRequest request;
         request.kind = EclRequestKind::text;
         if (i.opcode == 17 || i.opcode == 18)
+        {
             request.text = text(a[0]);
+        }
         if (i.opcode == 51)
+        {
             request.text = "\n";
+        }
         request.clear = i.opcode == 18 || i.opcode == 61;
         request.instruction = i;
         request.id = next_request_++;
@@ -549,25 +653,35 @@ void EclMachine::execute(const EclInstruction &i)
         const auto dest = destination(a[i.opcode == 44 ? 5 : 0]);
         const auto count = i.opcode == 44 ? 5 : a[spec.operands - 1].value;
         if (!count)
+        {
             throw EclError("Empty menu is not supported");
+        }
         EclRequest request;
         request.kind = EclRequestKind::menu;
         request.vertical = i.opcode == 21;
         if (request.vertical)
+        {
             request.text = text(a[1]);
+        }
         std::vector<std::uint16_t> results;
         if (i.opcode == 44)
         {
             request.choices = {"HAUGHTY", "SLY", "NICE", "MEEK", "ABUSIVE"};
             for (std::size_t n = 0; n < 5; ++n)
+            {
                 results.push_back(value(a[n]));
+            }
         }
         else
         {
             for (std::size_t n = spec.operands; n < a.size(); ++n)
+            {
                 request.choices.push_back(text(a[n]));
+            }
             for (std::uint16_t n = 0; n < count; ++n)
+            {
                 results.push_back(n);
+            }
         }
         request.instruction = i;
         request.id = next_request_++;
@@ -598,10 +712,14 @@ void EclMachine::execute(const EclInstruction &i)
         if (index < a[1].value)
         {
             if (i.opcode == 38 && stack_.size() >= 256)
+            {
                 throw EclError("Subroutine stack limit exceeded");
+            }
             jump(encoded_address(a[2 + index]));
             if (i.opcode == 38)
+            {
                 stack_.push_back(i.next);
+            }
             return;
         }
         break; // Zero-based dispatch; out-of-range falls through.
@@ -630,28 +748,36 @@ EclHostArgument::EclHostArgument(std::string text) noexcept
 std::uint16_t EclHostArgument::number() const
 {
     if (kind_ != EclArgumentKind::number)
+    {
         throw EclError("Host argument is not a number");
+    }
     return value_;
 }
 
 EclAddress EclHostArgument::address() const
 {
     if (kind_ != EclArgumentKind::address)
+    {
         throw EclError("Host argument is not an address");
+    }
     return EclAddress{value_};
 }
 
 const std::string &EclHostArgument::text() const
 {
     if (kind_ != EclArgumentKind::text)
+    {
         throw EclError("Host argument is not text");
+    }
     return text_;
 }
 
 void EclMachine::request_host(const EclInstruction &i)
 {
     if (!host_opcodes_.contains(i.opcode))
+    {
         throw EclError("Host capability unavailable: " + std::string(ecl_opcode(i.opcode).name));
+    }
     EclRequest request;
     request.kind = EclRequestKind::host;
     request.instruction = i;
@@ -665,17 +791,23 @@ void EclMachine::request_host(const EclInstruction &i)
             output || (op == 30 && n == 0) || (op == 35 && n < 2) || op == 45 || op == 60;
         const bool is_text = op == 57 || (op == 41 && n >= 9 && n <= 11);
         if (address)
+        {
             request.arguments.emplace_back(output ? destination(operand)
                                                   : EclAddress{op == 60 && operand.tag == 129
                                                                    ? operand.value
                                                                    : encoded_address(operand)});
+        }
         else if (is_text)
+        {
             request.arguments.emplace_back(text(operand));
+        }
         else
         {
             std::uint16_t number = value(operand);
             if (op != 39 || n == 7)
+            {
                 number &= 255;
+            }
             request.arguments.emplace_back(number);
         }
     }
@@ -692,10 +824,14 @@ EclRunResult EclMachine::run(std::size_t budget)
         try
         {
             if (total_instructions_ >= 1000000)
+            {
                 throw EclError("Invocation instruction limit exceeded");
+            }
             const auto instruction = decode(pc_);
             if (trace_.size() == 64)
+            {
                 trace_.erase(trace_.begin());
+            }
             trace_.push_back(pc_);
             ++count;
             ++total_instructions_;
@@ -717,15 +853,21 @@ EclRunResult EclMachine::run(std::size_t budget)
 bool EclMachine::resume(std::uint64_t id, std::optional<std::size_t> choice)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id)
+    {
         return false;
+    }
     if (pending_->kind == EclRequestKind::menu)
     {
         if (!choice || *choice >= pending_->choices.size())
+        {
             return false;
+        }
         write(*destination_, menu_values_[*choice]);
     }
     else if (pending_->kind != EclRequestKind::text || choice)
+    {
         return false;
+    }
     finish_request();
     return true;
 }
@@ -742,7 +884,9 @@ bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
         input.size() > pending_->input_limit)
+    {
         return false;
+    }
     try
     {
         if (pending_->kind == EclRequestKind::input_number)
@@ -750,7 +894,9 @@ bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
             std::uint16_t v{};
             const auto [end, ec] = std::from_chars(input.data(), input.data() + input.size(), v);
             if (input.empty() || ec != std::errc{} || end != input.data() + input.size())
+            {
                 return false;
+            }
             write(*destination_, v);
         }
         else if (pending_->kind == EclRequestKind::input_string)
@@ -759,12 +905,18 @@ bool EclMachine::resume_input(std::uint64_t id, std::string_view input)
             // so answers such as OHLO match however they were typed.
             std::string typed(input.empty() ? std::string_view(" ") : input);
             for (auto &c : typed)
+            {
                 if (c >= 'a' && c <= 'z')
+                {
                     c = static_cast<char>(c - 'a' + 'A');
+                }
+            }
             write_string(*destination_, typed);
         }
         else
+        {
             return false;
+        }
     }
     catch (const EclError &)
     {
@@ -778,14 +930,18 @@ unsigned EclMachine::host_random(std::uint64_t id, unsigned count)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
         pending_->kind != EclRequestKind::host || !count || count > 65536)
+    {
         throw EclError("Invalid host random request");
+    }
     return draw(count);
 }
 
 unsigned EclMachine::engine_random(unsigned count)
 {
     if (state_ == EclState::waiting || !count || count > 65536)
+    {
         throw EclError("Invalid engine random request");
+    }
     return draw(count);
 }
 
@@ -804,18 +960,24 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
 {
     if (state_ != EclState::waiting || !pending_ || pending_->id != id ||
         pending_->kind != EclRequestKind::host)
+    {
         return false;
+    }
     const auto opcode = pending_->instruction->opcode;
     if ((opcode == 32) != static_cast<bool>(reply.next_program) ||
         (opcode == 50) != reply.conditions.has_value())
+    {
         return false;
+    }
     if (reply.conditions && ((*reply.conditions)[0] == (*reply.conditions)[1] ||
                              std::any_of(reply.conditions->begin() + 2, reply.conditions->end(),
                                          [](bool v)
                                          {
                                              return v;
                                          })))
+    {
         return false;
+    }
     // Validate the entire reply, including required output arguments, before applying writes.
     std::set<EclAddress> addresses;
     try
@@ -824,13 +986,19 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
         {
             (void)variable(w.address);
             if (!addresses.insert(w.address).second)
+            {
                 return false;
+            }
         }
         for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
+        {
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
                  (opcode == 41 && n == 3)) &&
                 !addresses.contains(pending_->arguments[n].address()))
+            {
                 return false;
+            }
+        }
     }
     catch (const EclError &)
     {
@@ -838,9 +1006,13 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
     }
     auto next_image = reply.next_program ? reply.next_program->raw() : std::vector<std::uint8_t>{};
     for (const auto &w : reply.writes)
+    {
         write(w.address, w.value);
+    }
     if (reply.conditions)
+    {
         conditions_ = *reply.conditions;
+    }
     finish_request();
     if (reply.next_program)
     {
@@ -854,7 +1026,9 @@ void EclMachine::switch_program(std::shared_ptr<const EclProgram> next)
 {
     require_configurable();
     if (!next)
+    {
         throw EclError("Missing program");
+    }
     auto image = next->raw();
     load_program(std::move(next), std::move(image));
 }
@@ -868,8 +1042,12 @@ void EclMachine::load_program(std::shared_ptr<const EclProgram> next,
     stack_.clear();
     conditions_.fill(false);
     for (auto &[address, v] : variables_)
+    {
         if (address >= 0x4A00 && address <= 0x4A1F)
+        {
             v = 0;
+        }
+    }
     state_ = EclState::completed;
     pc_ = program_->entries()[4];
 }

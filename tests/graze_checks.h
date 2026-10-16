@@ -9,10 +9,14 @@ auto rules(std::string_view defense)
     std::string text{std::istreambuf_iterator<char>(in), {}};
     text += "\ncreature graze_target 25 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     if (defense == "resistance_vulnerability")
+    {
         text +=
             "affinity graze_target ward resistance all\naffinity graze_target weakness vulnerability all\n";
+    }
     else if (!defense.empty())
+    {
         text += "affinity graze_target ward " + std::string(defense) + " all\n";
+    }
     return srd5::parse_content(text);
 }
 
@@ -20,7 +24,9 @@ void ui_fixtures()
 {
     const auto output = std::getenv("OPENGOLD_GRAZE_FIXTURES");
     if (!output)
+    {
         return;
+    }
     const auto directory = std::filesystem::path(output);
     std::filesystem::create_directories(directory);
     auto r = module();
@@ -33,7 +39,9 @@ void ui_fixtures()
         const auto before = c->save();
         act(*c, "melee", 99);
         if (!c->snapshot().optional_effect_choice)
+        {
             continue;
+        }
         const auto write = [&](const char *name, const std::string &bytes)
         {
             std::ofstream out(directory / (std::string(name) + ".save"), std::ios::binary);
@@ -70,14 +78,20 @@ void reactions_and_limits()
             act(*c, "end");
             Command move;
             for (const auto &offered : c->legal_commands())
+            {
                 if (offered.verb == "move" && offered.destination == Cell{edge + 1, 1})
+                {
                     move = offered;
+                }
+            }
             check(!move.verb.empty() && c->submit(move) && c->snapshot().reaction_pending,
                   "Enemy leaving reach provokes Graze-capable reaction");
             const auto position = unit(*c, 99).cell;
             act(*c, "opportunity", 99);
             if (!c->snapshot().optional_effect_choice)
+            {
                 continue;
+            }
             check(unit(*c, 99).cell == position && !unit(*c, 1).reaction,
                   "Pending miss retains interrupted movement and spent Reaction");
             const auto pending = c->save();
@@ -99,7 +113,9 @@ void reactions_and_limits()
         auto draft = hero("greatsword", "fighter", "soldier").creation_data();
         const int face = score / 3;
         for (auto &roll : draft.rolls)
+        {
             roll = {{face, face, face + score % 3, 1}, 3};
+        }
         draft.training["class:fighter:fighting_style"] = {"great_weapon_fighting"};
         Character h(*srd5::character_rules(), draft, {});
         auto r = rules("");
@@ -114,14 +130,18 @@ void reactions_and_limits()
             if (h.sheet().modifiers[Ability::strength] <= 0)
             {
                 if (!result(*c).source.ends_with("misses."))
+                {
                     continue;
+                }
                 check(!c->snapshot().optional_effect_choice && unit(*c, 99).hit_points == 1000,
                       "Nonpositive modifiers do not produce a pointless Graze prompt");
                 tested = true;
                 continue;
             }
             if (!c->snapshot().optional_effect_choice)
+            {
                 continue;
+            }
             const int hp = unit(*c, 99).hit_points;
             act(*c, "effect_use");
             check(unit(*c, 99).hit_points == hp - h.sheet().modifiers[Ability::strength],
@@ -148,6 +168,7 @@ void reactions_and_limits()
 void advancement_and_rejection()
 {
     for (const auto klass : {"fighter", "paladin", "ranger"})
+    {
         for (unsigned level = 1; level <= 4; ++level)
         {
             auto r = rules("");
@@ -158,7 +179,9 @@ void advancement_and_rejection()
             party.equip(id, 1);
             party.award_experience(2700, "graze-levels");
             while (party.member(id).character.sheet().level < int(level))
+            {
                 party.advance(id, party.default_advancement(id));
+            }
             auto actors = party.participants();
             actors.front().cell = {1, 1};
             actors.push_back({99, "graze_target", "Target", Side::opposition, {2, 1}});
@@ -168,10 +191,14 @@ void advancement_and_rejection()
                 auto c = r->create({{12, 8, std::vector<Terrain>(96)}, actors, 777}, seed);
                 turn(*c, 1);
                 if (offers(*c, "action_surge"))
+                {
                     act(*c, "action_surge");
+                }
                 act(*c, "melee", 99);
                 if (!c->snapshot().optional_effect_choice)
+                {
                     continue;
+                }
                 const auto pending = c->save();
                 check(r->restore(pending)->save() == pending,
                       "Physical and advanced sources retain pending choice");
@@ -186,8 +213,10 @@ void advancement_and_rejection()
                 check(!c->submit(stale) && c->save() == after,
                       "A stale Use cannot deal damage again");
                 if (std::string_view(klass) == "fighter" && level >= 2)
+                {
                     check(offers(*c, "melee"),
                           "Graze preserves the separate Action Surge allowance");
+                }
                 auto bad = pending;
                 bad.replace(bad.find(r->identity().version), 6, "0.6.58");
                 rejects(
@@ -199,7 +228,9 @@ void advancement_and_rejection()
                 // flight lines.
                 auto selection_line = pending.size() - 1;
                 for (int line = 0; line < 4; ++line)
+                {
                     selection_line = pending.rfind('\n', selection_line - 1);
+                }
                 ++selection_line;
                 const auto selection_end = pending.find('\n', selection_line) + 1;
                 for (const char *invalid : {"99999 99 1 1 1\n", "1 1 1 1 1\n", "1 99 20 1 1\n"})
@@ -216,14 +247,18 @@ void advancement_and_rejection()
             }
             check(tested, "Every currently supported advancement route actually missed");
         }
+    }
 }
 
 void run()
 {
     unsigned cases = 0;
     for (const auto key : {"glaive", "greatsword"})
+    {
         for (const auto klass : {"fighter", "barbarian", "paladin", "ranger"})
+        {
             for (bool npc : {false, true})
+            {
                 for (const auto defense :
                      {"", "resistance", "vulnerability", "immunity", "resistance_vulnerability"})
                 {
@@ -289,6 +324,9 @@ void run()
                     }
                     check(tested, "Each Graze source/weapon/defense actually misses");
                 }
+            }
+        }
+    }
     check(cases == 80, "Full Graze source matrix ran");
     reactions_and_limits();
     advancement_and_rejection();

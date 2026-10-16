@@ -50,30 +50,44 @@ std::vector<std::uint8_t> archive(const std::filesystem::path &directory, std::s
 {
     std::optional<std::filesystem::path> path;
     for (const auto &entry : std::filesystem::directory_iterator(directory))
+    {
         if (entry.is_regular_file())
         {
             auto name = entry.path().filename().string();
             for (auto &c : name)
+            {
                 if (c >= 'a' && c <= 'z')
+                {
                     c -= 32;
+                }
+            }
             if (name == wanted)
             {
                 if (path)
+                {
                     throw std::runtime_error("Ambiguous art archive: " + std::string(wanted));
+                }
                 path = entry.path();
             }
         }
+    }
     if (!path)
+    {
         throw std::runtime_error("Missing art archive: " + std::string(wanted));
+    }
     const auto size = std::filesystem::file_size(*path);
     if (size > 32 * 1024 * 1024)
+    {
         throw std::runtime_error("Art archive exceeds size limit");
+    }
     std::ifstream input(*path, std::ios::binary);
     std::vector<std::uint8_t> bytes(static_cast<std::size_t>(size));
     if (!input ||
         !input.read(reinterpret_cast<char *>(bytes.data()), static_cast<std::streamsize>(size)) ||
         input.peek() != EOF)
+    {
         throw std::runtime_error("Cannot read art archive: " + std::string(wanted));
+    }
     return bytes;
 }
 
@@ -81,8 +95,10 @@ Ref<ImageTexture> icon(const std::vector<std::uint8_t> &bytes, unsigned record, 
 {
     auto decoded = opengold::decode_ega_combat_icon(bytes, record, frame);
     if (!decoded)
+    {
         throw std::runtime_error("Missing or invalid combat sprite pose: " +
                                  std::to_string(record));
+    }
     return presentation::image_texture(decoded.image);
 }
 } // namespace
@@ -99,7 +115,9 @@ void CombatSpriteDemo::_ready()
 {
     create_controls();
     if (Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     try
     {
         load_art();
@@ -112,8 +130,12 @@ void CombatSpriteDemo::_ready()
         set_process(false);
         get_node<Label>("Status")->set_text(gs("Cannot load sprite demo: ") + gs(error.what()));
         for (int i = 0; i < get_child_count(); ++i)
+        {
             if (auto *button = Object::cast_to<Button>(get_child(i)))
+            {
                 button->set_disabled(true);
+            }
+        }
     }
 }
 
@@ -132,9 +154,13 @@ void CombatSpriteDemo::create_controls()
     connect_button("BodyPrevious", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, -1));
     connect_button("BodyNext", callable_mp(this, &CombatSpriteDemo::change_part).bind(1, 1));
     for (unsigned part = 0; part < 6; ++part)
+    {
         for (unsigned bank = 0; bank < 2; ++bank)
+        {
             connect_button(("Color" + std::to_string(bank) + "_" + std::to_string(part)).c_str(),
                            callable_mp(this, &CombatSpriteDemo::select_color).bind(bank, part));
+        }
+    }
     for (unsigned index = 0; index < 16; ++index)
     {
         auto *button = get_node<Button>(gs("Palette" + std::to_string(index)));
@@ -148,13 +174,17 @@ void CombatSpriteDemo::load_art()
 {
     auto configured = OS::get_singleton()->get_environment("OPENGOLD_GAME_DIR");
     if (configured.is_empty())
+    {
         configured = ProjectSettings::get_singleton()->get_setting("opengold/game_directory", "");
+    }
     const auto directory = presentation::path_from_godot(configured);
     art_ = opengold::por::CharacterArt::load(directory);
     appearance_.combat_body = 4; // A weapon and shield expose all customization regions.
     const auto tiles = archive(directory, "DUNGCOM.DAX");
     for (unsigned frame = 0; frame < 25; ++frame)
+    {
         terrain_.push_back(icon(tiles, 1, frame));
+    }
     // A wide authored room goes through the same dungeon geometry generator as combat.
     opengold::por::GeoMap map;
     for (unsigned x = 7; x <= 10; ++x)
@@ -194,8 +224,10 @@ void CombatSpriteDemo::load_art()
         figures_.push_back(std::move(figure));
     }
     for (const auto &figure : figures_)
+    {
         get_node<TextureRect>(String("BattlefieldScroll/Canvas/") + figure.node)
             ->set_tooltip_text(gs(figure.label));
+    }
 }
 
 void CombatSpriteDemo::refresh_players()
@@ -228,13 +260,17 @@ void CombatSpriteDemo::refresh_colors()
         return tall_usage.contains(bank, part) || small_usage.contains(bank, part);
     };
     if (!present(color_bank_, color_part_))
+    {
         for (unsigned i = 0; i < 12; ++i)
+        {
             if (present(i / 6, i % 6))
             {
                 color_bank_ = i / 6;
                 color_part_ = i % 6;
                 break;
             }
+        }
+    }
     get_node<Label>("Head")->set_text(gs("Head ") + String::num_int64(appearance_.combat_head + 1) +
                                       " / 14");
     get_node<Label>("Body")->set_text(gs("Weapon ") +
@@ -243,6 +279,7 @@ void CombatSpriteDemo::refresh_colors()
         ->set_text(gs(presentation::character_regions[color_part_]) + " / Color-" +
                    String::num_int64(color_bank_ + 1) + ": choose a color");
     for (unsigned bank = 0; bank < 2; ++bank)
+    {
         for (unsigned part = 0; part < 6; ++part)
         {
             auto *button =
@@ -255,9 +292,12 @@ void CombatSpriteDemo::refresh_colors()
             color_button(*button, appearance_.colors[bank][part],
                          color_bank_ == bank && color_part_ == part);
         }
+    }
     for (unsigned index = 0; index < 16; ++index)
+    {
         color_button(*get_node<Button>(gs("Palette" + std::to_string(index))), index,
                      appearance_.colors[color_bank_][color_part_] == index);
+    }
 }
 
 void CombatSpriteDemo::refresh_figures()
@@ -270,9 +310,13 @@ void CombatSpriteDemo::refresh_figures()
     get_node<Label>("Pose")->set_text(
         gs(action_ ? "Action pose · 1 second" : "Ready pose · 1 second"));
     for (const char *name : {"Minus100", "Minus10"})
+    {
         get_node<Button>(name)->set_disabled(zoom_ == min_zoom);
+    }
     for (const char *name : {"Plus100", "Plus10"})
+    {
         get_node<Button>(name)->set_disabled(zoom_ == max_zoom);
+    }
     String sizes = canvas->call("report_heading");
     for (unsigned i = 0; i < figures_.size(); ++i)
     {
@@ -288,10 +332,12 @@ void CombatSpriteDemo::refresh_figures()
             String(canvas->call("report_figure_label", gs(figure.label), static_cast<int>(i))) +
             "  " + dimensions(source) + gs(" → ") + dimensions(sprite->get_size()) + " px";
         if (i < player_count)
+        {
             sizes +=
                 gs("  · ") + gs("Visible figure: ") +
                 dimensions(Vector2(canvas->call("visible_size", figure.node, source, bounds))) +
                 " px";
+        }
         sizes += "\n";
     }
     get_node<RichTextLabel>("Sizes")->set_text(sizes);
@@ -302,14 +348,20 @@ Dictionary CombatSpriteDemo::sprite_visuals() const
 {
     Dictionary data;
     if (!loaded_)
+    {
         return data;
+    }
     data["width"] = battlefield_.geometry.width;
     data["height"] = battlefield_.geometry.height;
     data["zoom"] = zoom_;
     Array tiles, figures;
     for (int y = 0; y < battlefield_.geometry.height; ++y)
+    {
         for (int x = 0; x < battlefield_.geometry.width; ++x)
+        {
             tiles.push_back(terrain_.at(battlefield_.tiles[y * battlefield_.geometry.width + x]));
+        }
+    }
     for (const auto &figure : figures_)
     {
         Dictionary entry;
@@ -326,9 +378,13 @@ Dictionary CombatSpriteDemo::sprite_visuals() const
 void CombatSpriteDemo::zoom_by(int amount)
 {
     if (!loaded_)
+    {
         return;
+    }
     if (!center_pending_)
+    {
         center_cell_ = get_node<Control>("BattlefieldScroll/Canvas")->call("center_cell", zoom_);
+    }
     zoom_ = std::clamp(zoom_ + amount, min_zoom, max_zoom);
     refresh_figures();
 }
@@ -336,7 +392,9 @@ void CombatSpriteDemo::zoom_by(int amount)
 void CombatSpriteDemo::change_part(int part, int direction)
 {
     if (!loaded_)
+    {
         return;
+    }
     auto &index = part == 0 ? appearance_.combat_head : appearance_.combat_body;
     const int count = part == 0 ? 14 : 35;
     index = (static_cast<int>(index) + direction + count) % count;
@@ -365,10 +423,14 @@ void CombatSpriteDemo::recolor(int index)
 void CombatSpriteDemo::_process(double delta)
 {
     if (!loaded_ || !std::isfinite(delta) || delta < 0)
+    {
         return;
+    }
     if (center_pending_)
+    {
         center_pending_ = !static_cast<bool>(get_node<Control>("BattlefieldScroll/Canvas")
                                                  ->call("center_when_ready", center_cell_, zoom_));
+    }
     elapsed_ = std::fmod(elapsed_ + delta, 2.0);
     const bool action = elapsed_ >= 1;
     if (action != action_)
@@ -392,7 +454,9 @@ void CombatSpriteDemo::_input(const Ref<InputEvent> &event)
 void CombatSpriteDemo::request_capture()
 {
     if (capture_pending_)
+    {
         return;
+    }
     if (DisplayServer::get_singleton()->get_name() == "headless")
     {
         emit_signal("capture_completed", String(), "Screenshots require graphical rendering.");
@@ -408,11 +472,15 @@ void CombatSpriteDemo::capture_frame()
     capture_pending_ = false;
     auto directory = OS::get_singleton()->get_environment("OPENGOLD_SCREENSHOT_DIR");
     if (directory.is_empty())
+    {
         directory =
             ProjectSettings::get_singleton()->globalize_path("user://sprite-demo-screenshots");
+    }
     String path, error;
     if (!directory.is_absolute_path() || DirAccess::make_dir_recursive_absolute(directory) != OK)
+    {
         error = "Cannot create screenshots folder.";
+    }
     else
     {
         const auto stamp =
@@ -422,7 +490,9 @@ void CombatSpriteDemo::capture_frame()
             String::num_uint64(Time::get_singleton()->get_ticks_usec()) + ".png");
         const auto image = get_viewport()->get_texture()->get_image();
         if (image.is_null() || image->save_png(path) != OK)
+        {
             error = "Cannot save screenshot.";
+        }
     }
     get_node<Label>("Status")->set_text(error.is_empty() ? gs("Screenshot saved (Ctrl+S).")
                                                          : error);

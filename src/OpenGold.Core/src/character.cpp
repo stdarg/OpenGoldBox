@@ -25,7 +25,9 @@ Character::Character(const rules::CharacterRules &rules, rules::CharacterDraft c
 void Character::rename(std::string name)
 {
     if (name.empty())
+    {
         throw std::runtime_error("A character needs a name");
+    }
     creation_.name = name;
     sheet_.name = std::move(name);
 }
@@ -50,22 +52,36 @@ void Character::replay(const rules::RulesModule &rules,
     {
         const auto level = static_cast<unsigned>(sheet_.level);
         for (const auto &edit : spell_edits)
+        {
             if (edit.level == level)
+            {
                 choose_spells(rules, edit.choices, edit.rest_session,
                               rules::SpellChoiceContext::long_rest,
                               rules::ChoiceCompleteness::partial);
+            }
+        }
         for (const auto &edit : training_edits)
+        {
             if (edit.level == level)
+            {
                 replace_rest_training(rules, edit.selections, edit.rest_session);
+            }
+        }
         for (const auto &trained : hall_training)
+        {
             if (trained.level == level)
+            {
                 train_at_hall(rules, trained.grant);
+            }
+        }
     };
     at_level();
     for (const auto &choice : history)
     {
         if (!advance(rules, scratch, choice))
+        {
             throw std::runtime_error("Unsupported saved advancement choice");
+        }
         at_level();
     }
 }
@@ -88,7 +104,9 @@ bool Character::advance(const rules::RulesModule &rules, rules::VitalState &stat
     auto vitals = state;
     auto history = advancements_;
     if (!rules.advance_character(sheet, vitals, choice))
+    {
         return false;
+    }
     history.push_back(choice);
     sheet_ = std::move(sheet);
     state = std::move(vitals);
@@ -101,13 +119,17 @@ void Character::choose_spells(const rules::RulesModule &rules, const rules::Spel
                               rules::ChoiceCompleteness completeness)
 {
     if (!rest_session)
+    {
         throw std::runtime_error("Spell choices require a completed Long Rest");
+    }
     if (std::any_of(spell_edits_.begin(), spell_edits_.end(),
                     [&](const auto &edit)
                     {
                         return edit.rest_session >= rest_session;
                     }))
+    {
         throw std::runtime_error("Spell choices already used for this rest");
+    }
     auto candidate = sheet_;
     auto history = spell_edits_;
     rules.apply_spell_choices(candidate, choices, context, completeness);
@@ -126,7 +148,9 @@ void Character::replace_rest_training(const rules::RulesModule &rules,
                                 {
                                     return edit.rest_session >= session;
                                 }))
+    {
         throw std::runtime_error("Training choices already used for this rest");
+    }
     auto candidate = sheet_;
     auto history = training_edits_;
     (void)rules.replace_rest_training(candidate, selections);

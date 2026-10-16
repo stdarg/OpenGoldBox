@@ -4,16 +4,24 @@ namespace cunning_checks
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb)
+        {
             return v;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -25,8 +33,12 @@ void act(CombatSession &c, std::string_view verb)
 CombatantView unit(const CombatSession &c)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == 1)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing Rogue");
 }
 
@@ -45,7 +57,9 @@ auto battle(const Character &h)
         2);
     test::keep_initiative(*c);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -125,7 +139,9 @@ void run()
             write("offturn", *c);
             check(!has(*c, "cunning_dash"), "Off-turn Cunning Action unavailable");
             while (c->snapshot().actor != 1)
+            {
                 act(*c, "end");
+            }
             check(has(*c, "cunning_dash") && unit(*c).movement_feet == speed,
                   "Cunning renews each turn without resting");
         }
@@ -135,11 +151,13 @@ void run()
         auto move = [&](CombatSession &session, Cell cell)
         {
             for (const auto &v : session.legal_commands())
+            {
                 if (v.verb == "move" && v.destination == cell)
                 {
                     check(session.submit(v), "Move accepted");
                     return;
                 }
+            }
             throw std::runtime_error("Move absent");
         };
         move(*c, {0, 1});
@@ -149,7 +167,9 @@ void run()
         move(*c, {1, 1});
         act(*c, "end");
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         move(*c, {0, 1});
         check(c->snapshot().reaction_pending && !has(*c, "cunning_dash"),
               "Disengage expires on next turn; reaction window blocks Cunning");
@@ -166,7 +186,9 @@ void run()
                   "Adrenaline Rush competes for same Bonus Action");
             act(*c, "end");
             while (c->snapshot().actor != 1)
+            {
                 act(*c, "end");
+            }
             act(*c, "adrenaline_rush");
             check(c->snapshot().temporary_hp_offer && !has(*c, "cunning_dash"),
                   "Temporary HP decision blocks other actions");
@@ -184,7 +206,9 @@ void run()
     check(has(*hit, "cunning_dash"),
           "Automatic Savage damage leaves the unspent Bonus Action for Cunning Action");
     for (const auto &resource : rules->recovery_info(soldier.sheet(), soldier_state).resources)
+    {
         check(resource.id != "cunning_action", "Cunning Action is not a rest-use pool");
+    }
     // A real Ray of Frost hit reduces every Dash allowance, including the new one.
     auto d = draft();
     d.training = choices();
@@ -210,7 +234,9 @@ void run()
                               2);
     test::keep_initiative(*slow);
     while (slow->snapshot().actor != 99)
+    {
         act(*slow, "end");
+    }
     act(*slow, "ray_of_frost");
     act(*slow, "end");
     check(unit(*slow).movement_feet == 20, "Actual Frost hit reduces Rogue Speed to twenty");
@@ -248,7 +274,9 @@ void run()
     }
     auto wounded = party.checkpoint();
     for (auto &member : wounded.roster)
+    {
         member.vitals.hit_points -= 2;
+    }
     party.restore(std::move(wounded));
     check(rules->experience_for_level(2) == 300, "Independent level-two XP threshold");
     rejects(

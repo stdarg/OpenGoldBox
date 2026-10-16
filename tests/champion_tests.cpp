@@ -41,35 +41,51 @@ Character hero(unsigned level = 3, std::string klass = "fighter", bool savage = 
     d.alignment = "neutral_good";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character h(*srd5::character_rules(), d, {});
     VitalState life;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), life), "Ordinary level advancement");
+    }
     return h;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
 Command cmd(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return v;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -97,7 +113,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed,
           {2, "dummy", "Target", Side::opposition, {3, 2}}}},
         seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -105,10 +123,18 @@ int attack_roll(const CombatSession &c)
 {
     const auto messages = c.snapshot().log_messages();
     for (auto it = messages.rbegin(); it != messages.rend(); ++it)
+    {
         if (it->source.starts_with("{actor} ->"))
+        {
             for (const auto &a : it->arguments)
+            {
                 if (a.name == "roll")
+                {
                     return std::stoi(a.value);
+                }
+            }
+        }
+    }
     return 0;
 }
 
@@ -117,7 +143,9 @@ std::uint64_t random_state(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (unsigned n = 0; n < 3; ++n)
+    {
         std::getline(in, row);
+    }
     std::uint64_t result{};
     in >> result;
     return result;
@@ -142,11 +170,17 @@ std::string escape_line(unsigned level)
           {2, "dummy", "Target", Side::opposition, {6, 6}}}},
         1);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     act(*c, "escape");
     for (const auto &line : c->snapshot().log())
+    {
         if (line.find("Athletics check") != std::string::npos)
+        {
             return line;
+        }
+    }
     throw std::runtime_error("No escape check");
 }
 
@@ -220,6 +254,7 @@ void critical_and_movement()
 {
     auto rules = custom();
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (bool unarmed : {false, true})
         {
             bool nineteen = false, twenty = false;
@@ -236,7 +271,9 @@ void critical_and_movement()
                 const int roll = attack_roll(*c);
                 check(roll == expected_roll, "Attack consumes one independent d20");
                 if (roll != 19 && roll != 20)
+                {
                     continue;
+                }
                 nineteen |= roll == 19;
                 twenty |= roll == 20;
                 const bool critical = roll == 20 || (level >= 3 && roll == 19);
@@ -259,7 +296,9 @@ void critical_and_movement()
                 check(bool(c->snapshot().free_movement) == (critical && level >= 3),
                       "Weapon and unarmed criticals offer free movement only to Champions");
                 if (!c->snapshot().free_movement)
+                {
                     continue;
+                }
                 check(c->snapshot().free_movement->remaining_feet == 15 && !has(*c, "dash") &&
                           !has(*c, "action_surge"),
                       "Half Speed allowance and exclusive legal actions");
@@ -278,8 +317,12 @@ void critical_and_movement()
                     });
                 Command step;
                 for (const auto &offered : c->legal_commands())
+                {
                     if (offered.verb == "move" && offered.destination == Cell{1, 2})
+                    {
                         step = offered;
+                    }
+                }
                 check(step.actor == 1, "Legal escape from target's reach");
                 check(c->submit(step) && copy->submit(step) && c->save() == copy->save(),
                       "Free movement resumes identically and provokes no reaction");
@@ -296,6 +339,7 @@ void critical_and_movement()
             check(nineteen && twenty,
                   "Both critical thresholds exercised at each level and weapon mode");
         }
+    }
 }
 
 void savage_and_prone()
@@ -307,7 +351,9 @@ void savage_and_prone()
         auto c = battle(*rules, hero(3, "fighter", true), seed, {"longsword"}, true);
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
+        {
             continue;
+        }
         const auto log = c->snapshot().log();
         check(std::any_of(log.begin(), log.end(),
                           [](const auto &line)
@@ -331,6 +377,7 @@ void reaction_continuation()
 {
     auto rules = custom();
     for (bool block : {false, true})
+    {
         for (bool lethal : {false, true})
         {
             bool covered = false;
@@ -356,16 +403,24 @@ void reaction_continuation()
                       {3, "dummy", "Reserve", Side::opposition, {7, 7}}}},
                     seed);
                 while (c->snapshot().actor != 2)
+                {
                     act(*c, "end");
+                }
                 Command ticket;
                 for (const auto &v : c->legal_commands())
+                {
                     if (v.verb == "move" && v.destination == Cell{4, 2})
+                    {
                         ticket = v;
+                    }
+                }
                 check(ticket.actor == 2 && c->submit(ticket) && c->snapshot().reaction_pending,
                       "Actual movement provokes Champion reaction");
                 act(*c, "opportunity", 2);
                 if (!c->snapshot().free_movement)
+                {
                     continue;
+                }
                 check(c->snapshot().actor == 1 && !unit(*c).reaction && unit(*c).action,
                       "Critical reaction interrupts movement without spending Champion Action");
                 auto copy = rules->restore(c->save());
@@ -374,8 +429,12 @@ void reaction_continuation()
                 const Cell destination = block ? Cell{4, 2} : Cell{2, 1};
                 Command step;
                 for (const auto &v : c->legal_commands())
+                {
                     if (v.verb == "move" && v.destination == destination)
+                    {
                         step = v;
+                    }
+                }
                 check(step.actor == 1 && c->submit(step) && copy->submit(step),
                       "Reaction Champion can move before original route resumes");
                 auto moved = rules->restore(c->save());
@@ -392,6 +451,7 @@ void reaction_continuation()
             }
             check(covered, "Live reaction movement case exercised");
         }
+    }
 }
 
 void campaign_and_cancellation()
@@ -409,7 +469,9 @@ void campaign_and_cancellation()
             party.equip(id, 1);
             party.award_experience(2700, "champion-levels");
             for (unsigned n = 2; n <= level; ++n)
+            {
                 party.advance(id, party.default_advancement(id));
+            }
             auto state = party.checkpoint();
             state.roster[0].vitals.hit_points = 1;
             party.restore(std::move(state));
@@ -419,12 +481,16 @@ void campaign_and_cancellation()
             actors.push_back({3, "vanguard", "Reserve", Side::opposition, {6, 6}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
+            {
                 act(*c, "end");
+            }
             act(*c, "second_wind");
             const auto hp = unit(*c).hit_points;
             act(*c, "melee", 2);
             if (!c->snapshot().free_movement)
+            {
                 continue;
+            }
             act(*c, "end");
             check(unit(*c).hit_points == hp && !unit(*c).bonus_action,
                   "Passive Champion features preserve HP and spent Second Wind budget");
@@ -441,7 +507,9 @@ void campaign_and_cancellation()
                   "Ordinary campaign save/reload keeps subclass and check source");
             check(bool(copy.rest(RestKind::short_rest)), "Champion uses ordinary Short Rest");
             if (copy.state().short_rest)
+            {
                 copy.finish_short_rest(copy.state().short_rest->ticket);
+            }
             check(bool(copy.rest(RestKind::long_rest)), "Champion uses ordinary Long Rest");
             check(copy.ability_check(id, Ability::strength, "athletics").advantage,
                   "Rests retain Champion entitlement");
@@ -491,15 +559,23 @@ void repeated_criticals_and_terrain()
               {2, "dummy", "Target", Side::opposition, {3, 2}}}},
             seed);
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
+        {
             continue;
+        }
         auto copy = rules->restore(c->save());
         Command step;
         for (const auto &v : copy->legal_commands())
+        {
             if (v.verb == "move" && v.destination == Cell{1, 2})
+            {
                 step = v;
+            }
+        }
         check(step.actor == 1 && copy->submit(step) &&
                   copy->snapshot().free_movement->remaining_feet == 5,
               "Difficult Terrain consumes ten feet of free movement");
@@ -507,7 +583,9 @@ void repeated_criticals_and_terrain()
         act(*c, "action_surge");
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
+        {
             continue;
+        }
         check(c->snapshot().free_movement->remaining_feet == 15,
               "A second critical earns a fresh allowance in the same turn");
         check(rules->restore(c->save())->save() == c->save(),
@@ -541,10 +619,14 @@ void fixtures()
               {3, "vanguard", "Reserve", Side::opposition, {6, 6}}}},
             seed);
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         act(*c, "melee", 2);
         if (!c->snapshot().free_movement)
+        {
             continue;
+        }
         std::ofstream(folder / "pending.save", std::ios::binary) << c->save();
         done = true;
     }

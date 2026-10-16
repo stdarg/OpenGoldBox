@@ -34,7 +34,9 @@ std::string selected_id(const OptionButton &control,
 {
     const int index = control.get_selected();
     if (index < 0 || static_cast<std::size_t>(index) >= options.size())
+    {
         throw std::runtime_error("Choose a character option");
+    }
     return options[static_cast<std::size_t>(index)].id;
 }
 
@@ -52,36 +54,54 @@ void fill_choices(const opengold::rules::CharacterRules &rules,
                                             return group.id == requested.id;
                                         });
         if (found == groups.end() || found->options.size() < found->count)
+        {
             throw std::runtime_error("No complete starting training choice is available");
+        }
         for (unsigned n = 0; n < found->count; ++n)
+        {
             draft.training[found->id].push_back(found->options[n].id);
+        }
     }
     const auto cantrips = rules.cantrip_options(draft);
     if (cantrips.count)
     {
         if (cantrips.options.size() < cantrips.count)
+        {
             throw std::runtime_error("No complete starting cantrip choice is available");
+        }
         draft.cantrips.emplace();
         for (unsigned n = 0; n < cantrips.count; ++n)
+        {
             draft.cantrips->push_back(cantrips.options[n].id);
+        }
     }
     const auto spells = rules.spell_choice_options(draft);
     if (!spells.may_prepare)
+    {
         return;
+    }
     draft.spells = opengold::rules::SpellChoices{};
     for (const auto &group : spells.learning)
     {
         if (group.options.size() < group.count)
+        {
             throw std::runtime_error("No complete starting spell choice is available");
+        }
         for (unsigned n = 0; n < group.count; ++n)
+        {
             draft.spells->learning[group.id].push_back(group.options[n].id);
+        }
     }
     const auto prepared = rules.spell_choice_options(draft);
     if (prepared.preparation.size() < prepared.prepared_count)
+    {
         throw std::runtime_error("No complete starting spell preparation is available");
+    }
     draft.spells->prepared.emplace();
     for (unsigned n = 0; n < prepared.prepared_count; ++n)
+    {
         draft.spells->prepared->push_back(prepared.preparation[n].id);
+    }
 }
 
 void add_options(OptionButton &control, const std::vector<opengold::rules::CreationChoice> &options)
@@ -94,7 +114,9 @@ void add_options(OptionButton &control, const std::vector<opengold::rules::Creat
         control.set_item_metadata(index, String::utf8(option.id.c_str()));
     }
     if (!options.empty())
+    {
         control.select(0);
+    }
 }
 
 String label_for(const std::vector<opengold::rules::CreationChoice> &options, const std::string &id)
@@ -129,7 +151,9 @@ void LevelUpLabView::prepare_view()
     add_options(required_node<OptionButton>(*this, "Gender"), genders_);
     auto &level = required_node<OptionButton>(*this, "CurrentLevel");
     for (int n = 1; n <= 3; ++n)
+    {
         level.add_item(String::num_int64(n));
+    }
     level.select(0);
     required_node<Button>(*this, "CreateCharacter")
         .connect("pressed", presentation::guarded(this, &LevelUpLabView::create_character));
@@ -193,7 +217,9 @@ void LevelUpLabView::create_character()
     const auto alignments = rules->choices(opengold::rules::CreationField::alignment);
     const auto backgrounds = rules->choices(opengold::rules::CreationField::background);
     if (alignments.empty() || backgrounds.empty())
+    {
         throw std::runtime_error("Rules have no starting alignment or background");
+    }
     draft.alignment = alignments.front().id;
     draft.background = backgrounds.front().id;
     const auto entered = required_node<LineEdit>(*this, "Name").get_text().strip_edges();
@@ -201,7 +227,9 @@ void LevelUpLabView::create_character()
                                     : entered.utf8().get_data();
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     fill_choices(*rules, draft);
     auto next = std::make_unique<opengold::CampaignParty>(
         opengold::srd5::load(presentation::path_from_godot(game_rules_file())));
@@ -211,7 +239,9 @@ void LevelUpLabView::create_character()
     for (int level = 1; level < target; ++level)
     {
         if (!next->can_advance(id))
+        {
             throw std::runtime_error("This class cannot reach the selected level");
+        }
         next->advance(id, next->default_advancement(id));
     }
     campaign_ = std::move(next);
@@ -222,21 +252,27 @@ void LevelUpLabView::create_character()
 void LevelUpLabView::open_level_up()
 {
     if (!campaign_ || !member_ || !campaign_->can_advance(member_))
+    {
         throw std::runtime_error("Create a character ready to level up first");
+    }
     required_node<LevelUpDialog>(*this, "LevelUp").open(member_);
 }
 
 void LevelUpLabView::open_saves(bool saving)
 {
     if (saving && (!campaign_ || !member_))
+    {
         throw std::runtime_error(N_("Create a character before saving"));
+    }
     required_node<SaveSlots>(*this, "SaveSlots").open(saving);
 }
 
 void LevelUpLabView::save_character(const std::filesystem::path &path)
 {
     if (!campaign_ || !member_)
+    {
         throw std::runtime_error(N_("Create a character before saving"));
+    }
     opengold::write_campaign_file(
         path, opengold::encode_campaign(*campaign_, nullptr, lab_asset_identity));
     required_node<Label>(*this, "Status").set_text(i18n::text(N_("Character saved.")));
@@ -250,7 +286,9 @@ void LevelUpLabView::load_character(const std::filesystem::path &path)
         lab_asset_identity, static_cast<const opengold::por::RolfTourSession *>(nullptr));
     if (saved.town || saved.party.roster.size() != 1 ||
         saved.party.slots[0] != saved.party.roster.front().id)
+    {
         throw std::runtime_error(N_("This is not a single-character level-up demo save"));
+    }
     auto next = std::make_unique<opengold::CampaignParty>(std::move(module));
     next->restore(std::move(saved.party));
     const auto id = next->state().roster.front().id;
@@ -264,7 +302,9 @@ void LevelUpLabView::load_character(const std::filesystem::path &path)
 void LevelUpLabView::show_sheet()
 {
     if (!campaign_ || !member_)
+    {
         return;
+    }
     required_node<RichTextLabel>(*this, "CharacterSheet/Text")
         .call("render", presentation::sheet_text(*campaign_, campaign_->member(member_)));
     auto &sheet = required_node<Window>(*this, "CharacterSheet");

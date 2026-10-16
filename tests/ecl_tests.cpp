@@ -45,7 +45,9 @@ Bytes record(const Bytes &body)
 {
     Bytes b{0, 0};
     for (int i = 0; i < 5; ++i)
+    {
         b.insert(b.end(), {1, 1, 0x14, 0x99});
+    }
     b.insert(b.end(), body.begin(), body.end());
     return b;
 }
@@ -405,7 +407,9 @@ void memory_and_input()
     EclMachine input(
         program({15, 0, 1, 1, 0, 0x97, 16, 0, 1, 1, 1, 0x97, 16, 0, 1, 1, 1, 0x97, 0}));
     for (std::uint16_t addr = 0x9700; addr <= 0x9729; ++addr)
+    {
         input.bind_variable(EclAddress{addr}, 0);
+    }
     check(input.start(0), "Input start");
     r = input.run();
     check(r.request && r.request->input_limit == 6 && !input.resume(r.request->id),
@@ -518,7 +522,9 @@ void host_services()
     EclMachine query(
         program({30, 1, 0x1b, 0x6c, 0, 0, 1, 0, 0x97, 1, 1, 0x97, 1, 2, 0x97, 1, 3, 0x97, 0}));
     for (std::uint16_t a = 0x9700; a < 0x9704; ++a)
+    {
         query.bind_variable(EclAddress{a}, 0);
+    }
     query.enable_host(30);
     check(query.start(0), "CHECK PARTY start");
     r = query.run();
@@ -542,15 +548,23 @@ void installed_slums(const EclCatalog &catalog)
 {
     const auto p = catalog.find({"ECL2.DAX", 20});
     if (!p)
+    {
         return; // Other installations need their own version-specific fixture.
+    }
     EclMachine vm(p);
     for (auto [first, last] : std::array<std::array<unsigned, 2>, 3>{
              {{0x4900, 0x4cff}, {0x6b00, 0x6eff}, {0x9700, 0x98ff}}})
+    {
         for (unsigned a = first; a <= last; ++a)
+        {
             vm.bind_variable(EclAddress(static_cast<std::uint16_t>(a)), 0);
+        }
+    }
     vm.bind_variable(ecl_cell_event, 1); // Slums event 1, as in marainein's published trace.
     for (std::uint8_t op : {11, 12, 13, 14, 28, 36})
+    {
         vm.enable_host(op);
+    }
     for (int visit = 0; visit < 2; ++visit)
     {
         check(vm.start(1), "Slums search entry");
@@ -560,13 +574,19 @@ void installed_slums(const EclCatalog &catalog)
             check(requests < 50, "Slums bounded request count");
             const auto r = vm.run();
             if (r.state == EclState::faulted)
+            {
                 throw EclError(r.diagnostic);
+            }
             if (r.state == EclState::completed)
+            {
                 break;
+            }
             check(r.request.has_value(), "Slums request expected");
             const auto &request = *r.request;
             if (request.kind == EclRequestKind::text)
+            {
                 check(vm.resume(request.id), "Slums text acknowledgement");
+            }
             else if (request.kind == EclRequestKind::menu)
             {
                 check(request.choices.size() == 1 && vm.resume(request.id, 0),
@@ -641,7 +661,9 @@ struct Fixture
         dax.push_back(static_cast<std::uint8_t>(bytes.size() - 1));
         dax.insert(dax.end(), bytes.begin(), bytes.end());
         if (invalid)
+        {
             dax.pop_back();
+        }
         std::ofstream out(path / filename, std::ios::binary);
         out.write(reinterpret_cast<const char *>(dax.data()),
                   static_cast<std::streamsize>(dax.size()));

@@ -25,7 +25,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -55,7 +57,9 @@ Character druid(unsigned level = 1, std::string order = "warden", std::string la
     d.name = "Druid";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[4] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {order}}};
     d.cantrips = std::move(cantrips);
@@ -71,7 +75,9 @@ Character druid(unsigned level = 1, std::string order = "warden", std::string la
     {
         auto choice = party.default_advancement(id);
         if (n == 2)
+        {
             choice.training["subclass:druid:land"] = {land};
+        }
         party.advance(id, choice);
     }
     return party.member(id).character;
@@ -80,24 +86,36 @@ Character druid(unsigned level = 1, std::string order = "warden", std::string la
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
 bool aim(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "area_move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -143,7 +161,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {98, "target", "Enemy", Side::opposition, {adjacent ? 2 : 4, 1}}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Druid's turn");
+    }
     check(c->snapshot().actor == 1, "The Druid acts");
     return c;
 }
@@ -153,11 +173,13 @@ int attack_bonus(const CombatSession &c)
 {
     const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
+    {
         if (const auto at = line->find(" vs AC "); at != std::string::npos)
         {
             const auto plus = line->rfind(" + ", at);
             return std::stoi(line->substr(plus + 3, at - plus - 3));
         }
+    }
     throw std::runtime_error("No attack roll logged");
 }
 
@@ -330,14 +352,20 @@ void reach(CombatSession &c, EntityId id)
 {
     check(submit(c, "end"), "End the turn");
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 4; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
 }
 
 bool move_to(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -373,7 +401,9 @@ void moonbeam_checks()
     check(move_to(*c, Cell{5, 1}) && burned() == 1, "Moving within the beam is not entering it");
     check(submit(*c, "end") && burned() == 2, "Ending its turn in the beam burns again");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Druid's turn");
+    }
     check(submit(*c, "move_moonbeam", 2) && !unit(*c, 1).action && burned() == 3 &&
               logged(*c, "Ally Constitution save"),
           "A Magic action moves the beam onto the ally");
@@ -408,7 +438,9 @@ void heat_metal_checks()
                          {98, "target", "Enemy", Side::opposition, {4, 1}}}},
                        5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Druid's turn");
+    }
     check(!submit(*c, "heat_metal", 98), "A monster without an equipment row wears no metal");
     check(submit(*c, "heat_metal", 97) && logged(*c, "Fire damage from the hot metal.") &&
               has_condition(*c, 97, "Heated (Heat Metal)"),
@@ -423,8 +455,12 @@ void heat_metal_checks()
 unsigned wild_shapes_left(const CombatSession &c)
 {
     for (const auto &pool : unit(c, 1).resources)
+    {
         if (pool.id == "wild_shape")
+        {
             return pool.remaining;
+        }
+    }
     throw std::runtime_error("No Wild Shape pool");
 }
 
@@ -441,7 +477,9 @@ void creature_equipment_checks()
                               {95, "slums-orc", "Orc", Side::opposition, {5, 3}}}},
                             5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Druid's turn");
+    }
     const auto commands = c->legal_commands();
     const auto heats = [&](EntityId target)
     {
@@ -553,7 +591,9 @@ void beast_form_checks()
                          {97, "campaign-character", "Knight", Side::opposition, {3, 1}, knight}}},
                        5);
     for (unsigned turns = 0; heat->snapshot().actor != 97 && turns < 6; ++turns)
+    {
         check(submit(*heat, "end"), "Reach the Knight's turn");
+    }
     check(submit(*heat, "wild_shape_wolf"), "The Knight takes the Wolf's form");
     reach(*heat, 1);
     const auto offers = heat->legal_commands();
@@ -579,8 +619,10 @@ VitalState shaped(const RulesModule &module, const CharacterSheet &sheet, unsign
                             1);
     effects.active.back().remaining_ms = remaining_ms;
     if (laughing)
+    {
         fx::apply_repeating_condition(effects, fx::EffectKind::laughing, {.scope = 3, .actor = 98},
                                       "Enemy", {.dc = 38, .first_save_ms = 6000});
+    }
     std::ostringstream out;
     fx::write_effects(out, effects);
     vitals.resources.replace(at, std::string::npos, out.str());
@@ -610,14 +652,18 @@ void wild_shape_end_checks()
     // The Druid's turn begins Incapacitated, whenever it comes.
     auto laughing = shaped_battle(*module, sheet, shaped(*module, sheet, 3600000, 10, true));
     for (unsigned turns = 0; laughing->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*laughing, "end"), "Reach the Druid's turn");
+    }
     check(laughing->snapshot().actor == 1 && unit(*laughing, 1).form.empty(),
           "Starting a turn Incapacitated ends the form");
 
     auto lapsing = shaped_battle(*module, sheet, shaped(*module, sheet, 6000, 10));
     check(unit(*lapsing, 1).form == "wolf", "A form with six seconds left");
     for (unsigned turns = 0; turns < 6 && !unit(*lapsing, 1).form.empty(); ++turns)
+    {
         check(submit(*lapsing, "end"), "Let a round pass");
+    }
     check(unit(*lapsing, 1).form.empty(), "The form ends when its time runs out");
 
     // Wild Shape lasts until the fight ends (WILD-1).
@@ -629,7 +675,9 @@ void wild_shape_end_checks()
         weak.state = VitalState{1};
         auto c = module->create({{12, 6, std::vector<Terrain>(72)}, {druid_in, weak}}, 5);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Druid's turn");
+        }
         check(submit(*c, "wild_shape_wolf") && submit(*c, "melee", 98) &&
                   c->snapshot().outcome == Outcome::victory,
               "The Wolf wins the fight");
@@ -650,10 +698,14 @@ void wild_shape_end_checks()
     {
         auto c = shaped_battle(*module, sheet, shaped(*module, sheet, 3600000, 1), seed);
         for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the enemy's turn");
+        }
         check(submit(*c, "melee", 1), "The enemy attacks the Wolf");
         if (unit(*c, 1).hit_points > 0)
+        {
             continue;
+        }
         check(unit(*c, 1).form.empty() && unit(*c, 1).prone,
               "Dropping to 0 Hit Points ends the form");
         dropped = true;
@@ -676,7 +728,9 @@ void prone_mover_checks()
               "Moving away from the Wolf provokes its bite");
         check(submit(*c, "opportunity"), "The Wolf bites");
         if (!unit(*c, 98).prone)
+        {
             continue;
+        }
         covered = true;
         const auto mover = unit(*c, 98);
         check(mover.cell.x < 8 && c->snapshot().outcome == Outcome::ongoing &&
@@ -695,7 +749,9 @@ void charge_checks()
     auto module = rules();
     std::vector<Terrain> corridor(36, Terrain::obstacle);
     for (int x = 0; x < 12; ++x)
+    {
         corridor[12 + x] = Terrain::open;
+    }
     // The Boar at (1,1) charges along the corridor at `enemy` on (`at`,1).
     const auto charge =
         [&](const std::string &enemy, int at, int stop, std::uint64_t seed, bool reload)
@@ -706,11 +762,15 @@ void charge_checks()
                                   {98, enemy, "Enemy", Side::opposition, {at, 1}}}},
                                 seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Druid's turn");
+        }
         check(submit(*c, "wild_shape_boar") && move_to(*c, Cell{stop, 1}),
               "The Boar runs down the corridor");
         if (reload)
+        {
             c = module->restore(c->save());
+        }
         check(submit(*c, "melee", 98), "The Boar gores");
         return c;
     };
@@ -721,7 +781,9 @@ void charge_checks()
         {
             auto c = charge(enemy, at, stop, seed, reload);
             if (logged(*c, " hits for ") || logged(*c, " CRITICAL for "))
+            {
                 return c;
+            }
         }
         throw std::runtime_error("No seed's Gore hits");
     };
@@ -746,7 +808,9 @@ void land_rest_checks()
     party.advance_time(std::chrono::hours{24});
     check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
     if (party.state().spell_rest)
+    {
         party.keep_rest_spells(id);
+    }
     const auto offered =
         rules->rest_training_options(party.member(id).character.sheet(), RestKind::long_rest);
     check(offered.size() == 1 && offered.front().group.id == "subclass:druid:land" &&
@@ -781,7 +845,9 @@ void lands_aid_checks()
                          {98, "target", "Enemy", Side::opposition, {4, 1}}}},
                        5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Druid's turn");
+    }
     check(submit(*c, "lands_aid") && aim(*c, Cell{4, 1}) && submit(*c, "area_cast") &&
               logged(*c, "Druid uses Land's Aid.") && logged(*c, "Enemy takes") &&
               logged(*c, "Necrotic damage from the thorns.") && unit(*c, 2).hit_points > 3 &&
@@ -799,7 +865,9 @@ void policy_checks()
           "The policy lights Produce Flame with its Bonus Action");
     check(choose_demo_command(*c).verb == "moonbeam", "Then it casts Moonbeam");
     for (unsigned n = 0; n < 4 && c->snapshot().moonbeams.empty(); ++n)
+    {
         check(c->submit(choose_demo_command(*c)), "Aim and cast Moonbeam");
+    }
     check(c->snapshot().moonbeams.front() == Cell{4, 1} && has_condition(*c, 1, "Concentrating"),
           "The beam shines on the enemy while the Druid concentrates");
     // Produce Flame spent this turn's Bonus Action.

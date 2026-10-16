@@ -15,7 +15,9 @@ namespace
 void check(bool value, const char *message)
 {
     if (!value)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 // An all-floor arena whose exploration squares have no walls.
@@ -40,8 +42,12 @@ void wall(DungeonBattlefield &field, MapDirection side)
 void fill_enemy_half(DungeonBattlefield &field, bool wide)
 {
     for (int y = 10; y <= 12; ++y)
+    {
         for (int x = wide ? 16 : 22; x <= 30; ++x)
+        {
             field.geometry.terrain[y * 50 + x] = Terrain::obstacle;
+        }
+    }
 }
 
 void groups_face_each_other()
@@ -110,9 +116,11 @@ void full_squares_and_walls()
     // A whole half-square holds 23 monsters; the 24th spills behind.
     const auto band = encounter_formation(open_field(), MapDirection::north, 0, 1, 25);
     for (std::size_t n = 0; n < 23; ++n)
+    {
         check(band.enemies[n] && band.enemies[n]->y >= 10 && band.enemies[n]->y <= 12 &&
                   band.enemies[n]->x >= 22 && band.enemies[n]->x <= 30,
               "The first 23 monsters fill their own half-square");
+    }
     check(band.enemies[23] == Cell{21, 10} && band.enemies[24] == Cell{23, 9},
           "Further monsters stand in the square behind");
 

@@ -28,7 +28,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -47,7 +49,9 @@ CharacterDraft draft()
     d.name = "Paladin";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 6, 6, 1}, 3};
     d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds", "searing_smite"}, {}, {}};
     return d;
@@ -60,8 +64,10 @@ Character paladin(unsigned level)
     VitalState life{hero.sheet().hit_points, false, {}};
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life, rules->default_advancement(hero.sheet())),
               "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -78,8 +84,12 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -107,8 +117,12 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -121,7 +135,9 @@ unsigned slots(const CombatSession &c, unsigned level)
     unsigned winds{}, count{};
     in >> magic >> winds;
     for (unsigned n = 1; n <= level; ++n)
+    {
         in >> count;
+    }
     return count;
 }
 
@@ -159,7 +175,9 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const CharacterShe
                        {97, "dummy", "Far Dummy", Side::opposition, {6, 1}}}},
                      seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     return c;
 }
 
@@ -186,7 +204,9 @@ std::unique_ptr<CombatSession> alone_with(const RulesModule &rules, const Charac
                             {98, std::move(kind), "Foe", Side::opposition, {2, 1}}}},
                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     return c;
 }
 
@@ -197,7 +217,9 @@ void progression_checks()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
     party.award_experience(64000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto &ten = party.member(id).character.sheet();
     check(ten.level == 10, "64,000 XP trains a Paladin to level 10");
     const auto fifteen = paladin(15);
@@ -330,8 +352,12 @@ void smite_checks()
 std::optional<std::string> save_line(const CombatSession &c, const std::string &name)
 {
     for (const auto &line : c.snapshot().log())
+    {
         if (line.starts_with(name + " Constitution save: d20 "))
+        {
             return line;
+        }
+    }
     return std::nullopt;
 }
 
@@ -362,12 +388,20 @@ std::optional<std::string> ally_save(const Character &hero, Cell paladin_cell)
                                  {98, "blindness-adept", "Adept", Side::opposition, {9, 1}}}},
                                seed);
         for (unsigned turns = 0; turns < 8 && !save_line(*c, "Ally"); ++turns)
+        {
             if (c->snapshot().actor != 98 || c->snapshot().reaction_pending)
+            {
                 check(submit(*c, "decline") || submit(*c, "end"), "The party waits");
+            }
             else
+            {
                 check(c->submit(choose_demo_command(*c)), "The adept acts");
+            }
+        }
         if (auto line = save_line(*c, "Ally"))
+        {
             return line;
+        }
     }
     return std::nullopt;
 }
@@ -412,7 +446,9 @@ bool aura_death_save(const Character &hero)
                              {98, "dummy", "Dummy", Side::opposition, {7, 1}}}},
                            1);
     for (unsigned turns = 0; turns < 6 && !logged(*c, "Ally death save:"); ++turns)
+    {
         check(submit(*c, "end"), "Turns pass");
+    }
     check(logged(*c, "Ally death save:"), "The ally makes a death save");
     return logged(*c, " (Aura of Protection)");
 }
@@ -426,8 +462,12 @@ void death_save_checks()
 bool aim(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "area_move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -436,8 +476,10 @@ void next_turn(CombatSession &c)
 {
     check(submit(c, "end"), "The Paladin ends its turn");
     for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(c, "decline") || submit(c, "end") || c.submit(choose_demo_command(c)),
               "Reach the Paladin's turn");
+    }
 }
 
 // Casting from higher slots: offered when it adds something, and paid from
@@ -477,9 +519,11 @@ void abjure_checks()
         c = duel(*rules, hero, seed);
         check(submit(*c, "abjure_foes", 98), "Abjure Foes starts with the first creature");
         if (c->snapshot().spell_targeting)
+        {
             check(submit(*c, "abjure_foes", 97) &&
                       (!c->snapshot().spell_targeting || submit(*c, "spell_cast")),
                   "A second creature, then the use");
+        }
         check(logged(*c, "Paladin uses Abjure Foes.") && !unit(*c, 1).action,
               "Abjure Foes takes the Magic action");
     }
@@ -551,10 +595,16 @@ void death_ward_checks()
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps Death Ward");
     for (unsigned turns = 0; turns < 6 && !logged(*c, "(Death Ward)"); ++turns)
+    {
         if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+        {
             check(submit(*c, "decline") || submit(*c, "end"), "The Paladin waits");
+        }
         else
+        {
             check(c->submit(choose_demo_command(*c)), "The brute attacks");
+        }
+    }
     check(logged(*c, "Paladin drops to 1 Hit Point instead (Death Ward).") &&
               unit(*c, 1).hit_points == 1 && !has_condition(*c, 1, "Death Ward"),
           "The brute's hit leaves 1 Hit Point and ends the ward");
@@ -582,11 +632,15 @@ void aura_of_life_checks()
                              {98, "dummy", "Dummy", Side::opposition, {7, 1}}}},
                            1);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     check(submit(*c, "aura_of_life", 1) && logged(*c, "Paladin radiates an Aura of Life."),
           "The Paladin casts Aura of Life");
     for (unsigned turns = 0; turns < 6 && !logged(*c, "Ally stirs in the Aura of Life."); ++turns)
+    {
         check(submit(*c, "end"), "Turns pass");
+    }
     check(logged(*c, "Ally stirs in the Aura of Life.") && unit(*c, 2).hit_points >= 1,
           "The fallen ally regains 1 Hit Point");
 }
@@ -606,12 +660,16 @@ void freedom_checks()
                              {98, "dummy", "Dummy", Side::opposition, {9, 0}}}},
                            1);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     const auto farthest = [&]
     {
         int best = 0;
         for (const auto cell : c->movement_reach(1))
+        {
             best = std::max(best, cell.x);
+        }
         return best;
     };
     check(farthest() == 3, "Difficult Terrain halves the Paladin's 30 feet");
@@ -672,7 +730,9 @@ void banishment_checks()
         check(submit(*fey, "banishment", 98), "The Paladin banishes the Fey");
     }
     for (unsigned rounds = 0; rounds < 12 && !unit(*fey, 98).dead; ++rounds)
+    {
         check(submit(*fey, "end"), "A round passes");
+    }
     check(logged(*fey, "Foe does not return from its banishment.") && unit(*fey, 98).dead,
           "After a full minute the Fey is defeated");
 }
@@ -690,12 +750,20 @@ void restoring_touch_checks()
                                seed);
         for (unsigned turns = 0;
              turns < 8 && !(c->snapshot().actor == 1 && has_condition(*c, 1, "Blinded")); ++turns)
+        {
             if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+            {
                 check(submit(*c, "decline") || submit(*c, "end"), "The Paladin waits");
+            }
             else
+            {
                 check(c->submit(choose_demo_command(*c)), "The adept acts");
+            }
+        }
         if (c->snapshot().actor != 1 || !has_condition(*c, 1, "Blinded"))
+        {
             continue;
+        }
         check(submit(*c, "lay_on_hands_restore", 1) &&
                   logged(*c, "Paladin is no longer Blinded.") && !has_condition(*c, 1, "Blinded"),
               "Restoring Touch ends Blinded");
@@ -730,7 +798,9 @@ Character hexer()
     d.name = "Warlock";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.training = {{"class:warlock", {"investigation", "deception"}}};
     d.cantrips = {"eldritch_blast", "chill_touch"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"hex", "hellish_rebuke"}, {}, {}};
@@ -758,11 +828,15 @@ void remove_curse_checks()
                              {98, "dummy", "Dummy", Side::opposition, {2, 1}}}},
                            1);
     for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Warlock's turn");
+    }
     check(!offered(*c, "remove_curse"), "Nothing to uncurse yet");
     check(submit(*c, "hex", 98) && logged(*c, "Dummy is hexed."), "The Warlock hexes the dummy");
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     check(submit(*c, "remove_curse", 98) && logged(*c, "Dummy's curses end.") &&
               !has_condition(*c, 98, "Hexed"),
           "Remove Curse ends Hex");
@@ -795,9 +869,13 @@ void revivify_checks()
             // Two squares apart: Revivify reaches 10 feet.
             p.cell = p.id == paladin_id ? Cell{1, 1} : Cell{3, 1};
             if (p.id == paladin_id)
+            {
                 p.character_profile = prepared;
+            }
             if (p.id == ally_id)
+            {
                 p.state = two_failures();
+            }
         }
         participants.push_back({98, "vanguard", "Foe", Side::opposition, {7, 1}});
         party.begin_combat();
@@ -810,7 +888,9 @@ void revivify_checks()
         party.apply_combat(c->snapshot());
         for (unsigned turns = 0;
              turns < 6 && !(unit(*c, ally_id).dead && c->snapshot().actor == paladin_id); ++turns)
+        {
             check(submit(*c, "end"), "Turns pass");
+        }
         if (!unit(*c, ally_id).dead || c->snapshot().actor != paladin_id)
         {
             party.end_combat();
@@ -881,7 +961,9 @@ void revivify_limit_checks()
                                 gold},
                                1);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Paladin's turn");
+        }
         return c;
     };
     check(!offered(*start(5000, VitalState{0, true, {}, {}}), "revivify"),
@@ -906,7 +988,9 @@ void magic_circle_checks()
                                  {98, "fey-dummy", "Fey", Side::opposition, {8, 1}}}},
                                1);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Paladin's turn");
+        }
         return c;
     };
     auto c = start();
@@ -921,7 +1005,9 @@ void magic_circle_checks()
     check(logged(*c, "Paladin keeps casting Magic Circle.") && !unit(*c, 1).action,
           "Casting takes the next turn's Action");
     for (unsigned turns = 0; turns < 30 && !logged(*c, "The Magic Circle is complete."); ++turns)
+    {
         check(submit(*c, "end"), "A turn passes");
+    }
     check(logged(*c, "The Magic Circle is complete."), "After a minute the circle stands");
     const auto reach = c->movement_reach(98);
     check(std::none_of(reach.begin(), reach.end(),

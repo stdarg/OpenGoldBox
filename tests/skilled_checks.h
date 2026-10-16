@@ -9,12 +9,16 @@ CampaignParty ready(const char *klass, const char *background)
     auto d = draft(klass, background);
     d.name = std::string("Skilled ") + klass;
     if (std::string_view(klass) == "wizard")
+    {
         d.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost"};
+    }
     choose_first_options(d);
     const auto id = p.add_pc(hero(d));
     p.award_experience(2700, "skilled-acceptance");
     for (unsigned level = 2; level <= 3; ++level)
+    {
         p.advance(id, p.default_advancement(id));
+    }
     check(p.member(id).character.sheet().level == 3, "Ready at level three");
     return p;
 }
@@ -71,13 +75,19 @@ void options_and_grants()
     check(group->acquired_level == 4, "Skilled proficiencies are acquired at level four");
     std::set<std::string> held;
     for (const auto &g : sheet.grants)
+    {
         if (g.id.starts_with("skill:"))
+        {
             held.insert(g.id);
+        }
+    }
     const auto already = static_cast<unsigned>(held.size());
     check(already && group->options.size() == 18 - already,
           "Every skill not already held is offered exactly once");
     for (const auto &option : group->options)
+    {
         check(!grant(sheet, option.id), "An already-known proficiency is never offered");
+    }
     p.advance(1, pick(p, {"skill:survival", "skill:nature", "skill:medicine"}));
     const auto next = p.member(1).character.sheet();
     check(next.level == 4, "Skilled advancement completes");
@@ -214,6 +224,7 @@ void run()
              {"check_effects", check_effects},
              {"rejections", rejections},
              {"persistence", persistence}})
+    {
         try
         {
             test();
@@ -222,5 +233,6 @@ void run()
         {
             throw std::runtime_error(std::string("Skilled/") + name + ": " + e.what());
         }
+    }
 }
 } // namespace skilled_checks

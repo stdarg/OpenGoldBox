@@ -34,7 +34,9 @@ std::string decoded(std::string_view stem)
 {
     std::string result;
     if (stem.size() % 2)
+    {
         return {};
+    }
     for (std::size_t i = 0; i < stem.size(); i += 2)
     {
         const auto digit = [](char c)
@@ -43,7 +45,9 @@ std::string decoded(std::string_view stem)
         };
         int a = digit(stem[i]), b = digit(stem[i + 1]);
         if (a < 0 || b < 0)
+        {
             return {};
+        }
         result += static_cast<char>(a * 16 + b);
     }
     return result;
@@ -93,7 +97,9 @@ void SaveSlots::prepare_dialog()
 void SaveSlots::connect_host(FileAction save, FileAction load)
 {
     if (!save || !load)
+    {
         throw std::logic_error("Save slots need both a save and a load action");
+    }
     save_ = std::move(save);
     load_ = std::move(load);
 }
@@ -101,7 +107,9 @@ void SaveSlots::connect_host(FileAction save, FileAction load)
 void SaveSlots::use_character_directory(std::filesystem::path directory)
 {
     if (directory.empty())
+    {
         throw std::invalid_argument("Character save directory is empty");
+    }
     directory_ = std::move(directory);
     character_saves_ = true;
 }
@@ -135,21 +143,31 @@ void SaveSlots::open(bool saving)
     try
     {
         if (std::filesystem::exists(directory_))
+        {
             for (auto &e : std::filesystem::directory_iterator(directory_))
             {
                 if (!e.is_regular_file())
+                {
                     continue;
+                }
                 auto p = e.path();
                 bool backup = p.extension() == ".bak";
                 if (backup)
+                {
                     p = p.stem();
+                }
                 if (p.extension() != ".ogs" || (saving && backup))
+                {
                     continue;
+                }
                 auto name = decoded(p.stem().string());
                 if (name.empty())
+                {
                     continue;
+                }
                 paths_.push_back(e.path());
             }
+        }
         std::sort(paths_.begin(), paths_.end());
         for (auto &p : paths_)
         {
@@ -170,9 +188,13 @@ void SaveSlots::open(bool saving)
     required_node<Button>(*this, "Action").set_text(i18n::text(saving ? N_("Save") : N_("Load")));
     popup_centered();
     if (saving)
+    {
         required_node<LineEdit>(*this, "Name").grab_focus();
+    }
     else
+    {
         list->grab_focus();
+    }
 }
 
 void SaveSlots::changed(String)
@@ -186,10 +208,14 @@ void SaveSlots::select(std::int64_t index)
 {
     changed("");
     if (index < 0 || static_cast<std::size_t>(index) >= paths_.size())
+    {
         return;
+    }
     if (saving_)
+    {
         required_node<LineEdit>(*this, "Name")
             .set_text(String::utf8(decoded(paths_[index].stem().string()).c_str()));
+    }
 }
 
 void SaveSlots::act()
@@ -202,14 +228,18 @@ void SaveSlots::act()
             auto text = required_node<LineEdit>(*this, "Name").get_text().strip_edges();
             std::string name = text.utf8().get_data();
             if (name.empty() || name.size() > 120)
+            {
                 throw std::runtime_error("Enter a save name of at most 120 UTF-8 bytes.");
+            }
             path = directory_ / (encoded(name) + ".ogs");
         }
         else
         {
             auto selected = required_node<ItemList>(*this, "Slots").get_selected_items();
             if (selected.is_empty())
+            {
                 throw std::runtime_error("Select a save first.");
+            }
             path = paths_.at(selected[0]);
         }
         if ((!saving_ || std::filesystem::exists(path)) && (!confirmed_ || pending_ != path))
@@ -227,9 +257,13 @@ void SaveSlots::act()
             return;
         }
         if (saving_)
+        {
             save_(path);
+        }
         else
+        {
             load_(path);
+        }
         hide();
     }
     catch (const std::exception &e)

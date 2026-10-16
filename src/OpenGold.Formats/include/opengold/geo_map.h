@@ -55,7 +55,9 @@ enum class MapDirection : std::size_t
 [[nodiscard]] constexpr std::optional<MapDirection> map_direction(unsigned value) noexcept
 {
     if (value >= 4)
+    {
         return std::nullopt;
+    }
     return MapDirection{value};
 }
 

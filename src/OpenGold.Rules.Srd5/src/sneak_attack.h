@@ -21,7 +21,9 @@ struct SneakAttackContext
 inline bool sneak_attack_eligible(const SneakAttackContext &context)
 {
     if (context.attack_mode < -1 || context.attack_mode > 1)
+    {
         throw std::runtime_error("Invalid net attack mode");
+    }
     return context.weapon_attack && (context.finesse || context.ranged_weapon) &&
            (context.attack_mode == 1 || (context.attack_mode == 0 && context.allied_distraction));
 }
@@ -31,7 +33,9 @@ inline bool sneak_attack_eligible(const SneakAttackContext &context)
 inline DamageDice sneak_attack_dice(unsigned rogue_level)
 {
     if (rogue_level < 1 || rogue_level > 20)
+    {
         throw std::runtime_error("Invalid Rogue level");
+    }
     return {static_cast<int>((rogue_level + 1) / 2), 6, 0};
 }
 } // namespace opengold::srd5::detail

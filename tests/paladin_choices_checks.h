@@ -12,8 +12,12 @@ CharacterDraft paladin_draft(std::vector<std::string> prepared)
 unsigned slot_capacity(const RulesModule &rules, const PartyMember &member)
 {
     for (const auto &pool : rules.recovery_info(member.character.sheet(), member.vitals).resources)
+    {
         if (pool.id == "spell_slot:1")
+        {
             return pool.capacity;
+        }
+    }
     return 0;
 }
 
@@ -84,7 +88,9 @@ void blessed_warrior_checks()
                                   return c.actor == 1 && c.verb == "sacred_flame" && c.target == 99;
                               });
         if (!offered)
+        {
             fight->submit(commands.front());
+        }
     }
     check(offered, "The Blessed Warrior casts Sacred Flame in combat");
     const auto bytes = saved(party);
@@ -97,8 +103,12 @@ void blessed_warrior_checks()
 const ResourcePool *pool(const RecoveryInfo &info, std::string_view id)
 {
     for (const auto &resource : info.resources)
+    {
         if (resource.id == id)
+        {
             return &resource;
+        }
+    }
     return nullptr;
 }
 
@@ -174,11 +184,13 @@ void paladin_choices_checks()
                                                {"cure_wounds", "cure_wounds"},
                                                {"cure_wounds", "divine_smite", "searing_smite"},
                                                {"healing_word", "cure_wounds"}})
+    {
         rejects(
             [&]
             {
                 (void)creation_rules->evaluate(paladin_draft(bad), NameRequirement::required);
             });
+    }
     const auto messages = rules->character_profile(paladin.sheet(), {}).spell_messages;
     check(std::any_of(messages.begin(), messages.end(),
                       [&](const auto &m)
@@ -190,7 +202,9 @@ void paladin_choices_checks()
     CharacterCreator creator(srd5::character_rules(), 1);
     creator.roll();
     for (unsigned n = 0; n < 6; ++n)
+    {
         creator.assign_roll(n, static_cast<rules::Ability>(n));
+    }
     creator.select(CreationField::character_class, "paladin");
     check(creator.has_spell_choices(), "The Spell Choices step appears for a Paladin");
 
@@ -259,7 +273,9 @@ void write_blessed_warrior_ui_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
     if (!directory || !*directory)
+    {
         return;
+    }
     CampaignParty party(module());
     (void)party.add_pc(Character(*srd5::character_rules(), paladin_draft({"cure_wounds"}), {}));
     party.award_experience(300, "blessed-warrior-ui");

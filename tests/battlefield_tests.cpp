@@ -11,7 +11,9 @@ namespace
 void check(bool value, const char *message)
 {
     if (!value)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::uint64_t digest(const DungeonBattlefield &field)
@@ -40,7 +42,9 @@ void oracle_tests()
         0xdfb4c31930267055ULL, 0xe471b601cea26066ULL, 0x8352ae6e9396c1f9ULL};
     unsigned index = 0;
     for (unsigned west : {0, 1, 3})
+    {
         for (unsigned north : {0, 1, 3})
+        {
             for (unsigned east : {0, 1, 3})
             {
                 GeoMap map;
@@ -53,28 +57,36 @@ void oracle_tests()
                 }
                 const auto field = dungeon_battlefield(map, 8, 8);
                 if (digest(field) != expected[index])
+                {
                     throw std::runtime_error("Original wall/door oracle mismatch at combination " +
                                              std::to_string(index));
+                }
                 check(field.geometry.width == 50 && field.geometry.height == 25 &&
                           field.geometry.terrain.size() == 1250,
                       "Original arena dimensions");
                 ++index;
             }
+        }
+    }
     GeoMap mixed;
     for (unsigned i = 0; i < 256; ++i)
+    {
         for (unsigned d = 0; d < 4; ++d)
         {
             mixed.cells[i].walls[d] = (i * 7 + d * 3) % 5 == 0;
             mixed.cells[i].doors[d] = (i / 3 + d) % 4;
         }
+    }
     constexpr std::array<std::pair<unsigned, unsigned>, 8> poses{
         {{0, 0}, {15, 0}, {0, 15}, {15, 15}, {8, 8}, {1, 8}, {14, 8}, {8, 1}}};
     constexpr std::array<std::uint64_t, 8> borders{
         0x4358d2f3eecbc509ULL, 0x771dc10d93b9c6adULL, 0x99448cdd35baef37ULL, 0x85328af967096776ULL,
         0xcff2298921ad58d5ULL, 0xef17af3460689192ULL, 0xe14a0977291617f5ULL, 0x1e2cfb5a50cebbc5ULL};
     for (unsigned i = 0; i < poses.size(); ++i)
+    {
         check(digest(dungeon_battlefield(mixed, poses[i].first, poses[i].second)) == borders[i],
               "Original mixed-boundary oracle mismatch");
+    }
 }
 
 void collision_tests()

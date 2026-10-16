@@ -18,7 +18,9 @@ struct CheckFailure : std::runtime_error
 inline void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw CheckFailure(message);
+    }
 }
 
 // Whether `operation` throws `Expected` (any standard exception by default).

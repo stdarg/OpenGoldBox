@@ -57,7 +57,9 @@ void choices_and_sources()
         for (unsigned level = 2; level <= 4; ++level)
         {
             if (level > 2)
+            {
                 party.advance(id, party.default_advancement(id));
+            }
             const auto &sheet = party.member(id).character.sheet();
             const auto &trained = skill(sheet, name);
             const auto check_result = rules->ability_check(sheet, {}, trained.ability, name);
@@ -80,8 +82,12 @@ void choices_and_sources()
                   "Current Scholar campaign round trip is exact");
             auto forged = sheet;
             for (auto &g : forged.grants)
+            {
                 if (g.source_id == source)
+                {
                     g.level = 1;
+                }
+            }
             rejects(
                 [&]
                 {
@@ -157,12 +163,14 @@ void medicine_combat()
         {
             bool ended = false;
             for (const auto &c : combat->legal_commands())
+            {
                 if (c.verb == "end")
                 {
                     check(combat->submit(c), "End prior turn");
                     ended = true;
                     break;
                 }
+            }
             check(ended, "Reach medic turn");
         }
         auto commands = combat->legal_commands();
@@ -172,7 +180,9 @@ void medicine_combat()
                                             return c.verb == "stabilize" && c.target == 2;
                                         });
         if (found == commands.end())
+        {
             continue;
+        }
         auto copy = rules->restore(combat->save());
         check(combat->submit(*found) && copy->submit(*found),
               "Scholar uses actual Stabilize action");
@@ -185,9 +195,13 @@ void medicine_combat()
             for (const auto &arg : message.arguments)
             {
                 if (arg.name == "roll")
+                {
                     roll = std::stoi(arg.value);
+                }
                 if (arg.name == "total")
+                {
                     total = std::stoi(arg.value);
+                }
             }
             if (roll >= 0 && total >= 0)
             {
@@ -207,7 +221,9 @@ void write_ui_fixture()
 {
     const auto *directory = std::getenv("OPENGOLD_GAME_DIR");
     if (!directory || !*directory)
+    {
         return;
+    }
     CampaignParty party(module());
     party.add_pc(wizard("medicine"));
     party.award_experience(2700, "scholar-ui");

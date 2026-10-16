@@ -65,27 +65,39 @@ void GameLifecycle::window_input(const Ref<InputEvent> &event, Node *node)
 {
     // The signal's emitting window owns the bound node for the connection's lifetime.
     if (auto *window = Object::cast_to<Window>(node))
+    {
         shortcut(event, *window);
+    }
 }
 
 void GameLifecycle::shortcut(const Ref<InputEvent> &event, Viewport &viewport)
 {
     const Ref<InputEventKey> key = event;
     if (key.is_null() || !key->is_pressed() || key->is_echo() || !key->is_ctrl_pressed())
+    {
         return;
+    }
     if (key->get_keycode() != KEY_X && key->get_keycode() != KEY_S)
+    {
         return;
+    }
     viewport.set_input_as_handled();
     if (key->get_keycode() == KEY_X)
+    {
         request_quit();
+    }
     else
+    {
         required_node<ScreenshotService>(*this, "/root/Screenshots").request_capture();
+    }
 }
 
 void GameLifecycle::request_quit()
 {
     if (quitting_)
+    {
         return;
+    }
     quitting_ = true;
     UtilityFunctions::print("OpenGoldBox: graceful shutdown requested\r");
     // Finish this iteration, then let Godot free the tree and native RAII owners.

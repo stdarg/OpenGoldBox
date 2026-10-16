@@ -14,7 +14,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -42,7 +44,9 @@ Character hero(std::string klass)
     d.name = "Component tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character c(*srd5::character_rules(), d, {});
     auto rules = module();
     VitalState vital{c.sheet().hit_points, false, {}};
@@ -52,20 +56,30 @@ Character hero(std::string klass)
         // A Cleric prepares every available spell up to its count; a Wizard
         // keeps the default preparation of its book.
         if (klass == "cleric")
+        {
             choice.spells = {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith",
                              "bless"};
+        }
         if (level == 3)
         {
             for (const auto *spell : {"blindness", "scorching_ray"})
+            {
                 if (klass == "wizard" && std::find(choice.spells.begin(), choice.spells.end(),
                                                    spell) == choice.spells.end())
+                {
                     choice.spells.push_back(spell);
+                }
+            }
             if (klass == "cleric")
+            {
                 choice.spells.push_back("blindness");
+            }
             // The Life Domain keeps Bless and Cure Wounds prepared from level three.
             if (klass == "cleric")
+            {
                 choice.spells = {"healing_word", "inflict_wounds", "shield_of_faith",
                                  "blindness",    "command",        "protection_from_evil_and_good"};
+            }
         }
         check(c.advance(*rules, vital, choice),
               "Level-three caster prepared through real advancement");
@@ -76,24 +90,36 @@ Character hero(std::string klass)
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -111,8 +137,10 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
                             {99, "vanguard", "Enemy", Side::opposition, {3, 1}}}},
                           2);
     if (c->snapshot().actor != 1)
+    {
         check(c->submit(command(*c, "end")),
               "Reach the caster turn after armor initiative penalty");
+    }
     check(c->snapshot().actor == 1, "Caster has its turn");
     return c;
 }
@@ -170,9 +198,11 @@ void expectations()
                     : verb.ends_with("_2") || verb == "scorching_ray" || verb == "blindness" ? 2
                                                                                              : 1;
                 for (unsigned level : {1u, 2u})
+                {
                     check(slots(unit(*cast), level) ==
                               slots(before, level) - (spent == level ? 1 : 0),
                           "Casting spends exactly its chosen slot; a cantrip spends none");
+                }
                 check(rules->restore(cast->save())->save() == cast->save(),
                       "Resolved cast round trips exactly");
             }
@@ -234,15 +264,19 @@ void ui_fixtures()
     std::filesystem::create_directories(path);
     auto rules = module();
     for (const auto &klass : {"cleric", "wizard"})
+    {
         for (bool shield : {false, true})
         {
             const auto h = hero(klass);
             std::vector<std::string> gear{"quarterstaff"};
             if (shield)
+            {
                 gear.push_back("shield");
+            }
             write(path / (std::string(klass) + (shield ? "-shield.save" : "-free.save")),
                   battle(*rules, h, gear)->save());
         }
+    }
 }
 } // namespace
 

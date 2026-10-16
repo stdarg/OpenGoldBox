@@ -17,7 +17,9 @@ namespace presentation
 [[nodiscard]] inline godot::Ref<godot::Image> rgba_image(const opengold::Image &source)
 {
     if (!opengold::consistent(source))
+    {
         throw std::runtime_error("Image pixels do not match its size");
+    }
     godot::PackedByteArray pixels;
     pixels.resize(source.rgba.size());
     std::copy(source.rgba.begin(), source.rgba.end(), pixels.ptrw());
@@ -40,11 +42,15 @@ inline void load_additional_portrait_heads(opengold::por::CharacterArt &art)
             godot::String::utf8(("res://bin/portraits/" + std::string(head.filename)).c_str());
         godot::Ref<godot::Texture2D> texture = godot::ResourceLoader::get_singleton()->load(path);
         if (texture.is_null())
+        {
             throw std::runtime_error("Missing portrait: " + std::string(head.filename) +
                                      ". Run build-opengoldbox.cmd and opengoldbox.exe.");
+        }
         auto source = texture->get_image();
         if (source.is_null() || (source->is_compressed() && source->decompress() != godot::OK))
+        {
             throw std::runtime_error("Cannot decode portrait: " + std::string(head.filename));
+        }
         source->convert(godot::Image::FORMAT_RGBA8);
         const auto pixels = source->get_data();
         opengold::Image decoded;

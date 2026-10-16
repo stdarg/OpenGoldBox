@@ -33,7 +33,9 @@ const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
 {
     const auto &body = art.combat_bodies().at(id);
     if (body.width != 24 || body.height != 24 || body.pixels.size() != 576)
+    {
         throw std::runtime_error("Invalid combat layer dimensions");
+    }
     return body;
 }
 
@@ -43,7 +45,9 @@ const IndexedIcon &body_at(const CharacterArt &art, unsigned id)
 bool gray_equipment(unsigned id, bool action, bool tall, int x, int y)
 {
     if (!tall)
+    {
         y -= 2;
+    }
     const auto rect = [&](int l, int t, int r, int b)
     {
         return x >= l && x <= r && y >= t && y <= b;
@@ -55,27 +59,47 @@ bool gray_equipment(unsigned id, bool action, bool tall, int x, int y)
         return std::hypot(x - x1 - t * dx, y - y1 - t * dy) <= width;
     };
     if (id == 0 || id == 27 || id == 29 || id == 32)
+    {
         return false;
+    }
     if (id == 1)
+    {
         return rect(16, 4, 23, 18) || rect(4, 4, 8, 8);
+    }
     if (id == 16)
+    {
         return rect(12, 7, 23, 12) || rect(4, 4, 8, 8);
+    }
     if (id == 5)
+    {
         return action ? rect(18, 9, 23, 14) : rect(18, 5, 22, 5);
+    }
     if (id == 21)
+    {
         return action ? rect(15, 13, 21, 13) : stroke(14, 13, 20, 16, 0.8);
+    }
     if (id == 28)
+    {
         return action ? rect(18, 2, 21, 19) : rect(19, 3, 20, 21);
+    }
     if (id == 30)
+    {
         return action ? rect(19, 11, 20, 14) : rect(19, 5, 21, 5);
+    }
     if (id == 31)
+    {
         return action ? stroke(3, 16, 21, 9, 0.8) : stroke(18, 2, 9, 19, 0.9);
+    }
     if (id == 19)
+    {
         return action ? stroke(3, 15, 22, 11, 1.0) : stroke(13, 18, 20, 2, 0.9);
+    }
     if (action)
     {
         if (id == 4)
+        {
             return rect(17, 8, 23, 20) || stroke(12, 14, 18, 8, 0.9);
+        }
         return rect(16, 0, 23, 20);
     }
     return rect(0, 0, 7, 15);
@@ -99,15 +123,20 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose 
     const int top = tall ? 8 : 10;
     const int waist = top + (robe(a.combat_body) ? 6 : 8);
     for (int y = 0; y < 24; ++y)
+    {
         for (int x = 0; x < 24; ++x)
         {
             const auto p = y * 24 + x;
             const auto color = original.pixels[p];
             if (garment(color))
+            {
                 result.pixels[p] = color;
+            }
             else if (color == 8 && !gray_equipment(a.combat_body, action, tall, x, y) &&
                      ((y >= top && x >= 8 && x <= 14) || y >= waist))
+            {
                 result.pixels[p] = color;
+            }
             // Restore only anatomy hidden by the original wielding arm/equipment.
             // Vote among homologous, locally decoded bodies of the same clothing
             // family. Visible saved garment pixels always take precedence.
@@ -118,17 +147,24 @@ IndexedIcon CharacterArt::combat_anatomy(const CharacterAppearance &a, IconPose 
             {
                 std::array<unsigned, 16> count{};
                 for (unsigned id = 0; id < 32; ++id)
+                {
                     if (robe(id) == robe(a.combat_body))
                     {
                         const auto c = body_at(*this, offset + id).pixels[p];
                         if (garment(c) || (c == 8 && !gray_equipment(id, action, tall, x, y)))
+                        {
                             ++count[c];
+                        }
                     }
+                }
                 const auto chosen = std::max_element(count.begin(), count.end());
                 if (*chosen)
+                {
                     result.pixels[p] = static_cast<std::uint8_t>(chosen - count.begin());
+                }
             }
         }
+    }
     return result;
 }
 
@@ -142,6 +178,7 @@ Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipme
     const bool tall = uses_tall_art(a.icon_size);
     const int top = tall ? 8 : 10, waist = top + (robe(equipment_body) ? 6 : 8);
     for (int y = 0; y < 24; ++y)
+    {
         for (int x = 0; x < 24; ++x)
         {
             const auto p = y * 24 + x;
@@ -149,8 +186,11 @@ Image CharacterArt::equipped_icon(const CharacterAppearance &a, unsigned equipme
             const bool arm_outline = color == 8 && y < waist && (x < 8 || x > 14) &&
                                      !gray_equipment(equipment_body, action, tall, x, y);
             if (limb(color) || arm_outline || equipment(color, equipment_body, action, tall, x, y))
+            {
                 composed.pixels[p] = color;
+            }
         }
+    }
     return compose_character_icon(combat_heads_.at(offset + a.combat_head), composed, a);
 }
 
@@ -162,6 +202,7 @@ std::vector<std::vector<unsigned>> CharacterArt::combat_body_groups() const
     {
         std::vector<std::uint8_t> look;
         for (const auto size : {IconSize::regular, IconSize::small})
+        {
             for (const auto pose : {IconPose::ready, IconPose::action})
             {
                 CharacterAppearance appearance;
@@ -170,9 +211,12 @@ std::vector<std::vector<unsigned>> CharacterArt::combat_body_groups() const
                 const auto pixels = combat_anatomy(appearance, pose).pixels;
                 look.insert(look.end(), pixels.begin(), pixels.end());
             }
+        }
         const auto [found, added] = group_of_look.try_emplace(std::move(look), groups.size());
         if (added)
+        {
             groups.emplace_back();
+        }
         groups[found->second].push_back(body);
     }
     return groups;

@@ -17,7 +17,9 @@ constexpr std::array weapons{"dagger", "handaxe", "javelin", "light_hammer",
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 auto module()
@@ -28,8 +30,12 @@ auto module()
 Command command(const CombatSession &combat, std::string_view verb, EntityId target = 0)
 {
     for (const auto &option : combat.legal_commands())
+    {
         if (option.verb == verb && (!target || option.target == target))
+        {
             return option;
+        }
+    }
     throw std::runtime_error("Missing baseline command: " + std::string(verb));
 }
 
@@ -49,7 +55,9 @@ Character hero()
     draft.name = "Thrown baseline";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), draft, {});
 }
 
@@ -60,21 +68,27 @@ CampaignParty thrown_party()
     CampaignParty party(module());
     auto character = hero();
     for (const auto weapon : weapons)
+    {
         character.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
+    }
     const auto shield = character.add_item({.definition_id = "shield", .name = "Baseline shield"});
     const auto id = party.add_pc(std::move(character));
     party.equip(id, 3); // Javelin in the ordered inventory above.
     party.equip(id, shield);
     party.award_experience(2700, "thrown-baseline");
     for (unsigned level = 2; level <= 4; ++level)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party;
 }
 
 void settle(CombatSession &combat)
 {
     if (combat.snapshot().free_movement)
+    {
         act(combat, "end");
+    }
 }
 
 void physical_inventory()
@@ -82,13 +96,17 @@ void physical_inventory()
     const std::array classes{"barbarian", "bard",   "cleric", "druid",    "fighter", "monk",
                              "paladin",   "ranger", "rogue",  "sorcerer", "warlock", "wizard"};
     for (const auto klass : classes)
+    {
         for (unsigned level = 1; level <= 4; ++level)
+        {
             for (const auto weapon : weapons)
             {
                 if (level > 1 && std::string_view(klass) != "fighter" &&
                     std::string_view(klass) != "cleric" && std::string_view(klass) != "wizard" &&
                     std::string_view(klass) != "rogue")
+                {
                     continue;
+                }
                 CampaignParty party(module());
                 auto draft = hero().creation_data();
                 draft.character_class = klass;
@@ -103,7 +121,9 @@ void physical_inventory()
                 party.equip(id, shield);
                 party.award_experience(2700, "throw-levels");
                 for (unsigned n = 1; n < level; ++n)
+                {
                     party.advance(id, party.default_advancement(id));
+                }
                 auto actors = party.participants();
                 actors.front().cell = {1, 1};
                 actors.push_back({2, "vanguard", "Target", Side::opposition, {2, 1}});
@@ -113,7 +133,9 @@ void physical_inventory()
                 party.begin_combat();
                 party.apply_combat(combat->snapshot());
                 while (combat->snapshot().actor != id)
+                {
                     act(*combat, "end");
+                }
                 auto before = combat->save();
                 check(before.starts_with("OGCOMBAT 61 "),
                       "New physical encounters use the current checkpoint format");
@@ -157,6 +179,8 @@ void physical_inventory()
                 check(encode_campaign(loaded, nullptr, "physical") == bytes,
                       "Post-combat equipment and quantities survive campaign save");
             }
+        }
+    }
 }
 
 void critical_stack()
@@ -174,11 +198,15 @@ void critical_stack()
         party.begin_combat();
         party.apply_combat(combat->snapshot());
         while (combat->snapshot().actor != 1)
+        {
             act(*combat, "end");
+        }
         act(*combat, "ranged", 2);
         const auto state = combat->snapshot();
         if (!state.free_movement)
+        {
             continue;
+        }
         party.apply_combat(state);
         check(party.member(1).character.inventory().find(3)->get().quantity == 3,
               "A ranged attack with a held Thrown weapon keeps it");
@@ -191,6 +219,7 @@ void critical_stack()
         act(*combat, "action_surge");
         auto throw_again = command(*combat, "throw", 2);
         for (const auto &command : combat->legal_commands())
+        {
             if (command.verb == "throw" && command.target == 2)
             {
                 const auto snapshot = combat->snapshot();
@@ -206,6 +235,7 @@ void critical_stack()
                     break;
                 }
             }
+        }
         check(combat->submit(throw_again), "Surge can throw the same weapon again");
         settle(*combat);
         party.apply_combat(combat->snapshot());
@@ -235,7 +265,9 @@ void large_stack()
     party.begin_combat();
     party.apply_combat(combat->snapshot());
     while (combat->snapshot().actor != first)
+    {
         act(*combat, "end");
+    }
     check(combat->snapshot().held_items.size() == 2,
           "Large stack does not allocate one record per unit");
     act(*combat, "throw", 99);
@@ -263,7 +295,9 @@ void control_fixture()
     const auto sword = pc.add_item({.definition_id = "longsword", .name = "Sword"});
     const auto shield = pc.add_item({.definition_id = "shield", .name = "Shield"});
     for (auto weapon : weapons)
+    {
         pc.add_item({.definition_id = weapon, .name = weapon, .quantity = 3});
+    }
     CampaignParty party(module());
     auto id = party.add_pc(std::move(pc));
     party.equip(id, sword);
@@ -275,7 +309,9 @@ void control_fixture()
     auto rules = module();
     auto combat = rules->create({{10, 8, std::vector<Terrain>(80)}, actors}, 1);
     while (combat->snapshot().actor != id)
+    {
         act(*combat, "end");
+    }
     const auto folder = std::filesystem::path(OPENGOLD_BINARY_DIR) / "thrown-fixtures";
     std::filesystem::create_directories(folder);
     std::ofstream(folder / "before.save", std::ios::binary) << combat->save();

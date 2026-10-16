@@ -41,14 +41,18 @@ Character hero(std::string klass = "fighter", std::string background = "sage")
     d.name = "Archer";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 void grow(CampaignParty &p, MemberId id, unsigned level)
 {
     while (std::cmp_less(p.member(id).character.sheet().level, level))
+    {
         p.advance(id, p.default_advancement(id));
+    }
 }
 
 void replace(std::string &s, std::string_view a, std::string_view b)
@@ -61,24 +65,36 @@ void replace(std::string &s, std::string_view a, std::string_view b)
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 Message result(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack log");
 }
 
 std::string arg(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == key)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing attack argument");
 }
 
@@ -234,8 +250,10 @@ void attacks()
                       arg(actual, "roll") == arg(control, "roll"),
                   "Archery preserves independent natural rolls, criticals and natural-one misses");
             if (seed != 11)
+            {
                 check(arg(actual, "damage") == arg(control, "damage"),
                       "Archery never modifies damage or consumes extra dice");
+            }
         }
     }
     auto soldier = battle(*rules, leveled("archery", "soldier"), "shortbow");
@@ -244,8 +262,10 @@ void attacks()
     check(soldier->save() == pending->save() && arg(result(*soldier), "bonus") == "7",
           "Restored Savage Attacker hit retains Archery's attack bonus");
     if (soldier->snapshot().free_movement)
+    {
         check(soldier->submit(command(*soldier, "end")),
               "Decline optional Champion movement before Surge");
+    }
     check(soldier->submit(command(*soldier, "action_surge")) &&
               soldier->submit(command(*soldier, "ranged")),
           "Archery remains usable on the additional non-Magic action");

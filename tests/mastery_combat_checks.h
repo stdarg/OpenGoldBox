@@ -6,7 +6,9 @@ fx::EffectState state(const CombatSession &c, EntityId id)
     const auto resources = unit(c, id).persistent.resources;
     const auto at = resources.find("FX");
     if (at == resources.npos)
+    {
         return {};
+    }
     std::istringstream in(resources.substr(at));
     return fx::read_effects(in);
 }
@@ -20,16 +22,24 @@ Message result(const CombatSession &c)
 {
     const auto messages = c.snapshot().log_messages();
     for (auto i = messages.rbegin(); i != messages.rend(); ++i)
+    {
         if (i->source.starts_with("{actor} -> {target}: d20"))
+        {
             return *i;
+        }
+    }
     throw std::runtime_error("Missing mastery attack result");
 }
 
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == name)
+        {
             return a.value;
+        }
+    }
     return {};
 }
 
@@ -41,14 +51,18 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 void turn(CombatSession &c, EntityId id)
 {
     for (unsigned n = 0; c.snapshot().actor != id && n < 8; ++n)
+    {
         act(c, "end");
+    }
     check(c.snapshot().actor == id, "Mastery fixture reaches turn");
 }
 
 void settle(CombatSession &c)
 {
     if (c.snapshot().free_movement)
+    {
         act(c, "end");
+    }
 }
 
 Character hero(std::string key, std::string klass = "fighter", std::string background = "sage")
@@ -58,7 +72,9 @@ Character hero(std::string key, std::string klass = "fighter", std::string backg
     auto &selected = draft.training["class:" + klass + ":weapon_mastery"];
     selected = {key, "club"};
     if (klass == "fighter")
+    {
         selected.push_back("dagger");
+    }
     return Character(*srd5::character_rules(), draft, {});
 }
 
@@ -69,7 +85,9 @@ auto rules(bool immune = false)
     std::string text{std::istreambuf_iterator<char>(in), {}};
     text += "\ncreature mastery_target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
     if (immune)
+    {
         text += "affinity mastery_target ward immunity all\n";
+    }
     return srd5::parse_content(text);
 }
 
@@ -117,12 +135,14 @@ void codec_and_lifecycle()
     for (auto bad :
          {"FX8 2 1 1 5 7 2 \"Source\" 0 6001 0 0", "FX8 2 1 1 6 7 2 \"Source\" 0 12001 0 0",
           "FX8 2 1 1 6 0 2 \"Source\" 0 9000 0 0"})
+    {
         rejects(
             [&]
             {
                 std::istringstream bytes(bad);
                 (void)fx::read_effects(bytes);
             });
+    }
     fx::consume_attack_masteries(attacker, target, {.scope = 7, .actor = 1});
     check(!fx::sapped(attacker) && !fx::vexed_by(target, {.scope = 7, .actor = 1}) &&
               target.active.size() == 2,
@@ -136,8 +156,10 @@ void codec_and_lifecycle()
     check(target.active.empty() && rng == before, "Exact expiry needs no saving throw or RNG");
     fx::EffectState full;
     for (unsigned i = 0; i < fx::effect_limit; ++i)
+    {
         fx::apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = i + 1}, "Source",
                                  6000);
+    }
     check(!fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 999}) &&
               fx::can_apply_attack_mastery(full, fx::EffectKind::sap, {.scope = 7, .actor = 1}),
           "Full store permits same-source refresh only");
@@ -155,11 +177,15 @@ void weapon_matrix()
             // Firearms cannot be mastered.
             if ((weapon.mastery != fx::Mastery::sap && weapon.mastery != fx::Mastery::vex) ||
                 weapon.key == "pistol")
+            {
                 continue;
+            }
             for (bool ranged : {false, true})
             {
                 if ((!ranged && weapon.ranged) || (ranged && !weapon.ranged && !weapon.thrown))
+                {
                     continue;
+                }
                 for (unsigned seed : {11u, 72u, 89u})
                 {
                     auto e = encounter(*r, hero(std::string(weapon.key)), std::string(weapon.key),
@@ -238,6 +264,7 @@ void timing_and_rolls()
           "Target's first attack consumes Sap");
     // Opposing sources cancel even on a pending damage decision.
     for (bool sap : {false, true})
+    {
         for (const auto background : {"sage", "soldier"})
         {
             e = encounter(*r, hero("rapier", "fighter", background), "rapier");
@@ -265,6 +292,7 @@ void timing_and_rolls()
             check(state(*c, 99).active.size() == 1 && state(*c, 99).next_id == 3,
                   "Hit consumes previous Vex before applying a fresh one");
         }
+    }
     // Attack spells consume existing Sap/Vex but never apply the held weapon's property.
     auto draft = character("wizard", "Caster").creation_data();
     draft.cantrips = std::vector<std::string>{"fire_bolt"};
@@ -288,6 +316,7 @@ void timing_and_rolls()
 void physical_attacks_and_reactions()
 {
     for (bool npc : {false, true})
+    {
         for (bool thrown : {false, true})
         {
             CampaignParty party(rules());
@@ -321,6 +350,7 @@ void physical_attacks_and_reactions()
             check(arg(result(*c), "disadvantage") == " (advantage)",
                   "Action Surge uses the freshly applied Vex");
         }
+    }
     auto r = rules();
     for (const auto key : {"mace", "rapier"})
     {
@@ -330,8 +360,12 @@ void physical_attacks_and_reactions()
         act(*c, "end");
         Command move;
         for (const auto &option : c->legal_commands())
+        {
             if (option.verb == "move" && option.destination == Cell{3, 1})
+            {
                 move = option;
+            }
+        }
         check(!move.verb.empty() && c->submit(move) && c->snapshot().reaction_pending,
               "Moving enemy offers mastery reaction");
         act(*c, "opportunity", 99);
@@ -352,6 +386,7 @@ void capacity_and_identity()
 {
     auto r = rules();
     for (bool matching : {false, true})
+    {
         for (const auto key : {"mace", "rapier"})
         {
             auto e = encounter(*r, hero(key), key);
@@ -381,9 +416,12 @@ void capacity_and_identity()
                       "Consume or refresh leaves bounded collection");
             }
             else
+            {
                 check(!offers(*c, "melee") && !c->submit(ticket) && c->save() == before,
                       "Capacity rejection is atomic before RNG/action consumption");
+            }
         }
+    }
     auto e = encounter(*r, character("fighter", "No grant"), "mace");
     auto base = r->create(e, 89);
     fx::EffectState effect;
@@ -409,7 +447,9 @@ void ui_fixtures()
 {
     const auto output = std::getenv("OPENGOLD_MASTERY_FIXTURES");
     if (!output)
+    {
         return;
+    }
     auto r = module();
     const auto path = std::filesystem::path(output);
     std::filesystem::create_directories(path);
@@ -425,7 +465,9 @@ void ui_fixtures()
             const auto before = c->save();
             act(*c, "melee", 99);
             if (!fx::has_attack_mastery(state(*c, 99)))
+            {
                 continue;
+            }
             for (const auto suffix : {"-before", "-after"})
             {
                 std::ofstream out(path / (std::string(key) + suffix + ".save"), std::ios::binary);
@@ -447,7 +489,9 @@ void pending_interactions()
         const auto id = p.add_pc(hero("rapier", klass, "soldier"));
         p.award_experience(900, "mastery-interaction");
         while (p.member(id).character.sheet().level < 3)
+        {
             p.advance(id, p.default_advancement(id));
+        }
         auto e = encounter(*r, p.member(id).character, "rapier");
         auto base = r->create(e, 72);
         fx::EffectState target;

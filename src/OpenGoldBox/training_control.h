@@ -23,51 +23,97 @@ inline godot::String training_string(std::string_view s)
 template <class Translate> godot::String training_source(std::string_view id, const Translate &tr)
 {
     if (id == "class:fighter:fighting_style")
+    {
         return tr(N_("Fighter Fighting Style"));
+    }
     if (id == "class:barbarian")
+    {
         return tr(N_("Barbarian class"));
+    }
     if (id == "class:bard")
+    {
         return tr(N_("Bard class"));
+    }
     if (id == "class:cleric")
+    {
         return tr(N_("Cleric class"));
+    }
     if (id == "class:cleric:divine_order")
+    {
         return tr(N_("Cleric Divine Order"));
+    }
     if (id == "class:druid")
+    {
         return tr(N_("Druid class"));
+    }
     if (id == "class:druid:primal_order")
+    {
         return tr(N_("Druid Primal Order"));
+    }
     if (id.ends_with(":weapon_mastery:4"))
+    {
         return training_source(id.substr(0, id.size() - 17), tr) + " / " + tr(N_("Weapon Mastery"));
+    }
     if (id.ends_with(":weapon_mastery"))
+    {
         return training_source(id.substr(0, id.size() - 15), tr) + " / " + tr(N_("Weapon Mastery"));
+    }
     if (id == "class:fighter")
+    {
         return tr(N_("Fighter class"));
+    }
     if (id == "class:monk")
+    {
         return tr(N_("Monk class"));
+    }
     if (id == "class:paladin")
+    {
         return tr(N_("Paladin class"));
+    }
     if (id == "class:ranger")
+    {
         return tr(N_("Ranger class"));
+    }
     if (id == "class:sorcerer")
+    {
         return tr(N_("Sorcerer class"));
+    }
     if (id == "class:warlock")
+    {
         return tr(N_("Warlock class"));
+    }
     if (id == "class:wizard")
+    {
         return tr(N_("Wizard class"));
+    }
     if (id == "class:rogue")
+    {
         return tr(N_("Rogue class"));
+    }
     if (id == "class:rogue:expertise")
+    {
         return tr(N_("Rogue Expertise"));
+    }
     if (id == "background:acolyte")
+    {
         return tr(N_("Acolyte background"));
+    }
     if (id == "background:soldier")
+    {
         return tr(N_("Soldier background"));
+    }
     if (id == "background:sage")
+    {
         return tr(N_("Sage background"));
+    }
     if (id == "class:wizard:scholar")
+    {
         return tr(N_("Wizard Scholar"));
+    }
     if (id == "background:criminal")
+    {
         return tr(N_("Criminal background"));
+    }
     return training_string(id);
 }
 
@@ -79,7 +125,9 @@ godot::String training_sources(const std::vector<opengold::rules::FeatureGrant> 
     for (const auto &g : grants)
     {
         if (!result.is_empty())
+        {
             result += ", ";
+        }
         result += training_source(g.source_id, tr);
     }
     return result;
@@ -91,32 +139,44 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 {
     godot::String text;
     if (!fixed)
+    {
         text = "\n\n[theme_title]" + tr(N_("Training")) + "[/theme_title]\n" +
                tr(profile.complete ? N_("Supported training choices complete")
                                    : N_("Training choices pending")) +
                "\n";
+    }
     for (const auto &s : profile.skills)
     {
         if (fixed && !s.proficient)
+        {
             continue;
+        }
         text += tr(s.label);
         if (!fixed)
         {
             text +=
                 " " + godot::String(s.bonus >= 0 ? "+" : "") + godot::String::num_int64(s.bonus);
             if (s.expertise)
+            {
                 text += " / " + tr(N_("Expertise"));
+            }
             else if (s.proficient)
+            {
                 text += " / " + tr(N_("Proficient"));
+            }
         }
         const auto sources = training_sources(s.sources, tr);
         if (!sources.is_empty())
+        {
             text += " (" + sources + ")";
+        }
         text += "\n";
     }
     for (const auto &m : profile.masteries)
+    {
         text += tr(N_("Weapon Mastery")) + ": " + tr(m.label) + " (" +
                 training_sources(m.sources, tr) + ")\n";
+    }
     return text;
 }
 
@@ -124,28 +184,44 @@ godot::String training_summary(const opengold::rules::TrainingProfile &profile, 
 inline const char *mastery_effect(std::string_view mastery)
 {
     if (mastery == "Cleave")
+    {
         return N_(
             "After a melee hit, attack a second creature within 5 feet of the first with the same weapon. Once per turn.");
+    }
     if (mastery == "Graze")
+    {
         return N_("A miss still deals damage equal to the ability modifier used for the attack.");
+    }
     if (mastery == "Nick")
+    {
         return N_(
             "The Light weapon's extra attack comes with the Attack action instead of a Bonus Action. Once per turn.");
+    }
     if (mastery == "Push")
+    {
         return N_(
             "On a hit, push a Large or smaller creature up to 10 feet straight away from you.");
+    }
     if (mastery == "Sap")
+    {
         return N_(
             "On a hit, the target has Disadvantage on its next attack roll before your next turn.");
+    }
     if (mastery == "Slow")
+    {
         return N_(
             "On a hit that deals damage, the target's Speed drops by 10 feet until your next turn.");
+    }
     if (mastery == "Topple")
+    {
         return N_(
             "On a hit, the target makes a Constitution save (DC 8 + the attack's ability modifier + proficiency bonus) or falls Prone.");
+    }
     if (mastery == "Vex")
+    {
         return N_(
             "On a hit that deals damage, your next attack against that target before the end of your next turn has Advantage.");
+    }
     return nullptr;
 }
 
@@ -175,7 +251,9 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
         const auto name = tr(skill->label);
         const auto chosen = signed_bonus(skill->bonus + (gained ? proficiency : 0));
         if (!gained)
+        {
             return name + godot::String(" ") + chosen;
+        }
         // The demo shares this header without the game's formatter.
         return tr(expertise ? N_("{skill} {bonus} with Expertise (now {current})")
                             : N_("{skill} {bonus} if chosen (now {current})"))
@@ -184,7 +262,9 @@ godot::String training_benefit(const opengold::rules::TrainingChoiceGroup &group
             .replace("{current}", signed_bonus(skill->bonus));
     }
     if (const auto *effect = mastery_effect(option.description))
+    {
         return tr(option.description) + godot::String(": ") + tr(effect);
+    }
     return tr(option.description);
 }
 
@@ -225,7 +305,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         species ? std::optional<opengold::rules::CharacterSheet>{} : std::optional(creator.sheet());
     for (auto i = static_cast<unsigned>(groups.size());
          i < static_cast<unsigned>(rows->get_child_count()); ++i)
+    {
         required_node<Control>(*rows, String("Group") + String::num_uint64(i)).hide();
+    }
     for (unsigned i = 0; i < groups.size(); ++i)
     {
         const auto &group = groups[i];
@@ -267,16 +349,22 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
                                 return row_name == id || row_name == id + String("Benefit");
                             });
             if (used)
+            {
                 continue;
+            }
             row->hide();
             if (auto *check = Object::cast_to<CheckBox>(row))
+            {
                 check->set_disabled(true);
+            }
         }
         // A single choice is a set of radio buttons sharing one group.
         const bool single =
             group.control == opengold::rules::TrainingChoiceControl::single_selection;
         if (single && !box->has_meta("radios"))
+        {
             box->set_meta("radios", Ref<ButtonGroup>(memnew(ButtonGroup)));
+        }
         const Ref<ButtonGroup> radios =
             single ? Ref<ButtonGroup>(box->get_meta("radios")) : Ref<ButtonGroup>();
         int row_index = 2; // after the title's slot and its spacer
@@ -338,7 +426,9 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         {
             auto *choice = Object::cast_to<CheckBox>(box.get_child(j));
             if (choice && choice->is_visible())
+            {
                 choices.push_back(choice);
+            }
         }
     }
     real_t widest = 0;
@@ -348,20 +438,30 @@ void refresh_training_controls(godot::Node &parent, const opengold::CharacterCre
         widest = std::max(widest, choice->get_combined_minimum_size().x);
     }
     for (auto *choice : choices)
+    {
         choice->set_custom_minimum_size({widest, choice->get_custom_minimum_size().y});
+    }
 
     String signature;
     for (const auto &group : groups)
+    {
         signature += training_string(group.id) + ";";
+    }
     auto &scroll = required_node<ScrollContainer>(parent, container);
     if (scroll.has_method("reset_for"))
+    {
         scroll.call("reset_for", signature);
+    }
     unsigned first = 0;
     for (unsigned i = 0; i < groups.size(); ++i)
+    {
         if (groups[i].control == opengold::rules::TrainingChoiceControl::single_selection)
+        {
             rows->move_child(
                 &required_node<GridContainer>(*rows, String("Group") + String::num_uint64(i)),
                 first++);
+        }
+    }
 }
 } // namespace presentation
 #endif

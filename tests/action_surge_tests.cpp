@@ -34,19 +34,27 @@ Character hero(unsigned level = 1, std::string race = "human", std::string klass
     d.name = "Surge tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character c(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(c.advance(*module(), state), "Advance fixture");
+    }
     return c;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || target == v.target))
+        {
             return v;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -55,8 +63,12 @@ using opengold::test::rejects;
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -68,8 +80,12 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -78,7 +94,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (unsigned i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t n{};
     in >> n;
     return n;
@@ -87,12 +105,14 @@ std::uint64_t rng(const CombatSession &c)
 unsigned remaining(const Character &h, const VitalState &state)
 {
     for (const auto &p : module()->recovery_info(h.sheet(), state).resources)
+    {
         if (p.id == "action_surge")
         {
             check(p.capacity == 1 && p.short_rest_recovery == 1,
                   "Independent level-2–4 pool capacity and recharge");
             return p.remaining;
         }
+    }
     return 99;
 }
 
@@ -112,7 +132,9 @@ auto battle(const Character &h, std::vector<std::string> gear = {},
                              {3, "vanguard", "Enemy 2", Side::opposition, {8, 1}}}},
                            seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -162,8 +184,12 @@ void grants()
                 });
             bad = h.sheet();
             for (auto &g : bad.grants)
+            {
                 if (g.id == "feature:action_surge")
+                {
                     g.level = 1;
+                }
+            }
             rejects(
                 [&]
                 {
@@ -183,16 +209,22 @@ void grants()
         }
     }
     for (const auto &klass : srd5::character_rules()->choices(CreationField::character_class))
+    {
         if (klass.id != "fighter")
+        {
             check(!has(*battle(hero(1, "human", klass.id)), "action_surge"),
                   "Other starting classes do not gain Action Surge");
+        }
+    }
 }
 
 void actions()
 {
     auto rules = module();
     for (unsigned level = 2; level <= 4; ++level)
+    {
         for (bool first : {false, true})
+        {
             for (const auto verb : {"dash", "dodge", "disengage", "melee", "ranged"})
             {
                 auto h = hero(level);
@@ -201,7 +233,9 @@ void actions()
                 const auto before = unit(*c);
                 const auto random = rng(*c);
                 if (!first)
+                {
                     act(*c, "dodge");
+                }
                 const auto ticket = command(*c, "action_surge");
                 act(*c, "action_surge");
                 check(
@@ -222,7 +256,9 @@ void actions()
                     unit(*c).action == first,
                     "Non-Magic action spends the restricted allowance before the ordinary action");
                 if (first)
+                {
                     act(*c, "dash");
+                }
                 check(!unit(*c).action, "Exactly two total actions this turn");
                 const auto done = c->save();
                 check(!c->submit({c->snapshot().revision, 1, 0, "dodge"}) && c->save() == done,
@@ -230,6 +266,8 @@ void actions()
                 check(rules->restore(done)->save() == done,
                       "Spent allowance and all action results restore");
             }
+        }
+    }
     auto h = hero(2, "orc");
     auto c = battle(h);
     act(*c, "action_surge");
@@ -245,7 +283,9 @@ void actions()
     act(*c, "action_surge");
     act(*c, "end");
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     check(!has(*c, "action_surge") && unit(*c).action && unit(*c).movement_feet == 30,
           "Unused extra allowance expires without refund or next-turn carryover");
     act(*c, "dash");
@@ -254,8 +294,12 @@ void actions()
     act(*c, "action_surge");
     Command move;
     for (const auto &v : c->legal_commands())
+    {
         if (v.verb == "move" && v.destination == Cell{0, 1})
+        {
             move = v;
+        }
+    }
     check(c->submit(move) && c->snapshot().reaction_pending,
           "Movement during Surge still provokes");
     check(!has(*c, "action_surge"), "Reaction window cannot activate the feature");
@@ -305,7 +349,9 @@ void attacks_and_malformed()
             {
                 auto at = line.size();
                 for (unsigned i = 0; i < 3; ++i)
+                {
                     at = line.rfind(' ', at - 1);
+                }
                 line.replace(at + 1, line.size() - at - 1, suffix);
             }
             edited += line + '\n';
@@ -345,7 +391,9 @@ void savage()
         act(*c, "action_surge");
         act(*c, "melee", 2);
         if (!test::logged(*c, "(Savage Attacker)"))
+        {
             continue;
+        }
         check(unit(*c).action, "Surge attack with automatic Savage damage keeps the normal action");
         check(rules->restore(c->save())->save() == c->save(),
               "Savage Attacker hit resumes with the unused ordinary action");
@@ -366,9 +414,13 @@ void recovery()
     {
         auto state = spent;
         if (long_rest)
+        {
             rules->recover(state, h.sheet());
+        }
         else
+        {
             rules->recover_short_rest(state, h.sheet());
+        }
         check(remaining(h, state) == 1, "Either completed rest fully recharges one use");
     }
     auto state = spent;
@@ -439,8 +491,10 @@ void ui_fixtures()
     std::ofstream(path / "cleric.save", std::ios::binary)
         << battle(hero(1, "human", "cleric"))->save();
     for (unsigned level = 3; level <= 4; ++level)
+    {
         std::ofstream(path / ("level" + std::to_string(level) + ".save"), std::ios::binary)
             << battle(hero(level, "orc"), {"longsword"})->save();
+    }
     auto c = battle(hero(2), {"longsword"});
     std::ofstream(path / "available.save", std::ios::binary) << c->save();
     act(*c, "action_surge");

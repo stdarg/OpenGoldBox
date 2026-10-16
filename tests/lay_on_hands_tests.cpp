@@ -24,7 +24,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -43,15 +45,21 @@ Character created(std::string klass, std::string name)
     d.name = std::move(name);
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -59,8 +67,12 @@ std::vector<EntityId> lay_on_hands_targets(const CombatSession &c)
 {
     std::vector<EntityId> targets;
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "lay_on_hands")
+        {
             targets.push_back(command.target);
+        }
+    }
     std::sort(targets.begin(), targets.end());
     return targets;
 }
@@ -69,8 +81,12 @@ unsigned pool(const CombatSession &c)
 {
 
     for (const auto &resource : unit(c, 1).resources)
+    {
         if (resource.id == "lay_on_hands")
+        {
             return resource.remaining;
+        }
+    }
     throw std::runtime_error("Missing Lay On Hands pool");
 }
 
@@ -101,19 +117,25 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
          VitalState{1, false, {}}},
         {99, "vanguard", "Enemy", Side::opposition, {10, 6}}};
     if (paladin_state)
+    {
         setup[0].state = *paladin_state;
+    }
     if (ally_state)
+    {
         setup[1].state = *ally_state;
+    }
     auto c = rules.create({{12, 8, std::vector<Terrain>(96)}, setup}, 7);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
     {
         bool ended = false;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "end")
             {
                 ended = c->submit(command);
                 break;
             }
+        }
         check(ended, "Reach the Paladin's turn");
     }
     check(c->snapshot().actor == 1, "The Paladin acts");
@@ -154,11 +176,13 @@ void combat_checks()
           "An ally at 0 Hit Points can be healed");
     const auto dying_offers = dying->legal_commands();
     for (const auto &command : dying_offers)
+    {
         if (command.verb == "lay_on_hands")
         {
             check(dying->submit(command), "Lay On Hands reaches a dying ally");
             break;
         }
+    }
     check(unit(*dying, 2).conscious && unit(*dying, 2).hit_points == 5,
           "A dying ally regains consciousness");
 }
@@ -185,15 +209,21 @@ void campaign_checks()
         for (const auto &resource :
              rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
                  .resources)
+        {
             if (resource.id == "lay_on_hands")
+            {
                 return resource;
+            }
+        }
         throw std::runtime_error("Missing Lay On Hands pool");
     };
     check(pool_of().capacity == 5 && pool_of().remaining == 5 && !pool_of().short_rest_recovery,
           "The pool is five per level and not restored by a Short Rest");
     party.award_experience(2700, "paladin-xp");
     for (unsigned level = 2; level <= 4; ++level)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     check(pool_of().capacity == 20 && pool_of().remaining == 20,
           "Each Paladin level adds five Hit Points to the pool");
     const auto bytes = encode_campaign(party, nullptr, "lay-on-hands");

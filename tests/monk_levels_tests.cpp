@@ -27,7 +27,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -46,20 +48,26 @@ CharacterDraft draft(std::string klass)
     d.name = "Veteran";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 6, 6, 1}, 3};
     const auto rules = srd5::character_rules();
     for (bool filled = true; filled;)
     {
         filled = false;
         for (const auto &group : rules->training_options(d))
+        {
             if (!d.training.contains(group.id))
             {
                 for (unsigned i = 0; i < group.count; ++i)
+                {
                     d.training[group.id].push_back(group.options.at(i).id);
+                }
                 filled = true;
                 break;
             }
+        }
     }
     return d;
 }
@@ -71,7 +79,9 @@ Character monk(unsigned level)
     VitalState life;
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life), "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -88,8 +98,12 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -114,8 +128,12 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -131,7 +149,9 @@ std::unique_ptr<CombatSession> duel(const RulesModule &rules, const Character &h
     // Uncanny Metabolism is offered as Initiative is rolled; it is kept for later.
     for (unsigned turns = 0;
          (c->snapshot().actor != 1 || offered(*c, "initiative_keep")) && turns < 6; ++turns)
+    {
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Monk's turn");
+    }
     return c;
 }
 
@@ -141,7 +161,9 @@ void progression_checks()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft("monk"), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     check(party.member(id).character.sheet().level == 15,
           "In the campaign a Monk reaches the hall's level 15");
     const auto rules = module();
@@ -169,7 +191,9 @@ void progression_checks()
     {
         unsigned count = 0;
         for (const auto ability : all_abilities)
+        {
             count += hero.sheet().save_proficiencies[ability] ? 1 : 0;
+        }
         return count;
     };
     check(proficient(monk(13)) == 2 && proficient(monk(14)) == 6,
@@ -194,7 +218,9 @@ void stunning_checks()
         check(offered(*c, "melee_stun"), "Stunning Strike is offered");
         check(submit(*c, "melee_stun", 98), "A Stunning Strike attack");
         if (!logged(*c, "Monk attempts a Stunning Strike."))
+        {
             continue;
+        }
         check(!offered(*c, "melee_stun") && offered(*c, "melee"),
               "Once a turn; Extra Attack's second attack is left");
         stunned |= logged(*c, "Dummy is Stunned.");
@@ -217,7 +243,9 @@ void flurry_stun_checks()
         check(submit(*c, "flurry_stun", 98), "A Flurry with Stunning Strike");
         tried = logged(*c, "Monk attempts a Stunning Strike.");
         if (tried)
+        {
             check(!offered(*c, "melee_stun"), "Still once a turn");
+        }
     }
     check(tried, "A Flurry hit tries the Stunning Strike");
 }
@@ -234,7 +262,9 @@ void empowered_checks()
             auto c = duel(*rules, monk(level), seed);
             check(submit(*c, "flurry_of_blows", 98), "A Flurry of Blows");
             if (logged(*c, text))
+            {
                 return true;
+            }
         }
         return false;
     };
@@ -291,7 +321,9 @@ void deflect_energy_checks()
         check(submit(*c, "end"), "The Monk waits");
         for (unsigned steps = 0;
              steps < 6 && c->snapshot().actor == 98 && !c->snapshot().reaction_pending; ++steps)
+        {
             check(c->submit(choose_demo_command(*c)), "The brute acts");
+        }
         check(offered(*c, "deflect") == (level == 13), "Deflect Attacks against Fire from 13");
     }
 }
@@ -303,19 +335,31 @@ void perfect_focus_checks()
     const auto focus = [](const CombatSession &c)
     {
         for (const auto &pool : unit(c, 1).resources)
+        {
             if (pool.id == "focus")
+            {
                 return pool.remaining;
+            }
+        }
         return 0u;
     };
     // Patient Defense with Focus each turn spends the Focus down to 2.
     auto first = duel(*rules, monk(15), 1);
     for (unsigned steps = 0; steps < 200 && focus(*first) > 2; ++steps)
+    {
         if (first->snapshot().reaction_pending)
+        {
             check(submit(*first, "decline"), "Decline");
+        }
         else if (first->snapshot().actor == 1)
+        {
             check(submit(*first, "patient_defense_focus") || submit(*first, "end"), "Spend Focus");
+        }
         else
+        {
             check(first->submit(choose_demo_command(*first)), "The dummy acts");
+        }
+    }
     check(focus(*first) == 2, "Two Focus Points left");
     auto c = duel(*rules, monk(15), 1, unit(*first, 1).persistent);
     check(logged(*c, "Monk has 4 Focus Points (Perfect Focus).") && focus(*c) == 4,
@@ -337,7 +381,9 @@ void carry_checks()
                                  {98, "dummy", "Dummy", Side::opposition, {7, 2}}}},
                                2);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Monk's turn");
+        }
         return c;
     };
     check(!offered(*start(9), "step_of_the_wind_carry"), "Not before level 10");
@@ -349,8 +395,12 @@ void carry_checks()
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the carried ally");
     bool moved = false;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb == "move" && command.destination == Cell{4, 1})
+        {
             moved = c->submit(command);
+        }
+    }
     const auto monk_cell = unit(*c, 1).cell, ally_cell = unit(*c, 2).cell;
     check(moved && monk_cell == Cell{4, 1} && ally_cell.x == 3 &&
               std::abs(ally_cell.y - monk_cell.y) <= 1,
@@ -370,14 +420,22 @@ void disciplined_survivor_checks()
                                  {98, "blindness-adept", "Adept", Side::opposition, {6, 1}}}},
                                seed);
         for (unsigned turns = 0; turns < 8 && !logged(*c, "Disciplined Survivor"); ++turns)
+        {
             if (c->snapshot().actor == 1 || c->snapshot().reaction_pending)
+            {
                 check(submit(*c, "initiative_keep") || submit(*c, "decline") || submit(*c, "end"),
                       "The Monk waits");
+            }
             else
+            {
                 check(c->submit(choose_demo_command(*c)), "The adept acts");
+            }
+        }
         if (logged(*c,
                    "Monk spends 1 Focus Point and rolls the save again (Disciplined Survivor)."))
+        {
             return;
+        }
     }
     throw std::runtime_error("No seed's Blindness save calls for Disciplined Survivor");
 }

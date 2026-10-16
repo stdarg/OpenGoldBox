@@ -28,7 +28,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -57,7 +59,9 @@ CharacterDraft draft(std::string first)
     d.name = "Warlock";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:warlock", {"investigation", "deception"}},
                   {"class:warlock:invocations", {std::move(first)}}};
@@ -80,9 +84,13 @@ Character warlock(unsigned level, std::string first = "pact_of_the_blade",
         const auto next = static_cast<unsigned>(hero.sheet().level) + 1;
         auto choice = rules->default_advancement(hero.sheet());
         if (const auto chosen = picks.find(next); chosen != picks.end())
+        {
             choice.training["class:warlock:invocations:" + std::to_string(next)] = chosen->second;
+        }
         if (next == 11)
+        {
             choice.training["class:warlock:arcanum:11"] = {"circle_of_death"};
+        }
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
     return hero;
@@ -101,8 +109,12 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -119,15 +131,21 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 void to_turn(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
+    {
         check(submit(c, "end") || submit(c, "decline"), "End a turn");
+    }
     check(c.snapshot().actor == id, "Reach the turn");
 }
 
@@ -166,7 +184,9 @@ void progression_checks()
         party.add_pc(Character(*srd5::character_rules(), draft("pact_of_the_blade"), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto sheet = party.member(id).character.sheet();
     check(sheet.level == 15, "A Warlock reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{5, 6},
@@ -180,8 +200,10 @@ void progression_checks()
                                                                                  {13, 12},
                                                                                  {14, 12},
                                                                                  {15, 13}})
+    {
         check(rules->spell_access(warlock(level).sheet()).prepared_choices == count,
               "Prepared spells: 6 at 5 to 13 at 15");
+    }
     check(rules->spell_access(warlock(10).sheet()).cantrip_choices == 4, "A fourth cantrip at 10");
     check(std::count_if(sheet.grants.begin(), sheet.grants.end(),
                         [](const auto &g)
@@ -190,12 +212,14 @@ void progression_checks()
                         }) == 9,
           "Nine invocations at 15");
     for (const unsigned level : {11u, 13u, 15u})
+    {
         check(std::any_of(sheet.grants.begin(), sheet.grants.end(),
                           [&](const auto &g)
                           {
                               return g.id.starts_with("arcanum:") && g.level == level;
                           }),
               "Mystic Arcanum at 11, 13 and 15");
+    }
     check(granted(sheet, "feature:hurl_through_hell"), "Hurl Through Hell at 14");
     check(granted(sheet, "feature:dark_ones_own_luck") &&
               std::any_of(sheet.grants.begin(), sheet.grants.end(),
@@ -259,7 +283,9 @@ void arcanum_checks()
     const auto verb = arcanum->verb;
     check(c->submit(*arcanum), "Cast the Mystic Arcanum spell");
     if (c->snapshot().spell_targeting || c->snapshot().area_targeting)
+    {
         check(submit(*c, "area_cast") || submit(*c, "spell_cast"), "Finish the casting");
+    }
     check(submit(*c, "end"), "End the turn");
     to_turn(*c, 1);
     check(!offered(*c, verb), "Once per Long Rest");
@@ -276,7 +302,9 @@ void hurl_checks()
                   submit(*c, "hurl_through_hell", 98),
               "Hurl Through Hell follows a hit");
         if (!logged(*c, "Foe is hurled through the Lower Planes."))
+        {
             continue;
+        }
         hurled = true;
         check(logged(*c, "Psychic damage from Hurl Through Hell.") && unit(*c, 98).banished,
               "The foe is gone and hurt");
@@ -320,14 +348,18 @@ void protectors_checks()
         check(submit(*c, "melee", 1) && (!c->snapshot().reaction_pending || submit(*c, "decline")),
               "The slayer attacks");
         if (!logged(*c, "Warlock drops to 1 Hit Point instead (Gift of the Protectors)."))
+        {
             continue;
+        }
         kept = unit(*c, 1).hit_points == 1;
         check(kept, "The Warlock is left 1 Hit Point");
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spent gift");
         for (unsigned turns = 0; turns < 12 && unit(*c, 1).hit_points > 0; ++turns)
+        {
             check(submit(*c, "melee", 1) || submit(*c, "end") || submit(*c, "decline"),
                   "The slayer attacks again");
+        }
         check(unit(*c, 1).hit_points == 0, "The gift works once per Long Rest");
     }
     check(kept, "A seed where the slayer drops the Warlock");

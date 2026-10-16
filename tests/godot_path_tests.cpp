@@ -12,7 +12,9 @@ namespace
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 void non_ascii_names_survive()

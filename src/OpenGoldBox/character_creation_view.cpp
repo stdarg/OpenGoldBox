@@ -152,9 +152,11 @@ void CharacterCreationView::_ready()
         .connect("item_selected",
                  presentation::guarded(this, &CharacterCreationView::background_selected));
     for (int i = 0; i < 12; ++i)
+    {
         required_node<CheckBox>(*this, gs("Targets/Rows/Class" + std::to_string(i)))
             .connect("toggled",
                      presentation::guarded(this, &CharacterCreationView::target_toggled).bind(i));
+    }
     required_node<OptionButton>(*this, "Bonus")
         .connect("item_selected",
                  presentation::guarded(this, &CharacterCreationView::bonus_selected));
@@ -178,11 +180,13 @@ void CharacterCreationView::_ready()
             .set_tooltip_text(
                 i18n::text(N_("Drag this rolled result onto an attribute to assign it.")));
         for (const char *stem : {"Ability", "Score", "BonusScore", "TotalScore"})
+        {
             required_node<Control>(*this, gs(std::string(stem) + std::to_string(i)))
                 .set_drag_forwarding(
                     Callable(),
                     presentation::guarded(this, &CharacterCreationView::can_drop_roll).bind(i),
                     presentation::guarded(this, &CharacterCreationView::drop_roll).bind(i));
+        }
         auto *score = &required_node<Button>(*this, gs("Score" + std::to_string(i)));
         score->set_drag_forwarding(
             presentation::guarded(this, &CharacterCreationView::drag_roll).bind(i + 6),
@@ -225,12 +229,16 @@ void CharacterCreationView::_ready()
         .connect("item_selected",
                  presentation::guarded(this, &CharacterCreationView::size_selected));
     for (int bank = 0; bank < 2; ++bank)
+    {
         for (int part = 0; part < 6; ++part)
+        {
             required_node<Button>(*this,
                                   gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
                 .connect("pressed",
                          presentation::guarded(this, &CharacterCreationView::color_selected)
                              .bind(bank, part));
+        }
+    }
     for (int i = 0; i < 16; ++i)
     {
         auto *button = &required_node<Button>(*this, gs("Palette" + std::to_string(i)));
@@ -242,7 +250,9 @@ void CharacterCreationView::_ready()
     }
     layout();
     if (Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     portrait_check_ = args.has("--portrait-check");
     checking_ = args.has("--character-check") || portrait_check_;
@@ -275,11 +285,17 @@ void CharacterCreationView::_ready()
         required_node<Label>(*this, "Status").set_text(error_);
         required_node<Button>(*this, "Next").set_disabled(true);
         for (int i = 0; i < get_child_count(); ++i)
+        {
             if (auto *c = Object::cast_to<Control>(get_child(i)))
+            {
                 if (c->get_name() != StringName("Title") &&
                     c->get_name() != StringName("Instructions") &&
                     c->get_name() != StringName("Status"))
+                {
                     c->hide();
+                }
+            }
+        }
     }
 }
 
@@ -292,11 +308,17 @@ void CharacterCreationView::layout()
     if (creator_)
     {
         if (creator_->step() == CreationStep::race)
+        {
             creation_layout.call("play", "race");
+        }
         else if (creator_->step() == CreationStep::attributes)
+        {
             creation_layout.call("play", "attributes");
+        }
         else if (creator_->step() == CreationStep::sheet)
+        {
             creation_layout.call("play", "sheet");
+        }
         creation_layout.call("advance", 0);
     }
 
@@ -305,13 +327,17 @@ void CharacterCreationView::layout()
     required_node<Node>(*this, "ModifiersModal/WindowLayout").call("fit", Vector2i(get_size()));
     required_node<Node>(*this, "SavingThrowsModal/WindowLayout").call("fit", Vector2i(get_size()));
     if (campaign_)
+    {
         party_layout();
+    }
 }
 
 void CharacterCreationView::recommend_portrait()
 {
     if (portrait_chosen_)
+    {
         return;
+    }
     auto a = creator_->appearance();
     const auto &d = creator_->draft();
     a.portrait = portraits_->recommended(d);
@@ -333,7 +359,9 @@ void CharacterCreationView::show_race_portrait(bool again)
     const auto &d = creator_->draft();
     if (!again && race_portrait_.is_valid() && race_portrait_of_ == d.race &&
         race_portrait_gender_ == d.gender)
+    {
         return;
+    }
     auto a = creator_->appearance();
     a.portrait =
         portraits_->of_race_and_gender(d, static_cast<std::uint32_t>(UtilityFunctions::randi()));
@@ -346,7 +374,9 @@ void CharacterCreationView::show_race_portrait(bool again)
 void CharacterCreationView::refresh_art()
 {
     if (!creator_ || !art_ || rendered_ == creator_->appearance())
+    {
         return;
+    }
     const auto &a = creator_->appearance();
     // Unarmed, as combat shows a character with nothing equipped; weapons and
     // shields appear there once they are equipped.
@@ -366,7 +396,9 @@ void CharacterCreationView::refresh_art()
 void CharacterCreationView::refresh()
 {
     if (!creator_)
+    {
         return;
+    }
     const presentation::ScopedFlag refreshing(refreshing_);
     const auto step = creator_->step();
     const auto &d = creator_->draft();
@@ -380,7 +412,9 @@ void CharacterCreationView::refresh()
                stats = step == CreationStep::attributes, icon = step == CreationStep::combat_icon,
                portrait = step == CreationStep::portrait;
     for (const auto *n : {"Choices"})
+    {
         show(n, choosing);
+    }
     show("GenderLabel", step == CreationStep::race);
     show("Gender", step == CreationStep::race);
     show("Description", choosing || step == CreationStep::sheet);
@@ -389,20 +423,30 @@ void CharacterCreationView::refresh()
     for (const auto *n :
          {"BackgroundLabel", "Background", "BonusLabel", "Bonus", "Columns", "DiceHeader",
           "BaseHeader", "BonusHeader", "TotalHeader", "Roll", "SwapHint"})
+    {
         show(n, stats);
+    }
     show("DiceHint", stats);
     show("Instructions", !stats);
     for (const auto *n : {"TargetsTitle", "Targets", "TargetHint"})
+    {
         show(n, stats);
+    }
     for (unsigned i = 0; i < 6; ++i)
+    {
         show(gs("Warning" + std::to_string(i)),
              stats && rules::unmet_targets(creator_->rules(), d)[rules::all_abilities[i]]);
+    }
     for (const auto *n : {"BaseHeader", "BonusHeader", "TotalHeader"})
+    {
         show(n, false);
+    }
     show("NameLabel", step == CreationStep::race);
     show("RaceSelection", step == CreationStep::race);
     if (step == CreationStep::race)
+    {
         show_race_portrait(false);
+    }
     show("Name", step == CreationStep::race);
     show("SpellChoices", step == CreationStep::spell_choices);
     show("TrainingFixed", step == CreationStep::training);
@@ -411,30 +455,44 @@ void CharacterCreationView::refresh()
     show("SpeciesChoices", step == CreationStep::race && creator_->has_species_choices());
     for (const auto *n : {"PortraitGender", "PortraitClass", "PortraitRace", "PortraitIdentity",
                           "PortraitFilters", "PortraitScroll"})
+    {
         show(n, portrait);
+    }
     show("PortraitPreview", portrait || step == CreationStep::sheet);
     if (!portrait)
+    {
         show("PortraitZoom", false);
+    }
     for (const auto *n : {"PortraitGender", "PortraitClass", "PortraitRace"})
+    {
         required_node<Button>(*this, n).set_disabled(added_to_party_);
+    }
     for (const auto *n : {"CombatHeadPrevious", "CombatHeadNext", "CombatHeadLabel", "BodyPrevious",
                           "BodyNext", "BodyLabel", "Size", "ColorTitle", "Color1Title",
                           "Color2Title", "PaletteHint", "ReadyLabel", "ActionLabel"})
+    {
         show(n, icon);
+    }
     for (int i = 0; i < 6; ++i)
     {
         for (const auto &stem : {std::string("Ability"), std::string("Dice"), std::string("Score"),
                                  std::string("BonusScore"), std::string("TotalScore")})
+        {
             required_node<Control>(*this, gs(stem + std::to_string(i))).set_visible(stats);
+        }
         required_node<Control>(*this, gs("TotalScore" + std::to_string(i))).hide();
         required_node<Control>(*this, gs("Part" + std::to_string(i))).set_visible(icon);
         for (int bank = 0; bank < 2; ++bank)
+        {
             required_node<Control>(*this,
                                    gs("Color" + std::to_string(bank) + "_" + std::to_string(i)))
                 .set_visible(icon);
+        }
     }
     for (int i = 0; i < 16; ++i)
+    {
         required_node<Control>(*this, gs("Palette" + std::to_string(i))).set_visible(icon);
+    }
     required_node<Label>(*this, "PageTitle")
         .set_text(i18n::text(steps[static_cast<unsigned>(step)]));
     std::string progress;
@@ -443,11 +501,15 @@ void CharacterCreationView::refresh()
     {
         if (i == static_cast<unsigned>(CreationStep::spell_choices) &&
             !creator_->has_spell_choices())
+        {
             continue;
+        }
         // A new body keeps the alignment, scores, class and training.
         if (creator_->reincarnating() && i >= static_cast<unsigned>(CreationStep::alignment) &&
             i <= static_cast<unsigned>(CreationStep::training))
+        {
             continue;
+        }
         progress +=
             (i == static_cast<unsigned>(step) ? "> " : "  ") + std::to_string(++ordinal) + ". " +
             i18n::utf8(i == static_cast<unsigned>(CreationStep::combat_icon) ? N_("Combat icon")
@@ -459,8 +521,10 @@ void CharacterCreationView::refresh()
     required_node<Button>(*this, "Back").set_text(i18n::text(N_("Back")));
     show("Next", step != CreationStep::sheet);
     if (campaign_)
+    {
         required_node<Button>(*this, "AddParty")
             .set_visible(step == CreationStep::sheet && !added_to_party_);
+    }
     required_node<Button>(*this, "Next")
         .set_text(i18n::text(portrait ? N_("Show character sheet") : N_("Next")));
     required_node<Button>(*this, "Next")
@@ -500,11 +564,13 @@ void CharacterCreationView::refresh()
             }
         }
         if (step == CreationStep::character_class)
+        {
             required_node<RichTextLabel>(*this, "Description")
                 .append_text(
                     "\n\n" +
                     i18n::text(
                         "Starting-class minimums use the multiclass prerequisites as an OpenGoldBox house rule. Disabled classes do not qualify; go Back to reassign scores or bonuses."));
+        }
         instructions =
             step == CreationStep::character_class
                 ? N_("Choose one starting class. Checked targets are future plans, not additional class levels.")
@@ -521,7 +587,9 @@ void CharacterCreationView::refresh()
         {
             gender->add_item(i18n::text(choices[i].label));
             if (choices[i].id == d.gender)
+            {
                 gender->select(i);
+            }
         }
     }
     if (stats)
@@ -550,12 +618,16 @@ void CharacterCreationView::refresh()
         {
             background->add_item(i18n::text(choices[i].label));
             if (choices[i].id == d.background)
+            {
                 background->select(i);
+            }
         }
         auto *bonus = &required_node<OptionButton>(*this, "Bonus");
         bonus->clear();
         for (const auto &option : creator_->rules().adjustments(d.background))
+        {
             bonus->add_item(i18n::adjustment(option));
+        }
         bonus->select(d.adjustment);
         required_node<Button>(*this, "Roll")
             .set_text(i18n::text(d.rolled ? N_("Reroll all six") : N_("Roll all six")));
@@ -567,10 +639,15 @@ void CharacterCreationView::refresh()
     std::optional<CharacterSheet> drafted;
     const CharacterSheet *s = nullptr;
     if (completed_)
+    {
         s = &completed_->sheet();
+    }
     else if (creator_->scores_assigned())
+    {
         s = &drafted.emplace(creator_->sheet());
+    }
     if (stats)
+    {
         for (unsigned i = 0; i < 6; ++i)
         {
             const auto ability = rules::all_abilities[i];
@@ -608,10 +685,13 @@ void CharacterCreationView::refresh()
             required_node<Label>(*this, gs("TotalScore" + std::to_string(i)))
                 .set_text(s ? gs(std::to_string(s->scores[ability])) : String("--"));
         }
+    }
     if (step == CreationStep::race && creator_->has_species_choices())
+    {
         presentation::refresh_training_controls(
             *this, *creator_, presentation::guarded(this, &CharacterCreationView::training_toggled),
             i18n::text, {}, true);
+    }
     if (step == CreationStep::training)
     {
         presentation::refresh_training_controls(
@@ -646,8 +726,10 @@ void CharacterCreationView::refresh()
                 : N_("Choose your available cantrips. Unfilled choices remain pending; Back preserves your selections.");
     }
     if (icon)
+    {
         instructions = N_(
             "Select a part's Color-1 or Color-2, then a swatch. Watch both poses change. Absent parts are disabled.");
+    }
     refresh_portraits();
     required_node<Label>(*this, "CombatHeadLabel")
         .set_text(
@@ -660,7 +742,9 @@ void CharacterCreationView::refresh()
     auto *size = &required_node<OptionButton>(*this, "Size");
     size->clear();
     for (const auto *label : {N_("Size: Short"), N_("Size: Regular"), N_("Size: Large")})
+    {
         size->add_item(i18n::text(label));
+    }
     size->select(static_cast<int>(a.icon_size));
     if (icon)
     {
@@ -672,18 +756,21 @@ void CharacterCreationView::refresh()
             color_part_ != shield_part)
         {
             for (unsigned i = 0; i < 12; ++i)
+            {
                 if (usage.contains(i / 6, i % 6))
                 {
                     color_bank_ = i / 6;
                     color_part_ = i % 6;
                     break;
                 }
+            }
         }
         required_node<Label>(*this, "PaletteHint")
             .set_text(i18n::format(
                 "{part} / Color-{bank}: choose a color",
                 {{"part", i18n::text(parts[color_part_])}, {"bank", color_bank_ + 1}}));
         for (int bank = 0; bank < 2; ++bank)
+        {
             for (int part = 0; part < 6; ++part)
             {
                 auto *button = &required_node<Button>(
@@ -703,6 +790,7 @@ void CharacterCreationView::refresh()
                                          : i18n::text("Not present"));
                 button->call("configure_part_index", a.colors[bank][part], selected);
             }
+        }
     }
     if (step == CreationStep::sheet)
     {
@@ -719,7 +807,9 @@ void CharacterCreationView::refresh()
         auto *list = &required_node<ItemList>(*this, "Choices");
         const auto races = creator_->rules().choices(CreationField::race);
         for (unsigned i = 0; i < races.size() && step == CreationStep::race; ++i)
+        {
             list->set_item_disabled(i, races[i].id != d.race);
+        }
         required_node<OptionButton>(*this, "Gender").set_disabled(true);
         auto *name = &required_node<LineEdit>(*this, "Name");
         name->set_text(String::utf8(d.name.c_str()));
@@ -728,27 +818,41 @@ void CharacterCreationView::refresh()
         required_node<Button>(*this, "AddParty").set_text(i18n::text(N_("Reincarnate")));
         String species;
         for (const auto &race : races)
+        {
             if (race.id == d.race)
+            {
                 species = i18n::text(race.label);
+            }
+        }
         if (step == CreationStep::race)
+        {
             required_node<Label>(*this, "Instructions")
                 .set_text(i18n::format(
                     N_("{name} returns in a new body: {species}. Make the species' choices, then continue."),
                     {{"name", String::utf8(d.name.c_str())}, {"species", species}}));
+        }
         else if (step == CreationStep::spell_choices)
+        {
             required_node<Label>(*this, "Instructions")
                 .set_text(i18n::text(N_("Choose the spells Magic Initiate teaches.")));
+        }
         else if (step == CreationStep::sheet)
+        {
             required_node<Label>(*this, "Instructions")
                 .set_text(i18n::text(N_("Review the new body, then cast Reincarnate.")));
+        }
     }
     // The portrait page names the character's race, gender and class so a
     // matching portrait is easy to find.
     const auto chosen_label = [&](CreationField field)
     {
         for (const auto &choice : creator_->rules().choices(field))
+        {
             if (choice.id == selection(d, field))
+            {
                 return i18n::text(choice.label);
+            }
+        }
         return String();
     };
     required_node<Label>(*this, "PortraitIdentity")
@@ -795,7 +899,9 @@ void CharacterCreationView::show_error(const std::exception &failure)
 void CharacterCreationView::target_toggled(bool selected, int index)
 {
     if (refreshing_)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -807,7 +913,9 @@ void CharacterCreationView::target_toggled(bool selected, int index)
 void CharacterCreationView::creation_spell_toggled(bool selected, String group, String option)
 {
     if (refreshing_ || !creator_)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -820,7 +928,9 @@ void CharacterCreationView::creation_spell_toggled(bool selected, String group, 
 void CharacterCreationView::cantrip_toggled(bool selected, String option)
 {
     if (refreshing_ || !creator_ || creator_->step() != CreationStep::spell_choices)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -833,7 +943,9 @@ void CharacterCreationView::training_toggled(bool selected, String group, String
     // The training page, or a species' choices on the race page.
     if (refreshing_ || !creator_ ||
         (creator_->step() != CreationStep::training && creator_->step() != CreationStep::race))
+    {
         return;
+    }
     // A radio button turning off only means another of its group was chosen,
     // and that choice replaces it.
     if (!selected)
@@ -846,7 +958,9 @@ void CharacterCreationView::training_toggled(bool selected, String group, String
                                         });
         if (found != groups.end() &&
             found->control == opengold::rules::TrainingChoiceControl::single_selection)
+        {
             return;
+        }
     }
     perform(
         [&]
@@ -864,7 +978,9 @@ void CharacterCreationView::next()
         {
             creator_->next();
             if (creator_->step() == CreationStep::sheet)
+            {
                 completed_ = creator_->create_character();
+            }
             selected_score_ = -1;
         });
 }
@@ -908,14 +1024,18 @@ void CharacterCreationView::restart()
 void CharacterCreationView::choice_selected(std::int64_t index)
 {
     if (refreshing_)
+    {
         return;
+    }
     perform(
         [&]
         {
             const auto f = choice_field(creator_->step());
             creator_->select(f, creator_->rules().choices(f).at(index).id);
             if (f == CreationField::race || f == CreationField::character_class)
+            {
                 recommend_portrait();
+            }
             if (f == CreationField::race)
             {
                 show_race_portrait(true);
@@ -927,7 +1047,9 @@ void CharacterCreationView::choice_selected(std::int64_t index)
 void CharacterCreationView::gender_selected(std::int64_t index)
 {
     if (refreshing_)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -941,7 +1063,9 @@ void CharacterCreationView::gender_selected(std::int64_t index)
 void CharacterCreationView::background_selected(std::int64_t index)
 {
     if (refreshing_)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -953,7 +1077,9 @@ void CharacterCreationView::background_selected(std::int64_t index)
 void CharacterCreationView::bonus_selected(std::int64_t index)
 {
     if (refreshing_)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -977,7 +1103,9 @@ void CharacterCreationView::score_selected(int index)
         [&]
         {
             if (selected_score_ < 0)
+            {
                 selected_score_ = index;
+            }
             else
             {
                 creator_->swap_scores(static_cast<rules::Ability>(selected_score_),
@@ -1030,14 +1158,18 @@ std::size_t CharacterCreationView::combat_body_group(unsigned body) const
                          return std::find(group.begin(), group.end(), body) != group.end();
                      });
     if (found == body_groups_.end())
+    {
         throw std::runtime_error("Unknown combat body");
+    }
     return static_cast<std::size_t>(found - body_groups_.begin());
 }
 
 void CharacterCreationView::size_selected(std::int64_t index)
 {
     if (refreshing_)
+    {
         return;
+    }
     perform(
         [&]
         {
@@ -1071,13 +1203,17 @@ void CharacterCreationView::palette_selected(int index)
 void CharacterCreationView::capture(const char *name)
 {
     if (!capture_)
+    {
         return;
+    }
     const auto path = presentation::path_from_godot(
         ProjectSettings::get_singleton()->globalize_path(gs(std::string("user://checks/") + name)));
     std::filesystem::create_directories(path.parent_path());
     const auto image = get_viewport()->get_texture()->get_image();
     if (image.is_null() || image->save_png(gs(path.generic_string())) != OK)
+    {
         throw std::runtime_error("Character capture failed");
+    }
 }
 
 void CharacterCreationView::_process(double)
@@ -1087,9 +1223,13 @@ void CharacterCreationView::_process(double)
         try
         {
             if (++check_frames_ % 4 == 0)
+            {
                 equipment_art_check();
+            }
             if (check_frames_ > 160)
+            {
                 throw std::runtime_error("Equipment artwork check timed out");
+            }
         }
         catch (const std::exception &e)
         {
@@ -1189,9 +1329,13 @@ void CharacterCreationView::_process(double)
         try
         {
             if (++check_frames_ % 4 == 0)
+            {
                 party_check();
+            }
             if (check_frames_ > 3000)
+            {
                 throw std::runtime_error("Party check timed out");
+            }
         }
         catch (const std::exception &e)
         {
@@ -1202,15 +1346,23 @@ void CharacterCreationView::_process(double)
         return;
     }
     if (!checking_ || Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     try
     {
         if (fatal_ || !error_.is_empty())
+        {
             throw std::runtime_error(error_.utf8().get_data());
+        }
         if (++check_frames_ % 4 == 0)
+        {
             check_run();
+        }
         if (check_frames_ > 400 + portraits_->entries().size() * 4)
+        {
             throw std::runtime_error("Character UI check timed out");
+        }
     }
     catch (const std::exception &e)
     {
@@ -1260,31 +1412,43 @@ void CharacterCreationView::check_run()
             const auto &assigned = creator_->draft().assignment;
             if (group == 0 &&
                 (assigned[Ability::intelligence] != 0 || assigned[Ability::strength] != 6))
+            {
                 throw std::runtime_error("Mouse drag did not fill only the target ability box");
+            }
             if (group == 0)
             {
                 const auto raw = creator_->draft().rolls[0].total();
                 required_node<OptionButton>(*this, "Background").emit_signal("item_selected", 0);
                 if (required_node<Button>(*this, "Score3").get_text() !=
                     gs(std::to_string(raw + 2)))
+                {
                     throw std::runtime_error(
                         "Background selector did not refresh the assigned score");
+                }
                 required_node<OptionButton>(*this, "Bonus").emit_signal("item_selected", 2);
                 if (required_node<Button>(*this, "Score3").get_text() !=
                         gs(std::to_string(raw + 1)) ||
                     !required_node<Button>(*this, "Score0").get_text().is_empty())
+                {
                     throw std::runtime_error(
                         "Bonus selector did not refresh partial scores correctly");
+                }
                 required_node<OptionButton>(*this, "Background").emit_signal("item_selected", 3);
                 required_node<OptionButton>(*this, "Bonus").emit_signal("item_selected", 1);
             }
             if (group == 1 && assigned[Ability::dexterity] != 1)
+            {
                 throw std::runtime_error("Second dice assignment failed");
+            }
             if (group == 2 &&
                 (assigned[Ability::dexterity] != 0 || assigned[Ability::intelligence] != 1))
+            {
                 throw std::runtime_error("Dragging between filled boxes failed to swap scores");
+            }
             if (can_drop_roll({}, String("invalid"), 0))
+            {
                 throw std::runtime_error("Invalid drag data accepted");
+            }
             if (group == 2)
             {
                 for (unsigned i : {0u, 2u, 4u, 5u})
@@ -1307,10 +1471,14 @@ void CharacterCreationView::check_run()
                 !required_node<RichTextLabel>(*this, "ModifiersModal/Text")
                      .get_text()
                      .contains("Dwarven Toughness"))
+            {
                 throw std::runtime_error("Modifier modal failed");
+            }
             const auto text = required_node<RichTextLabel>(*this, "ModifiersModal/Text").get_text();
             if (text.contains("(Score - 10)") || !text.contains("Ability score adjustments"))
+            {
                 throw std::runtime_error("Ability adjustments still include derived save bonuses");
+            }
             for (unsigned i = 0; i < 6; ++i)
             {
                 const auto &s = completed_->sheet();
@@ -1319,13 +1487,17 @@ void CharacterCreationView::check_run()
                 if (s.bonuses[ability] == 0)
                 {
                     if (text.contains(gs(heading)))
+                    {
                         throw std::runtime_error("Unadjusted ability shown in modifiers");
+                    }
                 }
                 else if (!text.contains(gs(
                              heading + "Rolled score: " + std::to_string(s.base[ability]) + "\n" +
                              s.background + " background (" + signed_number(s.bonuses[ability]) +
                              ")\nFinal score: " + std::to_string(s.scores[ability]))))
+                {
                     throw std::runtime_error("Adjustment lines do not match approved format");
+                }
             }
         }
         else if (modal_check_stage_ == 1)
@@ -1335,15 +1507,19 @@ void CharacterCreationView::check_run()
                 const auto image =
                     required_node<Window>(*this, "ModifiersModal").get_texture()->get_image();
                 if (image.is_valid())
+                {
                     image->save_png(ProjectSettings::get_singleton()->globalize_path(
                         "user://checks/character-modifiers.png"));
+                }
             }
             required_node<Button>(*this, "ModifiersModal/Close").emit_signal("pressed");
         }
         else if (modal_check_stage_ == 2)
         {
             if (required_node<Window>(*this, "ModifiersModal").is_visible())
+            {
                 throw std::runtime_error("Modifier modal did not close");
+            }
         }
         else if (modal_check_stage_ == 3)
         {
@@ -1353,7 +1529,9 @@ void CharacterCreationView::check_run()
             if (!required_node<Window>(*this, "SavingThrowsModal").is_visible() ||
                 !text.contains("Strength save:") ||
                 !text.contains("Fighter saving throw proficiency"))
+            {
                 throw std::runtime_error("Saving throw modal omitted sources");
+            }
         }
         else if (modal_check_stage_ == 4)
         {
@@ -1362,8 +1540,10 @@ void CharacterCreationView::check_run()
                 const auto image =
                     required_node<Window>(*this, "SavingThrowsModal").get_texture()->get_image();
                 if (image.is_valid())
+                {
                     image->save_png(ProjectSettings::get_singleton()->globalize_path(
                         "user://checks/character-saving-throws.png"));
+                }
             }
             auto *dc = &required_node<LineEdit>(*this, "SavingThrowsModal/DC");
             const auto edit = [&](const char *value)
@@ -1377,16 +1557,24 @@ void CharacterCreationView::check_run()
                 !edit("").contains("Enter a whole-number") ||
                 !edit("abc").contains("Enter a whole-number") ||
                 !edit("0").contains("Enter a whole-number"))
+            {
                 throw std::runtime_error("Saving throw DC changes failed");
+            }
             const int needed =
                 srd5::minimum_save_roll(15, completed_->sheet().saving_throws[Ability::strength]);
             if (!edit("15").contains(gs("Roll " + std::to_string(needed) + " or higher")))
+            {
                 throw std::runtime_error("Saving throw DC did not restore");
+            }
         }
         else if (modal_check_stage_ == 5)
+        {
             required_node<Button>(*this, "SavingThrowsModal/Close").emit_signal("pressed");
+        }
         else if (required_node<Window>(*this, "SavingThrowsModal").is_visible())
+        {
             throw std::runtime_error("Saving throw modal did not close");
+        }
         ++modal_check_stage_;
         return;
     }
@@ -1407,14 +1595,18 @@ void CharacterCreationView::check_run()
     {
         auto *button = &required_node<Button>(*this, name);
         if (!button->is_visible_in_tree() || button->is_disabled())
+        {
             throw std::runtime_error(std::string("Unavailable button: ") + name);
+        }
         click(button->get_global_rect().get_center());
     };
     const auto select_size = [&](por::IconSize size)
     {
         auto *sizes = &required_node<OptionButton>(*this, "Size");
         if (!sizes->is_visible_in_tree())
+        {
             throw std::runtime_error("Size must be on Combat appearance");
+        }
         sizes->select(static_cast<int>(size));
         sizes->emit_signal("item_selected", static_cast<int>(size));
     };
@@ -1425,21 +1617,27 @@ void CharacterCreationView::check_run()
         {
             auto *gender = &required_node<OptionButton>(*this, "Gender");
             if (!gender->is_visible_in_tree())
+            {
                 throw std::runtime_error("Gender must be on Race & Gender");
+            }
             for (unsigned i = 0; i < choices.size(); ++i)
+            {
                 if (choices[i].id == id)
                 {
                     gender->emit_signal("item_selected", i);
                     return;
                 }
+            }
         }
         for (unsigned i = 0; i < choices.size(); ++i)
+        {
             if (choices[i].id == id)
             {
                 auto *list = &required_node<ItemList>(*this, "Choices");
                 click(list->get_global_position() + list->get_item_rect(i).get_center());
                 return;
             }
+        }
         throw std::runtime_error("Missing UI choice");
     };
     // The portrait picker is checked on its own page, after combat appearance.
@@ -1453,15 +1651,19 @@ void CharacterCreationView::check_run()
             const auto &d = creator_->draft();
             if (filtered_portraits_.empty() ||
                 required_node<OptionButton>(*this, "PortraitClass").get_selected() != 0)
+            {
                 throw std::runtime_error(
                     "Portrait filters must start at the character's gender and race");
+            }
             for (const auto index : filtered_portraits_)
             {
                 const auto &shown = portraits_->entries().at(index);
                 if (!PortraitCatalog::same(shown.gender, d.gender) ||
                     !PortraitCatalog::same(shown.race, d.race))
+                {
                     throw std::runtime_error(
                         "Portrait filters must start at the character's gender and race");
+                }
             }
             for (const auto *name : {"PortraitGender", "PortraitRace"})
             {
@@ -1473,7 +1675,9 @@ void CharacterCreationView::check_run()
         }
         const auto &p = portraits_->entries()[check_head_];
         if (creator_->appearance().portrait != p.filename || images_[0]->get_width() != 1254)
+        {
             throw std::runtime_error("Portrait navigation or full-resolution texture failed");
+        }
         ++check_head_;
         portrait_part(1);
         return;
@@ -1487,9 +1691,13 @@ void CharacterCreationView::check_run()
         auto *race_filter = &required_node<OptionButton>(*this, "PortraitRace");
         if (gender_filter->get_item_count() != 4 || class_filter->get_item_count() != 13 ||
             race_filter->get_item_count() != 10)
+        {
             throw std::runtime_error("Portrait filters do not list every gender, class and race");
+        }
         for (int gender = 1; gender < gender_filter->get_item_count(); ++gender)
+        {
             for (int klass = 1; klass < class_filter->get_item_count(); ++klass)
+            {
                 for (int race = 1; race < race_filter->get_item_count(); ++race)
                 {
                     for (const auto &[filter, index] :
@@ -1504,27 +1712,39 @@ void CharacterCreationView::check_run()
                     const auto race_value = String(race_filter->get_item_metadata(race));
                     std::size_t count = 0;
                     for (const auto &p : portraits_->entries())
+                    {
                         if (gs(p.gender) == gender_value && gs(p.klass) == class_value &&
                             gs(p.race) == race_value)
+                        {
                             ++count;
+                        }
+                    }
                     if (count == 0 || filtered_portraits_.size() != count ||
                         !bool(required_node<Control>(*this, "PortraitScroll/PortraitSheet")
                                   .get("enabled")))
+                    {
                         throw std::runtime_error(
                             "Portrait intersection is missing or cannot be selected");
+                    }
                     for (const auto index : filtered_portraits_)
                     {
                         const auto &portrait = portraits_->entries().at(index);
                         if (gs(portrait.gender) != gender_value ||
                             gs(portrait.klass) != class_value || gs(portrait.race) != race_value)
+                        {
                             throw std::runtime_error(
                                 "Portrait filter returned the wrong character");
+                        }
                     }
                     if (creator_->appearance() != before || creator_->draft().race != draft.race ||
                         creator_->draft().gender != draft.gender ||
                         creator_->draft().character_class != draft.character_class)
+                    {
                         throw std::runtime_error("Filters changed the character");
+                    }
                 }
+            }
+        }
         for (const auto *name : {"PortraitGender", "PortraitClass", "PortraitRace"})
         {
             auto *filter = &required_node<OptionButton>(*this, name);
@@ -1532,7 +1752,9 @@ void CharacterCreationView::check_run()
             filter->emit_signal("item_selected", 0);
         }
         if (filtered_portraits_.size() != portraits_->entries().size())
+        {
             throw std::runtime_error("Clearing filters failed");
+        }
         ++check_default_;
         if (portrait_check_)
         {
@@ -1549,9 +1771,12 @@ void CharacterCreationView::check_run()
     case 0:
         capture("character-race-columns.png");
         if (!required_node<Button>(*this, "Next").is_disabled())
+        {
             throw std::runtime_error("Empty name accepted");
+        }
         required_node<LineEdit>(*this, "Name").grab_focus();
         for (char c : std::string("Mira Stoneward"))
+        {
             for (bool pressed : {true, false})
             {
                 Ref<InputEventKey> event;
@@ -1561,6 +1786,7 @@ void CharacterCreationView::check_run()
                 event->set_pressed(pressed);
                 get_viewport()->push_input(event, true);
             }
+        }
         break; // LineEdit publishes text_changed on the next idle turn.
     case 1:
         choose(CreationField::race, "dwarf");
@@ -1584,13 +1810,17 @@ void CharacterCreationView::check_run()
             !required_node<RichTextLabel>(*this, "Description")
                  .get_text()
                  .contains("Racial traits"))
+        {
             throw std::runtime_error(
                 "The race page must show a portrait and the traits of the chosen race");
+        }
         // Changing gender shows a portrait of the race and the new gender.
         choose(CreationField::gender, "female");
         shown = shown_portrait();
         if (!shown || shown->race != "Dwarf" || shown->gender != "Female")
+        {
             throw std::runtime_error("The race page must show a portrait of the chosen gender");
+        }
     }
         press("Next");
         break;
@@ -1600,23 +1830,33 @@ void CharacterCreationView::check_run()
         break;
     case 4:
         if (creator_->step() != CreationStep::attributes)
+        {
             throw std::runtime_error("Attributes must precede Class");
+        }
         for (unsigned i = 0; i < 12; ++i)
+        {
             required_node<CheckBox>(*this, gs("Targets/Rows/Class" + std::to_string(i)))
                 .set_pressed(true);
+        }
         if (creator_->draft().target_classes.size() != 12 ||
             !required_node<Label>(*this, "Warning3").is_visible())
+        {
             throw std::runtime_error(
                 "Target checkboxes must accept future goals and show unmet requirements");
+        }
         break;
     case 5:
         if (!required_node<Button>(*this, "Next").is_disabled())
+        {
             throw std::runtime_error("Unrolled scores accepted");
+        }
         capture("character-empty-rolls.png");
         press("Roll");
         if (!required_node<Button>(*this, "Next").is_disabled() ||
             !required_node<Button>(*this, "Score0").get_text().is_empty())
+        {
             throw std::runtime_error("Dice were automatically assigned");
+        }
         break;
     case 6:
     {
@@ -1624,7 +1864,9 @@ void CharacterCreationView::check_run()
         const auto old = creator_->draft().rolls;
         press("Roll");
         if (old == creator_->draft().rolls)
+        {
             throw std::runtime_error("Reroll did not replace dice");
+        }
         required_node<OptionButton>(*this, "Background").emit_signal("item_selected", 3);
         required_node<OptionButton>(*this, "Bonus").emit_signal("item_selected", 1);
         break;
@@ -1635,7 +1877,9 @@ void CharacterCreationView::check_run()
         press("Ability0");
         press("Ability2");
         if (creator_->draft().assignment[Ability::strength] != old[Ability::constitution])
+        {
             throw std::runtime_error("UI swap failed");
+        }
         break;
     }
     case 8:
@@ -1645,64 +1889,93 @@ void CharacterCreationView::check_run()
             const bool unmet = rules::unmet_targets(creator_->rules(), creator_->draft())[ability];
             if (required_node<Label>(*this, gs("Warning" + std::to_string(i))).is_visible() !=
                 unmet)
+            {
                 throw std::runtime_error("Target warnings did not follow score assignment");
+            }
             const Ref<StyleBoxFlat> style =
                 required_node<Button>(*this, gs("Score" + std::to_string(i)))
                     .get_theme_stylebox("normal");
             if (style->get_bg_color() !=
                 get_theme_color(unmet ? "score_unmet_bg" : "creation_field", "OpenGoldPalette"))
+            {
                 throw std::runtime_error("Target score background is stale");
+            }
         }
         required_node<CheckBox>(*this, "Targets/Rows/Class11").set_pressed(false);
         if (required_node<Label>(*this, "Warning3").is_visible())
+        {
             throw std::runtime_error("Removing Wizard target must clear Intelligence warning");
+        }
         required_node<CheckBox>(*this, "Targets/Rows/Class11").set_pressed(true);
         for (unsigned i = 0; i < 6; ++i)
+        {
             if (required_node<Button>(*this, gs("Score" + std::to_string(i))).get_text() !=
                 gs(std::to_string(creator_->sheet().scores[rules::all_abilities[i]])))
+            {
                 throw std::runtime_error(
                     "Displayed ability score differs from the character sheet");
+            }
+        }
         capture("character-attributes.png");
         press("Next");
         break;
     case 9:
         if (creator_->step() != CreationStep::character_class)
+        {
             throw std::runtime_error("Attributes must advance to Class");
+        }
         choose(CreationField::character_class, "fighter");
         press("Next");
         if (creator_->step() != CreationStep::training ||
             !required_node<Button>(*this, "Next").is_disabled())
+        {
             throw std::runtime_error("Qualified Fighter must complete Training first");
+        }
         required_node<CheckBox>(*this, "Training/Rows/Group1/perception").set_pressed(true);
         required_node<CheckBox>(*this, "Training/Rows/Group1/history").set_pressed(true);
         required_node<CheckBox>(*this, "Training/Rows/Group0/archery").set_pressed(true);
         // A Fighter also masters three weapons.
         for (const char *weapon : {"dagger", "longsword", "greataxe"})
+        {
             required_node<CheckBox>(*this, gs(std::string("Training/Rows/Group2/") + weapon))
                 .set_pressed(true);
+        }
         press("Next");
         if (creator_->step() != CreationStep::combat_icon)
+        {
             throw std::runtime_error("Completed training must advance to combat appearance");
+        }
         break;
     case 10:
         for (int bank = 0; bank < 2; ++bank)
+        {
             for (int part : {0, 3})
+            {
                 if (required_node<Button>(
                         *this, gs("Color" + std::to_string(bank) + "_" + std::to_string(part)))
                         .is_disabled())
+                {
                     throw std::runtime_error("Weapon and shield colors must stay choosable");
+                }
+            }
+        }
         press("CombatHeadNext");
         for (int i = 0; i < 4; ++i)
+        {
             press("BodyNext");
+        }
         if (creator_->appearance().combat_body != body_groups_.at(4).front() ||
             required_node<Label>(*this, "BodyLabel").get_text() !=
                 String("5 / ") + String::num_uint64(body_groups_.size()))
+        {
             throw std::runtime_error("Body buttons must step through the bodies without weapons");
+        }
         select_size(por::IconSize::small);
         break;
     case 11:
         capture("character-before-colors.png");
         for (int bank = 0; bank < 2; ++bank)
+        {
             for (int part = 0; part < 6; ++part)
             {
                 const auto before = creator_->appearance();
@@ -1711,9 +1984,13 @@ void CharacterCreationView::check_run()
                 press(("Color" + std::to_string(bank) + "_" + std::to_string(part)).c_str());
                 press(("Palette" + std::to_string(chosen)).c_str());
                 if (creator_->appearance().colors[bank][part] != chosen)
+                {
                     throw std::runtime_error("Color input did not change the requested region");
+                }
                 if (images_[0]->get_image()->get_data() != portrait)
+                {
                     throw std::runtime_error("Combat colors changed the portrait");
+                }
                 for (unsigned pose = 0; pose < 2; ++pose)
                 {
                     const auto pixels = images_[pose + 1]->get_image()->get_data();
@@ -1722,15 +1999,20 @@ void CharacterCreationView::check_run()
                                                                         : por::IconPose::ready);
                     if (std::cmp_not_equal(pixels.size(), expected.rgba.size()) ||
                         !std::equal(expected.rgba.begin(), expected.rgba.end(), pixels.ptr()))
+                    {
                         throw std::runtime_error("Preview texture is stale after palette input");
+                    }
                 }
             }
+        }
         break;
     case 12:
         capture("character-appearance.png");
         press("Next");
         if (creator_->step() != CreationStep::portrait)
+        {
             throw std::runtime_error("Combat appearance must advance to Portrait");
+        }
         break;
     case 13:
     {
@@ -1740,7 +2022,9 @@ void CharacterCreationView::check_run()
         press("Back");
         press("Next");
         if (chosen != creator_->appearance().portrait)
+        {
             throw std::runtime_error("Manual portrait changed on Back/Next");
+        }
         capture("character-portrait.png");
         press("Next");
         break;
@@ -1750,7 +2034,9 @@ void CharacterCreationView::check_run()
             completed_->sheet().name != "Mira Stoneward" || !completed_->inventory().empty() ||
             completed_->appearance() != creator_->appearance() ||
             completed_->appearance().portrait.empty())
+        {
             throw std::runtime_error("Character not completed with the selected portrait");
+        }
         capture("character-sheet.png");
         press("Back");
         break;
@@ -1761,22 +2047,30 @@ void CharacterCreationView::check_run()
         select_size(por::IconSize::regular);
         press("CombatHeadNext");
         if (!required_node<Button>(*this, "Color0_2").is_disabled())
+        {
             throw std::runtime_error("Helmet-covered hair control enabled");
+        }
         press("CombatHeadPrevious");
         select_size(a.icon_size);
         press("Next");
         press("Next");
         if (a != creator_->appearance() || !completed_ || a != completed_->appearance())
+        {
             throw std::runtime_error("Appearance lost on part changes or review");
+        }
         press("Restart");
         break;
     }
     case 16:
         if (completed_ || creator_->draft().rolled || !creator_->draft().name.empty() ||
             creator_->step() != CreationStep::race)
+        {
             throw std::runtime_error("Start over did not clear the character");
+        }
         if (creator_->appearance().portrait != portraits_->recommended(creator_->draft()))
+        {
             throw std::runtime_error("Restart did not restore the default race's recommended head");
+        }
         UtilityFunctions::print(
             "Godot C++ character check passed: choices, mouse drag assignment, swaps, background, HP, name, complete portraits, race/gender defaults, live texture recolors, saving throws, modifier modal, character/inventory, sheet, edit, restart");
         checking_ = false;

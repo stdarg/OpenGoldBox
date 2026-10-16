@@ -24,7 +24,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -47,8 +49,12 @@ CharacterDraft pool_draft(std::string_view klass)
     art.set_original_head(1, por::PortraitPart{"fixture", head});
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     for (const auto &preset : character_pool(*srd5::character_rules(), art))
+    {
         if (preset.creation_data().character_class == klass)
+        {
             return preset.creation_data();
+        }
+    }
     throw std::runtime_error("No pool character of the class");
 }
 
@@ -96,8 +102,12 @@ struct Party
             auto &picks = result.training[group.id];
             picks.clear();
             for (const auto &o : group.options)
+            {
                 if (picks.size() < group.count && o.id != taken_option)
+                {
                     picks.push_back(o.id);
+                }
+            }
         }
         if (result.spell_learning)
         {
@@ -109,16 +119,24 @@ struct Party
                 auto &fill = (*result.spell_learning)[group.id];
                 fill.clear();
                 for (const auto &o : group.options)
+                {
                     if (fill.size() < group.count)
+                    {
                         fill.push_back(o.id);
+                    }
+                }
             }
             // The locked list follows the swap; free places take the first offers.
             result.spells = offered.locked_prepared;
             for (const auto &o : offered.preparation)
+            {
                 if (result.spells.size() < offered.prepared_count && o.id != replaced_spell &&
                     std::find(result.spells.begin(), result.spells.end(), o.id) ==
                         result.spells.end())
+                {
                     result.spells.push_back(o.id);
+                }
+            }
         }
         return result;
     }

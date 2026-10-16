@@ -20,8 +20,12 @@ inline std::string upper_ascii(std::string_view text)
 {
     std::string value(text);
     for (auto &c : value)
+    {
         if (c >= 'a' && c <= 'z')
+        {
             c = static_cast<char>(c - 'a' + 'A');
+        }
+    }
     return value;
 }
 
@@ -32,13 +36,19 @@ std::vector<std::uint8_t> read_archive_bytes(const std::filesystem::path &path,
 {
     const auto size = std::filesystem::file_size(path);
     if (size > archive_size_limit)
+    {
         throw Error(std::move(too_large));
+    }
     std::ifstream input(path, std::ios::binary);
     if (!input)
+    {
         throw Error(std::move(cannot_open));
+    }
     std::vector<std::uint8_t> bytes(std::istreambuf_iterator<char>(input), {});
     if (input.bad() || bytes.size() != size)
+    {
         throw Error(std::move(cannot_read));
+    }
     return bytes;
 }
 
@@ -50,13 +60,19 @@ std::filesystem::path find_archive(const std::filesystem::path &directory, std::
     for (const auto &file : std::filesystem::directory_iterator(directory))
     {
         if (upper_ascii(file.path().filename().string()) != name || !file.is_regular_file())
+        {
             continue;
+        }
         if (match)
+        {
             throw Error(std::move(ambiguous));
+        }
         match = file.path();
     }
     if (!match)
+    {
         throw Error(std::move(missing));
+    }
     return *match;
 }
 } // namespace opengold::por::detail

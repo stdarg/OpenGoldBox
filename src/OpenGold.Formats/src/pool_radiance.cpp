@@ -28,7 +28,9 @@ DamageDice damage(std::span<const std::uint8_t> b, std::size_t p, std::size_t st
 std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
 {
     if (b.size() != 285 || b[0] > 15)
+    {
         return std::nullopt;
+    }
     CharacterRecord c;
     copy(b, 0, c.raw);
     c.name.assign(b.begin() + 1, b.begin() + 1 + b[0]);
@@ -39,7 +41,9 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.rolled_hit_points = b[177];
     c.base_movement = b[114];
     for (std::size_t i = 0; i < 2; ++i)
+    {
         c.base_attacks[i] = {b[161 + i], damage(b, 163 + i, 2)};
+    }
     c.saves = {b[109], b[110], b[111], b[112], b[113]};
     c.levels = {b[150], b[151], b[152], b[153], b[154], b[155], b[156], b[157]};
     c.race = b[46];
@@ -64,7 +68,9 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.base_xp_award = format::read_u16(b, 184);
     c.xp_per_hit_point = b[186];
     for (std::size_t i = 0; i < c.wealth.size(); ++i)
+    {
         c.wealth[i] = format::read_u16(b, 136 + 2 * i);
+    }
     c.strength_bonus_flag_raw = b[170];
     c.item_count = b[199];
     c.item_limit = b[176];
@@ -80,7 +86,9 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
     c.current.rear_armor_class = 60 - b[274];
     c.current.attacks_raw = {b[275], b[276]};
     for (std::size_t i = 0; i < 2; ++i)
+    {
         c.current.damage[i] = damage(b, 277 + i, 2);
+    }
     c.current.hit_points_raw = b[283];
     c.current.movement = b[284];
     return c;
@@ -89,13 +97,17 @@ std::optional<CharacterRecord> decode_character(std::span<const std::uint8_t> b)
 std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() % 63 != 0)
+    {
         return std::nullopt;
+    }
     std::vector<ItemRecord> result;
     for (std::size_t p = 0; p < bytes.size(); p += 63)
     {
         const auto b = bytes.subspan(p, 63);
         if (b[0] > 45)
+        {
             return std::nullopt;
+        }
         ItemRecord item;
         copy(b, 0, item.raw);
         item.stored_name.assign(b.begin() + 1, b.begin() + 1 + b[0]);
@@ -118,7 +130,9 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
 std::optional<std::vector<EffectRecord>> decode_effects(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() % 9 != 0)
+    {
         return std::nullopt;
+    }
     std::vector<EffectRecord> result;
     for (std::size_t p = 0; p < bytes.size(); p += 9)
     {
@@ -138,7 +152,9 @@ std::optional<std::vector<EffectRecord>> decode_effects(std::span<const std::uin
 std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() < 18 || (bytes.size() - 2) % 16 != 0 || (bytes.size() - 2) / 16 > 256)
+    {
         return std::nullopt;
+    }
     std::vector<ItemTemplate> result;
     for (std::size_t p = 2; p < bytes.size(); p += 16)
     {

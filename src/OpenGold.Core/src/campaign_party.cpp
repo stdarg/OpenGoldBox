@@ -24,13 +24,17 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     std::vector<std::pair<std::uint64_t, std::uint32_t>> stacks;
     unsigned carried = 0;
     for (const auto &item : member.character.inventory().items())
+    {
         if (item.definition_id == definition)
         {
             stacks.emplace_back(item.id, item.quantity);
             carried += item.quantity;
         }
+    }
     if (left > carried)
+    {
         throw std::runtime_error("Combat reported more thrown gear than was carried");
+    }
     auto inventory = member.character.inventory();
     for (auto stack = stacks.rbegin(); stack != stacks.rend() && carried > left; ++stack)
     {
@@ -38,7 +42,9 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
         inventory.remove(stack->first, used);
         carried -= used;
         if (used == stack->second)
+        {
             member.item_sources.erase(stack->first);
+        }
     }
     member.character.replace_inventory(std::move(inventory));
 }
@@ -51,7 +57,9 @@ std::vector<std::string> equipped_definitions(const PartyMember &member)
     {
         const auto item = member.character.inventory().find(equipped);
         if (!item)
+        {
             throw std::runtime_error("Equipped item is missing");
+        }
         definitions.push_back(item->get().definition_id);
     }
     return definitions;
@@ -67,7 +75,9 @@ std::string equipment_conversion(const por::Equipment &item)
                     {
                         return n != 0;
                     }))
+    {
         return "por:unsupported:" + std::to_string(raw.type);
+    }
     switch (raw.type)
     {
     case 1:
@@ -183,24 +193,34 @@ std::string equipment_conversion(const por::Equipment &item)
 CampaignParty::CampaignParty(std::unique_ptr<rules::RulesModule> rules) : rules_(std::move(rules))
 {
     if (!rules_)
+    {
         throw std::runtime_error("Party requires a rules module");
+    }
 }
 
 void CampaignParty::outside_combat() const
 {
     if (combat_)
+    {
         throw std::runtime_error("Finish combat before changing the party");
+    }
 }
 
 void CampaignParty::editable() const
 {
     outside_combat();
     if (state_.short_rest)
+    {
         throw std::runtime_error("Finish Short Rest spending before changing the party");
+    }
     if (state_.spell_rest)
+    {
         throw std::runtime_error("Finish Long Rest spell choices before changing the party");
+    }
     if (state_.training_rest)
+    {
         throw std::runtime_error("Finish Long Rest training choices before changing the party");
+    }
 }
 
 const PartyMember &CampaignParty::member(MemberId id) const
@@ -216,7 +236,9 @@ const PartyMember &CampaignParty::member_in(const PartyState &state, MemberId id
                                         return m.id == id;
                                     });
     if (found == state.roster.end())
+    {
         throw std::runtime_error("Unknown party member");
+    }
     return *found;
 }
 
@@ -234,7 +256,9 @@ void CampaignParty::select(PartySlot slot)
 {
     outside_combat();
     if (slot.index >= 8 || !state_.slots[slot.index])
+    {
         throw std::runtime_error("Empty party position");
+    }
     state_.selected_slot = slot;
 }
 
@@ -242,31 +266,43 @@ MemberId CampaignParty::leader() const
 {
     if (state_.leader &&
         std::find(state_.slots.begin(), state_.slots.end(), state_.leader) != state_.slots.end())
+    {
         return state_.leader;
+    }
     for (const auto id : state_.slots)
+    {
         if (id)
+        {
             return id;
+        }
+    }
     return 0;
 }
 
 void CampaignParty::make_leader(MemberId id)
 {
     if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end() || !id)
+    {
         throw std::runtime_error("Member is not in party");
+    }
     state_.leader = id;
 }
 
 void CampaignParty::set_quick(MemberId id)
 {
     if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end() || !id)
+    {
         throw std::runtime_error("Member is not in party");
+    }
     edit(id).quick = true;
 }
 
 void CampaignParty::take_control()
 {
     for (auto &member : state_.roster)
+    {
         member.quick = false;
+    }
 }
 
 void CampaignParty::set_quick_magic(bool on)
@@ -293,26 +329,38 @@ MemberId CampaignParty::spokesman() const
         return id && !vitals.dead && vitals.hit_points > 0;
     };
     if (const auto first = leader(); first && conscious(first))
+    {
         return first;
+    }
     for (const auto id : state_.slots)
+    {
         if (id && conscious(id))
+        {
             return id;
+        }
+    }
     return 0;
 }
 
 void CampaignParty::join(MemberId id, bool npc)
 {
     if (std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end())
+    {
         throw std::runtime_error("Already in party");
+    }
     const auto start = npc ? 6 : 0, end = npc ? 8 : 6;
     for (int i = start; i < end; ++i)
+    {
         if (!state_.slots[i])
         {
             state_.slots[i] = id;
             if (!selected())
+            {
                 state_.selected_slot = PartySlot{static_cast<unsigned>(i)};
+            }
             return;
         }
+    }
     throw std::runtime_error(npc ? "Both NPC positions are occupied"
                                  : "All six PC positions are occupied");
 }
@@ -321,13 +369,17 @@ MemberId CampaignParty::add_pc(Character character)
 {
     editable();
     if (state_.roster.size() >= 128)
+    {
         throw std::runtime_error("Roster is full");
+    }
     if (std::none_of(state_.slots.begin(), state_.slots.begin() + 6,
                      [](auto id)
                      {
                          return !id;
                      }))
+    {
         throw std::runtime_error("All six PC positions are occupied");
+    }
     const auto id = state_.next_id;
     const auto hp = character.sheet().hit_points;
     state_.roster.push_back({id, std::move(character), {}, {hp, false, {}}});
@@ -340,7 +392,9 @@ MemberId CampaignParty::recruit(std::string source, Character converted, unsigne
 {
     editable();
     if (source.empty() || morale > 255)
+    {
         throw std::runtime_error("NPC conversion requires a source identity and byte morale");
+    }
     const auto found = std::find_if(state_.roster.begin(), state_.roster.end(),
                                     [&](const auto &m)
                                     {
@@ -353,9 +407,13 @@ MemberId CampaignParty::recruit(std::string source, Character converted, unsigne
         return id;
     }
     if (state_.roster.size() >= 128)
+    {
         throw std::runtime_error("Roster is full");
+    }
     if (state_.slots[6] && state_.slots[7])
+    {
         throw std::runtime_error("Both NPC positions are occupied");
+    }
     (void)rules_->character_profile(converted.sheet(),
                                     {}); // Reject unknown conversion before recruitment.
     const auto id = state_.next_id;
@@ -376,10 +434,16 @@ MemberId CampaignParty::create_simulacrum(MemberId caster, MemberId original,
     editable();
     outside_combat();
     if (state_.short_rest || state_.spell_rest || state_.training_rest)
+    {
         throw std::runtime_error("Finish the rest's choices before casting Simulacrum");
+    }
     for (const auto id : {caster, original})
+    {
         if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        {
             throw std::runtime_error("Camp actions are for active members");
+        }
+    }
     const auto actions = camp_actions(caster);
     if (!action.starts_with("simulacrum") || action == "simulacrum_repair" ||
         std::none_of(actions.begin(), actions.end(),
@@ -387,25 +451,35 @@ MemberId CampaignParty::create_simulacrum(MemberId caster, MemberId original,
                      {
                          return a.id == action;
                      }))
+    {
         throw std::runtime_error("That spell or feature cannot be used now");
+    }
     if (state_.roster.size() >= 128)
+    {
         throw std::runtime_error("Roster is full");
+    }
     auto next = state_;
     // The caster's earlier simulacrum is destroyed.
     const auto source = "simulacrum:" + std::to_string(caster) + ":";
     for (auto &slot : next.slots)
+    {
         if (slot && member_in(next, slot).npc_source.starts_with(source))
         {
             auto &old = member_in(next, slot);
             old.vitals.hit_points = 0;
             old.vitals.dead = true;
             if (next.leader == slot)
+            {
                 next.leader = 0;
+            }
             slot = 0;
         }
+    }
     const auto position = std::find(next.slots.begin() + 6, next.slots.end(), MemberId{});
     if (position == next.slots.end())
+    {
         throw std::runtime_error("Both NPC positions are occupied");
+    }
     // Copying oneself passes one state as both, as camp actions do.
     auto &wizard = member_in(next, caster);
     auto &copied = member_in(next, original);
@@ -424,7 +498,9 @@ MemberId CampaignParty::create_simulacrum(MemberId caster, MemberId original,
                            .vitals = std::move(vitals)});
     *position = id;
     if (!next.slots[next.selected_slot.index])
+    {
         next.selected_slot = PartySlot{static_cast<unsigned>(position - next.slots.begin())};
+    }
     // The casting takes twelve hours.
     elapse(next, std::chrono::hours{12});
     next.short_rest.reset();
@@ -450,10 +526,16 @@ void CampaignParty::reincarnate(const rules::CharacterRules &creation, MemberId 
     editable();
     outside_combat();
     if (state_.short_rest || state_.spell_rest || state_.training_rest)
+    {
         throw std::runtime_error("Finish the rest's choices before casting Reincarnate");
+    }
     for (const auto id : {caster, target})
+    {
         if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        {
             throw std::runtime_error("Camp actions are for active members");
+        }
+    }
     const auto actions = camp_actions(caster);
     if (!action.starts_with("reincarnate") || caster == target ||
         std::none_of(actions.begin(), actions.end(),
@@ -461,21 +543,33 @@ void CampaignParty::reincarnate(const rules::CharacterRules &creation, MemberId 
                      {
                          return a.id == action;
                      }))
+    {
         throw std::runtime_error("That spell or feature cannot be used now");
+    }
     auto next = state_;
     // Rolled first, so the body is the species reincarnation_species() read.
     const auto species = rules_->reincarnation_species(next.random_state);
     for (const auto &[group, picks] : choices.training)
+    {
         if (!group.starts_with("species:" + species + ":") || group.ends_with(":kept"))
+        {
             throw std::runtime_error("A choice that is not the new species'");
+        }
+    }
     for (const auto &[group, picks] : choices.initiate_spells)
+    {
         if (!group.starts_with("feat:magic_initiate_"))
+        {
             throw std::runtime_error("A spell choice that is not Magic Initiate's");
+        }
+    }
     auto &druid = member_in(next, caster);
     auto &body = member_in(next, target);
     const auto gold = rules_->camp_action_gold(body.character.sheet(), body.vitals, action);
     if (gold > coins(next.wealth, Coin::gold))
+    {
         throw std::runtime_error("The party purse cannot pay the offering");
+    }
     rules_->use_camp_action(druid.character.sheet(), druid.vitals, body.character.sheet(),
                             body.vitals, action, next.random_state);
     coins(next.wealth, Coin::gold) -= gold;
@@ -485,10 +579,16 @@ void CampaignParty::reincarnate(const rules::CharacterRules &creation, MemberId 
     if (!choices.initiate_spells.empty())
     {
         if (!draft.spells)
+        {
             draft.spells.emplace();
+        }
         for (auto &[group, picks] : choices.initiate_spells)
+        {
             if (!draft.spells->learning.emplace(group, std::move(picks)).second)
+            {
                 throw std::runtime_error("A spell choice the character already made");
+            }
+        }
     }
     const auto before = body.character.sheet();
     body.character = body.character.recreated(creation, *rules_, std::move(draft));
@@ -504,21 +604,31 @@ void CampaignParty::end_combat() noexcept
 {
     combat_ = false;
     for (auto &slot : state_.slots)
+    {
         for (const auto &m : state_.roster)
+        {
             if (slot && m.id == slot && m.vitals.dead && m.npc_source.starts_with("simulacrum:"))
             {
                 if (state_.leader == slot)
+                {
                     state_.leader = 0;
+                }
                 slot = 0;
             }
+        }
+    }
     if (state_.slots[state_.selected_slot.index])
+    {
         return;
+    }
     for (unsigned i = 0; i < 8; ++i)
+    {
         if (state_.slots[i])
         {
             state_.selected_slot = PartySlot{i};
             return;
         }
+    }
 }
 
 void CampaignParty::rejoin(MemberId id)
@@ -533,17 +643,25 @@ void CampaignParty::remove(MemberId id)
     (void)member(id);
     auto it = std::find(state_.slots.begin(), state_.slots.end(), id);
     if (it == state_.slots.end())
+    {
         throw std::runtime_error("Member is not in party");
+    }
     *it = 0;
     if (state_.leader == id)
+    {
         state_.leader = 0;
+    }
     if (!selected())
+    {
         for (unsigned i = 0; i < 8; ++i)
+        {
             if (state_.slots[i])
             {
                 state_.selected_slot = PartySlot{i};
                 break;
             }
+        }
+    }
 }
 
 rules::RecoveryInfo CampaignParty::recovery_info(MemberId id) const
@@ -571,10 +689,14 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
     const auto &m = member(id);
     const auto selected = m.character.inventory().find(item);
     if (!selected)
+    {
         throw std::runtime_error("Unknown item");
+    }
     if (selected->get().quantity == 1 &&
         std::find(m.equipped.begin(), m.equipped.end(), item) != m.equipped.end())
+    {
         return {};
+    }
     auto keys = equipped_definitions(m);
     keys.push_back(selected->get().definition_id);
     return rules_->equipment_choices(m.character.sheet(), keys,
@@ -584,7 +706,9 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
 void CampaignParty::equip(MemberId id, std::uint64_t item, rules::EquipmentOperation operation)
 {
     if (operation == rules::EquipmentOperation::unequip)
+    {
         throw std::runtime_error("Invalid equip operation");
+    }
     change_equipment(id, item, operation);
 }
 
@@ -601,20 +725,28 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
     auto candidates = before.equipped;
     const auto found = std::find(candidates.begin(), candidates.end(), item);
     if (operation == rules::EquipmentOperation::equip && found != candidates.end())
+    {
         return;
+    }
     if (operation == rules::EquipmentOperation::unequip && found == candidates.end())
+    {
         return;
+    }
     const unsigned selected = operation != rules::EquipmentOperation::unequip
                                   ? static_cast<unsigned>(candidates.size())
                                   : static_cast<unsigned>(found - candidates.begin());
     if (operation != rules::EquipmentOperation::unequip)
+    {
         candidates.push_back(item);
+    }
     std::vector<std::string> keys;
     for (auto id : candidates)
     {
         const auto entry = before.character.inventory().find(id);
         if (!entry)
+        {
             throw std::runtime_error("Unknown item");
+        }
         keys.push_back(entry->get().definition_id);
     }
     const auto plan = rules_->equipment_change(before.character.sheet(), keys, selected, operation);
@@ -633,7 +765,9 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
                                                   .quantity = 1,
                                                   .original_type = unit.original_type});
             if (const auto source = sources.find(item); source != sources.end())
+            {
                 sources.emplace(candidates[selected], source->second);
+            }
         }
     }
     std::vector<std::uint64_t> next;
@@ -642,7 +776,9 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
     {
         if (index >= candidates.size() ||
             std::find(next.begin(), next.end(), candidates[index]) != next.end())
+        {
             throw std::runtime_error("Invalid equipment result from rules module");
+        }
         next.push_back(candidates[index]);
     }
     auto &target = edit(id);
@@ -658,7 +794,9 @@ rules::EquipmentInfo CampaignParty::equipment_info(MemberId id, std::uint64_t it
 {
     const auto found = member(id).character.inventory().find(item);
     if (!found)
+    {
         throw std::runtime_error("Unknown item");
+    }
     return rules_->equipment_info(found->get().definition_id);
 }
 
@@ -667,9 +805,13 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     editable();
     auto &m = edit(id);
     if (m.character.inventory().items().size() >= 16)
+    {
         throw std::runtime_error("Inventory is full (16 items)");
+    }
     if (coins(state_.wealth, Coin::gold) < item.stored.value)
+    {
         throw std::runtime_error("Not enough gold");
+    }
     auto inventory = m.character.inventory();
     auto sources = m.item_sources;
     const auto key =
@@ -694,7 +836,9 @@ void CampaignParty::add_coins(Coin coin, std::uint32_t count)
     editable();
     auto &held = coins(state_.wealth, coin);
     if (count > purse_limit - held)
+    {
         throw std::runtime_error("The party purse cannot hold more coins");
+    }
     held += count;
 }
 
@@ -703,28 +847,42 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
 {
     editable();
     if (reward_id.empty() || reward_id.size() > 160)
+    {
         throw std::runtime_error("Loot requires a bounded stable identity");
+    }
     if (std::find(state_.claimed_rewards.begin(), state_.claimed_rewards.end(), reward_id) !=
         state_.claimed_rewards.end())
+    {
         return true;
+    }
     if (state_.claimed_rewards.size() >= 1024 || items.size() > 256)
+    {
         throw std::runtime_error("Loot collection exceeds supported limits");
+    }
     auto next = state_;
     std::vector<std::size_t> recipients;
     for (auto id : next.slots)
+    {
         if (id)
         {
             const auto &member = member_in(next, id);
             if (!member.vitals.dead)
+            {
                 recipients.push_back(static_cast<std::size_t>(&member - next.roster.data()));
+            }
         }
+    }
     if (recipients.empty())
+    {
         return false;
+    }
     for (unsigned coin = 0; coin < 7; ++coin)
     {
         auto &purse = next.wealth[coin];
         if (wealth[coin] > purse_limit - purse)
+        {
             return false;
+        }
         purse += wealth[coin];
     }
     for (const auto &item : items)
@@ -754,27 +912,41 @@ void CampaignParty::award_experience(unsigned amount, std::string reward_id)
 {
     editable();
     if (reward_id.empty() || reward_id.size() > 160)
+    {
         throw std::runtime_error("Reward requires a bounded stable identity");
+    }
     if (std::find(state_.claimed_rewards.begin(), state_.claimed_rewards.end(), reward_id) !=
         state_.claimed_rewards.end())
+    {
         return;
+    }
     if (state_.claimed_rewards.size() >= 1024)
+    {
         throw std::runtime_error("Reward history is full");
+    }
     auto next = state_;
     bool awarded = false;
     for (auto id : next.slots)
+    {
         if (id)
         {
             auto &member = member_in(next, id);
             if (member.vitals.dead)
+            {
                 continue;
+            }
             if (amount > std::numeric_limits<unsigned>::max() - member.experience)
+            {
                 throw std::runtime_error("Experience overflow");
+            }
             awarded = true;
             member.experience += amount;
         }
+    }
     if (!awarded)
+    {
         throw std::runtime_error("Reward requires a living active member");
+    }
     next.claimed_rewards.push_back(std::move(reward_id));
     state_ = std::move(next);
 }
@@ -794,17 +966,29 @@ ExperienceOffer CampaignParty::experience_offer(MemberId id, TrainingHall hall) 
     const auto active =
         std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end();
     if (training_hall_for_class(m.character.creation_data().character_class) != hall)
+    {
         offer.denial = TrainingDenial::other_hall;
+    }
     else if (!active || m.vitals.dead)
+    {
         offer.denial = TrainingDenial::not_active;
+    }
     else if (!next_level)
+    {
         offer.denial = TrainingDenial::highest_level;
+    }
     else if (m.experience >= rules_->experience_for_level(next_level))
+    {
         offer.denial = TrainingDenial::ready_to_advance;
+    }
     else if (m.hall_experience_level == next_level - 1)
+    {
         offer.denial = TrainingDenial::already_trained;
+    }
     else if (coins(state_.wealth, Coin::gold) < offer.fee)
+    {
         offer.denial = TrainingDenial::gold;
+    }
     return offer;
 }
 
@@ -814,7 +998,9 @@ void CampaignParty::buy_experience(MemberId id, TrainingHall hall)
     outside_combat();
     const auto offer = experience_offer(id, hall);
     if (offer.denial != TrainingDenial::none)
+    {
         throw std::runtime_error("The training hall cannot sell this member experience");
+    }
     auto &m = edit(id);
     m.experience += offer.experience;
     m.hall_experience_level = rules_->advancement_options(m.character.sheet()).level - 1;
@@ -828,14 +1014,22 @@ TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall ha
         std::find(state_.slots.begin(), state_.slots.end(), id) != state_.slots.end();
     const auto &trained = m.character.hall_training();
     if (training_hall_for_class(m.character.creation_data().character_class) != hall)
+    {
         return TrainingDenial::other_hall;
+    }
     if (!active || m.vitals.dead)
+    {
         return TrainingDenial::not_active;
+    }
     if (!trained.empty() &&
         trained.back().level == static_cast<unsigned>(m.character.sheet().level))
+    {
         return TrainingDenial::already_trained;
+    }
     if (coins(state_.wealth, Coin::gold) < proficiency_training_fee)
+    {
         return TrainingDenial::gold;
+    }
     return TrainingDenial::none;
 }
 
@@ -843,7 +1037,9 @@ rules::TrainingChoiceGroup CampaignParty::skill_lessons(MemberId id, TrainingHal
 {
     std::vector<std::string> classes;
     for (const auto klass : hall_classes(hall))
+    {
         classes.emplace_back(klass);
+    }
     return rules_->hall_training_options(member(id).character.sheet(), classes);
 }
 
@@ -859,7 +1055,9 @@ void CampaignParty::train_skill(MemberId id, TrainingHall hall, const std::strin
                          return lesson.id == grant;
                      }) ||
         coins(state_.wealth, Coin::gold) < fee)
+    {
         throw std::runtime_error("The training hall cannot teach this lesson");
+    }
     auto character = member(id).character;
     character.train_at_hall(*rules_, grant);
     edit(id).character = std::move(character);
@@ -869,7 +1067,9 @@ void CampaignParty::train_skill(MemberId id, TrainingHall hall, const std::strin
 bool CampaignParty::can_advance(MemberId id) const
 {
     if (combat_ || state_.short_rest || state_.spell_rest || state_.training_rest)
+    {
         return false;
+    }
     const auto &m = member(id);
     const auto level = next_level(m);
     // A simulacrum gains no levels.
@@ -899,21 +1099,29 @@ PartyMember CampaignParty::preview_advancement(MemberId id,
                                                const rules::AdvancementChoice &choice) const
 {
     if (!can_advance(id))
+    {
         throw std::runtime_error("This character is not ready to level up");
+    }
     auto next = member(id);
     const auto level = next.character.sheet().level;
     if (rules_->default_advancement(next.character.sheet()).spell_learning &&
         !choice.spell_learning)
+    {
         throw std::runtime_error("Independent spell learning choices are required");
+    }
     for (const auto &group : rules_->advancement_options(next.character.sheet()).training)
     {
         const auto found = choice.training.find(group.id);
         if (found == choice.training.end() || found->second.size() != group.count)
+        {
             throw std::runtime_error("Complete required advancement training");
+        }
     }
     if (!next.character.advance(*rules_, next.vitals, choice) ||
         next.character.sheet().level != level + 1)
+    {
         throw std::runtime_error("Unsupported advancement");
+    }
     return next;
 }
 
@@ -942,12 +1150,16 @@ PartyMember CampaignParty::preview_spell_choices(MemberId id,
 {
     outside_combat();
     if (state_.short_rest)
+    {
         throw std::runtime_error("Finish resting before spell choices");
+    }
     if (!state_.spell_rest || state_.spell_rest->completed_minutes != state_.time_minutes ||
         state_.spell_rest->completed_subminute_milliseconds != state_.subminute_milliseconds ||
         std::find(state_.spell_rest->members.begin(), state_.spell_rest->members.end(), id) ==
             state_.spell_rest->members.end())
+    {
         throw std::runtime_error("No completed Long Rest spell choices");
+    }
     auto candidate = member(id);
     candidate.character.choose_spells(*rules_, choices, state_.spell_rest->ticket.session,
                                       rest_spell_context());
@@ -962,7 +1174,9 @@ void CampaignParty::choose_spells(MemberId id, const rules::SpellChoices &choice
     edit(id) = std::move(candidate);
     std::erase(state_.spell_rest->members, id);
     if (state_.spell_rest->members.empty())
+    {
         state_.spell_rest.reset();
+    }
 }
 
 void CampaignParty::keep_rest_spells(MemberId id)
@@ -971,10 +1185,14 @@ void CampaignParty::keep_rest_spells(MemberId id)
     if (!state_.spell_rest ||
         std::find(state_.spell_rest->members.begin(), state_.spell_rest->members.end(), id) ==
             state_.spell_rest->members.end())
+    {
         throw std::runtime_error("No Long Rest spell choice to decline");
+    }
     std::erase(state_.spell_rest->members, id);
     if (state_.spell_rest->members.empty())
+    {
         state_.spell_rest.reset();
+    }
 }
 
 PartyMember CampaignParty::preview_rest_training(RestTicket ticket, MemberId id,
@@ -986,12 +1204,15 @@ PartyMember CampaignParty::preview_rest_training(RestTicket ticket, MemberId id,
         rest->completed_minutes != state_.time_minutes ||
         rest->completed_subminute_milliseconds != state_.subminute_milliseconds ||
         std::find(rest->members.begin(), rest->members.end(), id) == rest->members.end())
+    {
         throw std::runtime_error("No completed Long Rest training choice");
+    }
     // A Short Rest changes only some choices; the rules accept any of them.
     const auto offered = rules_->rest_training_options(
         member(id).character.sheet(),
         state_.training_after_short_rest ? RestKind::short_rest : RestKind::long_rest);
     for (const auto &pick : selections)
+    {
         if (std::none_of(offered.begin(), offered.end(),
                          [&](const auto &choice)
                          {
@@ -1002,7 +1223,10 @@ PartyMember CampaignParty::preview_rest_training(RestTicket ticket, MemberId id,
                                                     return option.id == pick;
                                                 });
                          }))
+        {
             throw std::runtime_error("Not a choice this rest can change");
+        }
+    }
     auto candidate = member(id);
     candidate.character.replace_rest_training(*rules_, selections, ticket.session);
     rules_->validate_character_state(candidate.character.sheet(), candidate.vitals);
@@ -1017,7 +1241,9 @@ void CampaignParty::replace_rest_training(RestTicket ticket, MemberId id,
     edit(id) = std::move(candidate);
     std::erase(state_.training_rest->members, id);
     if (state_.training_rest->members.empty())
+    {
         state_.training_rest.reset();
+    }
 }
 
 void CampaignParty::keep_rest_training(RestTicket ticket, MemberId id)
@@ -1027,10 +1253,14 @@ void CampaignParty::keep_rest_training(RestTicket ticket, MemberId id)
         member(id).character.sheet(),
         state_.training_after_short_rest ? RestKind::short_rest : RestKind::long_rest);
     if (options.empty())
+    {
         throw std::runtime_error("No Long Rest training choice to decline");
+    }
     std::vector<std::string> current;
     for (const auto &choice : options)
+    {
         current.insert(current.end(), choice.selected.begin(), choice.selected.end());
+    }
     replace_rest_training(ticket, id, current);
 }
 
@@ -1039,11 +1269,15 @@ void CampaignParty::advance_time(std::chrono::milliseconds elapsed)
     outside_combat();
     const bool passes = elapsed != std::chrono::milliseconds::zero();
     if ((state_.spell_rest || state_.training_rest) && passes)
+    {
         throw std::runtime_error("Finish Long Rest spell choices before advancing time");
+    }
     // Everything that can throw comes first; then only moves.
     apply(state_, this->elapsed(state_, elapsed));
     if (passes)
+    {
         state_.short_rest.reset();
+    }
 }
 
 void CampaignParty::elapse(PartyState &state, std::chrono::milliseconds elapsed,
@@ -1057,12 +1291,16 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
                                               std::span<const MemberId> in_combat) const
 {
     if (elapsed < std::chrono::milliseconds::zero())
+    {
         throw std::runtime_error("Time cannot run backwards");
+    }
     const auto milliseconds = static_cast<std::uint64_t>(elapsed.count());
     const auto remainder = state.subminute_milliseconds + milliseconds % 60000;
     const auto minutes = milliseconds / 60000 + remainder / 60000;
     if (minutes > std::numeric_limits<std::uint64_t>::max() - state.time_minutes)
+    {
         throw std::runtime_error("Campaign clock overflow");
+    }
     Elapsed result{{},
                    state.random_state,
                    state.time_minutes + minutes,
@@ -1071,7 +1309,9 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
     for (const auto &member : state.roster)
     {
         if (std::find(in_combat.begin(), in_combat.end(), member.id) != in_combat.end())
+        {
             continue;
+        }
         auto profile =
             rules_->character_profile(member.character.sheet(), equipped_definitions(member));
         participants.push_back({member.id,
@@ -1084,16 +1324,24 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
     }
     rules_->elapse(participants, elapsed, result.random);
     for (auto &participant : participants)
+    {
         result.vitals.emplace_back(participant.id, std::move(*participant.state));
+    }
     return result;
 }
 
 void CampaignParty::apply(PartyState &state, Elapsed &&elapsed) noexcept
 {
     for (auto &[id, vitals] : elapsed.vitals)
+    {
         for (auto &member : state.roster)
+        {
             if (member.id == id)
+            {
                 member.vitals = std::move(vitals);
+            }
+        }
+    }
     state.random_state = elapsed.random;
     state.time_minutes = elapsed.time_minutes;
     state.subminute_milliseconds = elapsed.subminute_milliseconds;
@@ -1115,7 +1363,9 @@ bool CampaignParty::can_try_door(DoorMethod method) const
                        [&](MemberId id)
                        {
                            if (!id)
+                           {
                                return false;
+                           }
                            const auto &m = member(id);
                            return method == DoorMethod::knock
                                       ? rules_->can_cast_exploration_spell(m.character.sheet(),
@@ -1128,16 +1378,22 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
 {
     editable();
     if (method == DoorMethod::knock)
+    {
         return cast_knock(difficulty);
+    }
     std::vector<DoorAttempt> attempts;
     auto random_state = state_.random_state;
     for (auto id : state_.slots)
     {
         if (!id)
+        {
             continue;
+        }
         const auto &m = member(id);
         if (!tries_door(m, method))
+        {
             continue;
+        }
         const auto gear = equipped_definitions(m);
 
         const auto roll =
@@ -1148,7 +1404,9 @@ std::vector<DoorAttempt> CampaignParty::try_door(DoorMethod method, int difficul
                                              "sleight_of_hand", random_state);
         attempts.push_back({id, roll});
         if (roll.total >= difficulty)
+        {
             break;
+        }
     }
     state_.random_state = random_state;
     return attempts;
@@ -1161,10 +1419,14 @@ std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
     for (const auto id : next.slots)
     {
         if (!id)
+        {
             continue;
+        }
         auto &caster = member_in(next, id);
         if (!rules_->can_cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock"))
+        {
             continue;
+        }
         rules_->cast_exploration_spell(caster.character.sheet(), caster.vitals, "knock");
         state_ = std::move(next);
         return {{id, {0, difficulty}}};
@@ -1177,12 +1439,18 @@ void CampaignParty::temple_heal(MemberId target)
     editable();
     const auto &current = member(target);
     if (std::find(state_.slots.begin(), state_.slots.end(), target) == state_.slots.end())
+    {
         throw std::runtime_error("Temple target must be active");
+    }
     if (current.vitals.dead || current.vitals.hit_points >= hit_point_maximum(target))
+    {
         throw std::runtime_error("Cure Wounds requires a wounded living member");
+    }
     constexpr std::uint32_t temple_fee = 100;
     if (coins(state_.wealth, Coin::gold) < temple_fee)
+    {
         throw std::runtime_error("Party cannot afford temple service");
+    }
     auto next = state_;
     auto &healed = member_in(next, target);
     coins(next.wealth, Coin::gold) -= temple_fee;
@@ -1195,10 +1463,16 @@ std::optional<HazardHit> CampaignParty::hazard_attack(const rules::HazardAttack 
     editable();
     std::vector<MemberId> conscious;
     for (const auto id : state_.slots)
+    {
         if (id && member(id).vitals.hit_points > 0)
+        {
             conscious.push_back(id);
+        }
+    }
     if (conscious.empty())
+    {
         return std::nullopt;
+    }
     auto next = state_;
     const auto target =
         conscious[roll_die(next.random_state, static_cast<int>(conscious.size())) - 1];
@@ -1220,7 +1494,9 @@ std::vector<rules::CampAction> CampaignParty::camp_actions(MemberId id) const
 {
     const auto &m = member(id);
     if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+    {
         return {};
+    }
     return rules_->camp_actions(m.character.sheet(), m.vitals);
 }
 
@@ -1228,8 +1504,12 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
 {
     editable();
     for (const auto id : {user, target})
+    {
         if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        {
             throw std::runtime_error("Camp actions are for active members");
+        }
+    }
     auto next = state_;
     const auto find = [&](MemberId id) -> PartyMember &
     {
@@ -1238,7 +1518,9 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     auto &caster = find(user);
     // Reincarnate's new body takes the species' choices: reincarnate().
     if (action.starts_with("reincarnate"))
+    {
         throw std::runtime_error("Reincarnate needs the new species' choices");
+    }
     const auto actions = camp_actions(user);
     const auto chosen = std::find_if(actions.begin(), actions.end(),
                                      [&](const auto &a)
@@ -1251,11 +1533,13 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     {
         std::vector<rules::CampTarget> party;
         for (const auto id : next.slots)
+        {
             if (id)
             {
                 auto &m = find(id);
                 party.push_back({m.character.sheet(), m.vitals});
             }
+        }
         rules_->use_party_camp_action(caster.character.sheet(), caster.vitals, party, action,
                                       next.random_state);
     }
@@ -1266,7 +1550,9 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         const auto gold =
             rules_->camp_action_gold(patient.character.sheet(), patient.vitals, action);
         if (gold > coins(next.wealth, Coin::gold))
+        {
             throw std::runtime_error("The party purse cannot pay the offering");
+        }
         rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
                                 patient.vitals, action, next.random_state);
         coins(next.wealth, Coin::gold) -= gold;
@@ -1278,21 +1564,31 @@ std::optional<CoinExchange> CampaignParty::read_character(PartySlot slot, const 
 {
     outside_combat();
     if (slot.index >= 8)
+    {
         throw std::runtime_error("Invalid ECL party position");
+    }
     const auto id = state_.slots[slot.index];
     if (!id)
+    {
         return {};
+    }
     const auto &current = member(id);
     const auto hp = vm.variable(por::ecl_character_hit_points);
     if (hp > hit_point_maximum(id) || (current.vitals.dead && hp))
+    {
         throw std::runtime_error("Unsupported script HP change");
+    }
     Purse after_script;
     for (unsigned n = 0; n < 7; ++n)
+    {
         after_script[n] = vm.variable(por::ecl_coin_addresses[n]);
+    }
     // A script read changes only HP and coins, which pending Long Rest spell or
     // training choices do not depend on; the inn's script continues after its rest.
     if (state_.short_rest)
+    {
         throw std::runtime_error("Finish Short Rest spending before changing the party");
+    }
     auto settled = settle_script_coins(state_.wealth, after_script);
     auto &m = edit(id);
     auto vitals = m.vitals;
@@ -1309,14 +1605,18 @@ void CampaignParty::validate(const PartyState &state)
         !state.next_combat_scope || !state.next_rest_session ||
         (state.leader &&
          std::find(state.slots.begin(), state.slots.end(), state.leader) == state.slots.end()))
+    {
         throw std::runtime_error("Invalid party checkpoint");
+    }
     std::set<MemberId> ids, active;
     std::set<std::string> sources, creation_sources;
     for (const auto &m : state.roster)
     {
         if (!m.creation_source.empty() &&
             (m.creation_source.size() > 160 || !creation_sources.insert(m.creation_source).second))
+        {
             throw std::runtime_error("Invalid creation source checkpoint");
+        }
         if (!m.id || m.id >= state.next_id || !ids.insert(m.id).second || m.vitals.hit_points < 0 ||
             (m.last_rest_minutes &&
              (*m.last_rest_minutes > state.time_minutes ||
@@ -1326,11 +1626,17 @@ void CampaignParty::validate(const PartyState &state)
             (!m.last_rest_minutes && m.last_rest_subminute_milliseconds) ||
             (m.vitals.dead && m.vitals.hit_points) || m.morale > 255 ||
             (!m.npc_source.empty() && !sources.insert(m.npc_source).second))
+        {
             throw std::runtime_error("Invalid roster checkpoint");
+        }
         std::set<std::uint64_t> equipment;
         for (auto item : m.equipped)
+        {
             if (!m.character.inventory().find(item) || !equipment.insert(item).second)
+            {
                 throw std::runtime_error("Invalid equipment checkpoint");
+            }
+        }
     }
     if (std::any_of(state.claimed_rewards.begin(), state.claimed_rewards.end(),
                     [](const auto &id)
@@ -1339,17 +1645,27 @@ void CampaignParty::validate(const PartyState &state)
                     }) ||
         std::set<std::string>(state.claimed_rewards.begin(), state.claimed_rewards.end()).size() !=
             state.claimed_rewards.size())
+    {
         throw std::runtime_error("Invalid claimed rewards");
+    }
     for (unsigned slot = 0; slot < 8; ++slot)
+    {
         if (auto id = state.slots[slot])
         {
             if (!ids.contains(id) || !active.insert(id).second)
+            {
                 throw std::runtime_error("Invalid active party checkpoint");
+            }
             if ((slot < 6) != member_in(state, id).npc_source.empty())
+            {
                 throw std::runtime_error("Invalid PC/NPC checkpoint position");
+            }
         }
+    }
     if (!active.empty() && !state.slots[state.selected_slot.index])
+    {
         throw std::runtime_error("Invalid selected member checkpoint");
+    }
     if (state.spell_rest)
     {
         const auto &rest = *state.spell_rest;
@@ -1359,11 +1675,15 @@ void CampaignParty::validate(const PartyState &state)
             rest.completed_minutes != state.time_minutes ||
             rest.completed_subminute_milliseconds != state.subminute_milliseconds ||
             rest.members.empty() || rest.members.size() > 8)
+        {
             throw std::runtime_error("Invalid spell-choice rest checkpoint");
+        }
         for (auto id : rest.members)
         {
             if (!active.contains(id) || !members.insert(id).second)
+            {
                 throw std::runtime_error("Invalid spell-choice rest member");
+            }
             const auto &m = member_in(state, id);
             // Only a Long Rest is recorded as the member's last rest.
             const bool rested =
@@ -1376,7 +1696,9 @@ void CampaignParty::validate(const PartyState &state)
                             {
                                 return e.rest_session >= rest.ticket.session;
                             }))
+            {
                 throw std::runtime_error("Invalid completed-rest entitlement");
+            }
         }
     }
     if (state.training_rest)
@@ -1388,13 +1710,19 @@ void CampaignParty::validate(const PartyState &state)
             rest.completed_minutes != state.time_minutes ||
             rest.completed_subminute_milliseconds != state.subminute_milliseconds ||
             rest.members.empty() || rest.members.size() > 8)
+        {
             throw std::runtime_error("Invalid training-choice rest checkpoint");
+        }
         if (state.spell_rest && state.spell_rest->ticket != rest.ticket)
+        {
             throw std::runtime_error("Rest choice tickets disagree");
+        }
         for (auto id : rest.members)
         {
             if (!active.contains(id) || !members.insert(id).second)
+            {
                 throw std::runtime_error("Invalid training-choice rest member");
+            }
             const auto &m = member_in(state, id);
             // Only a Long Rest is recorded as the member's last rest.
             const bool rested =
@@ -1407,7 +1735,9 @@ void CampaignParty::validate(const PartyState &state)
                                        {
                                            return e.rest_session >= rest.ticket.session;
                                        }))
+            {
                 throw std::runtime_error("Invalid completed-rest training entitlement");
+            }
         }
     }
     if (state.short_rest)
@@ -1418,11 +1748,15 @@ void CampaignParty::validate(const PartyState &state)
             !rest.ticket.revision || rest.completed_minutes != state.time_minutes ||
             rest.completed_subminute_milliseconds != state.subminute_milliseconds ||
             rest.members.empty() || rest.members.size() > 8)
+        {
             throw std::runtime_error("Invalid Short Rest checkpoint");
+        }
         for (auto id : rest.members)
         {
             if (!active.contains(id) || !members.insert(id).second)
+            {
                 throw std::runtime_error("Invalid Short Rest member");
+            }
         }
     }
 }
@@ -1432,17 +1766,34 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
     validate(state);
     // The maximum is the rules': Aid raises it above the sheet's.
     for (const auto &m : state.roster)
+    {
         if (m.vitals.hit_points > rules.hit_point_maximum(m.character.sheet(), m.vitals))
+        {
             throw std::runtime_error("Invalid party checkpoint");
+        }
+    }
     for (const auto &m : state.roster)
+    {
         for (const auto &e : m.character.spell_edits())
+        {
             if (e.rest_session >= state.next_rest_session)
+            {
                 throw std::runtime_error("Spell history exceeds rest sequence");
+            }
+        }
+    }
     for (const auto &m : state.roster)
+    {
         for (const auto &e : m.character.training_edits())
+        {
             if (e.rest_session >= state.next_rest_session)
+            {
                 throw std::runtime_error("Training history exceeds rest sequence");
+            }
+        }
+    }
     if (state.training_rest)
+    {
         for (auto id : state.training_rest->members)
         {
             const auto &m = member_in(state, id);
@@ -1452,9 +1803,13 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
                                                                     ? RestKind::short_rest
                                                                     : RestKind::long_rest)
                     .empty())
+            {
                 throw std::runtime_error("Invalid Long Rest training eligibility");
+            }
         }
+    }
     if (state.spell_rest)
+    {
         for (auto id : state.spell_rest->members)
         {
             const auto &m = member_in(state, id);
@@ -1464,15 +1819,22 @@ void CampaignParty::validate_rest_choices(const PartyState &state, const rules::
                                          : rules::SpellChoiceContext::long_rest);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest ||
                 (!options.may_prepare && !options.may_replace))
+            {
                 throw std::runtime_error("Invalid Long Rest spell eligibility");
+            }
         }
+    }
     if (state.short_rest)
+    {
         for (auto id : state.short_rest->members)
         {
             const auto &m = member_in(state, id);
             if (!rules.recovery_info(m.character.sheet(), m.vitals).can_rest)
+            {
                 throw std::runtime_error("Invalid Short Rest vitality");
+            }
         }
+    }
 }
 
 void CampaignParty::restore(PartyState state)
@@ -1480,7 +1842,9 @@ void CampaignParty::restore(PartyState state)
     outside_combat();
     validate_rest_choices(state, *rules_);
     for (const auto &m : state.roster)
+    {
         (void)rules_->character_profile(m.character.sheet(), equipped_definitions(m));
+    }
     state_ = std::move(state);
 }
 
@@ -1488,11 +1852,14 @@ std::vector<rules::Participant> CampaignParty::participants() const
 {
     std::vector<rules::Participant> result;
     for (unsigned slot = 0; slot < 8; ++slot)
+    {
         if (auto id = state_.slots[slot])
         {
             const auto &m = member(id);
             if (m.vitals.dead)
+            {
                 continue;
+            }
             auto p = rules_->character_profile(m.character.sheet(), equipped_definitions(m));
             result.push_back({id,
                               "campaign-character",
@@ -1511,8 +1878,11 @@ std::vector<rules::Participant> CampaignParty::participants() const
                          : static_cast<int>(equipped - m.equipped.begin())});
             }
         }
+    }
     if (result.empty())
+    {
         throw std::runtime_error("Add a living combat-ready character first");
+    }
     return result;
 }
 
@@ -1520,9 +1890,13 @@ void CampaignParty::begin_combat()
 {
     outside_combat();
     if (state_.spell_rest || state_.training_rest)
+    {
         throw std::runtime_error("Finish Long Rest choices before combat");
+    }
     if (state_.next_combat_scope == std::numeric_limits<std::uint64_t>::max())
+    {
         throw std::runtime_error("Combat identity exhausted");
+    }
     combat_ = true;
     combat_registered_ = false;
     combat_elapsed_ = 0;
@@ -1533,19 +1907,29 @@ void CampaignParty::begin_combat()
 void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
 {
     if (!combat_ || snapshot.identity != rules_->identity())
+    {
         throw std::runtime_error("Combat rules identity mismatch");
+    }
     if (snapshot.elapsed_milliseconds < combat_elapsed_)
+    {
         throw std::runtime_error("Combat clock moved backward");
+    }
     if (snapshot.offerings_gold < combat_offerings_ ||
         snapshot.offerings_gold - combat_offerings_ > coins(state_.wealth, Coin::gold))
+    {
         throw std::runtime_error("Combat offerings exceed the party purse");
+    }
     // Everything that can throw is worked out first, without touching the
     // party; the commit below only moves. A member is copied only when the
     // fight used up thrown gear it carried.
     std::vector<MemberId> active;
     for (const auto &actor : snapshot.combatants)
+    {
         if (actor.side == rules::Side::party)
+        {
             active.push_back(actor.id);
+        }
+    }
     // Combat has already advanced active actors' effects and mortality. Only reserves
     // need campaign-side updates, preventing duplicate recovery rolls.
     auto reserves = elapsed(state_,
@@ -1556,6 +1940,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     std::vector<PartyMember> thrown;
     std::vector<std::pair<MemberId, int>> newly_checked;
     for (const auto &actor : snapshot.combatants)
+    {
         if (actor.side == rules::Side::party)
         {
             const auto it = std::find_if(state_.roster.begin(), state_.roster.end(),
@@ -1564,14 +1949,18 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                                              return m.id == actor.id;
                                          });
             if (it == state_.roster.end())
+            {
                 throw std::runtime_error("Combat party identity mismatch");
+            }
             const auto checked = std::find(combat_checked_.begin(), combat_checked_.end(),
                                            std::pair{actor.id, actor.max_hit_points});
             if (checked == combat_checked_.end())
             {
                 if (actor.max_hit_points !=
                     rules_->hit_point_maximum(it->character.sheet(), actor.persistent))
+                {
                     throw std::runtime_error("Combat party identity mismatch");
+                }
                 (void)rules_->character_profile(it->character.sheet(), equipped_definitions(*it));
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
             }
@@ -1580,10 +1969,13 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
             {
                 auto member = *it;
                 for (const auto &[definition, left] : actor.thrown_gear_left)
+                {
                     keep_thrown_gear(member, definition, left);
+                }
                 thrown.push_back(std::move(member));
             }
         }
+    }
     // Room now, so the commit allocates nothing.
     combat_checked_.reserve(combat_checked_.size() + newly_checked.size());
     // Revivify's offering is paid from the party purse as it is made.
@@ -1592,15 +1984,25 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
     for (auto &member : state_.roster)
     {
         for (auto &changed : thrown)
+        {
             if (changed.id == member.id)
+            {
                 member = std::move(changed);
+            }
+        }
         for (auto &[id, state] : vitals)
+        {
             if (id == member.id)
+            {
                 member.vitals = std::move(state);
+            }
+        }
     }
     state_.short_rest.reset();
     if (!combat_registered_)
+    {
         ++state_.next_combat_scope;
+    }
     std::erase_if(combat_checked_,
                   [&](const auto &entry)
                   {

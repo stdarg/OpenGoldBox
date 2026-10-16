@@ -17,7 +17,9 @@ inline void word(std::vector<std::uint8_t> &bytes, std::size_t at, unsigned valu
 inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &records)
 {
     if (records.size() > 256)
+    {
         throw std::logic_error("Too many fixture records");
+    }
     std::vector<std::uint8_t> bytes(2 + 9 * records.size());
     word(bytes, 0, static_cast<unsigned>(9 * records.size()));
     for (std::size_t i = 0; i < records.size(); ++i)
@@ -36,7 +38,9 @@ inline std::vector<std::uint8_t> literal_dax(const std::vector<DaxRecord> &recor
             bytes.insert(bytes.end(), record.bytes.begin() + at, record.bytes.begin() + at + count);
         }
         if (record.bytes.size() > 65535 || bytes.size() - start > 65535)
+        {
             throw std::logic_error("Fixture exceeds DAX record limits");
+        }
         word(bytes, header + 5, static_cast<unsigned>(record.bytes.size()));
         word(bytes, header + 7, static_cast<unsigned>(bytes.size() - start));
     }

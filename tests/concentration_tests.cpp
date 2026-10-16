@@ -9,7 +9,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 const Concentration first{{7, 1, 9}, 600000},

@@ -78,7 +78,9 @@ class CharacterCreationView : public godot::Control
     template <class Action> void perform(Action &&action)
     {
         if (!creator_ || fatal_)
+        {
             return;
+        }
         try
         {
             error_ = "";

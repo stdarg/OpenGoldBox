@@ -34,7 +34,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     const auto catalog = EclCatalog::load(directory);
     const auto program = catalog.find({"ECL3.DAX", 0});
     if (!program)
+    {
         throw EclError("Rolf tour requires ECL3.DAX record 0");
+    }
     // Guard this explicit entry profile. No pattern search through embedded data,
     // no modification of original bytes, and no assumption that an event ID is PC.
     const auto first = program->instruction(0xB071);
@@ -43,7 +45,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     if (first.opcode != 9 || first.operands[0].value != 1 || first.operands[1].value != 0x4AC5 ||
         intro.opcode != 18 || intro.operands[0].tag != 128 || setup.opcode != 12 ||
         setup.operands[0].value != 12)
+    {
         throw EclError("This ECL3:0 does not match the supported Rolf entry profile");
+    }
     // Explicit, verified Phlan profile. This does not implement general 127
     // operand semantics or assume that every map shares its GEO/art record ID.
     // Checked before the maps are loaded: it needs only the program
@@ -55,24 +59,34 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                     {
                         return a.tag != 0 || a.value != 127;
                     }))
+    {
         throw EclError("Unsupported Phlan wall resource profile");
+    }
     const auto maps = MapCatalog::load(directory);
     const auto map = maps.find({"GEO3.DAX", 0});
     if (!map)
+    {
         throw EclError("Rolf tour requires GEO3.DAX record 0");
+    }
     const auto archive = [&](const char *name)
     {
         auto records = decode_dax_archive(read_archive(resolve_archive(directory, name)));
         if (!records)
+        {
             throw EclError(std::string("Invalid wall archive ") + name);
+        }
         return records;
     };
     const auto find_record = [](const DaxDecodeResult &records,
                                 unsigned id) -> const std::vector<std::uint8_t> &
     {
         for (const auto &record : records.records)
+        {
             if (record.id == id)
+            {
                 return record.bytes;
+            }
+        }
         throw EclError("Missing required Phlan wall/tile record " + std::to_string(id));
     };
     const auto definitions = archive("WALLDEF3.DAX");
@@ -83,22 +97,30 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     {
         auto decoded = decode_wall_tiles(record);
         if (!decoded || decoded->size() != expected_count)
+        {
             throw EclError("Unexpected Phlan wall tile layout");
+        }
         tiles.insert(tiles.end(), decoded->begin(), decoded->end());
     };
     append(find_record(shared, 203), 45);
     for (unsigned id : {101, 102, 103})
+    {
         append(find_record(local, id), 70);
+    }
     auto wall_art = decode_wall_art(find_record(definitions, 0), tiles);
     if (!wall_art || wall_art->appearances.size() != 15)
+    {
         throw EclError("Invalid Phlan wall definitions");
+    }
     auto bytes = read_archive(resolve_archive(directory, "SPRIT3.DAX"));
     std::array<opengold::Image, 3> sprites;
     for (std::uint8_t i = 0; i < sprites.size(); ++i)
     {
         auto result = decode_ega_sprite(bytes, 12, i);
         if (!result)
+        {
             throw EclError("Cannot decode Rolf encounter distance image " + std::to_string(i));
+        }
         sprites[i] = std::move(result.image);
     }
     auto town = std::make_shared<PhlanResources>();
@@ -106,12 +128,16 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     {
         auto p = catalog.find({"ECL3.DAX", static_cast<std::uint8_t>(id)});
         if (!p)
+        {
             throw EclError("Missing New Phlan building script");
+        }
         town->programs.emplace(id, std::move(p));
     }
     const auto templates = decode_item_templates(read_archive(resolve_archive(directory, "ITEMS")));
     if (!templates)
+    {
         throw EclError("Invalid item templates");
+    }
     // An archive's fixed item lists (shop stock in town, script treasure in areas).
     const auto item_lists = [&](const std::string &name)
     {
@@ -120,12 +146,16 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         {
             const auto items = decode_items(record.bytes);
             if (!items)
+            {
                 throw EclError("Invalid treasure record in " + name);
+            }
             auto &stock = lists[record.id];
             for (const auto &item : *items)
             {
                 if (item.type >= templates->size())
+                {
                     throw EclError("Invalid item type in " + name);
+                }
                 Equipment equipment;
                 equipment.index = stock.size();
                 equipment.stored = item;
@@ -171,7 +201,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         {
             auto image = decode_ega_picture(record.bytes);
             if (image)
+            {
                 destination.emplace(record.id, std::move(image.image));
+            }
         }
     };
     pictures("HEAD3.DAX", town->heads);
@@ -244,7 +276,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     {
         auto image = decode_ega_combat_icon(dungeon, 1, tile);
         if (!image || image.image.width != 24 || image.image.height != 24)
+        {
             throw EclError("Invalid dungeon tactical tile");
+        }
         terrain_art.push_back(std::move(image.image));
     }
     for (const auto &area : areas)
@@ -253,7 +287,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         const auto program =
             catalog.find({"ECL" + bank + ".DAX", static_cast<std::uint8_t>(area.script)});
         if (!program)
+        {
             throw EclError("Missing area script ECL" + bank + ":" + std::to_string(area.script));
+        }
         town->programs.emplace(area.script, program);
         const auto definitions = archive(("WALLDEF" + bank + ".DAX").c_str()),
                    tiles = archive(("8X8D" + bank + ".DAX").c_str());
@@ -262,7 +298,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             auto district = std::make_shared<PhlanResources>();
             const auto map = maps.find({"GEO" + bank + ".DAX", static_cast<std::uint8_t>(geo.id)});
             if (!map)
+            {
                 throw EclError("Missing area map GEO" + bank + ":" + std::to_string(geo.id));
+            }
             district->map = map->get();
             district->script = area.script;
             district->bank = area.bank;
@@ -276,12 +314,16 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 auto common = decode_wall_tiles(find_record(shared, 203));
                 auto local_bank = decode_wall_tiles(find_record(tiles, id));
                 if (!common || common->size() != 45 || !local_bank || local_bank->size() != 70)
+                {
                     throw EclError("Invalid wall tile bank " + std::to_string(id));
+                }
                 walls.insert(walls.end(), common->begin(), common->end());
                 walls.insert(walls.end(), local_bank->begin(), local_bank->end());
                 auto decoded = decode_wall_art(find_record(definitions, id), walls);
                 if (!decoded || decoded->appearances.size() != 5)
+                {
                     throw EclError("Invalid wall definition bank " + std::to_string(id));
+                }
                 district->wall_art.appearances.insert(district->wall_art.appearances.end(),
                                                       decoded->appearances.begin(),
                                                       decoded->appearances.end());
@@ -293,8 +335,10 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 const auto id = conversion.record;
                 const auto creature = creatures.find({static_cast<std::uint8_t>(area.bank), id});
                 if (!creature)
+                {
                     throw EclError("Missing original creature MON" + bank +
                                    "CHA:" + std::to_string(id));
+                }
                 district->encounter_creatures.emplace(id, creature->get());
                 district->conversions.emplace(id, EncounterConversion{conversion.definition,
                                                                       conversion.fit_xp,
@@ -307,8 +351,12 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
             pictures(("BODY" + bank + ".DAX").c_str(), district->bodies);
             pictures(("PIC" + bank + ".DAX").c_str(), district->pictures);
             for (const auto &record : archive(("PIC" + bank + ".DAX").c_str()).records)
+            {
                 if (auto animation = decode_ega_animation(record.bytes))
+                {
                     district->animations.emplace(record.id, std::move(animation.frames));
+                }
+            }
             town->districts.emplace(geo.id, std::move(district));
         }
     }
@@ -388,25 +436,37 @@ void RolfTourSession::reset_run()
     transition_ = message_only_ = false;
     shop_request_ = 0;
     if (town_ && !town_->sprite_archive.empty())
+    {
         for (unsigned n = 0; n < 3; ++n)
         {
             auto decoded = decode_ega_sprite(town_->sprite_archive, 12, n);
             if (!decoded)
+            {
                 throw EclError("Cannot restore Rolf sprite");
+            }
             sprites_[n] = std::move(decoded.image);
         }
+    }
     // Minimal explicit isolated state, not a fabricated whole party/world model.
     for (const std::uint16_t address :
          {0x03DE, 0x49C9, 0x49FD, 0x4AC5, 0x4A07, 0x4A0F, 0x4A10, 0x4A11, 0x6DE1, 0x6E79,
           0x6E7A, 0x6E7B, 0x6E7C, 0x6E7D, 0x9801, 0xC04B, 0xC04C, 0xC04D, 0xC04E, 0xC04F})
+    {
         machine_.bind_variable(EclAddress{address}, 0);
+    }
     machine_.bind_variable(ecl_clock_hour, 12); // Research fixture: midday.
     for (const std::uint8_t opcode : {12, 13, 14, 45, 49, 58})
+    {
         machine_.enable_host(opcode);
+    }
     if (town_)
+    {
         configure_town();
+    }
     if (!machine_.start_at_for_inspection(entry_))
+    {
         fail("Invalid isolated tour entry");
+    }
 }
 
 void RolfTourSession::fail(std::string diagnostic)
@@ -441,7 +501,9 @@ void RolfTourSession::roll_back_event()
     // The steps that can throw come first: the party's restore checks before
     // it changes anything, and the area change needs the district's map.
     if (campaign_ && saved.campaign)
+    {
         campaign_->restore(std::move(*saved.campaign));
+    }
     change_area(saved.area);
     machine_ = std::move(saved.machine);
     party_ = std::move(saved.party);
@@ -487,7 +549,9 @@ void RolfTourSession::publish_pose()
     const PartyPose next{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
                          facing.value_or(MapDirection::north)};
     if (next.x >= 16 || next.y >= 16 || !facing)
+    {
         throw EclError("Tour wrote an invalid party pose");
+    }
     snapshot_.pose = next;
     snapshot_.visited.set(next.y * 16 + next.x);
     snapshot_.seen.set(next.y * 16 + next.x);
@@ -501,7 +565,9 @@ Image RolfTourSession::observe_view()
     // Before the opening script publishes a pose, (0,0) is only a default
     // value. An early UI refresh must not record it as explored territory.
     if (snapshot_.visited.none())
+    {
         return std::move(view.image);
+    }
     const auto known = snapshot_.seen | view.visible;
     if (known != snapshot_.seen)
     {
@@ -514,7 +580,9 @@ Image RolfTourSession::observe_view()
 void RolfTourSession::handle_host(const EclRequest &request)
 {
     if (town_ && snapshot_.tour_finished && handle_town_host(request))
+    {
         return;
+    }
     EclHostReply reply;
     const auto opcode = request.instruction->opcode;
     switch (opcode)
@@ -522,18 +590,26 @@ void RolfTourSession::handle_host(const EclRequest &request)
     case 12:
         if (request.arguments[0].number() != 12 || request.arguments[1].number() != 2 ||
             request.arguments[2].number() != 9)
+        {
             throw EclError("Unsupported encounter setup in Rolf tour");
+        }
         snapshot_.sprite_frame = 2;
         break;
     case 13:
         if (snapshot_.sprite_frame > 0)
+        {
             --snapshot_.sprite_frame;
+        }
         if (encounter_distance_ > 0)
+        {
             --encounter_distance_;
+        }
         break;
     case 14:
         if (request.arguments[0].number() != 255)
+        {
             throw EclError("Tour requested an unsupported picture");
+        }
         snapshot_.sprite_frame = -1;
         break;
     case 49:
@@ -554,7 +630,9 @@ void RolfTourSession::handle_host(const EclRequest &request)
             PartyPose pose{machine_.variable(ecl_party_x), machine_.variable(ecl_party_y),
                            facing.value_or(MapDirection::north)};
             if (pose.x >= 16 || pose.y >= 16 || !facing)
+            {
                 throw EclError("Invalid scripted movement pose");
+            }
             pose.x = (static_cast<int>(pose.x) + step_x(pose.facing) + 16) % 16;
             pose.y = (static_cast<int>(pose.y) + step_y(pose.facing) + 16) % 16;
             const auto &cell = map_.at(pose.x, pose.y);
@@ -568,7 +646,9 @@ void RolfTourSession::handle_host(const EclRequest &request)
             const auto x = machine_.variable(ecl_party_x), y = machine_.variable(ecl_party_y),
                        f = machine_.variable(ecl_party_facing);
             if (x >= 16 || y >= 16 || f >= 4)
+            {
                 throw EclError("Invalid redraw pose");
+            }
             const auto &cell = map_.at(x, y);
             reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
             ++snapshot_.redraws;
@@ -576,40 +656,56 @@ void RolfTourSession::handle_host(const EclRequest &request)
         else if (service == EclAddress{0xBA03})
         {
             if (machine_.variable(EclAddress{0x03DE}) != 8)
+            {
                 throw EclError("Unsupported tour sound selector");
+            }
             ++snapshot_.footsteps; // Presentation plays an original OpenGoldBox footstep cue.
         }
         else
+        {
             throw EclError("Unsupported native service in tour: " +
                            std::to_string(service.location));
+        }
         break;
     }
     default:
         throw EclError("Unsupported tour host request");
     }
     if (!machine_.resume_host(request.id, reply))
+    {
         throw EclError("Tour host reply rejected");
+    }
     if (opcode == 45 && (request.arguments[0].address() == EclAddress{0x2C90} ||
                          request.arguments[0].address() == EclAddress{0xC01E}))
+    {
         publish_pose();
+    }
     ++snapshot_.revision;
 }
 
 void RolfTourSession::advance(double seconds)
 {
     if (snapshot_.phase != TourPhase::running)
+    {
         return;
+    }
     if (!std::isfinite(seconds) || seconds < 0)
+    {
         return;
+    }
     try
     {
         if (delayed_request_)
         {
             remaining_delay_ -= std::min(seconds, 1.0);
             if (remaining_delay_ > 0)
+            {
                 return;
+            }
             if (!machine_.resume_host(delayed_request_, {}))
+            {
                 throw EclError("Delayed reply rejected");
+            }
             delayed_request_ = 0;
         }
         for (unsigned requests = 0; requests < 64; ++requests)
@@ -633,25 +729,37 @@ void RolfTourSession::advance(double seconds)
                 return;
             }
             if (!result.request)
+            {
                 return; // Instruction budget yield.
+            }
             auto &request = *result.request;
             if (request.kind == EclRequestKind::text)
             {
                 if (request.clear)
+                {
                     snapshot_.dialogue.clear();
+                }
                 snapshot_.dialogue += request.text;
                 if (snapshot_.dialogue.size() > 8192)
+                {
                     throw EclError("Tour dialogue exceeds limit");
+                }
                 if (!machine_.resume(request.id))
+                {
                     throw EclError("Text acknowledgement rejected");
+                }
                 ++snapshot_.revision;
             }
             else if (request.kind == EclRequestKind::menu)
             {
                 if (request.vertical && !request.text.empty())
+                {
                     snapshot_.dialogue += "\n" + request.text;
+                }
                 if (request.instruction && request.instruction->opcode == 44)
+                {
                     announce_spokesman();
+                }
                 snapshot_.choices = std::move(request.choices);
                 menu_request_ = request.id;
                 snapshot_.continue_ticket = ++next_ticket_;
@@ -664,7 +772,9 @@ void RolfTourSession::advance(double seconds)
             {
                 handle_host(request);
                 if (delayed_request_ || snapshot_.phase != TourPhase::running)
+                {
                     return;
+                }
             }
             else if (request.kind == EclRequestKind::input_number ||
                      request.kind == EclRequestKind::input_string)
@@ -677,7 +787,9 @@ void RolfTourSession::advance(double seconds)
                 return;
             }
             else
+            {
                 throw EclError("Unexpected input request");
+            }
         }
     }
     catch (const std::exception &error)
@@ -699,11 +811,15 @@ void RolfTourSession::encounter_challenge(unsigned challenge)
 bool RolfTourSession::camp(RestKind kind)
 {
     if (kind != RestKind::short_rest && kind != RestKind::long_rest)
+    {
         return false;
+    }
     if (!town_ || !campaign_ || snapshot_.phase != TourPhase::completed || campaign_->in_combat() ||
         campaign_->state().short_rest || campaign_->state().spell_rest ||
         campaign_->state().training_rest)
+    {
         return false;
+    }
     camp_kind_ = kind;
     begin_event(EventTrigger::camp);
     advance(0);
@@ -713,11 +829,15 @@ bool RolfTourSession::camp(RestKind kind)
 bool RolfTourSession::explore(ExplorationCommand command)
 {
     if (command == ExplorationCommand::camp)
+    {
         return camp(RestKind::long_rest);
+    }
     if (snapshot_.phase != TourPhase::completed ||
         (campaign_ && (campaign_->in_combat() || campaign_->state().short_rest ||
                        campaign_->state().spell_rest || campaign_->state().training_rest)))
+    {
         return false;
+    }
     if (town_)
     {
         if (command == ExplorationCommand::forward)
@@ -726,7 +846,9 @@ bool RolfTourSession::explore(ExplorationCommand command)
             begin_event(EventTrigger::step);
         }
         else if (command == ExplorationCommand::look)
+        {
             begin_event(EventTrigger::look);
+        }
         else
         {
             move_party(command);
@@ -737,11 +859,17 @@ bool RolfTourSession::explore(ExplorationCommand command)
     }
     auto pose = snapshot_.pose;
     if (command == ExplorationCommand::turn_left)
+    {
         pose.facing = turned_left(pose.facing);
+    }
     else if (command == ExplorationCommand::turn_right)
+    {
         pose.facing = turned_right(pose.facing);
+    }
     else if (command == ExplorationCommand::turn_around)
+    {
         pose.facing = reversed(pose.facing);
+    }
     else
     {
         const auto &edge = map_.at(pose.x, pose.y);
@@ -749,11 +877,15 @@ bool RolfTourSession::explore(ExplorationCommand command)
                   y = static_cast<int>(pose.y) + step_y(pose.facing);
         if (x < 0 || y < 0 || x >= 16 || y >= 16 || edge.walls[index(pose.facing)] ||
             edge.doors[index(pose.facing)])
+        {
             return false;
+        }
         const auto &other = map_.at(x, y);
         const auto reverse = reversed(pose.facing);
         if (other.walls[index(reverse)] || other.doors[index(reverse)])
+        {
             return false;
+        }
         pose.x = x;
         pose.y = y;
     }

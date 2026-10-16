@@ -28,7 +28,9 @@ void CharacterCreationView::load_portraits()
         control->add_item(i18n::text(labels[field]));
         std::set<std::string> values;
         for (const auto &p : portraits_->entries())
+        {
             values.insert(field == 0 ? p.gender : field == 1 ? p.klass : p.race);
+        }
         for (const auto &value : values)
         {
             control->add_item(i18n::text(value));
@@ -53,9 +55,13 @@ void CharacterCreationView::match_portrait_filters()
         auto *filter = &required_node<OptionButton>(*this, name);
         filter->select(0);
         for (int item = 1; value && item < filter->get_item_count(); ++item)
+        {
             if (PortraitCatalog::same(String(filter->get_item_metadata(item)).utf8().get_data(),
                                       *value))
+            {
                 filter->select(item);
+            }
+        }
     }
 }
 
@@ -63,7 +69,9 @@ void CharacterCreationView::refresh_portraits()
 {
     const bool on_page = creator_->step() == opengold::CreationStep::portrait;
     if (on_page && !on_portrait_page_)
+    {
         match_portrait_filters();
+    }
     on_portrait_page_ = on_page;
     filtered_portraits_.clear();
     const auto matches = [&](const char *node, const std::string &value)
@@ -86,13 +94,19 @@ void CharacterCreationView::refresh_portraits()
     {
         const auto &p = portraits_->entries()[i];
         if (p.filename == current)
+        {
             required_node<Control>(*this, "PortraitPreview")
                 .call("show_portrait", gs("res://bin/portraits/" + p.filename), caption(p));
+        }
         if (!matches("PortraitGender", p.gender) || !matches("PortraitClass", p.klass) ||
             !matches("PortraitRace", p.race))
+        {
             continue;
+        }
         if (p.filename == current)
+        {
             selected = static_cast<int>(filtered_portraits_.size());
+        }
         filtered_portraits_.push_back(i);
         files.push_back(gs("res://bin/portraits/" + p.filename));
         captions.push_back(caption(p));
@@ -104,14 +118,18 @@ void CharacterCreationView::refresh_portraits()
 void CharacterCreationView::portrait_filter_selected(std::int64_t)
 {
     if (!refreshing_)
+    {
         refresh();
+    }
 }
 
 // The next or previous matching portrait, wrapping around.
 void CharacterCreationView::portrait_part(int direction)
 {
     if (added_to_party_ || filtered_portraits_.empty())
+    {
         return;
+    }
     const auto &current = creator_->appearance().portrait;
     const auto found = std::find_if(filtered_portraits_.begin(), filtered_portraits_.end(),
                                     [&](std::size_t index)
@@ -128,17 +146,23 @@ void CharacterCreationView::portrait_part(int direction)
 void CharacterCreationView::portrait_selected(std::int64_t index)
 {
     if (refreshing_ || added_to_party_)
+    {
         return;
+    }
     perform(
         [&]
         {
             if (index < 0 || static_cast<std::size_t>(index) >= filtered_portraits_.size())
+            {
                 throw std::runtime_error("Invalid portrait selection");
+            }
             auto a = creator_->appearance();
             a.portrait = portraits_->entries().at(filtered_portraits_[index]).filename;
             creator_->appearance(a);
             if (completed_)
+            {
                 completed_->appearance(a);
+            }
             portrait_chosen_ = true;
         });
 }

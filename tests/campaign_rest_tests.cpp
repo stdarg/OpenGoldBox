@@ -34,11 +34,15 @@ Character hero(std::string klass = "fighter", unsigned level = 4)
     d.name = "Rest tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     Character result(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 2; n <= level; ++n)
+    {
         check(result.advance(*module(), scratch), "Fixture level is supported");
+    }
     return result;
 }
 
@@ -75,8 +79,12 @@ unsigned winds(const PartyMember &member)
 {
     const auto info = module()->recovery_info(member.character.sheet(), member.vitals);
     for (const auto &pool : info.resources)
+    {
         if (pool.id == "second_wind")
+        {
             return pool.remaining;
+        }
+    }
     throw std::runtime_error("Missing Second Wind pool");
 }
 
@@ -150,7 +158,9 @@ void individual_eligibility()
     state.subminute_milliseconds = 3000;
     state.random_state.value = 29;
     for (auto &m : state.roster)
+    {
         m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
+    }
     state.roster[1].last_rest_minutes = 41;
     state.roster[1].last_rest_subminute_milliseconds = 4000;
     state.roster[2].vitals = {0, false, dying_resources(1, 2)};
@@ -234,7 +244,9 @@ void spending_and_continuation()
     auto state = party.checkpoint();
     state.subminute_milliseconds = 1234;
     for (auto &m : state.roster)
+    {
         m.vitals = {1, false, spent_resources(m.character.sheet().character_class)};
+    }
     party.restore(std::move(state));
     rejects(
         [&]
@@ -279,7 +291,9 @@ void spending_and_continuation()
     const auto &healed = party.member(f);
     int healing = 0;
     for (const auto &roll : rolls)
+    {
         healing += roll.healing;
+    }
     check(rolls.size() >= 2 && rolls[0].roll == 4 && rolls[0].modifier == 2 &&
               rolls[0].healing == 6 && rolls[0].remaining == 3 && rolls[1].roll == 2 &&
               rolls[1].healing == 4 && rolls[1].remaining == 2,
@@ -478,10 +492,12 @@ void effects_once()
     auto state = party.checkpoint();
     state.subminute_milliseconds = 4321;
     for (auto &m : state.roster)
+    {
         m.vitals = {
             1, false,
             "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 0 0 \"\" 0 1 0 0 0 0 0 FX8 2 1 1 1 77 99 \"Source caster\" 13 "
             "43000 2000 0"};
+    }
     for (const auto kind : {RestKind::short_rest, RestKind::long_rest})
     {
         party.restore(state);
@@ -496,14 +512,18 @@ void effects_once()
               "Rest performs exactly the same timed recovery rolls as one elapsed interval");
         // A Long Rest leaves a Human only its Heroic Inspiration (kind 72).
         for (const auto &m : party.state().roster)
+        {
             check(m.vitals.resources.ends_with("FX8 2 0 0") ||
                       (kind == RestKind::long_rest &&
                        m.vitals.resources.find("FX8 3 1 2 72 1 1 ") != std::string::npos),
                   "Timed effects expire during the rest");
+        }
         check(party.member(reserve).vitals == elapsed.member(reserve).vitals,
               "Reserve effects advance without receiving rest recharge");
         if (party.state().short_rest)
+        {
             party.finish_short_rest(party.state().short_rest->ticket);
+        }
     }
     // A malformed member rejects before any other member can receive benefits.
     state.roster[1].vitals.resources = "invalid";
@@ -529,7 +549,9 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
 {
     Bytes bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     bytes.push_back(0);
     bytes.insert(bytes.end(), body.begin(), body.end());
     return std::make_shared<const por::EclProgram>(por::EclProgram::decode(bytes, "rest host"));
@@ -538,7 +560,9 @@ std::shared_ptr<const por::EclProgram> program(Bytes body)
 void settle(por::RolfTourSession &town)
 {
     for (unsigned n = 0; n < 100 && town.snapshot().phase == por::TourPhase::running; ++n)
+    {
         town.advance(.5);
+    }
     check(town.snapshot().phase != por::TourPhase::faulted, "Rest fixture script fault");
 }
 
@@ -579,6 +603,7 @@ void campaign_services()
               disk.town->script_variable(por::ecl_character_hit_points) == healed_hp,
           "Next script cannot overwrite committed Hit Die healing with stale HP");
     for (const auto kind : {RestKind::short_rest, RestKind::long_rest})
+    {
         for (const auto chance : {255u, 50u, 100u, 101u, 102u, 200u, 254u})
         {
             party->restore(state);
@@ -597,10 +622,13 @@ void campaign_services()
                     party->state().time_minutes == ((chance == 100 || chance == 101) ? 5 : 0),
                 "Forbidden, unsupported and five-minute interrupted camps grant neither resources nor spending rights");
             if (chance != 255 && chance != 100 && chance != 101)
+            {
                 check(
                     !blocked.script_diagnostics().empty(),
                     "Unverified interruption profiles reject explicitly instead of becoming city-watch events");
+            }
         }
+    }
     // Inn completion is still an event transaction. An unsupported instruction
     // after recovery restores the pre-event clock, resources, cooldowns and RNG.
     party->restore(std::move(state));
@@ -632,7 +660,9 @@ void watch_interruption_and_rollback()
         party->restore(std::move(initial));
         Bytes bytes{0, 0};
         for (unsigned n = 0; n < 5; ++n)
+        {
             bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+        }
         bytes.push_back(0);
         const Bytes pre{9, 0, 1, 1, 0xd2, 0x6d, 9, 0, 101, 1, 0xd3, 0x6d, 0};
         const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
@@ -640,9 +670,13 @@ void watch_interruption_and_rollback()
         bytes[17] = arrival >> 8;
         bytes.insert(bytes.end(), pre.begin(), pre.end());
         if (failure)
+        {
             bytes.insert(bytes.end(), {56, 0, 0, 0});
+        }
         else
+        {
             bytes.push_back(0);
+        }
         const auto script = std::make_shared<const por::EclProgram>(
             por::EclProgram::decode(bytes, "watch recovery"));
         auto resources = std::make_shared<por::PhlanResources>();
@@ -679,7 +713,9 @@ std::shared_ptr<const por::EclProgram> camp_script(std::uint8_t interval, std::u
     const Bytes pre{9, 0, interval, 1, 0xd2, 0x6d, 9, 0, chance, 1, 0xd3, 0x6d, 0};
     Bytes bytes{0, 0};
     for (unsigned n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     bytes.push_back(0);
     const unsigned arrival = 0x9915 + static_cast<unsigned>(pre.size());
     bytes[16] = arrival & 255;
@@ -730,12 +766,18 @@ CampOutcome camp_from_wounded(CampFixture &f, RestKind kind)
     const bool interrupted =
         f.town->snapshot().dialogue.ends_with("The rest was interrupted. Rest again to recover.");
     if (interrupted)
+    {
         check(!f.party->state().short_rest && member.vitals.hit_points == 1 && winds(member) == 0,
               "An interrupted rest grants no benefits");
+    }
     else if (kind == RestKind::short_rest)
+    {
         check(f.party->state().short_rest.has_value(), "A completed Short Rest offers spending");
+    }
     else
+    {
         check(member.vitals.hit_points > 1, "A completed Long Rest recovers HP");
+    }
     return {f.party->state().time_minutes, interrupted};
 }
 
@@ -764,7 +806,9 @@ void slums_street_profile()
         const auto outcome = camp_from_wounded(shorts, RestKind::short_rest);
         check(outcome.minutes == 60, "A Short Rest's only check falls at its last step");
         if (n % 2 == 0)
+        {
             check(!outcome.interrupted, "A Short Rest from a fresh count reaches no check");
+        }
         interrupted_shorts += outcome.interrupted;
     }
     check(interrupted_shorts > 0 && interrupted_shorts < 30,
@@ -831,7 +875,9 @@ void failed_interruption_rolls_back()
         check(f.town->camp(RestKind::short_rest), "Camp starts");
         settle(*f.town);
         if (f.town->script_diagnostics().empty())
+        {
             continue;
+        }
         check(saved(*f.party) == before, "A failed interruption restores party, time and RNG");
         for (unsigned retry = 2; retry <= 3; ++retry)
         {
@@ -872,11 +918,13 @@ void malformed_continuation()
     for (const auto bad : {"0 0 ", "1 1 1 1 60 0 1 1 ", "2 1 0 1 60 0 1 1 ", "2 1 1 0 60 0 1 1 ",
                            "2 1 1 1 59 0 1 1 ", "2 1 1 1 60 1 1 1 ", "2 1 1 1 60 0 0 ",
                            "2 1 1 1 60 0 2 1 1 ", "2 1 1 1 60 0 1 999 "})
+    {
         rejects(
             [&]
             {
                 (void)loaded(payload(prefix + bad + later));
             });
+    }
     check(saved(party) == good,
           "Correct-checksum malformed continuations cannot replace the live campaign");
     auto state = party.checkpoint();

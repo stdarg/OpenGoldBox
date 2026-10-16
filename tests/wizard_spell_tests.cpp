@@ -26,7 +26,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -61,7 +63,9 @@ Character wizard(unsigned level, std::vector<std::string> spells,
     d.name = "Wizard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::move(cantrips);
     d.spells = SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
     d.training = {{"class:wizard", {"medicine", "nature"}}};
@@ -85,24 +89,36 @@ Character wizard(unsigned level, std::vector<std::string> spells,
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return submit_aimed(c, command);
+        }
+    }
     return false;
 }
 
 bool aim(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "area_move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -145,7 +161,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {99, "target", "Second", Side::opposition, second}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Wizard's turn");
+    }
     check(c->snapshot().actor == 1, "The Wizard acts");
     return c;
 }
@@ -177,7 +195,9 @@ void thunderwave_checks()
         check(submit(*c, "area_cast") && logged(*c, "First takes") && !logged(*c, "Ally takes"),
               "The creature in the cube takes Thunder damage");
         if (!logged(*c, "First is pushed 10 feet."))
+        {
             continue;
+        }
         check(unit(*c, 98).cell == Cell{4, 1}, "A failed save pushes it 10 feet away");
         return;
     }
@@ -201,11 +221,15 @@ void thunderwave_wall_checks()
                                   {99, "target", "Second", Side::opposition, {9, 4}}}},
                                 seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Wizard's turn");
+        }
         check(submit(*c, "thunderwave") && aim(*c, Cell{2, 1}) && submit(*c, "area_cast"),
               "Thunderwave east toward the wall");
         if (!logged(*c, "First is pushed 5 feet."))
+        {
             continue;
+        }
         check(unit(*c, 98).cell == Cell{3, 1} &&
                   logged(*c, "First slams into an obstacle and takes "),
               "Stopped 5 feet short by the wall, it takes 1d6 Bludgeoning");
@@ -261,7 +285,9 @@ void next_turn(CombatSession &c)
 {
     check(submit(c, "end"), "End the Wizard's turn");
     for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(c, "end"), "Back to the Wizard");
+    }
 }
 
 void mage_armor_checks()
@@ -310,7 +336,9 @@ void ray_of_sickness_checks()
           "A hit Poisons the target");
     check(submit(*c, "end"), "End the Wizard's turn");
     while (c->snapshot().actor != 98)
+    {
         check(submit(*c, "end"), "Reach the Poisoned creature");
+    }
     check(submit(*c, "melee", 1) && logged(*c, "(disadvantage)"),
           "A Poisoned creature attacks with Disadvantage");
 }
@@ -330,8 +358,12 @@ void chromatic_orb_checks()
     auto c = battle(*module, wizard(1, {"magic_missile", "chromatic_orb"}), {3, 1}, {11, 5});
     std::vector<std::string> labels;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb.starts_with("chromatic_orb_") && command.target == 98)
+        {
             labels.push_back(command.label);
+        }
+    }
     check(labels.size() == 6 && labels.front() == "Chromatic Orb: Acid",
           "Chromatic Orb is offered once per damage type");
     const auto before = slots(*c);
@@ -367,7 +399,9 @@ bool has_condition(const CombatSession &c, EntityId id, std::string_view label)
 void reach(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 6; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
     check(c.snapshot().actor == id, "Reach the creature's turn");
 }
 
@@ -383,7 +417,9 @@ void sleep_checks()
         check(!logged(*c, "Ally grows drowsy") && !logged(*c, "Ally Wisdom save"),
               "Sleep passes over the Wizard's allies");
         if (!logged(*c, "First grows drowsy."))
+        {
             continue;
+        }
         check(has_condition(*c, 98, "Incapacitated (Sleep)"),
               "A failed save leaves it Incapacitated");
         const auto saved = c->save();
@@ -406,14 +442,18 @@ void hideous_laughter_checks()
                         seed);
         check(submit(*c, "hideous_laughter", 98), "Cast Hideous Laughter");
         if (!logged(*c, "First falls Prone, laughing."))
+        {
             continue;
+        }
         check(has_condition(*c, 98, "Prone and Incapacitated (laughing)"),
               "The target is Prone and Incapacitated");
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved, "The laughter survives a checkpoint");
         reach(*c, 98);
         for (const auto &command : c->legal_commands())
+        {
             check(command.verb == "end", "A laughing creature can only end its turn");
+        }
         return;
     }
     throw std::runtime_error("No seed fails the Wisdom save");
@@ -432,7 +472,9 @@ void color_spray_checks()
         check(!logged(*c, "Ally Constitution save") && !logged(*c, "Second Constitution save"),
               "Only creatures in the cone are touched");
         if (!logged(*c, "First is Blinded."))
+        {
             continue;
+        }
         check(!unit(*c, 98).conditions.empty(), "A failed save Blinds the target");
         return;
     }
@@ -455,11 +497,15 @@ void grease_checks()
         check(difficult(*c, {4, 1}) && difficult(*c, {5, 2}) && !difficult(*c, {6, 1}),
               "Grease makes a 10-foot square Difficult Terrain");
         if (!logged(*c, "First slips and falls Prone."))
+        {
             continue;
+        }
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved, "The grease survives a checkpoint");
         for (unsigned turns = 0; turns < 40; ++turns)
+        {
             check(submit(*c, "end"), "Let the minute pass");
+        }
         check(!difficult(*c, {4, 1}), "Grease vanishes after a minute");
         return;
     }
@@ -469,8 +515,12 @@ void grease_checks()
 std::optional<Command> offered(const CombatSession &c, std::string_view verb, Cell destination)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.destination == destination)
+        {
             return command;
+        }
+    }
     return std::nullopt;
 }
 
@@ -489,13 +539,17 @@ void grease_outlasts_its_fled_caster()
         const auto flee = offered(*c, "flee", Cell{-1, 1});
         check(flee && c->submit(*flee), "The Wizard may try to run off the field");
         if (!logged(*c, "Wizard flees the battle."))
+        {
             continue;
+        }
         check(difficult(*c, {4, 1}), "The Grease stays after its caster has fled");
         const auto saved = c->save();
         check(module->restore(saved)->save() == saved,
               "A checkpoint with a fled caster's Grease restores");
         for (unsigned turns = 0; turns < 40 && c->snapshot().outcome == Outcome::ongoing; ++turns)
+        {
             check(submit(*c, "end"), "Let the minute pass");
+        }
         check(!difficult(*c, {4, 1}), "Grease vanishes after a minute");
         return;
     }
@@ -505,8 +559,12 @@ void grease_outlasts_its_fled_caster()
 bool move_to(CombatSession &c, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == "move" && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -529,7 +587,9 @@ void web_checks()
               "Entering the webs calls for a save");
         caught_entering = logged(*c, "Second is Restrained by the webs.");
         if (!caught_entering)
+        {
             continue;
+        }
         check(unit(*c, 99).cell == Cell{8, 2}, "A caught creature stops where it entered");
         const auto offered = c->legal_commands();
         check(std::any_of(offered.begin(), offered.end(),
@@ -600,7 +660,9 @@ void sculpt_cap_checks()
                               {98, "target", "First", Side::opposition, {4, 1}}}},
                             5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Wizard's turn");
+    }
     check(submit(*c, "burning_hands") && aim(*c, Cell{3, 1}) && submit(*c, "area_cast"),
           "Burning Hands over three allies and an enemy");
     const auto saves = count_logged(*c, "Near Dexterity save") +
@@ -620,7 +682,9 @@ std::unique_ptr<CombatSession> shield_question(const RulesModule &module)
         reach(*c, 98);
         check(submit(*c, "melee", 1), "The enemy attacks the Wizard");
         if (!c->snapshot().reaction_pending)
+        {
             continue;
+        }
         check(c->snapshot().actor == 1 && offered(*c, "shield") && offered(*c, "decline"),
               "The hit Wizard is asked to cast Shield or decline");
         check(!logged(*c, "First -> Wizard"), "The attack waits for the answer");
@@ -681,16 +745,24 @@ void split_target_checks()
     const auto click = [](CombatSession &c, std::string_view verb, EntityId target)
     {
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == verb && command.target == target)
+            {
                 return c.submit(command);
+            }
+        }
         return false;
     };
     const auto offered = [](const CombatSession &c, std::string_view verb)
     {
         std::vector<EntityId> targets;
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == verb)
+            {
                 targets.push_back(command.target);
+            }
+        }
         std::sort(targets.begin(), targets.end());
         return targets;
     };
@@ -726,7 +798,9 @@ void split_target_checks()
 
     c = battle();
     for (int dart = 0; dart < 3; ++dart)
+    {
         check(click(*c, "magic_missile", 98), "Every dart at one foe");
+    }
     check(logged(*c, "Wizard casts Magic Missile for") && unit(*c, 99).hit_points == 1000,
           "All three darts at one foe are one hit, as before");
 
@@ -762,20 +836,28 @@ void ray_retarget_checks()
             seed);
         reach(*c, 1);
         for (const auto aim : aims)
+        {
             for (const auto &command : c->legal_commands())
+            {
                 if (command.verb == "scorching_ray" && command.target == aim)
                 {
                     check(c->submit(command), "A ray is aimed");
                     break;
                 }
+            }
+        }
         return c;
     };
     // The first seed whose first ray drops the Weakling.
     std::uint64_t seed = 1;
     for (; seed < 40; ++seed)
+    {
         if (unit(*cast({97, 97, 97}, seed), 97).hit_points <= 0 &&
             count_logged(*cast({97, 97, 97}, seed), "Wizard -> Weakling") == 1)
+        {
             break;
+        }
+    }
     check(seed < 40, "Some seed's first ray drops the Weakling");
     auto c = cast({97, 97, 97}, seed);
     check(count_logged(*c, "The ray turns to Near.") == 2 &&
@@ -804,15 +886,21 @@ void ray_retarget_checks()
     reach(*downed, 98);
     bool offered = false;
     for (const auto &command : downed->legal_commands())
+    {
         offered |= command.verb == "scorching_ray" && command.target == 1;
+    }
     check(offered, "A downed party member can be aimed at");
     for (int ray = 0; ray < 3; ++ray)
+    {
         for (const auto &command : downed->legal_commands())
+        {
             if (command.verb == "scorching_ray" && command.target == 1)
             {
                 check(downed->submit(command), "A ray is aimed at the fallen");
                 break;
             }
+        }
+    }
     check(count_logged(*downed, "Foe -> Fallen") + count_logged(*downed, "Foe -> Standing") == 3,
           "Every ray is an attack, on the fallen or, once it is dead, on another");
 }
@@ -863,7 +951,9 @@ void shield_slot_per_turn_checks()
         reach(*c, 98);
         check(submit(*c, "melee", 1), "The enemy attacks the Wizard");
         if (!c->snapshot().reaction_pending)
+        {
             continue;
+        }
         check(offered(*c, "shield"), "On the enemy's turn the Wizard may spend a slot on Shield");
         return;
     }
@@ -959,7 +1049,9 @@ void laughter_concentration_checks()
             battle(*module, wizard(1, {"magic_missile", "hideous_laughter"}), {4, 1}, {5, 1}, seed);
         check(submit(*c, "hideous_laughter", 98), "Cast Hideous Laughter");
         if (!logged(*c, "First falls Prone, laughing."))
+        {
             continue;
+        }
         next_turn(*c);
         check(submit(*c, "hideous_laughter", 99) && logged(*c, "Wizard loses Concentration.") &&
                   !has_condition(*c, 98, "Prone and Incapacitated (laughing)"),
@@ -991,7 +1083,9 @@ void incapacitated_concentration_checks()
         reach(*c, 98);
         check(submit(*c, "hideous_laughter", 1), "The Foe casts Hideous Laughter");
         if (!logged(*c, "Wizard falls Prone, laughing."))
+        {
             continue;
+        }
         check(logged(*c, "Wizard loses Concentration.") && !has_condition(*c, 1, "Concentrating"),
               "The laughing Wizard loses Concentration");
         return;
@@ -1007,7 +1101,9 @@ void area_wall_checks()
     const auto hero = wizard(3, {"magic_missile"}, {"shatter", "blindness"});
     std::vector<Terrain> field(72);
     for (int y = 0; y < 6; ++y)
+    {
         field[static_cast<std::size_t>(y * 12 + 7)] = Terrain::obstacle;
+    }
     auto c =
         module->create({{12, 6, field},
                         {{1,
@@ -1054,7 +1150,9 @@ void mirror_image_checks()
         const int hp = unit(*c, 1).hit_points;
         check(submit(*c, "melee", 1), "The enemy attacks");
         if (!logged(*c, "First hits one of Wizard's duplicates, which vanishes."))
+        {
             continue;
+        }
         check(unit(*c, 1).hit_points == hp, "The duplicate takes the hit");
         const auto snapshot = c->save();
         check(module->restore(snapshot)->save() == snapshot, "The duplicates survive a checkpoint");
@@ -1067,11 +1165,13 @@ void mirror_image_checks()
 int logged_attack_bonus(const CombatSession &c)
 {
     for (const auto &line : c.snapshot().log())
+    {
         if (line.starts_with("Wizard -> First: d20 "))
         {
             const auto plus = line.find(" + ");
             return std::stoi(line.substr(plus + 3));
         }
+    }
     throw std::runtime_error("No Wizard attack logged");
 }
 
@@ -1257,12 +1357,16 @@ void enlarge_reduce_checks()
                   logged(*c, "First Constitution save"),
               "An enemy is offered only Reduce, and saves");
         if (!logged(*c, "First is reduced."))
+        {
             continue;
+        }
         check(has_condition(*c, 98, "Reduced"), "A failed save reduces it");
         reach(*c, 98);
         check(submit(*c, "melee", 1), "The reduced enemy attacks");
         if (!logged(*c, "First -> Wizard") || !logged(*c, "hits"))
+        {
             continue;
+        }
         check(logged(*c, "Reduce subtracts"), "A reduced creature's weapon hits deal 1d4 less");
         return;
     }
@@ -1290,7 +1394,9 @@ void true_strike_checks()
                   !unit(*c, 1).action,
               "True Strike makes a weapon attack with the Action");
         if (!logged(*c, " hits for "))
+        {
             throw std::runtime_error("The True Strike test expects a hit on AC 1");
+        }
         check((unit(*c, 98).hit_points == hp) == radiant,
               "Radiant damage is the chosen type, the weapon's type otherwise");
     }
@@ -1303,8 +1409,12 @@ void dragons_breath_checks()
                     {11, 5});
     std::vector<std::string> labels;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb.starts_with("dragons_breath_") && command.target == 2)
+        {
             labels.push_back(command.label);
+        }
+    }
     check(labels.size() == 5 && labels.front() == "Dragon's Breath: Acid",
           "Dragon's Breath is offered once per damage type");
     check(submit(*c, "dragons_breath_fire", 2) && unit(*c, 1).action &&
@@ -1330,7 +1440,9 @@ void charm_person_checks()
               "Charm Person calls for a Wisdom save");
         charmed = logged(*c, "First is Charmed by Wizard.");
         if (!charmed)
+        {
             continue;
+        }
         check(has_condition(*c, 98, "Charmed"), "The creature is Charmed");
         reach(*c, 98);
         const auto commands = c->legal_commands();
@@ -1369,7 +1481,9 @@ void gust_of_wind_checks()
                   !logged(*c, "Second Strength save"),
               "Only creatures in the line save");
         if (!logged(*c, "First is pushed"))
+        {
             continue;
+        }
         check(unit(*c, 98).cell.x > 3, "A failed save pushes the creature along the line");
         reach(*c, 98);
         check(submit(*c, "end") && count_logged(*c, "First Strength save") == 2,

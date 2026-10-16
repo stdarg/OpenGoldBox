@@ -55,8 +55,12 @@ void refresh_nick(godot::Node &root, const opengold::rules::CombatantView *actor
     button->set_visible(actor && actor->nick_mastery);
     bool available = false;
     if (actor)
+    {
         for (const auto &attack : actor->nick_attacks)
+        {
             available |= attack.available;
+        }
+    }
     button->set_disabled(!available_turn || !available);
     auto *choices = &required_node<OptionButton>(root, "NickAttack/Choices");
     const String old = choices->get_selected() >= 0
@@ -65,6 +69,7 @@ void refresh_nick(godot::Node &root, const opengold::rules::CombatantView *actor
     choices->clear();
     int first = -1, selected = -1;
     if (actor)
+    {
         for (const auto &attack : actor->nick_attacks)
         {
             const int index = choices->get_item_count();
@@ -77,18 +82,25 @@ void refresh_nick(godot::Node &root, const opengold::rules::CombatantView *actor
             if (attack.available)
             {
                 if (first < 0)
+                {
                     first = index;
+                }
                 if (String(choices->get_item_metadata(index)) == old)
+                {
                     selected = index;
+                }
             }
         }
+    }
     choices->select(selected >= 0 ? selected : first);
     choices->set_disabled(!available_turn || !available);
     required_node<Button>(root, "NickAttack/Target")
         .set_disabled(!available_turn || !available || choices->get_selected() < 0 ||
                       choices->is_item_disabled(choices->get_selected()));
     if (required_node<Window>(root, "NickAttack").is_visible() && (!available_turn || !available))
+    {
         required_node<Window>(root, "NickAttack").hide();
+    }
 }
 } // namespace presentation
 #endif

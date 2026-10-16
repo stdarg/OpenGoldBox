@@ -64,10 +64,14 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
         {
             const auto name = opengold::por::detail::upper_ascii(file.path().filename().string());
             if (!file.is_regular_file() || !name.starts_with("CPIC") || !name.ends_with(".DAX"))
+            {
                 continue;
+            }
             const auto digit = name.substr(4, name.size() - 8);
             if (digit.size() != 1 || digit[0] < '1' || digit[0] > '8')
+            {
                 continue;
+            }
             by_bank[digit[0] - '0'].push_back(file.path());
             archive_bytes_.emplace(name, read_bytes(file.path()));
         }
@@ -84,42 +88,58 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
             ids_.push_back(id);
             // Same ID in the same archive bank is a candidate, never a verified binding.
             for (const auto &file : by_bank[id.bank])
+            {
                 if (paired(file, id.record))
                 {
                     art_.emplace(id, MonsterArt{file, id.record, "Same ID, same bank (candidate)"});
                     break;
                 }
+            }
             if (art_.contains(id))
+            {
                 continue;
+            }
             for (const auto &[bank, files] : by_bank)
             {
                 for (const auto &file : files)
+                {
                     if (paired(file, id.record))
                     {
                         art_.emplace(
                             id, MonsterArt{file, id.record, "Same ID, different bank (candidate)"});
                         break;
                     }
+                }
                 if (art_.contains(id))
+                {
                     break;
+                }
             }
             if (art_.contains(id))
+            {
                 continue;
+            }
             // Duplicate original names may share art, but this remains a weak candidate.
             for (const auto &[other_id, other] : creatures_->all())
             {
                 if (other_id == id || opengold::por::detail::upper_ascii(other.stored.name) !=
                                           opengold::por::detail::upper_ascii(creature.stored.name))
+                {
                     continue;
+                }
                 for (const auto &file : by_bank[other_id.bank])
+                {
                     if (paired(file, other_id.record))
                     {
                         art_.emplace(id, MonsterArt{file, other_id.record,
                                                     "Same name alias (weak candidate)"});
                         break;
                     }
+                }
                 if (art_.contains(id))
+                {
                     break;
+                }
             }
         }
         // Keep every archive-local combat pair visible, including art without a
@@ -132,11 +152,15 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
                     archive_bytes_.at(opengold::por::detail::upper_ascii(file.filename().string()));
                 const auto decoded = decode_dax_archive(bytes);
                 if (!decoded)
+                {
                     continue;
+                }
                 for (const auto &record : decoded.records)
                 {
                     if (record.id >= 128 || !paired(file, record.id))
+                    {
                         continue;
+                    }
                     const bool named = std::any_of(art_.begin(), art_.end(),
                                                    [&](const auto &item)
                                                    {
@@ -144,7 +168,9 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
                                                               item.second.base == record.id;
                                                    });
                     if (!named)
+                    {
                         extra_art_.push_back({file, record.id, "Unidentified archive pair"});
+                    }
                 }
             }
         }
@@ -167,7 +193,9 @@ Array SpriteCatalog::creatures() const
 {
     Array result;
     if (!creatures_)
+    {
         return result;
+    }
     for (const auto &id : ids_)
     {
         const auto &creature = creatures_->find(id)->get();
@@ -216,13 +244,17 @@ Dictionary SpriteCatalog::monster_art(int index) const
 {
     Dictionary result;
     if (index < 0 || static_cast<std::size_t>(index) >= ids_.size() + extra_art_.size())
+    {
         return result;
+    }
     const MonsterArt *art = nullptr;
     if (static_cast<std::size_t>(index) < ids_.size())
     {
         const auto found = art_.find(ids_[index]);
         if (found != art_.end())
+        {
             art = &found->second;
+        }
         if (!art)
         {
             const auto &record = creatures_->find(ids_[index])->get().stored;
@@ -237,7 +269,9 @@ Dictionary SpriteCatalog::monster_art(int index) const
         }
     }
     else
+    {
         art = &extra_art_[index - ids_.size()];
+    }
     result["archive"] = gs(art->archive.filename().string());
     result["record"] = art->base;
     result["basis"] = gs(art->basis);
@@ -247,13 +281,17 @@ Dictionary SpriteCatalog::monster_art(int index) const
 Ref<Texture2D> SpriteCatalog::monster_image(int index, bool action) const
 {
     if (index < 0 || static_cast<std::size_t>(index) >= ids_.size() + extra_art_.size())
+    {
         return {};
+    }
     const MonsterArt *art = nullptr;
     if (static_cast<std::size_t>(index) < ids_.size())
     {
         const auto found = art_.find(ids_[index]);
         if (found != art_.end())
+        {
             art = &found->second;
+        }
         if (!art && characters_)
         {
             const auto &record = creatures_->find(ids_[index])->get().stored;
@@ -276,15 +314,21 @@ Ref<Texture2D> SpriteCatalog::monster_image(int index, bool action) const
         }
     }
     else
+    {
         art = &extra_art_[index - ids_.size()];
+    }
     if (!art)
+    {
         return {};
+    }
     const auto &bytes =
         archive_bytes_.at(opengold::por::detail::upper_ascii(art->archive.filename().string()));
     auto decoded =
         decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(art->base + (action ? 128 : 0)), 0);
     if (!decoded)
+    {
         return {};
+    }
     return presentation::image_texture(decoded.image);
 }
 
@@ -292,7 +336,9 @@ Array SpriteCatalog::weapons() const
 {
     Array result;
     if (!bodies_)
+    {
         return result;
+    }
     for (const auto &option : bodies_->options())
     {
         Dictionary row;
@@ -307,9 +353,13 @@ Array SpriteCatalog::combat_body_groups() const
 {
     Array result;
     if (!characters_)
+    {
         return result;
+    }
     for (const auto &group : characters_->combat_body_groups())
+    {
         result.append(static_cast<int>(group.front()));
+    }
     return result;
 }
 
@@ -318,12 +368,16 @@ Dictionary SpriteCatalog::character_art(int head, int body, int size, int weapon
 {
     Dictionary result;
     if (!characters_ || !bodies_)
+    {
         return result;
+    }
     try
     {
         if (head < 0 || head >= 14 || body < 0 || body >= 35 || size < 0 ||
             size > static_cast<int>(IconSize::large) || colors.size() != 12)
+        {
             throw std::runtime_error("Invalid character picker selection");
+        }
         CharacterAppearance appearance;
         appearance.combat_head = head;
         appearance.combat_body = body;
@@ -332,14 +386,20 @@ Dictionary SpriteCatalog::character_art(int head, int body, int size, int weapon
         {
             const int color = colors[i];
             if (color < 0 || color >= 16)
+            {
                 throw std::runtime_error("Color out of range");
+            }
             appearance.colors[i / 6][i % 6] = color;
         }
         std::vector<CombatEquipment> equipped;
         if (weapon_type > 0)
+        {
             equipped.push_back({weapon_type, "", ""});
+        }
         if (shield)
+        {
             equipped.push_back({59, "Shield", "shield"});
+        }
         const auto selected = bodies_->choose(equipped, appearance.combat_body);
         const unsigned equipment_body = selected.matched ? selected.body : 0;
         result["ready"] = presentation::image_texture(
@@ -352,8 +412,12 @@ Dictionary SpriteCatalog::character_art(int head, int body, int size, int weapon
         Array usage;
         const auto color_usage = characters_->color_usage(appearance);
         for (unsigned bank = 0; bank < 2; ++bank)
+        {
             for (unsigned part = 0; part < 6; ++part)
+            {
                 usage.append(color_usage.contains(bank, part));
+            }
+        }
         result["color_usage"] = usage;
         return result;
     }

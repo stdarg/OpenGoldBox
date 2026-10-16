@@ -56,9 +56,13 @@ constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_
 [[nodiscard]] const char *district_name(unsigned area_id)
 {
     if (area_id == 20)
+    {
         return N_("Slums");
+    }
     if (area_id == 29 || area_id == 32)
+    {
         return N_("Kuto's Well");
+    }
     return N_("New Phlan");
 }
 
@@ -163,7 +167,9 @@ void RolfTourView::prepare_view()
     ready_ = true;
     layout();
     if (Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     const auto args = OS::get_singleton()->get_cmdline_user_args();
     no_fog_ = settings::flag("--no-fog");
     town_check_ = args.has("--town-check");
@@ -172,7 +178,9 @@ void RolfTourView::prepare_view()
     mastery_rest_check_ = args.has("--mastery-rest-check");
     capture_ = args.has("--capture");
     if (campaign_ && args.has("--party-check"))
+    {
         town_check_ = checking_ = true;
+    }
     // An original OpenGoldBox footstep cue, not extracted SSI sound data.
     footstep_.instantiate();
     footstep_->set_format(AudioStreamWAV::FORMAT_16_BITS);
@@ -194,7 +202,9 @@ void RolfTourView::prepare_view()
     setup_rest();
     restart();
     if (embedded_party_)
+    {
         required_node<Button>(*this, "Restart").hide();
+    }
 }
 
 void RolfTourView::layout()
@@ -234,7 +244,9 @@ void RolfTourView::restart()
             d.name = "Adventurer";
             d.rolled = true;
             for (auto &roll : d.rolls)
+            {
                 roll = {{6, 5, 4, 1}, 3};
+            }
             (void)campaign_->add_pc(opengold::Character(*opengold::srd5::character_rules(), d, {}));
             campaign_->add_coins(Coin::gold, 9999);
         }
@@ -249,7 +261,9 @@ void RolfTourView::restart()
             session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory)));
             session_->encounter_challenge(settings::encounter_challenge());
             if (campaign_)
+            {
                 session_->campaign_party(campaign_);
+            }
             for (unsigned i = 0; i < sprites_.size(); ++i)
             {
                 const auto &source = session_->sprites()[i];
@@ -275,7 +289,9 @@ void RolfTourView::restart()
 void RolfTourView::next()
 {
     if (!session_)
+    {
         return;
+    }
     // Continue, like any key, leaves the monster close-up for combat.
     if (shown_monster_picture_)
     {
@@ -287,7 +303,9 @@ void RolfTourView::next()
     if (s.phase == TourPhase::shopping)
     {
         if (!selected.is_empty())
+        {
             session_->buy(s.continue_ticket, selected[0]);
+        }
     }
     else if (s.phase == TourPhase::awaiting_input)
     {
@@ -295,7 +313,9 @@ void RolfTourView::next()
                         required_node<LineEdit>(*this, "Answer").get_text().utf8().get_data());
     }
     else
+    {
         session_->choose(s.continue_ticket, selected.is_empty() ? 0 : selected[0]);
+    }
     refresh();
 }
 
@@ -337,7 +357,9 @@ void RolfTourView::inventory()
         return;
     }
     if (!session_)
+    {
         return;
+    }
     refresh_inventory();
     panel->show();
 }
@@ -347,7 +369,9 @@ void RolfTourView::refresh_inventory()
     auto *items = &required_node<ItemList>(*this, "InventoryPanel/Items");
     items->clear();
     if (!campaign_ || !campaign_->selected())
+    {
         return;
+    }
     const auto &m = campaign_->member(campaign_->selected());
     required_node<Label>(*this, "InventoryPanel/Header")
         .set_text(i18n::format("{name} / {class} / party {gold} gp",
@@ -355,30 +379,40 @@ void RolfTourView::refresh_inventory()
                                 {"class", i18n::text(m.character.sheet().character_class)},
                                 {"gold", coins(campaign_->state().wealth, Coin::gold)}}));
     for (const auto &item : m.character.inventory().items())
+    {
         items->add_item(
             (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
                  ? i18n::text("Equipped / ")
                  : String()) +
             i18n::format("{item} x{quantity}",
                          {{"item", i18n::text(item.name)}, {"quantity", item.quantity}}));
+    }
     if (items->get_item_count())
+    {
         items->select(0);
+    }
     required_node<Button>(*this, "InventoryPanel/Equip").set_disabled(!items->get_item_count());
     required_node<Button>(*this, "InventoryPanel/Unequip").set_disabled(!items->get_item_count());
     required_node<Label>(*this, "InventoryPanel/Status")
         .set_text(i18n::text(N_("Inventory is empty. Visit a shop to buy equipment.")));
     if (items->get_item_count())
+    {
         inventory_selected(0);
+    }
 }
 
 void RolfTourView::inventory_selected(std::int64_t index)
 {
     if (!campaign_ || !campaign_->selected())
+    {
         return;
+    }
     const auto &m = campaign_->member(campaign_->selected());
     const auto items = m.character.inventory().items();
     if (index < 0 || static_cast<std::size_t>(index) >= items.size())
+    {
         return;
+    }
     try
     {
         required_node<Label>(*this, "InventoryPanel/Status")
@@ -398,7 +432,9 @@ void RolfTourView::equip_item(bool equip)
         const auto selection =
             required_node<ItemList>(*this, "InventoryPanel/Items").get_selected_items();
         if (selection.is_empty())
+        {
             throw std::runtime_error("Select an item first.");
+        }
         const auto id = campaign_->selected();
         // Copies: equipping can replace the member's inventory, and with it
         // anything still pointing into it (Effective C++ Item 28).
@@ -407,14 +443,20 @@ void RolfTourView::equip_item(bool equip)
         {
             const auto items = campaign_->member(id).character.inventory().items();
             if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+            {
                 throw std::runtime_error("Select an existing item.");
+            }
             item = items[selection[0]].id;
             definition = items[selection[0]].definition_id;
         }
         if (equip)
+        {
             campaign_->equip(id, item);
+        }
         else
+        {
             campaign_->unequip(id, item);
+        }
         refresh_inventory();
         required_node<ItemList>(*this, "InventoryPanel/Items").select(selection[0]);
         refresh();
@@ -433,7 +475,9 @@ void RolfTourView::equip_item(bool equip)
 void RolfTourView::party_selected(std::int64_t index)
 {
     if (index < 0 || index >= 8 || !session_ || !campaign_ || !campaign_->state().slots[index])
+    {
         return;
+    }
     const auto slot = static_cast<unsigned>(index);
     if (session_->snapshot().phase == TourPhase::shopping)
     {
@@ -442,9 +486,13 @@ void RolfTourView::party_selected(std::int64_t index)
         return;
     }
     if (session_->can_select_member())
+    {
         campaign_->select(opengold::PartySlot{slot});
+    }
     if (embedded_party_)
+    {
         emit_signal("party_member_selected", slot);
+    }
     else
     {
         const auto &m = campaign_->member(campaign_->state().slots[slot]);
@@ -472,7 +520,9 @@ void RolfTourView::select_buyer(unsigned slot)
 {
     if (!session_ || !campaign_ || !session_->can_select_member() || slot >= 8 ||
         !campaign_->state().slots[slot])
+    {
         return;
+    }
     campaign_->select(opengold::PartySlot{slot});
     refresh();
 }
@@ -481,8 +531,12 @@ std::vector<unsigned> RolfTourView::occupied_slots() const
 {
     std::vector<unsigned> slots;
     for (unsigned slot = 0; slot < 8; ++slot)
+    {
         if (campaign_->state().slots[slot])
+        {
             slots.push_back(slot);
+        }
+    }
     return slots;
 }
 
@@ -490,7 +544,9 @@ void RolfTourView::buyer_key(Key keycode)
 {
     const auto slots = occupied_slots();
     if (slots.empty())
+    {
         return;
+    }
     if (keycode == Key::KEY_TAB)
     {
         // Cycle through the member rows in display order, wrapping at the end.
@@ -504,7 +560,9 @@ void RolfTourView::buyer_key(Key keycode)
     // Number keys pick the nth visible member row.
     const auto row = static_cast<std::size_t>(keycode) - static_cast<std::size_t>(Key::KEY_1);
     if (row < slots.size())
+    {
         select_buyer(slots[row]);
+    }
 }
 
 void RolfTourView::close_sheet()
@@ -515,17 +573,25 @@ void RolfTourView::close_sheet()
 void RolfTourView::level_up_requested(int slot)
 {
     if (embedded_party_ && campaign_ && session_ && session_->can_leave())
+    {
         emit_signal("level_up_requested", campaign_->state().slots.at(slot));
+    }
 }
 
 void RolfTourView::movement(ExplorationCommand command)
 {
     if (!session_)
+    {
         return;
+    }
     if (session_->explore(command))
+    {
         refresh();
+    }
     else if (session_->snapshot().phase == TourPhase::completed)
+    {
         required_node<Label>(*this, "Movement").set_text(i18n::text(N_("The way is blocked")));
+    }
 }
 
 void RolfTourView::_input(const Ref<InputEvent> &event)
@@ -540,10 +606,14 @@ void RolfTourView::_input(const Ref<InputEvent> &event)
 void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
 {
     if (required_node<Window>(*this, "RestDialog").is_visible())
+    {
         return;
+    }
     const Ref<InputEventKey> key = event;
     if (key.is_null() || !key->is_pressed() || key->is_echo())
+    {
         return;
+    }
     if (shown_monster_picture_)
     {
         // As in the original, any key leaves the monster close-up for combat.
@@ -552,10 +622,14 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
         return;
     }
     if (required_node<Control>(*this, "InventoryPanel").is_visible())
+    {
         return;
+    }
     if (required_node<LineEdit>(*this, "Answer").has_focus() &&
         key->get_keycode() != Key::KEY_ENTER)
+    {
         return;
+    }
     if (session_ && campaign_ && session_->snapshot().phase == TourPhase::shopping &&
         (key->get_keycode() == Key::KEY_TAB ||
          (key->get_keycode() >= Key::KEY_1 && key->get_keycode() <= Key::KEY_8)))
@@ -568,7 +642,9 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
         (session_->snapshot().choices.size() > 1 ||
          session_->snapshot().phase == TourPhase::shopping) &&
         key->get_keycode() != Key::KEY_ENTER)
+    {
         return;
+    }
     switch (key->get_keycode())
     {
     case Key::KEY_ENTER:
@@ -610,7 +686,9 @@ void RolfTourView::_process(double delta)
 void RolfTourView::advance_frame(double delta)
 {
     if (Engine::get_singleton()->is_editor_hint())
+    {
         return;
+    }
     if (rest_save_open_)
     {
         auto *save = Object::cast_to<Window>(get_parent()->get_node_or_null("SaveSlots"));
@@ -627,10 +705,14 @@ void RolfTourView::advance_frame(double delta)
         {
             played_footsteps_ = session_->snapshot().footsteps;
             if (!checking_)
+            {
                 required_node<AudioStreamPlayer>(*this, "Footstep").play();
+            }
         }
         if (session_->snapshot().revision != shown_revision_)
+        {
             refresh();
+        }
         if (shown_monster_picture_)
         {
             monster_picture_seconds_ += delta;
@@ -648,7 +730,9 @@ void RolfTourView::advance_frame(double delta)
         return;
     }
     if (checking_)
+    {
         check_run();
+    }
 }
 
 namespace
@@ -667,19 +751,27 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("The rest was interrupted. Rest again to recover."), N_("Your camp is attacked!"),
          N_("The monsters go on their way."), N_("You get away."),
          N_("Your party flees the battle."), N_("Locked.")})
+    {
         result = result.replace(String::utf8(source), i18n::text(source));
+    }
     // The parley's spokesman and the members lost in a flight are named.
     const String speaks = " speaks for the party.", lost = " is left behind and lost.";
     auto lines = result.split("\n");
     for (int n = 0; n < lines.size(); ++n)
+    {
         if (lines[n].ends_with(speaks))
+        {
             lines[n] =
                 i18n::format(N_("{name} speaks for the party."),
                              {{"name", lines[n].substr(0, lines[n].length() - speaks.length())}});
+        }
         else if (lines[n].ends_with(lost))
+        {
             lines[n] =
                 i18n::format(N_("{name} is left behind and lost."),
                              {{"name", lines[n].substr(0, lines[n].length() - lost.length())}});
+        }
+    }
     return String("\n").join(lines);
 }
 
@@ -687,8 +779,12 @@ String rest_notice(const std::string &resource, const std::string &text)
 String choice_label(const std::string &resource, const std::string &choice)
 {
     for (const auto *host : {N_("Bash"), N_("Pick"), N_("Knock"), N_("Exit")})
+    {
         if (choice == host)
+        {
             return i18n::text(host);
+        }
+    }
     return i18n::campaign(resource + "/choices", choice);
 }
 
@@ -700,9 +796,13 @@ String coin_list(const opengold::Coins &coins)
     for (std::size_t coin = coins.size(); coin-- > 0;)
     {
         if (!coins[coin])
+        {
             continue;
+        }
         if (!result.is_empty())
+        {
             result += ", ";
+        }
         result += i18n::format(amounts[coin], {{"count", coins[coin]}});
     }
     return result;
@@ -713,9 +813,11 @@ String payment_notice(const CoinPayment &payment)
     const auto &coins = payment.coins;
     const auto name = String::utf8(payment.payer.c_str());
     if (coins.change == opengold::Coins{})
+    {
         return i18n::format(
             "{name} pays {paid} for {owed}.",
             {{"name", name}, {"paid", coin_list(coins.paid)}, {"owed", coin_list(coins.owed)}});
+    }
     return i18n::format("{name} pays {paid} for {owed} and receives {change} in change.",
                         {{"name", name},
                          {"paid", coin_list(coins.paid)},
@@ -727,11 +829,15 @@ String door_check_notice(const DoorCheck &check)
 {
     const auto name = String::utf8(check.member.c_str());
     if (check.method == opengold::DoorMethod::knock)
+    {
         return i18n::format("{name} casts Knock, and the lock opens.", {{"name", name}});
+    }
     if (check.method == opengold::DoorMethod::pick)
+    {
         return i18n::format(
             "{name} tries to pick the lock: Dexterity (Sleight of Hand) {total} (d20 {die}) against DC {dc}.",
             {{"name", name}, {"total", check.total}, {"die", check.die}, {"dc", check.difficulty}});
+    }
     return i18n::format(
         "{name} tries to force the door: Strength (Athletics) {total} (d20 {die}) against DC {dc}.",
         {{"name", name}, {"total", check.total}, {"die", check.die}, {"dc", check.difficulty}});
@@ -746,12 +852,18 @@ String event_dialogue(const std::string &resource, const TourSnapshot &s)
     auto result =
         s.host_dialogue.empty() ? rest_notice(resource, s.dialogue) : i18n::render(s.host_dialogue);
     for (const auto &payment : s.payments)
+    {
         result += "\n" + payment_notice(payment);
+    }
     for (const auto &check : s.door_checks)
+    {
         result += "\n" + door_check_notice(check);
+    }
     if (!s.door_checks.empty())
+    {
         result +=
             "\n" + i18n::text(s.door_opened ? N_("The door opens.") : N_("The door stays locked."));
+    }
     return result;
 }
 } // namespace
@@ -760,11 +872,15 @@ void RolfTourView::sync_monster_picture()
 {
     const auto *picture = session_ ? session_->monster_picture() : nullptr;
     if (picture == shown_monster_picture_)
+    {
         return;
+    }
     forget_monster_picture();
     shown_monster_picture_ = picture;
     if (!picture)
+    {
         return;
+    }
     for (const auto &frame : *picture)
     {
         monster_frames_.push_back(presentation::image_texture(frame.image));
@@ -789,7 +905,9 @@ std::size_t RolfTourView::current_monster_frame() const
 void RolfTourView::dismiss_monster_picture()
 {
     if (session_ && session_->start_encounter())
+    {
         refresh();
+    }
 }
 
 void RolfTourView::refresh()
@@ -816,9 +934,13 @@ void RolfTourView::refresh()
                 session_->picture() ? *session_->picture() : session_->observe_view();
             const auto image = presentation::rgba_image(source);
             if (wall_view_.is_null())
+            {
                 wall_view_ = ImageTexture::create_from_image(image);
+            }
             else
+            {
                 wall_view_->set_image(image);
+            }
             rendered_pose_ = pose;
             rendered_picture_revision_ = session_->snapshot().picture_revision;
         }
@@ -892,7 +1014,9 @@ void RolfTourView::refresh()
                              : answer   ? N_("Submit [Enter]")
                                         : N_("Continue [Enter]")));
     if (waiting && s.choices.size() == 1 && s.choices[0] == "Cancel")
+    {
         required_node<Button>(*this, "Continue").set_text(i18n::text(N_("Leave temple [Enter]")));
+    }
     required_node<Button>(*this, "Continue").set_visible(!completed);
     required_node<Label>(*this, "Progress")
         .set_text(faulted                 ? i18n::text("Stopped")
@@ -902,7 +1026,9 @@ void RolfTourView::refresh()
     required_node<Label>(*this, "Movement")
         .set_text(i18n::text(completed ? N_("Explore  /  arrow keys") : N_("Movement paused")));
     for (const char *name : {"Left", "Forward", "Right", "Look", "Camp"})
+    {
         required_node<Button>(*this, name).set_disabled(!completed);
+    }
     required_node<Button>(*this, "LeaveShop").set_visible(shopping);
     required_node<LineEdit>(*this, "Answer").set_visible(answer);
     required_node<LineEdit>(*this, "Answer").set_max_length(s.number_input ? 6 : 40);
@@ -912,6 +1038,7 @@ void RolfTourView::refresh()
     {
         choices->clear();
         if (shopping)
+        {
             for (const auto &item : session_->shop_stock())
             {
                 // Stock without an equipment conversion stays for sale, disclosed.
@@ -922,18 +1049,31 @@ void RolfTourView::refresh()
                            : N_("{item} / {price} gp / cannot be equipped"),
                     {{"item", i18n::text(item.label())}, {"price", item.stored.value}}));
             }
+        }
         else if (!s.host_choices.empty())
+        {
             for (const auto &c : s.host_choices)
+            {
                 choices->add_item(i18n::render(c));
+            }
+        }
         else
+        {
             for (const auto &c : s.choices)
+            {
                 choices->add_item(s.dialogue == "Choose a party member."
                                       ? String::utf8(c.c_str())
                                       : choice_label(resource, c));
+            }
+        }
         if (choices->get_item_count())
+        {
             choices->select(0);
+        }
         if (shopping || multiple)
+        {
             choices->grab_focus();
+        }
         if (answer)
         {
             required_node<LineEdit>(*this, "Answer").clear();
@@ -948,15 +1088,21 @@ void RolfTourView::refresh()
                                             : "normal");
     dialogue_layout.call("advance", 0);
     if (shopping)
+    {
         required_node<RichTextLabel>(*this, "Dialogue")
             .set_text(s.diagnostic.empty() ? i18n::text("Prices are per listed item or bundle.")
                                            : i18n::text(s.diagnostic));
+    }
     if (answer && !s.diagnostic.empty())
+    {
         required_node<RichTextLabel>(*this, "Dialogue")
             .add_text("\n" + String::utf8(s.diagnostic.c_str()));
+    }
     if (waiting && !s.diagnostic.empty())
+    {
         required_node<RichTextLabel>(*this, "Dialogue")
             .set_text(i18n::text(s.diagnostic) + "\n" + event_dialogue(resource + "/dialogue", s));
+    }
     if (loaded)
     {
         const auto &p = session_->party();
@@ -990,7 +1136,9 @@ void RolfTourView::refresh()
         const auto id = campaign_ ? campaign_->state().slots[slot] : 0;
         button->set_visible(id != 0);
         if (!id)
+        {
             continue;
+        }
         // While shopping, the buyer's row is drawn in gold; otherwise the leader's.
         const bool leader = id == campaign_->leader();
         button->call("set_highlight",
@@ -1034,18 +1182,24 @@ Dictionary RolfTourView::tour_visuals()
 {
     Dictionary data;
     if (!session_ || wall_view_.is_null() || session_->snapshot().visited.none())
+    {
         return data;
+    }
     const auto &state = session_->snapshot();
     data["wall"] = wall_view_;
     if (shown_monster_picture_ && !monster_frames_.empty())
+    {
         data["picture"] = monster_frames_[current_monster_frame()];
+    }
     else
     {
         const auto portrait_file = opengold::speaking_npc_portrait(state);
         const auto portrait =
             portrait_file.empty() ? Ref<Texture2D>() : npc_portrait(portrait_file);
         if (portrait.is_valid())
+        {
             data["picture"] = portrait;
+        }
         else if (state.sprite_frame >= 0 && sprites_[state.sprite_frame].is_valid())
         {
             const auto &source = session_->sprites()[state.sprite_frame];
@@ -1056,6 +1210,7 @@ Dictionary RolfTourView::tour_visuals()
     Array cells;
     cells.resize(256);
     for (unsigned y = 0; y < 16; ++y)
+    {
         for (unsigned x = 0; x < 16; ++x)
         {
             const unsigned index = y * 16 + x;
@@ -1069,12 +1224,17 @@ Dictionary RolfTourView::tour_visuals()
             for (unsigned direction = 0; direction < 4; ++direction)
             {
                 if (cell.walls[direction])
+                {
                     flags |= 1 << (1 + direction);
+                }
                 if (cell.doors[direction])
+                {
                     flags |= 1 << (5 + direction);
+                }
             }
             cells[index] = flags;
         }
+    }
     data["cells"] = cells;
     data["pose"] = Vector2i(state.pose.x, state.pose.y);
     data["facing"] = static_cast<int>(index(state.pose.facing));
@@ -1084,7 +1244,9 @@ Dictionary RolfTourView::tour_visuals()
 void RolfTourView::capture_frame(const String &name)
 {
     if (!capture_)
+    {
         return;
+    }
     const auto directory = ProjectSettings::get_singleton()->globalize_path("user://checks");
     std::filesystem::create_directories(presentation::path_from_godot(directory));
     const auto path = directory.path_join(name + String(".png"));
@@ -1097,10 +1259,13 @@ void RolfTourView::capture_frame(const String &name)
         const auto &state = session_->snapshot();
         const double cell = map_rect_.size.x / 16;
         for (unsigned y = 0; y < 16; ++y)
+        {
             for (unsigned x = 0; x < 16; ++x)
             {
                 if (x == state.pose.x && y == state.pose.y)
+                {
                     continue; // Party arrow covers its cell.
+                }
                 const auto center = get_global_transform_with_canvas().xform(
                     map_rect_.position + Vector2((x + .5) * cell, (y + .5) * cell));
                 const auto expected =
@@ -1109,12 +1274,17 @@ void RolfTourView::capture_frame(const String &name)
                                                                              : "map_seen",
                                     "OpenGoldPalette");
                 if (!image->get_pixel(center.x, center.y).is_equal_approx(expected))
+                {
                     throw std::runtime_error("Overhead fog pixel mismatch at " + std::to_string(x) +
                                              "," + std::to_string(y));
+                }
             }
+        }
     }
     if (image.is_null() || image->save_png(path) != OK)
+    {
         throw std::runtime_error("Failed to capture tour scene");
+    }
     UtilityFunctions::print("Screenshot: ", path);
 }
 
@@ -1135,14 +1305,18 @@ void RolfTourView::check_run()
             get_viewport()->push_input(key, true);
         };
         if (!session_ || session_->snapshot().phase == TourPhase::faulted)
+        {
             throw std::runtime_error(session_ ? session_->snapshot().diagnostic
                                               : error_.utf8().get_data());
+        }
         if (++check_frames_ > 2000)
+        {
             throw std::runtime_error("Tour integration check timed out; recovery stage " +
                                      std::to_string(recovery_stage_) + ", position " +
                                      std::to_string(session_->snapshot().pose.x) + "," +
                                      std::to_string(session_->snapshot().pose.y) + ", " +
                                      session_->snapshot().dialogue);
+        }
         const auto &s = session_->snapshot();
         if (town_check_ && s.tour_finished)
         {
@@ -1164,7 +1338,9 @@ void RolfTourView::check_run()
                 capture_pending_ = false;
                 if (required_node<Button>(*this, "Continue").is_disabled() ||
                     !required_node<Button>(*this, "Forward").is_disabled())
+                {
                     throw std::runtime_error("Incorrect input lock at tour prompt");
+                }
                 UtilityFunctions::print("Tour pause ", check_prompts_, " at ", s.pose.x, ",",
                                         s.pose.y, " facing ",
                                         static_cast<int64_t>(index(s.pose.facing)));
@@ -1172,29 +1348,41 @@ void RolfTourView::check_run()
                 const auto pose = s.pose;
                 press_key(Key::KEY_RIGHT);
                 if (session_->snapshot().pose != pose)
+                {
                     throw std::runtime_error("Keyboard bypassed tour movement lock");
+                }
                 press_key(Key::KEY_ENTER, true);
                 if (session_->snapshot().phase != TourPhase::awaiting_continue)
+                {
                     throw std::runtime_error("Held Enter skipped a prompt");
+                }
                 press_key(Key::KEY_ENTER);
                 if (session_->snapshot().phase != TourPhase::running)
+                {
                     throw std::runtime_error(
                         "Enter did not continue with a different button focused");
+                }
             }
         }
         else if (s.phase == TourPhase::completed)
         {
             if (check_prompts_ != 8)
+            {
                 throw std::runtime_error("Expected all eight original dialogue pauses");
+            }
             required_node<Button>(*this, "Restart").grab_focus();
             const auto facing = s.pose.facing;
             press_key(Key::KEY_RIGHT);
             if (session_->snapshot().pose.facing != turned_right(facing))
+            {
                 throw std::runtime_error("Exploration turn did not update native state");
+            }
             const auto before = session_->snapshot().pose;
             press_key(Key::KEY_DOWN);
             if (session_->snapshot().pose != PartyPose{before.x, before.y, reversed(before.facing)})
+            {
                 throw std::runtime_error("Down arrow must turn without moving");
+            }
             UtilityFunctions::print("Godot C++ tour integration passed: ", check_prompts_,
                                     " pauses.");
             get_tree()->quit(0);
@@ -1229,23 +1417,33 @@ void RolfTourView::check_town()
                          : coins(session_->party().wealth, Coin::gold);
     };
     if (check_prompts_ != 8)
+    {
         throw std::runtime_error("Town started before the full tour");
+    }
     if (shop_check_stage_ == 3 && s.phase == TourPhase::completed)
     {
         if (inventory_size() != 1 || session_->script_variable(EclAddress{0x6BC1}) != gold())
+        {
             throw std::runtime_error("Shop results did not persist after leaving");
+        }
         party_selected(0);
         auto *sheet =
             &required_node<Window>(*this, embedded_party_ ? "../TownSheet" : "MemberSheet");
         if (!sheet->is_visible())
+        {
             throw std::runtime_error("Town party click did not open a character sheet");
+        }
         sheet->emit_signal("close_requested");
         if (sheet->is_visible())
+        {
             throw std::runtime_error("Town character sheet did not close");
+        }
         UtilityFunctions::print(
             "Godot town integration passed: tour, doors, shop purchase, inventory and return to exploration.");
         if (!embedded_party_)
+        {
             get_tree()->quit(0);
+        }
         shop_check_stage_ = 4;
         checking_ = false;
         return;
@@ -1264,11 +1462,15 @@ void RolfTourView::check_town()
             const auto price = session_->shop_stock()[0].stored.value;
             if (required_node<ItemList>(*this, "Choices").get_item_count() != 57 ||
                 required_node<Button>(*this, "Continue").is_disabled())
+            {
                 throw std::runtime_error("Arms shop list is not available in Godot");
+            }
             required_node<Button>(*this, "Continue").emit_signal("pressed");
             if (gold() != gold_before - price || inventory_size() != 1)
+            {
                 throw std::runtime_error(
                     "Godot purchase did not debit the purse and add inventory");
+            }
             required_node<Button>(*this, "Inventory").emit_signal("pressed");
             shop_check_stage_ = 2;
             return;
@@ -1278,10 +1480,14 @@ void RolfTourView::check_town()
         const auto ac = campaign_->profile(id).armor_class;
         required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
         if (campaign_->profile(id).armor_class != ac + 2)
+        {
             throw std::runtime_error("Inventory Equip did not apply shield AC");
+        }
         required_node<Button>(*this, "InventoryPanel/Unequip").emit_signal("pressed");
         if (campaign_->profile(id).armor_class != ac)
+        {
             throw std::runtime_error("Inventory Unequip did not remove shield AC");
+        }
         required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
         auto retained = campaign_->checkpoint();
         auto changed = retained;
@@ -1305,7 +1511,9 @@ void RolfTourView::check_town()
         if (!required_node<Label>(*this, "InventoryPanel/Status")
                  .get_text()
                  .contains("Untrained shield: no AC bonus"))
+        {
             throw std::runtime_error("Equip must display the untrained penalty");
+        }
         auto staff_fixture = retained;
         auto &wielder = staff_fixture.roster.at(0);
         const auto staff = wielder.character.add_item(
@@ -1314,11 +1522,15 @@ void RolfTourView::check_town()
         campaign_->restore(std::move(staff_fixture));
         refresh_inventory();
         if (campaign_->profile(id).weapon_hands != 1)
+        {
             throw std::runtime_error("A shield must keep the quarterstaff one-handed");
+        }
         required_node<ItemList>(*this, "InventoryPanel/Items").select(0);
         required_node<Button>(*this, "InventoryPanel/Unequip").emit_signal("pressed");
         if (campaign_->profile(id).weapon_hands != 2)
+        {
             throw std::runtime_error("Removing the shield must free the second hand");
+        }
         campaign_->restore(std::move(retained));
         refresh_inventory();
         capture_frame("phlan-inventory");
@@ -1331,13 +1543,23 @@ void RolfTourView::check_town()
     {
         std::size_t selection = s.choices.size() - 1;
         for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT"})
+        {
             for (std::size_t n = 0; n < s.choices.size(); ++n)
+            {
                 if (s.choices[n] == safe)
+                {
                     selection = n;
+                }
+            }
+        }
         if (s.pose.x == 13 && s.pose.y == 8 && s.dialogue.find("SHOP") != std::string::npos)
+        {
             selection = 0;
+        }
         if (campaign_ && s.dialogue == "Choose a party member.")
+        {
             selection = 0;
+        }
         required_node<ItemList>(*this, "Choices").select(static_cast<std::int32_t>(selection));
         required_node<Button>(*this, "Continue").emit_signal("pressed");
         return;
@@ -1349,7 +1571,9 @@ void RolfTourView::check_town()
         return;
     }
     if (s.phase != TourPhase::completed)
+    {
         return;
+    }
     check_walk_to(13, 8);
 }
 
@@ -1361,7 +1585,9 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
     if (check_pending_edge_)
     {
         if (position != check_pending_edge_->second)
+        {
             check_refused_edges_.insert(*check_pending_edge_);
+        }
         check_pending_edge_.reset();
     }
     constexpr int dx[]{0, 1, 0, -1}, dy[]{-1, 0, 1, 0};
@@ -1379,16 +1605,22 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
         {
             const int x = cell % 16 + dx[d], y = cell / 16 + dy[d];
             if (x < 0 || y < 0 || x >= 16 || y >= 16)
+            {
                 continue;
+            }
             const auto &a = session_->map().at(cell % 16, cell / 16);
             const auto &b = session_->map().at(x, y);
             const int r = (d + 2) % 4;
             if (a.doors[d] > 1 || b.doors[r] > 1 || (a.walls[d] && !a.doors[d]) ||
                 (b.walls[r] && !b.doors[r]))
+            {
                 continue;
+            }
             const int next = y * 16 + x;
             if (previous[next] >= 0 || check_refused_edges_.contains({cell, next}))
+            {
                 continue;
+            }
             previous[next] = cell;
             cells.push(next);
         }
@@ -1400,18 +1632,24 @@ void RolfTourView::check_walk_to(unsigned tx, unsigned ty)
         return;
     }
     if (previous[next] < 0)
+    {
         throw std::runtime_error("No route to acceptance target " + std::to_string(tx) + "," +
                                  std::to_string(ty) + " from " + std::to_string(s.pose.x) + "," +
                                  std::to_string(s.pose.y) + "; blocked edges " +
                                  std::to_string(check_refused_edges_.size()));
+    }
     while (previous[next] != origin)
+    {
         next = previous[next];
+    }
     const auto facing = next % 16 > static_cast<int>(s.pose.x)   ? MapDirection::east
                         : next % 16 < static_cast<int>(s.pose.x) ? MapDirection::west
                         : next / 16 > static_cast<int>(s.pose.y) ? MapDirection::south
                                                                  : MapDirection::north;
     if (s.pose.facing == facing)
+    {
         check_pending_edge_ = {{origin, next}};
+    }
     required_node<Button>(*this, s.pose.facing == facing ? "Forward" : "Right")
         .emit_signal("pressed");
 }
@@ -1420,7 +1658,9 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
 {
     // Labels follow the session at the next refresh, not immediately.
     if (shown_revision_ != s.revision)
+    {
         return;
+    }
     const String district = i18n::text(district_name(s.area_id));
     const String location = required_node<Label>(*this, "Location").get_text();
     const String map_title = required_node<Label>(*this, "MapTitle").get_text();
@@ -1432,30 +1672,42 @@ void RolfTourView::check_district_labels(const TourSnapshot &s)
         (speaker_shows_district && speaker != district) ||
         (s.tour_finished &&
          title != i18n::format("OPENGOLDBOX  /  {district}", {{"district", district}})))
+    {
         throw std::runtime_error(
             "District labels do not name area " + std::to_string(s.area_id) + ": " +
             (title + String(" | ") + location + String(" | ") + map_title + String(" | ") + speaker)
                 .utf8()
                 .get_data());
+    }
     if (s.area_id == 20)
+    {
         slums_labels_checked_ = true;
+    }
 }
 
 bool RolfTourView::check_expedition_step()
 {
     if (!session_)
+    {
         throw std::runtime_error("Expedition session missing");
+    }
     const auto &s = session_->snapshot();
     if (!session_->script_diagnostics().empty())
+    {
         throw std::runtime_error(session_->script_diagnostics().back());
+    }
     if (s.phase == TourPhase::faulted)
+    {
         throw std::runtime_error(s.diagnostic);
+    }
     check_district_labels(s);
     if (shown_monster_picture_)
     {
         // Let the close-up animate for about two seconds before pressing a key.
         if (++monster_picture_check_frames_ < 120)
+        {
             return false;
+        }
         UtilityFunctions::print("Monster close-up shown with ",
                                 static_cast<int64_t>(monster_frames_.size()),
                                 " frames before combat");
@@ -1471,34 +1723,52 @@ bool RolfTourView::check_expedition_step()
         return false;
     }
     if (s.phase != TourPhase::completed)
+    {
         return false;
+    }
     if (s.area_id == 0)
     {
         if (session_->script_variable(ecl_slums_orc_victory) == 255)
         {
             if (!slums_labels_checked_)
+            {
                 throw std::runtime_error("Slums district labels were never checked");
+            }
             return true;
         }
         if (s.pose.x != 0 || s.pose.y != 4)
+        {
             throw std::runtime_error("Unexpected tour destination");
+        }
         if (s.pose.facing != MapDirection::west)
+        {
             right();
+        }
         else
+        {
             forward();
+        }
         return false;
     }
     if (session_->script_variable(ecl_slums_orc_victory) == 255)
     {
         if (s.pose.x != 15 || s.pose.y != 4)
+        {
             check_walk_to(15, 4);
+        }
         else if (s.pose.facing != MapDirection::east)
+        {
             right();
+        }
         else
+        {
             forward();
+        }
     }
     else
+    {
         check_walk_to(12, 1);
+    }
     return false;
 }
 
@@ -1519,7 +1789,9 @@ void RolfTourView::start_recovery_check()
     state.roster.back().vitals = {0, false, dying};
     // Gold alone pays the temple and, with change made, the inn's one platinum.
     if (member.vitals.dead)
+    {
         throw std::runtime_error("Recovery check requires a living victory survivor");
+    }
     member.vitals.hit_points = 1;
     state.wealth = {0, 0, 0, 200, 0, 0, 0};
     campaign_->restore(state);
@@ -1534,7 +1806,9 @@ void RolfTourView::check_recovery()
     const auto &s = session_->snapshot();
     const auto id = campaign_->state().roster.at(0).id;
     if (!session_->script_diagnostics().empty())
+    {
         throw std::runtime_error("Recovery route fault: " + session_->script_diagnostics().back());
+    }
     const auto choose = [&](std::size_t choice)
     {
         required_node<ItemList>(*this, "Choices").select(static_cast<std::int32_t>(choice));
@@ -1564,9 +1838,15 @@ void RolfTourView::check_recovery()
         }
         std::size_t selection = s.choices.size() - 1;
         for (const auto *safe : {"NO", "LEAVE", "RUN", "GO", "NONE", "EXIT", "Cancel"})
+        {
             for (std::size_t n = 0; n < s.choices.size(); ++n)
+            {
                 if (s.choices[n] == safe)
+                {
                     selection = n;
+                }
+            }
+        }
         const auto event = session_->map().at(s.pose.x, s.pose.y).event_number();
         // Temple cells can be transit cells: enter, then cancel the native service.
         // Answering NO makes the original script move the party back to its prior cell.
@@ -1574,10 +1854,16 @@ void RolfTourView::check_recovery()
             (recovery_stage_ == 5 && event == 9))
         {
             for (std::size_t n = 0; n < s.choices.size(); ++n)
+            {
                 if (s.choices[n] == "YES")
+                {
                     selection = n;
+                }
+            }
             if (s.dialogue == "Choose a party member.")
+            {
                 selection = 0;
+            }
         }
         choose(selection);
         return;
@@ -1594,13 +1880,17 @@ void RolfTourView::check_recovery()
         return;
     }
     if (s.phase != TourPhase::completed)
+    {
         return;
+    }
     const auto &member = campaign_->member(id);
     if (save_cancel_pending_)
     {
         if (campaign_->state().wealth != recovery_before_->wealth ||
             member.vitals != recovery_before_->roster.at(0).vitals)
+        {
             throw std::runtime_error("Cancelled temple service changed party");
+        }
         save_check_("cancelled-service");
         save_cancel_pending_ = false;
     }
@@ -1616,18 +1906,24 @@ void RolfTourView::check_recovery()
     {
         if (campaign_->state().time_minutes != recovery_before_->time_minutes + 5 ||
             member.vitals != recovery_before_->roster.at(0).vitals)
+        {
             throw std::runtime_error(
                 "Original city-watch interruption must consume five minutes without recovery");
+        }
         if (campaign_->state().roster.at(1).vitals.hit_points != 1 ||
             campaign_->state().roster.back().vitals.hit_points != 1 ||
             campaign_->state().random_state.value != 11400714819323198502ULL ||
             campaign_->state().roster.back().vitals.resources !=
                 presentation::srd_vitals(campaign_->state().roster.back().character,
                                          {.hit_dice = 1}))
+        {
             throw std::runtime_error(
                 "Camp time must advance companion Stable recovery and the reserve death save exactly once");
+        }
         if (save_check_)
+        {
             save_check_("interrupted-rest");
+        }
         recovery_stage_ = 3;
     }
     if (recovery_stage_ == 4)
@@ -1635,9 +1931,13 @@ void RolfTourView::check_recovery()
         const auto gold_before = coins(recovery_before_->wealth, Coin::gold);
         if (coins(campaign_->state().wealth, Coin::gold) != gold_before - 100 ||
             member.vitals.hit_points <= 1 || session_->script_variable(ecl_temple_service) != 0)
+        {
             throw std::runtime_error("Original temple must charge 100 gp, heal and resume ECL");
+        }
         if (save_check_)
+        {
             save_check_("temple-payment");
+        }
         recovery_before_ = campaign_->checkpoint();
         recovery_stage_ = 5;
     }
@@ -1650,21 +1950,31 @@ void RolfTourView::check_recovery()
             member.vitals.hit_points != member.character.sheet().hit_points ||
             coins(campaign_->state().wealth, Coin::gold) !=
                 coins(recovery_before_->wealth, Coin::gold) - 10)
+        {
             throw std::runtime_error("Original inn payment and full recovery must persist");
+        }
         const auto &payments = s.payments;
         const auto shown = required_node<RichTextLabel>(*this, "Dialogue").get_text();
         if (payments.size() != 1 || payments[0].coins.paid != opengold::Coins{0, 0, 0, 10, 0} ||
             !shown.contains(payment_notice(payments[0])))
+        {
             throw std::runtime_error("The inn's change-making payment must be shown");
+        }
         // The Fighter's inn rest offers an optional mastery replacement; keep the
         // current set so the rested party is saved at an editable boundary.
         if (!campaign_->state().training_rest)
+        {
             throw std::runtime_error("The inn rest must offer the Fighter's mastery choice");
+        }
         required_node<Button>(*this, "RestTraining/Cancel").emit_signal("pressed");
         if (campaign_->state().training_rest)
+        {
             throw std::runtime_error("Keeping the mastery set must finish the rest choices");
+        }
         if (save_check_)
+        {
             save_check_("inn-rest");
+        }
         if (save_check_)
         {
             bool rejected = false;
@@ -1677,7 +1987,9 @@ void RolfTourView::check_recovery()
                 rejected = true;
             }
             if (!rejected)
+            {
                 throw std::runtime_error("Full-health temple service should reject");
+            }
             save_check_("rejected-service");
         }
         recovery_before_ = campaign_->checkpoint();
@@ -1694,11 +2006,15 @@ void RolfTourView::check_recovery()
         if (campaign_->state().time_minutes != recovery_before_->time_minutes ||
             !required_node<Button>(required_node<Window>(*this, "RestDialog"), "Start")
                  .is_disabled())
+        {
             throw std::runtime_error("Immediate repeated long rest must be denied");
+        }
         required_node<Button>(required_node<Window>(*this, "RestDialog"), "Finish")
             .emit_signal("pressed");
         if (save_check_)
+        {
             save_check_("denied-rest");
+        }
         if (save_check_)
         {
             // A wounded member gives the reloaded rest something to heal; the
@@ -1721,12 +2037,16 @@ void RolfTourView::check_recovery()
     }
     const auto target_event = recovery_stage_ == 3 ? 6u : 9u;
     for (unsigned y = 0; y < 16; ++y)
+    {
         for (unsigned x = 0; x < 16; ++x)
+        {
             if (session_->map().at(x, y).event_number() == target_event)
             {
                 check_walk_to(x, y);
                 return;
             }
+        }
+    }
     throw std::runtime_error("Original recovery location is missing");
 }
 

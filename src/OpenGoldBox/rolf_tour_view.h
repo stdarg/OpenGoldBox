@@ -58,7 +58,9 @@ class RolfTourView : public godot::Control
     bool resolve_combat(const opengold::rules::Snapshot &result)
     {
         if (!session_ || !session_->resolve_combat(result))
+        {
             return false;
+        }
         refresh();
         return true;
     }
@@ -66,7 +68,9 @@ class RolfTourView : public godot::Control
     bool reject_combat(std::string diagnostic)
     {
         if (!session_ || !session_->reject_combat(std::move(diagnostic)))
+        {
             return false;
+        }
         refresh();
         return true;
     }

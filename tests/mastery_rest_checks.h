@@ -7,7 +7,9 @@ void ui_fixture()
     const auto output = std::getenv("OPENGOLD_MASTERY_REST_FIXTURE");
     const auto assets = std::getenv("OPENGOLD_GAME_DIR");
     if (!output || !assets || !*assets)
+    {
         return;
+    }
     auto party = std::make_shared<CampaignParty>(module());
     party->add_pc(mastery_grant_checks::chosen("fighter"));
     auto town = por::RolfTourSession::load(assets);
@@ -16,11 +18,17 @@ void ui_fixture()
     {
         const auto state = town.snapshot();
         if (state.phase == por::TourPhase::awaiting_continue)
+        {
             town.continue_dialogue(state.continue_ticket);
+        }
         else if (state.phase == por::TourPhase::awaiting_input)
+        {
             town.choose(state.continue_ticket, 0);
+        }
         else
+        {
             town.advance(1);
+        }
     }
     check(town.can_leave(), "Original town reaches a saveable boundary");
     check(bool(party->rest(RestKind::long_rest)) && party->state().training_rest,
@@ -40,14 +48,18 @@ void script_reads_after_rest(CampaignParty &party, MemberId id)
 {
     std::vector<std::uint8_t> record{0, 0};
     for (int entry = 0; entry < 5; ++entry)
+    {
         record.insert(record.end(), {1, 1, 0x14, 0x99});
+    }
     record.push_back(0); // An EXIT body; the machine only supplies variables here.
     por::EclMachine vm(
         std::make_shared<const por::EclProgram>(por::EclProgram::decode(record, "inn-read")));
     vm.bind_variable(por::ecl_character_hit_points,
                      static_cast<std::uint16_t>(party.member(id).vitals.hit_points));
     for (std::uint16_t coin = 0x6BBB; coin <= 0x6BC7; coin += 2)
+    {
         vm.bind_variable(por::EclAddress{coin}, coin == 0x6BC1 ? 7 : 0); // Seven gold coins.
+    }
     (void)party.read_character(PartySlot{}, vm);
     check(party.state().wealth[3] == 7 && party.state().training_rest,
           "Script read after a Long Rest keeps the pending mastery choice");
@@ -68,6 +80,7 @@ void run()
         return next;
     };
     for (const auto klass : {"fighter", "barbarian", "rogue", "paladin", "ranger"})
+    {
         for (bool npc : {false, true})
         {
             CampaignParty party(module());
@@ -87,12 +100,16 @@ void run()
             check(bool(party.rest(RestKind::long_rest)), "Real Long Rest completes");
             // A Paladin's prepared-spell choice comes first; keeping it leaves the mastery choice.
             if (party.state().spell_rest)
+            {
                 party.keep_rest_spells(id);
+            }
             check(party.state().training_rest &&
                       party.state().training_rest->members == std::vector<MemberId>{id},
                   "Only qualified completed rest grants one per-member replacement");
             if (!npc)
+            {
                 script_reads_after_rest(party, id);
+            }
             party = roundtrip(party);
             const auto ticket = party.state().training_rest->ticket;
             const auto options =
@@ -101,11 +118,13 @@ void run()
                     .front();
             auto selected = options.selected;
             for (const auto &o : options.group.options)
+            {
                 if (std::find(selected.begin(), selected.end(), o.id) == selected.end())
                 {
                     selected[0] = o.id;
                     break;
                 }
+            }
             const auto before = saved(party);
             const auto member = party.member(id);
             rejects(
@@ -172,7 +191,9 @@ void run()
             check(bool(party.rest(RestKind::long_rest)),
                   "Next qualified rest can offer a new choice");
             if (party.state().spell_rest)
+            {
                 party.keep_rest_spells(id);
+            }
             const auto keep_before = party.member(id).character.sheet().grants;
             party.keep_rest_training(party.state().training_rest->ticket, id);
             check(party.member(id).character.sheet().grants == keep_before &&
@@ -182,6 +203,7 @@ void run()
             check(party.member(id).character.training_edits().size() == 2,
                   "Kept window cannot later be replayed as unused");
         }
+    }
     // Other training may remain pending when mastery itself is complete. Replay
     // replacement at its original level before applying the fourth-weapon choice.
     auto draft = hero("fighter").creation_data();
@@ -194,7 +216,9 @@ void run()
                             std::vector<std::string>{"greatsword", "longsword", "shortbow"});
     p.award_experience(2700, "rest-mastery-levels");
     for (unsigned level = 2; level <= 4; ++level)
+    {
         p.advance(id, p.default_advancement(id));
+    }
     p = roundtrip(p);
     check(p.member(id).character.sheet().training.masteries.size() == 4,
           "Rest edit replays before later Fighter entitlement");
@@ -206,11 +230,13 @@ void run()
           "Fourth-kind capacity retains Fighter one-replacement limit");
     auto selected = options.selected;
     for (const auto &o : options.group.options)
+    {
         if (std::find(selected.begin(), selected.end(), o.id) == selected.end())
         {
             selected[0] = o.id;
             break;
         }
+    }
     p.replace_rest_training(p.state().training_rest->ticket, id, selected);
     p = roundtrip(p);
     check(p.member(id).character.training_edits().back().level == 4,
@@ -223,10 +249,14 @@ void run()
     const auto dead = excluded.add_pc(mastery_grant_checks::chosen("fighter"));
     auto state = excluded.checkpoint();
     for (auto &m : state.roster)
+    {
         if (m.id == dead)
+        {
             m.vitals = {0, true,
                         "SRD13 0 0 0 0 0 0 0 0 0 0 0 3 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
                         "Dead"};
+        }
+    }
     excluded.restore(std::move(state));
     check(bool(excluded.rest(RestKind::long_rest)) && !excluded.state().training_rest,
           "Unqualified/dead/reserve/pending-training members do not gain replacement windows");

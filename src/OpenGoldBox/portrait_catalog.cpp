@@ -18,7 +18,9 @@ std::string normalized(std::string s)
     for (auto &c : s)
     {
         if (c >= 'A' && c <= 'Z')
+        {
             c += 32;
+        }
     }
     s.erase(std::remove_if(s.begin(), s.end(),
                            [](char c)
@@ -37,19 +39,25 @@ PortraitCatalog PortraitCatalog::load()
     json.instantiate();
     if (json->parse(FileAccess::get_file_as_string("res://bin/portraits/portraits.json")) != OK ||
         json->get_data().get_type() != Variant::DICTIONARY)
+    {
         throw std::runtime_error("Cannot read portrait catalog. Run build-opengoldbox.cmd.");
+    }
     const Dictionary catalog = json->get_data();
     const Array keys = catalog.keys();
     for (int64_t i = 0; i < keys.size(); ++i)
     {
         if (catalog[keys[i]].get_type() != Variant::DICTIONARY)
+        {
             throw std::runtime_error("Invalid portrait metadata");
+        }
         const Dictionary entry = catalog[keys[i]];
         const auto field = [&](const char *key)
         {
             if (!entry.has(key) || entry[key].get_type() != Variant::STRING ||
                 String(entry[key]).is_empty())
+            {
                 throw std::runtime_error("Missing portrait metadata");
+            }
             return std::string(String(entry[key]).utf8().get_data());
         };
         Portrait p{String(keys[i]).utf8().get_data(), field("Gender"), field("Class"),
@@ -58,11 +66,15 @@ PortraitCatalog PortraitCatalog::load()
         a.portrait = p.filename;
         opengold::por::validate_character_appearance(a);
         if (!ResourceLoader::get_singleton()->exists(gs("res://bin/portraits/" + p.filename)))
+        {
             throw std::runtime_error("Missing portrait: " + p.filename);
+        }
         result.portraits_.push_back(std::move(p));
     }
     if (result.portraits_.empty())
+    {
         throw std::runtime_error("Empty portrait catalog");
+    }
     std::sort(result.portraits_.begin(), result.portraits_.end(),
               [](const auto &a, const auto &b)
               {
@@ -99,11 +111,17 @@ std::string PortraitCatalog::of_race_and_gender(const opengold::rules::Character
 {
     std::vector<const Portrait *> matches;
     for (const auto &p : portraits_)
+    {
         if (normalized(p.race) == normalized(draft.race) &&
             normalized(p.gender) == normalized(draft.gender))
+        {
             matches.push_back(&p);
+        }
+    }
     if (matches.empty())
+    {
         return recommended(draft);
+    }
     return matches[pick % matches.size()]->filename;
 }
 
@@ -116,13 +134,19 @@ Ref<ImageTexture> PortraitCatalog::texture(const opengold::por::CharacterAppeara
                      {
                          return p.filename == filename;
                      }))
+    {
         filename = recommended(draft);
+    }
     if (const auto found = textures_.find(filename); found != textures_.end())
+    {
         return found->second;
+    }
     Ref<Texture2D> texture =
         ResourceLoader::get_singleton()->load(gs("res://bin/portraits/" + filename));
     if (texture.is_null())
+    {
         throw std::runtime_error("Cannot load portrait: " + filename);
+    }
     auto result = ImageTexture::create_from_image(texture->get_image());
     textures_.emplace(filename, result);
     return result;

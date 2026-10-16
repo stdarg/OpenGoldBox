@@ -24,7 +24,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -53,30 +55,42 @@ Character barbarian(unsigned level = 1)
     d.name = "Barbarian";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.training = {{"class:barbarian", {"nature", "perception"}},
                   {"class:barbarian:weapon_mastery", {"greataxe", "handaxe"}}};
     CampaignParty party(srd5::load(root / "data/rules/srd-5.2.1/combat.rules"));
     const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
     party.award_experience(2700, "barbarian-xp");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -113,8 +127,12 @@ bool raging(const CombatSession &c)
 unsigned rages_left(const CombatSession &c)
 {
     for (const auto &pool : unit(c, 1).resources)
+    {
         if (pool.id == "rage")
+        {
             return pool.remaining;
+        }
+    }
     throw std::runtime_error("No Rage pool");
 }
 
@@ -129,7 +147,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {98, "target", "Enemy", Side::opposition, {2, 1}}}},
                            seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Barbarian's turn");
+    }
     check(c->snapshot().actor == 1, "The Barbarian acts");
     return c;
 }
@@ -139,7 +159,9 @@ void reach(CombatSession &c, EntityId id)
 {
     check(submit(c, "end"), "End the turn");
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 4; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
 }
 
 void rage_checks()
@@ -187,7 +209,9 @@ std::unique_ptr<CombatSession> entangled(const RulesModule &module)
                             {barbarian_entry, {98, "target", "Enemy", Side::opposition, {2, 1}}}},
                            5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Barbarian's turn");
+    }
     return c;
 }
 
@@ -324,7 +348,9 @@ int danger_save(const RulesModule &module, const Character &hero, std::uint64_t 
     d.name = "Foe";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = {"sacred_flame"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
     const Character foe(*srd5::character_rules(), d, {});
@@ -357,11 +383,17 @@ int danger_save(const RulesModule &module, const Character &hero, std::uint64_t 
     }
     auto c = module.create(e, seed);
     for (unsigned turns = 0; c->snapshot().actor != 98 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     check(submit(*c, "sacred_flame", 1), "The Cleric casts Sacred Flame at the Barbarian");
     for (const auto &line : c->snapshot().log())
+    {
         if (const auto at = line.find("Barbarian Dexterity save: d20 "); at != std::string::npos)
+        {
             return std::stoi(line.substr(at + 30));
+        }
+    }
     throw std::runtime_error("No Dexterity save in the log");
 }
 
@@ -425,7 +457,9 @@ void frenzy_checks()
         auto c = battle(*module, barbarian(3), {"greataxe"}, seed);
         check(submit(*c, "rage") && submit(*c, "reckless", 98), "Rage, then attack recklessly");
         if (!logged(*c, "Rage adds"))
+        {
             continue;
+        }
         check(logged(*c, "Frenzy adds"), "A raging, reckless hit adds Frenzy's 2d6");
         return;
     }

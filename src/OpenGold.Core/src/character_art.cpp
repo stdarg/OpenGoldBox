@@ -29,7 +29,9 @@ const AdditionalPortraitHead &additional_head(unsigned id)
                                         return head.id == id;
                                     });
     if (entry == additional_heads.end())
+    {
         throw std::runtime_error("Unknown additional portrait head");
+    }
     return *entry;
 }
 
@@ -58,6 +60,7 @@ Image fit_neck(const Image &head, const Image &body, const AdditionalPortraitHea
         static_cast<double>(right - left) / (placement.neck_right - placement.neck_left);
     Image result = head;
     for (unsigned y = 0; y < 40; ++y)
+    {
         for (unsigned x = 0; x < 88; ++x)
         {
             // Translate the face intact. Only the lowest five rows gradually widen
@@ -68,10 +71,13 @@ Image fit_neck(const Image &head, const Image &body, const AdditionalPortraitHea
                 static_cast<int>(std::floor(source_center + (x + 0.5 - target_center) / scale));
             const auto to = (y * 88 + x) * 4;
             for (unsigned c = 0; c < 3; ++c)
+            {
                 result.rgba[to + c] =
                     from_x >= 0 && from_x < 88 ? head.rgba[(y * 88 + from_x) * 4 + c] : 0;
+            }
             result.rgba[to + 3] = 255;
         }
+    }
     return result;
 }
 
@@ -83,17 +89,25 @@ std::vector<std::uint8_t> composed_pixels(const IndexedIcon &head, const Indexed
     if (head.width != 24 || body.width != 24 || !head.height || head.height > 24 ||
         body.height != 24 || head.pixels.size() != head.width * head.height ||
         body.pixels.size() != 576)
+    {
         throw std::runtime_error("Invalid character icon components");
+    }
     auto pixels = body.pixels;
     for (unsigned p = 0; p < head.pixels.size(); ++p)
+    {
         if (head.pixels[p])
+        {
             pixels[p] = head.pixels[p];
+        }
+    }
     if (std::any_of(pixels.begin(), pixels.end(),
                     [](auto c)
                     {
                         return c > 15;
                     }))
+    {
         throw std::runtime_error("Invalid character icon pixel");
+    }
     return pixels;
 }
 
@@ -102,16 +116,24 @@ IndexedIcon with_dagger(IndexedIcon body, unsigned bank)
     const bool action = bank >= 128, tall = bank % 128 == 64;
     const unsigned tip_y = action ? (tall ? 17u : 18u) : (tall ? 4u : 6u);
     for (unsigned y = 0; y < 24; ++y)
+    {
         for (unsigned x = 0; x < 24; ++x)
         {
             auto &color = body.pixels[y * 24 + x];
             if (color != 7 && color != 15)
+            {
                 continue;
+            }
             if ((action && y > tip_y) || (!action && y < tip_y))
+            {
                 color = 0;
+            }
             else if (y == tip_y)
+            {
                 color = x == (action ? 19u : 4u) ? 15 : 0;
+            }
         }
+    }
     return body;
 }
 
@@ -122,8 +144,12 @@ IndexedIcon without_wand(IndexedIcon body, unsigned bank)
     const auto erase = [&](unsigned y, unsigned first, unsigned last)
     {
         for (unsigned x = first; x <= last; ++x)
+        {
             if (body.pixels[y * 24 + x] == 8)
+            {
                 body.pixels[y * 24 + x] = 0;
+            }
+        }
     };
     switch (bank)
     {
@@ -160,8 +186,12 @@ std::span<const AdditionalPortraitHead> additional_portrait_heads()
 std::optional<unsigned> matching_portrait_head(std::string_view race, std::string_view gender)
 {
     for (const auto &head : additional_heads)
+    {
         if (head.race == race && head.gender == gender)
+        {
             return head.id;
+        }
+    }
     return std::nullopt;
 }
 
@@ -170,7 +200,9 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
     const auto &placement = additional_head(head_id);
     if (!source.width || !source.height || source.width > 8192 || source.height > 8192 ||
         !consistent(source))
+    {
         throw std::runtime_error("Invalid portrait source image");
+    }
     unsigned bottom = source.height;
     const auto visible = [&](unsigned x, unsigned y)
     {
@@ -182,22 +214,29 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
     {
         bool content = false;
         for (unsigned x = 0; x < source.width; ++x)
+        {
             if (visible(x, bottom - 1))
             {
                 content = true;
                 break;
             }
+        }
         if (content)
+        {
             break;
+        }
         --bottom;
     }
     if (!bottom)
+    {
         throw std::runtime_error("Portrait source has no visible head");
+    }
     Image result;
     result.width = 88;
     result.height = 40;
     result.rgba.resize(88 * 40 * 4);
     for (unsigned y = 0; y < 40; ++y)
+    {
         for (unsigned x = 0; x < 88; ++x)
         {
             const auto source_y =
@@ -206,17 +245,22 @@ Image prepare_portrait_head(const Image &source, unsigned head_id)
             const auto to = (y * 88 + x) * 4;
             // Composite alpha on the original portrait's black background.
             for (unsigned c = 0; c < 3; ++c)
+            {
                 result.rgba[to + c] =
                     static_cast<unsigned>(source.rgba[from + c]) * source.rgba[from + 3] / 255;
+            }
             result.rgba[to + 3] = 255;
         }
+    }
     return result;
 }
 
 bool CharacterColorUsage::contains(unsigned bank, unsigned part) const
 {
     if (bank >= 2 || part >= 6)
+    {
         throw std::runtime_error("Invalid character color region");
+    }
     return ready[bank][part] || action[bank][part];
 }
 
@@ -229,16 +273,24 @@ void validate_character_appearance(const CharacterAppearance &a)
                                                })) ||
         a.portrait_body > 255 || a.combat_head >= 14 || a.combat_body >= 35 ||
         a.icon_size > IconSize::large)
+    {
         throw std::runtime_error("Invalid appearance reference");
+    }
     if (!a.portrait.empty() &&
         (a.portrait.size() > 160 || !a.portrait.ends_with(".png") ||
          a.portrait.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789-_.") !=
              std::string::npos ||
          a.portrait.find("..") != std::string::npos))
+    {
         throw std::runtime_error("Invalid portrait filename");
+    }
     for (const auto &bank : a.colors)
+    {
         for (auto color : bank)
+        {
             (void)character_color(color);
+        }
+    }
 }
 
 std::array<std::uint8_t, 3> character_color(unsigned index)
@@ -260,23 +312,31 @@ std::array<std::uint8_t, 3> character_color(unsigned index)
                                                                    {255, 255, 85},
                                                                    {255, 255, 255}}};
     if (index >= palette.size())
+    {
         throw std::runtime_error("Invalid character color");
+    }
     return palette[index];
 }
 
 IndexedIcon decode_character_icon(std::span<const std::uint8_t> record)
 {
     if (record.size() < 17)
+    {
         throw std::runtime_error("Truncated character icon");
+    }
     const unsigned height = record[0] + 256u * record[1],
                    width = (record[2] + 256u * record[3]) * 8;
     if (width != 24 || !height || height > 24 || record[8] != 1 ||
         record.size() != 17 + width * height / 2)
+    {
         throw std::runtime_error("Unsupported character icon layout");
+    }
     IndexedIcon result{width, height, {}};
     result.pixels.reserve(width * height);
     for (unsigned p = 0; p < width * height; ++p)
+    {
         result.pixels.push_back(p % 2 ? record[17 + p / 2] & 15 : record[17 + p / 2] >> 4);
+    }
     return result;
 }
 
@@ -285,8 +345,12 @@ Image compose_character_icon(const IndexedIcon &head, const IndexedIcon &body,
 {
     const auto pixels = composed_pixels(head, body);
     for (const auto &bank : appearance.colors)
+    {
         for (auto c : bank)
+        {
             (void)character_color(c);
+        }
+    }
     Image result;
     result.width = result.height = 24;
     result.rgba.resize(24 * 24 * 4);
@@ -297,7 +361,9 @@ Image compose_character_icon(const IndexedIcon &head, const IndexedIcon &body,
         const unsigned index = pixels[p];
         auto rgb = character_color(index == 8 ? 0 : index);
         if (const auto region = color_regions[index & 7]; region >= 0)
+        {
             rgb = character_color(appearance.colors[index >> 3][region]);
+        }
         std::copy(rgb.begin(), rgb.end(), result.rgba.begin() + p * 4);
         result.rgba[p * 4 + 3] = index ? 255 : 0;
     }
@@ -308,27 +374,36 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
 {
     std::map<std::string, std::filesystem::path> paths;
     for (const auto &entry : std::filesystem::directory_iterator(directory))
+    {
         if (entry.is_regular_file())
         {
             auto name = detail::upper_ascii(entry.path().filename().string());
             if (!paths.emplace(name, entry.path()).second)
+            {
                 throw std::runtime_error("Ambiguous art archive: " + name);
+            }
         }
+    }
     const auto read = [&](const std::string &name)
     {
         if (!paths.contains(name))
+        {
             throw std::runtime_error("Missing character art: " + name);
+        }
         const auto &path = paths.at(name);
         auto bytes = detail::read_archive_bytes<std::runtime_error>(
             path, "Character art archive exceeds size limit", "Cannot read character art: " + name,
             "Cannot read character art: " + name);
         auto decoded = decode_dax_archive(bytes);
         if (!decoded)
+        {
             throw std::runtime_error("Invalid character art archive: " + name);
+        }
         return std::move(decoded.records);
     };
     CharacterArt art;
     for (unsigned disk = 1; disk <= 8; ++disk)
+    {
         for (const auto &stem : {std::string("HEAD"), std::string("BODY")})
         {
             const auto archive = stem + std::to_string(disk) + ".DAX";
@@ -339,17 +414,26 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
                 auto decoded = decode_ega_picture(r.bytes);
                 if (!decoded || decoded.image.width != 88 ||
                     decoded.image.height != (stem == "HEAD" ? 40 : 48))
+                {
                     throw std::runtime_error("Unsupported player portrait layout");
+                }
                 auto &parts = stem == "HEAD" ? art.heads_ : art.bodies_;
                 if (parts.contains(r.id) && parts.at(r.id).image.rgba != decoded.image.rgba)
+                {
                     throw std::runtime_error("Conflicting player portrait ID across archives");
+                }
                 parts.try_emplace(r.id, PortraitPart{archive, std::move(decoded.image)});
             }
         }
+    }
     for (const auto &r : read("CHEAD.DAX"))
+    {
         art.combat_heads_.emplace(r.id, decode_character_icon(r.bytes));
+    }
     for (const auto &r : read("CBODY.DAX"))
+    {
         art.combat_bodies_.emplace(r.id, decode_character_icon(r.bytes));
+    }
     for (unsigned bank : {0u, 64u, 128u, 192u})
     {
         art.combat_bodies_.emplace(bank + 32, without_wand(art.combat_bodies_.at(bank + 21), bank));
@@ -357,17 +441,29 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
         art.combat_bodies_.emplace(bank + 34, with_dagger(art.combat_bodies_.at(bank + 24), bank));
     }
     if (art.heads_.empty() || art.bodies_.empty())
+    {
         throw std::runtime_error("Missing portraits");
+    }
     for (unsigned size : {0u, 64u})
+    {
         for (unsigned pose : {0u, 128u})
         {
             for (unsigned id = 0; id < 14; ++id)
+            {
                 if (!art.combat_heads_.contains(size + pose + id))
+                {
                     throw std::runtime_error("Missing combat head pose");
+                }
+            }
             for (unsigned id = 0; id < 32; ++id)
+            {
                 if (!art.combat_bodies_.contains(size + pose + id))
+                {
                     throw std::runtime_error("Missing combat body pose");
+                }
+            }
         }
+    }
     return art;
 }
 
@@ -375,7 +471,9 @@ void CharacterArt::validate(const CharacterAppearance &a) const
 {
     validate_character_appearance(a);
     if (!heads_.contains(a.portrait_head) || !bodies_.contains(a.portrait_body))
+    {
         throw std::runtime_error("Invalid character appearance selection");
+    }
 }
 
 void CharacterArt::add_portrait_head(unsigned id, Image image)
@@ -387,25 +485,33 @@ void CharacterArt::add_portrait_head(unsigned id, Image image)
                                     });
     if (entry == additional_heads.end() || image.width != 88 || image.height != 40 ||
         !consistent(image))
+    {
         throw std::runtime_error("Invalid additional portrait head");
+    }
     if (!heads_
              .emplace(id, PortraitPart{std::string(entry->filename), std::move(image),
                                        std::string(entry->label)})
              .second)
+    {
         throw std::runtime_error("Duplicate portrait head ID");
+    }
 }
 
 void CharacterArt::set_original_head(unsigned id, PortraitPart part)
 {
     if (part.image.width != 88 || part.image.height != 40 || !consistent(part.image))
+    {
         throw std::runtime_error("A portrait head is 88x40");
+    }
     heads_.insert_or_assign(id, std::move(part));
 }
 
 void CharacterArt::set_original_body(unsigned id, PortraitPart part)
 {
     if (part.image.width != 88 || part.image.height != 48 || !consistent(part.image))
+    {
         throw std::runtime_error("A portrait body is 88x48");
+    }
     bodies_.insert_or_assign(id, std::move(part));
 }
 
@@ -415,7 +521,9 @@ void require_combat_icon(const IndexedIcon &icon)
 {
     if (icon.width != 24 || !icon.height || icon.height > 24 ||
         icon.pixels.size() != icon.width * icon.height)
+    {
         throw std::runtime_error("A combat icon is 24 pixels wide and at most 24 high");
+    }
 }
 } // namespace
 
@@ -465,8 +573,12 @@ CharacterColorUsage CharacterArt::color_usage(const CharacterAppearance &a) cons
                                             combat_bodies_.at(bank + a.combat_body));
         auto &counts = action ? usage.action : usage.ready;
         for (auto pixel : pixels)
+        {
             if (const auto part = color_regions[pixel & 7]; part >= 0)
+            {
                 ++counts[pixel >> 3][part];
+            }
+        }
     }
     return usage;
 }

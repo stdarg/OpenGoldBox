@@ -39,15 +39,21 @@ CharacterDraft draft()
     d.name = "Cantrip tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return d;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -63,16 +69,24 @@ using opengold::test::rejects;
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -81,7 +95,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (unsigned i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t n{};
     in >> n;
     return n;
@@ -90,16 +106,24 @@ std::uint64_t rng(const CombatSession &c)
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack log");
 }
 
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == name)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing attack argument");
 }
 
@@ -111,7 +135,9 @@ Character hero(unsigned level = 1, bool poison = true)
     Character h(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), scratch), "Advance real Wizard choices");
+    }
     return h;
 }
 
@@ -133,7 +159,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                           seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
+    {
         check(c->submit(command(*c, "end")), "Reach caster");
+    }
     check(c->snapshot().actor == 1, "Independent seed reaches caster");
     return c;
 }
@@ -156,6 +184,7 @@ void access()
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned wizards = 0;
     for (const auto &preset : character_pool(*creation, art))
+    {
         if (preset.sheet().character_class == "Wizard")
         {
             ++wizards;
@@ -171,6 +200,7 @@ void access()
                       prepared.front() == "magic_missile",
                   "Preset Wizards pre-generate independent book and preparation selections");
         }
+    }
     check(wizards > 0, "Preset Wizard path exercised");
     const auto original = creation->evaluate(d, NameRequirement::required);
     check(rules->spell_access(original).cantrips.size() == 1 &&
@@ -202,6 +232,7 @@ void access()
             });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
+    {
         if (klass.id != "wizard" && klass.id != "warlock" && klass.id != "sorcerer" &&
             klass.id != "druid")
         {
@@ -214,6 +245,7 @@ void access()
                     (void)creation->evaluate(d, NameRequirement::required);
                 });
         }
+    }
     for (unsigned level = 1; level <= 4; ++level)
     {
         auto h = hero(level);
@@ -237,8 +269,12 @@ void access()
         });
     auto invalid = hero().sheet();
     for (auto &g : invalid.grants)
+    {
         if (g.id == "spell:poison_spray")
+        {
             g.source_id = "species:tiefling";
+        }
+    }
     rejects(
         [&]
         {
@@ -251,7 +287,9 @@ void rolls()
     // Independent SplitMix64 golden values: two initiative rolls, then attack.
     // seed 0: natural 20, 5+8 damage; 13: natural 17, 8 damage; 40: natural 1.
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (unsigned seed : {0u, 13u, 40u})
+        {
             for (const auto &defense :
                  std::vector<std::string>{"", "resistance", "vulnerability", "immunity"})
             {
@@ -298,6 +336,8 @@ void rolls()
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Stale cast rejects atomically");
             }
+        }
+    }
     auto rules = custom();
     auto c = battle(*rules, hero(), 13, {2, 1});
     check(c->submit(command(*c, "poison_spray", 2)), "Nearby spell attack");
@@ -331,7 +371,9 @@ void eligibility()
     {
         auto c = battle(*rules, h, 13, {3, 1}, gear);
         while (c->snapshot().actor != 1)
+        {
             check(c->submit(command(*c, "end")), "Reach armored caster");
+        }
         check(unit(*c).known_cantrips == std::vector<std::string>{"fire_bolt", "poison_spray"},
               "Knowledge remains visible while armor blocks casting");
         // Full hands block nothing (CLASS-11); untrained armor does.
@@ -358,9 +400,11 @@ void eligibility()
     auto normal = battle(*rules, h);
     const auto before = normal->save();
     for (EntityId bad : {0u, 999u})
+    {
         check(!normal->submit({normal->snapshot().revision, 1, bad, "poison_spray"}) &&
                   normal->save() == before,
               "No terrain/object/unknown target can be forged");
+    }
     check(has(*normal, "poison_spray", 1), "A creature-targeting spell can target its own caster");
     const auto hp = unit(*normal).hit_points;
     check(normal->submit(command(*normal, "poison_spray", 1)) && unit(*normal).hit_points == hp - 8,
@@ -384,6 +428,7 @@ void allies_and_unconscious()
     const auto h = hero();
     auto profile = rules->character_profile(h.sheet(), {});
     for (bool unconscious : {false, true})
+    {
         for (bool adjacent : {false, true})
         {
             Encounter e{{10, 8, std::vector<Terrain>(80)},
@@ -398,7 +443,9 @@ void allies_and_unconscious()
                          {3, "target", "Enemy", Side::opposition, {8, 1}}}};
             auto c = rules->create(e, 13);
             while (c->snapshot().actor != 1)
+            {
                 check(c->submit(command(*c, "end")), "Reach caster with third initiative slot");
+            }
             check(has(*c, "poison_spray", 2),
                   "Living ally remains a legal target, including at zero HP");
             auto copy = rules->restore(c->save());
@@ -418,6 +465,7 @@ void allies_and_unconscious()
                       "Unconscious damage adds critical or ordinary death failures");
             }
         }
+    }
 }
 
 void campaign()
@@ -425,6 +473,7 @@ void campaign()
     auto rules = module();
     auto creation = srd5::character_rules();
     for (bool npc : {false, true})
+    {
         for (unsigned level = 1; level <= 4; ++level)
         {
             CampaignParty p(module());
@@ -463,6 +512,7 @@ void campaign()
                       restored.profile(id).data == p.profile(id).data,
                   "Inventory, wealth, equipment and cast access retained");
         }
+    }
 }
 
 void ui_fixtures()
@@ -486,12 +536,16 @@ void ui_fixtures()
             2);
         // Untrained armor's initiative Disadvantage may put the caster later.
         for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+        {
             for (const auto &end : c->legal_commands())
+            {
                 if (end.verb == "end")
                 {
                     (void)c->submit(end);
                     break;
                 }
+            }
+        }
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

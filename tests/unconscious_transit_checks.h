@@ -4,7 +4,9 @@ Encounter corridor()
 {
     Battlefield board{6, 3, std::vector<Terrain>(18, Terrain::obstacle)};
     for (int x = 0; x < 6; ++x)
+    {
         board.terrain[6 + x] = Terrain::open;
+    }
     return {board,
             {{1, "vanguard", "Mover", Side::party, {0, 1}},
              {2,
@@ -21,17 +23,27 @@ void run()
 {
     auto module = srd5::load(pack());
     for (bool reverse : {false, true})
+    {
         for (bool difficult : {false, true})
+        {
             for (bool allied : {false, true})
             {
                 auto e = corridor();
                 if (reverse)
+                {
                     for (auto &p : e.participants)
+                    {
                         p.side = p.side == Side::party ? Side::opposition : Side::party;
+                    }
+                }
                 if (allied)
+                {
                     e.participants[1].side = e.participants[0].side;
+                }
                 if (difficult)
+                {
                     e.battlefield.terrain[8] = Terrain::difficult;
+                }
                 auto session = hero_first(*module, e);
                 const auto before = unit(*session, 1);
                 // As in the original game, the downed do not hold their squares.
@@ -58,10 +70,14 @@ void run()
                           "Awake enemy blocks route atomically");
                 }
             }
+        }
+    }
     // Actual damage changes a block into traversable space without removing the creature.
     auto e = corridor();
     for (auto &participant : e.participants)
+    {
         participant.side = participant.side == Side::party ? Side::opposition : Side::party;
+    }
     e.participants[0].cell = {1, 1};
     e.participants[1].state = VitalState{1};
     bool downed = false;
@@ -69,10 +85,14 @@ void run()
     {
         auto session = module->create(e, seed);
         if (session->snapshot().actor != 1)
+        {
             continue;
+        }
         check(session->submit(command(*session, "melee")), "Attack blocker");
         if (unit(*session, 2).hit_points || unit(*session, 2).dead)
+        {
             continue;
+        }
         check(session->submit(command(*session, "move", {3, 1})) &&
                   unit(*session, 1).cell == Cell{3, 1},
               "Actual knockout opens enemy transit");
@@ -113,11 +133,15 @@ void run()
     {
         auto session = module->create(e, seed);
         if (session->snapshot().actor != 1)
+        {
             continue;
+        }
         check(session->submit(command(*session, "move", {4, 1})), "Start low-HP crossing");
         check(session->submit(command(*session, "opportunity")), "Resolve interruption");
         if (unit(*session, 1).hit_points || unit(*session, 1).dead)
+        {
             continue;
+        }
         check(unit(*session, 1).cell == unit(*session, 2).cell &&
                   !session->snapshot().reaction_pending,
               "Knockout preserves involuntary enemy overlap");
@@ -133,7 +157,9 @@ void run()
         died |= unit(*waiting, 1).dead;
         natural_recovery |= unit(*waiting, 1).hit_points > 0;
         if (healed)
+        {
             continue;
+        }
         auto copy = module->restore(session->save());
         for (unsigned n = 0; session->snapshot().actor != 4; ++n)
         {
@@ -152,7 +178,9 @@ void run()
         check(unit(*session, 1).hit_points > 0 && unit(*session, 1).cell == unit(*session, 2).cell,
               "Recovery does not teleport the mover");
         while (session->snapshot().actor != 1)
+        {
             check(session->submit(command(*session, "end")), "Return to mover turn");
+        }
         copy = module->restore(session->save());
         auto move = command(*session, "move", {3, 1});
         check(session->submit(move) && copy->submit(move), "Exit involuntary overlap");

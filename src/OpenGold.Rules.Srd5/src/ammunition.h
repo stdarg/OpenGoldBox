@@ -34,8 +34,12 @@ inline constexpr std::array ammunition_definitions{
 inline constexpr const AmmunitionDefinition *ammunition(std::string_view key)
 {
     for (const auto &item : ammunition_definitions)
+    {
         if (item.key == key)
+        {
             return &item;
+        }
+    }
     return nullptr;
 }
 } // namespace opengold::srd5::detail

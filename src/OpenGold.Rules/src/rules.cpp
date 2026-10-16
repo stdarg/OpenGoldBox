@@ -11,7 +11,9 @@ bool Battlefield::contains(Cell p) const noexcept
 Terrain Battlefield::at(Cell p) const noexcept
 {
     if (!contains(p))
+    {
         return Terrain::obstacle;
+    }
     const auto index = static_cast<std::size_t>(p.y) * static_cast<std::size_t>(width) +
                        static_cast<std::size_t>(p.x);
     return index < terrain.size() ? terrain[index] : Terrain::obstacle;
@@ -20,7 +22,9 @@ Terrain Battlefield::at(Cell p) const noexcept
 bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
 {
     if (board.at(from) == Terrain::obstacle || board.at(to) == Terrain::obstacle)
+    {
         return false;
+    }
     const int columns = std::abs(to.x - from.x), rows = std::abs(to.y - from.y);
     const int step_x = to.x > from.x ? 1 : -1, step_y = to.y > from.y ? 1 : -1;
     int crossed_x = 0, crossed_y = 0;
@@ -39,7 +43,9 @@ bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
             // diagonal cell. Checking all three prevents sight through walls.
             if (board.at({current.x + step_x, current.y}) == Terrain::obstacle ||
                 board.at({current.x, current.y + step_y}) == Terrain::obstacle)
+            {
                 return false;
+            }
             current.x += step_x;
             current.y += step_y;
             ++crossed_x;
@@ -56,7 +62,9 @@ bool has_line_of_sight(const Battlefield &board, Cell from, Cell to)
             ++crossed_y;
         }
         if (board.at(current) == Terrain::obstacle)
+        {
             return false;
+        }
     }
     return true;
 }

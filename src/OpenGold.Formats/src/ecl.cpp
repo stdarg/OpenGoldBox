@@ -69,7 +69,9 @@ const EclOpcode &ecl_opcode(std::uint8_t op)
                                                       {"PROTECTION", 1, false, true, true},
                                                       {"CLEAR BOX", 0, false, true}}};
     if (op >= specs.size())
+    {
         throw EclError("Unknown opcode " + std::to_string(op));
+    }
     return specs[op];
 }
 
@@ -86,7 +88,9 @@ std::string unpack_ecl_text(std::span<const std::uint8_t> bytes)
             bits -= 6;
             const auto code = (buffer >> bits) & 63;
             if (code)
+            {
                 text.push_back(static_cast<char>(code < 32 ? code + 64 : code));
+            }
         }
         buffer &= (1U << bits) - 1;
     }
@@ -102,14 +106,20 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
                                        std::span<const std::uint8_t> image) const
 {
     if (image.size() != raw_.size())
+    {
         throw EclError("Invalid execution image size");
+    }
     if (address < origin || address >= origin + image.size() - 2)
+    {
         throw EclError("Instruction address outside program");
+    }
     std::size_t cursor = address - origin + 2;
     const auto byte = [&]()
     {
         if (cursor >= image.size())
+        {
             throw EclError("Truncated instruction operand");
+        }
         return image[cursor++];
     };
     EclInstruction result;
@@ -128,24 +138,34 @@ EclInstruction EclProgram::instruction(std::uint32_t address,
         else if (arg.tag == 128)
         {
             if (arg.value > image.size() - cursor)
+            {
                 throw EclError("Truncated packed text");
+            }
             arg.text = unpack_ecl_text(image.subspan(cursor, arg.value));
             cursor += arg.value;
         }
         else if (arg.tag != 0)
+        {
             throw EclError("Unsupported operand tag " + std::to_string(arg.tag));
+        }
         return arg;
     };
     for (unsigned i = 0; i < spec.operands; ++i)
+    {
         result.operands.push_back(operand());
+    }
     if (spec.variable_list)
     {
         const auto &count = result.operands.back();
         if ((count.tag != 0 && count.tag != 2) || count.value > 255)
+        {
             throw EclError("Dynamic or invalid operand list length");
+        }
         const unsigned n = count.value;
         for (unsigned i = 0; i < n; ++i)
+        {
             result.operands.push_back(operand());
+        }
     }
     result.next = origin + static_cast<std::uint32_t>(cursor) - 2;
     return result;
@@ -156,7 +176,9 @@ EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_v
     try
     {
         if (bytes.size() < 2 || bytes.size() - 2 > limit - origin)
+        {
             throw EclError("Invalid ECL record size");
+        }
         EclProgram program;
         program.raw_.assign(bytes.begin(), bytes.end());
         program.source_ = source;
@@ -165,14 +187,20 @@ EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_v
         {
             const auto entry = program.instruction(cursor);
             if (entry.opcode != 1 || entry.operands[0].tag >= 128)
+            {
                 throw EclError("Invalid entry jump");
+            }
             target = entry.operands[0].value;
             cursor = entry.next;
         }
         program.body_start_ = cursor;
         for (auto target : program.entries_)
+        {
             if (target < cursor || target >= origin + bytes.size() - 2)
+            {
                 throw EclError("Entry target outside program body");
+            }
+        }
         return program;
     }
     catch (const EclError &e)

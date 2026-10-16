@@ -16,23 +16,33 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
     for (std::size_t i = 0; i < ordered.size(); ++i)
     {
         if (!ordered[i].effects.id || (i && ordered[i - 1].effects.id == ordered[i].effects.id))
+        {
             throw std::runtime_error("Invalid recovery participant identity");
+        }
         validate_recovery(ordered[i].life);
     }
     if (!milliseconds)
+    {
         return;
+    }
     // Outside combat a dying creature does not wait on a six-second cadence:
     // its remaining death saves resolve at once, before any clock advances.
     if (mode == RecoveryMode::campaign)
+    {
         for (auto &subject : ordered)
         {
             auto &life = subject.life.get();
             while (life.hp == 0 && !life.dead && !life.stable)
+            {
                 (void)death_save(life, rng, !healing_blocked(subject.effects.effects.get()),
                                  subject.effects.lucky);
+            }
         }
+    }
     for (auto &subject : ordered)
+    {
         start_stable_recovery(subject.life, rng);
+    }
     while (milliseconds)
     {
         auto step = milliseconds;
@@ -46,23 +56,31 @@ void elapse_recovery(std::span<RecoverySubject> subjects, std::uint64_t millisec
                 if (life.recovery.stable_recovery_due)
                 {
                     if (!healing_blocked(subject.effects.effects.get()))
+                    {
                         step = 0;
+                    }
                 }
                 else
+                {
                     step = std::min<std::uint64_t>(step, life.recovery.stable_recovery_in_ms);
+                }
             }
             for (const auto &effect : subject.effects.effects.get().active)
             {
                 any = true;
                 step = std::min<std::uint64_t>(step, effect.remaining_ms);
                 if (effect.save_in_ms)
+                {
                     step = std::min<std::uint64_t>(step, effect.save_in_ms);
+                }
             }
         }
         if (!any)
         {
             for (auto &subject : ordered)
+            {
                 (void)advance_recovery_clock(subject.life, milliseconds);
+            }
             return;
         }
         milliseconds -= step;

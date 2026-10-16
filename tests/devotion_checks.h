@@ -78,7 +78,9 @@ void write_sacred_weapon_fixture()
                               {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
                             2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "bless-fixtures";
     std::filesystem::create_directories(path);
     std::ofstream out(path / "sacred.save", std::ios::binary);

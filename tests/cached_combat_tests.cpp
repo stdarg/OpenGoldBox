@@ -13,7 +13,9 @@ namespace
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<opengold::CombatDemo> training_demo()

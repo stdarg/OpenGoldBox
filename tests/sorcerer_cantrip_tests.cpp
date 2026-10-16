@@ -41,7 +41,9 @@ CharacterDraft draft()
     d.name = "Cantrip tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     return d;
 }
@@ -49,8 +51,12 @@ CharacterDraft draft()
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -66,16 +72,24 @@ using opengold::test::rejects;
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -84,7 +98,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (unsigned i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t n{};
     in >> n;
     return n;
@@ -93,16 +109,24 @@ std::uint64_t rng(const CombatSession &c)
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack log");
 }
 
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == name)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing attack argument");
 }
 
@@ -124,7 +148,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                           seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
+    {
         check(c->submit(command(*c, "end")), "Reach caster");
+    }
     check(c->snapshot().actor == 1, "Independent seed reaches caster");
     return c;
 }
@@ -133,7 +159,9 @@ fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
     if (at == state.resources.npos)
+    {
         return {};
+    }
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
@@ -163,8 +191,10 @@ void access()
     check(access.cantrip_choices == 4 && access.cantrips.size() == 4,
           "Four explicit starting choices");
     for (const auto &spell : access.cantrips)
+    {
         check(spell.source_id == "class:sorcerer:spellcasting" && spell.acquired_level == 1,
               "Real source and acquisition level");
+    }
     for (const auto &bad : std::vector<std::vector<std::string>>{{"fire_bolt", "fire_bolt"},
                                                                  {"eldritch_blast"},
                                                                  {"sacred_flame"},
@@ -187,13 +217,21 @@ void access()
                                     return g.id == "spell:fire_bolt";
                                 });
         if (mode == 0)
+        {
             g.source_id = "class:wizard:spellcasting";
+        }
         if (mode == 1)
+        {
             g.level = 2;
+        }
         if (mode == 2)
+        {
             g.choices = {{"access", "spellbook"}};
+        }
         if (mode == 3)
+        {
             bad.grants.push_back(g);
+        }
         rejects(
             [&]
             {
@@ -214,7 +252,9 @@ void access()
         });
     auto absent = battle(*custom(), hero({}));
     for (const auto &spell : choices)
+    {
         check(!has(*absent, spell), "Unselected spell unavailable");
+    }
     por::CharacterArt art;
     Image head;
     head.width = 88;
@@ -228,19 +268,23 @@ void access()
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned count = 0;
     for (const auto &preset : character_pool(*creation, art))
+    {
         if (preset.sheet().character_class == "Sorcerer")
         {
             ++count;
             check(rules->spell_access(preset.sheet()).cantrips.size() == 4,
                   "Preset choices pre-generated");
         }
+    }
     check(count > 0, "Preset path exercised");
 }
 
 void rolls()
 {
     for (const auto &spell : choices)
+    {
         for (unsigned seed : {0u, 3u, 13u, 40u})
+        {
             for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
             {
                 const std::string type = spell == "fire_bolt"      ? "fire"
@@ -281,17 +325,23 @@ void rolls()
                           after.persistent == before.persistent,
                       "Only Magic action spent");
                 if (spell == "ray_of_frost")
+                {
                     check(fx::speed_penalty(effects(unit(*c, 2).persistent)) ==
                               (seed == 40 ? 0 : 10),
                           "Hit slows even through Cold immunity");
+                }
                 if (spell == "shocking_grasp")
+                {
                     check(
                         unit(*c, 2).reaction && fx::opportunity_blocked(effects(
                                                     unit(*c, 2).persistent)) == (seed != 40),
                         "Shocking Grasp suppresses opportunities through immunity without spending Reaction");
+                }
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Repeated cast rejects atomically");
             }
+        }
+    }
 }
 
 void timing()
@@ -306,8 +356,10 @@ void timing()
                   c->save() == copy->save(),
               "Target-turn effect continuation");
         if (spell == "shocking_grasp")
+        {
             check(!fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
                   "Suppression ends at target turn");
+        }
         else
         {
             check(fx::speed_penalty(effects(unit(*c, 2).persistent)) == 10,
@@ -361,6 +413,7 @@ void campaign()
 {
     auto rules = module();
     for (const auto &spell : choices)
+    {
         for (bool npc : {false, true})
         {
             CampaignParty party(module());
@@ -398,7 +451,9 @@ void campaign()
             {
                 check(bool(restored.rest(kind)), "Camp/inn rest");
                 if (restored.state().short_rest)
+                {
                     restored.finish_short_rest(restored.state().short_rest->ticket);
+                }
                 saved = encode_campaign(restored, nullptr, "sorcerer-cantrip");
                 CampaignParty again(module());
                 again.restore(decode_campaign(saved, *srd5::character_rules(), *rules,
@@ -410,6 +465,7 @@ void campaign()
                       "Rest save/reload preserves all learned cantrips");
             }
         }
+    }
 }
 
 void fixtures()
@@ -431,12 +487,16 @@ void fixtures()
             2);
         // Untrained armor's initiative Disadvantage may put the caster later.
         for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+        {
             for (const auto &end : c->legal_commands())
+            {
                 if (end.verb == "end")
                 {
                     (void)c->submit(end);
                     break;
                 }
+            }
+        }
         write(path / (kind + ".save"), c->save());
     }
 }

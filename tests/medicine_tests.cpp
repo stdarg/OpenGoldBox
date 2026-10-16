@@ -46,29 +46,43 @@ Character hero(std::string klass = "fighter", unsigned level = 2, bool trained =
     d.name = "Medic";
     d.rolled = true;
     for (auto &roll : d.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     if (trained)
+    {
         d.training["class:" + klass] = {"medicine"};
+    }
     Character h(*srd5::character_rules(), d, {});
     VitalState vitals;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), vitals), "Ordinary advancement");
+    }
     return h;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command cmd(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -80,8 +94,12 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -90,7 +108,9 @@ std::uint64_t random(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (int i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t value{};
     in >> value;
     return value;
@@ -123,7 +143,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 0, Cel
           {99, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
         seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -167,7 +189,9 @@ void outcomes()
         {
             auto c = battle(*rules, h, seed);
             if (!has(*c, "stabilize"))
+            {
                 continue;
+            }
             const auto before = unit(*c);
             const auto rng = random(*c);
             auto original = rules->restore(c->save());
@@ -222,8 +246,10 @@ void outcomes()
                 boosted |= stable(*c);
                 still_failed |= !stable(*c);
                 if (!stable(*c))
+                {
                     check(unit(*c, 2).persistent == unit(*original, 2).persistent,
                           "Failed boost preserves original target state");
+                }
                 auto expected = unit(*decline).persistent.resources;
                 if (stable(*c))
                 {
@@ -241,17 +267,27 @@ void outcomes()
                       "Unboosted check rolls recovery only on success");
             }
             for (const auto &message : c->snapshot().log_messages())
+            {
                 for (const auto &arg : message.arguments)
+                {
                     if (arg.name == "roll")
                     {
                         if (arg.value == "1")
+                        {
                             one = true;
+                        }
                         if (arg.value == "20")
+                        {
                             twenty = true;
+                        }
                     }
+                }
+            }
             if (stable(*c))
+            {
                 check(unit(*c, 2).hit_points == 0 && !has(*c, "stabilize"),
                       "Success stabilizes without healing or waking");
+            }
         }
         check(
             success && failure && one && twenty && (level == 1 || (boosted && still_failed)),
@@ -287,7 +323,9 @@ void all_classes()
         act(*c, "stabilize", 2);
         bool saw = false;
         for (const auto &m : c->snapshot().log_messages())
+        {
             for (const auto &a : m.arguments)
+            {
                 if (a.name == "modifier")
                 {
                     const int wisdom = h.sheet().scores[Ability::wisdom];
@@ -295,6 +333,8 @@ void all_classes()
                           "Medicine proficiency is used");
                     saw = true;
                 }
+            }
+        }
         check(saw, "Medicine log includes modifier");
     }
 }
@@ -314,7 +354,9 @@ void legality_and_surge()
         act(*c, "action_surge");
         act(*c, "stabilize", 2);
         if (!c->snapshot().ability_check_choice)
+        {
             continue;
+        }
         check(unit(*c).action, "Help uses restricted Surge first, preserving ordinary Action");
         auto copy = rules->restore(c->save());
         act(*c, "mind_skip");
@@ -347,15 +389,23 @@ void campaign_and_rest()
             actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 6}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
             while (c->snapshot().actor != id)
+            {
                 act(*c, "end");
+            }
             if (!has(*c, "stabilize"))
+            {
                 continue;
+            }
             act(*c, "stabilize", patient);
             if (!c->snapshot().ability_check_choice)
+            {
                 continue;
+            }
             act(*c, "mind_use");
             if (unit(*c, patient).status.find("Stable") == std::string::npos)
+            {
                 continue;
+            }
             party.begin_combat();
             party.apply_combat(c->snapshot());
             party.end_combat();
@@ -365,8 +415,12 @@ void campaign_and_rest()
                 for (const auto &pool :
                      rules->recovery_info(p.member(id).character.sheet(), p.member(id).vitals)
                          .resources)
+                {
                     if (pool.id == "second_wind")
+                    {
                         return pool.remaining;
+                    }
+                }
                 throw std::runtime_error("Missing Second Wind");
             };
             check(winds(party) == capacity - 1 && party.member(patient).vitals.hit_points == 0,
@@ -381,7 +435,9 @@ void campaign_and_rest()
             check(bool(loaded.rest(RestKind::short_rest)) && winds(loaded) == capacity,
                   "Short Rest recharges shared Second Wind pool");
             if (loaded.state().short_rest)
+            {
                 loaded.finish_short_rest(loaded.state().short_rest->ticket);
+            }
             check(bool(loaded.rest(RestKind::long_rest)) &&
                       loaded.member(patient).vitals.hit_points > 0 && winds(loaded) == capacity,
                   "Long Rest preserves normal recovery and full shared resource");
@@ -404,7 +460,9 @@ void fixtures()
         const auto before = c->save();
         act(*c, "stabilize", 2);
         if (!c->snapshot().ability_check_choice)
+        {
             continue;
+        }
         // Custom content is used only in native tests; game fixtures require the standard pack.
         auto normal = module();
         auto actors = std::vector<Participant>{
@@ -425,13 +483,19 @@ void fixtures()
             {99, "vanguard", "Enemy", Side::opposition, {6, 6}}};
         auto ui = normal->create({{8, 8, std::vector<Terrain>(64)}, actors}, seed);
         while (ui->snapshot().actor != 1)
+        {
             act(*ui, "end");
+        }
         if (unit(*ui, 2).hit_points > 0 || !has(*ui, "stabilize"))
+        {
             continue;
+        }
         const auto available = ui->save();
         act(*ui, "stabilize", 2);
         if (!ui->snapshot().ability_check_choice)
+        {
             continue;
+        }
         std::ofstream(dir / "available.save", std::ios::binary) << available;
         std::ofstream(dir / "pending.save", std::ios::binary) << ui->save();
         done = true;
@@ -462,9 +526,13 @@ void fixtures()
               {99, "vanguard", "Enemy", Side::opposition, {6, 6}}}},
             seed);
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         if (!has(*c, "stabilize"))
+        {
             continue;
+        }
         std::ofstream(dir / "combined.save", std::ios::binary) << c->save();
         done = true;
     }

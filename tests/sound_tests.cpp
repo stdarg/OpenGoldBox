@@ -15,7 +15,9 @@ using Bytes = std::vector<std::uint8_t>;
 void require(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 using opengold::test::rejects;
@@ -72,11 +74,13 @@ void packing()
             (void)unpack_sound_executable(bad);
         });
     for (std::size_t i = 0; i < 32; ++i)
+    {
         rejects<std::runtime_error>(
             [&]
             {
                 (void)unpack_sound_executable(std::span(file).first(i));
             });
+    }
     Bytes plain(32 + 4);
     word(plain, 0, 0x5a4d);
     word(plain, 8, 2);
@@ -159,8 +163,12 @@ void rendering()
     require(pcm.size() == 20280, "PIT duration to sample count");
     unsigned crossings = 0;
     for (std::size_t i = 1; i < pcm.size(); ++i)
+    {
         if (pcm[i - 1] < 0 && pcm[i] >= 0)
+        {
             ++crossings;
+        }
+    }
     require(crossings >= 421 && crossings <= 423, "Approximate 1 kHz tone frequency");
     tone.ticks.assign(3, {0, false});
     const auto silence = render_speaker_audio(tone);

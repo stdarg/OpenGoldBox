@@ -20,16 +20,24 @@ using opengold::test::rejects;
 int reference_step(const Battlefield &board, const std::vector<int> &occupants, Cell from, Cell to)
 {
     if (board.at(from) == Terrain::obstacle || board.at(to) == Terrain::obstacle || from == to)
+    {
         return -1;
+    }
     if (std::abs(from.x - to.x) > 1 || std::abs(from.y - to.y) > 1)
+    {
         return -1;
+    }
     if (from.x != to.x && from.y != to.y &&
         (board.at({from.x, to.y}) == Terrain::obstacle ||
          board.at({to.x, from.y}) == Terrain::obstacle))
+    {
         return -1;
+    }
     const int occupant = occupants[to.y * board.width + to.x];
     if (occupant == 2)
+    {
         return -1;
+    }
     return board.at(to) == Terrain::difficult || occupant == 3 ? 10 : 5;
 }
 
@@ -49,7 +57,9 @@ std::vector<int> reference_costs(const Battlefield &board, const std::vector<int
                     reference_step(board, occupants, {from % board.width, from / board.width},
                                    {to % board.width, to / board.width});
                 if (edge >= 0)
+                {
                     costs[to] = std::min(costs[to], costs[from] + edge);
+                }
             }
         }
     }
@@ -60,9 +70,13 @@ void compare_routes(const Battlefield &board, const std::vector<int> &occupants,
 {
     std::vector<Occupant> actors;
     for (int i = 0; i < static_cast<int>(occupants.size()); ++i)
+    {
         if (occupants[i])
+        {
             actors.push_back(
                 {{i % board.width, i / board.width}, occupants[i] >= 2, occupants[i] == 3});
+        }
+    }
     const MovementGrid grid(board, origin, actors);
     const auto expected = reference_costs(board, occupants, origin);
     for (const int budget : {0, 5, 9, 10, 15, 20, 30, std::numeric_limits<int>::max()})
@@ -113,9 +127,13 @@ void exhaustive_movement()
             const auto kind = remaining % 6;
             remaining /= 6;
             if (kind <= 2)
+            {
                 board.terrain[cell] = static_cast<Terrain>(kind);
+            }
             else
+            {
                 occupants[cell] = kind - 2;
+            }
         }
         compare_routes(board, occupants, {0, 0});
     }
@@ -128,7 +146,9 @@ void exhaustive_movement()
         for (int cell = 0; cell < 9; ++cell)
         {
             if (cell == 4)
+            {
                 continue;
+            }
             board.terrain[cell] = static_cast<Terrain>(remaining % 3);
             remaining /= 3;
         }
@@ -149,7 +169,9 @@ bool touches_wall(Cell from, Cell to, Cell wall)
         if (deltas[axis] == 0)
         {
             if (starts[axis] < lows[axis] || starts[axis] > lows[axis] + 2)
+            {
                 return false;
+            }
             continue;
         }
         const auto a = static_cast<long double>(lows[axis] - starts[axis]) / deltas[axis];
@@ -166,7 +188,9 @@ void exhaustive_sight()
     {
         Battlefield board{3, 3, std::vector<Terrain>(9)};
         for (int i = 0; i < 9; ++i)
+        {
             board.terrain[i] = (walls >> i) & 1 ? Terrain::obstacle : Terrain::open;
+        }
         for (int a = 0; a < 9; ++a)
         {
             for (int b = 0; b < 9; ++b)
@@ -174,9 +198,13 @@ void exhaustive_sight()
                 const Cell from{a % 3, a / 3}, to{b % 3, b / 3};
                 bool clear = true;
                 for (int wall = 0; wall < 9; ++wall)
+                {
                     if (board.terrain[wall] == Terrain::obstacle &&
                         touches_wall(from, to, {wall % 3, wall / 3}))
+                    {
                         clear = false;
+                    }
+                }
                 check(has_line_of_sight(board, from, to) == clear,
                       "Sight disagrees with segment/rectangle oracle");
                 check(has_line_of_sight(board, from, to) == has_line_of_sight(board, to, from),
@@ -190,7 +218,9 @@ void allied_transit()
 {
     Battlefield corridor{7, 2, std::vector<Terrain>(14, Terrain::obstacle)};
     for (int x = 0; x < 7; ++x)
+    {
         corridor.terrain[x] = Terrain::open;
+    }
     const std::vector<Occupant> allies{{{1, 0}, false}, {{2, 0}, false}};
     MovementGrid grid(corridor, {0, 0}, allies);
     check(grid.reachable(15).path_to({3, 0}) == std::vector<Cell>{{1, 0}, {2, 0}, {3, 0}},
@@ -296,9 +326,13 @@ void boundaries_and_ties()
                                            {{1, 2}, false}, {{2, 2}, false}};
     const MovementGrid trapped(Battlefield{3, 3, std::vector<Terrain>(9)}, {1, 1}, surrounded);
     for (int y = 0; y < 3; ++y)
+    {
         for (int x = 0; x < 3; ++x)
+        {
             check(!trapped.reachable(30).cost_to({x, y}),
                   "Surrounded character has no highlighted moves");
+        }
+    }
     // Search results and grids own their data; later caller mutations cannot
     // change either a previously computed path or a pending search's geometry.
     const auto reachable = grid.reachable(15);

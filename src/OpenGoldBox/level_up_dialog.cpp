@@ -30,7 +30,9 @@ presentation::NodeOwner<> LevelUpDialog::create()
     auto scene = presentation::instantiate_scene("res://scenes/level_up_dialog.tscn");
     auto *dialog = Object::cast_to<LevelUpDialog>(scene.get());
     if (!dialog)
+    {
         throw std::runtime_error("Invalid level-up dialog scene");
+    }
     dialog->set_title(i18n::text(N_("Level up")));
     dialog->bind_controls();
     return scene;
@@ -40,7 +42,9 @@ void LevelUpDialog::connect_host(CampaignAccess campaign, std::function<void()> 
                                  FailureReport report)
 {
     if (!campaign || !advanced || !report)
+    {
         throw std::logic_error("Level-up dialog needs a campaign, a follow-up and a report");
+    }
     campaign_ = std::move(campaign);
     advanced_ = std::move(advanced);
     report_ = std::move(report);
@@ -76,7 +80,9 @@ void LevelUpDialog::bind_controls()
         auto *points =
             &required_node<OptionButton>(*this, String("Ability") + String::num_uint64(i));
         for (int n = 0; n <= 2; ++n)
+        {
             points->add_item(String("+") + String::num_int64(n));
+        }
         points->connect("item_selected",
                         presentation::guarded(this, &LevelUpDialog::advancement_changed));
     }
@@ -93,9 +99,11 @@ void LevelUpDialog::bind_controls()
     }
     for (const char *name : {"SwapCantrip", "SwapCantripWith", "SwapSpell", "SwapSpellWith",
                              "SwapOption", "SwapOptionWith"})
+    {
         required_node<OptionButton>(*this, String("SwapPage/") + name)
             .connect("item_selected",
                      presentation::guarded(this, &LevelUpDialog::advancement_swap_changed));
+    }
     auto *note = &required_node<Label>(*this, "Note");
     note->set_text(i18n::text(N_(
         "Fixed-average HP growth. Existing resource expenditure is preserved.\nAdditional class and subclass features are unavailable in this version.")));
@@ -123,8 +131,12 @@ LevelUpDialog::advancement_skilled_groups() const
 {
     std::vector<const opengold::rules::TrainingChoiceGroup *> groups;
     for (const auto &group : advancement_options_.training)
+    {
         if (picks_several(group))
+        {
             groups.push_back(&group);
+        }
+    }
     return groups;
 }
 
@@ -132,7 +144,9 @@ const opengold::rules::TrainingChoiceGroup *LevelUpDialog::advancement_skilled_g
 {
     const auto groups = advancement_skilled_groups();
     if (groups.empty())
+    {
         return nullptr;
+    }
     return groups[std::min(skilled_index_, groups.size() - 1)];
 }
 
@@ -159,15 +173,27 @@ std::vector<LevelUpDialog::AdvancementStep> LevelUpDialog::advancement_steps() c
     const auto groups = advancement_skilled_groups();
     std::vector<AdvancementStep> steps{{AdvancementPage::choices, 0}};
     for (std::size_t i = 0; i < groups.size(); ++i)
+    {
         if (!after_swaps(*groups[i]))
+        {
             steps.push_back({AdvancementPage::skilled, i});
+        }
+    }
     if (has_swaps())
+    {
         steps.push_back({AdvancementPage::swaps, 0});
+    }
     for (std::size_t i = 0; i < groups.size(); ++i)
+    {
         if (after_swaps(*groups[i]))
+        {
             steps.push_back({AdvancementPage::skilled, i});
+        }
+    }
     if (advancement_choice_.spell_learning)
+    {
         steps.push_back({AdvancementPage::spells, 0});
+    }
     return steps;
 }
 
@@ -181,7 +207,9 @@ LevelUpDialog::AdvancementStep LevelUpDialog::advancement_next_step() const
     const auto steps = advancement_steps();
     const auto at = std::find(steps.begin(), steps.end(), current_step());
     if (at == steps.end())
+    {
         return steps.front();
+    }
     return at + 1 == steps.end() ? *at : *(at + 1);
 }
 
@@ -238,9 +266,13 @@ void LevelUpDialog::refresh_swaps()
         const String base(name);
         const bool shown = !offer.replaceable.empty() && !offer.replacements.empty();
         for (const auto &suffix : {String("Label"), String(), String("WithLabel"), String("With")})
+        {
             required_node<Control>(*this, String("SwapPage/") + base + suffix).set_visible(shown);
+        }
         if (!shown)
+        {
             return;
+        }
         required_node<Label>(*this, String("SwapPage/") + base + String("Label"))
             .set_text(swap_question(offer.label));
         required_node<Label>(*this, String("SwapPage/") + base + String("WithLabel"))
@@ -254,10 +286,14 @@ void LevelUpDialog::refresh_swaps()
             replaced.add_item(i18n::text(o.label));
             replaced.set_item_metadata(replaced.get_item_count() - 1, String::utf8(o.id.c_str()));
             if (o.id == swap.replaced)
+            {
                 replaced.select(replaced.get_item_count() - 1);
+            }
         }
         if (swap.replaced.empty())
+        {
             replaced.select(0);
+        }
         auto &replacement =
             required_node<OptionButton>(*this, String("SwapPage/") + base + String("With"));
         replacement.clear();
@@ -267,14 +303,18 @@ void LevelUpDialog::refresh_swaps()
         for (const auto &o : offer.replacements)
         {
             if (chosen(o.id))
+            {
                 continue;
+            }
             replacement.add_item(
                 i18n::text(o.label) +
                 (o.description.empty() ? String() : String(" / ") + i18n::text(o.description)));
             replacement.set_item_metadata(replacement.get_item_count() - 1,
                                           String::utf8(o.id.c_str()));
             if (o.id == swap.replacement)
+            {
                 replacement.select(replacement.get_item_count() - 1);
+            }
         }
         replacement.set_disabled(swap.replaced.empty());
     };
@@ -287,7 +327,9 @@ void LevelUpDialog::refresh_swaps()
 void LevelUpDialog::advancement_swap_changed(std::int64_t)
 {
     if (advancement_refreshing_)
+    {
         return;
+    }
     static constexpr std::array<const char *, 3> names{"SwapCantrip", "SwapSpell", "SwapOption"};
     const auto value = [&](const String &node)
     {
@@ -308,10 +350,14 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
         row.replacement = replaced == row.replaced ? value(base + String("With")) : std::string();
         row.replaced = replaced;
         if (row.replaced.empty())
+        {
             row.replacement.clear();
+        }
         swap_incomplete_ |= !row.replaced.empty() && row.replacement.empty();
         if (!row.replacement.empty())
+        {
             complete[n] = row;
+        }
     }
     // A spell swap changes the list the level's spell choices start from.
     const auto before = advancement_choice_.spell_swap;
@@ -320,7 +366,9 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
     advancement_choice_.option_swap = complete[2];
     auto &spells = advancement_choice_.spells;
     if (!before.replacement.empty())
+    {
         std::replace(spells.begin(), spells.end(), before.replacement, before.replaced);
+    }
     if (const auto &now = advancement_choice_.spell_swap; !now.replacement.empty())
     {
         std::erase(spells, now.replacement);
@@ -332,7 +380,9 @@ void LevelUpDialog::advancement_swap_changed(std::int64_t)
 void LevelUpDialog::advancement_pages()
 {
     if (!advancing_)
+    {
         return;
+    }
     // Wizards and Clerics choose spells on a second page.
     const bool spell_page = advancement_choice_.spell_learning.has_value();
     const auto *skilled = advancement_skilled_group();
@@ -346,7 +396,9 @@ void LevelUpDialog::advancement_pages()
     required_node<Control>(*this, "SwapPage")
         .set_visible(advancement_page_ == AdvancementPage::swaps);
     if (advancement_page_ == AdvancementPage::swaps)
+    {
         refresh_swaps();
+    }
     // Back appears on any page after the first rather than only a Wizard's
     // spell page, so a non-Wizard taking Skilled can still step back.
     required_node<Button>(*this, "Back").set_visible(!on_first);
@@ -354,13 +406,17 @@ void LevelUpDialog::advancement_pages()
         .set_text(advancement_next_step() == current_step() ? i18n::text(N_("Confirm"))
                                                             : i18n::text(N_("Next")));
     for (const char *name : {"HP", "FeatLabel", "Feat", "Note"})
+    {
         required_node<Control>(*this, name).set_visible(on_first);
+    }
     // Match open_advancement exactly: a dropdown alongside a feat choice is
     // supplemental, and then the ability controls stay visible beside it.
     const bool has_training = advancement_dropdown_group() != nullptr;
     const bool supplemental = has_training && !advancement_options_.feats.empty();
     for (const char *name : {"AdvancementTrainingLabel", "AdvancementTraining"})
+    {
         required_node<Control>(*this, name).set_visible(on_first && has_training);
+    }
     for (unsigned i = 0; i < 6; ++i)
     {
         required_node<Control>(*this, String("Ability") + String::num_uint64(i))
@@ -369,20 +425,28 @@ void LevelUpDialog::advancement_pages()
             .set_visible(on_first && (!has_training || supplemental));
     }
     if (advancement_page_ == AdvancementPage::skilled)
+    {
         refresh_advancement_skilled();
+    }
     if (!spell_page)
     {
         required_node<Control>(*this, "SpellLabel").set_visible(on_first);
         for (unsigned i = 0; i < 4; ++i)
+        {
             required_node<Control>(*this, String("Spell") + String::num_uint64(i))
                 .set_visible(on_first && i < advancement_options_.spells.size());
+        }
         return;
     }
     required_node<Control>(*this, "SpellLabel").hide();
     for (unsigned i = 0; i < 4; ++i)
+    {
         required_node<Control>(*this, String("Spell") + String::num_uint64(i)).hide();
+    }
     if (advancement_page_ != AdvancementPage::spells)
+    {
         return;
+    }
     auto sheet = campaign().rule_module().spell_choice_sheet(
         campaign().member(advancing_).character.sheet(), advancement_choice_);
     auto options = campaign().rule_module().spell_choice_options(
@@ -418,24 +482,34 @@ void LevelUpDialog::refresh_advancement_skilled()
 {
     const auto *group = advancement_skilled_group();
     if (!group)
+    {
         return;
+    }
     auto &rows = required_node<VBoxContainer>(*this, "SkilledPage/Rows");
     const auto &picked = advancement_choice_.training[group->id];
     auto &count = required_node<Label>(*this, "SkilledCount");
     if (group->id == "feat:skilled")
+    {
         count.set_text(i18n::format(
             "Selected: {count}/{total}",
             {{"count", static_cast<unsigned>(picked.size())}, {"total", group->count}}));
+    }
     else
+    {
         count.set_text(i18n::format("{choice}: {count}/{total} selected",
                                     {{"choice", i18n::text(group->label)},
                                      {"count", static_cast<unsigned>(picked.size())},
                                      {"total", group->count}}));
+    }
     // Hide every row first; the loop below shows only what is still offered, so
     // no reverse name mapping is needed (ids contain underscores of their own).
     for (int n = 0; n < rows.get_child_count(); ++n)
+    {
         if (auto *box = Object::cast_to<CheckBox>(rows.get_child(n)))
+        {
             box->hide();
+        }
+    }
     for (const auto &option : group->options)
     {
         const auto name = presentation::training_string(option.id).replace(":", "_");
@@ -455,14 +529,18 @@ void LevelUpDialog::refresh_advancement_skilled()
         // catalog extractor matches on that call, so a literal behind a ternary
         // is never collected and would ship untranslated.
         if (group->id != "feat:skilled")
+        {
             box->set_text(i18n::text(option.label) +
                           (option.description.empty()
                                ? String()
                                : String(" / ") + i18n::text(option.description)));
+        }
         else
+        {
             box->set_text(option.id.starts_with("skill:")
                               ? i18n::format("Skill: {name}", {{"name", i18n::text(option.label)}})
                               : i18n::format("Tool: {name}", {{"name", i18n::text(option.label)}}));
+        }
         const bool on = std::find(picked.begin(), picked.end(), option.id) != picked.end();
         box->set_pressed_no_signal(on);
         // A full selection leaves only the chosen three toggleable, so the
@@ -477,16 +555,22 @@ void LevelUpDialog::advancement_skilled_toggled(bool selected, String option)
     const std::string id = option.utf8().get_data();
     const auto *group = advancement_skilled_group();
     if (!group)
+    {
         return;
+    }
     auto &picked = advancement_choice_.training[group->id];
     if (selected)
     {
         if (std::find(picked.begin(), picked.end(), id) == picked.end() &&
             picked.size() < group->count)
+        {
             picked.push_back(id);
+        }
     }
     else
+    {
         std::erase(picked, id);
+    }
     refresh_advancement_skilled();
     advancement_changed();
 }
@@ -525,11 +609,15 @@ void LevelUpDialog::open(opengold::MemberId id)
     swap_incomplete_ = false;
     // Several picks start empty, as the dropdown starts at "Choose an option".
     for (const auto *group : advancement_skilled_groups())
+    {
         advancement_choice_.training.erase(group->id);
+    }
     {
         const presentation::ScopedFlag refreshing(advancement_refreshing_);
         for (const char *name : {"HP", "FeatLabel", "Feat", "Note", "SpellLabel"})
+        {
             required_node<Control>(*this, name).show();
+        }
         required_node<Label>(*this, "Title")
             .set_text(i18n::format("{name} / Level {level}",
                                    {{"name", gs(campaign().member(id).character.sheet().name)},
@@ -538,7 +626,9 @@ void LevelUpDialog::open(opengold::MemberId id)
         auto *feat = &required_node<OptionButton>(*this, "Feat");
         feat->clear();
         if (advancement_options_.feats.empty())
+        {
             feat->add_item(i18n::text(N_("No feat or ability increase at this level")));
+        }
         for (unsigned i = 0; i < advancement_options_.feats.size(); ++i)
         {
             const auto &option = advancement_options_.feats[i];
@@ -547,7 +637,9 @@ void LevelUpDialog::open(opengold::MemberId id)
             feat->set_item_disabled(i, !option.available);
             feat->set_item_tooltip(i, i18n::text(option.description));
             if (option.id == advancement_choice_.feat)
+            {
                 feat->select(i);
+            }
         }
         feat->set_disabled(advancement_options_.feats.empty());
         const auto *dropdown = advancement_dropdown_group();
@@ -574,16 +666,20 @@ void LevelUpDialog::open(opengold::MemberId id)
                 .set_text(i18n::text(group.label));
             training->add_item(i18n::text("Choose an option"));
             for (const auto &option : group.options)
+            {
                 training->add_item(i18n::text(option.label) +
                                    (option.description.empty()
                                         ? String()
                                         : String(" / ") + i18n::text(option.description)));
+            }
             training->select(0);
             advancement_choice_.training.clear();
         }
         for (unsigned i = 0; i < 6; ++i)
+        {
             required_node<OptionButton>(*this, String("Ability") + String::num_uint64(i))
                 .select(advancement_choice_.abilities[opengold::rules::all_abilities[i]]);
+        }
         required_node<Label>(*this, "SpellLabel")
             .set_text(i18n::text(advancement_options_.spells.empty()
                                      ? N_("No spell choices for this class")
@@ -593,7 +689,9 @@ void LevelUpDialog::open(opengold::MemberId id)
             auto *spell = &required_node<CheckBox>(*this, String("Spell") + String::num_uint64(i));
             spell->set_visible(i < advancement_options_.spells.size());
             if (i >= advancement_options_.spells.size())
+            {
                 continue;
+            }
             const auto &option = advancement_options_.spells[i];
             spell->set_text(i18n::text(option.label) +
                             (option.available ? String() : i18n::text(" (Unavailable)")));
@@ -618,7 +716,9 @@ void LevelUpDialog::open(opengold::MemberId id)
                 if ((advancement_choice_.fighting_style &&
                      option.id == *advancement_choice_.fighting_style) ||
                     (!advancement_choice_.fighting_style && option.id == "keep"))
+                {
                     style->select(i);
+                }
             }
         }
     }
@@ -650,12 +750,18 @@ void LevelUpDialog::drop_unoffered_learning()
     if (!campaign().default_advancement(advancing_).spell_learning)
     {
         if (offered.empty())
+        {
             advancement_choice_.spell_learning.reset();
+        }
         else if (!advancement_choice_.spell_learning)
+        {
             advancement_choice_.spell_learning.emplace();
+        }
     }
     if (!advancement_choice_.spell_learning)
+    {
         return;
+    }
     std::erase_if(*advancement_choice_.spell_learning,
                   [&](const auto &entry)
                   {
@@ -670,7 +776,9 @@ void LevelUpDialog::drop_unoffered_learning()
 void LevelUpDialog::advancement_changed(std::int64_t)
 {
     if (advancement_refreshing_ || !advancing_)
+    {
         return;
+    }
     if (!advancement_options_.fighting_styles.empty())
     {
         const auto index = required_node<OptionButton>(*this, "FightingStyle").get_selected();
@@ -678,9 +786,13 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         {
             const auto &option = advancement_options_.fighting_styles.at(index);
             if (option.id == "keep")
+            {
                 advancement_choice_.fighting_style.reset();
+            }
             else
+            {
                 advancement_choice_.fighting_style = option.id;
+            }
         }
         advancement_options_ = campaign().advancement_options(advancing_, advancement_choice_);
         drop_unoffered_learning();
@@ -712,16 +824,24 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     {
         const auto index = required_node<OptionButton>(*this, "AdvancementTraining").get_selected();
         if (index > 0 && static_cast<std::size_t>(index) <= group->options.size())
+        {
             advancement_choice_.training[group->id] = {group->options[index - 1].id};
+        }
     }
     for (const auto *group : advancement_skilled_groups())
+    {
         advancement_choice_.training[group->id] = std::move(previous[group->id]);
+    }
     // An invocation picked or swapped in can bring a choice of its own
     // (Lessons of the First Ones' Skilled), so the options follow the picks.
     advancement_options_ = campaign().advancement_options(advancing_, advancement_choice_);
     for (const auto *group : advancement_skilled_groups())
+    {
         if (!advancement_choice_.training.contains(group->id))
+        {
             advancement_choice_.training[group->id] = std::move(previous[group->id]);
+        }
+    }
     // The feat and Lessons of the First Ones can each bring Magic Initiate's spells.
     drop_unoffered_learning();
     const bool ability = advancement_choice_.feat == "ability_score_improvement";
@@ -731,7 +851,9 @@ void LevelUpDialog::advancement_changed(std::int64_t)
             &required_node<OptionButton>(*this, String("Ability") + String::num_uint64(i));
         points->set_disabled(!ability);
         if (!ability)
+        {
             points->select(0);
+        }
         const auto shown = opengold::rules::all_abilities[i];
         advancement_choice_.abilities[shown] = ability ? points->get_selected() : 0;
         const auto value = campaign().member(advancing_).character.sheet().scores[shown];
@@ -749,9 +871,13 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         // control asked for a node that does not exist and aborted every Cleric
         // level-up, so this bound matches the controls that were actually built.
         for (unsigned i = 0; i < std::min<std::size_t>(4, advancement_options_.spells.size()); ++i)
+        {
             if (required_node<CheckBox>(*this, String("Spell") + String::num_uint64(i))
                     .is_pressed())
+            {
                 advancement_choice_.spells.push_back(advancement_options_.spells[i].id);
+            }
+        }
     }
     auto preview_choice = advancement_choice_;
     // The HP preview and the Next button both come from previewing the whole
@@ -761,6 +887,7 @@ void LevelUpDialog::advancement_changed(std::int64_t)
     const auto steps = advancement_steps();
     const auto now = std::find(steps.begin(), steps.end(), current_step());
     for (auto later = now == steps.end() ? steps.end() : now + 1; later != steps.end(); ++later)
+    {
         if (later->page == AdvancementPage::skilled)
         {
             const auto *group = advancement_skilled_groups()[later->index];
@@ -771,11 +898,14 @@ void LevelUpDialog::advancement_changed(std::int64_t)
                 for (const auto &option : group->options)
                 {
                     if (fill.size() == group->count)
+                    {
                         break;
+                    }
                     fill.push_back(option.id);
                 }
             }
         }
+    }
     if (preview_choice.spell_learning && advancement_page_ != AdvancementPage::spells)
     {
         const auto defaults = campaign().default_advancement(advancing_);
@@ -805,8 +935,12 @@ void LevelUpDialog::advancement_changed(std::int64_t)
         {
             auto &fill = (*preview_choice.spell_learning)[group.id];
             for (const auto &option : group.options)
+            {
                 if (fill.size() < group.count && !picked(option.id))
+                {
                     fill.push_back(option.id);
+                }
+            }
         }
     }
     try
@@ -845,7 +979,9 @@ void LevelUpDialog::close()
 void LevelUpDialog::confirm()
 {
     if (!advancing_)
+    {
         return;
+    }
     // Confirm doubles as Next until the last page; only then does it apply the
     // whole advancement in one transaction.
     if (const auto next = advancement_next_step(); next != current_step())

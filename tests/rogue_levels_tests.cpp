@@ -26,7 +26,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -45,20 +47,26 @@ CharacterDraft draft(std::string klass, std::string race = "dwarf")
     d.name = "Veteran";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 6, 6, 1}, 3};
     const auto rules = srd5::character_rules();
     for (bool filled = true; filled;)
     {
         filled = false;
         for (const auto &group : rules->training_options(d))
+        {
             if (!d.training.contains(group.id))
             {
                 for (unsigned i = 0; i < group.count; ++i)
+                {
                     d.training[group.id].push_back(group.options.at(i).id);
+                }
                 filled = true;
                 break;
             }
+        }
     }
     return d;
 }
@@ -74,7 +82,9 @@ Character rogue(unsigned level, std::string race = "dwarf")
     VitalState life;
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life), "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -91,8 +101,12 @@ bool offered(const CombatSession &c, std::string_view verb)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -119,8 +133,12 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -134,10 +152,14 @@ std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &
     std::vector<Participant> setup{{1, "campaign-character", "Rogue", Side::party, {1, 1}, profile},
                                    {98, "dummy", "Dummy", Side::opposition, {2, 1}}};
     if (ally)
+    {
         setup.push_back({2, "dull", "Ally", Side::party, {3, 1}});
+    }
     auto c = rules.create({{8, 3, std::vector<Terrain>(24)}, setup}, seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
+    }
     return c;
 }
 
@@ -148,7 +170,9 @@ void progression_checks()
         const auto id = party.add_pc(Character(*srd5::character_rules(), draft("rogue"), {}));
         party.award_experience(165000, "levels-xp");
         while (party.can_advance(id))
+        {
             party.advance(id, party.default_advancement(id));
+        }
         check(party.member(id).character.sheet().level == 15,
               "In the campaign a Rogue reaches the hall's level 15");
     }
@@ -194,7 +218,9 @@ void progression_checks()
           "The level 11-15 features arrive at their levels");
     unsigned proficient = 0;
     for (const auto ability : all_abilities)
+    {
         proficient += fifteen.sheet().save_proficiencies[ability] ? 1 : 0;
+    }
     check(proficient == 4 && fifteen.sheet().save_proficiencies[Ability::wisdom] &&
               fifteen.sheet().save_proficiencies[Ability::charisma],
           "Slippery Mind: Wisdom and Charisma saves at level 15");
@@ -212,7 +238,9 @@ void improved_cunning_checks()
               "Pairs of effects; no Devious Strikes before level 14");
         check(submit(*c, "melee_trip+withdraw", 98), "A Trip and Withdraw attack");
         if (!logged(*c, "adds Sneak Attack: 4d6"))
+        {
             continue;
+        }
         check(logged(*c, "Rogue may withdraw"), "Both effects: the withdrawal follows");
         return;
     }
@@ -225,6 +253,7 @@ void devious_checks()
     const auto rules = dummy_rules();
     bool knocked = false, blinded = false, dazed = false;
     for (std::uint64_t seed = 1; seed < 80 && !(knocked && blinded && dazed); ++seed)
+    {
         for (const auto *verb : {"melee_knock_out", "melee_obscure", "melee_daze"})
         {
             auto c = fight(*rules, rogue(14), seed);
@@ -244,24 +273,39 @@ void devious_checks()
             const auto saved = c->save();
             check(rules->restore(saved)->save() == saved, "A checkpoint keeps the effect");
             if (std::string_view(verb) == "melee_knock_out" && logged(*c, "Dummy is knocked out."))
+            {
                 knocked = shows("Unconscious (Knock Out)");
+            }
             if (std::string_view(verb) == "melee_obscure" && logged(*c, "Dummy is Blinded."))
+            {
                 blinded = shows("Blinded");
+            }
             if (std::string_view(verb) != "melee_daze" || !logged(*c, "Dummy is dazed."))
+            {
                 continue;
+            }
             // On its turn the dazed dummy moves, and then may not attack.
             check(submit(*c, "end"), "The Rogue ends its turn");
             for (unsigned steps = 0; steps < 6 && c->snapshot().actor != 98; ++steps)
+            {
                 check(submit(*c, "end") || c->submit(choose_demo_command(*c)), "Reach the dummy");
+            }
             if (c->snapshot().actor != 98)
+            {
                 continue;
+            }
             bool moved = false;
             for (const auto &command : c->legal_commands())
+            {
                 if (!moved && command.verb == "move" && command.actor == 98)
+                {
                     moved = c->submit(command);
+                }
+            }
             check(moved && !offered(*c, "melee"), "Having moved, the dazed dummy cannot attack");
             dazed = true;
         }
+    }
     check(knocked && blinded && dazed, "Each Devious Strike lands on some seed");
 }
 
@@ -271,6 +315,7 @@ void cunning_checks()
     const auto rules = dummy_rules();
     bool tripped = false, withdrew = false;
     for (std::uint64_t seed = 1; seed < 60 && !(tripped && withdrew); ++seed)
+    {
         for (const auto *verb : {"melee_trip", "melee_withdraw"})
         {
             auto c = fight(*rules, rogue(5), seed);
@@ -278,9 +323,13 @@ void cunning_checks()
                   "Cunning Strike is offered with Sneak Attack; Stealth Attack waits for level 9");
             check(submit(*c, verb, 98), "A Cunning Strike attack");
             if (!logged(*c, "adds Sneak Attack: 2d6"))
+            {
                 continue;
+            }
             if (std::string_view(verb) == "melee_trip")
+            {
                 tripped |= logged(*c, "Dummy is tripped and falls Prone.");
+            }
             else
             {
                 const auto free = c->snapshot().free_movement;
@@ -290,6 +339,7 @@ void cunning_checks()
                 check(rules->restore(saved)->save() == saved, "A checkpoint keeps the withdrawal");
             }
         }
+    }
     check(tripped && withdrew, "Trip and Withdraw both work on some seed");
     auto alone = fight(*rules, rogue(5), 1, false);
     check(!offered(*alone, "melee_trip"), "No Cunning Strike without Sneak Attack");
@@ -305,9 +355,13 @@ void uncanny_dodge_checks()
         check(submit(*c, "end"), "The Rogue waits");
         for (unsigned steps = 0;
              steps < 4 && c->snapshot().actor == 98 && !offered(*c, "uncanny_dodge"); ++steps)
+        {
             check(c->submit(choose_demo_command(*c)), "The dummy attacks");
+        }
         if (!offered(*c, "uncanny_dodge"))
+        {
             continue;
+        }
         check(submit(*c, "uncanny_dodge") && logged(*c, "Rogue uses Uncanny Dodge") &&
                   !unit(*c, 1).reaction,
               "Uncanny Dodge halves the hit for the Reaction");
@@ -332,20 +386,30 @@ void evasion_checks()
                             {98, "campaign-character", "Evader", Side::opposition, {2, 1}, foe}}},
                           seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the breather's turn");
+        }
         if (c->snapshot().actor != 1 || !submit(*c, "breath_weapon_line"))
+        {
             continue;
+        }
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "area_move" && command.destination == Cell{2, 1})
             {
                 check(c->submit(command), "Aim the breath at the Evader");
                 break;
             }
+        }
         check(submit(*c, "area_cast"), "The breath is exhaled");
         if (!logged(*c, "Evader takes"))
+        {
             continue;
+        }
         if (logged(*c, "Evader takes 0 "))
+        {
             return;
+        }
     }
     throw std::runtime_error("No seed's save leaves the evading Rogue unhurt");
 }
@@ -357,7 +421,9 @@ void reliable_checks()
     const auto profile = rules->character_profile(rogue(7).sheet(), {}).data;
     std::vector<Terrain> walled(72);
     for (int y = 0; y <= 2; ++y)
+    {
         walled[y * 12 + 4] = Terrain::obstacle;
+    }
     for (std::uint64_t seed = 1; seed < 80; ++seed)
     {
         auto c = rules->create({{12, 6, walled},
@@ -365,10 +431,14 @@ void reliable_checks()
                                  {98, "dull", "Foe", Side::opposition, {8, 1}}}},
                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
+        }
         check(submit(*c, "cunning_hide"), "The Rogue hides");
         if (logged(*c, "Reliable Talent: Rogue's d20 of "))
+        {
             return;
+        }
     }
     throw std::runtime_error("No seed rolls a low d20 for the hiding Rogue");
 }
@@ -382,12 +452,18 @@ void supreme_sneak_checks()
         rules->character_profile(rogue(9).sheet(), std::vector<std::string>{"dagger"}).data;
     std::vector<Terrain> walled(72);
     for (int y = 0; y <= 2; ++y)
+    {
         walled[y * 12 + 4] = Terrain::obstacle;
+    }
     const auto step = [](CombatSession &c, Cell cell)
     {
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == "move" && command.destination == cell)
+            {
                 return c.submit(command);
+            }
+        }
         return false;
     };
     for (std::uint64_t seed = 1; seed < 120; ++seed)
@@ -397,16 +473,24 @@ void supreme_sneak_checks()
                                  {98, "dull", "Foe", Side::opposition, {6, 1}}}},
                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "initiative_keep") || submit(*c, "end"), "Reach the Rogue's turn");
+        }
         if (!submit(*c, "cunning_hide") || !unit(*c, 1).hidden)
+        {
             continue;
+        }
         if (!step(*c, {3, 2}) || !step(*c, {3, 3}) || !step(*c, {4, 3}) || !step(*c, {5, 2}) ||
             !unit(*c, 1).hidden)
+        {
             continue;
+        }
         check(offered(*c, "melee_stealth"), "A hidden Rogue is offered Stealth Attack");
         check(submit(*c, "melee_stealth", 98), "The Stealth Attack");
         if (!logged(*c, "adds Sneak Attack: 4d6"))
+        {
             continue;
+        }
         check(logged(*c, "Rogue stays hidden (Stealth Attack).") && unit(*c, 1).hidden,
               "Dealing Sneak Attack damage, the Rogue stays hidden");
         return;

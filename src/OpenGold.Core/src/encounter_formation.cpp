@@ -91,7 +91,9 @@ std::vector<Area> areas(const DungeonBattlefield &field, const Side &side)
     for (const auto direction : spill_order[index(side.facing)])
     {
         if (walled(field, side.square, direction))
+        {
             continue;
+        }
         const Cell square{side.square.x + step_x(direction), side.square.y + step_y(direction)};
         const auto fills = reversed(direction);
         const bool behind = direction == reversed(side.facing);
@@ -115,9 +117,13 @@ Cell rank_position(Cell centre, MapDirection fills, int n)
     const auto left = grid_step[index(turned_left(fills))];
     const auto steps = n / 2;
     if (n == 1)
+    {
         return centre;
+    }
     if (n % 2 == 0)
+    {
         return {centre.x + right.x * steps, centre.y + right.y * steps};
+    }
     return {centre.x + left.x * steps, centre.y + left.y * steps};
 }
 
@@ -153,15 +159,23 @@ std::vector<Cell> slots(const DungeonBattlefield &field, const Side &side)
                     break;
                 }
                 if (!column_inside || !row_inside)
+                {
                     break;
+                }
                 if (usable(area, grid))
+                {
                     result.push_back(arena_cell(grid, area.square));
+                }
                 if (n >= (first ? first_rank : longest_rank))
+                {
                     break;
+                }
             }
             ++rank;
             if (side.is_party && facing_sideways && own_square && rank == 1 && spills.size() > 1)
+            {
                 ++rank;
+            }
             first = false;
         }
     }
@@ -178,6 +192,7 @@ std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Si
     {
         auto &cell = result.emplace_back();
         for (const auto candidate : candidates)
+        {
             if (field.geometry.at(candidate) != rules::Terrain::obstacle &&
                 !occupied.contains(candidate))
             {
@@ -185,6 +200,7 @@ std::vector<std::optional<Cell>> place(const DungeonBattlefield &field, const Si
                 occupied.insert(candidate);
                 break;
             }
+        }
     }
     return result;
 }

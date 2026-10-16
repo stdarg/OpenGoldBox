@@ -17,8 +17,12 @@ auto rules_module(std::string extra = {})
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Rogue test actor missing");
 }
 
@@ -27,7 +31,9 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
 {
     std::vector<std::string> gear;
     if (!weapon.empty())
+    {
         gear.push_back(weapon);
+    }
     const Cell target = ranged ? Cell{5, 1} : Cell{2, 1};
     Encounter e{{12, 8, std::vector<Terrain>(96)},
                 {{1,
@@ -38,10 +44,14 @@ auto battle(const RulesModule &rules, const Character &h, std::string weapon = "
                   rules.character_profile(h.sheet(), gear).data},
                  {99, enemy, "Target", Side::opposition, target}}};
     if (ally)
+    {
         e.participants.push_back({2, "vanguard", "Ally", Side::party, {target.x, 2}});
+    }
     auto c = rules.create(std::move(e), seed);
     for (unsigned i = 0; c->snapshot().actor != 1 && i < 5; ++i)
+    {
         act(*c, "end");
+    }
     check(c->snapshot().actor == 1, "Rogue receives ordinary turn");
     return c;
 }
@@ -54,11 +64,13 @@ void roundtrip(const RulesModule &r, const CombatSession &c)
 void move(CombatSession &c, Cell to)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == "move" && v.destination == to)
         {
             check(c.submit(v), "Rogue movement accepted");
             return;
         }
+    }
     throw std::runtime_error("Rogue move unavailable");
 }
 
@@ -67,8 +79,12 @@ std::vector<std::string> sneak_lines(const CombatSession &c)
 {
     std::vector<std::string> lines;
     for (const auto &line : c.snapshot().log())
+    {
         if (line.find(" adds Sneak Attack: ") != std::string::npos)
+        {
             lines.push_back(line);
+        }
+    }
     return lines;
 }
 
@@ -82,13 +98,19 @@ std::string last_hit(const CombatSession &c)
 {
     const auto messages = c.snapshot().log_messages();
     for (auto m = messages.rbegin(); m != messages.rend(); ++m)
+    {
         if (m->source.starts_with("{actor} -> {target}: d20"))
         {
             for (const auto &a : m->arguments)
+            {
                 if (a.name == "hit")
+                {
                     return a.value;
+                }
+            }
             return {};
         }
+    }
     return {};
 }
 
@@ -97,8 +119,12 @@ int logged_number(const CombatSession &c, std::string_view marker, std::string_v
 {
     const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
+    {
         if (line->find(marker) != std::string::npos)
+        {
             return std::stoi(line->substr(line->find(before) + before.size()));
+        }
+    }
     throw std::runtime_error("Missing logged number: " + std::string(marker));
 }
 
@@ -131,18 +157,22 @@ void run()
     for (unsigned level = 1; level <= 4; ++level)
     {
         if (level > 1)
+        {
             check(h.advance(*rules, wounds), "Rogue advances normally through level four");
+        }
         check(std::cmp_equal(h.sheet().level, level) &&
                   wounds.hit_points == h.sheet().hit_points - 2,
               "Rogue advancement preserves wounds");
         const auto &grants = h.sheet().grants;
         for (const auto *thief : {"subclass:thief", "feature:fast_hands"})
+        {
             check(std::any_of(grants.begin(), grants.end(),
                               [&](const auto &g)
                               {
                                   return g.id == thief;
                               }) == (level >= 3),
                   "Rogue level three records the Thief subclass and Fast Hands");
+        }
         auto c = battle(*rules, h);
         act(*c, "melee");
         check(sneak_lines(*c).size() == 1, "Ally near target applies Sneak Attack automatically");
@@ -185,7 +215,9 @@ void run()
         check(unit(*c).movement_feet == 0, "Dash cannot restore movement under Steady Aim");
         act(*c, "end");
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         check(unit(*c).movement_feet == 30 && has(*c, "steady_aim"),
               "Next turn restores speed and Aim eligibility");
         move(*c, {2, 1});
@@ -205,7 +237,9 @@ void run()
         auto pc = hero(d);
         VitalState v;
         for (unsigned n = 2; n <= level; ++n)
+        {
             check(pc.advance(*rules, v), "Recruited Rogue ordinary advancement");
+        }
         pc.add_item({.definition_id = "dagger", .name = "Dagger"});
         const auto id = recruited.recruit("fixture:rogue-attacks", std::move(pc));
         recruited.equip(id, 1);
@@ -219,7 +253,9 @@ void run()
         actors.push_back({99, "target", "Target", Side::opposition, {2, 1}});
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
+        {
             act(*c, "end");
+        }
         const auto vitals = unit(*c, id).persistent;
         act(*c, "melee");
         check(sneaked(*c), "Recruited Rogue applies Sneak Attack automatically");
@@ -242,7 +278,9 @@ void run()
         act(*c, "steady_aim");
         act(*c, "end");
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         act(*c, "ranged");
         check(!last_hit(*c).empty() && !sneaked(*c),
               "Real later hit proves unused Aim expires at turn end");
@@ -259,7 +297,9 @@ void run()
             act(*c, "steady_aim");
             act(*c, "ranged");
             if (unit(*c, 99).hit_points != 1000 || !last_hit(*c).empty())
+            {
                 continue;
+            }
             const auto saved = c->save();
             const auto start = saved.find("\n1 \"campaign-character\"");
             check(start != std::string::npos, "Locate saved aimed actor");
@@ -268,7 +308,9 @@ void run()
             std::string field;
             // Skip the fields before Sneak Attack, through the smite window.
             for (unsigned n = 0; n < 53; ++n)
+            {
                 actor_fields >> std::quoted(field);
+            }
             bool sneak_used, aim_used, aim_ready, moved;
             actor_fields >> sneak_used >> aim_used >> aim_ready >> moved;
             check(actor_fields && !sneak_used && aim_used && !aim_ready && !moved,
@@ -299,6 +341,7 @@ void run()
     }
     // Live cancellation cases: close ranged attacks have Disadvantage; Aim cancels it.
     for (bool ally : {false, true})
+    {
         for (bool aim : {false, true})
         {
             bool checked = false;
@@ -306,10 +349,14 @@ void run()
             {
                 auto c = battle(*rules, h, "shortbow", ally, seed, false);
                 if (aim)
+                {
                     act(*c, "steady_aim");
+                }
                 act(*c, "ranged");
                 if (last_hit(*c).empty())
+                {
                     continue;
+                }
                 check(
                     sneaked(*c) == (ally && aim),
                     "Actual canceled Advantage permits ally clause; uncanceled Disadvantage never does");
@@ -318,13 +365,16 @@ void run()
             }
             check(checked, "Live opposed-roll hit exercised");
         }
+    }
     bool critical_verified = false;
     for (unsigned seed = 1; seed <= 128 && !critical_verified; ++seed)
     {
         auto c = battle(*rules, h, "dagger", true, seed);
         act(*c, "melee");
         if (last_hit(*c) != "CRITICAL" || !sneaked(*c))
+        {
             continue;
+        }
         check(sneak_lines(*c).front().find(": 4d6 for ") != std::string::npos,
               "Level-four critical rolls four extra d6");
         roundtrip(*rules, *c);
@@ -356,7 +406,9 @@ void run()
                  {99, "target", "Target", Side::opposition, {2, 1}}}};
             auto c = rules->create(std::move(e), seed);
             while (c->snapshot().actor != 1)
+            {
                 act(*c, "end");
+            }
             act(*c, "melee");
             check(!sneaked(*c), "Unconscious adjacent ally cannot enable Sneak Attack");
             checked = !last_hit(*c).empty();
@@ -380,10 +432,14 @@ void run()
             actors.push_back({2, "vanguard", "Ally", Side::party, {5, 2}});
             auto c = rules->create({{12, 8, std::vector<Terrain>(96)}, actors}, seed);
             while (c->snapshot().actor != id)
+            {
                 act(*c, "end");
+            }
             act(*c, "throw");
             if (last_hit(*c).empty())
+            {
                 continue;
+            }
             check(sneaked(*c) == (std::string_view(weapon) != "handaxe"),
                   "Thrown Finesse/Ranged weapon qualifies; thrown Handaxe does not");
             roundtrip(*rules, *c);
@@ -398,24 +454,36 @@ void run()
         auto c = battle(*rules, h, "dagger", true, seed);
         act(*c, "melee");
         if (!sneaked(*c))
+        {
             continue;
+        }
         act(*c, "end");
         while (c->snapshot().actor != 99)
+        {
             act(*c, "end");
+        }
         move(*c, {4, 1});
         for (auto now = c->snapshot(); now.reaction_pending && now.actor != 1; now = c->snapshot())
+        {
             act(*c, "decline");
+        }
         check(c->snapshot().actor == 1 && c->snapshot().reaction_pending,
               "Enemy movement offers actual Rogue opportunity attack");
         auto restored = rules->restore(c->save());
         act(*c, "opportunity");
         act(*restored, "opportunity");
         if (sneak_lines(*c).size() != 2)
+        {
             continue;
+        }
         check(!unit(*c).reaction, "Reaction is spent and Sneak Attack is fresh on the enemy turn");
         for (auto *session : {c.get(), restored.get()})
+        {
             while (session->snapshot().reaction_pending)
+            {
                 act(*session, "decline");
+            }
+        }
         check(c->save() == restored->save() && unit(*c, 99).cell == Cell{4, 1},
               "Reaction Sneak damage and interrupted movement continue identically");
         reaction_verified = true;
@@ -425,7 +493,9 @@ void run()
     auto resisted = rules_module("affinity target ward resistance piercing\n");
     auto weak = d;
     for (auto &r : weak.rolls)
+    {
         r = {{1, 1, 1, 1}, 3};
+    }
     auto weak_hero = hero(weak);
     bool negative_verified = false;
     for (unsigned seed = 1; seed <= 64 && !negative_verified; ++seed)
@@ -433,7 +503,9 @@ void run()
         auto c = battle(*resisted, weak_hero, "dagger", true, seed);
         act(*c, "melee");
         if (!sneaked(*c) || kept_weapon_damage(*c) >= 0)
+        {
             continue;
+        }
         roundtrip(*resisted, *c);
         check(unit(*c, 99).hit_points ==
                   1000 - std::max(0, kept_weapon_damage(*c) + sneak_damage(*c)) / 2,
@@ -456,7 +528,9 @@ void run()
     auto id = party.add_pc(hero(d));
     party.award_experience(2700, "rogue-batch");
     for (unsigned n = 2; n <= 4; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto bytes = encode_campaign(party, nullptr, "rogue-attacks");
     CampaignParty copy(module());
     copy.restore(
@@ -493,7 +567,9 @@ void verify_ui(const char *file)
                                      *creation, *rules, assets, nullptr)
                          .party);
     for (unsigned level = 2; level <= 4; ++level)
+    {
         expected.advance(1, expected.default_advancement(1));
+    }
     CampaignParty actual(module());
     actual.restore(
         decode_campaign(read_campaign_file(file), *creation, *rules, assets, nullptr).party);

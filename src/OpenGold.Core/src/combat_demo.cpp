@@ -25,8 +25,12 @@ Battlefield arena()
 {
     Battlefield b{12, 9, std::vector<Terrain>(108)};
     for (int y = 2; y <= 6; ++y)
+    {
         if (y != 4)
+        {
             b.terrain[y * 12 + 6] = Terrain::obstacle;
+        }
+    }
     b.terrain[4 * 12 + 5] = Terrain::difficult;
     b.terrain[4 * 12 + 6] = Terrain::difficult;
     return b;
@@ -46,13 +50,17 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
     {
         auto name = por::detail::upper_ascii(file.path().filename().string());
         if (name != "CPIC2.DAX")
+        {
             continue;
+        }
         auto bytes = por::detail::read_archive_bytes<std::runtime_error>(
             file.path(), "Combat art archive exceeds limit", "Cannot read combat art",
             "Cannot read combat art");
         auto decoded = decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(record), 0);
         if (!decoded)
+        {
             throw std::runtime_error("Cannot decode the script-selected combat icon");
+        }
         return std::move(decoded.image);
     }
     return std::nullopt;
@@ -72,11 +80,13 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
         [&](std::span<Participant> side, const std::vector<std::optional<Cell>> &starts)
     {
         for (std::size_t n = 0; n < side.size(); ++n)
+        {
             if (starts[n])
             {
                 side[n].cell = *starts[n];
                 std::erase(reachable, *starts[n]);
             }
+        }
     };
     const auto fill_in =
         [&](std::span<Participant> side, const std::vector<std::optional<Cell>> &starts)
@@ -84,9 +94,13 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
         for (std::size_t n = 0; n < side.size(); ++n)
         {
             if (starts[n])
+            {
                 continue;
+            }
             if (reachable.empty())
+            {
                 throw std::runtime_error("Original battlefield cannot fit the complete encounter");
+            }
             const auto target = starts.front().value_or(centre);
             const auto nearest =
                 std::min_element(reachable.begin(), reachable.end(),
@@ -118,8 +132,12 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
     }
     std::vector<Participant> fighting;
     for (std::size_t n = 0; n < encounter.enemies.size(); ++n)
+    {
         if (enemy_starts[n])
+        {
             fighting.push_back(std::move(encounter.enemies[n]));
+        }
+    }
     encounter.enemies = std::move(fighting);
 }
 } // namespace
@@ -127,7 +145,9 @@ void place_as_original(CampaignEncounter &encounter, std::vector<Participant> &p
 CombatDemo::CombatDemo(std::unique_ptr<RulesModule> module) : module_(std::move(module))
 {
     if (!module_)
+    {
         throw std::runtime_error("A combat rules module is required");
+    }
 }
 
 CombatDemo::~CombatDemo() = default;
@@ -141,20 +161,26 @@ CombatDemo::CampaignCombat::CampaignCombat(std::shared_ptr<CampaignParty> party)
 CombatDemo::CampaignCombat::~CampaignCombat()
 {
     if (party_)
+    {
         party_->end_combat();
+    }
 }
 
 void CombatDemo::campaign_party(std::shared_ptr<CampaignParty> party)
 {
     if (combat_)
+    {
         throw std::runtime_error("Attach party before starting combat");
+    }
     campaign_ = std::move(party);
 }
 
 void CombatDemo::synchronize_party()
 {
     if (!campaign_combat_)
+    {
         return;
+    }
     const auto state = combat_->snapshot();
     campaign_->apply_combat(state);
     finish_campaign_combat(state.outcome);
@@ -163,7 +189,9 @@ void CombatDemo::synchronize_party()
 void CombatDemo::finish_campaign_combat(Outcome outcome)
 {
     if (outcome == Outcome::ongoing)
+    {
         return;
+    }
     campaign_combat_.reset();
     if (outcome == Outcome::victory && !reward_id_.empty())
     {
@@ -175,14 +203,18 @@ void CombatDemo::finish_campaign_combat(Outcome outcome)
 void CombatDemo::install_combat(std::unique_ptr<CombatSession> next, std::string reward_id)
 {
     if (!next)
+    {
         throw std::runtime_error("Rules module returned no combat session");
+    }
     if (!campaign_)
     {
         combat_ = std::move(next);
         return;
     }
     if (campaign_->identity() != module_->identity())
+    {
         throw std::runtime_error("Party and combat rules differ");
+    }
     // Failed snapshot validation releases the edit lock and leaves the previous
     // session intact. Only a successful handoff transfers the lock to this owner.
     CampaignCombat ownership(campaign_);
@@ -209,29 +241,43 @@ void CombatDemo::start_encounter(std::vector<Participant> enemies, std::string r
 void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
 {
     if (!campaign_ || combat_)
+    {
         throw std::runtime_error("A new campaign combat owner is required");
+    }
     if (campaign_->identity() != module_->identity())
+    {
         throw std::runtime_error("Invalid campaign encounter context");
+    }
     const auto &board = encounter.field.geometry;
     if (board.width < 2 || board.height < 2 || board.width > 64 || board.height > 64 ||
         board.terrain.size() != static_cast<std::size_t>(board.width * board.height) ||
         encounter.surprise > Surprise::both || encounter.distance > 2)
+    {
         throw std::runtime_error("Invalid campaign battlefield");
+    }
     // A party member the original formation has no room for, or the one
     // monster kept when none had room, stands inside one reachable component
     // of the original geometry. Never erase walls.
     std::vector<Cell> cells;
     for (int y = 0; y < board.height; ++y)
+    {
         for (int x = 0; x < board.width; ++x)
+        {
             if (board.at({x, y}) != Terrain::obstacle)
+            {
                 cells.push_back({x, y});
+            }
+        }
+    }
     const auto distance = [](Cell a, Cell b)
     {
         return std::abs(a.x - b.x) + std::abs(a.y - b.y);
     };
     const Cell origin{25, 13};
     if (cells.empty())
+    {
         throw std::runtime_error("Battlefield has no open cells");
+    }
     std::stable_sort(cells.begin(), cells.end(),
                      [&](Cell a, Cell b)
                      {
@@ -248,48 +294,72 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         frontier.pop();
         cells.push_back(p);
         for (int y = -1; y <= 1; ++y)
+        {
             for (int x = -1; x <= 1; ++x)
             {
                 const Cell next{p.x + x, p.y + y};
                 if ((!x && !y) || board.at(next) == Terrain::obstacle)
+                {
                     continue;
+                }
                 if (x && y &&
                     (board.at({p.x + x, p.y}) == Terrain::obstacle ||
                      board.at({p.x, p.y + y}) == Terrain::obstacle))
+                {
                     continue;
+                }
                 const auto index = next.y * board.width + next.x;
                 if (seen[index])
+                {
                     continue;
+                }
                 seen[index] = true;
                 frontier.push(next);
             }
+        }
     }
     auto participants = campaign_->participants();
     for (auto &participant : participants)
+    {
         participant.resting = encounter.party_resting;
+    }
     if (cells.size() < participants.size() + 1)
+    {
         throw std::runtime_error("Original battlefield cannot fit the complete encounter");
+    }
     if (!encounter.positions.empty())
     {
         if (encounter.positions.size() != participants.size() + encounter.enemies.size())
+        {
             throw std::runtime_error("Invalid authored combat formation");
+        }
         std::set<Cell> occupied;
         for (std::size_t i = 0; i < encounter.positions.size(); ++i)
         {
             const auto cell = encounter.positions[i];
             if (board.at(cell) == Terrain::obstacle || !occupied.insert(cell).second)
+            {
                 throw std::runtime_error("Invalid authored combat position");
+            }
             if (i < participants.size())
+            {
                 participants[i].cell = cell;
+            }
             else
+            {
                 encounter.enemies[i - participants.size()].cell = cell;
+            }
         }
     }
     if (encounter.positions.empty())
+    {
         place_as_original(encounter, participants, cells, origin);
+    }
     // Mutual surprise cancels out: Surprise::both marks neither side.
     for (auto &participant : participants)
+    {
         participant.surprised = encounter.surprise == Surprise::party;
+    }
     for (auto &enemy : encounter.enemies)
     {
         enemy.surprised = encounter.surprise == Surprise::monsters;
@@ -320,7 +390,9 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                                        gear = options.gear;
     const unsigned level = options.level;
     if (!rules)
+    {
         throw std::runtime_error("Combat demo requires combat rules");
+    }
     auto art = CharacterArt::load(game_directory);
     auto pool = character_pool(characters, art);
     const auto body_catalog = body_catalog_file.empty()
@@ -337,7 +409,9 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
     const std::array<unsigned, 6> weapons{36, 36, 23, 36, 8, 33};
     const std::array<Cell, 6> positions{{{5, 5}, {6, 5}, {7, 5}, {5, 6}, {6, 6}, {7, 6}}};
     if (classes.size() > positions.size())
+    {
         throw std::runtime_error("A play-test party has at most six members");
+    }
     const bool custom = !classes.empty();
     for (std::size_t i = 0; i < (custom ? classes.size() : showcase.size()); ++i)
     {
@@ -355,18 +429,27 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                          [&](const Character &candidate)
                          {
                              if (candidate.creation_data().character_class != klass)
+                             {
                                  return false;
+                             }
                              if (custom)
+                             {
                                  return seen++ == earlier % 4;
+                             }
                              return i != 0 || candidate.creation_data().race == "goliath";
                          });
         if (found == pool.end())
+        {
             throw std::runtime_error("Missing showcase hero in character pool");
+        }
         const auto id = party->add_pc(*found);
         party->add_coins(Coin::gold, 10);
         if (custom)
+        {
             outfit_pool_member(*party, id);
+        }
         else
+        {
             for (const unsigned type : {weapons[i], i < 2 ? 55u : 50u})
             {
                 Equipment item;
@@ -376,6 +459,7 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
                 party->purchase(id, item);
                 party->equip(id, party->member(id).character.inventory().items().back().id);
             }
+        }
 
         for (const auto &key : gear)
         {
@@ -394,21 +478,29 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
         {
             const auto resolved = resolve_combat_appearance(party->member(id), *body_catalog);
             if (!resolved.selection.matched)
+            {
                 missing = resolved.selection.label;
+            }
             result.encounter.art.push_back({id, resolved.icon(art, IconPose::ready),
                                             resolved.icon(art, IconPose::action), missing});
         }
         else
+        {
             result.encounter.art.push_back({id, art.icon(appearance, IconPose::ready),
                                             art.icon(appearance, IconPose::action), missing});
+        }
     }
     // Every member gains the experience for `level` and takes default choices.
     if (level > 1)
     {
         party->award_experience(level >= 4 ? 2700 : level == 3 ? 900 : 300, "playtest:level");
         for (const auto id : party->state().slots)
+        {
             while (id && party->can_advance(id))
+            {
                 party->advance(id, party->default_advancement(id));
+            }
+        }
     }
     result.encounter.positions.assign(
         positions.begin(),
@@ -422,7 +514,9 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             const unsigned icon = definition == "troll" ? 31 : definition == "ogre" ? 8 : 0;
             const auto picture = original_icon(game_directory, icon);
             if (!picture)
+            {
                 throw std::runtime_error("Missing original combat icon for " + definition);
+            }
             const auto id = static_cast<EntityId>(1000 + n);
             const Cell cell{10, 4 + static_cast<int>(n)};
             result.encounter.enemies.push_back(
@@ -438,18 +532,25 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
     const auto leader = original_icon(game_directory, 1);
     const auto leader_action = original_icon(game_directory, 129);
     if (!kobold || !leader)
+    {
         throw std::runtime_error("Missing original Kobold combat icon");
+    }
     constexpr std::array<Cell, 6> removed{{{6, 4}, {9, 4}, {9, 7}, {7, 8}, {4, 8}, {4, 5}}};
     unsigned number = 0;
     for (int y = 4; y <= 8; ++y)
+    {
         for (int x = 4; x <= 9; ++x)
         {
             if (x > 4 && x < 9 && y > 4 && y < 8)
+            {
                 continue;
+            }
             const Cell cell{x, y};
             const bool is_leader = cell == Cell{6, 4};
             if (!is_leader && std::find(removed.begin(), removed.end(), cell) != removed.end())
+            {
                 continue;
+            }
             const auto id = static_cast<EntityId>(1000 + result.encounter.enemies.size());
             result.encounter.enemies.push_back(
                 {id, is_leader ? "slums-kobold-leader" : "slums-kobold",
@@ -459,13 +560,16 @@ CombatDemoSetup make_combat_demo(std::unique_ptr<RulesModule> rules,
             result.encounter.art.push_back(
                 {id, is_leader ? *leader : *kobold, is_leader ? leader_action : kobold_action});
         }
+    }
     return result;
 }
 
 const CombatSession &CombatDemo::combat() const
 {
     if (!combat_)
+    {
         throw std::runtime_error("No active combat");
+    }
     return *combat_;
 }
 
@@ -506,25 +610,41 @@ void CombatDemo::training(std::uint64_t seed, bool conditions)
 void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t seed)
 {
     if (campaign_combat_)
+    {
         throw std::runtime_error("Finish combat before changing the party");
+    }
     const auto catalog = EclCatalog::load(directory);
     const auto program = catalog.find({"ECL2.DAX", 20});
     if (!program)
+    {
         throw std::runtime_error("Slums profile requires ECL2.DAX:20");
+    }
     auto creatures = CreatureCatalog::load(directory);
     for (auto record : {4, 13})
+    {
         if (!creatures.find({2, static_cast<std::uint8_t>(record)}))
+        {
             throw std::runtime_error("Missing Slums creature record");
+        }
+    }
     EclMachine vm(program);
     for (auto [first, last] : std::array<std::array<unsigned, 2>, 3>{
              {{0x4900, 0x4cff}, {0x6b00, 0x6eff}, {0x9700, 0x98ff}}})
+    {
         for (unsigned a = first; a <= last; ++a)
+        {
             vm.bind_variable(EclAddress(static_cast<std::uint16_t>(a)), 0);
+        }
+    }
     vm.bind_variable(ecl_cell_event, 1);
     for (std::uint8_t opcode : {11, 12, 13, 14, 28, 36})
+    {
         vm.enable_host(opcode);
+    }
     if (!vm.start(1))
+    {
         throw std::runtime_error("Cannot enter Slums event 1");
+    }
     vm_ = std::move(vm);
     creatures_ = std::move(creatures);
     combat_.reset();
@@ -542,12 +662,16 @@ void CombatDemo::slums(const std::filesystem::path &directory, std::uint64_t see
 void CombatDemo::pump()
 {
     if (!vm_ || menu_ticket_ || combat_ticket_)
+    {
         return;
+    }
     for (unsigned step = 0; step < 64; ++step)
     {
         const auto result = vm_->run(1000);
         if (result.state == EclState::faulted)
+        {
             throw std::runtime_error(result.diagnostic);
+        }
         if (result.state == EclState::completed)
         {
             status_ = "Script complete; event flag " +
@@ -556,22 +680,32 @@ void CombatDemo::pump()
             return;
         }
         if (!result.request)
+        {
             continue;
+        }
         const auto &request = *result.request;
         if (request.kind == EclRequestKind::text)
         {
             if (request.clear)
+            {
                 dialogue_.clear();
+            }
             dialogue_ += request.text;
             if (dialogue_.size() > 8192)
+            {
                 throw std::runtime_error("Slums dialogue exceeds limit");
+            }
             if (!vm_->resume(request.id))
+            {
                 throw std::runtime_error("Text acknowledgement rejected");
+            }
         }
         else if (request.kind == EclRequestKind::menu)
         {
             if (request.choices.size() != 1)
+            {
                 throw std::runtime_error("Unsupported Slums menu");
+            }
             menu_ticket_ = request.id;
             return;
         }
@@ -585,7 +719,9 @@ void CombatDemo::pump()
                 const unsigned record = first ? 13 : 4, count = first ? 1 : 3;
                 if (a.size() != 3 || a[0].number() != record || a[1].number() != count ||
                     a[2].number() != 4 || enemies_.size() > 1)
+                {
                     throw std::runtime_error("Unrecognized Slums creature/count/icon profile");
+                }
                 const auto &creature =
                     creatures_->find({2, static_cast<std::uint8_t>(record)})->get();
                 const auto icon = original_icon(game_directory_, a[2].number());
@@ -600,7 +736,9 @@ void CombatDemo::pump()
                          Side::opposition,
                          {9, 2 + static_cast<int>(enemies_.size())}});
                     if (icon)
+                    {
                         art_.push_back({id, *icon, action});
+                    }
                 }
             }
             else if (opcode == 36)
@@ -608,7 +746,9 @@ void CombatDemo::pump()
                 if (enemies_.size() != 4 || encounters_ != 0 ||
                     vm_->variable(ecl_encounter_morale) != 99 ||
                     vm_->variable(ecl_encounter_surprise) != 0)
+                {
                     throw std::runtime_error("Unsupported Slums combat context");
+                }
                 start_encounter(enemies_, "por:ECL2:20:search1:orcs:v1");
                 combat_ticket_ = request.id;
                 ++encounters_;
@@ -621,12 +761,18 @@ void CombatDemo::pump()
                 art_.clear(); // CLEAR MONSTERS resets the staged encounter.
             }
             else if (opcode != 12 && opcode != 13 && opcode != 14)
+            {
                 throw std::runtime_error("Unsupported Slums presentation service");
+            }
             if (!vm_->resume_host(request.id, {}))
+            {
                 throw std::runtime_error("Slums host acknowledgement rejected");
+            }
         }
         else
+        {
             throw std::runtime_error("Unsupported Slums input");
+        }
     }
     throw std::runtime_error("Slums script exceeded request budget");
 }
@@ -634,9 +780,13 @@ void CombatDemo::pump()
 void CombatDemo::continue_script()
 {
     if (!vm_ || !menu_ticket_)
+    {
         return;
+    }
     if (!vm_->resume(menu_ticket_, 0))
+    {
         throw std::runtime_error("Slums menu acknowledgement rejected");
+    }
     menu_ticket_ = 0;
     pump();
 }
@@ -644,14 +794,22 @@ void CombatDemo::continue_script()
 void CombatDemo::finish_combat()
 {
     if (!vm_ || !combat_ticket_ || !combat_)
+    {
         return;
+    }
     const auto state = combat_->snapshot();
     if (state.outcome == Outcome::ongoing)
+    {
         return;
+    }
     unsigned defeated = 0;
     for (const auto &unit : state.combatants)
+    {
         if (unit.side == Side::opposition && unit.hit_points == 0)
+        {
             ++defeated;
+        }
+    }
     EclHostReply reply;
     reply.writes = {
         // The original's combat results: 0 won, 128 the party fled, 129 it fell.
@@ -665,7 +823,9 @@ void CombatDemo::finish_combat()
         {EclAddress{0x6E71}, 0},
         {EclAddress{0x6E72}, 0}};
     if (!vm_->resume_host(combat_ticket_, reply))
+    {
         throw std::runtime_error("Combat outcome rejected by ECL");
+    }
     combat_ticket_ = 0;
     pump();
 }
@@ -673,7 +833,9 @@ void CombatDemo::finish_combat()
 bool CombatDemo::submit(const Command &command)
 {
     if (!combat_ || !combat_->submit(command))
+    {
         return false;
+    }
     synchronize_party();
     finish_combat();
     return true;
@@ -682,9 +844,13 @@ bool CombatDemo::submit(const Command &command)
 void CombatDemo::revisit()
 {
     if (!script_complete() || !combat_ || combat_->snapshot().outcome != Outcome::victory)
+    {
         throw std::runtime_error("Revisit requires completed victory");
+    }
     if (!vm_->start(1))
+    {
         throw std::runtime_error("Slums revisit rejected");
+    }
     dialogue_.clear();
     pump();
 }
@@ -692,15 +858,19 @@ void CombatDemo::revisit()
 std::string CombatDemo::save_combat() const
 {
     if (vm_ || campaign_)
+    {
         throw std::runtime_error(
             "Campaign checkpoints are pending; save/load currently supports training combat only");
+    }
     return combat().save();
 }
 
 void CombatDemo::restore_combat(std::string_view checkpoint)
 {
     if (vm_ || campaign_)
+    {
         throw std::runtime_error("Cannot replace a campaign combat with a training checkpoint");
+    }
     auto restored = module_->restore(checkpoint);
     combat_ = std::move(restored);
 }
@@ -708,7 +878,9 @@ void CombatDemo::restore_combat(std::string_view checkpoint)
 unsigned CombatDemo::script_variable(EclAddress address) const
 {
     if (!vm_)
+    {
         throw std::runtime_error("No active campaign script");
+    }
     return vm_->variable(address);
 }
 
@@ -759,7 +931,9 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
                      {
                          return hidden_enemy(a.id);
                      }))
+    {
         return choose_in_sight(state, offered);
+    }
     auto seen = state;
     std::erase_if(seen.combatants,
                   [&](const auto &a)
@@ -778,16 +952,24 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
                                             return a.side != active->side && a.conscious;
                                         });
     if (!enemy_left)
+    {
         for (const auto &command : open)
+        {
             if (command.verb == "search")
+            {
                 return command;
+            }
+        }
+    }
     return choose_in_sight(seen, open);
 }
 
 Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered)
 {
     if (offered.empty())
+    {
         throw std::runtime_error("No legal combat command");
+    }
     const auto &active = *std::find_if(state.combatants.begin(), state.combatants.end(),
                                        [&](const auto &a)
                                        {
@@ -796,7 +978,9 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // The module orders its pending check choices by its default AI preference.
     if (!state.initiative_choices.empty() || state.effect_targeting ||
         state.optional_effect_choice || state.ability_check_choice || state.free_movement)
+    {
         return offered.front();
+    }
     if (state.temporary_hp_offer)
     {
         const auto verb =
@@ -804,16 +988,28 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                 ? "temp_hp_keep"
                 : "temp_hp_use";
         for (const auto &command : offered)
+        {
             if (command.verb == verb)
+            {
                 return command;
+            }
+        }
     }
     for (const auto &command : offered)
+    {
         if (command.verb == "stand_up")
+        {
             return command;
+        }
+    }
     // A creature whose morale broke runs for the edge; cornered, it fights on.
     if (active.panicked && !state.reaction_pending)
+    {
         if (const auto run = run_for_edge(state, offered, active))
+        {
             return *run;
+        }
+    }
     // Rank offered destinations by a geometric route around obstacles. Straight
     // distance alone can strand both sides on opposite corners of a wall.
     // This is an AI heuristic; legal movement and its costs remain module-owned.
@@ -825,30 +1021,40 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     std::vector<int> routes(board.terrain.size(), 10000);
     std::queue<Cell> frontier;
     for (const auto &a : state.combatants)
+    {
         if (a.side != active.side && !a.dead && a.hit_points > 0)
         {
             routes[index(a.cell)] = 0;
             frontier.push(a.cell);
         }
+    }
     while (!frontier.empty())
     {
         const auto p = frontier.front();
         frontier.pop();
         for (int y = -1; y <= 1; ++y)
+        {
             for (int x = -1; x <= 1; ++x)
             {
                 const Cell next{p.x + x, p.y + y};
                 if ((!x && !y) || board.at(next) == Terrain::obstacle)
+                {
                     continue;
+                }
                 if (x && y &&
                     (board.at({p.x + x, p.y}) == Terrain::obstacle ||
                      board.at({p.x, p.y + y}) == Terrain::obstacle))
+                {
                     continue;
+                }
                 if (routes[index(next)] <= routes[index(p)] + 1)
+                {
                     continue;
+                }
                 routes[index(next)] = routes[index(p)] + 1;
                 frontier.push(next);
             }
+        }
     }
     const auto nearest = [&](Cell p)
     {
@@ -860,34 +1066,58 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     if (const auto &targeting = state.spell_targeting)
     {
         for (const auto &command : offered)
+        {
             if (command.verb == (targeting->chosen.empty() ? "spell_cancel" : "spell_cast"))
+            {
                 return command;
+            }
+        }
         const Command *aim = nullptr;
         for (const auto &command : offered)
+        {
             if (command.verb == targeting->verb &&
                 (!aim || command.target == targeting->chosen.back()))
+            {
                 aim = &command;
+            }
+        }
         if (aim)
+        {
             return *aim;
+        }
     }
     // Paladin's Smite costs no slot, so a Paladin uses it on the first hit it can;
     // slots stay for healing.
     for (const auto &command : offered)
+    {
         if (command.verb == "divine_smite_free")
+        {
             return command;
+        }
+    }
     // Favored Enemy's Hunter's Mark and moving it cost no slot, and Horde
     // Breaker's attack, Superior Hunter's Prey and Divine Strike cost nothing,
     // so they come first.
     for (const auto verb :
          {"hunters_mark_move", "hunters_mark_free", "horde_breaker", "superior_hunters_prey",
           "divine_strike_radiant", "spiritual_weapon_strike"})
+    {
         for (const auto &command : offered)
+        {
             if (command.verb == verb)
+            {
                 return command;
+            }
+        }
+    }
     // A Barbarian rages before it fights; its attacks keep the Rage going.
     for (const auto &command : offered)
+    {
         if (command.verb == "rage")
+        {
             return command;
+        }
+    }
     // Sacred Weapon lasts the fight, so it is taken before the first melee attack.
     const bool can_strike = std::any_of(offered.begin(), offered.end(),
                                         [](const auto &command)
@@ -895,25 +1125,38 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                             return command.verb == "melee";
                                         });
     for (const auto &command : offered)
+    {
         if (can_strike && command.verb == "sacred_weapon")
+        {
             return command;
+        }
+    }
     // A creature caught by vines spends its Action trying to break free.
     for (const auto &command : offered)
+    {
         if (command.verb == "escape")
+        {
             return command;
+        }
+    }
     for (const auto &command : offered)
+    {
         if (command.verb == "opportunity" || command.verb == "shield" ||
             command.verb == "deflect" || command.verb == "redirect" || command.verb == "rebuke" ||
             command.verb == "giant_boon" || command.verb == "stones_endurance" ||
             command.verb == "storms_thunder" ||
             (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))
+        {
             return command;
+        }
+    }
     // An ally below half Hit Points is healed, by Lay On Hands first because it
     // costs no spell slot. Borrowed view into local offered commands.
     const auto heal_below_half =
         [&](std::initializer_list<std::string_view> verbs) -> const Command *
     {
         for (const auto &command : offered)
+        {
             if (std::find(verbs.begin(), verbs.end(), command.verb) != verbs.end())
             {
                 const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -922,22 +1165,33 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                        return a.id == command.target;
                                                    });
                 if (target.side == active.side && target.hit_points * 2 < target.max_hit_points)
+                {
                     return &command;
+                }
             }
+        }
         return nullptr;
     };
     // Lay On Hands and Divine Spark cost no spell slot.
     if (const auto *command = heal_below_half({"lay_on_hands", "divine_spark"}))
+    {
         return *command;
+    }
     // Preserve Life is offered only beside a Bloodied ally, and Lesser
     // Restoration only on a Blinded one.
     for (const auto &command : offered)
+    {
         if (command.verb == "turn_undead" || command.verb == "preserve_life" ||
             command.verb.starts_with("lesser_restoration_") || command.verb == "spare_the_dying")
+        {
             return command;
+        }
+    }
     if (const auto *command =
             heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word", "healing_word_2"}))
+    {
         return *command;
+    }
     // A dying ally who is not healed is stabilized when no enemy is within reach.
     const bool threatened =
         std::any_of(state.combatants.begin(), state.combatants.end(),
@@ -948,6 +1202,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                         return a.side != active.side && a.conscious && std::max(dx, dy) <= 1;
                     });
     for (const auto &command : offered)
+    {
         if (!threatened && command.verb == "stabilize")
         {
             const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -956,16 +1211,27 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                    return a.id == command.target;
                                                });
             if (target.side == active.side)
+            {
                 return command;
+            }
         }
+    }
     for (const auto &command : offered)
+    {
         if (command.verb == "shake_awake")
+        {
             return command;
+        }
+    }
     const auto offers = [&](std::string_view verb) -> const Command *
     {
         for (const auto &command : offered)
+        {
             if (command.verb == verb)
+            {
                 return &command;
+            }
+        }
         return nullptr;
     };
     const auto shows = [](const CombatantView &unit, std::string_view condition)
@@ -1004,20 +1270,32 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         if (state.area_targeting->verb == "moonbeam" || state.area_targeting->verb == "lands_aid")
         {
             for (const auto &a : state.combatants)
+            {
                 if (a.side != active.side && a.conscious && clear_of_allies(a.cell) &&
                     std::max(std::abs(a.cell.x - active.cell.x),
                              std::abs(a.cell.y - active.cell.y)) <= 24)
                 {
                     if (a.cell == state.area_targeting->center)
+                    {
                         if (const auto *cast = offers("area_cast"))
+                        {
                             return *cast;
+                        }
+                    }
                     for (const auto &command : offered)
+                    {
                         if (command.verb == "area_move" && command.destination == a.cell)
+                        {
                             return command;
+                        }
+                    }
                 }
+            }
         }
         if (const auto *cancel = offers("spell_cancel"))
+        {
             return *cancel;
+        }
     }
     // Moonbeam reaches 120 feet: 24 squares, each 5 feet in any direction. A
     // target within it is always aimable, so aiming never starts over.
@@ -1040,30 +1318,56 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     for (const auto buff :
          {Buff{"innate_sorcery", "Innate Sorcery"}, Buff{"produce_flame", "Produce Flame"},
           Buff{"shillelagh", "Shillelagh"}})
+    {
         if (const auto *command = offers(buff.verb);
             command && !shows(active, buff.condition) &&
             (std::string_view(buff.verb) != "innate_sorcery" || offers("eldritch_blast") ||
              offers("sorcerous_burst_fire")))
+        {
             return *command;
+        }
+    }
     if (!concentrating)
+    {
         for (const auto verb : {"hex", "spiritual_weapon"})
+        {
             if (const auto *command = offers(verb))
+            {
                 return *command;
+            }
+        }
+    }
     for (const auto &command : offered)
+    {
         if (command.verb == "bardic_inspiration" && command.target != active.id &&
             !shows(unit(command.target), "Inspired"))
+        {
             return command;
+        }
+    }
     // A Druid holds Moonbeam on the enemies, then fights as a Wolf; a Wolf
     // whose Moonbeam has ended leaves the form to cast it again.
     if (!active.form.empty() && !concentrating)
+    {
         if (const auto *command = offers("leave_wild_shape"))
+        {
             return *command;
+        }
+    }
     if (!concentrating && moonbeam_target)
+    {
         if (const auto *command = offers("moonbeam"))
+        {
             return *command;
+        }
+    }
     if (active.form.empty() && concentrating)
+    {
         if (const auto *command = offers("wild_shape_wolf"))
+        {
             return *command;
+        }
+    }
     if (const auto *command = offers("move_moonbeam"); command && moonbeam_target)
     {
         const auto &beamed = state.moonbeams;
@@ -1075,12 +1379,19 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                    std::find(beamed.begin(), beamed.end(), a.cell) != beamed.end();
                         });
         if (!burning)
+        {
             for (const auto &move : offered)
+            {
                 if (move.verb == "move_moonbeam" && unit(move.target).side != active.side &&
                     clear_of_allies(unit(move.target).cell))
+                {
                     return move;
+                }
+            }
+        }
     }
     for (const auto &command : offered)
+    {
         if (command.verb == "blindness" || command.verb == "hold_person" ||
             command.verb == "hideous_laughter" || command.verb == "ray_of_enfeeblement")
         {
@@ -1090,15 +1401,20 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                  return a.id == command.target;
                                              });
             if (target->conditions.empty())
+            {
                 return command;
+            }
         }
+    }
     // A downed enemy is still offered only when it may rise again (a troll's
     // Regeneration): only Acid or Fire stops it, so finish it with one of those,
     // a spell or a Torch before a thrown flask that is used up.
     for (const auto verb :
          {"fire_bolt", "sorcerous_burst_fire", "scorching_ray", "acid_arrow", "hurl_flame",
           "flame_blade_strike", "torch", "throw_alchemists_fire", "throw_acid"})
+    {
         for (const auto &command : offered)
+        {
             if (command.verb == verb)
             {
                 const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -1107,8 +1423,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                        return a.id == command.target;
                                                    });
                 if (target.side != active.side && target.hit_points == 0)
+                {
                     return command;
+                }
             }
+        }
+    }
     // A standing regenerating enemy is set Burning with Alchemist's Fire: the fire
     // at the start of each of its turns keeps it from regenerating. Oil goes on
     // first when anyone on the side can follow with Alchemist's Fire for 5 more
@@ -1134,34 +1454,48 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                });
         });
     for (const auto &command : offered)
+    {
         if (command.verb == "throw_oil" && alchemists_fire_follows)
         {
             const auto &target = target_of(command);
             if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
                 !target.oiled && !target.burning)
+            {
                 return command;
+            }
         }
+    }
     for (const auto &command : offered)
+    {
         if (command.verb == "throw_alchemists_fire")
         {
             const auto &target = target_of(command);
             if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
                 !target.burning)
+            {
                 return command;
+            }
         }
+    }
     // Fire stops the regeneration that would undo more than a spell's or a
     // weapon's damage, unless something already stopped it this round: a Fire
     // spell from afar, or a Torch in melee.
     for (const auto verb : {"scorching_ray", "fire_bolt", "sorcerous_burst_fire", "hurl_flame",
                             "flame_blade_strike", "torch"})
+    {
         for (const auto &command : offered)
+        {
             if (command.verb == verb)
             {
                 const auto &target = target_of(command);
                 if (target.side != active.side && target.regenerates && target.hit_points > 0 &&
                     !target.burning && !target.regeneration_stopped)
+                {
                     return command;
+                }
             }
+        }
+    }
     for (const auto verb : {"magic_missile",
                             "magic_missile_2",
                             "scorching_ray",
@@ -1189,6 +1523,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         const Command *best = nullptr;
         int hp = 100000; // Borrowed view into local offered commands.
         for (const auto &command : offered)
+        {
             if (command.verb == verb)
             {
                 const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -1204,21 +1539,36 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                     hp = target.hit_points;
                 }
             }
+        }
         if (best)
+        {
             return *best;
+        }
     }
     // With the Action spent, a Bonus Action may still strike: Flurry of Blows,
     // a Martial Arts strike, Hex or Heat Metal again.
     if (!active.action)
+    {
         for (const auto verb : {"flurry_of_blows", "martial_arts", "hex_move", "heat_metal_again"})
+        {
             if (const auto *command = offers(verb))
+            {
                 return *command;
+            }
+        }
+    }
     // With no action left, approaching for another attack cannot help this
     // turn. The bonus-action recovery choices above still get their chance.
     if (!active.action)
+    {
         for (const auto &command : offered)
+        {
             if (command.verb == "end")
+            {
                 return command;
+            }
+        }
+    }
     // The nearest square with a clear line to an enemy, when none is in view here.
     const auto sees_enemy = [&](Cell from)
     {
@@ -1232,10 +1582,13 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     const auto step_into_view = [&]() -> const Command *
     {
         if (sees_enemy(active.cell))
+        {
             return nullptr;
+        }
         const Command *step = nullptr;
         int shortest = 1000;
         for (const auto &command : offered)
+        {
             if (command.verb == "move" && sees_enemy(command.destination))
             {
                 const int steps = std::max(std::abs(command.destination.x - active.cell.x),
@@ -1246,12 +1599,17 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                     shortest = steps;
                 }
             }
+        }
         return step;
     };
     // With nothing to attack yet, Aggressive covers more ground toward the enemy.
     for (const auto &command : offered)
+    {
         if (command.verb == "aggressive")
+        {
             return command;
+        }
+    }
     // A character with a ranged attack cantrip that sees no enemy steps into
     // view to cast from there rather than walking up to the enemy.
     const auto &cantrips = active.known_cantrips;
@@ -1265,23 +1623,32 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                id == "produce_flame" || id == "sorcerous_burst";
                     });
     if (casts_from_afar)
+    {
         if (const auto *step = step_into_view())
+        {
             return *step;
+        }
+    }
     const Command *move = nullptr;
     int closest = nearest(active.cell);
     for (const auto &command : offered)
+    {
         if (command.verb == "move" && nearest(command.destination) < closest)
         {
             move = &command;
             closest = nearest(command.destination);
         }
+    }
     if (move)
+    {
         return *move;
+    }
     // Unable to get any closer, a character draws a carried bow or crossbow and
     // shoots the weakest enemy in range.
     const Command *shot = nullptr;
     int weakest = 100000;
     for (const auto &command : offered)
+    {
         if (command.verb == "shoot")
         {
             const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -1295,20 +1662,33 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                 weakest = target.hit_points;
             }
         }
+    }
     if (shot)
+    {
         return *shot;
+    }
     // Seeing no enemy from here (behind a wall corner, say), a character steps to
     // the nearest square with a clear line to one, to shoot or cast from there.
     if (const auto *step = step_into_view())
+    {
         return *step;
+    }
     // Stuck with no enemy it can strike in melee (and so none that can strike
     // it), a shield-bearer carrying a bow takes its shield off to shoot.
     if (!can_strike)
+    {
         if (const auto *command = offers("doff_shield"))
+        {
             return *command;
+        }
+    }
     for (const auto &command : offered)
+    {
         if (command.verb == "end")
+        {
             return command;
+        }
+    }
     return offered.front();
 }
 } // namespace
@@ -1327,12 +1707,18 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
     const auto offer = [&](std::string_view verb) -> const Command *
     {
         for (const auto &command : offered)
+        {
             if (command.verb == verb && command.actor == active.id)
+            {
                 return &command;
+            }
+        }
         return nullptr;
     };
     if (const auto *flee = offer("flee"))
+    {
         return *flee;
+    }
     const auto &board = state.battlefield;
     const auto cells = static_cast<std::size_t>(board.width * board.height);
     const auto index = [&](Cell p)
@@ -1345,17 +1731,21 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
         std::vector<int> steps(cells, -1);
         std::queue<Cell> frontier;
         for (const auto source : sources)
+        {
             if (board.contains(source) && steps[index(source)] < 0)
             {
                 steps[index(source)] = 0;
                 frontier.push(source);
             }
+        }
         while (!frontier.empty())
         {
             const auto p = frontier.front();
             frontier.pop();
             for (int dy = -1; dy <= 1; ++dy)
+            {
                 for (int dx = -1; dx <= 1; ++dx)
+                {
                     if (const Cell next{p.x + dx, p.y + dy}; board.contains(next) &&
                                                              board.at(next) != Terrain::obstacle &&
                                                              steps[index(next)] < 0)
@@ -1363,29 +1753,47 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
                         steps[index(next)] = steps[index(p)] + 1;
                         frontier.push(next);
                     }
+                }
+            }
         }
         return steps;
     };
     std::vector<Cell> edges;
     for (int y = 0; y < board.height; ++y)
+    {
         for (int x = 0; x < board.width; ++x)
+        {
             if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
                 board.at({x, y}) != Terrain::obstacle)
+            {
                 edges.push_back({x, y});
+            }
+        }
+    }
     if (active.side != Side::party)
     {
         std::vector<Cell> opponents;
         for (const auto &other : state.combatants)
+        {
             if (other.side != active.side && other.hit_points > 0 && !other.dead && !other.fled)
+            {
                 opponents.push_back(other.cell);
+            }
+        }
         const auto mine = distances({active.cell}), theirs = distances(opponents);
         std::vector<Cell> away;
         for (const auto edge : edges)
+        {
             if (mine[index(edge)] >= 0 &&
                 (theirs[index(edge)] < 0 || theirs[index(edge)] > mine[index(edge)]))
+            {
                 away.push_back(edge);
+            }
+        }
         if (!away.empty())
+        {
             edges = std::move(away);
+        }
     }
     const auto to_edge = distances(edges);
     const auto steps_to_edge = [&](Cell p)
@@ -1396,18 +1804,26 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
     const Command *move = nullptr;
     int closest = steps_to_edge(active.cell);
     for (const auto &command : offered)
+    {
         if (command.verb == "move" && command.actor == active.id &&
             steps_to_edge(command.destination) < closest)
         {
             move = &command;
             closest = steps_to_edge(command.destination);
         }
+    }
     if (move)
+    {
         return *move;
+    }
     // Out of movement short of the edge: Dash for more.
     if (steps_to_edge(active.cell) > 0 && steps_to_edge(active.cell) < 1 << 20)
+    {
         if (const auto *dash = offer("dash"))
+        {
             return *dash;
+        }
+    }
     return std::nullopt;
 }
 } // namespace
@@ -1420,8 +1836,12 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
 {
     std::vector<std::string> spells;
     for (const auto &a : state.combatants)
+    {
         if (a.id == state.actor)
+        {
             spells = a.spells;
+        }
+    }
     std::erase_if(commands,
                   [&](const auto &command)
                   {
@@ -1439,7 +1859,9 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
 Command choose_quick_command(const CombatSession &session, bool magic)
 {
     if (magic)
+    {
         return choose_demo_command(session);
+    }
     const auto state = session.snapshot();
     return choose_from(state, without_spells(state, session.legal_commands()));
 }
@@ -1461,9 +1883,13 @@ Command choose_flee_command(const CombatSession &session)
     // Reactions, choices and those who cannot flee are left to the demo AI.
     if (active == state.combatants.end() || active->side != Side::party || !active->can_flee ||
         state.reaction_pending || end == offered.end())
+    {
         return choose_demo_command(session);
+    }
     if (const auto run = run_for_edge(state, offered, *active))
+    {
         return *run;
+    }
     return *end;
 }
 } // namespace opengold

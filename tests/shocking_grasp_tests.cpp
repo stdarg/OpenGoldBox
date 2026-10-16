@@ -48,20 +48,28 @@ Character hero(unsigned level = 1, std::string spell = "shocking_grasp")
     d.name = "Frost Wizard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::vector<std::string>{spell};
     Character h(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), state), "Ordinary advancement");
+    }
     return h;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return v;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -73,16 +81,24 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -90,7 +106,9 @@ fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
     if (at == state.resources.npos)
+    {
         return {};
+    }
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
@@ -100,7 +118,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (int n = 0; n < 3; ++n)
+    {
         std::getline(in, row);
+    }
     std::uint64_t result;
     in >> result;
     return result;
@@ -119,7 +139,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                             {2, "target", "Target", Side::opposition, target}}},
                           seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -147,8 +169,12 @@ void access()
     check(!has(*c, "shocking_grasp"), "Unknown spell unavailable");
     auto wrong = h.sheet();
     for (auto &g : wrong.grants)
+    {
         if (g.id == "spell:shocking_grasp")
+        {
             g.source_id = "species:elf";
+        }
+    }
     rejects(
         [&]
         {
@@ -159,7 +185,9 @@ void access()
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (unsigned seed : {0u, 13u, 40u})
+        {
             for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
             {
                 auto rules = custom(
@@ -175,8 +203,11 @@ void damage()
                 // 40 natural 1.
                 bool logged = false;
                 for (const auto &message : c->snapshot().log_messages())
+                {
                     if (message.source.starts_with("{actor} -> {target}: d20"))
+                    {
                         for (const auto &arg : message.arguments)
+                        {
                             if (arg.name == "bonus")
                             {
                                 logged = true;
@@ -184,6 +215,9 @@ void damage()
                                     arg.value == std::to_string(level == 4 ? 6 : 5),
                                     "Wizard Intelligence plus proficiency, not Strength/Charisma");
                             }
+                        }
+                    }
+                }
                 check(logged, "Attack bonus recorded");
                 // From level three a Wizard is an Evoker: Potent Cantrip deals half
                 // damage on a miss, covered by opengold_wizard_spell_tests.
@@ -208,10 +242,12 @@ void damage()
                 check(unit(*c, 2).reaction && unit(*c, 2).movement_feet == 30,
                       "Target Reaction and movement preserved");
                 if (seed != 40)
+                {
                     check(status.active.size() == 1 && status.active[0].source_actor == 1 &&
                               status.active[0].remaining_ms == 3000 &&
                               status.active[0].save_in_ms == 0,
                           "Effect lasts until target turn, not caster turn");
+                }
                 const auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
                           after.movement_feet == before.movement_feet &&
@@ -220,6 +256,8 @@ void damage()
                 auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Stale action is atomic");
             }
+        }
+    }
 }
 
 void timing()
@@ -255,15 +293,21 @@ void movement()
                              {3, "target", "Other", Side::opposition, {1, 2}}}},
                            13);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     act(*c, "shocking_grasp", 2);
     check(fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
           "Actual hit applies suppression");
     auto find_move = [&](const CombatSession &s)
     {
         for (const auto &v : s.legal_commands())
+        {
             if (v.verb == "move" && v.destination == Cell{0, 0})
+            {
                 return v;
+            }
+        }
         throw std::runtime_error("Missing movement");
     };
     check(c->submit(find_move(*c)), "Move after cast");
@@ -278,7 +322,9 @@ void movement()
     check(fx::opportunity_blocked(effects(unit(*c, 2).persistent)),
           "Movement interruption does not advance the effect clock");
     while (c->snapshot().actor != 2)
+    {
         act(*c, "end");
+    }
     check(!fx::opportunity_blocked(effects(unit(*c, 2).persistent)) && unit(*c, 2).reaction,
           "Target turn restores ordinary opportunity eligibility");
 }
@@ -293,8 +339,12 @@ void reaction_and_armor()
         auto move = [&](Cell to)
         {
             for (const auto &v : c->legal_commands())
+            {
                 if (v.verb == "move" && v.destination == to)
+                {
                     return v;
+                }
+            }
             throw std::runtime_error("Missing test move");
         };
         check(c->submit(move({0, 1})), "Move out of reach");
@@ -305,7 +355,9 @@ void reaction_and_armor()
         act(*c, "shocking_grasp", 2);
         check(!unit(*c, 2).reaction, "A hit or miss never refunds a spent Reaction");
         if (!fx::opportunity_blocked(effects(unit(*c, 2).persistent)))
+        {
             continue;
+        }
         covered = true;
         auto copy = rules->restore(c->save());
         act(*c, "end");
@@ -321,7 +373,9 @@ void reaction_and_armor()
     Character fighter(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < 4; ++n)
+    {
         check(fighter.advance(*rules, state), "Ordinary armored Fighter advancement");
+    }
     auto c = rules->create(
         {{8, 8, std::vector<Terrain>(64)},
          {{1,
@@ -338,7 +392,9 @@ void reaction_and_armor()
            rules->character_profile(fighter.sheet(), std::vector<std::string>{"plate"}).data}}},
         89);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     const auto random = rng(*c);
     const int hp = unit(*c, 2).hit_points;
     act(*c, "shocking_grasp", 2);
@@ -371,12 +427,14 @@ void lifecycle()
          {"FX3 2 1 1 3 5 1 \"Caster\" 0 6000 0", "FX8 2 1 1 3 5 1 \"Caster\" 1 6000 0 0",
           "FX8 2 1 1 3 5 1 \"Caster\" 0 6001 0 0", "FX8 2 1 1 3 5 1 \"Caster\" 0 6000 1 0",
           "FX8 1 0"})
+    {
         rejects(
             [&]
             {
                 std::istringstream in(bad);
                 (void)fx::read_effects(in);
             });
+    }
 }
 
 void legality()
@@ -397,8 +455,10 @@ void legality()
     // Full hands block nothing (CLASS-11); untrained armor does.
     for (const auto &gear :
          std::vector<std::vector<std::string>>{{"quarterstaff", "shield"}, {"wand", "shield"}})
+    {
         check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "shocking_grasp"),
               "Full hands do not block casting");
+    }
     {
         auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
         auto before = c->save();
@@ -410,8 +470,10 @@ void legality()
     auto c = battle(*rules, hero());
     auto before = c->save();
     for (EntityId id : {0u, 999u})
+    {
         check(!c->submit({c->snapshot().revision, 1, id, "shocking_grasp"}) && c->save() == before,
               "Unknown target atomic");
+    }
 }
 
 void persistence_guards()
@@ -446,7 +508,9 @@ void persistence_guards()
           {3, "target", "Enemy", Side::opposition, {6, 1}}}},
         13);
     while (dead->snapshot().actor != 1)
+    {
         act(*dead, "end");
+    }
     auto before = dead->save();
     check(!has(*dead, "shocking_grasp", 2) &&
               !dead->submit({dead->snapshot().revision, 1, 2, "shocking_grasp"}) &&
@@ -458,6 +522,7 @@ void campaign()
 {
     auto rules = module();
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (bool npc : {false, true})
         {
             CampaignParty party(module());
@@ -468,7 +533,9 @@ void campaign()
             actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 1}});
             auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
             while (c->snapshot().actor != id)
+            {
                 act(*c, "end");
+            }
             act(*c, "shocking_grasp", id);
             party.begin_combat();
             party.apply_combat(c->snapshot());
@@ -494,7 +561,9 @@ void campaign()
             {
                 check(bool(restored.rest(kind)), "Rest accepted");
                 if (restored.state().short_rest)
+                {
                     restored.finish_short_rest(restored.state().short_rest->ticket);
+                }
                 check(!fx::opportunity_blocked(effects(restored.member(id).vitals)),
                       "Rest expires suppression");
                 const auto camp = encode_campaign(restored, nullptr, "shocking");
@@ -506,6 +575,7 @@ void campaign()
                       "Rest-save reload retains grants and state");
             }
         }
+    }
 }
 
 void fixtures()
@@ -521,7 +591,9 @@ void fixtures()
                              {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
                            2);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     std::ofstream(path / "known.save", std::ios::binary) << c->save();
     act(*c, "shocking_grasp", 2);
     std::ofstream(path / "suppressed.save", std::ios::binary) << c->save();

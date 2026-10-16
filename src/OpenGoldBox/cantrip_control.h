@@ -23,6 +23,7 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
     required_node<Label>(*rows, "Count").set_visible(group.count > 0);
     required_node<Label>(*rows, "Pending").set_visible(picked.size() < group.count);
     for (int i = 0; i < rows->get_child_count(); ++i)
+    {
         if (auto *check = Object::cast_to<CheckBox>(rows->get_child(i)))
         {
             const auto id = check->get_name();
@@ -31,8 +32,11 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
                              {
                                  return training_string(option.id) == id;
                              }))
+            {
                 check->hide();
+            }
         }
+    }
     for (const auto &option : group.options)
     {
         const auto name = training_string(option.id);

@@ -25,11 +25,15 @@ constexpr std::array<int, 4> dx{0, 1, 0, -1}, dy{-1, 0, 1, 0};
 Edge side(const GeoMap &map, int x, int y, unsigned direction, unsigned party_y)
 {
     if (x < 0 || x >= 16 || y < 0 || y >= 16)
+    {
         return y == static_cast<int>(party_y) && (direction == 1 || direction == 3) ? Edge::open
                                                                                     : Edge::wall;
+    }
     const auto &cell = map.at(x, y);
     if (!cell.walls[direction])
+    {
         return Edge::open;
+    }
     return cell.doors[direction] ? Edge::doorway : Edge::wall;
 }
 
@@ -50,8 +54,12 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
         tiles[y * 7 + x] = tile;
     };
     for (int y = 0; y < 5; ++y)
+    {
         for (int x = (y < 2 ? 1 : 0); x < (y < 2 ? 7 : 6); ++x)
+        {
             put(x, y, 23);
+        }
+    }
     if (west == Edge::wall)
     {
         put(1, 0, 1);
@@ -85,7 +93,9 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
                 put(x, 1, 11);
             }
             if (west == Edge::wall)
+            {
                 put(2, 1, 7);
+            }
         }
         else
         {
@@ -122,7 +132,9 @@ std::array<std::uint8_t, 35> cell_tiles(Edge west, Edge north, Edge east, Edge u
         put(6, 0, upper_east == Edge::wall ? 4 : 2);
         put(6, 1, east != Edge::open ? 5 : right_north != Edge::open ? 13 : 9);
         if (east == Edge::open && right_north != Edge::open)
+        {
             put(6, 0, upper_east == Edge::wall ? 12 : 25);
+        }
     }
     return tiles;
 }
@@ -149,16 +161,21 @@ bool blocked(unsigned tile)
 DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y)
 {
     if (x >= 16 || y >= 16)
+    {
         throw std::out_of_range("Dungeon battlefield requires a valid exploration position");
+    }
     DungeonBattlefield result{{50, 25, std::vector<rules::Terrain>(1250), std::vector<bool>(1250)},
                               std::vector<std::uint8_t>(1250, 22)};
     for (int row = -2; row <= 2; ++row)
+    {
         for (int column = -6; column <= 6; ++column)
         {
             const int gx = static_cast<int>(x) + column, gy = static_cast<int>(y) + row;
             for (unsigned direction = 0; direction < 4; ++direction)
+            {
                 result.walled[row + 2][column + 6][direction] =
                     edge(map, gx, gy, direction, y) == Edge::wall;
+            }
             // A square open to the sky has ordinary plants (Plant Growth); the
             // original marks a roofed square with its event byte's high bit.
             const bool sky =
@@ -169,21 +186,28 @@ DungeonBattlefield dungeon_battlefield(const GeoMap &map, unsigned x, unsigned y
                                           edge(map, gx - 1, gy, 0, y), edge(map, gx, gy - 1, 1, y),
                                           edge(map, gx + 1, gy, 0, y));
             for (int sy = 0; sy < 5; ++sy)
+            {
                 for (int sx = 0; sx < 7; ++sx)
                 {
                     const auto tile = stamp[sy * 7 + sx];
                     if (!tile)
+                    {
                         continue;
+                    }
                     const rules::Cell cell{21 + 6 * column + 5 * row + sx, 10 + 5 * row + sy};
                     if (!result.geometry.contains(cell))
+                    {
                         continue;
+                    }
                     const auto index = cell.y * 50 + cell.x;
                     result.tiles[index] = tile - 1;
                     result.geometry.plants[index] = sky;
                     result.geometry.terrain[index] =
                         blocked(tile) ? rules::Terrain::obstacle : rules::Terrain::open;
                 }
+            }
         }
+    }
     return result;
 }
 } // namespace opengold::por

@@ -44,7 +44,9 @@ double integral(double x, double period)
 std::vector<std::int16_t> render_speaker_audio(const SoundEffect &effect)
 {
     if (!effect.tick_divisor || effect.ticks.size() > 4096)
+    {
         throw std::runtime_error("Invalid PC speaker timing");
+    }
     const double duration = effect.ticks.size() * static_cast<double>(effect.tick_divisor);
     const auto count =
         static_cast<std::size_t>(std::ceil(duration * speaker_sample_rate / pit_clock));
@@ -60,13 +62,17 @@ std::vector<std::int16_t> render_speaker_audio(const SoundEffect &effect)
         {
             const auto tick = static_cast<std::size_t>(time / effect.tick_divisor);
             if (tick >= effect.ticks.size())
+            {
                 break;
+            }
             const auto until = std::min(end, (tick + 1) * static_cast<double>(effect.tick_divisor));
             const auto &sound = effect.ticks[tick];
             const double period = sound.divisor ? sound.divisor : 65536;
             phase = std::fmod(phase, period);
             if (sound.enabled)
+            {
                 area += integral(phase + until - time, period) - integral(phase, period);
+            }
             phase = std::fmod(phase + until - time, period);
             time = until;
         }

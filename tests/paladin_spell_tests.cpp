@@ -21,7 +21,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -53,7 +55,9 @@ Character paladin(std::vector<std::string> prepared)
     d.name = "Paladin";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
     return Character(*srd5::character_rules(), d, {});
 }
@@ -61,8 +65,12 @@ Character paladin(std::vector<std::string> prepared)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -70,8 +78,12 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     const auto offered = c.legal_commands();
     for (const auto &command : offered)
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -98,7 +110,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {99, std::move(enemy), "Enemy", Side::opposition, {2, 1}}}},
                            5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     check(c->snapshot().actor == 1, "The Paladin acts");
     return c;
 }
@@ -117,7 +131,9 @@ void shield_of_faith_checks()
     check(!submit(*c, "heroism", 2), "One spell slot per turn");
     check(submit(*c, "end"), "End the Paladin's turn");
     while (c->snapshot().actor != 1)
+    {
         check(submit(*c, "end"), "Back to the Paladin");
+    }
     check(submit(*c, "heroism", 2), "Heroism replaces the held Concentration");
     check(unit(*c, 2).armor_class == ally_ac && logged(*c, "Paladin loses Concentration."),
           "Starting Heroism ends Shield of Faith");
@@ -130,7 +146,9 @@ void heroism_checks()
     auto c = battle(*module, hero);
     check(submit(*c, "heroism", 2), "Heroism touches the ally");
     while (c->snapshot().actor != 2)
+    {
         check(submit(*c, "end"), "Reach the ally's turn");
+    }
     const int charisma = hero.sheet().modifiers[Ability::charisma];
     check(unit(*c, 2).temporary_hp.amount == std::max(0, charisma),
           "Heroism grants Temporary HP equal to the caster's spellcasting modifier");
@@ -153,7 +171,9 @@ void concentration_damage_checks()
     const int shielded = unit(*c, 1).armor_class;
     // The enemy, +20 to hit, strikes the Paladin on its turn.
     while (c->snapshot().actor != 99)
+    {
         check(submit(*c, "end"), "Reach the enemy");
+    }
     const int hp = unit(*c, 1).hit_points;
     check(submit(*c, "melee", 1), "The enemy attacks the Paladin");
     check(unit(*c, 1).hit_points < hp, "The Paladin is hit");
@@ -173,7 +193,9 @@ bool warded_attack_disadvantaged(std::string enemy)
           "Protection from Evil and Good on the Paladin");
     check(!unit(*c, 1).action, "Protection from Evil and Good takes the Action");
     while (c->snapshot().actor != 99)
+    {
         check(submit(*c, "end"), "Reach the enemy");
+    }
     check(submit(*c, "melee", 1), "The enemy attacks the Paladin");
     return logged(*c, "(disadvantage)");
 }
@@ -190,9 +212,13 @@ int logged_bonus(const CombatSession &c)
 {
     const auto log = c.snapshot().log();
     for (auto line = log.rbegin(); line != log.rend(); ++line)
+    {
         if (const auto at = line->find(" + ");
             at != std::string::npos && line->find(" vs AC ") != std::string::npos)
+        {
             return std::stoi(line->substr(at + 3));
+        }
+    }
     throw std::runtime_error("No attack in the log");
 }
 
@@ -207,9 +233,11 @@ void bless_checks()
               unit(*c, 1).action,
           "Choosing a creature starts the choice and spends nothing");
     for (const auto &command : c->legal_commands())
+    {
         check(command.verb == "bless" || command.verb == "spell_cast" ||
                   command.verb == "spell_cancel",
               "Only the choice is open while choosing");
+    }
     const auto choosing = c->save();
     check(module->restore(choosing)->save() == choosing, "The open choice survives a checkpoint");
     check(submit(*c, "bless", 2) && c->snapshot().spell_targeting->chosen.empty(),
@@ -233,7 +261,9 @@ void bless_checks()
     const int base = logged_bonus(*plain);
     check(submit(*early, "end"), "End the casting turn");
     while (early->snapshot().actor != 1)
+    {
         check(submit(*early, "end"), "Back to the Paladin");
+    }
     check(submit(*early, "melee", 99), "A blessed attack");
     const int blessed = logged_bonus(*early);
     check(blessed >= base + 1 && blessed <= base + 4, "Bless adds 1d4 to attack rolls");
@@ -255,7 +285,9 @@ void write_ui_fixture()
                               {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
                             2);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "bless-fixtures";
     std::filesystem::create_directories(path);
     std::ofstream out(path / "paladin.save", std::ios::binary);

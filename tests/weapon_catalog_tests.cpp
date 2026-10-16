@@ -33,7 +33,9 @@ auto module(bool target = false)
     auto content =
         read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules");
     if (target)
+    {
         content += "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
+    }
     return srd5::parse_content(content);
 }
 
@@ -59,7 +61,9 @@ std::vector<Expected> expectations()
     while (std::getline(in, row))
     {
         if (row.empty() || row[0] == '#')
+        {
             continue;
+        }
         std::istringstream fields(row);
         Expected e;
         fields >> e.key >> e.martial >> e.ranged >> e.damage >> e.type >> e.properties >> e.range >>
@@ -81,7 +85,9 @@ Character hero(std::string klass = "fighter", std::string background = "sage")
     d.name = "Catalog tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{6, 4, 4, 1}, 3};
     d.rolls[1] = {{6, 5, 5, 1}, 3};
     return Character(*srd5::character_rules(), d, {});
@@ -90,24 +96,36 @@ Character hero(std::string klass = "fighter", std::string background = "sage")
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &u : c.snapshot().combatants)
+    {
         if (u.id == id)
+        {
             return u;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -121,7 +139,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (int i = 0; i < 3; ++i)
+    {
         std::getline(in, row);
+    }
     std::uint64_t value{};
     in >> value;
     return value;
@@ -130,16 +150,24 @@ std::uint64_t rng(const CombatSession &c)
 std::string argument(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == key)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing argument");
 }
 
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack");
 }
 
@@ -222,6 +250,7 @@ void all_classes()
                   h.sheet().modifiers[Ability::dexterity] == 3,
               "Asymmetric ability oracle");
         for (const auto &e : expectations())
+        {
             for (unsigned seed : {0u, 13u, 40u})
             {
                 const bool trained =
@@ -267,6 +296,7 @@ void all_classes()
                 check(!c->submit(ticket) && c->save() == saved,
                       "Stale attack is atomic for every weapon and class");
             }
+        }
     }
     check(classes == 12, "All twelve SRD classes covered");
 }
@@ -280,23 +310,29 @@ void boundaries()
         const auto info = rules->equipment_info(e.key);
         check(info.slot == EquipmentSlot::weapon, "Every catalog key is equippable");
         if (e.has("two-handed"))
+        {
             rejects(
                 [&]
                 {
                     (void)rules->character_profile(h.sheet(),
                                                    std::array<std::string, 2>{e.key, "shield"});
                 });
+        }
         else
+        {
             check(
                 rules->character_profile(h.sheet(), std::array<std::string, 2>{e.key, "shield"})
                         .armor_class == 15,
                 "One-handed equipment preserves the shield; ammo loading is a separate property action");
+        }
         if (e.range)
         {
             for (const int feet : {e.range, e.range + 5, e.long_range, e.long_range + 5, 310})
             {
                 if (feet > 310)
+                {
                     continue; // Larger long ranges are source-checked; the battlefield is capped at
+                }
                 // 64 cells.
                 auto c = battle(*rules, h, e.key, 13, {1 + feet / 5, 1});
                 check(has(*c, "ranged") == (feet <= e.long_range),

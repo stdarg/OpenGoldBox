@@ -56,10 +56,18 @@ void refresh_training_replacement(
     };
     String current = tr(N_("Current selections")) + ": ";
     for (const auto &choice : choices)
+    {
         for (const auto &id : choice.selected)
+        {
             for (const auto &option : choice.group.options)
+            {
                 if (option.id == id)
+                {
                     current += tr(option.label) + "; ";
+                }
+            }
+        }
+    }
     required_node<Label>(w, "Current").set_text(current);
     auto &limit = required_node<Label>(w, "Limit");
     limit.hide();
@@ -69,14 +77,24 @@ void refresh_training_replacement(
     for (const auto &choice : choices)
     {
         if (choices.size() > 1)
+        {
             shown.push_back("Heading_" + training_string(choice.group.id).replace(":", "_"));
+        }
         for (const auto &option : choice.group.options)
+        {
             shown.push_back(training_string(option.id));
+        }
     }
     for (int n = 0; n < rows->get_child_count(); ++n)
+    {
         if (auto *control = Object::cast_to<Control>(rows->get_child(n)))
+        {
             if (std::find(shown.begin(), shown.end(), String(control->get_name())) == shown.end())
+            {
                 control->hide();
+            }
+        }
+    }
     int position = 0;
     for (const auto &choice : choices)
     {
@@ -106,7 +124,9 @@ void refresh_training_replacement(
             }
             heading->set_text(tr(group.label));
             if (heading->get_index() != position)
+            {
                 rows->move_child(heading, position);
+            }
             ++position;
             heading->show();
         }
@@ -127,7 +147,9 @@ void refresh_training_replacement(
             box->set_pressed_no_signal(on);
             box->set_disabled(!on && group.count > 1 && picks >= group.count);
             if (box->get_index() != position)
+            {
                 rows->move_child(box, position);
+            }
             ++position;
             box->show();
         }

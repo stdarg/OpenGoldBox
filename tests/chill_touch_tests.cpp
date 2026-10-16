@@ -50,22 +50,32 @@ Character hero(std::string klass = "wizard", unsigned level = 1, std::string rac
     d.name = "Chill caster";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::vector<std::string>{"chill_touch"};
     if (klass == "fighter" || klass == "cleric")
+    {
         d.cantrips = std::vector<std::string>{};
+    }
     Character h(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), state), "Ordinary advancement");
+    }
     return h;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return v;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -77,16 +87,24 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -94,7 +112,9 @@ fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
     if (at == state.resources.npos)
+    {
         return {};
+    }
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
@@ -109,7 +129,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (int n = 0; n < 3; ++n)
+    {
         std::getline(in, row);
+    }
     std::uint64_t result;
     in >> result;
     return result;
@@ -128,7 +150,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                             {2, "target", "Target", Side::opposition, target}}},
                           seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -150,7 +174,9 @@ void access()
         act(*c, "chill_touch", 2);
         bool checked = false;
         for (const auto &message : c->snapshot().log_messages())
+        {
             for (const auto &arg : message.arguments)
+            {
                 if (arg.name == "bonus")
                 {
                     const auto ability =
@@ -159,6 +185,8 @@ void access()
                           "Class Intelligence/Charisma casting bonus");
                     checked = true;
                 }
+            }
+        }
         check(checked, "Real attack bonus observed");
         auto profile = rules->character_profile(h.sheet(), {}).data;
         check(profile.starts_with("PC43 ") && profile.find(" chill_touch ") != profile.npos,
@@ -201,7 +229,9 @@ void access()
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (unsigned seed : {0u, 13u, 40u})
+        {
             for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
             {
                 auto rules = custom(
@@ -243,6 +273,8 @@ void damage()
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Repeated command is atomic");
             }
+        }
+    }
 }
 
 void timing()
@@ -294,17 +326,25 @@ void skipped_caster()
                                      {3, "vanguard", "Companion", Side::party, {6, 1}}}},
                                    seed);
             while (c->snapshot().actor != 1)
+            {
                 act(*c, "end");
+            }
             act(*c, "chill_touch", 2);
             if (!blocked(*c))
+            {
                 continue;
+            }
             const auto deadline = c->snapshot().elapsed_milliseconds +
                                   effects(unit(*c, 2).persistent).active[0].remaining_ms;
             while (c->snapshot().actor != 2)
+            {
                 act(*c, "end");
+            }
             act(*c, "melee", 1);
             if (unit(*c).hit_points > 0)
+            {
                 continue;
+            }
             check(unit(*c).dead == lethal, "Actual enemy hit exercises dead/unconscious caster");
             auto copy = rules->restore(c->save());
             for (unsigned turns = 0; c->snapshot().elapsed_milliseconds < deadline && turns < 6;
@@ -337,7 +377,9 @@ void campaign_handoff()
         actors.push_back({99, "vanguard", "Enemy", Side::opposition, {6, 1}});
         auto c = rules->create({{8, 8, std::vector<Terrain>(64)}, actors}, 13);
         while (c->snapshot().actor != id)
+        {
             act(*c, "end");
+        }
         act(*c, "chill_touch", id);
         check(blocked(*c, id), "Actual self hit applies effect");
         party.begin_combat();
@@ -357,7 +399,9 @@ void campaign_handoff()
         check(!fx::healing_blocked(effects(copy.member(id).vitals)),
               "Short Rest clears expired block");
         if (copy.state().short_rest)
+        {
             copy.finish_short_rest(copy.state().short_rest->ticket);
+        }
         check(bool(copy.rest(RestKind::long_rest)) &&
                   copy.member(id).vitals.hit_points == h.sheet().hit_points,
               "Long Rest heals normally after effect elapsed");
@@ -381,8 +425,10 @@ void legality()
     // Full hands block nothing (CLASS-11); untrained armor does.
     for (auto gear :
          std::vector<std::vector<std::string>>{{"quarterstaff", "shield"}, {"wand", "shield"}})
+    {
         check(has(*battle(*rules, hero(), 13, {2, 1}, gear), "chill_touch"),
               "Full hands do not block casting");
+    }
     {
         auto c = battle(*rules, hero(), 13, {2, 1}, {"plate"});
         auto saved = c->save();
@@ -417,12 +463,14 @@ void lifecycle()
          {"FX4 2 1 1 4 5 1 \"Caster\" 0 6000 0 0 1", "FX8 2 1 1 4 5 1 \"Caster\" 1 6000 0 0",
           "FX8 2 1 1 4 5 1 \"Caster\" 0 12001 0 0", "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 1 0",
           "FX8 2 1 1 4 5 1 \"Caster\" 0 6000 0 2"})
+    {
         rejects(
             [&]
             {
                 std::istringstream in(bad);
                 (void)fx::read_effects(in);
             });
+    }
 }
 
 VitalState blocked_state(const RulesModule &rules, const Character &h, int hp)
@@ -488,7 +536,9 @@ void recovery()
                              {2, "target", "Enemy", Side::opposition, {2, 1}}}},
                            13);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     act(*c, "second_wind");
     check(unit(*c).hit_points == 1 && !unit(*c).bonus_action, "Second Wind spent without healing");
 }
@@ -518,7 +568,9 @@ void healing_spells()
                                  {99, "target", "Enemy", Side::opposition, {5, 1}}}},
                                13);
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         check(blocked(*c), "Block remains before actual healing spell");
         const auto random = rng(*c);
         auto copy = rules->restore(c->save());
@@ -554,6 +606,7 @@ void combat_death_save()
         for (unsigned turns = 0; turns < 3 && !covered; ++turns)
         {
             for (const auto &message : c->snapshot().log_messages())
+            {
                 if (message.source == "{name} death save: {roll}")
                 {
                     bool fighter = false, natural20 = false;
@@ -579,8 +632,11 @@ void combat_death_save()
                         break;
                     }
                 }
+            }
             if (!covered)
+            {
                 act(*c, "end");
+            }
         }
     }
     check(covered, "Actual blocked combat natural 20 exercised");
@@ -667,7 +723,9 @@ void earned_lifecycle()
     {
         auto damaged = pending;
         if (buffer)
+        {
             damaged.temporary_hp = {5, "test:buffer"};
+        }
         fx::damage_life(damaged, 1, 20);
         check(!damaged.stable && !damaged.recovery.stable_recovery_due && damaged.failures == 1,
               "Damage cancels earned recovery even through Temporary HP");
@@ -683,16 +741,19 @@ void earned_lifecycle()
                                                           {0, 0, 0, true, true, {0, 0, true}},
                                                           {0, 0, 0, false, false, {0, 0, true}},
                                                           {0, 0, 0, true, false, {0, 1, true}}})
+    {
         rejects(
             [&]
             {
                 fx::validate_recovery(invalid);
             });
+    }
 }
 
 void stable_timeline()
 {
     for (auto mode : {fx::RecoveryMode::campaign, fx::RecoveryMode::combat})
+    {
         for (unsigned deadline : {999u, 1000u, 1001u, 3000u, 4000u})
         {
             fx::LifeState life{0, 0, 0, true, false, {0, deadline}}, other{10};
@@ -711,7 +772,9 @@ void stable_timeline()
             std::uint64_t random = 17, piece_random = 17;
             fx::elapse_recovery(whole, 2999, random, mode);
             for (unsigned step : {1u, 998u, 1u, 999u, 1000u})
+            {
                 fx::elapse_recovery(chunked, step, piece_random, mode);
+            }
             check(life == pieces && effect == piece_effect && other_effect == other_piece_effect &&
                       random == piece_random,
                   "Shared effect/deadline ordering and RNG are partition invariant");
@@ -723,6 +786,7 @@ void stable_timeline()
             fx::elapse_recovery(whole, 1000, random, mode);
             check(life.hp == 1, "Recovery eventually occurs at the later boundary");
         }
+    }
 }
 
 VitalState stable_blocked(unsigned deadline = 1000)
@@ -817,7 +881,9 @@ void stable_actual_cast()
           {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
         13);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     check(unit(*c, 2).hit_points == 0, "Stable before actual cast");
     act(*c, "chill_touch", 2);
     check(blocked(*c, 2) && unit(*c, 2).hit_points == 0,
@@ -857,7 +923,9 @@ void fixtures()
                                  {99, "vanguard", "Enemy", Side::opposition, {5, 1}}}},
                                2);
         while (c->snapshot().actor != 1)
+        {
             act(*c, "end");
+        }
         std::ofstream(path / (std::string(klass) + ".save"), std::ios::binary) << c->save();
         act(*c, "chill_touch", 2);
         std::ofstream(path / (std::string(klass) + "-blocked.save"), std::ios::binary) << c->save();

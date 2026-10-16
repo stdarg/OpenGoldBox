@@ -13,7 +13,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 void rejects(std::string_view bytes)
@@ -39,7 +41,9 @@ std::string row(std::array<int, 19> values = definition)
     std::ostringstream out;
     out << "creature bandit";
     for (auto value : values)
+    {
         out << ' ' << value;
+    }
     return out.str() + '\n';
 }
 
@@ -59,7 +63,9 @@ void malformed_content()
 {
     for (const auto *invalid : {"", "OPENGOLD_SRD5", "OPENGOLD_SRD5 2 synthetic.1\n",
                                 "OTHER 1 synthetic.1\n", "OPENGOLD_SRD5 1 synthetic.1 extra\n"})
+    {
         rejects(std::string(invalid) + row());
+    }
     rejects(header);
     rejects(std::string(header) + "# comments without definitions\n");
     rejects("OPENGOLD_SRD5 1 " + std::string(81, 'x') + '\n' + row());
@@ -107,7 +113,9 @@ void identities_and_sessions()
     for (auto c : bytes)
     {
         if (c == '\n')
+        {
             crlf += '\r';
+        }
         crlf += c;
     }
     auto module = srd5::parse_content(std::string(bytes)); // Temporary source must not be borrowed.

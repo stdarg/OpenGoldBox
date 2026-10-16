@@ -15,9 +15,13 @@ SoundBank::SoundBank(std::vector<SoundEffect> effects)
     for (const auto &effect : effects)
     {
         if (!effect.id || !ids.insert(effect.id).second)
+        {
             throw std::invalid_argument("Sound bank requires unique, nonzero sound IDs");
+        }
         if (effect.ticks.empty())
+        {
             throw std::invalid_argument("Sound bank entries require at least one tick");
+        }
     }
     clips_.reserve(effects.size());
     for (auto &effect : effects)
@@ -41,7 +45,9 @@ const SoundClip &SoundBank::at(unsigned id) const
                                         return clip.id == id;
                                     });
     if (found == clips_.end())
+    {
         throw std::out_of_range("Unknown sound ID: " + std::to_string(id));
+    }
     return *found;
 }
 

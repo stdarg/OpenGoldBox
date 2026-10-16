@@ -23,7 +23,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &path)
@@ -52,15 +54,21 @@ std::unique_ptr<CombatSession> fight(const RulesModule &rules, std::string_view 
                 {{1, "runner", "Runner", Side::party, {0, 1}},
                  {9, std::string(enemy), "Enemy", Side::opposition, {beside ? 1 : 7, 1}}}};
     if (second_member)
+    {
         e.participants.push_back({2, "runner", "Stayer", Side::party, {3, 3}});
+    }
     return rules.create(std::move(e), seed);
 }
 
 std::optional<Command> offered(const CombatSession &c, std::string_view verb, EntityId actor)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.actor == actor)
+        {
             return command;
+        }
+    }
     return std::nullopt;
 }
 
@@ -137,7 +145,9 @@ void even_speed_is_a_coin_toss()
             check(!offered(*c, "flee", 1), "A member who failed must stay to the end");
         }
         else if (c->snapshot().outcome == Outcome::fled)
+        {
             escaped = true;
+        }
     }
     check(stayed && escaped,
           "As fast as the fastest enemy, a member gets away about half the time");
@@ -183,7 +193,9 @@ void flee_policy()
                      {9, "slow", "Enemy", Side::opposition, {15, 3}}}};
         auto c = rules->create(std::move(e), 1);
         for (unsigned n = 0; n < 200 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        {
             check(c->submit(choose_flee_command(*c)), "The flee policy's command is legal");
+        }
         check(c->snapshot().outcome == Outcome::fled && logged(*c, "Runner flees the battle."),
               "A member fast enough runs to the edge and off the field");
     }
@@ -246,14 +258,20 @@ void cornered_monster_fights()
         const auto melee = offered(*c, "melee", 1);
         check(melee && c->submit(*melee), "The runner strikes");
         if (unit(c->snapshot(), 9).hit_points == 30)
+        {
             continue;
+        }
         for (unsigned n = 0; n < 80 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        {
             check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+        }
         const auto log = c->snapshot().log();
         const auto stayed =
             std::find(log.begin(), log.end(), "Enemy cannot get away and must stay.");
         if (stayed == log.end())
+        {
             continue;
+        }
         check(std::any_of(stayed, log.end(),
                           [](const auto &line)
                           {
@@ -277,7 +295,9 @@ void cornered_at_once()
         // A wall down the middle with a gap at the bottom keeps them out of sight.
         std::vector<Terrain> terrain(180);
         for (int y = 0; y < 8; ++y)
+        {
             terrain[static_cast<std::size_t>(y * 20 + 10)] = Terrain::obstacle;
+        }
         Encounter e{{20, 9, std::move(terrain)},
                     {{1, "runner", "Runner", Side::party, {1, 1}},
                      {9, "even", "Enemy", Side::opposition, {18, 1}, {}, VitalState{10}}}};
@@ -289,7 +309,9 @@ void cornered_at_once()
             const auto end = offered(*c, "end", 1);
             check(c->submit(actor == 1 ? *end : choose_demo_command(*c)), "The command is legal");
             if (!logged(*c, "Enemy cannot get away and must stay."))
+            {
                 continue;
+            }
             const auto s = c->snapshot();
             const auto &enemy = unit(s, 9);
             check(!enemy.panicked && std::none_of(enemy.conditions.begin(), enemy.conditions.end(),
@@ -301,7 +323,9 @@ void cornered_at_once()
             const auto failed_at = s.log().size();
             for (auto now = c->snapshot(); now.actor == 9 && now.outcome == Outcome::ongoing;
                  now = c->snapshot())
+            {
                 check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+            }
             const auto log = c->snapshot().log();
             check(std::find(log.begin() + static_cast<std::ptrdiff_t>(failed_at), log.end(),
                             "Enemy dashes.") == log.end(),
@@ -329,7 +353,9 @@ void monsters_break()
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A panicked creature survives a checkpoint");
         for (unsigned n = 0; n < 60 && c->snapshot().outcome == Outcome::ongoing; ++n)
+        {
             check(c->submit(choose_demo_command(*c)), "The AI's command is legal");
+        }
         check(c->snapshot().outcome == Outcome::victory && unit(c->snapshot(), 9).fled,
               "The panicked creature runs off the field and the fight is won");
     }

@@ -22,7 +22,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -53,7 +55,9 @@ Character paladin()
     d.name = "Smiter";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds", "searing_smite"}, {}, {}};
     Character c(*srd5::character_rules(), d, {});
     auto rules = srd5::load(root / "data/rules/srd-5.2.1/combat.rules");
@@ -65,8 +69,12 @@ Character paladin()
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -74,8 +82,12 @@ std::vector<std::string> smites(const CombatSession &c)
 {
     std::vector<std::string> result;
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb.find("smite") != std::string::npos)
+        {
             result.push_back(command.verb);
+        }
+    }
     std::sort(result.begin(), result.end());
     return result;
 }
@@ -84,8 +96,12 @@ bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     const auto offered = c.legal_commands();
     for (const auto &command : offered)
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -102,8 +118,12 @@ unsigned slots(const CombatSession &c)
 unsigned resource(const CombatSession &c, std::string_view id)
 {
     for (const auto &pool : unit(c, 1).resources)
+    {
         if (pool.id == id)
+        {
             return pool.remaining;
+        }
+    }
     return 0;
 }
 
@@ -119,7 +139,9 @@ std::unique_ptr<CombatSession> battle(const RulesModule &rules, const Character 
                             {99, "target", "Target", Side::opposition, {2, 1}}}},
                           seed);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Paladin's turn");
+    }
     check(c->snapshot().actor == 1, "The Paladin acts");
     return c;
 }
@@ -157,11 +179,15 @@ int smite_damage(const RulesModule &rules, std::string_view verb)
     check(submit(*c, verb, 99), "The smite resolves");
     check(!unit(*c, 1).bonus_action && smites(*c).empty(), "A smite spends the Bonus Action");
     if (verb == "divine_smite_free")
+    {
         check(resource(*c, "paladins_smite") == free - 1 && slots(*c) == slots_before,
               "Paladin's Smite spends its free use, not a slot");
+    }
     else
+    {
         check(slots(*c) == slots_before - 1 && resource(*c, "paladins_smite") == free,
               "A smite cast with a slot spends one slot");
+    }
     return before - unit(*c, 99).hit_points;
 }
 
@@ -198,7 +224,9 @@ void critical_smite_checks()
         auto c = battle(*rules, hero, {"longsword"}, seed);
         check(submit(*c, "melee", 99), "The Paladin attacks");
         if (!logged(*c, "CRITICAL"))
+        {
             continue;
+        }
         const bool searing = crits % 2 == 1;
         ++crits;
         const int before = unit(*c, 99).hit_points;
@@ -238,7 +266,9 @@ void searing_smite_checks()
         check(rules->restore(c->save())->save() == c->save(),
               "The burning effect survives a checkpoint");
         while (c->snapshot().actor != 1)
+        {
             check(submit(*c, "end"), "Return to the Paladin");
+        }
         const auto so_far = c->snapshot().log();
         const auto burned_again = std::count_if(so_far.begin(), so_far.end(),
                                                 [](const auto &line)
@@ -247,7 +277,9 @@ void searing_smite_checks()
                                                 });
         check(burned_again == 1, "One burn per target turn so far");
         while (c->snapshot().actor != 99)
+        {
             check(submit(*c, "end"), "Reach the target's next turn");
+        }
         const auto later = c->snapshot().log();
         const auto burns = std::count_if(later.begin(), later.end(),
                                          [](const auto &line)
@@ -273,9 +305,13 @@ void write_ui_fixture()
                                  {99, "vanguard", "Target", Side::opposition, {2, 1}}}},
                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Paladin's turn");
+        }
         if (c->snapshot().actor != 1 || !submit(*c, "melee", 99) || smites(*c).empty())
+        {
             continue;
+        }
         const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "smite-fixtures";
         std::filesystem::create_directories(path);
         std::ofstream out(path / "after-hit.save", std::ios::binary);
@@ -296,8 +332,12 @@ void campaign_checks()
         for (const auto &pool :
              rules->recovery_info(party.member(id).character.sheet(), party.member(id).vitals)
                  .resources)
+        {
             if (pool.id == "paladins_smite")
+            {
                 return pool;
+            }
+        }
         throw std::runtime_error("Missing Paladin's Smite");
     };
     check(free_smite().capacity == 1 && free_smite().remaining == 1 &&

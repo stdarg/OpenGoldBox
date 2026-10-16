@@ -33,7 +33,9 @@ void TownSheetDialog::connect_host(CampaignAccess campaign, std::function<void()
                                    FailureReport report)
 {
     if (!campaign || !leader_changed || !report)
+    {
         throw std::logic_error("The town sheet needs its campaign, a follow-up and a report");
+    }
     campaign_ = std::move(campaign);
     leader_changed_ = std::move(leader_changed);
     report_ = std::move(report);
@@ -53,7 +55,9 @@ void TownSheetDialog::show_member(std::int64_t slot)
 {
     const auto &campaign = campaign_();
     if (slot < 0 || slot >= 8 || !campaign.state().slots[slot])
+    {
         return;
+    }
     const auto &m = campaign.member(campaign.state().slots[slot]);
     member_ = m.id;
     required_node<RichTextLabel>(*this, "Text")
@@ -65,7 +69,9 @@ void TownSheetDialog::show_member(std::int64_t slot)
 void TownSheetDialog::make_leader()
 {
     if (!member_)
+    {
         return;
+    }
     campaign_().make_leader(member_);
     required_node<Button>(*this, "MakeLeader").set_disabled(true);
     leader_changed_();

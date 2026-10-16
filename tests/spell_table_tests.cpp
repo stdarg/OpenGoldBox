@@ -33,7 +33,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -70,13 +72,19 @@ Character hero(std::string klass, unsigned level, std::vector<std::string> cantr
     d.name = "Table caster";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     if (!cantrips.empty())
+    {
         d.cantrips = cantrips;
+    }
     Character h(*srd5::character_rules(), d, {});
     VitalState scratch;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), scratch), "Ordinary advancement");
+    }
     return h;
 }
 
@@ -129,14 +137,20 @@ std::string offers(const CombatSession &c)
     for (const auto &command : c.legal_commands())
     {
         if (command.verb == "move")
+        {
             continue;
+        }
         lines.insert(command.verb + "|" + std::to_string(command.target));
     }
     std::string out;
     for (const auto &line : lines)
+    {
         out += "    " + line + "\n";
+    }
     if (out.empty())
+    {
         out = "    (none)\n";
+    }
     return out;
 }
 
@@ -162,11 +176,13 @@ std::string snapshot()
             {
                 bool ended = false;
                 for (const auto &command : c->legal_commands())
+                {
                     if (command.verb == "end")
                     {
                         ended = c->submit(command);
                         break;
                     }
+                }
                 check(ended, "Reach the caster's turn");
             }
             check(c->snapshot().actor == 1, "Caster acts");
@@ -233,7 +249,9 @@ void table()
     for (const auto *id : {"chill_touch", "shocking_grasp", "eldritch_blast", "ray_of_frost",
                            "sacred_flame", "fire_bolt", "poison_spray", "cure_wounds",
                            "healing_word", "magic_missile", "scorching_ray", "blindness"})
+    {
         check(find_spell(id) != nullptr, "Access catalog ids are all table rows");
+    }
 }
 
 // ---- generic per-row behaviour (Phase 2 of the acceleration plan) --------
@@ -269,14 +287,18 @@ CharacterSheet widest(const RulesModule &rules, const Probe &probe)
     for (const auto &option : group.options)
     {
         if (cantrips.size() >= group.count)
+        {
             break;
+        }
         cantrips.push_back(option.id);
     }
     auto sheet = hero(probe.klass, probe.level, cantrips).sheet();
     for (const auto &row : spell_table)
     {
         if (!row.level)
+        {
             continue;
+        }
         auto trial = sheet;
         trial.prepared_spells.push_back(std::string(row.id));
         try
@@ -295,16 +317,24 @@ CharacterSheet widest(const RulesModule &rules, const Probe &probe)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 std::optional<Command> find(const CombatSession &c, std::string_view verb, EntityId target)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && a.target == target)
+        {
             return a;
+        }
+    }
     return std::nullopt;
 }
 
@@ -339,7 +369,9 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     auto at_range = battle(rules, sheet, row.range);
     const auto offer = find(*at_range, row.id, target);
     if (!offer)
+    {
         return; // this caster cannot reach this row; another probe may
+    }
     covered = true;
 
     // Range is inclusive at `range` and excludes the next square. An
@@ -373,17 +405,25 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     const auto after_caster = unit(*at_range, 1);
     const auto after_target = unit(*at_range, target);
     if (row.bonus_action)
+    {
         check(!after_caster.bonus_action && after_caster.action == before_caster.action,
               "A Bonus Action spell spends the Bonus Action and keeps the Action");
+    }
     else
+    {
         check(!after_caster.action, "An Action spell spends the Action");
+    }
 
     if (row.pattern == SpellPattern::heal)
+    {
         check(after_target.hit_points >= before_target.hit_points,
               "Healing never reduces hit points");
+    }
     else
+    {
         check(after_target.hit_points <= before_target.hit_points,
               "An attack never restores hit points");
+    }
 
     // A rider is observable whenever the spell actually landed. Spiritual
     // Weapon's rider is its force on the battlefield, as Arcane Sword's is its
@@ -397,8 +437,10 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
         row.rider != Rider::vampiric_touch && row.rider != Rider::disintegrate &&
         row.rider != Rider::finger_of_death && row.rider != Rider::befuddlement &&
         after_target.hit_points < before_target.hit_points)
+    {
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");
+    }
 
     // A stale ticket must not resolve twice.
     const auto settled = at_range->save();
@@ -414,15 +456,21 @@ CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, con
     auto &prepared = sheet.prepared_spells;
     if (!row.level || prepared.empty() ||
         std::find(prepared.begin(), prepared.end(), row.id) != prepared.end())
+    {
         return sheet;
+    }
     auto trial = sheet;
     // A Wizard prepares from its book, so a book entry changes with it: the
     // one learned last, whose level allows the higher spells.
     auto book = trial.grants.end();
     for (auto grant = trial.grants.begin(); grant != trial.grants.end(); ++grant)
+    {
         if (grant->choices.contains("access") && grant->choices.at("access") == "spellbook" &&
             (book == trial.grants.end() || grant->level > book->level))
+        {
             book = grant;
+        }
+    }
     auto replaced = trial.prepared_spells.end() - 1;
     if (book != trial.grants.end())
     {
@@ -431,12 +479,20 @@ CharacterSheet with_prepared(const RulesModule &rules, CharacterSheet sheet, con
         if (const auto found =
                 std::find(trial.prepared_spells.begin(), trial.prepared_spells.end(), old);
             found != trial.prepared_spells.end())
+        {
             replaced = found;
+        }
     }
     else
+    {
         for (auto &grant : trial.grants)
+        {
             if (grant.id == "spell:" + *replaced)
+            {
                 grant.id = "spell:" + std::string(row.id);
+            }
+        }
+    }
     *replaced = std::string(row.id);
     try
     {
@@ -454,7 +510,9 @@ void behaviour()
     auto rules = custom();
     std::vector<CharacterSheet> sheets;
     for (const auto &probe : probes)
+    {
         sheets.push_back(widest(*rules, probe));
+    }
     for (const auto &row : spell_table)
     {
         // Smites are offered by the caster's own melee hit, not by range, a
@@ -493,10 +551,14 @@ void behaviour()
             row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
             row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
             row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals)
+        {
             continue;
+        }
         bool covered = false;
         for (const auto &sheet : sheets)
+        {
             row_behaviour(*rules, row, with_prepared(*rules, sheet, row), covered);
+        }
         // The payoff: a row no class can actually cast fails here instead of
         // shipping as dead data.
         check(covered, ("No probed class can cast " + std::string(row.id)).c_str());
@@ -556,8 +618,10 @@ void profile_tags()
     // Unrecognised tags: earlier profile tags, non-numeric, and not a PC tag at
     // all. An unknown tag must never read as "has everything".
     for (const auto &bad : {"PC00", "PC35", "PC42", "PC44", "PC99", "PCxx", "XX35", "PC-1"})
+    {
         check(!loads(rebuild(bad, listed)),
               ("Profile tag " + std::string(bad) + " must be rejected").c_str());
+    }
 
     check(loads(rebuild("PC43", "2 fire_bolt magic_missile")),
           "An explicit spell list loads and satisfies the Wizard grant cross-check");

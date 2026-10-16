@@ -87,11 +87,15 @@ Character character(std::string klass)
     d.alignment = "neutral_good";
     d.background = "soldier";
     if (klass == "wizard")
+    {
         d.training["class:wizard"] = {"medicine", "nature"};
+    }
     d.name = "Save test " + klass;
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     por::CharacterAppearance a;
     a.portrait = "human-male-fighter-01.png";
     return Character(*srd5::character_rules(), d, a);
@@ -101,7 +105,9 @@ auto prototype()
 {
     std::vector<std::uint8_t> bytes{0, 0};
     for (int n = 0; n < 5; ++n)
+    {
         bytes.insert(bytes.end(), {1, 1, 0x15, 0x99});
+    }
     bytes.push_back(0);
     // Each LOOK increments a persistent cell, then completes.
     bytes.insert(bytes.end(), {4, 1, 0x10, 0x98, 0, 1, 1, 0x10, 0x98, 0});
@@ -115,7 +121,9 @@ auto prototype()
 void settle(por::RolfTourSession &town)
 {
     for (int i = 0; i < 100 && town.snapshot().phase == por::TourPhase::running; ++i)
+    {
         town.advance(1);
+    }
     check(town.can_leave(), "Fixture must finish");
 }
 
@@ -234,11 +242,13 @@ void fog_saves(const std::filesystem::path &directory)
     for (const auto &invalid :
          {std::string("0 "), "1 0 \"" + std::string(256, '0') + "\" ",
           "1 99 \"" + std::string(256, '1') + "\" ", "1 0 \"" + std::string(255, '1') + "x\" "})
+    {
         rejects(
             [&]
             {
                 (void)decode_with_knowledge(invalid);
             });
+    }
     check(encode_campaign(*party, &single, "fog-fixture") == current,
           "Malformed fog saves leave the live campaign untouched");
 }
@@ -253,8 +263,12 @@ void file_safety(const std::filesystem::path &directory)
     const auto has_temporary = [&]
     {
         for (const auto &entry : std::filesystem::directory_iterator(directory))
+        {
             if (entry.path().filename().string().starts_with("storage.save.tmp"))
+            {
                 return true;
+            }
+        }
         return false;
     };
     const std::string first("first\0checkpoint", 16);
@@ -342,6 +356,7 @@ void roundtrip(const std::filesystem::path &directory)
 {
     std::filesystem::create_directories(directory);
     for (const auto *filename : {"../portrait.png", "a/b.png", "a\\b.png", "portrait.jpg"})
+    {
         rejects(
             [&]
             {
@@ -349,6 +364,7 @@ void roundtrip(const std::filesystem::path &directory)
                 a.portrait = filename;
                 por::validate_character_appearance(a);
             });
+    }
     auto party = std::make_shared<CampaignParty>(module());
     auto fighter = party->add_pc(character("fighter"));
     auto wizard = character("wizard");
@@ -477,12 +493,14 @@ void roundtrip(const std::filesystem::path &directory)
         });
     for (const auto &identity :
          {rules->identity().module, rules->identity().version, rules->identity().content})
+    {
         rejects(
             [&]
             {
                 (void)decode_campaign(changed_identity(saved, identity), *srd5::character_rules(),
                                       *rules, "fixture-v1", &base);
             });
+    }
 #ifdef _WIN32
     {
         std::ifstream held(path, std::ios::binary);
@@ -544,7 +562,9 @@ void level_four_roundtrip(const std::filesystem::path &directory)
     d.name = "Save test initiate";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.training = {{"class:fighter", {"acrobatics", "history"}},
                   {"class:fighter:fighting_style", {"defense"}}};
     d.spells =
@@ -559,12 +579,16 @@ void level_four_roundtrip(const std::filesystem::path &directory)
     const auto initiate = party->add_pc(Character(*srd5::character_rules(), d, look));
     std::vector<MemberId> others;
     for (const auto *klass : {"cleric", "warlock", "monk", "sorcerer", "wizard"})
+    {
         others.push_back(party->add_pc(character(klass)));
+    }
     party->award_experience(2700, "save:level-four");
     for (unsigned level = 1; level < 4; ++level)
     {
         for (const auto id : others)
+        {
             party->advance(id, party->default_advancement(id));
+        }
         auto choice = party->default_advancement(initiate);
         if (level == 3)
         {
@@ -610,8 +634,12 @@ void level_four_roundtrip(const std::filesystem::path &directory)
     const auto pool = [&](std::string_view id)
     {
         for (const auto &p : pools)
+        {
             if (p.id == id)
+            {
                 return static_cast<int>(p.remaining);
+            }
+        }
         return -1;
     };
     check(pool("magic_initiate:cure_wounds") == 0 && pool("magic_initiate:entangle") == 1,

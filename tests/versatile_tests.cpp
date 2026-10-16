@@ -12,7 +12,9 @@ namespace
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 auto module()
@@ -32,23 +34,33 @@ Character hero()
     draft.name = "Grip tester";
     draft.rolled = true;
     for (auto &roll : draft.rolls)
+    {
         roll = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), draft, {});
 }
 
 CombatantView unit(const CombatSession &session, EntityId id)
 {
     for (const auto &a : session.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &session, std::string_view verb)
 {
     for (const auto &c : session.legal_commands())
+    {
         if (c.verb == verb)
+        {
             return c;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -96,15 +108,22 @@ void damage_follows_other_hand()
                                            : 10);
     };
     for (const auto &weapon : weapons)
+    {
         for (const bool shield : {false, true})
+        {
             for (const int seed : {0, 13, 40})
+            {
                 for (const bool thrown : {false, true})
                 {
                     if (thrown && !weapon.thrown)
+                    {
                         continue;
+                    }
                     std::vector<std::string> gear{weapon.key};
                     if (shield)
+                    {
                         gear.emplace_back("shield");
+                    }
                     const auto profile = rules->character_profile(sheet, gear);
                     check(profile.weapon_hands == (shield ? 1u : 2u),
                           "Rules report two hands only when the other hand is empty");
@@ -137,6 +156,9 @@ void damage_follows_other_hand()
                     const auto saved = combat->save();
                     check(rules->restore(saved)->save() == saved, "Attack resources round trip");
                 }
+            }
+        }
+    }
     for (const auto &weapon : weapons)
     {
         const std::array<std::string, 2> gear{weapon.key, "dagger"};
@@ -165,7 +187,9 @@ void reaction_continuation()
     {
         combat = rules->create(e, seed);
         if (combat->snapshot().actor == 2)
+        {
             break;
+        }
     }
     auto move = command(*combat, "move");
     move.destination = {3, 1};

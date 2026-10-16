@@ -14,7 +14,9 @@ namespace
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 constexpr double tick = 1.0 / 18.2;
@@ -43,8 +45,10 @@ void view_never_reads_through_the_session_pointer()
     check(!text.empty(), "The exploration view's source is found");
     for (const char *read :
          {"*shown_monster_picture_", "shown_monster_picture_->", "shown_monster_picture_)["})
+    {
         check(text.find(read) == std::string::npos,
               std::string("rolf_tour_view.cpp reads the close-up through the session: ") + read);
+    }
 }
 } // namespace
 

@@ -26,7 +26,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -63,7 +65,9 @@ Character sorcerer(unsigned level = 1, std::vector<std::string> metamagic = {},
     d.name = "Sorcerer";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.training = {{"class:sorcerer", {"deception", "insight"}}};
     d.cantrips = {"sorcerous_burst", "fire_bolt", "ray_of_frost", "shocking_grasp"};
     d.spells = SpellChoices{{}, prepared, {}, {}};
@@ -74,7 +78,9 @@ Character sorcerer(unsigned level = 1, std::vector<std::string> metamagic = {},
     {
         auto choice = party.default_advancement(id);
         if (n == 1 && !metamagic.empty())
+        {
             choice.training["class:sorcerer:metamagic"] = metamagic;
+        }
         party.advance(id, choice);
     }
     return party.member(id).character;
@@ -83,16 +89,24 @@ Character sorcerer(unsigned level = 1, std::vector<std::string> metamagic = {},
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -119,8 +133,12 @@ bool logged(const CombatSession &c, std::string_view text)
 unsigned pool(const CombatSession &c, std::string_view id)
 {
     for (const auto &resource : unit(c, 1).resources)
+    {
         if (resource.id == id)
+        {
             return resource.remaining;
+        }
+    }
     throw std::runtime_error("Missing resource pool");
 }
 
@@ -154,10 +172,14 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
         {1, "campaign-character", "Sorcerer", Side::party, {1, 1}, profile},
         {98, enemy, "Enemy", Side::opposition, {4, 1}}};
     if (ally)
+    {
         participants.push_back({2, "target", "Ally", Side::party, *ally});
+    }
     auto c = module.create({{12, 6, std::vector<Terrain>(72)}, participants}, 5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Sorcerer's turn");
+    }
     check(c->snapshot().actor == 1, "The Sorcerer acts");
     return c;
 }
@@ -248,8 +270,12 @@ std::pair<int, int> stored_slots(const VitalState &state)
 unsigned rest_pool(const RulesModule &module, const Character &hero, const VitalState &state)
 {
     for (const auto &resource : module.recovery_info(hero.sheet(), state).resources)
+    {
         if (resource.id == "sorcery_points")
+        {
             return resource.remaining;
+        }
+    }
     throw std::runtime_error("Missing Sorcery Points");
 }
 
@@ -371,15 +397,19 @@ void heightened_checks()
         fx::EffectState effects;
         fx::apply_blindness(effects, caster, "Caster", {.dc = 13, .first_save_ms = 1000});
         if (marked)
+        {
             fx::apply_spell_benefit(effects, caster, "Caster", fx::EffectKind::heightened,
                                     fx::spell_index("blindness"));
+        }
         std::array<fx::EffectSubject, 1> subject{{{1, effects, {}}}};
         int natural = 0;
         fx::elapse_effects(subject, 1000, seed,
                            [&](const auto &event)
                            {
                                if (event.save)
+                               {
                                    natural = event.save->natural;
+                               }
                            });
         return natural;
     };

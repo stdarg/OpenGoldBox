@@ -16,7 +16,9 @@ GodotSoundOutput::~GodotSoundOutput()
 {
     stop();
     if (auto *node = player())
+    {
         node->set_stream(Ref<AudioStream>());
+    }
 }
 
 AudioStreamPlayer *GodotSoundOutput::player() const noexcept
@@ -27,7 +29,9 @@ AudioStreamPlayer *GodotSoundOutput::player() const noexcept
 void GodotSoundOutput::prepare(const SoundBank &bank)
 {
     if (!player())
+    {
         throw std::runtime_error("Sound output node no longer exists");
+    }
     std::map<unsigned, Ref<AudioStreamWAV>> prepared;
     for (const auto &clip : bank.clips())
     {
@@ -54,10 +58,14 @@ void GodotSoundOutput::play(unsigned id)
 {
     const auto stream = streams_.find(id);
     if (stream == streams_.end())
+    {
         throw std::out_of_range("Sound stream was not prepared");
+    }
     auto *node = player();
     if (!node || !node->is_inside_tree())
+    {
         throw std::runtime_error("Sound output node is not in the active scene");
+    }
     node->stop();
     node->set_stream(stream->second);
     node->play();
@@ -66,15 +74,19 @@ void GodotSoundOutput::play(unsigned id)
 void GodotSoundOutput::stop() noexcept
 {
     if (auto *node = player())
+    {
         node->stop();
+    }
 }
 
 void GodotSoundOutput::set_gain(double gain) noexcept
 {
     // Defensive even for direct adapter callers. Zero is a true mute.
     if (auto *node = player())
+    {
         node->set_volume_linear(
             static_cast<float>(std::isfinite(gain) ? std::clamp(gain, 0.0, 1.0) : 0));
+    }
 }
 
 bool GodotSoundOutput::is_playing() const noexcept

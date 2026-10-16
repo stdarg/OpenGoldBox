@@ -7,7 +7,9 @@
 void CombatView::begin_nick()
 {
     if (presentation::required_node<Button>(*this, "Nick").is_disabled())
+    {
         return;
+    }
     presentation::required_node<Window>(*this, "NickAttack").popup_centered();
     presentation::required_node<OptionButton>(*this, "NickAttack/Choices").grab_focus();
 }
@@ -40,7 +42,9 @@ void CombatView::confirm_nick()
     auto *choices = &presentation::required_node<OptionButton>(*this, "NickAttack/Choices");
     const auto index = choices->get_selected();
     if (index < 0 || presentation::required_node<Button>(*this, "NickAttack/Target").is_disabled())
+    {
         return;
+    }
     const String key = choices->get_item_metadata(index);
     light_item_ = static_cast<unsigned>(key.get_slice("#", 1).to_int());
     cancel_nick();

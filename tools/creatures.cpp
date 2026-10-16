@@ -10,16 +10,22 @@ void dice(const opengold::por::DamageDice &d)
 {
     std::cout << static_cast<unsigned>(d.count) << 'd' << static_cast<unsigned>(d.sides);
     if (d.modifier != 0)
+    {
         std::cout << (d.modifier > 0 ? "+" : "") << d.modifier;
+    }
 }
 
 void modifier(std::string_view label, const std::optional<int> &value)
 {
     std::cout << "  " << label << ": ";
     if (value)
+    {
         std::cout << *value;
+    }
     else
+    {
         std::cout << "unknown";
+    }
     std::cout << '\n';
 }
 
@@ -57,9 +63,13 @@ void print(const opengold::por::Creature &c)
     modifier("Reference CON HP/hit die", c.abilities.constitution_hp_per_hit_die);
     std::cout << "  Strength bonus permission hint (unverified CHA[170]): ";
     if (c.abilities.strength_bonus_allowed_hint)
+    {
         std::cout << (*c.abilities.strength_bonus_allowed_hint ? "allowed" : "disabled");
+    }
     else
+    {
         std::cout << "unknown";
+    }
     std::cout << '\n';
     for (const auto &item : c.equipment)
     {
@@ -76,14 +86,20 @@ void print(const opengold::por::Creature &c)
             std::cout << '\n';
         }
         if (item.bonuses.armor_base_ac)
+        {
             modifier("  Armor base AC", item.bonuses.armor_base_ac);
+        }
         if (item.bonuses.ac_adjustment)
+        {
             modifier("  Item AC adjustment", item.bonuses.ac_adjustment);
+        }
         if (item.stored.effect_codes != std::array<std::uint8_t, 3>{})
         {
             std::cout << "    Item activation/effect bytes (not SPC IDs):";
             for (auto code : item.stored.effect_codes)
+            {
                 std::cout << ' ' << static_cast<unsigned>(code);
+            }
             std::cout << '\n';
         }
     }
@@ -92,9 +108,13 @@ void print(const opengold::por::Creature &c)
         const auto &e = effect.definition;
         std::cout << "  Effect " << static_cast<unsigned>(e.code) << ": " << e.name;
         if (effect.stored.duration_raw == 0)
+        {
             std::cout << " [permanent]";
+        }
         else
+        {
             std::cout << " [raw duration " << effect.stored.duration_raw << ']';
+        }
         if (e.regeneration)
         {
             std::cout << ", " << e.regeneration->hp_per_round << " HP/round";
@@ -106,17 +126,27 @@ void print(const opengold::por::Creature &c)
             }
         }
         if (e.resistance_percent)
+        {
             std::cout << ", " << *e.resistance_percent << '%';
+        }
         if (e.incoming_damage_multiplier)
+        {
             std::cout << ", damage x" << *e.incoming_damage_multiplier;
+        }
         if (e.target_save_adjustment)
+        {
             std::cout << ", target save adjustment " << *e.target_save_adjustment;
+        }
         if (e.levels_drained)
+        {
             std::cout << ", drains " << *e.levels_drained << " level(s)";
+        }
         std::cout << '\n';
     }
     for (const auto &note : c.interpretation_notes)
+    {
         std::cout << "  Note: " << note << '\n';
+    }
     std::cout << '\n';
 }
 
@@ -152,9 +182,11 @@ void print_equipment(const opengold::por::CreatureCatalog &catalog)
     {
         const auto found = catalog.find({2, conversion.record});
         if (!found)
+        {
             throw opengold::por::CatalogError(std::string("Missing creature record for ") +
                                               conversion.creature + ": bank 2, record " +
                                               std::to_string(conversion.record));
+        }
         const auto &creature = found->get();
         std::string armor = "none";
         bool metal = false;
@@ -169,17 +201,23 @@ void print_equipment(const opengold::por::CreatureCatalog &catalog)
             const auto *worn = opengold::srd5::detail::armor(key);
             if (!item.stored.readied() || !worn ||
                 worn->category == opengold::srd5::detail::ArmorCategory::shield)
+            {
                 continue;
+            }
             armor = key;
             metal = opengold::srd5::detail::metal_armor(*worn);
         }
         const auto source = creature.id.key();
         if (metal)
+        {
             std::cout << "equipment " << conversion.creature << " metal_armor " << source << ' '
                       << armor << '\n';
+        }
         else
+        {
             std::cout << "# " << conversion.creature << ' ' << source << ' ' << armor
                       << ": no metal armor\n";
+        }
     }
 }
 } // namespace
@@ -211,12 +249,16 @@ int main(int argc, char **argv)
                 return 1;
             }
             for (const auto &c : matches)
+            {
                 print(c.get());
+            }
         }
         else
         {
             for (const auto &[id, c] : catalog.all())
+            {
                 print(c);
+            }
         }
     }
     catch (const opengold::por::CatalogError &error)

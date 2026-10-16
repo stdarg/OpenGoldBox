@@ -2921,7 +2921,9 @@ inline constexpr std::string_view natural_suffix = "_natural";
 inline constexpr unsigned cast_slot_level(std::string_view verb)
 {
     if (verb.size() < 3 || verb[verb.size() - 2] != '_')
+    {
         return 0;
+    }
     const char digit = verb.back();
     return digit >= '2' && digit <= '9' ? static_cast<unsigned>(digit - '0') : 0;
 }
@@ -2931,15 +2933,25 @@ inline constexpr unsigned cast_slot_level(std::string_view verb)
 inline constexpr std::string_view without_cast_suffix(std::string_view verb)
 {
     if (cast_slot_level(verb))
+    {
         verb.remove_suffix(2);
+    }
     else if (verb.ends_with(initiate_suffix))
+    {
         verb.remove_suffix(initiate_suffix.size());
+    }
     else if (verb.ends_with(intervention_suffix))
+    {
         verb.remove_suffix(intervention_suffix.size());
+    }
     else if (verb.ends_with(arcanum_suffix))
+    {
         verb.remove_suffix(arcanum_suffix.size());
+    }
     else if (verb.ends_with(natural_suffix))
+    {
         verb.remove_suffix(natural_suffix.size());
+    }
     return verb;
 }
 
@@ -2953,11 +2965,15 @@ inline std::optional<CommandOption> command_option(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("command_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(8);
     const auto found = std::find(command_options.begin(), command_options.end(), verb);
     if (found == command_options.end())
+    {
         return std::nullopt;
+    }
     return static_cast<CommandOption>(found - command_options.begin() + 1);
 }
 
@@ -2970,10 +2986,14 @@ inline std::optional<DamageType> chromatic_type(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("chromatic_orb_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(14);
     if (std::find(chromatic_types.begin(), chromatic_types.end(), verb) == chromatic_types.end())
+    {
         return std::nullopt;
+    }
     return damage_type(verb);
 }
 
@@ -2986,12 +3006,16 @@ inline constexpr std::array<std::string_view, 3> restoration_conditions{"blinded
 inline std::optional<std::string_view> restoration_condition(std::string_view verb)
 {
     if (!verb.starts_with("lesser_restoration_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(19);
     const auto found =
         std::find(restoration_conditions.begin(), restoration_conditions.end(), verb);
     if (found == restoration_conditions.end())
+    {
         return std::nullopt;
+    }
     return *found;
 }
 
@@ -3004,13 +3028,17 @@ inline constexpr std::array<std::string_view, 5> dragon_types{"acid", "cold", "f
 inline std::optional<DamageType> dragon_type(std::string_view verb)
 {
     for (const std::string_view prefix : {"dragons_breath_exhale_", "dragons_breath_"})
+    {
         if (verb.starts_with(prefix))
         {
             verb.remove_prefix(prefix.size());
             if (std::find(dragon_types.begin(), dragon_types.end(), verb) == dragon_types.end())
+            {
                 return std::nullopt;
+            }
             return damage_type(verb);
         }
+    }
     return std::nullopt;
 }
 
@@ -3022,10 +3050,14 @@ inline constexpr std::array<std::string_view, 7> burst_types{
 inline std::optional<DamageType> burst_type(std::string_view verb)
 {
     if (!verb.starts_with("sorcerous_burst_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(16);
     if (std::find(burst_types.begin(), burst_types.end(), verb) == burst_types.end())
+    {
         return std::nullopt;
+    }
     return damage_type(verb);
 }
 
@@ -3038,10 +3070,14 @@ inline constexpr std::array<std::string_view, 11> resistance_types{
 inline std::optional<DamageType> resistance_type(std::string_view verb)
 {
     if (!verb.starts_with("resistance_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(11);
     if (std::find(resistance_types.begin(), resistance_types.end(), verb) == resistance_types.end())
+    {
         return std::nullopt;
+    }
     return damage_type(verb);
 }
 
@@ -3053,11 +3089,15 @@ inline constexpr std::array<std::string_view, 2> guidance_skills{"athletics", "m
 inline std::optional<int> guidance_skill(std::string_view verb)
 {
     if (!verb.starts_with("guidance_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(9);
     const auto found = std::find(guidance_skills.begin(), guidance_skills.end(), verb);
     if (found == guidance_skills.end())
+    {
         return std::nullopt;
+    }
     return static_cast<int>(found - guidance_skills.begin());
 }
 
@@ -3071,10 +3111,14 @@ inline std::optional<DamageType> energy_type(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("protection_from_energy_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(23);
     if (std::find(energy_types.begin(), energy_types.end(), verb) == energy_types.end())
+    {
         return std::nullopt;
+    }
     return damage_type(verb);
 }
 
@@ -3091,11 +3135,15 @@ inline std::optional<int> curse_of(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("bestow_curse_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(13);
     const auto found = std::find(curses.begin(), curses.end(), verb);
     if (found == curses.end())
+    {
         return std::nullopt;
+    }
     return static_cast<int>(found - curses.begin());
 }
 
@@ -3110,11 +3158,15 @@ inline std::optional<std::size_t> greater_harm(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("greater_restoration_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(20);
     const auto found = std::find(greater_harms.begin(), greater_harms.end(), verb);
     if (found == greater_harms.end())
+    {
         return std::nullopt;
+    }
     return static_cast<std::size_t>(found - greater_harms.begin());
 }
 
@@ -3125,11 +3177,15 @@ inline std::optional<std::size_t> contagion_ability(std::string_view verb)
                                                         "intelligence", "wisdom",    "charisma"};
     verb = without_cast_suffix(verb);
     if (!verb.starts_with("contagion_"))
+    {
         return std::nullopt;
+    }
     verb.remove_prefix(10);
     const auto found = std::find(abilities.begin(), abilities.end(), verb);
     if (found == abilities.end())
+    {
         return std::nullopt;
+    }
     return static_cast<std::size_t>(found - abilities.begin());
 }
 
@@ -3155,9 +3211,13 @@ inline constexpr std::array<std::string_view, 10> wall_sides{
 inline std::optional<std::size_t> wall_side(std::string_view verb)
 {
     for (std::size_t n = 0; n < wall_sides.size(); ++n)
+    {
         if (verb.ends_with(wall_sides[n]) && verb.size() > wall_sides[n].size() &&
             verb[verb.size() - wall_sides[n].size() - 1] == '_' && verb.find("wall_of_fire") == 0)
+        {
             return n;
+        }
+    }
     return std::nullopt;
 }
 
@@ -3167,11 +3227,17 @@ inline std::optional<std::size_t> wall_direction(std::string_view verb)
 {
     verb = without_cast_suffix(verb);
     if (const auto side = wall_side(verb))
+    {
         verb.remove_suffix(wall_sides[*side].size() + 1);
+    }
     for (std::size_t n = 0; n < wall_directions.size(); ++n)
+    {
         if (verb.ends_with(wall_directions[n]) && verb.size() > wall_directions[n].size() &&
             verb[verb.size() - wall_directions[n].size() - 1] == '_')
+        {
             return n;
+        }
+    }
     return std::nullopt;
 }
 
@@ -3182,7 +3248,9 @@ inline const SpellDef *spell_by_id(std::string_view id)
     {
         std::unordered_map<std::string_view, const SpellDef *> result;
         for (const auto &spell : spell_table)
+        {
             result.emplace(spell.id, &spell);
+        }
         return result;
     }();
     const auto found = index.find(id);
@@ -3193,70 +3261,134 @@ inline const SpellDef *find_spell(std::string_view id)
 {
     // Most lookups name a spell outright.
     if (const auto *spell = spell_by_id(id))
+    {
         return spell;
+    }
     id = without_cast_suffix(id);
     if (energy_type(id))
+    {
         id = "protection_from_energy";
+    }
     if (curse_of(id))
+    {
         id = "bestow_curse";
+    }
     if (greater_harm(id))
+    {
         id = "greater_restoration";
+    }
     if (contagion_ability(id))
+    {
         id = "contagion";
+    }
     if (id == "sunbeam_line")
+    {
         id = "sunbeam";
+    }
     if (const auto side = wall_side(id))
+    {
         id.remove_suffix(wall_sides[*side].size() + 1);
+    }
     if (const auto direction = wall_direction(id))
+    {
         id.remove_suffix(wall_directions[*direction].size() + 1);
+    }
     if (id.starts_with("fire_shield_"))
+    {
         id = "fire_shield";
+    }
     if (id.starts_with("conjure_minor_elementals_"))
+    {
         id = "conjure_minor_elementals";
+    }
     if (id.starts_with("conjure_elemental_"))
+    {
         id = "conjure_elemental";
+    }
     if (id.starts_with("summon_dragon_"))
+    {
         id = "summon_dragon";
+    }
     if (id == "telekinesis_again")
+    {
         id = "telekinesis";
+    }
     if (id.starts_with("eyebite_"))
+    {
         id = "eyebite";
+    }
     if (id.starts_with("contingency_"))
+    {
         id = "contingency";
+    }
     if (id.starts_with("forcecage_"))
+    {
         id = "forcecage";
+    }
     if (id.starts_with("giant_insect_"))
+    {
         id = "giant_insect";
+    }
     if (id.starts_with("animal_shapes_"))
+    {
         id = "animal_shapes";
+    }
     if (id == "call_lightning_again")
+    {
         id = "call_lightning";
+    }
     if (id == "move_sanctuary")
+    {
         id = "natures_sanctuary";
+    }
     if (id.starts_with("polymorph_"))
+    {
         id = "polymorph";
+    }
     if (id == "dimension_door_with")
+    {
         id = "dimension_door";
+    }
     if (command_option(id))
+    {
         id = "command";
+    }
     if (resistance_type(id))
+    {
         id = "resistance";
+    }
     if (guidance_skill(id))
+    {
         id = "guidance";
+    }
     if (id.starts_with("magic_circle_"))
+    {
         id = "magic_circle";
+    }
     if (chromatic_type(id))
+    {
         id = "chromatic_orb";
+    }
     if (restoration_condition(id))
+    {
         id = "lesser_restoration";
+    }
     if (id == "enlarge" || id == "reduce")
+    {
         id = "enlarge_reduce";
+    }
     if (id == "true_strike_radiant")
+    {
         id = "true_strike";
+    }
     if (burst_type(id))
+    {
         id = "sorcerous_burst";
+    }
     if (dragon_type(id))
+    {
         id = id.starts_with("dragons_breath_exhale_") ? "dragons_breath_exhale" : "dragons_breath";
+    }
     return spell_by_id(id);
 }
 
@@ -3277,8 +3409,12 @@ inline std::vector<std::string> spells_from_mask(unsigned mask)
 {
     std::vector<std::string> result;
     for (const auto &spell : spell_table)
+    {
         if (spell.mask && (mask & spell.mask))
+        {
             result.emplace_back(spell.id);
+        }
+    }
     return result;
 }
 
@@ -3290,7 +3426,9 @@ inline unsigned mask_from_spells(const std::vector<std::string> &ids)
     {
         const auto *spell = find_spell(id);
         if (!spell || !spell->mask)
+        {
             return 0;
+        }
         mask |= spell->mask;
     }
     return mask;
@@ -3310,7 +3448,9 @@ inline std::vector<std::string> spells_of_level(const std::vector<std::string> &
     {
         const auto *spell = find_spell(id);
         if (spell && (spell->level == 0) == cantrips)
+        {
             result.push_back(id);
+        }
     }
     return result;
 }

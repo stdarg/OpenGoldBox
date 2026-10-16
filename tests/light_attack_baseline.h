@@ -18,11 +18,14 @@ CampaignParty party()
     }
     p.award_experience(2700, "light-baseline");
     for (const auto id : {1u, 2u, 3u})
+    {
         for (unsigned level = 2; level <= 4; ++level)
         {
             auto choice = p.default_advancement(id);
             if (level == 2)
+            {
                 choice.fighting_style = "great_weapon_fighting";
+            }
             if (level == 4)
             {
                 choice.feat = "archery";
@@ -30,9 +33,12 @@ CampaignParty party()
             }
             p.advance(id, choice);
         }
+    }
     auto state = p.checkpoint();
     for (auto &member : state.roster)
+    {
         member.vitals.hit_points -= 2;
+    }
     p.restore(std::move(state));
     return p;
 }

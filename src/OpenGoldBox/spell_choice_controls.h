@@ -29,12 +29,18 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
 {
     using namespace godot;
     for (int i = 0; i < rows.get_child_count(); ++i)
+    {
         if (auto *control = Object::cast_to<Control>(rows.get_child(i)))
+        {
             control->hide();
+        }
+    }
     auto groups = options.learning;
     if (options.may_prepare)
+    {
         groups.push_back(
             {"prepared", "Prepared spells", options.prepared_count, options.preparation});
+    }
     int position = 0;
     for (const auto &group : groups)
     {
@@ -66,8 +72,12 @@ void refresh_spell_groups(godot::VBoxContainer &rows,
         pending->set_text(tr(N_("Unsupported choices remain pending.")));
         pending->set_visible(group.options.size() < group.count);
         for (int i = 0; i < section->get_child_count(); ++i)
+        {
             if (auto *box = Object::cast_to<CheckBox>(section->get_child(i)))
+            {
                 box->hide();
+            }
+        }
         for (const auto &option : group.options)
         {
             auto *box =
@@ -108,10 +118,14 @@ inline void equalize_choice_widths(godot::Node &root)
         auto *node = pending.back();
         pending.pop_back();
         for (int i = 0; i < node->get_child_count(); ++i)
+        {
             pending.push_back(node->get_child(i));
+        }
         auto *choice = Object::cast_to<CheckBox>(node);
         if (choice && choice->is_visible())
+        {
             choices.push_back(choice);
+        }
     }
     real_t widest = 0;
     for (auto *choice : choices)
@@ -121,22 +135,30 @@ inline void equalize_choice_widths(godot::Node &root)
         widest = std::max(widest, choice->get_combined_minimum_size().x);
     }
     for (auto *choice : choices)
+    {
         choice->set_custom_minimum_size({widest, choice->get_custom_minimum_size().y});
+    }
 }
 
 inline void toggle_spell(opengold::rules::SpellChoices &choice, opengold::ChoiceToggle toggle)
 {
     const auto [group, value, selected] = toggle;
     if (group == "prepared" && !choice.prepared)
+    {
         choice.prepared.emplace();
+    }
     auto &values = group == "prepared" ? *choice.prepared : choice.learning[std::string(group)];
     if (selected)
     {
         if (std::find(values.begin(), values.end(), value) == values.end())
+        {
             values.emplace_back(value);
+        }
     }
     else
+    {
         std::erase(values, value);
+    }
 }
 
 template <class Translate>
@@ -185,18 +207,28 @@ void spell_known(godot::Window &w, const opengold::rules::SpellAccess &access,
     w.set_title(tr(spellbook ? N_("Spellbook") : N_("Prepared spells")));
     godot::String text = tr(N_("Known cantrips")) + ": ";
     for (const auto &s : access.cantrips)
+    {
         text += tr(s.label) + "; ";
+    }
     if (spellbook)
     {
         text += "\n" + tr(N_("Spellbook")) + ": ";
         for (const auto &s : access.spellbook)
+        {
             text += tr(s.label) + "; ";
+        }
     }
     text += "\n" + tr(N_("Prepared spells")) + ": ";
     for (const auto &id : access.prepared)
+    {
         for (const auto &s : preparation)
+        {
             if (s.id == id)
+            {
                 text += tr(s.label) + "; ";
+            }
+        }
+    }
     required_node<godot::RichTextLabel>(w, "Known").set_text(text);
 }
 } // namespace presentation

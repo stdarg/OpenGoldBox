@@ -28,7 +28,9 @@ constexpr std::string_view strikes = "class:cleric:blessed_strikes";
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -61,7 +63,9 @@ CharacterDraft draft()
     d.name = "Cleric";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[4] = {{6, 6, 6, 1}, 3};
     d.cantrips = std::vector<std::string>{"sacred_flame", "spare_the_dying", "resistance"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
@@ -81,7 +85,9 @@ Character cleric(unsigned level, std::string strike = "divine_strike")
     {
         auto choice = rules->default_advancement(hero.sheet());
         if (choice.training.contains(std::string(strikes)))
+        {
             choice.training[std::string(strikes)] = {strike};
+        }
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
     return hero;
@@ -93,7 +99,9 @@ CharacterSheet with_spell(const Character &hero, const std::string &spell)
     auto sheet = hero.sheet();
     auto &prepared = sheet.prepared_spells;
     if (std::find(prepared.begin(), prepared.end(), spell) == prepared.end())
+    {
         prepared.front() = spell;
+    }
     return sheet;
 }
 
@@ -110,8 +118,12 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -133,8 +145,12 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -147,22 +163,30 @@ unsigned slots(const CombatSession &c, unsigned level)
     unsigned winds{}, count{};
     in >> magic >> winds;
     for (unsigned n = 1; n <= level; ++n)
+    {
         in >> count;
+    }
     return count;
 }
 
 unsigned remaining(const CombatSession &c, std::string_view pool)
 {
     for (const auto &resource : unit(c, 1).resources)
+    {
         if (resource.id == pool)
+        {
             return resource.remaining;
+        }
+    }
     return 0;
 }
 
 void to_turn(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
     check(c.snapshot().actor == id, "Reach the turn");
 }
 
@@ -174,7 +198,9 @@ std::unique_ptr<CombatSession> chapel(const RulesModule &rules, const CharacterS
     const std::vector<std::string> gear{"mace"};
     std::optional<VitalState> life;
     if (hp)
+    {
         life = VitalState{hp, false, {}};
+    }
     auto c =
         rules.create({{12, 5, std::vector<Terrain>(60)},
                       {{1,
@@ -209,7 +235,9 @@ void progression_checks()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     check(party.member(id).character.sheet().level == 15, "A Cleric reaches the cap of 15");
     check(grants(cleric(5), "feature:sear_undead", 5) &&
               grants(cleric(6), "feature:blessed_healer", 6),
@@ -221,8 +249,10 @@ void progression_checks()
           "Blessed Strikes takes the chosen option");
     for (const auto &[level, count] :
          std::vector<std::pair<unsigned, unsigned>>{{5, 9}, {6, 10}, {7, 11}, {8, 12}})
+    {
         check(rules->spell_access(cleric(level).sheet()).prepared_choices == count,
               "Prepared spells: 9 at 5 to 12 at 8");
+    }
     const auto preparable = [&](const Character &hero, std::string_view spell)
     {
         const auto options =
@@ -236,10 +266,14 @@ void progression_checks()
     for (const auto *spell :
          {"animate_dead", "beacon_of_hope", "bestow_curse", "dispel_magic", "magic_circle",
           "protection_from_energy", "remove_curse", "spirit_guardians"})
+    {
         check(preparable(cleric(5), spell), std::string("A level-5 Cleric can prepare ") + spell);
+    }
     check(!preparable(cleric(4), "spirit_guardians"), "No level-3 spells at 4");
     for (const auto *spell : {"banishment", "freedom_of_movement", "guardian_of_faith"})
+    {
         check(preparable(cleric(7), spell), std::string("A level-7 Cleric can prepare ") + spell);
+    }
     const auto dummies = dummy_rules();
     auto c5 = chapel(*dummies, cleric(5).sheet(), "dummy", 1);
     check(slots(*c5, 3) == 2 && remaining(*c5, "channel_divinity") == 2,
@@ -265,29 +299,41 @@ void progression_checks()
           "Prepared spells: 16 at 11 and 12");
     for (const auto *spell : {"blade_barrier", "create_undead", "harm", "heal", "heroes_feast",
                               "sunbeam", "true_seeing", "word_of_recall"})
+    {
         check(preparable(cleric(11), spell), std::string("A level-11 Cleric can prepare ") + spell);
+    }
     check(slots(*chapel(*dummies, cleric(11).sheet(), "dummy", 1), 6) == 1,
           "One level-6 slot at 11");
     for (const auto &[level, count] :
          std::vector<std::pair<unsigned, unsigned>>{{13, 17}, {14, 17}, {15, 18}})
+    {
         check(rules->spell_access(cleric(level).sheet()).prepared_choices == count,
               "Prepared spells: 17 at 13 and 14, 18 at 15");
+    }
     for (const auto *spell :
          {"conjure_celestial", "divine_word", "fire_storm", "regenerate", "resurrection"})
+    {
         check(preparable(cleric(13), spell), std::string("A level-13 Cleric can prepare ") + spell);
+    }
     check(!preparable(cleric(12), "fire_storm"), "No level-7 spells at 12");
     for (const auto *spell : {"antimagic_field", "earthquake", "holy_aura", "sunburst"})
+    {
         check(preparable(cleric(15), spell), std::string("A level-15 Cleric can prepare ") + spell);
+    }
     check(!preparable(cleric(14), "sunburst"), "No level-8 spells at 14");
     check(slots(*chapel(*dummies, cleric(13).sheet(), "dummy", 1), 7) == 1 &&
               slots(*chapel(*dummies, cleric(15).sheet(), "dummy", 1), 8) == 1,
           "A level-7 slot at 13, a level-8 slot at 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{9, 14}, {10, 15}})
+    {
         check(rules->spell_access(cleric(level).sheet()).prepared_choices == count,
               "Prepared spells: 14 at 9, 15 at 10");
+    }
     for (const auto *spell :
          {"contagion", "dispel_evil_and_good", "flame_strike", "insect_plague", "raise_dead"})
+    {
         check(preparable(cleric(9), spell), std::string("A level-9 Cleric can prepare ") + spell);
+    }
     check(!preparable(cleric(8), "flame_strike"), "No level-5 spells at 8");
     auto c9 = chapel(*dummies, cleric(9).sheet(), "dummy", 1);
     check(slots(*c9, 5) == 1 && slots(*chapel(*dummies, cleric(10).sheet(), "dummy", 1), 5) == 2,
@@ -346,25 +392,37 @@ void bestow_curse_checks()
     auto c = chapel(*rules, with_spell(cleric(5), "bestow_curse"), "dummy", 1);
     Command step;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb == "move" && command.destination == Cell{2, 2})
+        {
             step = command;
+        }
+    }
     check(step.actor == 1 && c->submit(step), "Step beside the foe");
     for (const auto *curse : {"strength", "dexterity", "constitution", "intelligence", "wisdom",
                               "charisma", "attacks", "dodge", "necrotic"})
+    {
         check(offered(*c, std::string("bestow_curse_") + curse, 98),
               std::string("Bestow Curse offers ") + curse);
+    }
     bool cursed = false;
     for (std::uint64_t seed = 1; seed < 40 && !cursed; ++seed)
     {
         auto trial = chapel(*rules, with_spell(cleric(5), "bestow_curse"), "dummy", seed);
         Command near;
         for (const auto &command : trial->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{2, 2})
+            {
                 near = command;
+            }
+        }
         check(trial->submit(near) && submit(*trial, "bestow_curse_necrotic", 98),
               "Cast Bestow Curse");
         if (!logged(*trial, "Foe is cursed: extra Necrotic damage."))
+        {
             continue;
+        }
         cursed = true;
         const auto saved = trial->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the curse");
@@ -407,7 +465,9 @@ void animate_dead_checks()
               logged(*c, "Cleric begins casting Animate Dead."),
           "Animate Dead begins on the corpse");
     for (unsigned turns = 0; turns < 40 && !logged(*c, "Corpse rises as a Zombie."); ++turns)
+    {
         check(submit(*c, "end"), "Pass the minute of casting");
+    }
     check(logged(*c, "Cleric keeps casting Animate Dead.") &&
               logged(*c, "Corpse rises as a Zombie.") && unit(*c, 97).side == Side::party &&
               unit(*c, 97).hit_points == 15,
@@ -446,7 +506,9 @@ void sear_undead_checks()
         check(submit(*c, "turn_undead", 1), "Turn Undead at 5");
         seared = logged(*c, "Foe takes ") && logged(*c, " Radiant damage from Sear Undead.");
         if (seared)
+        {
             check(logged(*c, "Foe is turned."), "The searing does not end the turning");
+        }
     }
     check(seared, "Sear Undead burns an Undead that fails its save");
 }
@@ -460,11 +522,17 @@ void blessed_strikes_checks()
         auto c = chapel(*rules, cleric(7).sheet(), "dummy", seed);
         Command step;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{2, 2})
+            {
                 step = command;
+            }
+        }
         check(c->submit(step) && submit(*c, "melee", 98), "The Cleric swings its mace");
         if (!offered(*c, "divine_strike_radiant", 98))
+        {
             continue;
+        }
         check(offered(*c, "divine_strike_necrotic", 98), "Divine Strike offers both types");
         check(submit(*c, "divine_strike_necrotic", 98) &&
                   logged(*c, " Necrotic damage from Divine Strike.") &&
@@ -476,8 +544,12 @@ void blessed_strikes_checks()
     auto potent = chapel(*rules, cleric(7, "potent_spellcasting").sheet(), "dummy", 1);
     Command step;
     for (const auto &command : potent->legal_commands())
+    {
         if (command.verb == "move" && command.destination == Cell{2, 2})
+        {
             step = command;
+        }
+    }
     check(potent->submit(step) && submit(*potent, "melee", 98) &&
               !offered(*potent, "divine_strike_radiant"),
           "Potent Spellcasting has no Divine Strike");
@@ -490,16 +562,24 @@ CharacterSheet with_spells(const Character &hero, const std::vector<std::string>
     auto &prepared = sheet.prepared_spells;
     std::size_t next = 0;
     for (const auto &spell : spells)
+    {
         if (std::find(prepared.begin(), prepared.end(), spell) == prepared.end())
+        {
             prepared[next++] = spell;
+        }
+    }
     return sheet;
 }
 
 bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -583,13 +663,19 @@ void contagion_checks()
         auto c = chapel(*rules, with_spells(cleric(9), {"contagion"}), "dummy", seed);
         Command step;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{2, 2})
+            {
                 step = command;
+            }
+        }
         check(c->submit(step) && offered(*c, "contagion_wisdom", 98),
               "Contagion offers each ability");
         check(submit(*c, "contagion_wisdom", 98), "Cast Contagion");
         if (!logged(*c, "Foe is Poisoned by the contagion."))
+        {
             continue;
+        }
         sick = true;
         check(logged(*c, " Necrotic damage."), "Contagion's 11d8 Necrotic damage");
         const auto saved = c->save();
@@ -614,13 +700,21 @@ void dispel_evil_checks()
         to_turn(*c, 98);
         Command closer;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{2, 2})
+            {
                 closer = command;
+            }
+        }
         check(c->submit(closer) && submit(*c, "melee", 1), "The walker attacks the Cleric");
         bool disadvantaged = false;
         for (const auto &line : log_lines(*c))
+        {
             if (line.starts_with("Foe -> Cleric"))
+            {
                 disadvantaged = line.find("(disadvantage)") != std::string::npos;
+            }
+        }
         check(disadvantaged, "An Undead attacks the Cleric with Disadvantage");
         to_turn(*c, 1);
         check(offered(*c, "dispel_dismissal", 98) && submit(*c, "dispel_dismissal", 98),
@@ -660,8 +754,12 @@ void raise_dead_checks()
                                {98, "brute", "Foe", Side::opposition, {2, 2}}}},
                              1);
     for (unsigned turns = 0; turns < 40 && !unit(*c, fallen).dead; ++turns)
+    {
         if (!(c->snapshot().actor == 98 && submit(*c, "melee", fallen)))
+        {
             check(submit(*c, "end") || submit(*c, "decline"), "Pass the turn");
+        }
+    }
     check(unit(*c, fallen).dead, "The brute kills the Fallen");
     auto target = unit(*c, fallen).persistent;
     RandomState random{1};
@@ -683,7 +781,9 @@ void level_six_checks()
         check(submit(*c, "harm", 98), "Cast Harm");
         harmed = logged(*c, "Foe's Hit Point maximum drops by ");
         if (harmed)
+        {
             check(unit(*c, 98).max_hit_points < 1000, "Harm lowers the maximum");
+        }
     }
     check(harmed, "A seed where the brute fails its save");
     // Heal: 70 Hit Points.
@@ -735,12 +835,16 @@ void level_six_checks()
               submit(*c, "spell_cast") && logged(*c, "Cleric begins casting Create Undead."),
           "Create Undead chooses up to three corpses and begins");
     for (unsigned turns = 0; turns < 40 && !logged(*c, "Corpse rises as a Ghoul."); ++turns)
+    {
         if (!submit(*c, "end"))
         {
             for (const auto &line : log_lines(*c))
+            {
                 std::cerr << line << '\n';
+            }
             check(false, "Pass the minute of casting");
         }
+    }
     check(logged(*c, "Corpse rises as a Ghoul.") && unit(*c, 97).side == Side::party &&
               unit(*c, 97).hit_points == 22,
           "The corpse rises as a Ghoul for the party");
@@ -833,7 +937,9 @@ void divine_word_checks()
         all = logged(*c, "Low dies.") && logged(*c, "Mid is Blinded and Stunned.") &&
               logged(*c, "High is Blinded.");
         if (!all)
+        {
             continue;
+        }
         check(unit(*c, 96).dead, "20 Hit Points or fewer: it dies");
         const auto status = unit(*c, 97).status;
         check(status.find("Blinded") != std::string::npos &&
@@ -878,7 +984,9 @@ void regenerate_checks()
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the casting");
     for (unsigned turns = 0; turns < 60 && !logged(*c, "Regenerate takes hold of Ally."); ++turns)
+    {
         check(submit(*c, "end"), "Pass the minute of casting");
+    }
     check(logged(*c, "Cleric keeps casting Regenerate.") && unit(*c, 2).hit_points >= 3 + 19,
           "After a minute the ally regains 4d8 + 15");
     const auto before = log_lines(*c).size();
@@ -927,7 +1035,9 @@ void earthquake_checks()
                   logged(*c, "The ground shakes.") && logged(*c, "Foe Dexterity save:"),
               "Earthquake shakes the ground");
         if (logged(*c, "Cleric loses Concentration."))
+        {
             continue;
+        }
         check(c->snapshot().battlefield.at({10, 4}) == Terrain::difficult,
               "The tremor is Difficult Terrain");
         const auto saved = c->save();
@@ -954,8 +1064,12 @@ void holy_aura_checks()
         check(step_to(*c, Cell{2, 2}) && submit(*c, "melee", 1), "The Undead attacks the Cleric");
         bool disadvantaged = false;
         for (const auto &line : log_lines(*c))
+        {
             if (line.starts_with("Foe -> Cleric"))
+            {
                 disadvantaged = line.find("(disadvantage)") != std::string::npos;
+            }
+        }
         check(disadvantaged, "Attacks on a warded creature have Disadvantage");
         blinded = logged(*c, "Foe is Blinded by the holy aura.");
     }
@@ -975,8 +1089,10 @@ void sunburst_checks()
               "Sunburst flashes");
         blinded = logged(*c, "Foe is Blinded.");
         if (blinded)
+        {
             check(unit(*c, 98).status.find("Blinded") != std::string::npos,
                   "A failed save leaves it Blinded");
+        }
     }
     check(blinded, "A seed where the foe fails its save");
 }
@@ -1018,7 +1134,9 @@ void improved_strikes_checks()
         auto c = chapel(*rules, cleric(14, "potent_spellcasting").sheet(), "dummy", seed);
         check(submit(*c, "sacred_flame", 98), "Cast Sacred Flame");
         if (!offered(*c, "potent_vitality", 2))
+        {
             continue;
+        }
         check(submit(*c, "potent_vitality", 2) && unit(*c, 2).temporary_hp.amount >= 2 &&
                   logged(*c, "Cleric gives vitality to Ally.") && !offered(*c, "potent_vitality"),
               "Twice the Wisdom modifier in Temporary Hit Points, once");
@@ -1039,8 +1157,12 @@ void cantrip_checks()
             auto c = chapel(*rules, cleric(level).sheet(), "dummy", seed);
             check(submit(*c, "sacred_flame", 98), "Cast Sacred Flame");
             for (const auto &line : log_lines(*c))
+            {
                 if (line.starts_with("Foe takes ") && line.ends_with(" Radiant damage."))
+                {
                     best = std::max(best, std::stoi(line.substr(10)));
+                }
+            }
         }
         return best;
     };

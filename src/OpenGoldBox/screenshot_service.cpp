@@ -61,9 +61,11 @@ void ScreenshotService::prepare_service()
     // The game autoload owns this subtree in its scene. Directly instantiated
     // services use the same authored scene for the notice.
     if (!get_node_or_null("NoticeLayer"))
+    {
         presentation::attach_child(*this,
                                    presentation::instantiate_scene(
                                        "res://scenes/control_templates/screenshot_notice.tscn"));
+    }
 }
 
 void ScreenshotService::_process(double delta)
@@ -82,7 +84,9 @@ void ScreenshotService::advance_capture(double delta)
     {
         notice_time_ -= delta;
         if (notice_time_ <= 0)
+        {
             panel->hide();
+        }
     }
     poll_time_ += delta;
     if (pending_)
@@ -96,15 +100,21 @@ void ScreenshotService::advance_capture(double delta)
         }
     }
     if (poll_time_ < .1 || pending_ || directory_.is_empty())
+    {
         return;
+    }
     poll_time_ = 0;
     const auto request = directory_.path_join("capture.request");
     if (!FileAccess::file_exists(request))
+    {
         return;
+    }
     {
         const auto input = FileAccess::open(request, FileAccess::READ);
         if (input.is_null() || input->get_length() > 128)
+        {
             return;
+        }
         request_id_ = input->get_as_text().strip_edges();
     }
     file_request_ = true;
@@ -114,7 +124,9 @@ void ScreenshotService::advance_capture(double delta)
 bool ScreenshotService::request_capture()
 {
     if (pending_ || !is_inside_tree())
+    {
         return false;
+    }
     pending_ = true;
     capture_wait_ = 0;
     required_node<PanelContainer>(*this, "NoticeLayer/Notice").hide();
@@ -135,7 +147,9 @@ bool ScreenshotService::request_capture()
         "frame_post_draw", presentation::guarded(this, &ScreenshotService::capture_frame),
         Object::CONNECT_ONE_SHOT);
     if (error != OK)
+    {
         complete({}, i18n::text("Cannot capture the current game frame."));
+    }
     return true;
 }
 
@@ -175,7 +189,9 @@ void ScreenshotService::capture_windows(Node &node, const String &prefix, Array 
     {
         capture_windows(*node.get_child(i), prefix, files, error);
         if (!error.is_empty())
+        {
             return;
+        }
     }
 }
 
@@ -194,7 +210,9 @@ void ScreenshotService::capture_frame()
     String error;
     capture_windows(*get_tree()->get_root(), prefix, files, error);
     if (files.is_empty() && error.is_empty())
+    {
         error = i18n::text("Cannot capture the current game frame.");
+    }
     complete(files, error);
 }
 
@@ -221,15 +239,23 @@ void ScreenshotService::complete(const Array &files, String error)
             }
         }
         if (published)
+        {
             published =
                 DirAccess::rename_absolute(temporary, directory_.path_join("latest.json")) == OK;
+        }
         if (!published)
+        {
             DirAccess::remove_absolute(temporary);
+        }
     }
     if (!published && error.is_empty())
+    {
         error = i18n::text("Screenshots saved, but the capture report could not be written.");
+    }
     if (file_request_)
+    {
         DirAccess::remove_absolute(directory_.path_join("capture.request"));
+    }
     file_request_ = false;
     request_id_ = String();
     const auto message = error.is_empty()
@@ -239,9 +265,13 @@ void ScreenshotService::complete(const Array &files, String error)
     required_node<PanelContainer>(*this, "NoticeLayer/Notice").show();
     notice_time_ = 5;
     if (error.is_empty())
+    {
         UtilityFunctions::print(message);
+    }
     else
+    {
         UtilityFunctions::printerr(message);
+    }
     pending_ = false;
     emit_signal("capture_completed", files, error);
 }

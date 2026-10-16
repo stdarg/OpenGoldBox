@@ -24,7 +24,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -55,8 +57,10 @@ void conversions()
     check(torch.slot == EquipmentSlot::weapon && torch.hands == 1,
           "A Torch is wielded in one hand");
     for (const auto *gear : {"oil", "acid", "alchemists_fire"})
+    {
         check(module->equipment_info(gear).slot == EquipmentSlot::carried,
               std::string(gear) + " is carried gear");
+    }
     check(item(authored_item::torch).label() == "Torch" &&
               item(authored_item::alchemists_fire).label() == "Alchemist's Fire",
           "The added gear has readable names");
@@ -73,7 +77,9 @@ CharacterSheet fighter()
     d.name = "Torchbearer";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {}).sheet();
 }
 
@@ -90,8 +96,12 @@ std::size_t count_logged(const CombatSession &c, std::string_view text)
 bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.actor == actor && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -116,9 +126,13 @@ void torch_stops_regeneration()
               {3, "target", "Guard", Side::opposition, {9, 3}}}},
             seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             (void)submit(*c, "end", c->snapshot().actor);
+        }
         if (c->snapshot().actor != 1 || !submit(*c, "melee", 1, 2))
+        {
             continue;
+        }
         const auto troll = [&]
         {
             const auto s = c->snapshot();
@@ -129,11 +143,15 @@ void torch_stops_regeneration()
                                  });
         };
         if (troll().hit_points != 0)
+        {
             continue;
+        }
         check(c->snapshot().outcome == Outcome::ongoing,
               "A Torch fells the troll while its guard fights on");
         for (unsigned turns = 0; turns < 3 && !troll().dead; ++turns)
+        {
             (void)submit(*c, "end", c->snapshot().actor);
+        }
         check(troll().dead && count_logged(*c, "cannot regenerate and dies") == 1,
               "A troll felled by a Torch cannot regenerate and dies");
         burned = true;
@@ -164,9 +182,13 @@ Character torchbearer(std::string character_class = "fighter")
     d.name = "Torchbearer";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     if (character_class == "wizard")
+    {
         d.cantrips = {"fire_bolt", "ray_of_frost", "shocking_grasp"};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -189,7 +211,9 @@ Arena arena(const std::vector<std::uint8_t> &gear,
     result.party->award_experience(result.party->rule_module().experience_for_level(level),
                                    "arena");
     while (result.party->can_advance(result.fighter))
+    {
         result.party->advance(result.fighter, result.party->default_advancement(result.fighter));
+    }
     const auto wield = [&](std::uint8_t type)
     {
         result.party->purchase(result.fighter, item(type));
@@ -199,9 +223,13 @@ Arena arena(const std::vector<std::uint8_t> &gear,
     };
     wield(36);
     if (shield)
+    {
         wield(59);
+    }
     for (const auto type : gear)
+    {
         result.party->purchase(result.fighter, item(type));
+    }
     CampaignEncounter encounter;
     encounter.field.geometry = {12, 6, std::vector<Terrain>(72)};
     encounter.field.tiles.resize(72, 7);
@@ -232,8 +260,12 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId actor, Enti
 bool use(CombatDemo &demo, std::string_view verb, EntityId actor, EntityId target = 0)
 {
     for (const auto &command : demo.combat().legal_commands())
+    {
         if (command.verb == verb && command.actor == actor && (!target || command.target == target))
+        {
             return demo.submit(command);
+        }
+    }
     return false;
 }
 
@@ -281,9 +313,13 @@ void torch_drawn_against_troll()
               "A sword-wielder carrying a Torch can strike with either");
         check(use(*a.demo, "torch", fighter, 1000), "The fighter strikes with the Torch");
         if (unit(*a.demo, 1000).hit_points != 0)
+        {
             continue;
+        }
         for (unsigned turns = 0; turns < 3 && !unit(*a.demo, 1000).dead; ++turns)
+        {
             (void)use(*a.demo, "end", a.demo->combat().snapshot().actor);
+        }
         check(unit(*a.demo, 1000).dead && logged(*a.demo, "cannot regenerate and dies") == 1,
               "A troll felled by a Torch cannot regenerate and dies");
         return;
@@ -346,7 +382,9 @@ void oil_then_torch()
         const auto before = unit(*a.demo, 1000).hit_points;
         check(use(*a.demo, "torch", fighter, 1000), "The fighter strikes with the Torch");
         if (unit(*a.demo, 1000).hit_points == before)
+        {
             continue;
+        }
         check(before - unit(*a.demo, 1000).hit_points == 6 &&
                   logged(*a.demo, "burns for 5 more damage") == 1,
               "Fire on an oiled creature deals 5 more damage");
@@ -405,10 +443,14 @@ void burning_troll()
               "The AI sets a standing troll burning");
         check(use(*a.demo, "throw_alchemists_fire", fighter, 1000), "Throw Alchemist's Fire");
         if (!unit(*a.demo, 1000).burning)
+        {
             continue;
+        }
         check(unit(*a.demo, 1000).regenerates, "The snapshot shows a regenerating troll");
         for (unsigned turns = 0; turns < 4 && !unit(*a.demo, 1000).dead; ++turns)
+        {
             check(use(*a.demo, "end", a.demo->combat().snapshot().actor), "End the turn");
+        }
         check(unit(*a.demo, 1000).dead, "A burning troll at 0 HP cannot regenerate and dies");
         return;
     }

@@ -30,7 +30,9 @@ inline int roll_damage_component(std::uint64_t &state, DamageDice dice, bool cri
 {
     int total = dice.bonus;
     for (int i = 0; i < dice.count * (critical ? 2 : 1); ++i)
+    {
         total += damage_die_value(roll_die(state, dice.sides), rule);
+    }
     return total;
 }
 

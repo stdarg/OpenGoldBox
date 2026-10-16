@@ -31,7 +31,9 @@ const bool verbose = std::getenv("OPENGOLD_ATTAINED_VERBOSE") != nullptr;
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -48,14 +50,20 @@ Character created(const std::string &klass)
     d.alignment = "neutral_good";
     d.background = "soldier";
     if (klass == "fighter")
+    {
         d.training = {{"class:fighter", {"acrobatics", "history"}},
                       {"class:fighter:fighting_style", {"defense"}}};
+    }
     if (klass == "wizard")
+    {
         d.training["class:wizard"] = {"arcana", "nature"};
+    }
     d.name = "Attained " + klass;
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -74,8 +82,12 @@ Character ready_made(std::string_view klass)
     art.set_original_head(1, por::PortraitPart{"fixture", head});
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     for (const auto &preset : character_pool(*srd5::character_rules(), art))
+    {
         if (preset.creation_data().character_class == klass)
+        {
             return preset;
+        }
+    }
     throw std::runtime_error("No pool character of the class");
 }
 
@@ -96,7 +108,9 @@ unsigned spent(const CampaignParty &party, MemberId id)
 {
     unsigned total = 0;
     for (const auto &pool : pools(party, id))
+    {
         total += pool.capacity - pool.remaining;
+    }
     return total;
 }
 
@@ -121,22 +135,30 @@ std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::
     {
         const auto now = combat->snapshot();
         if (now.outcome != Outcome::ongoing)
+        {
             break;
+        }
         const auto legal_commands = combat->legal_commands();
         auto command = choose_demo_command(now, legal_commands);
         if (!used)
+        {
             for (const auto &legal : legal_commands)
+            {
                 if (std::find(verbs.begin(), verbs.end(), legal.verb) != verbs.end())
                 {
                     command = legal;
                     used = true;
                     break;
                 }
+            }
+        }
         if (verbose && step < 12)
         {
             std::cerr << "  verbs:";
             for (const auto &legal : legal_commands)
+            {
                 std::cerr << ' ' << legal.verb;
+            }
             std::cerr << "\n  -> " << command.verb << '\n';
         }
         check(combat->submit(command), label + ": the fight accepts a legal command");
@@ -170,7 +192,9 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
     CampaignParty party(module());
     const auto id = party.add_pc(pool ? ready_made(klass) : created(klass));
     if (pool)
+    {
         outfit_pool_member(party, id);
+    }
     for (unsigned level = 1; level <= 4; ++level)
     {
         const auto label = klass + " level " + std::to_string(level);
@@ -178,15 +202,21 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
         check(party.member(id).character.sheet().level == static_cast<int>(level),
               label + ": the character is at this level");
         for (const auto &grant : step.grants)
+        {
             check(has_grant(party, id, grant), label + ": holds " + grant);
+        }
         if (verbose)
         {
             std::cerr << label << " grants:";
             for (const auto &g : party.member(id).character.sheet().grants)
+            {
                 std::cerr << ' ' << g.id;
+            }
             std::cerr << "\n  pools:";
             for (const auto &pool : pools(party, id))
+            {
                 std::cerr << ' ' << pool.id << ' ' << pool.remaining << '/' << pool.capacity;
+            }
             std::cerr << '\n';
         }
 
@@ -215,35 +245,55 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
         // A Short Rest, then a Long Rest a day later, restore the character.
         auto state = party.checkpoint();
         if (state.roster.front().vitals.hit_points <= 0)
+        {
             party.rule_module().set_hit_points(state.roster.front().vitals,
                                                state.roster.front().character.sheet(), 1);
+        }
         party.restore(std::move(state));
         const auto before_rest = pools(party, id);
         check(bool(party.rest(RestKind::short_rest)), label + ": a Short Rest completes");
         for (const auto &pool : before_rest)
+        {
             if (pool.short_rest_recovery && pool.remaining < pool.capacity)
+            {
                 for (const auto &after : pools(party, id))
+                {
                     if (after.id == pool.id)
+                    {
                         check(after.remaining > pool.remaining,
                               label + ": a Short Rest recovers " + pool.id);
+                    }
+                }
+            }
+        }
         if (party.state().short_rest)
+        {
             party.finish_short_rest(party.state().short_rest->ticket);
+        }
         // A Hunter Ranger may change its Hunter's Prey after a Short Rest too.
         if (party.state().training_rest)
+        {
             party.keep_rest_training(party.state().training_rest->ticket, id);
+        }
         party.advance_time(std::chrono::hours{24});
         check(bool(party.rest(RestKind::long_rest)), label + ": a Long Rest completes");
         if (party.state().spell_rest)
+        {
             party.keep_rest_spells(id);
+        }
         if (party.state().training_rest)
+        {
             party.keep_rest_training(party.state().training_rest->ticket, id);
+        }
         check(spent(party, id) == 0 &&
                   party.member(id).vitals.hit_points == party.hit_point_maximum(id),
               label + ": the Long Rest restores every use and Hit Point");
         (void)reloaded(party, label + " rested");
 
         if (level == 4)
+        {
             break;
+        }
         party.award_experience(party.rule_module().experience_for_level(level + 1) -
                                    party.member(id).experience,
                                "attained:" + klass + ":" + std::to_string(level));

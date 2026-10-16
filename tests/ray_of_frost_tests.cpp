@@ -48,21 +48,29 @@ Character hero(unsigned level = 1, bool frost = true)
     d.name = "Frost Wizard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips =
         frost ? std::vector<std::string>{"ray_of_frost"} : std::vector<std::string>{"fire_bolt"};
     Character h(*srd5::character_rules(), d, {});
     VitalState state;
     for (unsigned n = 1; n < level; ++n)
+    {
         check(h.advance(*module(), state), "Ordinary advancement");
+    }
     return h;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return v;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -74,16 +82,24 @@ void act(CombatSession &c, std::string_view verb, EntityId target = 0)
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &v : c.legal_commands())
+    {
         if (v.verb == verb && (!target || v.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -91,7 +107,9 @@ fx::EffectState effects(const VitalState &state)
 {
     auto at = state.resources.find("FX");
     if (at == state.resources.npos)
+    {
         return {};
+    }
     std::istringstream in(state.resources.substr(at));
     return fx::read_effects(in);
 }
@@ -101,7 +119,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (int n = 0; n < 3; ++n)
+    {
         std::getline(in, row);
+    }
     std::uint64_t result;
     in >> result;
     return result;
@@ -120,7 +140,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                             {2, "target", "Target", Side::opposition, target}}},
                           seed);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     return c;
 }
 
@@ -152,7 +174,9 @@ void access()
 void damage()
 {
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (unsigned seed : {0u, 13u, 40u})
+        {
             for (const std::string defense : {"", "resistance", "vulnerability", "immunity"})
             {
                 auto rules =
@@ -187,10 +211,12 @@ void damage()
                 check(target.movement_feet == (seed == 40 ? 30 : 20),
                       "Speed reduction affects movement allowance");
                 if (seed != 40)
+                {
                     check(status.active.size() == 1 && status.active[0].source_actor == 1 &&
                               status.active[0].remaining_ms == 6000 &&
                               status.active[0].save_in_ms == 0,
                           "Slow records caster and exact next-turn duration without saves");
+                }
                 auto after = unit(*c);
                 check(!after.action && after.bonus_action && after.reaction &&
                           after.movement_feet == before.movement_feet &&
@@ -200,6 +226,8 @@ void damage()
                 check(!c->submit(ticket) && c->save() == saved,
                       "Stale command preserves every saved byte");
             }
+        }
+    }
 }
 
 void timing()
@@ -223,8 +251,12 @@ void timing()
     c = battle(*rules, hero(), 13, {15, 1});
     Command move;
     for (const auto &v : c->legal_commands())
+    {
         if (v.verb == "move" && v.destination == Cell{6, 1})
+        {
             move = v;
+        }
+    }
     check(c->submit(move) && unit(*c).movement_feet == 5, "Spend 25 feet before casting");
     act(*c, "ray_of_frost", 1);
     check(unit(*c).movement_feet == 0, "Slow cannot expose negative movement");
@@ -251,11 +283,15 @@ void multiple_casters()
                              {3, "campaign-character", "Second", Side::party, {3, 1}, profile}}},
                            2);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     act(*c, "ray_of_frost", 2);
     act(*c, "end");
     while (c->snapshot().actor != 3)
+    {
         act(*c, "end");
+    }
     act(*c, "ray_of_frost", 2);
     auto state = effects(unit(*c, 2).persistent);
     check(state.active.size() == 2 && unit(*c, 2).movement_feet == 20,
@@ -299,12 +335,14 @@ void effect_lifecycle()
     for (const char *bad :
          {"FX1 2 1 1 2 5 1 \"Caster\" 0 6000 0", "FX8 2 1 1 2 5 1 \"Caster\" 1 6000 0 0",
           "FX8 2 1 1 2 5 1 \"Caster\" 0 6001 0 0", "FX8 2 1 1 2 5 1 \"Caster\" 0 6000 1 0"})
+    {
         rejects(
             [&]
             {
                 std::istringstream input(bad);
                 (void)fx::read_effects(input);
             });
+    }
 }
 
 void legality()
@@ -338,9 +376,11 @@ void legality()
     c = battle(*rules, hero());
     auto before = c->save();
     for (EntityId target : {0u, 999u})
+    {
         check(!c->submit({c->snapshot().revision, 1, target, "ray_of_frost"}) &&
                   c->save() == before,
               "Only real creatures may be targeted");
+    }
 }
 
 void campaign()
@@ -353,7 +393,9 @@ void campaign()
     actors.push_back({99, "vanguard", "Enemy", Side::opposition, {13, 1}});
     auto c = rules->create({{20, 8, std::vector<Terrain>(160)}, actors}, 13);
     while (c->snapshot().actor != id)
+    {
         act(*c, "end");
+    }
     act(*c, "ray_of_frost", id);
     party.begin_combat();
     party.apply_combat(c->snapshot());
@@ -399,7 +441,9 @@ void fixtures()
                         {99, "vanguard", "Enemy", Side::opposition, {8, 1}}}},
                       2);
     while (c->snapshot().actor != 1)
+    {
         act(*c, "end");
+    }
     std::ofstream(path / "known.save", std::ios::binary) << c->save();
     act(*c, "ray_of_frost", 2);
     std::ofstream(path / "slow.save", std::ios::binary) << c->save();

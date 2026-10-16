@@ -39,7 +39,9 @@ CharacterDraft draft()
     d.name = "Cantrip tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     return d;
 }
@@ -47,8 +49,12 @@ CharacterDraft draft()
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -64,16 +70,24 @@ using opengold::test::rejects;
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 bool has(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return true;
+        }
+    }
     return false;
 }
 
@@ -82,7 +96,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string line;
     for (unsigned i = 0; i < 3; ++i)
+    {
         std::getline(in, line);
+    }
     std::uint64_t n{};
     in >> n;
     return n;
@@ -91,16 +107,24 @@ std::uint64_t rng(const CombatSession &c)
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack log");
 }
 
 std::string arg(const Message &m, std::string_view name)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == name)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing attack argument");
 }
 
@@ -112,12 +136,16 @@ Character hero(unsigned level = 1, bool learned = true)
     d.cantrips = learned ? std::vector<std::string>{"eldritch_blast"} : std::vector<std::string>{};
     Character created(*srd5::character_rules(), d, {});
     if (level == 1)
+    {
         return created;
+    }
     CampaignParty party(module());
     const auto id = party.add_pc(std::move(created));
     party.award_experience(2700, "eldritch:levels");
     for (unsigned n = 1; n < level; ++n)
+    {
         party.advance(id, party.default_advancement(id));
+    }
     return party.member(id).character;
 }
 
@@ -154,7 +182,9 @@ auto battle(const RulesModule &rules, const Character &h, unsigned seed = 13, Ce
                           seed);
     // A side-zero target requires a living opposing actor to keep combat active.
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 2; ++turns)
+    {
         check(c->submit(command(*c, "end")), "Reach caster");
+    }
     check(c->snapshot().actor == 1, "Independent seed reaches caster");
     return c;
 }
@@ -185,6 +215,7 @@ void access()
             });
     }
     for (const auto &klass : creation->choices(CreationField::character_class))
+    {
         if (klass.id != "warlock")
         {
             d = draft();
@@ -196,10 +227,15 @@ void access()
                     (void)creation->evaluate(d, NameRequirement::required);
                 });
         }
+    }
     auto invalid = hero().sheet();
     for (auto &g : invalid.grants)
+    {
         if (g.id == "spell:eldritch_blast")
+        {
             g.source_id = "class:wizard:spellcasting";
+        }
+    }
     rejects(
         [&]
         {
@@ -230,12 +266,14 @@ void access()
     art.set_original_body(1, por::PortraitPart{"fixture", body});
     unsigned count = 0;
     for (const auto &preset : character_pool(*creation, art))
+    {
         if (preset.sheet().character_class == "Warlock")
         {
             ++count;
             check(rules->spell_access(preset.sheet()).cantrips.size() == 2,
                   "Presets pre-generate supported choices");
         }
+    }
     check(count > 0, "Preset route exercised");
 }
 
@@ -246,7 +284,9 @@ void rolls()
     check(!agonizing(hero(1)) && agonizing(hero(2)),
           "Levels 2-4 cast with Agonizing Blast, so its damage is checked too");
     for (unsigned level = 1; level <= 4; ++level)
+    {
         for (unsigned seed : {0u, 13u, 40u})
+        {
             for (const auto &defense :
                  std::vector<std::string>{"", "resistance", "vulnerability", "immunity"})
             {
@@ -291,6 +331,8 @@ void rolls()
                 const auto saved = c->save();
                 check(!c->submit(ticket) && c->save() == saved, "Stale cast rejects atomically");
             }
+        }
+    }
     auto rules = custom();
     auto c = battle(*rules, hero(), 13, {2, 1});
     check(c->submit(command(*c, "eldritch_blast", 2)), "Nearby spell attack");
@@ -326,7 +368,9 @@ void eligibility()
     {
         auto c = battle(*rules, h, 13, {3, 1}, gear);
         while (c->snapshot().actor != 1)
+        {
             check(c->submit(command(*c, "end")), "Reach armored caster");
+        }
         check(unit(*c).known_cantrips == std::vector<std::string>{"eldritch_blast"},
               "Knowledge remains visible while armor blocks casting");
         // Full hands block nothing (CLASS-11); untrained armor does.
@@ -354,9 +398,11 @@ void eligibility()
     auto normal = battle(*rules, h);
     const auto before = normal->save();
     for (EntityId bad : {0u, 999u})
+    {
         check(!normal->submit({normal->snapshot().revision, 1, bad, "eldritch_blast"}) &&
                   normal->save() == before,
               "No unsupported object or unknown target can be forged");
+    }
     check(has(*normal, "eldritch_blast", 1),
           "A creature-targeting spell can target its own caster");
     const auto hp = unit(*normal).hit_points;
@@ -382,6 +428,7 @@ void allies_and_unconscious()
     const auto h = hero();
     auto profile = rules->character_profile(h.sheet(), {});
     for (bool unconscious : {false, true})
+    {
         for (bool adjacent : {false, true})
         {
             Encounter e{{28, 8, std::vector<Terrain>(224)},
@@ -396,7 +443,9 @@ void allies_and_unconscious()
                          {3, "target", "Enemy", Side::opposition, {8, 1}}}};
             auto c = rules->create(e, 13);
             while (c->snapshot().actor != 1)
+            {
                 check(c->submit(command(*c, "end")), "Reach caster with third initiative slot");
+            }
             check(has(*c, "eldritch_blast", 2),
                   "Living ally remains a legal target, including at zero HP");
             auto copy = rules->restore(c->save());
@@ -416,6 +465,7 @@ void allies_and_unconscious()
                       "Unconscious damage adds critical or ordinary death failures");
             }
         }
+    }
 }
 
 void campaign()
@@ -423,6 +473,7 @@ void campaign()
     auto rules = module();
     auto creation = srd5::character_rules();
     for (bool npc : {false, true})
+    {
         for (unsigned level = 1; level <= 4; ++level)
         {
             CampaignParty p(module());
@@ -462,7 +513,9 @@ void campaign()
                 auto rest = restored.rest(kind);
                 check(bool(rest), "Camp/inn rest accepted");
                 if (restored.state().short_rest)
+                {
                     restored.finish_short_rest(restored.state().short_rest->ticket);
+                }
                 const auto camp = encode_campaign(restored, nullptr, "eldritch");
                 CampaignParty again(module());
                 again.restore(decode_campaign(camp, *creation, *rules, "eldritch", nullptr).party);
@@ -473,13 +526,18 @@ void campaign()
             }
             unsigned quarterstaffs{};
             for (const auto &item : restored.member(id).character.inventory().items())
+            {
                 if (item.definition_id == "quarterstaff")
+                {
                     quarterstaffs += item.quantity;
+                }
+            }
             check(quarterstaffs == 1 && restored.state().wealth[3] == 37 &&
                       rules->spell_access(restored.member(id).character.sheet()).cantrips ==
                           rules->spell_access(p.member(id).character.sheet()).cantrips,
                   "Rest preserves physical equipment, wealth and cast access");
         }
+    }
 }
 
 void ui_fixtures()
@@ -503,12 +561,16 @@ void ui_fixtures()
             2);
         // Untrained armor's initiative Disadvantage may put the caster later.
         for (unsigned n = 0; c->snapshot().actor != 1 && n < 6; ++n)
+        {
             for (const auto &end : c->legal_commands())
+            {
                 if (end.verb == "end")
                 {
                     (void)c->submit(end);
                     break;
                 }
+            }
+        }
         write(path / (std::string(name) + ".save"), c->save());
     }
 }

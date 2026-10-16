@@ -41,13 +41,21 @@ Character created(std::string klass, std::string name, std::vector<std::string> 
     d.name = std::move(name);
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     if (!prepared.empty())
+    {
         d.spells = SpellChoices{{}, std::move(prepared), {}, {}};
+    }
     if (klass == "paladin")
+    {
         d.training = {{"class:paladin", {"athletics", "medicine"}}};
+    }
     if (klass == "ranger")
+    {
         d.training = {{"class:ranger", {"athletics", "nature", "perception"}}};
+    }
     if (klass == "cleric")
     {
         d.cantrips = std::vector<std::string>{"sacred_flame"};
@@ -66,15 +74,21 @@ std::vector<std::string> action_ids(const CampaignParty &party, MemberId id)
 {
     std::vector<std::string> ids;
     for (const auto &action : party.camp_actions(id))
+    {
         ids.push_back(action.id);
+    }
     return ids;
 }
 
 unsigned remaining(const CampaignParty &party, MemberId id, std::string_view pool)
 {
     for (const auto &resource : party.recovery_info(id).resources)
+    {
         if (resource.id == pool)
+        {
             return resource.remaining;
+        }
+    }
     return 0;
 }
 
@@ -83,8 +97,12 @@ void wound(CampaignParty &party, MemberId id, int hit_points)
 {
     auto state = party.checkpoint();
     for (auto &m : state.roster)
+    {
         if (m.id == id)
+        {
             m.vitals = {hit_points, false, ""};
+        }
+    }
     party.restore(std::move(state));
 }
 
@@ -93,8 +111,12 @@ void hurt(CampaignParty &party, MemberId id, int hit_points)
 {
     auto state = party.checkpoint();
     for (auto &m : state.roster)
+    {
         if (m.id == id)
+        {
             m.vitals.hit_points = hit_points;
+        }
+    }
     party.restore(std::move(state));
 }
 
@@ -171,8 +193,12 @@ void spell_checks()
     refreshed.restore(party.checkpoint());
     auto state = refreshed.checkpoint();
     for (auto &m : state.roster)
+    {
         if (m.id == cleric)
+        {
             m.vitals = {m.vitals.hit_points, false, ""};
+        }
+    }
     refreshed.restore(std::move(state));
     refreshed.use_camp_action(cleric, fighter, "healing_word");
     check(hp(refreshed, fighter) > 0, "Healing raises an unconscious member");
@@ -213,7 +239,9 @@ void prayer_of_healing_checks()
     party.advance(cleric, third);
     std::vector<MemberId> fighters;
     for (const auto *name : {"First", "Second", "Third"})
+    {
         fighters.push_back(party.add_pc(created("fighter", name, {})));
+    }
     const auto actions = party.camp_actions(cleric);
     const auto prayer = std::find_if(actions.begin(), actions.end(),
                                      [](const auto &a)
@@ -239,7 +267,9 @@ void prayer_of_healing_checks()
     check(saved(party) == before, "The refused prayer changes nothing");
     (void)party.rest(RestKind::long_rest);
     if (party.state().spell_rest)
+    {
         party.keep_rest_spells(cleric);
+    }
     hurt(party, fighters[0], 1);
     party.use_camp_action(cleric, cleric, "prayer_of_healing");
     check(hp(party, fighters[0]) > 1, "After a Long Rest the prayer heals again");
@@ -258,7 +288,9 @@ void aid_checks()
     party.advance(cleric, party.default_advancement(cleric));
     std::vector<MemberId> fighters;
     for (const auto *name : {"First", "Second", "Third"})
+    {
         fighters.push_back(party.add_pc(created("fighter", name, {})));
+    }
     // A level-one Cleric has the lowest maximum.
     const auto low = party.add_pc(
         created("cleric", "Low", {"cure_wounds", "healing_word", "bless", "shield_of_faith"}));
@@ -271,7 +303,9 @@ void aid_checks()
           "Aid is a whole-party camp spell");
     std::map<MemberId, int> before;
     for (const auto id : {cleric, fighters[0], fighters[1], fighters[2], low})
+    {
         before[id] = party.hit_point_maximum(id);
+    }
     check(before[low] < before[fighters[0]] && before[fighters[2]] < before[cleric],
           "The level-one Cleric's maximum is lowest, the level-three Cleric's highest");
     party.use_camp_action(cleric, cleric, "aid");

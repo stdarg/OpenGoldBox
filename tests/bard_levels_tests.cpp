@@ -28,7 +28,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -55,7 +57,9 @@ CharacterDraft draft()
     d.name = "Bard";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
     d.cantrips = {"vicious_mockery", "starry_wisp"};
@@ -79,7 +83,9 @@ Character bard(unsigned level, const std::string &spell = {})
         auto choice = rules->default_advancement(hero.sheet());
         if (!spell.empty() && hero.sheet().level + 1 == static_cast<int>(level) &&
             std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+        {
             choice.spells.back() = spell;
+        }
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
     return hero;
@@ -98,8 +104,12 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -116,7 +126,9 @@ bool logged(const CombatSession &c, std::string_view text)
 void to_turn(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
+    {
         check(submit(c, "end"), "End a turn");
+    }
     check(c.snapshot().actor == id, "Reach the turn");
 }
 
@@ -159,7 +171,9 @@ void progression_checks()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     const auto sheet = party.member(id).character.sheet();
     check(sheet.level == 15, "A Bard reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{5, 9},
@@ -173,8 +187,10 @@ void progression_checks()
                                                                                  {13, 17},
                                                                                  {14, 17},
                                                                                  {15, 18}})
+    {
         check(rules->spell_access(bard(level).sheet()).prepared_choices == count,
               "Prepared spells: 9 at 5 to 18 at 15");
+    }
     check(granted(sheet, "expertise:", 2) && granted(sheet, "expertise:", 9),
           "Expertise at 2 and 9");
     check(std::count_if(sheet.grants.begin(), sheet.grants.end(),

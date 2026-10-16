@@ -55,7 +55,9 @@ String substitute(const String &message, std::initializer_list<i18n::Argument> a
 {
     Dictionary values;
     for (const auto &[name, value] : arguments)
+    {
         values[name] = value;
+    }
     return interpolate(message, values);
 }
 } // namespace
@@ -70,51 +72,75 @@ void prepare_ui(Node &root)
         return text(value.utf8().get_data());
     };
     if (auto *label = Object::cast_to<Label>(&root))
+    {
         label->set_text(translate_string(label->get_text()));
+    }
     else if (auto *rich = Object::cast_to<RichTextLabel>(&root))
+    {
         rich->set_text(translate_string(rich->get_text()));
+    }
     else if (auto *button = Object::cast_to<Button>(&root))
+    {
         button->set_text(translate_string(button->get_text()));
+    }
     else if (auto *edit = Object::cast_to<LineEdit>(&root))
+    {
         edit->set_placeholder(translate_string(edit->get_placeholder()));
+    }
     if (auto *window = Object::cast_to<Window>(&root))
+    {
         window->set_title(translate_string(window->get_title()));
+    }
     if (auto *control = Object::cast_to<Control>(&root))
+    {
         control->set_tooltip_text(translate_string(control->get_tooltip_text()));
+    }
     for (int i = 0; i < root.get_child_count(); ++i)
+    {
         prepare_ui(*root.get_child(i));
+    }
 }
 
 String text(std::string_view source)
 {
     if (source.empty())
+    {
         return {};
+    }
     const String translated = TranslationServer::get_singleton()->translate(gs(source));
     // "Flame Strike (Divine Intervention)", a spell cast through a Cleric's
     // Divine Intervention, is translated in two parts.
     constexpr std::string_view intervention = " (Divine Intervention)";
     if (translated == gs(source) && source.size() > intervention.size() &&
         source.ends_with(intervention))
+    {
         return format(N_("{spell} (Divine Intervention)"),
                       {{"spell", text(source.substr(0, source.size() - intervention.size()))}});
+    }
     // "Eyebite (Mystic Arcanum)", a Warlock's once-a-day spell, is
     // translated in two parts too.
     constexpr std::string_view arcanum = " (Mystic Arcanum)";
     if (translated == gs(source) && source.size() > arcanum.size() && source.ends_with(arcanum))
+    {
         return format(N_("{spell} (Mystic Arcanum)"),
                       {{"spell", text(source.substr(0, source.size() - arcanum.size()))}});
+    }
     // "Fireball (Natural Recovery)", a Druid's free Circle Spell, likewise.
     constexpr std::string_view natural = " (Natural Recovery)";
     if (translated == gs(source) && source.size() > natural.size() && source.ends_with(natural))
+    {
         return format(N_("{spell} (Natural Recovery)"),
                       {{"spell", text(source.substr(0, source.size() - natural.size()))}});
+    }
     // "Dimension Door with Ilsa", a spell that takes a companion, is
     // translated in two parts: the companion is a name.
     constexpr std::string_view companion = "Dimension Door with ";
     if (translated == gs(source) && source.starts_with(companion) &&
         source.size() > companion.size() && !source.ends_with(" slot)"))
+    {
         return format(N_("{spell} with {name}"), {{"spell", text("Dimension Door")},
                                                   {"name", gs(source.substr(companion.size()))}});
+    }
     // "Cure Wounds (level 3 slot)", a spell cast from a higher slot, is
     // translated in two parts when the whole has no entry of its own.
     constexpr std::string_view slot_prefix = " (level ", slot_suffix = " slot)";
@@ -122,10 +148,14 @@ String text(std::string_view source)
     if (translated != gs(source) || at == std::string_view::npos ||
         !source.ends_with(slot_suffix) ||
         source.size() != at + slot_prefix.size() + 1 + slot_suffix.size())
+    {
         return translated;
+    }
     const char level = source[at + slot_prefix.size()];
     if (level < '2' || level > '9')
+    {
         return translated;
+    }
     return format(N_("{spell} (level {level} slot)"),
                   {{"spell", text(source.substr(0, at))}, {"level", String::chr(level)}});
 }
@@ -152,7 +182,9 @@ String plural(std::string_view singular, std::string_view multiple, int count,
         TranslationServer::get_singleton()->translate_plural(gs(singular), gs(multiple), count);
     Dictionary values;
     for (const auto &[name, value] : arguments)
+    {
         values[name] = value;
+    }
     values["count"] = count;
     return interpolate(translated, values);
 }
@@ -182,9 +214,13 @@ String grouped_number(const std::string &value)
         for (std::size_t at = value.size() - 4;; at -= 4)
         {
             if (value[at] != ',')
+            {
                 return false;
+            }
             if (at < 4)
+            {
                 return value.find(',') == at;
+            }
         }
     }();
     // The language's thousands separator, from how it writes a grouped number.
@@ -197,8 +233,10 @@ String render(const opengold::rules::Message &message)
 {
     Dictionary values;
     for (const auto &argument : message.arguments)
+    {
         values[gs(argument.name)] =
             argument.translate ? text(argument.value) : grouped_number(argument.value);
+    }
     return interpolate(text(message.source), values);
 }
 
@@ -208,7 +246,9 @@ String render(const std::vector<opengold::rules::Message> &messages)
     for (const auto &message : messages)
     {
         if (!result.is_empty())
+        {
             result += "\n";
+        }
         result += render(message);
     }
     return result;
@@ -227,7 +267,9 @@ void initialize()
 bool select_language(const String &locale)
 {
     if (!settings::save_language(locale))
+    {
         return false;
+    }
     initialize();
     return true;
 }

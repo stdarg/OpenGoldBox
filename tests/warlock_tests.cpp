@@ -23,7 +23,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -62,11 +64,15 @@ Character warlock(unsigned level = 1, std::vector<std::string> first = {},
     d.name = "Warlock";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[5] = {{6, 6, 6, 1}, 3};
     d.training = {{"class:warlock", {"investigation", "deception"}}};
     if (!first.empty())
+    {
         d.training["class:warlock:invocations"] = first;
+    }
     d.cantrips = {"eldritch_blast", "chill_touch"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"hex", "hellish_rebuke"}, {}, {}};
     CampaignParty party(module_rules());
@@ -76,10 +82,14 @@ Character warlock(unsigned level = 1, std::vector<std::string> first = {},
     {
         auto choice = party.default_advancement(id);
         if (n == 1 && !second.empty())
+        {
             choice.training["class:warlock:invocations:2"] = second;
+        }
         if (n == 1 && std::find(second.begin(), second.end(), "lessons_skilled") != second.end())
+        {
             choice.training["invocation:lessons_skilled"] = {"skill:athletics", "skill:perception",
                                                              "skill:stealth"};
+        }
         if (n == 2 && !third.empty())
         {
             choice.spells = party.member(id).character.sheet().prepared_spells;
@@ -93,16 +103,24 @@ Character warlock(unsigned level = 1, std::vector<std::string> first = {},
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -149,9 +167,13 @@ std::unique_ptr<CombatSession> battle(const RulesModule &module, const Character
                              {98, enemy, "Enemy", Side::opposition, {2, 1}}}},
                            seed);
     if (!c->snapshot().initiative_choices.empty())
+    {
         check(submit(*c, "initiative_keep"), "Keep Initiative");
+    }
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Warlock's turn");
+    }
     check(c->snapshot().actor == 1, "The Warlock acts");
     return c;
 }
@@ -160,7 +182,9 @@ void reach_turn(CombatSession &c)
 {
     check(submit(c, "end"), "End the Warlock's turn");
     for (unsigned turns = 0; c.snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(c, "end"), "Back to the Warlock");
+    }
 }
 
 void pact_magic_checks()
@@ -188,7 +212,9 @@ void hellish_rebuke_checks()
         auto c = battle(*module, warlock(), seed);
         check(submit(*c, "end") && submit(*c, "melee", 1), "The enemy attacks");
         if (!c->snapshot().reaction_pending)
+        {
             continue;
+        }
         check(c->snapshot().actor == 1 && offered(*c, "rebuke") && offered(*c, "decline"),
               "A hurt Warlock is asked about Hellish Rebuke");
         const auto saved = c->save();
@@ -212,7 +238,9 @@ void rebuke_spell_damage_checks()
     check(submit(*c, "end"), "The enemy's turn");
     // Each of the three darts is aimed at the Warlock.
     for (unsigned dart = 0; dart < 3 && !c->snapshot().reaction_pending; ++dart)
+    {
         check(submit(*c, "magic_missile", 1), "The enemy aims a dart");
+    }
     check(c->snapshot().reaction_pending && offered(*c, "rebuke"),
           "The darts' damage asks about Hellish Rebuke");
     check(submit(*c, "rebuke") && logged(*c, "Warlock casts Hellish Rebuke at Enemy.") &&
@@ -228,8 +256,12 @@ void rebuke_slot_per_turn_checks()
     const auto step_away = [](CombatSession &c)
     {
         for (const auto &command : c.legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{0, 1})
+            {
                 return c.submit(command);
+            }
+        }
         return false;
     };
     bool hurt_while_leaving = false;
@@ -249,7 +281,9 @@ void rebuke_slot_per_turn_checks()
         check(submit(*c, "hex", 98) && submit(*c, "end") && submit(*c, "melee", 1),
               "Hex, then the enemy attacks");
         if (!c->snapshot().reaction_pending)
+        {
             continue;
+        }
         check(offered(*c, "rebuke"), "On the enemy's turn the Warlock may spend its other slot");
         return;
     }
@@ -309,7 +343,9 @@ void magical_cunning_checks()
               {98, "target", "Enemy", Side::opposition, {2, 1}}}},
             5);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Warlock's turn");
+        }
         check(submit(*c, "hex", 98), "Spend a slot on Hex");
         return unit(*c, 1).persistent;
     };
@@ -356,9 +392,15 @@ void invocation_checks()
     draft.background = "sage";
     std::vector<std::string> first;
     for (const auto &group : creation->training_options(draft))
+    {
         if (group.id == "class:warlock:invocations")
+        {
             for (const auto &option : group.options)
+            {
                 first.push_back(option.id);
+            }
+        }
+    }
     check(first == std::vector<std::string>{"armor_of_shadows", "eldritch_mind",
                                             "pact_of_the_blade", "pact_of_the_tome"},
           "Level 1 offers the invocations without prerequisites");
@@ -378,12 +420,14 @@ void invocation_checks()
         check(submit(*c, "eldritch_blast", 98) && logged(*c, "Enemy is pushed 10 feet."),
               "Repelling Blast pushes the creature Eldritch Blast hits");
         for (const auto &line : c->snapshot().log())
+        {
             if (line.starts_with("Warlock -> Enemy") &&
                 line.find(" hits for ") != std::string::npos)
             {
                 const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));
                 check(damage >= 5 && damage <= 14, "Agonizing Blast adds +4 to 1d10");
             }
+        }
     }
     {
         const auto hero = warlock(2, {"eldritch_mind"}, {"fiendish_vigor", "lessons_alert"});
@@ -444,8 +488,12 @@ void invocation_gap_checks()
         std::vector<std::string> ids;
         for (const auto &group :
              party.rule_module().advancement_options(party.member(id).character.sheet()).training)
+        {
             for (const auto &option : group.options)
+            {
                 ids.push_back(option.id);
+            }
+        }
         return ids;
     }();
     const auto listed = [&](std::string_view option)
@@ -464,12 +512,14 @@ void invocation_gap_checks()
         auto c = battle(*module, hero);
         check(submit(*c, "chill_touch", 98), "The Warlock casts Chill Touch");
         for (const auto &line : c->snapshot().log())
+        {
             if (line.starts_with("Warlock -> Enemy") &&
                 line.find(" hits for ") != std::string::npos)
             {
                 const int damage = std::stoi(line.substr(line.find(" hits for ") + 10));
                 check(damage >= 5 && damage <= 14, "Agonizing Blast adds +4 to Chill Touch's 1d10");
             }
+        }
     }
     {
         const auto hero = warlock(2, {"eldritch_mind"}, {"lessons_skilled", "fiendish_vigor"});
@@ -515,9 +565,13 @@ void invocation_gap_checks()
                                  {98, "target", "Enemy", Side::opposition, {2, 1}}}},
                                5);
             if (!c->snapshot().initiative_choices.empty())
+            {
                 check(submit(*c, "initiative_keep"), "Keep Initiative");
+            }
             for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+            {
                 check(submit(*c, "end"), "Reach the Warlock's turn");
+            }
             check(offered(*c, "melee_necrotic") && offered(*c, "melee_psychic") &&
                       submit(*c, verb, 98),
                   "The pact weapon strikes");
@@ -544,7 +598,9 @@ void fiend_checks()
         auto d = battle(*module, third, seed, "weakling");
         check(submit(*d, "eldritch_blast", 98), "Eldritch Blast at a weakling");
         if (unit(*d, 98).hit_points > 0)
+        {
             continue;
+        }
         // Charisma 18 (+4) and Warlock level 3.
         check(logged(*d, "Dark One's Blessing: Warlock gains 7 Temporary Hit Points.") &&
                   unit(*d, 1).temporary_hp.amount == 7,
@@ -573,10 +629,14 @@ void ally_blessing_checks()
                                  {98, "weakling", "Enemy", Side::opposition, foe}}},
                                seed);
             for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 4; ++turns)
+            {
                 check(submit(*c, "end"), "Reach the ally's turn");
+            }
             check(submit(*c, "melee", 98), "The ally attacks the weakling");
             if (unit(*c, 98).hit_points > 0)
+            {
                 continue;
+            }
             return unit(*c, 1).temporary_hp.amount == 7 &&
                    logged(*c, "Dark One's Blessing: Warlock gains 7 Temporary Hit Points.");
         }
@@ -605,7 +665,9 @@ void policy_checks()
                          {98, "target", "Enemy", Side::opposition, {4, 1}}}},
                        5);
     for (unsigned turns = 0; d->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*d, "end"), "Reach the Warlock's turn");
+    }
     for (unsigned n = 0; n < 3; ++n)
     {
         const auto command = choose_demo_command(*d);

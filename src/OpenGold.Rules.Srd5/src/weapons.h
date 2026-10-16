@@ -508,8 +508,12 @@ inline bool weapon_proficient(CharacterClass klass, const Weapon &weapon)
 inline constexpr const Weapon *weapon(std::string_view key)
 {
     for (const auto &value : weapons)
+    {
         if (value.key == key)
+        {
             return &value;
+        }
+    }
     return nullptr;
 }
 } // namespace opengold::srd5::detail

@@ -22,7 +22,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::string read(const std::filesystem::path &p)
@@ -42,8 +44,12 @@ std::unique_ptr<RulesModule> rules()
 bool submit(CombatSession &c, std::string_view verb, EntityId actor, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.actor == actor && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -80,7 +86,9 @@ void multiattack()
                               {2, "target", "Target", Side::party, {2, 1}}}},
                             3);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
         check(submit(*c, "end", c->snapshot().actor), "Reach the Lizardfolk's turn");
+    }
     check(submit(*c, "melee", 1, 2) && count_logged(*c, "Lizardfolk -> Target") == 2,
           "The Lizardfolk attacks twice with one Attack action");
     bool rejected = false;
@@ -108,7 +116,9 @@ Character fighter_character()
     d.name = "Arrow target";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 

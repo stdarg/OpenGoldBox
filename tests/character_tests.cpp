@@ -61,6 +61,7 @@ void creation_tests()
           "Seeded rolls reproduce across sessions");
     std::set<int> totals;
     for (int i = 0; i < 2000; ++i)
+    {
         for (const auto &roll : module->roll(seed))
         {
             check(roll.total() >= 3 && roll.total() <= 18, "4d6 result remains in range");
@@ -69,6 +70,7 @@ void creation_tests()
                       *std::min_element(roll.dice.begin(), roll.dice.end()),
                   "Lowest die is discarded");
         }
+    }
     check(totals.size() == 16, "The roller can produce every score, including low results");
     AbilityRoll example{{6, 1, 4, 3}, 1};
     check(example.total() == 13, "Four dice retain the three highest results");
@@ -91,7 +93,9 @@ void creation_tests()
     const std::array<std::array<int, 4>, 6> dice{
         {{4, 4, 4, 1}, {3, 3, 3, 1}, {5, 5, 4, 1}, {1, 1, 1, 1}, {5, 5, 5, 1}, {6, 6, 6, 1}}};
     for (unsigned i = 0; i < 6; ++i)
+    {
         d.rolls[i] = {dice[i], 3};
+    }
     auto s = module->evaluate(d, NameRequirement::required);
     check(s.scores[Ability::strength] == 14 && s.scores[Ability::dexterity] == 10 &&
               s.scores[Ability::constitution] == 14 && s.hit_points == 12,
@@ -172,7 +176,9 @@ void creation_tests()
         boundary.background = "acolyte";
         boundary.adjustment = 1;
         for (auto &roll : boundary.rolls)
+        {
             roll = {{{4, 4, 4, 1}}, 3};
+        }
         // Choose a background bonus allocation outside each tested primary.
         const auto req = module->class_requirements(option.id);
         for (auto ability : req.abilities)
@@ -185,7 +191,9 @@ void creation_tests()
         check(rules::class_eligible(*module, boundary, option.id),
               "Every class accepts exactly 13 in its primary abilities");
         for (auto ability : req.abilities)
+        {
             --boundary.rolls[ability_index(ability)].dice[0];
+        }
         check(!rules::class_eligible(*module, boundary, option.id),
               "Every class rejects primaries below 13");
     }
@@ -261,7 +269,9 @@ void creation_tests()
     check(creator.step() == CreationStep::race && creator.draft().gender == "male",
           "Back retains gender on combined first step");
     for (int i = 0; i < 2; ++i)
+    {
         creator.next();
+    }
     rejects(
         [&]
         {
@@ -323,7 +333,9 @@ void creation_tests()
         },
         "An ability converted from an out-of-range box index is rejected");
     for (unsigned i = 0; i < 6; ++i)
+    {
         creator.assign_roll(i, static_cast<Ability>(i));
+    }
     check(creator.scores_assigned(), "All six assignments permit review");
     creator.swap_scores(Ability::strength, Ability::constitution);
     check(creator.sheet().base[Ability::strength] == original[2].total() &&
@@ -341,7 +353,9 @@ void creation_tests()
     check(creator.draft().rolls != original && creator.draft().assignment[Ability::strength] == 6,
           "Full reroll replaces all rolls and empties assignments");
     for (unsigned i = 0; i < 6; ++i)
+    {
         creator.assign_roll(i, static_cast<Ability>(i));
+    }
     creator.target_class("wizard", true);
     creator.target_class("wizard", true);
     check(creator.draft().target_classes.size() == 1, "Repeated target selection is idempotent");
@@ -367,12 +381,14 @@ void creation_tests()
             }
         }
         else
+        {
             rejects(
                 [&]
                 {
                     creator.select(CreationField::character_class, option.id);
                 },
                 "Unqualified starting classes cannot be selected");
+        }
     }
     check(selected, "Fixture has a qualified class");
     creator.next();
@@ -408,7 +424,9 @@ void creation_tests()
         },
         "A Cleric prepares the available spells");
     for (const auto *spell : {"cure_wounds", "healing_word", "inflict_wounds", "shield_of_faith"})
+    {
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
+    }
     rejects(
         [&]
         {
@@ -553,7 +571,9 @@ void starting_gold_tests()
     check(amounts.size() == 16, "Every amount from 30 to 180 gp can be rolled");
     CharacterCreator first(srd5::character_rules(), 99), second(srd5::character_rules(), 99);
     for (auto *creator : {&first, &second})
+    {
         creator->roll();
+    }
     check(first.starting_gold() == second.starting_gold(), "Seeded starting gold reproduces");
     std::set<int> rerolled{first.starting_gold()};
     for (int i = 0; i < 20; ++i)
@@ -638,6 +658,7 @@ void additional_portrait_tests()
     source.height = 84;
     source.rgba.resize(176 * 84 * 4);
     for (unsigned y = 0; y < 84; ++y)
+    {
         for (unsigned x = 0; x < 176; ++x)
         {
             const auto p = (y * 176 + x) * 4;
@@ -649,11 +670,13 @@ void additional_portrait_tests()
                 source.rgba[p + 2] = 173;
             }
         }
+    }
     const auto original = source.rgba;
     const auto panel = prepare_portrait_head(source, 256);
     check(panel.width == 88 && panel.height == 40 && source.rgba == original,
           "Preparing a head leaves source artwork intact");
     for (unsigned y = 0; y < 40; ++y)
+    {
         for (unsigned x = 0; x < 88; ++x)
         {
             const auto p = (y * 88 + x) * 4;
@@ -661,6 +684,7 @@ void additional_portrait_tests()
                       panel.rgba[p + 2] == 173 && panel.rgba[p + 3] == 255,
                   "Nearest sampling preserves approved colors and removes the bottom gap");
         }
+    }
     Image translucent;
     translucent.width = translucent.height = 1;
     translucent.rgba = {240, 160, 80, 128};
@@ -759,6 +783,7 @@ void additional_portrait_tests()
     // Independent join geometry: male/female openings, including an off-center
     // narrow neck and unrelated collar pixels on the same scanline.
     for (const auto &head : additions)
+    {
         for (const auto opening : {std::pair{36u, 56u}, std::pair{37u, 55u}, std::pair{36u, 52u}})
         {
             Image neck;
@@ -766,8 +791,11 @@ void additional_portrait_tests()
             neck.height = 40;
             neck.rgba.assign(88 * 40 * 4, 0);
             for (unsigned p = 3; p < neck.rgba.size(); p += 4)
+            {
                 neck.rgba[p] = 255;
+            }
             for (unsigned y = 34; y < 40; ++y)
+            {
                 for (unsigned x = head.neck_left; x < head.neck_right; ++x)
                 {
                     const auto p = (y * 88 + x) * 4;
@@ -775,13 +803,18 @@ void additional_portrait_tests()
                     neck.rgba[p + 1] = 120;
                     neck.rgba[p + 2] = 200;
                 }
+            }
             // A face feature above the fitted rows must retain its size and colors.
             for (unsigned x = 40; x < 44; ++x)
+            {
                 neck.rgba[(20 * 88 + x) * 4] = 211;
+            }
             Image torso = body;
             torso.rgba.assign(88 * 48 * 4, 0);
             for (unsigned p = 3; p < torso.rgba.size(); p += 4)
+            {
                 torso.rgba[p] = 255;
+            }
             for (unsigned x = opening.first; x < opening.second; ++x)
             {
                 torso.rgba[x * 4] = 255;
@@ -802,24 +835,33 @@ void additional_portrait_tests()
                         (x >= opening.first && x < opening.second),
                     "Every new head meets the selected body's full neck opening with no overhang");
                 if (image.rgba[(20 * 88 + x) * 4] == 211)
+                {
                     ++face_pixels;
+                }
             }
             check(face_pixels == 4, "Neck fitting translates the face without stretching it");
             check(
                 std::equal(torso.rgba.begin(), torso.rgba.end(), image.rgba.begin() + 88 * 40 * 4),
                 "Fitting never recolors or moves original body pixels");
         }
+    }
     Image rounded;
     rounded.width = 88;
     rounded.height = 40;
     rounded.rgba.assign(88 * 40 * 4, 255);
     for (unsigned y = 0; y < 40; ++y)
+    {
         for (unsigned x = 0; x < 88; ++x)
+        {
             rounded.rgba[(y * 88 + x) * 4] = y;
+        }
+    }
     for (const auto id : {258u, 260u, 262u, 264u})
+    {
         check(
             prepare_portrait_head(rounded, id).rgba[39 * 88 * 4] == 39,
             "Revised male heads retain the full neck below the chin instead of cropping it into the armor");
+    }
 }
 
 void art_tests()
@@ -842,6 +884,7 @@ void art_tests()
     CharacterAppearance a;
     const std::array<unsigned, 6> masks{7, 1, 4, 6, 2, 3};
     for (unsigned bank = 0; bank < 2; ++bank)
+    {
         for (unsigned region = 0; region < 6; ++region)
         {
             body.pixels.assign(576, 0);
@@ -859,6 +902,7 @@ void art_tests()
                   "Outline and transparency preserved");
             check(yellow.rgba[8] == black.rgba[8], "Recolor does not alter fixed cap pixels");
         }
+    }
     head.pixels[0] = 4;
     a.colors[0][2] = 10;
     body.pixels[0] = 6;
@@ -884,13 +928,17 @@ void art_tests()
             a.combat_body = 0;
             auto usage = art.color_usage(a);
             for (unsigned bank = 0; bank < 2; ++bank)
+            {
                 check(!usage.contains(bank, 0) && !usage.contains(bank, 3),
                       "Original unarmed sprite has no weapon or shield to recolor");
+            }
             a.combat_body = 1;
             usage = art.color_usage(a);
             for (unsigned bank = 0; bank < 2; ++bank)
+            {
                 check(usage.contains(bank, 0) && !usage.contains(bank, 3),
                       "Original bow uses weapon indices, without a shield");
+            }
             a.combat_body = 4;
             a.combat_head = 2;
             usage = art.color_usage(a);
@@ -900,10 +948,15 @@ void art_tests()
                 auto source = art.combat_bodies().at(bank + 4).pixels;
                 const auto &head_pixels = art.combat_heads().at(bank + 2).pixels;
                 for (unsigned p = 0; p < head_pixels.size(); ++p)
+                {
                     if (head_pixels[p])
+                    {
                         source[p] = head_pixels[p];
+                    }
+                }
                 const auto original = art.icon(a, pose_of(action));
                 for (unsigned color_bank = 0; color_bank < 2; ++color_bank)
+                {
                     for (unsigned part = 0; part < 6; ++part)
                     {
                         auto changed = a;
@@ -919,7 +972,9 @@ void art_tests()
                             check(differs == targeted,
                                   "Only the selected original source mask changes in each pose");
                             if (targeted)
+                            {
                                 ++count;
+                            }
                         }
                         check(count == (action ? usage.action : usage.ready)[color_bank][part],
                               "Visible region counts match the composed original art");
@@ -928,6 +983,7 @@ void art_tests()
                                 (part != 2 || color_bank != 0 || !tall),
                             "The tall helmet covers hair; other armed test sprite regions remain visible");
                     }
+                }
             }
         }
         for (unsigned bank : {0u, 64u, 128u, 192u})
@@ -938,16 +994,20 @@ void art_tests()
                   "Derived shield body retains original dimensions");
             unsigned removed = 0;
             for (std::size_t p = 0; p < original.size(); ++p)
+            {
                 if (original[p] != derived[p])
                 {
                     check(original[p] == 8 && derived[p] == 0,
                           "Derived shield body only removes gray wand pixels");
                     ++removed;
                 }
+            }
             check(removed > 0, "Derived shield body removes wand in each size and pose");
         }
         for (bool tall : {false, true})
+        {
             for (unsigned h = 0; h < 14; ++h)
+            {
                 for (unsigned b = 0; b < 35; ++b)
                 {
                     a.icon_size = tall ? IconSize::regular : IconSize::small;
@@ -957,6 +1017,8 @@ void art_tests()
                               art.icon(a, IconPose::action).rgba.size() == 576 * 4,
                           "Every original head/body combination has both poses");
                 }
+            }
+        }
         std::cout << "Original character art: " << art.heads().size() << " portrait heads, "
                   << art.bodies().size()
                   << " bodies; 14 combat heads, 35 bodies, both sizes and poses\n";
@@ -987,15 +1049,23 @@ Character create_ordinarily(std::string_view klass, Ability best,
     const auto &rolls = creator.draft().rolls;
     unsigned highest = 0;
     for (unsigned n = 1; n < rolls.size(); ++n)
+    {
         if (rolls[n].total() > rolls[highest].total())
+        {
             highest = n;
+        }
+    }
     creator.assign_roll(highest, best);
     for (unsigned n = 0, ability = 0; n < rolls.size(); ++n)
     {
         if (n == highest)
+        {
             continue;
+        }
         if (static_cast<Ability>(ability) == best)
+        {
             ++ability;
+        }
         creator.assign_roll(n, static_cast<Ability>(ability++));
     }
     creator.select(CreationField::background, background);
@@ -1003,15 +1073,23 @@ Character create_ordinarily(std::string_view klass, Ability best,
     creator.select(CreationField::character_class, klass);
     creator.next();
     for (const auto &toggle : training)
+    {
         creator.training_choice(toggle);
+    }
     creator.next();
     check(creator.step() == CreationStep::spell_choices, "Training advances to Spell Choices");
     for (const auto &cantrip : cantrips)
+    {
         creator.cantrip_choice(cantrip, true);
+    }
     for (const auto &toggle : learned)
+    {
         creator.spell_choice(toggle);
+    }
     for (const auto &spell : prepared)
+    {
         creator.spell_choice({.group = "prepared", .option = spell, .selected = true});
+    }
     check(creator.spell_choices_complete(), "Every owed spell is chosen");
     creator.next();
     auto appearance = creator.appearance();

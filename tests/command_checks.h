@@ -5,7 +5,9 @@ std::vector<std::string> offered_verbs(const CombatSession &c)
 {
     std::vector<std::string> verbs;
     for (const auto &command : c.legal_commands())
+    {
         verbs.push_back(command.verb);
+    }
     return verbs;
 }
 
@@ -33,10 +35,14 @@ std::unique_ptr<CombatSession> commanded(const RulesModule &module, const std::s
                                  {99, "target", "Enemy", Side::opposition, {1 + gap, 1}}}},
                                seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Paladin's turn");
+        }
         check(submit(*c, verb, 99), "The Paladin casts Command");
         if (logged(*c, "must obey Paladin's Command"))
+        {
             return c;
+        }
     }
     throw std::runtime_error("No seed fails the Wisdom save");
 }
@@ -53,8 +59,12 @@ void command_offer_checks()
     auto c = battle(*module, paladin({"command"}));
     std::vector<std::string> labels;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb.starts_with("command") && command.target == 99)
+        {
             labels.push_back(command.label);
+        }
+    }
     check(labels == std::vector<std::string>{"Command: Approach", "Command: Flee",
                                              "Command: Grovel", "Command: Halt"},
           "Command offers four options and no Drop");
@@ -122,7 +132,9 @@ std::string cleric_profile(const RulesModule &module)
     d.name = "Cleric";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.cantrips = std::vector<std::string>{"sacred_flame"};
     d.spells = SpellChoices{{}, std::vector<std::string>{"command"}, {}, {}};
     d.training = {{"class:cleric", {"medicine", "persuasion"}},
@@ -147,7 +159,9 @@ void command_upcast_checks()
           {99, "target", "Second", Side::opposition, {3, 2}}}},
         5);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
         check(submit(*c, "end"), "Reach the Cleric's turn");
+    }
     check(submit(*c, "command_halt_2", 98) && c->snapshot().spell_targeting && unit(*c, 1).action,
           "A level-two Command starts choosing its creatures");
     const auto choosing = c->save();
@@ -156,7 +170,9 @@ void command_upcast_checks()
           "The second creature casts Command");
     unsigned saves = 0;
     for (const auto &line : c->snapshot().log())
+    {
         saves += line.find("Wisdom save") != std::string::npos;
+    }
     check(saves == 2, "Each chosen creature makes its own Wisdom save");
 }
 
@@ -178,10 +194,14 @@ void write_command_fixture()
                              {99, "vanguard", "Enemy", Side::opposition, {6, 1}}}},
                            seed);
         for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
             check(submit(*c, "end"), "Reach the Paladin's turn");
+        }
         const auto ready = c->save();
         if (!submit(*c, "command_grovel", 99) || !logged(*c, "must obey"))
+        {
             continue;
+        }
         const auto path = std::filesystem::path(OPENGOLD_BINARY_DIR) / "bless-fixtures";
         std::filesystem::create_directories(path);
         std::ofstream out(path / "command.save", std::ios::binary);

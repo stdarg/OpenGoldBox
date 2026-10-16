@@ -36,7 +36,9 @@ Character hero(std::string klass = "wizard")
     d.name = "Spellbook tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -44,31 +46,45 @@ std::vector<std::string> ids(const std::vector<LearnedSpell> &spells)
 {
     std::vector<std::string> result;
     for (const auto &s : spells)
+    {
         result.push_back(s.id);
+    }
     return result;
 }
 
 bool has(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return true;
+        }
+    }
     return false;
 }
 
 Command command(const CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb && (!target || a.target == target))
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command");
 }
 
 CombatantView unit(const CombatSession &c)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == 1)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
@@ -110,11 +126,15 @@ void creation()
                 access.prepared_choices == 4,
             "Independent level-one SRD entitlements remain explicit beyond the implemented preset");
         for (const auto &s : access.cantrips)
+        {
             check(s.source_id == "class:wizard:spellcasting" && s.acquired_level == 1,
                   "Cantrip provenance is explicit");
+        }
         for (const auto &s : access.spellbook)
+        {
             check(s.source_id == "class:wizard:spellcasting" && s.acquired_level == 1,
                   "Book provenance is explicit");
+        }
     }
     const auto h = hero();
     auto s = h.sheet();
@@ -190,11 +210,17 @@ void progression()
                   (level == 2 || (learned("scorching_ray") && learned("blindness"))),
               "Previously learned spells remain even when all are unprepared at different levels");
         if (level >= 3)
+        {
             for (const auto &entry : access.spellbook)
+            {
                 if (entry.id == "scorching_ray" || entry.id == "blindness")
+                {
                     check(
                         entry.acquired_level == 3,
                         "New entries retain first learning level rather than latest preparation level");
+                }
+            }
+        }
         check(member.vitals.hit_points == member.character.sheet().hit_points - deficit,
               "Advancement preserves wounds");
         const auto info = rules->recovery_info(member.character.sheet(), member.vitals);

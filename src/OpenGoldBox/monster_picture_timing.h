@@ -17,14 +17,20 @@ namespace presentation
     constexpr double tick_seconds = 1.0 / 18.2;
     std::uint64_t total_ticks = 0;
     for (const auto delay : delays)
+    {
         total_ticks += delay;
+    }
     if (!total_ticks)
+    {
         return 0;
+    }
     auto tick = static_cast<std::uint64_t>(seconds / tick_seconds) % total_ticks;
     for (std::size_t n = 0; n < delays.size(); ++n)
     {
         if (tick < delays[n])
+        {
             return n;
+        }
         tick -= delays[n];
     }
     return 0;

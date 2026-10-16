@@ -34,8 +34,12 @@ inline constexpr std::array thrown_gear_items{
 inline constexpr const ThrownGear *thrown_gear(std::string_view key)
 {
     for (const auto &item : thrown_gear_items)
+    {
         if (item.key == key)
+        {
             return &item;
+        }
+    }
     return nullptr;
 }
 } // namespace opengold::srd5::detail

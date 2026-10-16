@@ -23,24 +23,34 @@ struct RecordResult
 RecordResult extract_record(std::span<const std::uint8_t> dax, std::uint8_t wanted_id)
 {
     if (dax.size() < 2)
+    {
         return {};
+    }
     const std::size_t toc_size = read_u16(dax, 0);
     if (toc_size % 9 != 0 || toc_size > dax.size() - 2)
+    {
         return {};
+    }
 
     for (std::size_t entry = 0; entry < toc_size / 9; ++entry)
     {
         const std::size_t header = 2 + entry * 9;
         if (dax[header] != wanted_id)
+        {
             continue;
+        }
         const std::size_t offset = read_u32(dax, header + 1);
         const std::size_t raw_size = read_u16(dax, header + 5);
         const std::size_t compressed_size = read_u16(dax, header + 7);
         if (offset > dax.size() - 2 - toc_size)
+        {
             return {};
+        }
         const std::size_t data_start = 2 + toc_size + offset;
         if (data_start > dax.size() || compressed_size > dax.size() - data_start)
+        {
             return {};
+        }
 
         std::vector<std::uint8_t> output;
         output.reserve(raw_size);
@@ -53,7 +63,9 @@ RecordResult extract_record(std::span<const std::uint8_t> dax, std::uint8_t want
             {
                 const std::size_t count = static_cast<std::size_t>(command) + 1;
                 if (count > input_end - input || count > raw_size - output.size())
+                {
                     return {};
+                }
                 output.insert(output.end(), dax.begin() + input, dax.begin() + input + count);
                 input += count;
             }
@@ -61,12 +73,16 @@ RecordResult extract_record(std::span<const std::uint8_t> dax, std::uint8_t want
             {
                 const std::size_t count = static_cast<std::size_t>(-command);
                 if (input >= input_end || count > raw_size - output.size())
+                {
                     return {};
+                }
                 output.insert(output.end(), count, dax[input++]);
             }
         }
         if (output.size() != raw_size)
+        {
             return {};
+        }
         return {FormatResult::ok, std::move(output)};
     }
     return {FormatResult::not_found, {}};
@@ -94,10 +110,14 @@ constexpr std::array<std::array<std::uint8_t, 3>, 16> ega_palette{{{0, 0, 0},
 DaxDecodeResult decode_dax_archive(std::span<const std::uint8_t> bytes)
 {
     if (bytes.size() < 2)
+    {
         return {};
+    }
     const std::size_t toc_size = read_u16(bytes, 0);
     if (toc_size % 9 != 0 || toc_size > bytes.size() - 2)
+    {
         return {};
+    }
     std::array<bool, 256> seen{};
     std::vector<DaxRecord> records;
     records.reserve(toc_size / 9);
@@ -105,11 +125,15 @@ DaxDecodeResult decode_dax_archive(std::span<const std::uint8_t> bytes)
     {
         const auto id = bytes[offset];
         if (seen[id])
+        {
             return {};
+        }
         seen[id] = true;
         auto record = extract_record(bytes, id);
         if (record.status != FormatResult::ok)
+        {
             return {};
+        }
         records.push_back({id, std::move(record.bytes)});
     }
     return {FormatResult::ok, std::move(records)};
@@ -131,16 +155,22 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
 {
     auto extracted = extract_record(dax, record_id);
     if (extracted.status != FormatResult::ok)
+    {
         return {extracted.status, {}};
+    }
     const std::span<const std::uint8_t> record{extracted.bytes};
     if (record.empty() || frame_index >= record[0])
+    {
         return {FormatResult::not_found, {}};
+    }
 
     std::size_t cursor = 1;
     for (std::uint8_t frame = 0; frame <= frame_index; ++frame)
     {
         if (cursor > record.size() || 21 > record.size() - cursor)
+        {
             return {};
+        }
         const auto height = read_u16(record, cursor + 4);
         const auto width_bytes = read_u16(record, cursor + 6);
         const std::size_t packed_size = static_cast<std::size_t>(height) * width_bytes * 4;
@@ -148,7 +178,9 @@ ImageDecodeResult decode_ega_sprite(std::span<const std::uint8_t> dax, std::uint
         if (height == 0 || width_bytes == 0 ||
             width_bytes > std::numeric_limits<std::uint16_t>::max() / 8 ||
             packed_size > record.size() - pixel_start)
+        {
             return {};
+        }
         if (frame != frame_index)
         {
             cursor = pixel_start + packed_size;
@@ -182,18 +214,26 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
 {
     const auto extracted = extract_record(dax, record_id);
     if (extracted.status != FormatResult::ok)
+    {
         return {extracted.status, {}};
+    }
     const std::span<const std::uint8_t> record{extracted.bytes};
     if (record.size() < 17)
+    {
         return {};
+    }
     const auto height = read_u16(record, 0), width_bytes = read_u16(record, 2);
     const auto count = record[8];
     const std::size_t frame_size = static_cast<std::size_t>(height) * width_bytes * 4;
     if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
         record.size() != 17 + frame_size * count)
+    {
         return {};
+    }
     if (frame_index >= count)
+    {
         return {FormatResult::not_found, {}};
+    }
     Image image;
     image.width = width_bytes * 8;
     image.height = height;
@@ -206,7 +246,9 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
         std::copy(ega_palette[index].begin(), ega_palette[index].end(),
                   image.rgba.begin() + pixel * 4);
         if (index == 8)
+        {
             image.rgba[pixel * 4] = image.rgba[pixel * 4 + 1] = image.rgba[pixel * 4 + 2] = 0;
+        }
         if (index == 13)
         {
             image.rgba[pixel * 4] = 255;
@@ -221,12 +263,16 @@ ImageDecodeResult decode_ega_combat_icon(std::span<const std::uint8_t> dax, std:
 ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record)
 {
     if (record.size() < 17)
+    {
         return {};
+    }
     const auto height = read_u16(record, 0), width_bytes = read_u16(record, 2);
     const unsigned count = record[8];
     if (!height || height > 200 || !width_bytes || width_bytes > 40 || !count ||
         record.size() != 17 + static_cast<std::size_t>(height) * width_bytes * 4 * count)
+    {
         return {};
+    }
     Image image;
     image.width = width_bytes * 8;
     image.height = height;
@@ -251,7 +297,9 @@ ImageDecodeResult decode_ega_picture(std::span<const std::uint8_t> record)
 AnimationDecodeResult decode_ega_animation(std::span<const std::uint8_t> record)
 {
     if (record.empty() || !record[0])
+    {
         return {};
+    }
     const unsigned frame_count = record[0];
     std::vector<std::uint8_t> first_frame;
     std::vector<AnimationFrame> frames;
@@ -259,34 +307,52 @@ AnimationDecodeResult decode_ega_animation(std::span<const std::uint8_t> record)
     for (unsigned n = 0; n < frame_count; ++n)
     {
         if (record.size() - offset < 4 + 17)
+        {
             return {};
+        }
         const auto delay = read_u32(record, offset);
         const auto header = record.subspan(offset + 4, 17);
         if (header[8] != 1)
+        {
             return {}; // Each frame holds exactly one picture.
+        }
         const std::size_t frame_size =
             17 + static_cast<std::size_t>(read_u16(header, 0)) * read_u16(header, 2) * 4;
         if (record.size() - offset - 4 < frame_size)
+        {
             return {};
+        }
         std::vector<std::uint8_t> frame(record.begin() + offset + 4,
                                         record.begin() + offset + 4 + frame_size);
         if (n == 0)
+        {
             first_frame = frame;
+        }
         else if (frame.size() != first_frame.size() ||
                  !std::equal(frame.begin(), frame.begin() + 4, first_frame.begin()))
+        {
             return {}; // Deltas only make sense against a picture of the same size.
+        }
         else
+        {
             // XOR on packed bytes is XOR on each 4-bit color index they hold.
             for (std::size_t i = 17; i < frame.size(); ++i)
+            {
                 frame[i] ^= first_frame[i];
+            }
+        }
         auto image = decode_ega_picture(frame);
         if (!image)
+        {
             return {};
+        }
         frames.push_back({delay, std::move(image.image)});
         offset += 4 + frame_size;
     }
     if (offset != record.size())
+    {
         return {};
+    }
     return {FormatResult::ok, std::move(frames)};
 }
 } // namespace opengold

@@ -27,7 +27,9 @@ auto module(bool target = false)
     auto content =
         read(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/rules/srd-5.2.1/combat.rules");
     if (target)
+    {
         content += "\ncreature target 1 1000 0 30 1 1 4 0 0 0 0 0 0 0 0 0 0 1 0\n";
+    }
     return srd5::parse_content(content);
 }
 
@@ -43,30 +45,44 @@ Character hero(std::string klass = "fighter", int strength = 12, int dexterity =
     d.name = "Heavy tester";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[0] = {{strength - 8, 4, 4, 1}, 3};
     d.rolls[1] = {{dexterity - 8, 4, 4, 1}, 3};
     // 12 and 13 use the same modifier: only the Heavy threshold differs.
     if (strength == 15)
+    {
         d.rolls[0] = {{6, 5, 4, 1}, 3};
+    }
     if (dexterity == 15)
+    {
         d.rolls[1] = {{6, 5, 4, 1}, 3};
+    }
     return Character(*srd5::character_rules(), d, {});
 }
 
 CombatantView unit(const CombatSession &c, EntityId id = 1)
 {
     for (const auto &u : c.snapshot().combatants)
+    {
         if (u.id == id)
+        {
             return u;
+        }
+    }
     throw std::runtime_error("Missing actor");
 }
 
 Command command(const CombatSession &c, std::string_view verb)
 {
     for (const auto &a : c.legal_commands())
+    {
         if (a.verb == verb)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing command: " + std::string(verb));
 }
 
@@ -80,7 +96,9 @@ std::uint64_t rng(const CombatSession &c)
     std::istringstream in(c.save());
     std::string row;
     for (int i = 0; i < 3; ++i)
+    {
         std::getline(in, row);
+    }
     std::uint64_t value{};
     in >> value;
     return value;
@@ -89,16 +107,24 @@ std::uint64_t rng(const CombatSession &c)
 std::string argument(const Message &m, std::string_view key)
 {
     for (const auto &a : m.arguments)
+    {
         if (a.name == key)
+        {
             return a.value;
+        }
+    }
     throw std::runtime_error("Missing message argument");
 }
 
 Message attack(const CombatSession &c)
 {
     for (const auto &m : c.snapshot().log_messages())
+    {
         if (m.source.starts_with("{actor} -> {target}: d20"))
+        {
             return m;
+        }
+    }
     throw std::runtime_error("Missing attack result");
 }
 
@@ -113,9 +139,13 @@ auto battle(const RulesModule &rules, const Character &h, const std::vector<std:
                 {{1, "campaign-character", "Hero", Side::party, {1, 1}, profile.data},
                  {2, "target", "Target", Side::opposition, target}}};
     if (blind_target)
+    {
         e.participants[1].state = VitalState{1000, false, effect};
+    }
     if (blind_hero)
+    {
         e.participants[0].state = VitalState{h.sheet().hit_points, false, effect};
+    }
     auto c = rules.create(e, seed);
     check(c->snapshot().actor == 1, "Golden seed begins with the hero");
     return c;
@@ -146,6 +176,7 @@ void thresholds()
     {
         ++classes;
         for (const auto &w : weapons)
+        {
             for (const int score : {12, 13})
             {
                 const auto h = hero(klass.id, w.ranged ? 15 : score, w.ranged ? score : 15);
@@ -159,28 +190,36 @@ void thresholds()
                                                     requirements.abilities.end(), qualifies)
                                      : !std::all_of(requirements.abilities.begin(),
                                                     requirements.abilities.end(), qualifies))
+                {
                     continue;
+                }
                 const auto profile =
                     rules->character_profile(h.sheet(), std::array<std::string, 1>{w.key});
                 check(!profile.strength_dexterity_disadvantage && profile.movement_feet == 30,
                       "Heavy never applies armor/check/save/initiative or speed penalties");
                 bool explained = false;
                 for (const auto &m : profile.item_messages)
+                {
                     if (m.source.find("(Heavy)") != m.source.npos)
                     {
                         auto label = argument(m, "item");
                         for (auto &ch : label)
                         {
                             if (ch == ' ')
+                            {
                                 ch = '_';
+                            }
                             else if (ch >= 'A' && ch <= 'Z')
+                            {
                                 ch = char(ch - 'A' + 'a');
+                            }
                         }
                         explained =
                             label == w.key && argument(m, "score") == std::to_string(score) &&
                             argument(m, "ability") == (w.ranged ? "Dexterity" : "Strength") &&
                             (m.source.find("Disadvantage") != m.source.npos) == (score == 12);
                     }
+                }
                 check(
                     explained && profile.item_modifiers.find("(Heavy)") != std::string::npos,
                     "Existing Modifiers presentation identifies item, required ability, current score and result");
@@ -225,6 +264,7 @@ void thresholds()
                           "Stale attack rejection remains atomic");
                 }
             }
+        }
     }
     check(classes == 12, "Every SRD class is exercised");
     for (const char *race : {"halfling", "gnome"})
@@ -356,8 +396,12 @@ void opportunity_attack()
     act(*c, "end");
     Command retreat;
     for (const auto &v : c->legal_commands())
+    {
         if (v.verb == "move" && v.destination == Cell{4, 1})
+        {
             retreat = v;
+        }
+    }
     check(c->submit(retreat) && c->snapshot().reaction_pending,
           "Leaving reach offers the weak Heavy wielder an Opportunity Attack");
     auto declined = rules->restore(c->save());

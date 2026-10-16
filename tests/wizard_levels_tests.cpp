@@ -26,7 +26,9 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 void check(bool ok, const std::string &message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 std::unique_ptr<RulesModule> module()
@@ -55,7 +57,9 @@ CharacterDraft draft(std::string name = "Wizard")
     d.name = std::move(name);
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     d.rolls[3] = {{6, 6, 6, 1}, 3};
     d.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
     const std::vector<std::string> book{"magic_missile", "burning_hands", "shield",
@@ -73,8 +77,10 @@ Character wizard(unsigned level, std::string name = "Wizard")
     VitalState life{hero.sheet().hit_points, false, {}};
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life, rules->default_advancement(hero.sheet())),
               "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -96,12 +102,16 @@ CharacterSheet with_spells(const Character &hero, const std::vector<std::string>
             // The latest spell learned, whose level allows any new spell.
             auto learned = sheet.grants.end();
             for (auto g = sheet.grants.begin(); g != sheet.grants.end(); ++g)
+            {
                 if (g->id.starts_with("spell:") && g->level >= 5 &&
                     g->source_id == "class:wizard:spellcasting" && g->choices.contains("access") &&
                     g->choices.at("access") == "spellbook" &&
                     std::find(spells.begin(), spells.end(), g->id.substr(6)) == spells.end() &&
                     (learned == sheet.grants.end() || g->level > learned->level))
+                {
                     learned = g;
+                }
+            }
             check(learned != sheet.grants.end(), "A level-5 spell to replace");
             const auto old = learned->id.substr(6);
             learned->id = "spell:" + spell;
@@ -111,9 +121,13 @@ CharacterSheet with_spells(const Character &hero, const std::vector<std::string>
         if (std::find(prepared.begin(), prepared.end(), spell) == prepared.end())
         {
             if (next < prepared.size())
+            {
                 prepared[next] = spell;
+            }
             else
+            {
                 prepared.push_back(spell);
+            }
         }
         ++next;
     }
@@ -133,16 +147,24 @@ bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
 bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && (!target || command.target == target))
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
 bool submit_cell(CombatSession &c, std::string_view verb, Cell cell)
 {
     for (const auto &command : c.legal_commands())
+    {
         if (command.verb == verb && command.destination == cell)
+        {
             return c.submit(command);
+        }
+    }
     return false;
 }
 
@@ -159,8 +181,12 @@ bool logged(const CombatSession &c, std::string_view text)
 CombatantView unit(const CombatSession &c, EntityId id)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.id == id)
+        {
             return a;
+        }
+    }
     throw std::runtime_error("Missing combatant");
 }
 
@@ -172,7 +198,9 @@ unsigned slots(const CombatSession &c, unsigned level, EntityId id = 1)
     unsigned winds{}, count{};
     in >> magic >> winds;
     for (unsigned n = 1; n <= level; ++n)
+    {
         in >> count;
+    }
     return count;
 }
 
@@ -184,14 +212,18 @@ unsigned slots_left(const CampaignParty &party, MemberId id, unsigned level)
     unsigned winds{}, count{};
     in >> magic >> winds;
     for (unsigned n = 1; n <= level; ++n)
+    {
         in >> count;
+    }
     return count;
 }
 
 void to_turn(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
+    {
         check(submit(c, "end") || submit(c, "decline"), "End a turn");
+    }
     check(c.snapshot().actor == id, "Reach the turn");
 }
 
@@ -218,7 +250,9 @@ void progression_checks()
     const auto id = party.add_pc(Character(*srd5::character_rules(), draft(), {}));
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
+    {
         party.advance(id, party.default_advancement(id));
+    }
     check(party.member(id).character.sheet().level == 15, "A Wizard reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>{{5, 9},
                                                                                  {6, 10},
@@ -231,8 +265,10 @@ void progression_checks()
                                                                                  {13, 17},
                                                                                  {14, 18},
                                                                                  {15, 19}})
+    {
         check(rules->spell_access(wizard(level).sheet()).prepared_choices == count,
               "Prepared spells: 9 at 5 to 19 at 15");
+    }
     check(rules->spell_access(wizard(10).sheet()).cantrip_choices == 5, "A fifth cantrip at 10");
     const auto grants = wizard(10).sheet().grants;
     check(std::any_of(grants.begin(), grants.end(),
@@ -309,9 +345,13 @@ void memorize_spell_checks()
     check(options.may_prepare && !options.may_replace, "Memorize Spell prepares, never replaces");
     std::vector<std::string> unprepared;
     for (const auto &spell : rules->spell_access(sheet).spellbook)
+    {
         if (std::find(sheet.prepared_spells.begin(), sheet.prepared_spells.end(), spell.id) ==
             sheet.prepared_spells.end())
+        {
             unprepared.push_back(spell.id);
+        }
+    }
     check(unprepared.size() >= 2, "Two unprepared spells in the book");
     auto one = sheet.prepared_spells, two = sheet.prepared_spells;
     one[0] = unprepared[0];
@@ -419,7 +459,9 @@ void counterspell_checks()
         to_turn(*c, 98);
         check(submit(*c, "fire_bolt", 1), "The rival casts Fire Bolt");
         if (!c->snapshot().reaction_pending)
+        {
             continue;
+        }
         check(offered(*c, "counterspell") && submit(*c, "counterspell"),
               "The Wizard is asked about Counterspell");
         check(logged(*c, "Wizard casts Counterspell.") && slots(*c, 3) == 1 &&
@@ -427,8 +469,10 @@ void counterspell_checks()
               "Counterspell spends a level-3 slot");
         stopped = logged(*c, "Rival's spell dissipates.");
         if (stopped)
+        {
             check(!logged(*c, "Rival -> Wizard") && !logged(*c, "Wizard takes "),
                   "A stopped spell does nothing");
+        }
     }
     check(stopped, "A seed where the rival fails its save");
 }
@@ -453,7 +497,9 @@ void haste_checks()
           "The second Dash spends the Action");
     for (unsigned turns = 0; turns < 40 && !logged(*c, "A wave of lethargy washes over Wizard.");
          ++turns)
+    {
         check(submit(*c, "end"), "Pass the minute");
+    }
     check(logged(*c, "A wave of lethargy washes over Wizard."), "Haste's end brings lethargy");
 }
 
@@ -471,7 +517,9 @@ void hypnotic_pattern_checks()
                   submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:"),
               "The pattern appears");
         if (!logged(*c, "Foe is entranced by the pattern."))
+        {
             continue;
+        }
         entranced = true;
         check(unit(*c, 98).status.find("Charmed") != std::string::npos, "Entranced: Charmed");
         to_turn(*c, 98);
@@ -496,7 +544,9 @@ void fear_checks()
                   submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:"),
               "Fear's cone");
         if (!logged(*c, "Foe is Frightened."))
+        {
             continue;
+        }
         frightened = true;
         to_turn(*c, 98);
         const auto commands = c->legal_commands();
@@ -532,7 +582,9 @@ void cloud_checks()
         to_turn(*c, 98);
         retched = logged(*c, "Foe retches in the cloud and can take no action this turn.");
         if (retched)
+        {
             check(!unit(*c, 98).action && !unit(*c, 98).bonus_action, "No action or Bonus Action");
+        }
     }
     check(retched, "A seed where the foe fails its save");
 }
@@ -575,7 +627,9 @@ void blink_checks()
                        {{98, "brute", "Foe", Side::opposition, {2, 2}}}, seed);
         check(submit(*c, "blink", 1) && submit(*c, "end"), "Cast Blink and end the turn");
         if (!logged(*c, "Wizard blinks into the Ethereal Plane"))
+        {
             continue;
+        }
         vanished = true;
         check(!offered(*c, "melee", 1), "The Wizard is out of reach");
         to_turn(*c, 1);
@@ -620,7 +674,9 @@ void tentacles_checks()
         held = logged(*c, " Bludgeoning damage from the tentacles.") &&
                logged(*c, "Foe is Restrained.");
         if (!held)
+        {
             continue;
+        }
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the tentacles");
         to_turn(*c, 98);
@@ -653,7 +709,9 @@ void blight_and_charm_checks()
                   (submit(*m, "charm_monster", 98) && submit(*m, "spell_cast")),
               "Cast Charm Monster");
         if (m->snapshot().spell_targeting)
+        {
             check(submit(*m, "spell_cast"), "Charm the chosen foe");
+        }
         charmed = logged(*m, "Foe is Charmed by Wizard.");
     }
     check(charmed, "Charm Monster charms a creature that is no Humanoid");
@@ -671,7 +729,9 @@ void confusion_checks()
                   submit(*c, "area_cast") && logged(*c, "Foe Wisdom save:"),
               "Confusion");
         if (!logged(*c, "Foe is Confused."))
+        {
             continue;
+        }
         confused = true;
         check(submit(*c, "end"), "End the Wizard's turn");
         check(logged(*c, "Foe wanders in confusion.") || logged(*c, "Foe stands confused") ||
@@ -700,7 +760,9 @@ void slow_checks()
                   !logged(*c, "Ally Wisdom save:"),
               "Slow takes only enemies");
         if (!logged(*c, "Foe is slowed."))
+        {
             continue;
+        }
         slowed = true;
         check(unit(*c, 98).armor_class == ac - 2 &&
                   unit(*c, 98).status.find("Slow") != std::string::npos,
@@ -729,15 +791,21 @@ void slow_checks()
                   submit(*c, "area_cast"),
               "The rival casts Slow");
         if (!logged(*c, "Wizard is slowed."))
+        {
             continue;
+        }
         to_turn(*c, 1);
         check(submit(*c, "misty_step") && submit_cell(*c, "area_move", Cell{1, 5}) &&
                   submit(*c, "area_cast") && !unit(*c, 1).action && !unit(*c, 1).bonus_action,
               "A slowed creature's Bonus Action spends its action too");
         if (logged(*c, "Wizard's spell fails under Slow."))
+        {
             failed = unit(*c, 1).cell == (Cell{1, 2});
+        }
         else
+        {
             cast = unit(*c, 1).cell == (Cell{1, 5});
+        }
     }
     check(failed && cast, "A slowed caster's spell fails on a failed Wisdom save");
 }
@@ -770,7 +838,9 @@ void fire_shield_checks()
     check(submit(*c, "melee", 1), "The brute strikes");
     // The Wizard declines to cast Shield.
     if (c->snapshot().reaction_pending)
+    {
         check(submit(*c, "decline"), "Decline Shield");
+    }
     check(logged(*c, "Foe takes ") && logged(*c, " Fire damage from the fire shield."),
           "The shield burns a melee attacker");
 }
@@ -787,25 +857,33 @@ Character monk(unsigned level)
     d.name = "Rival";
     d.rolled = true;
     for (auto &r : d.rolls)
+    {
         r = {{6, 5, 4, 1}, 3};
+    }
     const auto creation = srd5::character_rules();
     for (bool filled = true; filled;)
     {
         filled = false;
         for (const auto &group : creation->training_options(d))
+        {
             if (!d.training.contains(group.id))
             {
                 for (unsigned i = 0; i < group.count; ++i)
+                {
                     d.training[group.id].push_back(group.options.at(i).id);
+                }
                 filled = true;
                 break;
             }
+        }
     }
     Character hero(*creation, d, {});
     VitalState life;
     const auto rules = module();
     while (hero.sheet().level < static_cast<int>(level))
+    {
         check(hero.advance(*rules, life), "An ordinary level-up");
+    }
     return hero;
 }
 
@@ -821,15 +899,21 @@ void borrowed_attack_checks()
         int total = 0;
         const auto log = c.snapshot().log();
         for (auto line = log.begin() + static_cast<std::ptrdiff_t>(from); line != log.end(); ++line)
+        {
             if (const auto at = line->find(" Fire damage from the fire shield.");
                 line->starts_with("Rival takes ") && at != std::string::npos)
+            {
                 total += std::stoi(line->substr(12, at - 12));
+            }
+        }
         return total;
     };
     const auto decline = [](CombatSession &c)
     {
         while (c.snapshot().reaction_pending)
+        {
             check(submit(c, "decline"), "Decline Shield");
+        }
     };
     bool flurry = false, martial_arts = false;
     for (std::uint64_t seed = 1; seed < 40 && !(flurry && martial_arts); ++seed)
@@ -857,7 +941,9 @@ void borrowed_attack_checks()
         }
         // Martial Arts' Unarmed Strike after the Attack action, next turn.
         if (unit(*c, 3).hit_points == 0)
+        {
             continue;
+        }
         to_turn(*c, 1);
         to_turn(*c, 3);
         check(submit(*c, "melee", 1), "The Monk attacks");
@@ -865,7 +951,9 @@ void borrowed_attack_checks()
         from = c->snapshot().log().size();
         before = unit(*c, 3).hit_points;
         if (before == 0 || !submit(*c, "martial_arts", 1))
+        {
             continue;
+        }
         decline(*c);
         if (const int burned = burns(*c, from); burned && !martial_arts)
         {
@@ -921,7 +1009,9 @@ void phantasmal_killer_checks()
         check(submit(*c, "phantasmal_killer", 98) && logged(*c, "Foe Wisdom save:"),
               "Phantasmal Killer");
         if (!logged(*c, "Foe is gripped by its worst fears."))
+        {
             continue;
+        }
         haunted = true;
         const auto saved = c->save();
         check(rules->restore(saved)->save() == saved, "A checkpoint keeps the nightmare");
@@ -951,7 +1041,9 @@ void polymorph_checks()
                   logged(*c, "Foe Wisdom save:"),
               "Polymorph");
         if (!logged(*c, "Foe turns into a Wolf."))
+        {
             continue;
+        }
         turned = true;
         check(unit(*c, 98).armor_class == 12 && unit(*c, 98).temporary_hp.amount == 11,
               "The Wolf's AC and 11 Temporary Hit Points");
@@ -972,7 +1064,9 @@ void sphere_checks()
         check(submit(*c, "resilient_sphere", 98) && logged(*c, "Foe Dexterity save:"),
               "Resilient Sphere");
         if (!logged(*c, "Foe is sealed in a shimmering sphere."))
+        {
             continue;
+        }
         sealed = true;
         check(submit(*c, "end"), "End the turn");
         to_turn(*c, 98);
@@ -1053,12 +1147,20 @@ void hound_and_elementals_checks()
         to_turn(*c, 1);
         Command step;
         for (const auto &command : c->legal_commands())
+        {
             if (command.verb == "move" && command.destination == Cell{5, 2})
+            {
                 step = command;
+            }
+        }
         if (step.actor)
+        {
             check(c->submit(step), "Step beside the foe");
+        }
         if (submit(*c, "melee", 98))
+        {
             burned = logged(*c, " Fire damage from the elemental spirits.");
+        }
     }
     check(burned, "A hit on a creature in the Emanation deals the chosen type");
 }
@@ -1076,8 +1178,12 @@ bool has_combatant(const CombatSession &c, std::string_view form)
 EntityId combatant_with(const CombatSession &c, std::string_view form)
 {
     for (const auto &a : c.snapshot().combatants)
+    {
         if (a.form == form)
+        {
             return a.id;
+        }
+    }
     return 0;
 }
 
@@ -1102,7 +1208,9 @@ void level_five_checks()
                       (c->snapshot().spell_targeting && submit(*c, "spell_cast")),
                   "Hold Monster");
             if (c->snapshot().spell_targeting)
+            {
                 check(submit(*c, "spell_cast"), "Hold the chosen foe");
+            }
             held = unit(*c, 98).status.find("Paralyzed") != std::string::npos;
             continue;
         }
@@ -1199,7 +1307,9 @@ void animate_objects_checks()
           "Animate Objects");
     unsigned objects = 0;
     for (const auto &a : c->snapshot().combatants)
+    {
         objects += a.form == "animated_object";
+    }
     check(objects >= 3, "As many objects as the Intelligence modifier");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the objects");
@@ -1217,12 +1327,18 @@ void mislead_checks()
     to_turn(*c, 98);
     Command near;
     for (const auto &command : c->legal_commands())
+    {
         if (command.verb == "move" &&
             std::max(std::abs(command.destination.x - unit(*c, twin).cell.x),
                      std::abs(command.destination.y - unit(*c, twin).cell.y)) == 1)
+        {
             near = command;
+        }
+    }
     if (near.actor)
+    {
         check(c->submit(near), "The foe closes on the double");
+    }
     check(submit(*c, "melee", twin) &&
               logged(*c, "The attack passes through an illusory double.") &&
               !offered(*c, "melee", twin),
@@ -1242,7 +1358,9 @@ void telekinesis_checks()
                   logged(*c, "Foe Strength save:"),
               "Telekinesis seizes the foe");
         if (unit(*c, 98).cell != (Cell{10, 2}))
+        {
             continue;
+        }
         moved = true;
         check(unit(*c, 98).status.find("Restrained") != std::string::npos, "The foe is held");
         check(submit(*c, "end"), "End the turn");
@@ -1330,7 +1448,9 @@ void eyebite_checks()
                   logged(*c, "Foe Wisdom save:"),
               "Eyebite");
         if (!logged(*c, "Foe falls asleep."))
+        {
             continue;
+        }
         asleep = true;
         check(submit(*c, "end"), "End the turn");
         to_turn(*c, 1);
@@ -1354,10 +1474,14 @@ void flesh_and_dance_checks()
             for (unsigned turns = 0; turns < 8 && !logged(*c, "Foe turns to stone.") &&
                                      logged(*c, "Foe begins to turn to stone.");
                  ++turns)
+            {
                 check(submit(*c, "end"), "Pass a turn");
+            }
             stone = logged(*c, "Foe turns to stone.");
             if (stone)
+            {
                 check(unit(*c, 98).status.find("Petrified") != std::string::npos, "Petrified");
+            }
         }
         auto d = field(*rules, with_spells(wizard(11), {"irresistible_dance"}),
                        {{98, "dummy", "Foe", Side::opposition, {3, 2}}}, seed);
@@ -1411,7 +1535,9 @@ void magic_jar_checks()
                        {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, seed);
         check(submit(*c, "magic_jar", 98) && logged(*c, "Foe Charisma save:"), "Magic Jar");
         if (!logged(*c, "Foe is dominated by Wizard."))
+        {
             continue;
+        }
         possessed = true;
         check(unit(*c, 1).status.find("Magic Jar") != std::string::npos,
               "The Wizard's body lies helpless");
@@ -1478,7 +1604,9 @@ void finger_of_death_checks()
                   seed);
         check(submit(*c, "finger_of_death", 98), "Finger of Death");
         if (!unit(*c, 98).dead)
+        {
             continue;
+        }
         check(submit(*c, "end"), "End the turn");
         to_turn(*c, 1);
         risen = logged(*c, "Foe rises as a Zombie.");
@@ -1525,7 +1653,9 @@ void prismatic_and_gravity_checks()
                   submit(*c, "area_cast"),
               "Reverse Gravity");
         if (!logged(*c, "Foe falls upward."))
+        {
             continue;
+        }
         lifted = true;
         check(logged(*c, "Foe takes ") &&
                   unit(*c, 98).status.find("Fallen upward") != std::string::npos,
@@ -1597,10 +1727,14 @@ void level_eight_checks()
         to_turn(*c, 3);
         check(submit(*c, "befuddlement", 1), "The rival casts Befuddlement");
         if (unit(*c, 1).status.find("Befuddled") == std::string::npos)
+        {
             continue;
+        }
         for (unsigned turns = 0; turns < 40 && c->snapshot().outcome == Outcome::ongoing; ++turns)
+        {
             check(submit(*c, "melee", 3) || submit(*c, "end") || submit(*c, "decline"),
                   "The slayer strikes the rival down");
+        }
         check(c->snapshot().outcome == Outcome::victory, "The slayer ends the fight");
         lifted = unit(*c, 1).status.find("Befuddled") == std::string::npos &&
                  unit(*c, 1).persistent.resources.find(" 172 ") == std::string::npos;
@@ -1655,9 +1789,13 @@ Character wizard_knowing(unsigned level, const std::string &spell, unsigned lear
         {
             auto &book = choice.spell_learning->at("spellbook:" + std::to_string(learned_at));
             if (std::find(book.begin(), book.end(), spell) == book.end())
+            {
                 book.front() = spell;
+            }
             if (std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+            {
                 choice.spells.back() = spell;
+            }
         }
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }

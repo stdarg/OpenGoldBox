@@ -25,7 +25,9 @@ namespace
 void require(bool ok, const char *message)
 {
     if (!ok)
+    {
         throw std::runtime_error(message);
+    }
 }
 
 class TemporaryFile
@@ -86,7 +88,9 @@ class Descriptor
     ~Descriptor()
     {
         if (fd_ >= 0)
+        {
             ::close(fd_);
+        }
     }
 
     Descriptor(const Descriptor &) = delete;
@@ -130,7 +134,9 @@ void write_temporary(TemporaryFile &file, std::string_view bytes)
     {
         const auto count = ::write(handle.get(), bytes.data() + offset, bytes.size() - offset);
         if (count < 0 && errno == EINTR)
+        {
             continue;
+        }
         require(count > 0, "Cannot write save");
         offset += static_cast<std::size_t>(count);
     }
@@ -179,7 +185,9 @@ void write_save_file(const std::filesystem::path &path, std::string_view bytes, 
     file.installed();
 #else
     if (std::filesystem::exists(path))
+    {
         std::filesystem::copy_file(path, backup, std::filesystem::copy_options::overwrite_existing);
+    }
     std::filesystem::rename(file.path(), path);
     file.installed();
     Descriptor parent(::open(directory.c_str(), O_RDONLY | O_DIRECTORY));

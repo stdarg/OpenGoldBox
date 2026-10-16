@@ -39,7 +39,9 @@ struct ActionBudget
     bool attack_again() noexcept
     {
         if (!extra_attacks)
+        {
             return false;
+        }
         --extra_attacks;
         return true;
     }
