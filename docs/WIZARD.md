@@ -48,8 +48,8 @@ The Wizard advances to level 8 for now; level 9 waits for its level-5 spells
 - **Level-4 spells** (7): Banishment, Black Tentacles, Blight, Charm Monster,
   Confusion, Dimension Door, Fire Shield, Greater Invisibility, Ice Storm,
   Phantasmal Killer, Polymorph, Resilient Sphere, Stoneskin, Vitriolic Sphere
-  and Wall of Fire (below). Conjure Minor Elementals and Faithful Hound wait
-  for decisions. Arcane Eye, Control Water, Divination, Fabricate,
+  and Wall of Fire, and Conjure Minor Elementals and Faithful Hound (LEVELS-4)
+  (below). Arcane Eye, Control Water, Divination, Fabricate,
   Hallucinatory Terrain, Locate Creature, Private Sanctum, Secret Chest and
   Stone Shape are cut.
 - **Ability Score Improvement** (8): a feat or ability points.
@@ -110,6 +110,17 @@ The Wizard advances to level 8 for now; level 9 waits for its level-5 spells
 
 ### The level-4 spells
 
+- **Conjure Minor Elementals** (Action, Concentration up to 10 minutes): one
+  entry per type, Acid, Cold, Fire or Lightning, chosen at the casting
+  (LEVELS-4); while it lasts, each of the Wizard's hits on a creature within
+  15 feet of it deals 2d8 more of that type (1d8 more per slot level above
+  4), and the ground there is Difficult Terrain for its enemies.
+- **Faithful Hound** (Action, 30 feet, 8 hours): a phantom watchdog in a free
+  square, drawn as a guardian, that nothing harms. At the start of each of
+  the Wizard's turns it bites the nearest enemy within 5 feet: a Dexterity
+  save against 4d8 Force. **Move Faithful Hound** (a Magic action) moves it
+  up to 50 feet, beside an enemy the Wizard can see (LEVELS-4). It lasts the
+  fight; its watch over a camp has nothing to act on.
 - **Black Tentacles** (Action, 90 feet, Concentration up to 1 minute): a
   20-foot square, Difficult Terrain. A creature in it when it appears, that
   enters it or ends its turn there makes a Strength save, once a turn, or

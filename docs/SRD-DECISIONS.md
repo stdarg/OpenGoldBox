@@ -1108,6 +1108,29 @@ it:
 - **Ranger prepared spells** follow the SRD table (p. 58), 5 at level 4.
 - **Expertise** at Rogue 6, Bard 9 and Ranger 9 stands as LEVELS-1 decided.
 
+## LEVELS-4 (2026-10-16): Wizard spells, Antimagic Field and summons
+
+The user answered the questions the Wizard's levels 5–8 raised:
+
+- **Faithful Hound:** a Magic action moves it up to 50 feet (LEVELS-1) beside
+  an enemy the Wizard can see; it bites at the start of the Wizard's turns
+  and cannot be harmed.
+- **Conjure Minor Elementals:** the extra damage type is chosen once, when the
+  spell is cast (one entry per type, as Protection from Energy has); the SRD
+  chooses it at each hit.
+- **Antimagic Field** stops every spell and every Magic action in it, and
+  magic items do not work there.
+- **Polymorph:** creature stat blocks carry no Challenge Rating, so the limit
+  to a Beast no stronger than the creature is not checked.
+- **Summoned creatures** (Summon Dragon's Draconic Spirit, Animate Objects'
+  objects, Mislead's double) join the fight as new combatants that act right
+  after their caster, controlled by the player (LEVELS-1), drawn with the
+  closest existing art (the game's dragon for the spirit).
+- **Confirmed:** Confusion's wandering provokes no Opportunity Attacks; Wall of
+  Fire hides creatures in it as fog does without blocking sight beyond it;
+  Divine Word, Holy Aura and Conjure Celestial choose foes or allies
+  automatically; Fire Storm's cubes lie on a 10-foot grid.
+
 ## LEVELS-3 (2026-10-15): the open decisions of levels 11–15
 
 The user answered the [levels 11–15 inventory](LEVELS-11-15-INVENTORY.md)'s

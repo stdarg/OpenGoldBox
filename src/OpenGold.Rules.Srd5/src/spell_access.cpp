@@ -230,6 +230,8 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"resilient_sphere", "Resilient Sphere", 4, 0, wizard_list},
     Spell{"vitriolic_sphere", "Vitriolic Sphere", 4, 0, sorcerer_list | wizard_list},
     Spell{"wall_of_fire", "Wall of Fire", 4, 0, druid_list | sorcerer_list | wizard_list},
+    Spell{"faithful_hound", "Faithful Hound", 4, 0, wizard_list},
+    Spell{"conjure_minor_elementals", "Conjure Minor Elementals", 4, 0, druid_list | wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};

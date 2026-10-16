@@ -747,6 +747,38 @@ void wall_of_fire_checks()
           logged(*c, " Fire damage from the wall of fire."), "Its burning side burns a creature ending its turn there");
 }
 
+void hound_and_elementals_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, with_spells(wizard(8), {"faithful_hound", "conjure_minor_elementals"}),
+    {{98, "dummy", "Foe", Side::opposition, {6, 2}}}, 1);
+    check(submit(*c, "faithful_hound") && submit_cell(*c, "area_move", Cell{5, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "A phantom watchdog appears."), "Faithful Hound");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the hound");
+    check(submit(*c, "end"), "End the turn");
+    to_turn(*c, 1);
+    check(logged(*c, "The hound bites at Foe."), "The hound bites at the start of the Wizard's turn");
+    check(offered(*c, "conjure_minor_elementals_cold") &&
+          submit(*c, "conjure_minor_elementals_fire") &&
+          logged(*c, "Elemental spirits flit around Wizard."), "Conjure Minor Elementals: Fire");
+    bool burned = false;
+    for (unsigned turns = 0; turns < 8 && !burned; ++turns)
+    {
+        check(submit(*c, "end"), "End the turn");
+        to_turn(*c, 1);
+        Command step;
+        for (const auto &command : c->legal_commands())
+            if (command.verb == "move" && command.destination == Cell{5, 2})
+                step = command;
+        if (step.actor)
+            check(c->submit(step), "Step beside the foe");
+        if (submit(*c, "melee", 98))
+            burned = logged(*c, " Fire damage from the elemental spirits.");
+    }
+    check(burned, "A hit on a creature in the Emanation deals the chosen type");
+}
+
 void sculpt_checks()
 {
     const auto rules = dummy_rules();
@@ -793,6 +825,7 @@ int main()
         sphere_checks();
         vitriol_checks();
         wall_of_fire_checks();
+        hound_and_elementals_checks();
     }
     catch (const std::exception &error)
     {

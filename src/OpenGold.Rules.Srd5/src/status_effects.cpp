@@ -549,7 +549,8 @@ void apply_searing_smite(EffectState &effects, EffectSource source,
 int benefit_value_limit(EffectKind kind)
 {
     return kind == EffectKind::resistance || kind == EffectKind::dragons_breath ||
-           kind == EffectKind::energy_ward || kind == EffectKind::defending
+           kind == EffectKind::energy_ward || kind == EffectKind::defending ||
+           kind == EffectKind::minor_elementals
            ? static_cast<int>(DamageType::count) - 1
            : kind == EffectKind::dominated ? 40
            : kind == EffectKind::cursed ? 18
@@ -663,6 +664,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::produce_flame:
     case EffectKind::flame_blade:
     case EffectKind::fire_shield:
+    case EffectKind::minor_elementals:
     case EffectKind::aura_of_life:
     case EffectKind::heightened: // the longest spell it can mark, but Web
         return 600000; // 10 minutes

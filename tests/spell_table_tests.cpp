@@ -448,8 +448,8 @@ void behaviour()
         // Quarterstaff and Heat Metal a creature in metal armor; their own
         // tests cover them, as the Paladin's cover Abjure Foes, a class feature,
         // Remove Curse and Greater Restoration, which need a cursed or charmed
-        // creature, and Dominate Beast, a Beast; Fire Shield and Polymorph
-        // are offered once per shield and form.
+        // creature, and Dominate Beast, a Beast; Fire Shield, Polymorph and
+        // Conjure Minor Elementals are offered once per shield, form and type.
         if (row.pattern == SpellPattern::smite ||
                 ((row.pattern == SpellPattern::buff || row.pattern == SpellPattern::save_condition ||
                   row.pattern == SpellPattern::heal) && row.instances > 1) ||
@@ -470,7 +470,7 @@ void behaviour()
                 row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
                 row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
                 row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
-                row.rider == Rider::polymorph)
+                row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals)
             continue;
         bool covered = false;
         for (const auto &sheet : sheets)

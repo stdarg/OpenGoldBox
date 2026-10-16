@@ -255,9 +255,11 @@ The Cleric advances to the game's cap of 15
   like) do not affect a creature in it. A creature's spell effects (Bless,
   Hold Person, True Seeing and every other effect Dispel Magic could end) are
   suppressed while it stands in the field: they do nothing, their time still
-  runs, and they return when it leaves or the field ends. Magic actions that
-  are not spells (Channel Divinity, a Sunbeam's new Line) still work, and
-  magic items and teleportation have nothing to act on yet.
+  runs, and they return when it leaves or the field ends. No Magic action or
+  other magic is used in it or on a creature in it either (LEVELS-4): Channel
+  Divinity, a spell's later actions (a Sunbeam's new Line, moving a Moonbeam),
+  Lay On Hands, Wild Shape, Breath Weapon and smites. Magic items, which do
+  not work there either, and teleportation have nothing to act on yet.
 - **Earthquake** (Action, 500 feet, Concentration up to 1 minute): a tremor
   100 feet in radius, Difficult Terrain. When it is cast and at the end of
   each of the Cleric's turns, every creature in it makes a Dexterity save; on

@@ -177,7 +177,9 @@ enum class Rider : unsigned
     polymorph,
     resilient_sphere,
     vitriolic_sphere,
-    wall_of_fire
+    wall_of_fire,
+    faithful_hound,
+    conjure_minor_elementals
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2187,6 +2189,36 @@ inline constexpr std::array spell_table
         .evocation = true,
         .wall = 60,
         .ring = 20},
+    // SRD 5.2.1 p. 129: a phantom watchdog in a free square within 30 feet
+    // for 8 hours; at the start of each of the caster's turns it bites an
+    // enemy within 5 feet (Dexterity save or 4d8 Force); a Magic action moves
+    // it 50 feet (LEVELS-4).
+    SpellDef{
+        .id = "faithful_hound",
+        .label = "Faithful Hound",
+        .level = 4,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 30,
+        .save = Ability::dexterity,
+        .damage = DamageType::force,
+        .dice = {4, 8, 0},
+        .rider = Rider::faithful_hound},
+    // SRD 5.2.1 p. 118: a 15-foot Emanation; the caster's hits on a creature
+    // in it deal 2d8 more Acid, Cold, Fire or Lightning, chosen when it is
+    // cast (LEVELS-4); Difficult Terrain for enemies; 1d8 more per slot level.
+    SpellDef{
+        .id = "conjure_minor_elementals",
+        .label = "Conjure Minor Elementals",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .damage = DamageType::fire,
+        .dice = {2, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::conjure_minor_elementals,
+        .concentration = true},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -2624,6 +2656,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id.remove_suffix(wall_directions[*direction].size() + 1);
     if (id.starts_with("fire_shield_"))
         id = "fire_shield";
+    if (id.starts_with("conjure_minor_elementals_"))
+        id = "conjure_minor_elementals";
     if (id.starts_with("polymorph_"))
         id = "polymorph";
     if (id == "dimension_door_with")

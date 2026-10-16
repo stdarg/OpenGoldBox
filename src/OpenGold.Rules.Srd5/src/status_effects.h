@@ -355,9 +355,12 @@ enum class EffectKind : unsigned
     vitriol = 142,
     // Wall of Fire: the creature has been burned entering the wall this turn.
     wall_burned = 143,
+    // Conjure Minor Elementals, on its caster: `dc` is the extra damage's
+    // DamageType.
+    minor_elementals = 144,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = wall_burned
+    last = minor_elementals
 };
 
 // Magic Circle's creature types, by `dc`.

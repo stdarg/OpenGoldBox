@@ -175,8 +175,9 @@ detail::EffectKind rider_effect(detail::Rider rider)
            : rider == detail::Rider::animate_dead || rider == detail::Rider::create_undead ||
              rider == detail::Rider::regenerate || rider == detail::Rider::antimagic_field
            ? detail::EffectKind::hunters_mark
-           // Conjure Celestial lasts 10 minutes.
-           : rider == detail::Rider::conjure_celestial ? detail::EffectKind::shield_of_faith
+           // Conjure Celestial and Conjure Minor Elementals last 10 minutes.
+           : rider == detail::Rider::conjure_celestial ||
+             rider == detail::Rider::conjure_minor_elementals ? detail::EffectKind::shield_of_faith
            : detail::EffectKind::divine_favor;
 }
 
@@ -209,7 +210,7 @@ bool concentration_effect(detail::EffectKind kind)
            kind == detail::EffectKind::vampiric || kind == detail::EffectKind::tentacled ||
            kind == detail::EffectKind::confused || kind == detail::EffectKind::greater_invisible ||
            kind == detail::EffectKind::haunted || kind == detail::EffectKind::polymorphed ||
-           kind == detail::EffectKind::sphered;
+           kind == detail::EffectKind::sphered || kind == detail::EffectKind::minor_elementals;
 }
 
 // The level of the spell an effect comes from (0 for a cantrip), or none for
@@ -298,6 +299,7 @@ std::optional<unsigned> spell_level_of(detail::EffectKind kind)
     case Kind::polymorphed:
     case Kind::sphered:
     case Kind::vitriol:
+    case Kind::minor_elementals:
         return 4u;
     case Kind::contagion:
     case Kind::dispel_evil:
@@ -349,6 +351,24 @@ bool selects_creatures(const detail::SpellDef &spell)
 
 // A smite follows the caster's own melee hit; divine_smite_free is Paladin's
 // Smite's slotless cast, and a "_N" verb a cast from a higher slot.
+// A command that is a Magic action or another magical effect (Antimagic
+// Field, LEVELS-4): Channel Divinity's uses, a spell's later actions, Lay On
+// Hands, Wild Shape and a Dragonborn's Breath Weapon. Spells are kept out of
+// the field where they are offered.
+bool magical_command(std::string_view verb)
+{
+    constexpr std::array<std::string_view, 22> verbs{
+        "dispel_break", "dispel_dismissal", "move_moonbeam", "sunbeam_line", "vampiric_touch_again",
+        "flame_blade_strike", "hurl_flame", "armor_of_shadows", "fiendish_vigor", "lands_aid",
+        "divine_spark", "turn_undead", "preserve_life", "abjure_foes", "tireless",
+        "spiritual_weapon_strike", "move_spirit_pack", "move_pillar", "potent_vitality",
+        "sacred_weapon", "sacred_weapon_radiant", "move_hound"};
+    return std::find(verbs.begin(), verbs.end(), verb) != verbs.end() ||
+           verb.starts_with("lay_on_hands") || verb.starts_with("wild_shape") ||
+           verb.starts_with("dragons_breath_exhale") || verb.starts_with("breath_weapon") ||
+           verb.starts_with("divine_strike") || verb.starts_with("channel_");
+}
+
 bool is_smite(std::string_view verb)
 {
     const auto spell = detail::without_cast_suffix(verb);
@@ -616,6 +636,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::wizard, "stoneskin", 7},
     SpellAccessRow{CharacterClass::wizard, "vitriolic_sphere", 7},
     SpellAccessRow{CharacterClass::wizard, "wall_of_fire", 7},
+    SpellAccessRow{CharacterClass::wizard, "faithful_hound", 7},
+    SpellAccessRow{CharacterClass::wizard, "conjure_minor_elementals", 7},
     SpellAccessRow{CharacterClass::sorcerer, "fire_bolt", 1},
     SpellAccessRow{CharacterClass::sorcerer, "poison_spray", 1},
     SpellAccessRow{CharacterClass::sorcerer, "ray_of_frost", 1},
@@ -2982,7 +3004,9 @@ class Session final : public CombatSession
         tentacles,      // Black Tentacles, Difficult Terrain
         hail,           // Ice Storm's hailstones, Difficult Terrain until it ends_ms
         fire_wall,      // Wall of Fire's squares, opaque
-        fire_side       // the squares within 10 feet of Wall of Fire's burning side
+        fire_side,      // the squares within 10 feet of Wall of Fire's burning side
+        hound,          // one square: Faithful Hound's watchdog, until it ends_ms
+        elementals      // Conjure Minor Elementals' 15-foot Emanation, around its caster
     };
     struct Zone
     {
@@ -4666,7 +4690,7 @@ detail::MovementGrid Session::movement_grid(const Actor &mover) const
     // Spirit Guardians halve an enemy's Speed in their Emanation: here its
     // squares are Difficult Terrain to it.
     for (const auto &zone : zones_)
-        if (zone.kind == ZoneKind::guardians &&
+        if ((zone.kind == ZoneKind::guardians || zone.kind == ZoneKind::elementals) &&
                 actor(zone.caster).source.side != mover.source.side)
             for (int y = 0; y < board.height; ++y)
                 for (int x = 0; x < board.width; ++x)
@@ -4730,14 +4754,15 @@ Snapshot Session::snapshot() const
             s.flaming_spheres.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::moonbeam || zone.kind == ZoneKind::pillar)
             s.moonbeams.insert(s.moonbeams.end(), zone.cells.begin(), zone.cells.end());
-        else if (zone.kind == ZoneKind::holy || zone.kind == ZoneKind::antimagic)
+        else if (zone.kind == ZoneKind::holy || zone.kind == ZoneKind::antimagic ||
+                 zone.kind == ZoneKind::elementals)
         {
             for (int y = 0; y < board_.height; ++y)
                 for (int x = 0; x < board_.width; ++x)
                     if (const Cell cell{x, y}; in_emanation(zone, cell))
                         s.circles.push_back(cell);
         }
-        else if (zone.kind == ZoneKind::guardian)
+        else if (zone.kind == ZoneKind::guardian || zone.kind == ZoneKind::hound)
             s.guardians.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::circle)
             s.circles.insert(s.circles.end(), zone.cells.begin(), zone.cells.end());
@@ -5670,6 +5695,21 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return; // An aimed area, resolved by cast_area().
     case detail::Rider::vampiric_touch:
         return; // A touch resolved with its attack.
+    case detail::Rider::conjure_minor_elementals:
+    {
+        const auto type = detail::damage_type(
+                              detail::without_cast_suffix(verb).substr(
+                                  std::string_view("conjure_minor_elementals_").size()));
+        Zone spirits{a.source.id, ZoneKind::elementals, {a.source.cell}};
+        spirits.slot = slot_level_of(verb, spell);
+        zones_.push_back(std::move(spirits));
+        detail::apply_spell_benefit(a.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::minor_elementals, static_cast<int>(type));
+        log("Elemental spirits flit around " + a.source.name + ".",
+        {"Elemental spirits flit around {name}.", {{"name", a.source.name}}});
+        return;
+    }
+    case detail::Rider::faithful_hound:
     case detail::Rider::black_tentacles:
     case detail::Rider::confusion:
     case detail::Rider::dimension_door:
@@ -6713,6 +6753,16 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             }
             continue;
         }
+        // Conjure Minor Elementals: the extra damage's type, chosen at the
+        // casting (LEVELS-4).
+        if (spell.rider == detail::Rider::conjure_minor_elementals)
+        {
+            for (const auto type : {"acid", "cold", "fire", "lightning"})
+                offer_leveled("conjure_minor_elementals_" + std::string(type),
+                              "Conjure Minor Elementals: " +
+                              std::string(detail::damage_name(detail::damage_type(type))));
+            continue;
+        }
         // Fire Shield: the warm shield or the chill one.
         if (spell.rider == detail::Rider::fire_shield)
         {
@@ -6853,7 +6903,8 @@ std::vector<Command> Session::offered_commands() const
         // Misty Step and Flaming Sphere need an unoccupied square.
         const bool open_square = spell.rider == detail::Rider::misty_step ||
                                  spell.rider == detail::Rider::flaming_sphere ||
-                                 spell.rider == detail::Rider::guardian_of_faith;
+                                 spell.rider == detail::Rider::guardian_of_faith ||
+                                 spell.rider == detail::Rider::faithful_hound;
         // An area centered on a square needs a clear line to that square; a
         // cone, line or cube spreads from the caster and is only pointed.
         // Dimension Door needs only a free square, seen or not.
@@ -7388,6 +7439,16 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &other : actors_)
                 if (pillar_reaches(zone, other))
                     add(id, "move_pillar", "Move the pillar of light", other.source.id);
+    // Faithful Hound: a Magic action moves it up to 50 feet, beside an enemy
+    // the caster can see (LEVELS-4).
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::hound && zone.caster == id && a.actions.available(true))
+            for (const auto &other : actors_)
+                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                        !absent(other) && can_see(a, other) &&
+                        distance(zone.cells.front(), other.source.cell) <= 55 &&
+                        distance(zone.cells.front(), other.source.cell) > 5)
+                    add(id, "move_hound", "Move Faithful Hound", other.source.id);
     // Vampiric Touch: a Magic action touches again while it lasts.
     if (detail::has_effect(a.effects, detail::EffectKind::vampiric) && a.actions.available(true))
         for (const auto &other : actors_)
@@ -7835,6 +7896,14 @@ std::vector<Command> Session::offered_commands() const
     obey_command(offered, a);
     flee_turning(offered, a);
     hold_still(offered, a);
+    // Antimagic Field: no spell or other magic in it, nor reaching into it.
+    std::erase_if(offered, [&](const Command & command)
+    {
+        const bool magic = magical_command(command.verb) || is_smite(command.verb) ||
+                           (detail::find_spell(command.verb) && command.verb != "flee");
+        return magic && (in_antimagic(a.source.cell) ||
+                         (command.target && in_antimagic(actor(command.target).source.cell)));
+    });
     return offered;
 }
 
@@ -8832,7 +8901,8 @@ bool Session::near_pack(const Zone &pack, Cell cell)
 bool Session::in_emanation(const Zone &zone, Cell cell) const
 {
     return distance(actor(zone.caster).source.cell, cell) <=
-           (zone.kind == ZoneKind::holy ? 30 : zone.kind == ZoneKind::guardians ? 15 : 10);
+           (zone.kind == ZoneKind::holy ? 30
+            : zone.kind == ZoneKind::guardians || zone.kind == ZoneKind::elementals ? 15 : 10);
 }
 
 bool Session::emanates(const Zone &zone)
@@ -10430,6 +10500,14 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         zones_.push_back({a.source.id, ZoneKind::overgrowth, std::move(grown),
                           std::numeric_limits<std::uint64_t>::max()});
         log("The plants grow thick and overgrown.", {"The plants grow thick and overgrown.", {}});
+        return;
+    }
+    if (spell.rider == detail::Rider::faithful_hound)
+    {
+        // Eight hours: it lasts the fight.
+        zones_.push_back({a.source.id, ZoneKind::hound, {aimed.center}, elapsed_ms_ + 28800000,
+                          area_dc(a, spell)});
+        log("A phantom watchdog appears.", {"A phantom watchdog appears.", {}});
         return;
     }
     if (spell.rider == detail::Rider::black_tentacles)
@@ -12474,6 +12552,29 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
             {"{name} is Blinded by the holy aura.", {{"name", a.source.name}}});
         }
     }
+    // Conjure Minor Elementals: a hit on a creature in the caster's Emanation
+    // deals 2d8 more of the chosen type, 1d8 more per slot level above 4.
+    if (const auto spirits = std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+{
+    return zone.kind == ZoneKind::elementals && zone.caster == a.source.id;
+    });
+    hit && spirits != zones_.end() && !target.life.dead && in_emanation(*spirits, target.source.cell))
+        for (const auto &e : a.effects.active)
+            if (e.kind == detail::EffectKind::minor_elementals)
+            {
+                const auto type = static_cast<detail::DamageType>(e.dc);
+                const auto name = std::string(detail::damage_name(type));
+                const int amount = resolved_damage(target, type,
+                                                   dice({2 + static_cast<int>(spirits->slot) - 4, 8, 0}));
+                log(target.source.name + " takes " + std::to_string(amount) + " " + name +
+                    " damage from the elemental spirits.",
+                {
+                    "{name} takes {damage} {type} damage from the elemental spirits.",
+                    {{"name", target.source.name}, {"damage", std::to_string(amount)}, {"type", name, true}}
+                });
+                damage(target, amount, false);
+                break;
+            }
     // Fire Shield: a creature within 5 feet that hits in melee takes 2d8 Fire
     // from the warm shield or Cold from the chill one.
     if (const auto shield = std::find_if(target.effects.active.begin(), target.effects.active.end(),
@@ -13542,6 +13643,29 @@ bool Session::begin_turn()
     }
     // Haste: the second, limited action.
     a.actions.haste = detail::has_effect(a.effects, detail::EffectKind::hasted);
+    // Faithful Hound: it bites the nearest enemy within 5 feet of it.
+    for (const auto &zone : std::vector<Zone>(zones_))
+        if (zone.kind == ZoneKind::hound && zone.caster == a.source.id)
+        {
+            Actor *prey = nullptr; // Borrowed from actors_.
+            for (auto &other : actors_)
+                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                        !absent(other) && !sealed_off(other) &&
+                        distance(zone.cells.front(), other.source.cell) <= 5 && !prey)
+                    prey = &other;
+            if (!prey)
+                continue;
+            const auto &spell = *detail::find_spell("faithful_hound");
+            log("The hound bites at " + prey->source.name + ".",
+            {"The hound bites at {name}.", {{"name", prey->source.name}}});
+            if (saving_throw_succeeds(*prey, spell.save, zone.save_dc, false,
+                                      heightened_against(*prey, a, spell.id)))
+                continue;
+            const int amount = resolved_damage(*prey, spell.damage, dice(spell.dice));
+            log(prey->source.name + " takes " + std::to_string(amount) + " Force damage.",
+            {"{name} takes {damage} Force damage.", {{"name", prey->source.name}, {"damage", std::to_string(amount)}}});
+            damage(*prey, amount);
+        }
     // Confusion: a d10 decides the turn.
     if (detail::has_effect(a.effects, detail::EffectKind::confused) && conscious(a) &&
             !confused_turn(a))
@@ -15478,6 +15602,21 @@ void Session::dispatch(const Command &command)
         move_spirit_pack(a, actor(command.target));
     else if (command.verb == "move_pillar")
         move_pillar(a, actor(command.target));
+    else if (command.verb == "move_hound")
+    {
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        auto &hound = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+        {
+            return zone.kind == ZoneKind::hound && zone.caster == a.source.id;
+        });
+        hound.cells = {spectral_cell(actor(command.target), hound.cells.front())};
+        log(a.source.name + " sends the hound after " + actor(command.target).source.name + ".",
+        {
+            "{name} sends the hound after {target}.",
+            {{"name", a.source.name}, {"target", actor(command.target).source.name}}
+        });
+    }
     else if (command.verb == "vampiric_touch_again")
     {
         a.nick_origin = 0;
@@ -17047,11 +17186,12 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         const bool timed = kind == static_cast<unsigned>(ZoneKind::grease) ||
                            kind == static_cast<unsigned>(ZoneKind::guardian) ||
                            kind == static_cast<unsigned>(ZoneKind::overgrowth) ||
-                           kind == static_cast<unsigned>(ZoneKind::hail);
+                           kind == static_cast<unsigned>(ZoneKind::hail) ||
+                           kind == static_cast<unsigned>(ZoneKind::hound);
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::fire_side) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::elementals) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
                  kind != static_cast<unsigned>(ZoneKind::guardians) &&
@@ -17060,7 +17200,8 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                  kind != static_cast<unsigned>(ZoneKind::pillar) &&
                  kind != static_cast<unsigned>(ZoneKind::tentacles) &&
                  kind != static_cast<unsigned>(ZoneKind::fire_wall) &&
-                 kind != static_cast<unsigned>(ZoneKind::fire_side)) ||
+                 kind != static_cast<unsigned>(ZoneKind::fire_side) &&
+                 kind != static_cast<unsigned>(ZoneKind::elementals)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
@@ -19953,7 +20094,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.218", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.219", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

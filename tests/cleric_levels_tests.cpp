@@ -943,11 +943,14 @@ void antimagic_checks()
         {98, "dummy", "Foe", Side::opposition, {8, 2}}
     }, 1);
     check(unit(*c, 2).status.find("True Seeing") != std::string::npos, "The ally has True Seeing");
+    check(offered(*c, "divine_spark", 2), "Divine Spark outside a field");
     check(submit(*c, "antimagic_field", 1) && logged(*c, "An aura of antimagic surrounds Cleric."),
           "Antimagic Field surrounds the Cleric");
     check(unit(*c, 2).status.find("True Seeing") == std::string::npos,
           "The ally's spell is suppressed in the field");
     check(!offered(*c, "sacred_flame"), "No one casts a spell in the field");
+    check(!offered(*c, "turn_undead") && !offered(*c, "divine_spark"),
+          "Nor takes a Magic action there (LEVELS-4)");
     const auto saved = c->save();
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps what the field suppresses");
     check(unit(*c, 2).persistent.resources.find("117") != std::string::npos,
