@@ -2,6 +2,7 @@ extends Control
 
 const Evidence = preload("res://scripts/art_script_evidence.gd")
 const MonsterMetadata = preload("res://scripts/monster_metadata.gd")
+const GEAR_ROLES := ["one_hand", "two_hand", "ranged", "shield", "gear"]
 
 var catalog := SpriteCatalog.new()
 var rows: Array = []
@@ -134,7 +135,7 @@ func _build_ui() -> void:
     monster_source.custom_minimum_size.y = 80
     preview.add_child(monster_source)
     var variant_label := Label.new()
-    variant_label.text = "Weapon + shield image pair"
+    variant_label.text = "Equipment setup for ready/action art"
     preview.add_child(variant_label)
     variant_choice = OptionButton.new()
     variant_choice.item_selected.connect(func(_index: int): _show_monster_image())
@@ -160,7 +161,7 @@ func _build_ui() -> void:
     gear_heading.add_theme_font_size_override("font_size", 20)
     editor.add_child(gear_heading)
     var gear_hint := Label.new()
-    gear_hint.text = "Only complete weapon + shield pairs get separate images."
+    gear_hint.text = "1H weapons and shields stay paired; ranged and 2H weapons are separate setups."
     gear_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     editor.add_child(gear_hint)
     var gear_scroll := ScrollContainer.new()
@@ -255,10 +256,13 @@ func _append_gear_row(item: Dictionary) -> void:
     var line := HBoxContainer.new()
     line.set_meta("id", str(item.id))
     line.set_meta("source_type", int(item.get("source_type", -1)))
+    line.set_meta("source_hands", int(item.get("source_hands", -1)))
+    line.set_meta("source_range", int(item.get("source_range", -1)))
     var kind := OptionButton.new()
-    for label in ["Weapon", "Shield", "Gear"]: kind.add_item(label)
-    kind.select(["weapon", "shield", "gear"].find(str(item.kind)))
-    kind.custom_minimum_size.x = 115
+    for label in ["1H weapon", "2H weapon", "Ranged", "Shield", "Gear"]: kind.add_item(label)
+    var role := str(item.get("weapon_role", "one_hand")) if item.kind == "weapon" else str(item.kind)
+    kind.select(GEAR_ROLES.find(role))
+    kind.custom_minimum_size.x = 125
     kind.item_selected.connect(func(_index: int): _gear_changed())
     line.add_child(kind)
     var name := LineEdit.new()
@@ -285,7 +289,8 @@ func _append_gear_row(item: Dictionary) -> void:
 func _add_gear() -> void:
     if selected < 0: return
     var item_id := "added_%d" % Time.get_ticks_usec()
-    _append_gear_row({"id": item_id, "source_type": -1, "kind": "gear", "name": "", "readied": false})
+    _append_gear_row({"id": item_id, "source_type": -1, "source_hands": -1,
+        "source_range": -1, "kind": "gear", "weapon_role": "", "name": "", "readied": false})
     _gear_changed()
     var line: HBoxContainer = gear_rows.get_child(gear_rows.get_child_count() - 1)
     line.get_child(1).grab_focus()
@@ -300,11 +305,15 @@ func _store_draft() -> void:
         var kind: OptionButton = line.get_child(0)
         var name: LineEdit = line.get_child(1)
         var readied: CheckButton = line.get_child(2)
+        var role: String = GEAR_ROLES[kind.selected]
         equipment.append({
             "id": line.get_meta("id"),
-            "kind": ["weapon", "shield", "gear"][kind.selected],
+            "kind": "weapon" if role in ["one_hand", "two_hand", "ranged"] else role,
+            "weapon_role": role if role in ["one_hand", "two_hand", "ranged"] else "",
             "name": name.text.strip_edges(),
             "source_type": line.get_meta("source_type"),
+            "source_hands": line.get_meta("source_hands"),
+            "source_range": line.get_meta("source_range"),
             "readied": readied.button_pressed,
         })
     record.equipment = equipment
@@ -378,30 +387,55 @@ func _show_monster_image() -> void:
 
 func _metadata_check() -> void:
     assert(rows.size() >= 170)
+    assert(MonsterMetadata.source_weapon_role(36, 1) == "one_hand")
+    assert(MonsterMetadata.source_weapon_role(43, 2) == "ranged")
+    assert(MonsterMetadata.source_weapon_role(38, 2) == "two_hand")
     var first: Dictionary = rows[0]
     var art: Dictionary = catalog.monster_art(0)
+    var migration_row: Dictionary = first.duplicate(true)
+    migration_row.equipment = [
+        {"label": "Short sword", "type": 37, "hands": 1, "range": 0, "readied": true},
+        {"label": "Long bow", "type": 43, "hands": 2, "range": 22, "readied": false},
+        {"label": "Greatsword", "type": 38, "hands": 2, "range": 0, "readied": false},
+        {"label": "Shield", "type": 59, "hands": 1, "range": 0, "readied": true},
+    ]
+    var older: Dictionary = MonsterMetadata.new_record(migration_row, art)
+    for item in older.equipment:
+        item.erase("weapon_role")
+        item.erase("source_hands")
+        item.erase("source_range")
+    assert(MonsterMetadata.save_record(older, metadata_root).is_empty())
+    var migrated: Dictionary = MonsterMetadata.load_record(migration_row, art, metadata_root)
+    assert(migrated.error.is_empty())
+    assert(migrated.data.equipment[0].weapon_role == "one_hand")
+    assert(migrated.data.equipment[1].weapon_role == "ranged")
+    assert(migrated.data.equipment[2].weapon_role == "two_hand")
+    assert(migrated.data.variants.size() == 3)
     var sample: Dictionary = MonsterMetadata.new_record(first, art)
     sample.equipment = [
-        {"id": "w1", "kind": "weapon", "name": "Sword", "source_type": 36, "readied": true},
-        {"id": "w2", "kind": "weapon", "name": "Mace", "source_type": 23, "readied": false},
+        {"id": "w1", "kind": "weapon", "weapon_role": "one_hand", "name": "Sword", "source_type": 36, "readied": true},
+        {"id": "w2", "kind": "weapon", "weapon_role": "ranged", "name": "Long bow", "source_type": 43, "readied": false},
+        {"id": "w3", "kind": "weapon", "weapon_role": "two_hand", "name": "Greatsword", "source_type": 38, "readied": false},
         {"id": "s1", "kind": "shield", "name": "Round shield", "source_type": 59, "readied": true},
         {"id": "s2", "kind": "shield", "name": "Kite shield", "source_type": -1, "readied": false},
         {"id": "g1", "kind": "gear", "name": "Cloak", "source_type": -1, "readied": false},
     ]
     MonsterMetadata.rebuild_variants(sample)
     assert(sample.variants.size() == 4)
-    for variant in sample.variants:
-        assert(not str(variant.weapon_id).is_empty() and not str(variant.shield_id).is_empty())
-    var pair_id: String = sample.variants[2].id
+    assert(sample.variants[0].id == "w1__s1" and sample.variants[1].id == "w1__s2")
+    assert(sample.variants[0].shield_id == "s1" and sample.variants[1].shield_id == "s2")
+    assert(sample.variants[2].id == "w2__ranged" and sample.variants[2].shield_id.is_empty())
+    assert(sample.variants[3].id == "w3__two_hand" and sample.variants[3].shield_id.is_empty())
+    var ranged_id: String = sample.variants[2].id
     sample.description = "Original, independently described creature."
     sample.flag_for_regeneration = true
     assert(MonsterMetadata.save_record(sample, metadata_root).is_empty())
     var loaded: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
     assert(loaded.error.is_empty())
     assert(loaded.data.description == sample.description and loaded.data.flag_for_regeneration)
-    assert(loaded.data.equipment.size() == 5 and loaded.data.variants.size() == 4)
-    assert(loaded.data.variants[2].id == pair_id)
-    sample.equipment = [sample.equipment[0], sample.equipment[4]]
+    assert(loaded.data.equipment.size() == 6 and loaded.data.variants.size() == 4)
+    assert(loaded.data.variants[2].id == ranged_id)
+    sample.equipment = [sample.equipment[0], sample.equipment[5]]
     MonsterMetadata.rebuild_variants(sample)
     assert(sample.variants.size() == 1 and sample.variants[0].id == "default")
     sample.equipment = [
@@ -427,23 +461,40 @@ func _metadata_check() -> void:
     draft_records[first.key] = loaded.data
     _select_monster(0)
     assert(variant_choice.item_count == 4)
+    var bow_kind: OptionButton = gear_rows.get_child(1).get_child(0)
+    bow_kind.select(0)
+    _gear_changed()
+    assert(variant_choice.item_count == 5)
+    bow_kind.select(2)
+    _gear_changed()
+    assert(variant_choice.item_count == 4)
     variant_choice.select(2)
     var image := Image.create_empty(2, 2, false, Image.FORMAT_RGBA8)
     image.fill(Color(0.8, 0.2, 0.1))
-    var ready_path: String = MonsterMetadata.art_path(first.key, pair_id, false, metadata_root)
+    var ready_path: String = MonsterMetadata.art_path(first.key, ranged_id, false, metadata_root)
     assert(DirAccess.make_dir_recursive_absolute(ready_path.get_base_dir()) == OK)
     assert(image.save_png(ready_path) == OK)
+    var pair_path: String = MonsterMetadata.art_path(first.key, "w1__s1", false, metadata_root)
+    assert(DirAccess.make_dir_recursive_absolute(pair_path.get_base_dir()) == OK)
+    image.fill(Color(0.1, 0.8, 0.2))
+    assert(image.save_png(pair_path) == OK)
     show_new_art.button_pressed = true
     _show_monster_image()
     assert(monster_source.text.begins_with("New art"))
     assert(monster_image.texture == art_cache[ready_path])
+    variant_choice.select(0)
+    _show_monster_image()
+    assert(monster_source.text.begins_with("New art"))
+    assert(monster_image.texture == art_cache[pair_path])
+    assert(monster_image.texture != art_cache[ready_path])
+    variant_choice.select(2)
     action = true
     _show_monster_image()
     assert(monster_source.text.begins_with("Original fallback"))
     assert(monster_image.texture != art_cache[ready_path])
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
-    print("Monster metadata checks passed: JSON save/load, editable drafts, 4 complete variants, default pair, new art and original fallback")
+    print("Monster metadata checks passed: JSON save/load, editable drafts, paired melee plus separate ranged/2H setups, default pair, new art and original fallback")
     get_tree().quit()
 
 func _remove_check_tree(path: String) -> void:

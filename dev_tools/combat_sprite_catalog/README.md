@@ -33,10 +33,15 @@ the monster name, original creature and art source files/records, description,
 regeneration flag, equipment, and image variants. Unsaved edits remain available
 while switching between records during the current session.
 
-Each weapon combines with each shield in the editable list. The **Weapon + shield
-image pair** dropdown selects one combination and its ready/action images. There
-are no weapon-only or shield-only combinations. If no complete pair exists, the
-record has one **Default** ready/action pair. Put independently created PNGs at
+The equipment editor distinguishes **1H weapon**, **2H weapon**, and **Ranged**.
+It seeds these roles from the original item types and hand counts; you can correct
+the role in the list. Every one-handed weapon combines with every shield as a
+single setup. The monster cannot select that weapon or shield alone. Each ranged
+or two-handed weapon is a separate setup without a shield, so a monster can
+switch between sword-and-shield and bow art. The **Equipment setup for
+ready/action art** dropdown selects a whole setup and its ready/action images.
+If no selectable setup exists, the record has one **Default** pair. Put
+independently created PNGs at
 `dev_tools/combat_sprite_catalog/art/<source-key>/<variant-id>/ready.png` and
 `action.png`. The JSON's `variants` entries contain these relative paths. Enable
 **Show new art when available** to preview them; a missing or invalid PNG falls
@@ -68,4 +73,5 @@ It also checks the in-pane Head and Body buttons, color swatches, Large size,
 and that the character pane has no scrolling selection panel.
 
 Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
-draft retention, variant pairing, replacement preview, and original fallback.
+draft retention, paired one-handed setups, separate ranged and two-handed setups,
+replacement preview, and original fallback.

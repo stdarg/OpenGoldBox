@@ -135,6 +135,8 @@ Array SpriteCatalog::creatures() const
             entry["label"] = gs(item.label());
             entry["readied"] = item.stored.readied();
             entry["type"] = item.stored.type;
+            entry["hands"] = item.base.hands;
+            entry["range"] = item.base.range;
             equipment.push_back(entry);
         }
         row["equipment"] = equipment;
