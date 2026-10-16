@@ -1,3 +1,4 @@
+#include "archive_io.h"
 #include "opengold/map_catalog.h"
 #include "opengold/formats.h"
 #include <algorithm>
@@ -15,10 +16,7 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
         {
             if (!entry.is_regular_file())
                 continue;
-            auto name = entry.path().filename().string();
-            for (auto &c : name)
-                if (c >= 'a' && c <= 'z')
-                    c -= 'a' - 'A';
+            auto name = detail::upper_ascii(entry.path().filename().string());
             if (!name.starts_with("GEO") || !name.ends_with(".DAX"))
                 continue;
             const auto bank = name.substr(3, name.size() - 7);
@@ -34,15 +32,9 @@ MapCatalog MapCatalog::load(const std::filesystem::path &directory)
         MapCatalog catalog;
         for (const auto &[name, path] : archives)
         {
-            const auto size = std::filesystem::file_size(path);
-            if (size > 32 * 1024 * 1024)
-                throw MapError("Map archive too large: " + name);
-            std::ifstream input(path, std::ios::binary);
-            if (!input)
-                throw MapError("Cannot open " + name);
-            std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
-            if (input.bad() || bytes.size() != size)
-                throw MapError("Cannot read " + name);
+            auto bytes = detail::read_archive_bytes<MapError>(path,
+                "Map archive too large: " + name, "Cannot open " + name,
+                "Cannot read " + name);
             auto dax = decode_dax_archive(bytes);
             if (!dax)
                 throw MapError("Invalid DAX archive " + name);

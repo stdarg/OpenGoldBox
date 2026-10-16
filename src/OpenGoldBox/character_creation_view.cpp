@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include "cantrip_control.h"
 #include "spell_choice_controls.h"
 #include "training_control.h"
@@ -46,10 +47,7 @@ using presentation::required_node;
 
 namespace
 {
-String gs(std::string_view s)
-{
-    return String::utf8(s.data(), static_cast<int64_t>(s.size()));
-}
+using presentation::gs;
 
 const std::array<const char *, 9> steps
 {

@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include "character_creation_view.h"
 #include "localization.h"
 #include "guarded_handlers.h"
@@ -13,10 +14,7 @@ using presentation::required_node;
 
 namespace
 {
-String gs(std::string_view s)
-{
-    return String::utf8(s.data(), s.size());
-}
+using presentation::gs;
 } // namespace
 
 void CharacterCreationView::load_portraits()

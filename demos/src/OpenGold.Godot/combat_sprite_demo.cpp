@@ -1,3 +1,4 @@
+#include "../../../src/OpenGoldBox/godot_text.h"
 #include "combat_sprite_demo.h"
 #include "character_colors.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
@@ -30,13 +31,10 @@ using namespace godot;
 
 namespace
 {
+using presentation::gs;
 constexpr unsigned player_count = 4;
 constexpr int min_zoom = 10, max_zoom = 1000;
 
-String gs(std::string_view value)
-{
-    return String::utf8(value.data(), value.size());
-}
 
 String dimensions(Vector2 size)
 {

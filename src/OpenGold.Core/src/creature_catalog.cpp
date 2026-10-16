@@ -1,3 +1,4 @@
+#include "archive_io.h"
 #include "opengold/authored_items.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
@@ -11,28 +12,13 @@ namespace opengold::por
 {
 namespace
 {
-std::string upper_ascii(std::string_view text)
-{
-    std::string result(text);
-    for (auto &c : result)
-        if (c >= 'a' && c <= 'z')
-            c = static_cast<char>(c - 'a' + 'A');
-    return result;
-}
-
 std::vector<std::uint8_t> read_file(const std::filesystem::path &path)
 {
-    std::ifstream input(path, std::ios::binary);
-    if (!input)
+    if (!std::filesystem::exists(path))
         throw CatalogError("Cannot open " + path.string());
-    // DAX has at most 256 records of at most 65535 bytes each. Bound allocations.
-    const auto size = std::filesystem::file_size(path);
-    if (size > 32 * 1024 * 1024)
-        throw CatalogError("Asset exceeds size limit: " + path.string());
-    std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
-    if (input.bad() || bytes.size() != size)
-        throw CatalogError("Cannot read " + path.string());
-    return bytes;
+    return detail::read_archive_bytes<CatalogError>(path,
+        "Asset exceeds size limit: " + path.string(), "Cannot open " + path.string(),
+        "Cannot read " + path.string());
 }
 
 using Archive = std::map<std::uint8_t, std::vector<std::uint8_t>>;
@@ -310,7 +296,7 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
         {
             if (!entry.is_regular_file())
                 continue;
-            const auto name = upper_ascii(entry.path().filename().string());
+            const auto name = detail::upper_ascii(entry.path().filename().string());
             if (name != "ITEMS" && !(name.starts_with("MON") && name.ends_with(".DAX")))
                 continue;
             if (!files.emplace(name, entry.path()).second)
@@ -421,10 +407,10 @@ CreatureCatalog::find(CreatureId id) const noexcept
 std::vector<std::reference_wrapper<const Creature>>
 CreatureCatalog::find_by_name(std::string_view name) const
 {
-    const auto wanted = upper_ascii(name);
+    const auto wanted = detail::upper_ascii(name);
     std::vector<std::reference_wrapper<const Creature>> found;
     for (const auto &[id, creature] : creatures_)
-        if (upper_ascii(creature.stored.name) == wanted)
+        if (detail::upper_ascii(creature.stored.name) == wanted)
             found.push_back(std::cref(creature));
     return found;
 }

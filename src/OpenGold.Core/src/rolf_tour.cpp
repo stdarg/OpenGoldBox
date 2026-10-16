@@ -1,3 +1,4 @@
+#include "archive_io.h"
 #include "opengold/authored_items.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
@@ -14,36 +15,15 @@ namespace
 constexpr unsigned general_store_list = 54;
 std::filesystem::path resolve_archive(const std::filesystem::path &directory, std::string_view name)
 {
-    std::optional<std::filesystem::path> path;
-    for (const auto &file : std::filesystem::directory_iterator(directory))
-    {
-        auto candidate = file.path().filename().string();
-        for (auto &c : candidate)
-            if (c >= 'a' && c <= 'z')
-                c -= 'a' - 'A';
-        if (candidate != name || !file.is_regular_file())
-            continue;
-        if (path)
-            throw EclError("Ambiguous archive " + std::string(name));
-        path = file.path();
-    }
-    if (!path)
-        throw EclError("Missing " + std::string(name));
-    return *path;
+    return detail::find_archive<EclError>(directory, name,
+        "Ambiguous archive " + std::string(name), "Missing " + std::string(name));
 }
 
 std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 {
-    const auto size = std::filesystem::file_size(path);
-    if (size > 32 * 1024 * 1024)
-        throw EclError("Archive exceeds size limit");
-    std::ifstream input(path, std::ios::binary);
-    if (!input)
-        throw EclError("Cannot open " + path.string());
-    std::vector<std::uint8_t> data{std::istreambuf_iterator<char>(input), {}};
-    if (input.bad() || data.size() != size)
-        throw EclError("Incomplete archive read");
-    return data;
+    return detail::read_archive_bytes<EclError>(path,
+        "Archive exceeds size limit", "Cannot open " + path.string(),
+        "Incomplete archive read");
 }
 
 } // namespace

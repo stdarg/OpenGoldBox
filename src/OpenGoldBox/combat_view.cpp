@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include "initiative_controls.h"
 #include "optional_effect_controls.h"
 #include "combat_weapon_controls.h"
@@ -57,10 +58,7 @@ using presentation::required_node;
 
 namespace
 {
-String gs(std::string_view text)
-{
-    return String::utf8(text.data(), text.size());
-}
+using presentation::gs;
 
 const std::array<std::pair<const char *, const char *>, 10> action_buttons
 {

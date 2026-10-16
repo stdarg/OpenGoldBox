@@ -1,3 +1,4 @@
+#include "archive_io.h"
 #include "opengold/authored_items.h"
 #include "opengold/combat_demo.h"
 #include "opengold/combat_body_catalog.h"
@@ -42,18 +43,11 @@ std::optional<Image> original_icon(const std::filesystem::path &directory, unsig
 {
     for (const auto &file : std::filesystem::directory_iterator(directory))
     {
-        auto name = file.path().filename().string();
-        for (auto &c : name)
-            if (c >= 'a' && c <= 'z')
-                c -= 32;
+        auto name = por::detail::upper_ascii(file.path().filename().string());
         if (name != "CPIC2.DAX")
             continue;
-        if (std::filesystem::file_size(file.path()) > 32 * 1024 * 1024)
-            throw std::runtime_error("Combat art archive exceeds limit");
-        std::ifstream input(file.path(), std::ios::binary);
-        std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
-        if (input.bad())
-            throw std::runtime_error("Cannot read combat art");
+        auto bytes = por::detail::read_archive_bytes<std::runtime_error>(file.path(),
+            "Combat art archive exceeds limit", "Cannot read combat art", "Cannot read combat art");
         auto decoded = decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(record), 0);
         if (!decoded)
             throw std::runtime_error("Cannot decode the script-selected combat icon");

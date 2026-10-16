@@ -1,3 +1,4 @@
+#include "../../../src/OpenGold.Core/src/archive_io.h"
 #include "wall_art_catalog.h"
 #include "map_art_profiles.h"
 #include "opengold/exploration_view.h"
@@ -26,44 +27,19 @@ String godot_string(const std::string &value)
     return String::utf8(value.c_str());
 }
 
-std::string uppercase(std::string value)
-{
-    for (char &ch : value)
-        if (ch >= 'a' && ch <= 'z')
-            ch -= 'a' - 'A';
-    return value;
-}
-
-// The original installation may use upper- or lowercase DOS filenames.
 std::filesystem::path archive_path(const std::filesystem::path &directory,
                                    const std::string &name)
 {
-    std::optional<std::filesystem::path> match;
-    for (const auto &file : std::filesystem::directory_iterator(directory))
-    {
-        if (!file.is_regular_file() || uppercase(file.path().filename().string()) != name)
-            continue;
-        if (match)
-            throw std::runtime_error("Ambiguous archive: " + name);
-        match = file.path();
-    }
-    if (!match)
-        throw std::runtime_error("Missing archive: " + name);
-    return *match;
+    return detail::find_archive<std::runtime_error>(directory, name,
+        "Ambiguous archive: " + name, "Missing archive: " + name);
 }
 
 DaxDecodeResult read_archive(const std::filesystem::path &directory, const std::string &name)
 {
     const auto path = archive_path(directory, name);
-    const auto size = std::filesystem::file_size(path);
-    if (size > 32 * 1024 * 1024)
-        throw std::runtime_error("Archive exceeds size limit: " + name);
-    std::ifstream input(path, std::ios::binary);
-    if (!input)
-        throw std::runtime_error("Cannot open archive: " + name);
-    std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
-    if (input.bad() || bytes.size() != size)
-        throw std::runtime_error("Incomplete archive read: " + name);
+    auto bytes = detail::read_archive_bytes<std::runtime_error>(path,
+        "Archive exceeds size limit: " + name, "Cannot open archive: " + name,
+        "Incomplete archive read: " + name);
     auto decoded = decode_dax_archive(bytes);
     if (!decoded)
         throw std::runtime_error("Invalid DAX archive: " + name);

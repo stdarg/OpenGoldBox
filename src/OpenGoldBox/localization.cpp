@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include "localization.h"
 #include "application_settings.h"
 #include <godot_cpp/classes/config_file.hpp>
@@ -15,10 +16,7 @@ using namespace godot;
 
 namespace
 {
-String gs(std::string_view value)
-{
-    return String::utf8(value.data(), value.size());
-}
+using presentation::gs;
 
 // Substitute once over the template. Braces inside a player-entered name are
 // literal data and must never be interpreted as another format expression.

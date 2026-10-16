@@ -1,3 +1,4 @@
+#include "archive_io.h"
 #include "opengold/character_art.h"
 #include <algorithm>
 #include <cmath>
@@ -312,10 +313,7 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
     for (const auto &entry : std::filesystem::directory_iterator(directory))
         if (entry.is_regular_file())
         {
-            auto name = entry.path().filename().string();
-            for (auto &c : name)
-                if (c >= 'a' && c <= 'z')
-                    c -= 32;
+            auto name = detail::upper_ascii(entry.path().filename().string());
             if (!paths.emplace(name, entry.path()).second)
                 throw std::runtime_error("Ambiguous art archive: " + name);
         }
@@ -324,13 +322,9 @@ CharacterArt CharacterArt::load(const std::filesystem::path &directory)
         if (!paths.contains(name))
             throw std::runtime_error("Missing character art: " + name);
         const auto &path = paths.at(name);
-        const auto size = std::filesystem::file_size(path);
-        if (size > 32 * 1024 * 1024)
-            throw std::runtime_error("Character art archive exceeds size limit");
-        std::ifstream in(path, std::ios::binary);
-        std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(in), {}};
-        if (in.bad() || bytes.size() != size)
-            throw std::runtime_error("Cannot read character art: " + name);
+        auto bytes = detail::read_archive_bytes<std::runtime_error>(path,
+            "Character art archive exceeds size limit", "Cannot read character art: " + name,
+            "Cannot read character art: " + name);
         auto decoded = decode_dax_archive(bytes);
         if (!decoded)
             throw std::runtime_error("Invalid character art archive: " + name);

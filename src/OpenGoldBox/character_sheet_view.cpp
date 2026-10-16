@@ -1,3 +1,5 @@
+#include "sheet_format.h"
+#include "godot_text.h"
 #include "godot_nodes.h"
 #include "game_resources.h"
 #include "character_text.h"
@@ -18,26 +20,12 @@ using presentation::required_node;
 
 namespace
 {
+using presentation::signed_number;
+using presentation::rich_text_literal;
+using presentation::gs;
 const std::array<const char *, 6> names{"Strength",     "Dexterity", "Constitution",
     "Intelligence", "Wisdom",    "Charisma"};
 
-std::string number(int n)
-{
-    return (n >= 0 ? "+" : "") + std::to_string(n);
-}
-
-std::string literal(std::string_view value)
-{
-    std::string text;
-    for (char c : value)
-        text += c == '[' ? "[lb]" : std::string(1, c);
-    return text;
-}
-
-String gs(std::string_view text)
-{
-    return String::utf8(text.data(), text.size());
-}
 } // namespace
 
 Variant CharacterCreationView::drag_roll(Vector2, int index)
@@ -113,7 +101,7 @@ void CharacterCreationView::show_modifiers()
                 text += i18n::formatted("{source} ({bonus})",
             {
                 {"source", i18n::render(source.label_message)},
-                {"bonus", gs(number(source.bonuses[ability]))}
+                {"bonus", gs(signed_number(source.bonuses[ability]))}
             }) +
         "\n";
         text += i18n::formatted("Final score: {score}", {{"score", s.scores[ability]}}) + "\n\n";
@@ -142,7 +130,7 @@ void CharacterCreationView::show_modifiers()
     {
         text += i18n::utf8(
                     "\n\n[theme_emphasis]Items[/theme_emphasis]\nNo equipped item modifiers.\n\n[theme_emphasis]Spells[/theme_emphasis]\nNo active spell modifiers. Persistent spell effects are not implemented.");
-        text += "\n\n" + literal(e.what());
+        text += "\n\n" + rich_text_literal(e.what());
     }
     required_node<RichTextLabel>(*this, "ModifiersModal/Text").call("render", gs(text));
     required_node<Label>(*this, "ModifiersModal/Title")
@@ -203,15 +191,15 @@ void CharacterCreationView::update_saving_throws(String value)
                     "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n",
         {
             {"ability", i18n::text(names[i])},
-            {"bonus", gs(number(s.saving_throws[ability]))},
+            {"bonus", gs(signed_number(s.saving_throws[ability]))},
             {"target", target},
-            {"modifier", gs(number(s.modifiers[ability]))},
+            {"modifier", gs(signed_number(s.modifiers[ability]))},
             {"score", s.scores[ability]}
         });
         text += s.save_proficiencies[ability]
                 ? i18n::formatted("{bonus} from {class} saving throw proficiency.",
         {
-            {"bonus", gs(number(s.saving_throws[ability] - s.modifiers[ability]))},
+            {"bonus", gs(signed_number(s.saving_throws[ability] - s.modifiers[ability]))},
             {"class", i18n::text(s.character_class)}
         })
             : i18n::formatted(

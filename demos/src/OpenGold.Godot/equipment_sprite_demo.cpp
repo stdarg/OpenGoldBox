@@ -1,3 +1,4 @@
+#include "../../../src/OpenGoldBox/godot_text.h"
 #include "equipment_sprite_demo.h"
 #include "../../../src/OpenGoldBox/godot_nodes.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
@@ -22,10 +23,7 @@ using namespace opengold;
 
 namespace
 {
-String gs(std::string_view s)
-{
-    return String::utf8(s.data(), s.size());
-}
+using presentation::gs;
 
 std::filesystem::path path(const String &s)
 {

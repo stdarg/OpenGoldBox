@@ -1,3 +1,4 @@
+#include "../../../src/OpenGoldBox/godot_text.h"
 #include "sound_board_view.h"
 #include "../../../src/OpenGoldBox/godot_sound_output.h"
 #include <godot_cpp/classes/audio_stream_player.hpp>
@@ -22,10 +23,7 @@ using namespace opengold::por;
 
 namespace
 {
-String gs(std::string_view value)
-{
-    return String::utf8(value.data(), static_cast<int64_t>(value.size()));
-}
+using presentation::gs;
 
 String button_name(int index)
 {

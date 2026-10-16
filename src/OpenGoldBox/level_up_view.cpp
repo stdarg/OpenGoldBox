@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include "godot_nodes.h"
 #include "localization.h"
 #include "game_resources.h"
@@ -33,10 +34,7 @@ using presentation::required_node;
 
 namespace
 {
-String gs(std::string_view s)
-{
-    return String::utf8(s.data(), s.size());
-}
+using presentation::gs;
 
 } // namespace
 

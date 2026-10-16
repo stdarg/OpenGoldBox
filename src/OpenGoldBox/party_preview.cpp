@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <chrono>
 #include <godot_cpp/classes/check_box.hpp>
@@ -46,10 +47,7 @@ using presentation::required_node;
 
 namespace
 {
-String gs(std::string_view text)
-{
-    return String::utf8(text.data(), text.size());
-}
+using presentation::gs;
 
 Character preview_guard()
 {

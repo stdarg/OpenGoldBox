@@ -1,3 +1,5 @@
+#include "sheet_format.h"
+#include "godot_text.h"
 #include "character_sheet_text.h"
 #include "character_text.h"
 #include "hp_presentation.h"
@@ -12,23 +14,9 @@ using namespace opengold;
 
 namespace
 {
-std::string number(int n)
-{
-    return (n >= 0 ? "+" : "") + std::to_string(n);
-}
-
-std::string literal(std::string_view value)
-{
-    std::string text;
-    for (char c : value)
-        text += c == '[' ? "[lb]" : std::string(1, c);
-    return text;
-}
-
-String gs(std::string_view text)
-{
-    return String::utf8(text.data(), text.size());
-}
+using presentation::signed_number;
+using presentation::rich_text_literal;
+using presentation::gs;
 
 // The party, when given, adds what it knows about the member: current HP,
 // gold, AC and where each item is held.
@@ -39,7 +27,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     std::string text = i18n::formatted(
                            "[theme_font=sheet_title]{name}[/theme_font]\nLevel {level} / {race} / {gender} / {class}\n{alignment} / {background}\n\n",
     {
-        {"name", gs(literal(s.name))},
+        {"name", gs(rich_text_literal(s.name))},
         {"level", s.level},
         {"race", i18n::text(s.race)},
         {"gender", i18n::text(s.gender)},
@@ -117,7 +105,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
                 ? "score_positive" : "score_negative") + "]" +
             score + "[/theme_color]";
         text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" + colored +
-                "[/cell][cell]" + number(s.saving_throws[ability]) +
+                "[/cell][cell]" + signed_number(s.saving_throws[ability]) +
                 (s.save_proficiencies[ability] ? " *" : "") + "[/cell]";
     }
     text += "[/theme_table]\n" + i18n::utf8("* Proficient saving throw");
@@ -131,10 +119,10 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         }
         catch (const std::exception &e)
         {
-            text += "\n\n" + literal(e.what());
+            text += "\n\n" + rich_text_literal(e.what());
         }
         if (!member->vitals.description.empty())
-            text += "\n" + literal(member->vitals.description);
+            text += "\n" + rich_text_literal(member->vitals.description);
     }
     text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
     if (character.inventory().empty())
@@ -143,7 +131,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         member ? party->profile(member->id).equipment_positions : std::vector<rules::Message> {};
     for (const auto &item : character.inventory().items())
     {
-        text += "\n" + literal(i18n::utf8(item.name)) + " x" + std::to_string(item.quantity);
+        text += "\n" + rich_text_literal(i18n::utf8(item.name)) + " x" + std::to_string(item.quantity);
         if (member)
         {
             const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);

@@ -1,3 +1,4 @@
+#include "godot_text.h"
 #include "level_up_dialog.h"
 #include "spell_choice_controls.h"
 #include "guarded_handlers.h"
@@ -19,10 +20,7 @@ using presentation::required_node;
 
 namespace
 {
-String gs(std::string_view s)
-{
-    return String::utf8(s.data(), s.size());
-}
+using presentation::gs;
 
 } // namespace
 

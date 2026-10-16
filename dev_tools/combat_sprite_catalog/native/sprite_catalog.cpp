@@ -1,3 +1,5 @@
+#include "../../../src/OpenGold.Core/src/archive_io.h"
+#include "../../../src/OpenGoldBox/godot_text.h"
 #include "sprite_catalog.h"
 #include "../../../src/OpenGoldBox/godot_images.h"
 #include "../../../src/OpenGoldBox/godot_path.h"
@@ -14,21 +16,12 @@ using namespace opengold;
 using namespace opengold::por;
 
 namespace {
-String gs(std::string_view value) { return String::utf8(value.data(), value.size()); }
-std::string upper(std::string value)
-{
-    for (auto &c : value) if (c >= 'a' && c <= 'z') c -= 32;
-    return value;
-}
+using presentation::gs;
 std::vector<std::uint8_t> read_bytes(const std::filesystem::path &file)
 {
-    if (std::filesystem::file_size(file) > 32 * 1024 * 1024)
-        throw std::runtime_error("Combat archive exceeds size limit: " + file.string());
-    std::ifstream in(file, std::ios::binary);
-    if (!in) throw std::runtime_error("Cannot open " + file.string());
-    std::vector<std::uint8_t> result{std::istreambuf_iterator<char>(in), {}};
-    if (in.bad()) throw std::runtime_error("Cannot read " + file.string());
-    return result;
+    return opengold::por::detail::read_archive_bytes<std::runtime_error>(file,
+        "Combat archive exceeds size limit: " + file.string(),
+        "Cannot open " + file.string(), "Cannot read " + file.string());
 }
 }
 
@@ -54,7 +47,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
         bodies_ = CombatBodyCatalog::load(source / "combat-body-looks.tsv", source / "combat-weapon-options.tsv");
         std::map<int, std::vector<std::filesystem::path>> by_bank;
         for (const auto &file : std::filesystem::directory_iterator(game)) {
-            const auto name = upper(file.path().filename().string());
+            const auto name = opengold::por::detail::upper_ascii(file.path().filename().string());
             if (!file.is_regular_file() || !name.starts_with("CPIC") || !name.ends_with(".DAX")) continue;
             const auto digit = name.substr(4, name.size() - 8);
             if (digit.size() != 1 || digit[0] < '1' || digit[0] > '8') continue;
@@ -62,7 +55,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
             archive_bytes_.emplace(name, read_bytes(file.path()));
         }
         const auto paired = [&](const std::filesystem::path &file, unsigned base) {
-            const auto &bytes = archive_bytes_.at(upper(file.filename().string()));
+            const auto &bytes = archive_bytes_.at(opengold::por::detail::upper_ascii(file.filename().string()));
             return base < 128 && decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(base), 0) &&
                 decode_ega_combat_icon(bytes, static_cast<std::uint8_t>(base + 128), 0);
         };
@@ -86,7 +79,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
             if (art_.contains(id)) continue;
             // Duplicate original names may share art, but this remains a weak candidate.
             for (const auto &[other_id, other] : creatures_->all()) {
-                if (other_id == id || upper(other.stored.name) != upper(creature.stored.name)) continue;
+                if (other_id == id || opengold::por::detail::upper_ascii(other.stored.name) != opengold::por::detail::upper_ascii(creature.stored.name)) continue;
                 for (const auto &file : by_bank[other_id.bank])
                     if (paired(file, other_id.record)) {
                         art_.emplace(id, MonsterArt{file, other_id.record, "Same name alias (weak candidate)"});
@@ -99,7 +92,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
         // confidently named MON record. An identical ID in another bank can differ.
         for (const auto &[bank, files] : by_bank) {
             for (const auto &file : files) {
-                const auto &bytes = archive_bytes_.at(upper(file.filename().string()));
+                const auto &bytes = archive_bytes_.at(opengold::por::detail::upper_ascii(file.filename().string()));
                 const auto decoded = decode_dax_archive(bytes);
                 if (!decoded) continue;
                 for (const auto &record : decoded.records) {
@@ -147,7 +140,7 @@ Array SpriteCatalog::creatures() const
     }
     for (const auto &art : extra_art_) {
         Dictionary row;
-        row["key"] = gs(upper(art.archive.filename().string()) + ":" + std::to_string(art.base));
+        row["key"] = gs(opengold::por::detail::upper_ascii(art.archive.filename().string()) + ":" + std::to_string(art.base));
         row["name"] = String("Unidentified combat sprite");
         row["archive"] = gs(art.archive.filename().string());
         row["record"] = art.base;
@@ -206,7 +199,7 @@ Ref<Texture2D> SpriteCatalog::monster_image(int index, bool action) const
         }
     } else art = &extra_art_[index - ids_.size()];
     if (!art) return {};
-    const auto &bytes = archive_bytes_.at(upper(art->archive.filename().string()));
+    const auto &bytes = archive_bytes_.at(opengold::por::detail::upper_ascii(art->archive.filename().string()));
     auto decoded = decode_ega_combat_icon(bytes,
         static_cast<std::uint8_t>(art->base + (action ? 128 : 0)), 0);
     if (!decoded) return {};
