@@ -55,7 +55,7 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::u
 
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> creation, const RulesModule &rules,
                                    const Character &former, std::string_view species)
-    : rules_(std::move(creation)), random_{0}, gold_random_{0}, former_(former), module_(&rules)
+    : rules_(std::move(creation)), former_(former), module_(&rules), random_{0}, gold_random_{0}
 {
     if (!rules_)
         throw std::runtime_error("Character creator requires a rules module");

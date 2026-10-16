@@ -695,6 +695,103 @@ void fire_shield_checks()
           logged(*c, " Fire damage from the fire shield."), "The shield burns a melee attacker");
 }
 
+// A Monk of the level, its creation choices the first ones offered.
+Character monk(unsigned level)
+{
+    CharacterDraft d;
+    d.race = "dwarf";
+    d.gender = "female";
+    d.character_class = "monk";
+    d.background = "soldier";
+    d.alignment = "neutral_good";
+    d.name = "Rival";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+        r = {{6, 5, 4, 1}, 3};
+    const auto creation = srd5::character_rules();
+    for (bool filled = true; filled;)
+    {
+        filled = false;
+        for (const auto &group : creation->training_options(d))
+            if (!d.training.contains(group.id))
+            {
+                for (unsigned i = 0; i < group.count; ++i)
+                    d.training[group.id].push_back(group.options.at(i).id);
+                filled = true;
+                break;
+            }
+    }
+    Character hero(*creation, d, {});
+    VitalState life;
+    const auto rules = module();
+    while (hero.sheet().level < static_cast<int>(level))
+        check(hero.advance(*rules, life), "An ordinary level-up");
+    return hero;
+}
+
+// An Unarmed Strike is made through a borrowed loadout (#235): Fire Shield's
+// damage back must reach the Monk itself.
+void borrowed_attack_checks()
+{
+    const auto rules = dummy_rules();
+    const std::vector<std::string> bare;
+    // The fire shield's damage logged from the `from`th line on.
+    const auto burns = [](const CombatSession &c, std::size_t from)
+    {
+        int total = 0;
+        const auto log = c.snapshot().log();
+        for (auto line = log.begin() + static_cast<std::ptrdiff_t>(from); line != log.end(); ++line)
+            if (const auto at = line->find(" Fire damage from the fire shield.");
+                    line->starts_with("Rival takes ") && at != std::string::npos)
+                total += std::stoi(line->substr(12, at - 12));
+        return total;
+    };
+    const auto decline = [](CombatSession &c)
+    {
+        while (c.snapshot().reaction_pending)
+            check(submit(c, "decline"), "Decline Shield");
+    };
+    bool flurry = false, martial_arts = false;
+    for (std::uint64_t seed = 1; seed < 40 && !(flurry && martial_arts); ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(7), {"fire_shield"}),
+        {{3, "campaign-character", "Rival", Side::opposition, {2, 2},
+                rules->character_profile(monk(5).sheet(), bare).data}}, seed);
+        check(submit(*c, "fire_shield_warm"), "Fire Shield's warm shield");
+        to_turn(*c, 3);
+        // Flurry of Blows: two Unarmed Strikes.
+        auto from = c->snapshot().log().size();
+        int before = unit(*c, 3).hit_points;
+        check(submit(*c, "flurry_of_blows", 1), "A Flurry of Blows");
+        decline(*c);
+        if (const int burned = burns(*c, from); burned && !flurry)
+        {
+            flurry = true;
+            check(unit(*c, 3).hit_points == std::max(0, before - burned),
+                  "A Flurry's striker loses the Hit Points Fire Shield deals it");
+        }
+        // Martial Arts' Unarmed Strike after the Attack action, next turn.
+        if (unit(*c, 3).hit_points == 0)
+            continue;
+        to_turn(*c, 1);
+        to_turn(*c, 3);
+        check(submit(*c, "melee", 1), "The Monk attacks");
+        decline(*c);
+        from = c->snapshot().log().size();
+        before = unit(*c, 3).hit_points;
+        if (before == 0 || !submit(*c, "martial_arts", 1))
+            continue;
+        decline(*c);
+        if (const int burned = burns(*c, from); burned && !martial_arts)
+        {
+            martial_arts = true;
+            check(unit(*c, 3).hit_points == std::max(0, before - burned),
+                  "A Martial Arts striker loses the Hit Points Fire Shield deals it");
+        }
+    }
+    check(flurry && martial_arts, "Seeds where both Unarmed Strikes hit the shielded Wizard");
+}
+
 void invisibility_checks()
 {
     const auto rules = dummy_rules();
@@ -1536,6 +1633,7 @@ int main()
         slow_checks();
         dimension_door_checks();
         fire_shield_checks();
+        borrowed_attack_checks();
         invisibility_checks();
         ice_storm_checks();
         phantasmal_killer_checks();

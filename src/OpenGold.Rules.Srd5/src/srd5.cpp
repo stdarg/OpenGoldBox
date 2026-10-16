@@ -1522,7 +1522,7 @@ struct Actor
     detail::ConcentrationState concentration; // the one Concentration spell this actor keeps
     // Wild Shape: the Beast form's statistics, derived from the wild_shape effect.
     std::optional<Definition> form;
-    bool light_damage{};        // Transient attack copy only; pending hits carry their own flag.
+    bool light_damage{};        // Lent for one attack only; pending hits carry their own flag.
     bool involuntary_overlap{}; // Interrupted in an occupied space; retained through recovery until
     // separated.
     detail::EffectState effects;
@@ -4425,6 +4425,12 @@ class Session final : public CombatSession
     // A weapon attack, or a spell attack when `spell` is given.
     bool attack(Actor &a, Actor &target, AttackRange range,
                 const std::optional<SpellAttack> &spell = std::nullopt);
+    // A weapon attack made with `loadout`'s statistics (an Unarmed Strike, a
+    // thrown, off-hand or Torch strike, True Strike): the attacker wears the
+    // loadout's definition, held weapon and light-attack flag for the attack,
+    // so what the attack does to the attacker (Fire Shield, Sanctuary ending,
+    // once-a-turn features) happens to the attacker itself.
+    bool attack_as(Actor &a, const Actor &loadout, Actor &target, AttackRange range);
     detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
     bool mastery_capacity(const Actor &, const Actor &, AttackRange range) const;
     detail::RollModifiers attack_modifiers(const Actor &a, const Actor &target, AttackRange range,
@@ -5167,9 +5173,7 @@ void Session::remove_fled()
 // A carried Torch strikes as a Simple Melee weapon for 1 Fire damage.
 void Session::torch_attack(Actor &a, Actor &target)
 {
-    auto striker = thrown_actor(a, "torch");
-    attack(striker, target, AttackRange::melee);
-    a.aim_ready = striker.aim_ready;
+    attack_as(a, thrown_actor(a, "torch"), target, AttackRange::melee);
 }
 
 // Acid, Alchemist's Fire or Oil thrown in place of an attack: the target makes
@@ -5224,8 +5228,7 @@ void Session::throw_weapon(Actor &a, Actor &target, unsigned token, bool light)
 {
     auto attacker = thrown_actor(a, items_.at(token - 1).definition);
     attacker.light_damage = light;
-    attack(attacker, target, AttackRange::ranged);
-    a.aim_ready = attacker.aim_ready;
+    attack_as(a, attacker, target, AttackRange::ranged);
     if (mastery_)
         mastery_->thrown_item = token;
 }
@@ -15007,7 +15010,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         modifiers.advantage = false;
     a.aim_ready = false;
     if (actors_[turn_].source.id == a.source.id)
-        actor(a.source.id).attacked = true;
+        a.attacked = true;
     // Guiding Bolt's and Studied Attacks' Advantage is spent on this attack roll.
     const auto attacker = effect_source(a);
     std::erase_if(target.effects.active, [&](const auto & e)
@@ -15031,7 +15034,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         end_hiding(a.source.id);
     // An attack roll against an enemy on its own turn extends a Rage.
     if (target.source.side != a.source.side && actors_[turn_].source.id == a.source.id)
-        extend_rage(actor(a.source.id));
+        extend_rage(a);
     int bonus = (spell ? casting_bonus(d, spell_attack->spell)
                  : !ranged && shillelagh(a) ? casting_bonus(d, "shillelagh")
                  : ranged ? d.ranged_bonus
@@ -15060,7 +15063,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     // Heroic Inspiration rolls a missed attack again.
     if (natural != 20 && !(!spell && natural >= d.critical_from) &&
             !attack_hits(natural, bonus, armor_class(target)))
-        if (const auto again = heroic_reroll(actor(a.source.id)))
+        if (const auto again = heroic_reroll(a))
             natural = *again;
     const bool automatic = natural == 20 || (!spell && natural >= d.critical_from);
     bool hit = automatic || attack_hits(natural, bonus, armor_class(target));
@@ -15071,7 +15074,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         hit = attack_hits(natural, bonus, armor_class(target));
         if (!hit)
         {
-            bonus += peerless_skill(actor(a.source.id), armor_class(target) - natural - bonus);
+            bonus += peerless_skill(a, armor_class(target) - natural - bonus);
             hit = attack_hits(natural, bonus, armor_class(target));
         }
     }
@@ -15125,7 +15128,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                                  ? roll_advantage_damage(a, target, natural)
                                  : 0;
     const bool savage = hit && !spell && damage_dice.count && d.savage &&
-                        !actor(a.source.id).savage_used;
+                        !a.savage_used;
     if (savage)
         weapon_damage = keep_higher_savage_roll(a, weapon_damage, roll_damage());
     if (hit)
@@ -15136,7 +15139,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         weapon_damage += d.rage_damage;
         log("Rage adds " + std::to_string(d.rage_damage) + " damage.",
         {"Rage adds {damage} damage.", {{"damage", std::to_string(d.rage_damage)}}});
-        weapon_damage += frenzy_damage(actor(a.source.id), critical_hit(a, target, natural));
+        weapon_damage += frenzy_damage(a, critical_hit(a, target, natural));
     }
     if (hit && !spell)
         weapon_damage = resized_damage(a, weapon_damage);
@@ -15326,7 +15329,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     if (hit && amount > 0 && target.life.hp > 0)
         giant_boon(a, target, critical_hit(a, target, natural, spell));
     if (hit && brutal && !target.life.dead)
-        brutal_blow(actor(a.source.id), target, brutal_->blow);
+        brutal_blow(a, target, brutal_->blow);
     if (cunning)
     {
         // Withdraw's move comes after the other effect.
@@ -15338,14 +15341,14 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
             return kind != CunningStrike::withdraw;
         });
         for (const auto kind : kinds)
-            cunning_effect(actor(a.source.id), target, kind);
+            cunning_effect(a, target, kind);
     }
     else if (stealthy)
         end_hiding(a.source.id);
     if (hit && stunning_ == a.source.id && !spell && !ranged && d.martial_arts &&
-            !actor(a.source.id).stun_used && actor(a.source.id).surges > 0 && !target.life.dead &&
+            !a.stun_used && a.surges > 0 && !target.life.dead &&
             target.life.hp > 0)
-        stunning_strike(actor(a.source.id), target);
+        stunning_strike(a, target);
     // Hellish Rebuke and Storm's Thunder answer the damage once the attack is done.
     answer_damage();
     return hit;
@@ -15437,6 +15440,28 @@ bool Session::mark_can_move(const Actor &caster) const
     return marked;
 }
 
+bool Session::attack_as(Actor &a, const Actor &loadout, Actor &target, AttackRange range)
+{
+    // Given back however the attack ends, a reaction prompt unwinding it too.
+    struct Lent
+    {
+        Actor &a;
+        Definition definition;
+        unsigned selected_weapon;
+        bool light_damage;
+
+        ~Lent()
+        {
+            a.definition = std::move(definition);
+            a.selected_weapon = selected_weapon;
+            a.light_damage = light_damage;
+        }
+    } lent{a, std::exchange(a.definition, loadout.definition),
+           std::exchange(a.selected_weapon, loadout.selected_weapon),
+           std::exchange(a.light_damage, loadout.light_damage)};
+    return attack(a, target, range);
+}
+
 void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
 {
     // The attack uses the spellcasting modifier for its attack and damage
@@ -15457,8 +15482,7 @@ void Session::strike_true(Actor &a, Actor &target, TrueStrikeDamage choice)
     }
     log(a.source.name + " casts True Strike.",
     {"{name} casts {spell}.", {{"name", a.source.name}, {"spell", "True Strike", true}}});
-    attack(striker, target, AttackRange::melee);
-    a.aim_ready = striker.aim_ready;
+    attack_as(a, striker, target, AttackRange::melee);
 }
 
 std::vector<Session::ReadyMetamagic> Session::readied_metamagic(const Actor &a)
@@ -18269,11 +18293,10 @@ void Session::dispatch(const Command &command)
         {
             auto attacker = item_actor(a, command.item);
             attacker.light_damage = true;
-            attack(attacker, actor(command.target),
-                   command.verb == "light_ranged" || command.verb == "nick_ranged"
-                   ? AttackRange::ranged
-                   : AttackRange::melee);
-            a.aim_ready = attacker.aim_ready;
+            attack_as(a, attacker, actor(command.target),
+                      command.verb == "light_ranged" || command.verb == "nick_ranged"
+                      ? AttackRange::ranged
+                      : AttackRange::melee);
         }
     }
     else if (command.verb == "stand_up")
@@ -18366,9 +18389,7 @@ void Session::dispatch(const Command &command)
         const int strikes = d.heightened_focus ? 3 : 2;
         for (int strike = 0; strike < strikes && actor(command.target).life.hp > 0; ++strike)
         {
-            auto striker = unarmed_actor(a);
-            const bool hit = attack(striker, actor(command.target), AttackRange::melee);
-            a.aim_ready = striker.aim_ready;
+            const bool hit = attack_as(a, unarmed_actor(a), actor(command.target), AttackRange::melee);
             if (hit && actor(command.target).life.hp > 0)
                 open_hand(a, actor(command.target), command.verb);
         }
@@ -18519,9 +18540,7 @@ void Session::dispatch(const Command &command)
     else if (command.verb == "martial_arts")
     {
         a.bonus = false;
-        auto striker = unarmed_actor(a);
-        attack(striker, actor(command.target), AttackRange::melee);
-        a.aim_ready = striker.aim_ready;
+        attack_as(a, unarmed_actor(a), actor(command.target), AttackRange::melee);
     }
     else if (command.verb == "rage")
     {
@@ -19290,9 +19309,8 @@ void Session::dispatch(const Command &command)
             torch_attack(a, actor(command.target));
         else if (command.verb == "shoot")
         {
-            auto shooter = thrown_actor(a, carried_ranged_weapon(a));
-            attack(shooter, actor(command.target), AttackRange::ranged);
-            a.aim_ready = shooter.aim_ready;
+            attack_as(a, thrown_actor(a, carried_ranged_weapon(a)), actor(command.target),
+                      AttackRange::ranged);
         }
         else if (const auto *gear = command.verb.starts_with("throw_")
                                     ? detail::thrown_gear(std::string_view(command.verb).substr(6))
@@ -23812,7 +23830,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.235", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.236", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
