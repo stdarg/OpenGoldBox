@@ -472,9 +472,11 @@ enum class EffectKind : unsigned
     // Gift of the Protectors has kept someone up; it returns with the
     // Warlock's Long Rest.
     protectors_used = 191,
+    // Tsunami: the creature has swum this turn, against the wave.
+    swum = 192,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = protectors_used
+    last = swum
 };
 
 // Magic Circle's creature types, by `dc`.

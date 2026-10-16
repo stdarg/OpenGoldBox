@@ -217,7 +217,8 @@ enum class Rider : unsigned
     wall_of_thorns,
     natures_sanctuary,
     animal_shapes,
-    slow
+    slow,
+    tsunami
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -3087,7 +3088,25 @@ inline constexpr std::array spell_table
         .save = Ability::wisdom,
         .rider = Rider::slow,
         .concentration = true,
-        .area = 40}};
+        .area = 40},
+    // SRD 5.2.1 p. 171: a wall of water, cast with an Action and 10 feet
+    // thick (LEVELS-5); a Strength save against 6d10 Bludgeoning, half on a
+    // success. It then moves 50 feet away from the caster at the start of
+    // each of the caster's turns, for 5d10 and 1d10 less each time.
+    SpellDef{
+        .id = "tsunami",
+        .label = "Tsunami",
+        .level = 8,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 300,
+        .save = Ability::strength,
+        .half_on_success = true,
+        .damage = DamageType::bludgeoning,
+        .dice = {6, 10, 0},
+        .rider = Rider::tsunami,
+        .concentration = true,
+        .wall = 300}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in

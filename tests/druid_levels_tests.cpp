@@ -282,6 +282,27 @@ void high_checks()
     check(submit(*shapes, "leave_animal_shape") && logged(*shapes, "Druid returns to its own shape."),
           "A Bonus Action leaves the shape");
 }
+// Tsunami: a 10-foot-thick wall of water that moves 50 feet away from the
+// Druid at the start of its turns, carrying those in it (LEVELS-5).
+void tsunami_checks()
+{
+    const auto rules = dummy_rules();
+    auto c = field(*rules, druid(15, "tsunami").sheet(), {5, 2});
+    check(submit(*c, "tsunami_vertical") && submit_cell(*c, "area_move", Cell{4, 2}) &&
+          submit(*c, "area_cast") && logged(*c, "A wall of water rises.") &&
+          logged(*c, "Foe Strength save:"), "The wall rises over the foe in its second row");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the wave");
+    to_turn(*c, 98);
+    check(submit_cell(*c, "move", Cell{5, 4}) && logged(*c, "Foe Athletics check:"),
+          "Moving in the wave takes an Athletics check");
+    const bool swam = logged(*c, "(swims).");
+    check(swam == (unit(*c, 98).cell == (Cell{5, 4})), "A failed check holds the foe");
+    to_turn(*c, 1);
+    check(logged(*c, "The tsunami surges forward."), "The wave moves at the Druid's turn");
+    check(unit(*c, 98).cell.x == 13, "The wave carries the foe to the field's edge");
+    check(logged(*c, "Druid loses Concentration."), "Off the field, the wave is spent");
+}
 } // namespace
 
 int main()
@@ -294,6 +315,7 @@ int main()
         tiger_checks();
         spells_checks();
         high_checks();
+        tsunami_checks();
     }
     catch (const std::exception &error)
     {

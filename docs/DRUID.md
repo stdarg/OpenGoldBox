@@ -187,10 +187,9 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
 - **Land's Aid** deals and heals 3d6 from 10.
 - **Level-6 to level-8 spells:** at 11 Conjure Fey, Flesh to Stone, Heal,
   Heroes' Feast, Sunbeam and Wall of Thorns; at 13 Fire Storm, Regenerate and
-  Reverse Gravity; at 15 Befuddlement, Earthquake, Incendiary Cloud and
-  Sunburst (the shared ones work as for the [Cleric](CLERIC.md#levels-515) and
-  the [Wizard](WIZARD.md#levels-515)). Tsunami waits for a decision on its
-  1-minute casting and its 50-foot thickness on small maps.
+  Reverse Gravity; at 15 Befuddlement, Earthquake, Incendiary Cloud,
+  Sunburst and Tsunami (the shared ones work as for the
+  [Cleric](CLERIC.md#levels-515) and the [Wizard](WIZARD.md#levels-515)).
 - **Animal Shapes** (Action, 30 feet): one entry per Beast form (Wolf, Boar,
   Giant Lizard, Giant Snake, Tiger), then the willing creatures are chosen,
   the Druid among them if it likes. Each takes the form, keeping its own Hit
@@ -211,6 +210,19 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
   each creature in it makes a Dexterity save against 7d8 Piercing, half on a
   success. Entering it or ending a turn in it is a Dexterity save against
   7d8 Slashing, once a turn (1d8 more of each per slot level above 6).
+- **Tsunami** (Action, Concentration up to 6 rounds): a wall of water across
+  the field in any of four directions, 10 feet thick (LEVELS-5: the SRD's
+  minute of casting and 50 feet would not fit a fight or a battle map); its
+  second row lies on the side away from the Druid. As it rises each creature
+  in it makes a Strength save against 6d10 Bludgeoning, half on a success. At
+  the start of each of the Druid's later turns it moves 50 feet away from
+  the Druid, carrying the creatures in it or in its way, each of which makes
+  a Strength save or takes 5d10 Bludgeoning; each move deals 1d10 less, and
+  after the 1d10 move it subsides at the end of the turn. Carried into an
+  obstacle, a creature takes the push damage of PUSH-1; the field's edge
+  stops it without harm, and a wave that leaves the field ends. A creature
+  in the water moves only after a Strength (Athletics) check against the
+  spell's DC, once a turn; a failure holds it for the turn.
 - **Ability Score Improvement** (12).
 - **Nature's Sanctuary** (Land 14): **Nature's Sanctuary**, a Magic action
   and a Wild Shape use, raises a 15-foot cube of spectral trees within 120

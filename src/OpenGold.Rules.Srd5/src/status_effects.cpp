@@ -140,7 +140,7 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::wall_burned && kind != EffectKind::breathed &&
             kind != EffectKind::lifted && kind != EffectKind::hand_ready &&
             kind != EffectKind::hurled && kind != EffectKind::fey_fright &&
-            kind != EffectKind::thorned &&
+            kind != EffectKind::thorned && kind != EffectKind::swum &&
             kind != EffectKind::clouded && kind != EffectKind::rooted &&
             kind != EffectKind::jigging) ||
             !can_apply(effects) ||
@@ -1044,7 +1044,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::wall_burned || kind == EffectKind::breathed ||
                            kind == EffectKind::lifted || kind == EffectKind::hand_ready ||
                            kind == EffectKind::hurled || kind == EffectKind::fey_fright ||
-                           kind == EffectKind::thorned ||
+                           kind == EffectKind::thorned || kind == EffectKind::swum ||
                            kind == EffectKind::clouded || kind == EffectKind::rooted ||
                            kind == EffectKind::jigging ||
                            kind == EffectKind::shocking_grasp ||

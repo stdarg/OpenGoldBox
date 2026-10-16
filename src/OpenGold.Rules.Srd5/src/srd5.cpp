@@ -964,6 +964,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "stinking_cloud", 5},
     SpellAccessRow{CharacterClass::druid, "conjure_fey", 11},
     SpellAccessRow{CharacterClass::druid, "animal_shapes", 15},
+    SpellAccessRow{CharacterClass::druid, "tsunami", 15},
     SpellAccessRow{CharacterClass::druid, "wall_of_thorns", 11},
     // Druid level-3 spells, with the level-3 slot of Druid level 5.
     SpellAccessRow{CharacterClass::druid, "call_lightning", 5},
@@ -2164,6 +2165,21 @@ std::string wall_direction_label(std::size_t direction)
     constexpr std::array<std::string_view, 5> labels{"horizontal", "vertical", "rising diagonal",
                                                      "falling diagonal", "ring"};
     return std::string(labels.at(direction));
+}
+
+// Tsunami's headings, by the index its zone keeps in `dealt`.
+constexpr std::array<Cell, 8> wave_headings{Cell{0, 1}, Cell{0, -1}, Cell{1, 0}, Cell{-1, 0},
+    Cell{1, 1}, Cell{-1, -1}, Cell{1, -1}, Cell{-1, 1}};
+
+// Tsunami's heading: across its wall, away from the caster at `origin`.
+std::size_t wave_heading(std::string_view verb, Cell origin, Cell center)
+{
+    // Across a row, a column, a rising or a falling diagonal.
+    constexpr std::array<std::size_t, 4> across{0, 2, 4, 6};
+    const auto forward = across[detail::wall_direction(verb).value_or(0)];
+    const auto step = wave_headings[forward];
+    const bool backward = (center.x - origin.x) * step.x + (center.y - origin.y) * step.y < 0;
+    return backward ? forward + 1 : forward;
 }
 
 // The ward type a "magic_circle_fey" verb names.
@@ -3515,7 +3531,10 @@ class Session final : public CombatSession
         antilife,       // Antilife Shell's 10-foot Emanation, around its caster
         fey,            // one square: Conjure Fey's spirit
         thorns,         // Wall of Thorns, 4 feet of movement a foot, opaque
-        sanctuary       // Nature's Sanctuary's spectral trees, until it ends_ms
+        sanctuary,      // Nature's Sanctuary's spectral trees, until it ends_ms
+        // Tsunami's wall of water: `slot` the d10s of its next move, `dealt`
+        // its heading, an index into wave_headings.
+        wave
     };
     struct Zone
     {
@@ -3993,6 +4012,9 @@ class Session final : public CombatSession
                      const std::vector<Cell> &cells, int dc);
     [[nodiscard]] int area_dc(const Actor &caster, const detail::SpellDef &spell) const;
     void push_away(const Actor &from, Actor &target, int squares);
+    void push_along(Actor &target, Cell step, int squares);
+    void move_wave(EntityId caster);
+    [[nodiscard]] bool held_by_wave(Actor &a);
     // A pushed creature stopped by a wall, an obstacle or another creature with
     // `short_feet` of its push left takes 1d6 Bludgeoning for each 10 feet or
     // part of it, up to 3d6 (PUSH-1).
@@ -4227,6 +4249,15 @@ class Session final : public CombatSession
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
+    // A Strength (Athletics) check against `dc`, before its log line, and
+    // the help a failure may still get after it.
+    struct AthleticsRoll
+    {
+        int natural{}, bonus{};
+        bool advantage{}, success{};
+    };
+    AthleticsRoll roll_athletics(Actor &a, int dc);
+    bool rescue_athletics(Actor &a, const AthleticsRoll &check, int dc);
     // Guidance's 1d4 for an ability check with `skill`, logged; 0 without it.
     [[nodiscard]] int guidance_bonus(const Actor &a, std::string_view skill);
     [[nodiscard]] bool mark_can_move(const Actor &caster) const;
@@ -6598,6 +6629,7 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
     case detail::Rider::black_tentacles:
     case detail::Rider::confusion:
     case detail::Rider::slow:
+    case detail::Rider::tsunami:
     case detail::Rider::dimension_door:
     case detail::Rider::ice_storm:
     case detail::Rider::vitriolic_sphere:
@@ -9852,6 +9884,17 @@ std::vector<Cell> Session::area_shape(const detail::SpellDef &spell, std::string
         for (int n = -length / 2; n < length - length / 2; ++n)
             if (const Cell cell{center.x + n * step.x, center.y + n * step.y}; board_.contains(cell))
                 cells.push_back(cell);
+        // Tsunami's wall is 10 feet thick (LEVELS-5): a second row beside the
+        // first, away from the caster, square by square along a diagonal.
+        if (spell.rider == detail::Rider::tsunami)
+        {
+            const auto heading = wave_headings[wave_heading(verb, origin, center)];
+            const Cell beside{heading.x, heading.x ? 0 : heading.y};
+            for (int n = -length / 2; n < length - length / 2; ++n)
+                if (const Cell cell{center.x + n * step.x + beside.x, center.y + n * step.y + beside.y};
+                        board_.contains(cell))
+                    cells.push_back(cell);
+        }
         return cells;
     }
     // The aimed direction from the caster; aiming at the caster faces east.
@@ -12172,9 +12215,16 @@ void Session::ice_burst(Actor &caster, const Actor &target, unsigned steps)
 
 void Session::push_away(const Actor &from, Actor &target, int squares)
 {
-    // Straight away from `from`, square by square, while the way is open.
+    // Straight away from `from`.
     const int sx = (target.source.cell.x > from.source.cell.x) - (target.source.cell.x < from.source.cell.x);
     const int sy = (target.source.cell.y > from.source.cell.y) - (target.source.cell.y < from.source.cell.y);
+    push_along(target, Cell{sx, sy}, squares);
+}
+
+void Session::push_along(Actor &target, Cell step, int squares)
+{
+    // Square by square, while the way is open.
+    const int sx = step.x, sy = step.y;
     int moved = 0;
     for (; moved < squares && (sx || sy); ++moved)
     {
@@ -12198,6 +12248,119 @@ void Session::push_away(const Actor &from, Actor &target, int squares)
     if (const Cell next{target.source.cell.x + sx, target.source.cell.y + sy};
             moved < squares && (sx || sy) && board_.contains(next))
         slam(target, 5 * (squares - moved));
+}
+
+// Tsunami: at the start of its caster's turns the wall moves 50 feet away,
+// carrying the creatures in it or in its way, who save against its damage;
+// each move deals 1d10 less (LEVELS-5).
+void Session::move_wave(EntityId caster)
+{
+    const auto found = std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::wave && zone.caster == caster;
+    });
+    if (found == zones_.end())
+        return;
+    const auto before = *found;
+    const auto heading = wave_headings[static_cast<std::size_t>(before.dealt)];
+    constexpr int squares = 10;
+    const auto shifted = [&](Cell cell, int k)
+    {
+        return Cell{cell.x + k * heading.x, cell.y + k * heading.y};
+    };
+    std::vector<Cell> swept, ahead;
+    for (int k = 0; k <= squares; ++k)
+        for (const auto cell : before.cells)
+            if (const auto moved = shifted(cell, k); board_.contains(moved))
+            {
+                if (std::find(swept.begin(), swept.end(), moved) == swept.end())
+                    swept.push_back(moved);
+                if (k == squares)
+                    ahead.push_back(moved);
+            }
+    found->cells = ahead;
+    --found->slot;
+    log("The tsunami surges forward.", {"The tsunami surges forward.", {}});
+    // The foremost first, so no one carried blocks another.
+    std::vector<EntityId> caught;
+    for (const auto &other : actors_)
+        if (!other.life.dead && !absent(other) && !sealed_off(other) &&
+                std::find(swept.begin(), swept.end(), other.source.cell) != swept.end())
+            caught.push_back(other.source.id);
+    std::stable_sort(caught.begin(), caught.end(), [&](EntityId left, EntityId right)
+    {
+        const auto along = [&](EntityId id)
+        {
+            const auto cell = actor(id).source.cell;
+            return cell.x * heading.x + cell.y * heading.y;
+        };
+        return along(left) > along(right);
+    });
+    for (const auto id : caught)
+    {
+        auto &other = actor(id);
+        if (!saving_throw_succeeds(other, detail::Ability::strength, before.save_dc))
+        {
+            const int amount = resolved_damage(other, detail::DamageType::bludgeoning,
+                                               dice({static_cast<int>(before.slot), 10, 0}));
+            log(other.source.name + " takes " + std::to_string(amount) + " Bludgeoning damage from the tsunami.",
+            {
+                "{name} takes {damage} Bludgeoning damage from the tsunami.",
+                {{"name", other.source.name}, {"damage", std::to_string(amount)}}
+            });
+            damage(other, amount);
+        }
+        // Carried until it is in the wall's new place, or the way is shut.
+        int carry = 0;
+        while (carry < squares &&
+                std::find(ahead.begin(), ahead.end(), shifted(other.source.cell, carry)) == ahead.end())
+            ++carry;
+        if (!other.life.dead && carry)
+            push_along(other, heading, carry);
+    }
+    // Off the field, the wave is spent.
+    if (ahead.empty())
+        end_concentration(actor(caster));
+}
+
+// Tsunami: a creature in the wave moves only by swimming, after a Strength
+// (Athletics) check against the spell's DC, once a turn; a failure holds it
+// for the turn.
+bool Session::held_by_wave(Actor &a)
+{
+    const auto wave = std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+    {
+        return zone.kind == ZoneKind::wave && in_zone(zone, a.source.cell);
+    });
+    if (wave == zones_.end() || detail::has_effect(a.effects, detail::EffectKind::swum))
+        return false;
+    const int dc = wave->save_dc;
+    const auto check = roll_athletics(a, dc);
+    const std::string advantage_label = check.advantage ? " (advantage)" : "";
+    log(a.source.name + " Athletics check: d20 " + std::to_string(check.natural) + advantage_label +
+        " + " + std::to_string(check.bonus) + " vs DC " + std::to_string(dc) +
+        (check.success ? " (swims)." : " (held by the wave)."),
+    {
+        check.success ? "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (swims)."
+        : "{name} Athletics check: d20 {roll}{advantage} + {bonus} vs DC {dc} (held by the wave).",
+        {   {"name", a.source.name},
+            {"roll", std::to_string(check.natural)},
+            {"advantage", advantage_label, true},
+            {"bonus", std::to_string(check.bonus)},
+            {"dc", std::to_string(dc)}
+        }
+    });
+    if (!check.success && !rescue_athletics(a, check, dc))
+    {
+        a.movement = 0;
+        a.dashes = 0;
+        return true;
+    }
+    const unsigned rest_of_turn = turn_end_ms(turn_) - (turn_ ? turn_end_ms(turn_ - 1) : 0);
+    if (detail::can_apply(a.effects))
+        detail::apply_poisoned(a.effects, effect_source(a), a.source.name, rest_of_turn,
+                               detail::EffectKind::swum);
+    return false;
 }
 
 bool Session::blocks_push(Cell cell, EntityId pushed) const
@@ -12537,6 +12700,22 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         for (auto &other : actors_)
             if (in_zone(swarm, other.source.cell))
                 swarm_strikes(swarm, other);
+        return;
+    }
+    if (spell.rider == detail::Rider::tsunami)
+    {
+        // The wave strikes those in it as it rises, then moves at the start of
+        // the caster's turns.
+        begin_concentration(a, spell);
+        Zone wave{a.source.id, ZoneKind::wave, area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+        wave.save_dc = area_dc(a, spell);
+        wave.slot = 5;
+        wave.dealt = static_cast<int>(wave_heading(aimed.verb, a.source.cell, aimed.center));
+        log("A wall of water rises.", {"A wall of water rises.", {}});
+        damage_area(a, spell, aimed.verb, wave.cells, wave.save_dc);
+        // Caught in its own wave, the caster may lose Concentration at once.
+        if (a.concentration.active())
+            zones_.push_back(std::move(wave));
         return;
     }
     if (spell.rider == detail::Rider::wall_of_thorns)
@@ -13335,11 +13514,41 @@ int Session::guidance_bonus(const Actor &a, std::string_view skill)
     return bonus;
 }
 
+Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
+{
+    // A creature's Strength save bonus stands in for Athletics. Rage and the
+    // Champion's Remarkable Athlete give the check Advantage.
+    AthleticsRoll check;
+    check.advantage = rage_of(a) || def(a).champion;
+    check.natural = reliable(
+        a, "athletics", detail::d20({check.advantage, !fears_in_sight(a).empty(), def(a).lucky}, rng_));
+    check.bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
+                  guidance_bonus(a, "athletics");
+    check.success = check.natural + check.bonus >= dc;
+    // An enemy Lore Bard's Cutting Words may spoil it; the check's line shows
+    // the lowered bonus, as an attack's does.
+    if (check.success)
+    {
+        check.bonus -= cutting_words(a, check.natural + check.bonus - dc, CutRoll::check);
+        check.success = check.natural + check.bonus >= dc;
+    }
+    if (!check.success && check.bonus + 20 >= dc)
+        if (const auto again = heroic_reroll(a))
+            check.success = *again + check.bonus >= dc;
+    return check;
+}
+
+// Bardic Inspiration or Peerless Skill, for a failed check.
+bool Session::rescue_athletics(Actor &a, const AthleticsRoll &check, int dc)
+{
+    const int shortfall = dc - check.natural - check.bonus;
+    return inspiration_roll(a, shortfall) >= shortfall || peerless_skill(a, shortfall) > 0;
+}
+
 void Session::escape_ensnaring(Actor &a)
 {
     // A Strength (Athletics) check against the spell's DC ends Ensnaring
-    // Strike. A creature's Strength save bonus stands in for Athletics. Rage
-    // and the Champion's Remarkable Athlete give the check Advantage.
+    // Strike.
     const auto found = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                     [](const auto & e)
     {
@@ -13348,23 +13557,10 @@ void Session::escape_ensnaring(Actor &a)
                e.kind == detail::EffectKind::tentacled;
     });
     const auto vines = *found;
-    const bool advantage = rage_of(a) || def(a).champion;
-    const int natural = reliable(
-        a, "athletics", detail::d20({advantage, !fears_in_sight(a).empty(), def(a).lucky}, rng_));
-    int bonus = (a.source.character_profile.empty() ? def(a).saves[0] : def(a).athletics) +
-                guidance_bonus(a, "athletics");
-    bool escaped = natural + bonus >= vines.dc;
-    // An enemy Lore Bard's Cutting Words may spoil the escape; the check's
-    // line shows the lowered bonus, as an attack's does.
-    if (escaped)
-    {
-        bonus -= cutting_words(a, natural + bonus - vines.dc, CutRoll::check);
-        escaped = natural + bonus >= vines.dc;
-    }
-    if (!escaped && bonus + 20 >= vines.dc)
-        if (const auto again = heroic_reroll(a))
-            escaped = *again + bonus >= vines.dc;
-    const std::string advantage_label = advantage ? " (advantage)" : "";
+    const auto check = roll_athletics(a, vines.dc);
+    const int natural = check.natural, bonus = check.bonus;
+    bool escaped = check.success;
+    const std::string advantage_label = check.advantage ? " (advantage)" : "";
     log(a.source.name + " Athletics check: d20 " + std::to_string(natural) + advantage_label +
         " + " + std::to_string(bonus) + " vs DC " + std::to_string(vines.dc) +
         (escaped ? " (escapes)." : " (still Restrained)."),
@@ -13379,9 +13575,7 @@ void Session::escape_ensnaring(Actor &a)
         }
     });
     if (!escaped)
-        escaped = inspiration_roll(a, vines.dc - natural - bonus) >= vines.dc - natural - bonus;
-    if (!escaped)
-        escaped = peerless_skill(a, vines.dc - natural - bonus) > 0;
+        escaped = rescue_athletics(a, check, vines.dc);
     if (!escaped)
         return;
     // Ensnaring Strike ends, and with it the caster's Concentration; Entangle
@@ -16251,6 +16445,7 @@ bool Session::begin_turn()
     }
     // Haste: the second, limited action.
     a.actions.haste = detail::has_effect(a.effects, detail::EffectKind::hasted);
+    move_wave(a.source.id);
     // Faithful Hound: it bites the nearest enemy within 5 feet of it.
     for (const auto &zone : std::vector<Zone>(zones_))
         if (zone.kind == ZoneKind::hound && zone.caster == a.source.id)
@@ -16909,6 +17104,15 @@ void Session::end_turn()
     });
     // Delayed Blast Fireball's bead grows by 1d6 as its caster's turn ends;
     // Arcane Sword's sword may strike on the caster's later turns.
+    // Tsunami sinks away as its caster's turn ends after its last move.
+    if (std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+{
+    return zone.kind == ZoneKind::wave && zone.caster == actors_[turn_].source.id && !zone.slot;
+    }))
+    {
+        log("The tsunami subsides.", {"The tsunami subsides.", {}});
+        end_concentration(actors_[turn_]);
+    }
     for (auto &zone : zones_)
         if (zone.kind == ZoneKind::bead && zone.caster == actors_[turn_].source.id)
             zone.dealt = std::min(zone.dealt + 1, 59);
@@ -18855,6 +19059,8 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "move")
     {
+        if (held_by_wave(a))
+            return;
         // Resilient Sphere: rolling the sphere takes the creature's action.
         if (detail::has_effect(a.effects, detail::EffectKind::sphered) && !a.moved)
             (void)a.actions.spend();
@@ -18864,6 +19070,8 @@ void Session::dispatch(const Command &command)
     }
     else if (command.verb == "flee")
     {
+        if (held_by_wave(a))
+            return;
         // One step off the field; leaving an enemy's reach provokes as any move.
         path_ = {command.destination};
         path_index_ = 0;
@@ -20335,7 +20543,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::sanctuary) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::wave) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
                  kind != static_cast<unsigned>(ZoneKind::guardians) &&
@@ -20354,14 +20562,18 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                  kind != static_cast<unsigned>(ZoneKind::bead) &&
                  kind != static_cast<unsigned>(ZoneKind::storm) &&
                  kind != static_cast<unsigned>(ZoneKind::fey) &&
-                 kind != static_cast<unsigned>(ZoneKind::thorns)) ||
+                 kind != static_cast<unsigned>(ZoneKind::thorns) &&
+                 kind != static_cast<unsigned>(ZoneKind::wave)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
                 (zone.dealt && kind != static_cast<unsigned>(ZoneKind::guardian) &&
                  kind != static_cast<unsigned>(ZoneKind::bead) &&
                  kind != static_cast<unsigned>(ZoneKind::sword) &&
-                 kind != static_cast<unsigned>(ZoneKind::fey)) ||
+                 kind != static_cast<unsigned>(ZoneKind::fey) &&
+                 kind != static_cast<unsigned>(ZoneKind::wave)) ||
+                (kind == static_cast<unsigned>(ZoneKind::wave) &&
+                 static_cast<std::size_t>(zone.dealt) >= wave_headings.size()) ||
                 !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -20834,7 +21046,7 @@ class Module final : public RulesModule
                 "Evoker: Potent Cantrip deals half damage when a cantrip misses or is saved against.";
         if (klass == CharacterClass::wizard && result.level == 5)
             result.description =
-                "Level 3 spell slots and Wizard spells: Animate Dead, Bestow Curse, Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Magic Circle, Protection from Energy, Remove Curse, Sleet Storm, Stinking Cloud, Tiny Hut and Vampiric Touch.\nMemorize Spell: after a Short Rest, change one prepared spell for another in your spellbook.\nProficiency Bonus +3.";
+                "Level 3 spell slots and Wizard spells: Animate Dead, Bestow Curse, Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Magic Circle, Protection from Energy, Remove Curse, Sleet Storm, Slow, Stinking Cloud, Tiny Hut and Vampiric Touch.\nMemorize Spell: after a Short Rest, change one prepared spell for another in your spellbook.\nProficiency Bonus +3.";
         if (klass == CharacterClass::wizard && result.level == 6)
             result.description =
                 "Sculpt Spells: up to 1 + the spell's level allies you can see in your Evocation areas are spared.";
@@ -20898,10 +21110,10 @@ class Module final : public RulesModule
                 "Nature's Sanctuary: a Magic action and a Wild Shape use raise a 15-foot cube of spectral trees for a minute; allies among them share your Nature's Ward Resistance, and a Bonus Action moves it 60 feet.\nLand's Aid deals and heals 4d6.";
         if (klass == CharacterClass::druid && result.level == 15)
             result.description =
-                "A level 8 spell slot and Druid spells: Befuddlement, Earthquake, Incendiary Cloud and Sunburst.\nImproved Elemental Fury: Primal Strike deals 2d8.";
+                "A level 8 spell slot and Druid spells: Befuddlement, Earthquake, Incendiary Cloud, Sunburst and Tsunami.\nImproved Elemental Fury: Primal Strike deals 2d8.";
         if (klass == CharacterClass::bard && result.level == 5)
             result.description =
-                "Font of Inspiration: Bardic Inspiration returns on a Short Rest, and a spell slot (no action) gives back a use. The Bardic Inspiration die is a d8.\nLevel 3 spell slots and Bard spells: Bestow Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant Growth, Stinking Cloud and Tiny Hut.\nProficiency Bonus +3.";
+                "Font of Inspiration: Bardic Inspiration returns on a Short Rest, and a spell slot (no action) gives back a use. The Bardic Inspiration die is a d8.\nLevel 3 spell slots and Bard spells: Bestow Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant Growth, Slow, Stinking Cloud and Tiny Hut.\nProficiency Bonus +3.";
         if (klass == CharacterClass::bard && result.level == 6)
             result.description =
                 "Magical Discoveries: two Cleric, Druid or Wizard spells, cantrips or of level 1 to 3, always prepared.";
@@ -20945,7 +21157,7 @@ class Module final : public RulesModule
                 "Mystic Arcanum: choose a level 8 Warlock spell to cast once per Long Rest without a spell slot.\nOne more Eldritch Invocation; Witch Sight is open.";
         if (klass == CharacterClass::sorcerer && result.level == 5)
             result.description =
-                "Sorcerous Restoration: after a Short Rest, regain Sorcery Points up to half your Sorcerer level, once per Long Rest.\nLevel 3 spell slots and Sorcerer spells: Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Protection from Energy, Sleet Storm, Stinking Cloud and Vampiric Touch; Draconic Spells: Fear is always prepared. Font of Magic creates level-3 slots.\nProficiency Bonus +3.";
+                "Sorcerous Restoration: after a Short Rest, regain Sorcery Points up to half your Sorcerer level, once per Long Rest.\nLevel 3 spell slots and Sorcerer spells: Blink, Counterspell, Dispel Magic, Fear, Fireball, Haste, Hypnotic Pattern, Lightning Bolt, Protection from Energy, Sleet Storm, Slow, Stinking Cloud and Vampiric Touch; Draconic Spells: Fear is always prepared. Font of Magic creates level-3 slots.\nProficiency Bonus +3.";
         if (klass == CharacterClass::sorcerer && result.level == 6)
             result.description =
                 "Elemental Affinity: choose Acid, Cold, Fire, Lightning or Poison: Resistance to it, and your Charisma modifier added to the damage of your spells of that type.";
@@ -23558,7 +23770,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.232", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.233", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
