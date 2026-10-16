@@ -175,7 +175,9 @@ class CombatView : public godot::Control
     void layout_reaction_controls(bool reaction);
     void refresh();
     void sync_art(bool preserve_effects = false);
-    void act(const opengold::rules::Command &command);
+    // By value: the command often comes from the cached legal commands, which
+    // acting drops (Effective Modern C++ Item 41).
+    void act(opengold::rules::Command command);
     void select_mode(godot::String verb);
     void immediate(godot::String verb);
     // Area spells (CLASS-5): whether `verb` starts aiming one, and moving the preview.

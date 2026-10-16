@@ -165,7 +165,7 @@ Vector2i CombatView::selected_character_cell() const
 {
     if (!demo_ || !demo_->has_combat())
         return {-1, -1};
-    const auto state = demo_.snapshot();
+    const auto &state = demo_.snapshot();
     const auto selected = std::find_if(state.combatants.begin(), state.combatants.end(),
                                        [&](const auto & a)
     {
@@ -179,7 +179,7 @@ bool CombatView::sprite_facing_left(std::int64_t id) const
 {
     if (!demo_ || !demo_->has_combat())
         return false;
-    const auto state = demo_.snapshot();
+    const auto &state = demo_.snapshot();
     const auto actor = std::find_if(state.combatants.begin(), state.combatants.end(),
                                     [&](const auto & a)
     {
@@ -289,7 +289,7 @@ bool CombatView::quick_turn(const Snapshot &state) const
 // the computer plays a member takes the party back, as the original's keys.
 bool CombatView::quick_key(Key key)
 {
-    const auto state = demo_.snapshot();
+    const auto &state = demo_.snapshot();
     if (state.outcome != Outcome::ongoing)
         return false;
     if (key == Key::KEY_Q)
@@ -576,12 +576,12 @@ void CombatView::_ready()
 void CombatView::layout()
 {
     followed_.reset();
-    const auto board = demo_ && demo_->has_combat() ? demo_.snapshot().battlefield
-                       : Battlefield{12, 9, {}};
+    static const Battlefield empty_board{12, 9, {}};
+    const auto &board = demo_ && demo_->has_combat() ? demo_.snapshot().battlefield : empty_board;
     bool party_controls = false;
     if (demo_ && demo_->has_combat())
     {
-        const auto state = demo_.snapshot();
+        const auto &state = demo_.snapshot();
         party_controls = state.outcome == Outcome::ongoing &&
                          std::any_of(state.combatants.begin(), state.combatants.end(),
                                      [&](const auto &actor)
@@ -1023,7 +1023,7 @@ void CombatView::weapon_selected(std::int64_t index)
     auto *choices = &required_node<OptionButton>(*this, "Weapons");
     if (!demo_ || !demo_->has_combat() || index < 0 || index >= choices->get_item_count())
         return;
-    for (const auto &c : demo_->combat().legal_commands())
+    for (const auto &c : demo_.legal_commands())
         if (c.verb == "weapon_select" && c.item == static_cast<unsigned>(choices->get_item_id(static_cast<std::int32_t>(index))))
         {
             act(c);
@@ -1094,7 +1094,7 @@ void CombatView::use_item()
     if (item_verb_.empty() || !demo_ || !demo_->has_combat())
         return;
     required_node<Button>(*this, "UseItemAction").release_focus();
-    const auto offered = demo_->combat().legal_commands();
+    const auto &offered = demo_.legal_commands();
     const bool targeted = std::any_of(offered.begin(), offered.end(), [&](const auto & c)
     {
         return c.verb == item_verb_ && c.target && c.target != c.actor;
@@ -1137,7 +1137,7 @@ void CombatView::select_party(EntityId id)
 {
     if (!demo_ || !demo_->has_combat())
         return;
-    const auto state = demo_.snapshot();
+    const auto &state = demo_.snapshot();
     if (state.free_movement)
         return;
     const auto selected = std::find_if(state.combatants.begin(), state.combatants.end(),
@@ -1158,7 +1158,7 @@ void CombatView::move_selected(Cell direction)
 {
     if (!demo_ || !demo_->has_combat())
         return;
-    const auto state = demo_.snapshot();
+    const auto &state = demo_.snapshot();
     const auto explain = [&](const char *message)
     {
         error_ = message;
@@ -1184,7 +1184,7 @@ void CombatView::move_selected(Cell direction)
     if (selected == state.combatants.end())
         return;
     const Cell destination{selected->cell.x + direction.x, selected->cell.y + direction.y};
-    const auto offered = demo_->combat().legal_commands();
+    const auto &offered = demo_.legal_commands();
     if (!state.battlefield.contains(destination))
     {
         // Moving off the edge flees the fight, as in the original.
@@ -1243,7 +1243,7 @@ bool CombatView::aims_area(std::string_view verb) const
 {
     if (!demo_ || !demo_->has_combat())
         return false;
-    const auto offered = demo_->combat().legal_commands();
+    const auto &offered = demo_.legal_commands();
     return std::any_of(offered.begin(), offered.end(), [&](const auto & c)
     {
         return c.verb == verb && c.aims_area;
@@ -1252,7 +1252,7 @@ bool CombatView::aims_area(std::string_view verb) const
 
 void CombatView::aim_area_at(Cell cell)
 {
-    for (const auto &c : demo_->combat().legal_commands())
+    for (const auto &c : demo_.legal_commands())
         if (c.verb == "area_move" && c.destination == cell)
         {
             act(c);
@@ -1265,7 +1265,7 @@ void CombatView::immediate(String verb)
     if (!demo_ || !demo_->has_combat())
         return;
     auto wanted = std::string(verb.utf8().get_data());
-    const auto state = demo_.snapshot();
+    const auto &state = demo_.snapshot();
     if (state.effect_targeting && wanted == "end")
         wanted = "effect_skip";
     // While choosing a spell's creatures, End casts on those chosen.
@@ -1275,7 +1275,7 @@ void CombatView::immediate(String verb)
         wanted = "area_cast";
     // React answers whichever reaction is asked: an opportunity attack, Shield,
     // Deflect Attacks or its redirect, Hellish Rebuke or a Giant Ancestry boon.
-    const auto legal = demo_->combat().legal_commands();
+    const auto &legal = demo_.legal_commands();
     for (const char *reaction : {"shield", "deflect", "redirect", "rebuke", "giant_boon",
                                      "stones_endurance", "storms_thunder", "retaliate",
                                      "uncanny_dodge", "superior_defense"
@@ -1297,7 +1297,7 @@ void CombatView::immediate(String verb)
     return a.id == state.actor && a.side == rules::Side::party;
 }))
     return;
-    for (const auto &c : demo_->combat().legal_commands())
+    for (const auto &c : demo_.legal_commands())
         if (c.verb == wanted && presentation::initiative_command(*this, c) &&
                 ((wanted != "effect_use" && wanted != "effect_skip") ||
                  c.item == presentation::optional_effect_item(*this, state)))
@@ -1312,7 +1312,7 @@ void CombatView::immediate(String verb)
     }
 }
 
-void CombatView::act(const Command &command)
+void CombatView::act(Command command)
 {
     try
     {
@@ -1437,10 +1437,12 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
             flee_mode_ &&
             (key.is_valid() || (click.is_valid() && click->get_button_index() == MOUSE_BUTTON_LEFT)))
         return;
-    // A copy: act() changes the combat, which drops the cached snapshot.
-    if (demo_->has_combat() && presentation::effect_target_input(
+    // Copies, only while choosing an effect's target: act() changes the
+    // combat, which drops the cached snapshot and commands.
+    if (demo_->has_combat() && demo_.snapshot().effect_targeting &&
+            presentation::effect_target_input(
                 event, Snapshot(demo_.snapshot()),
-                demo_->combat().legal_commands(), effect_target_index_,
+                std::vector<Command>(demo_.legal_commands()), effect_target_index_,
                 [&](const Command & c)
 {
     act(c);
@@ -1474,14 +1476,14 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
              (mode_.starts_with("light_") || mode_.starts_with("nick_"))) &&
             demo_->has_combat())
     {
-        const auto state = demo_.snapshot();
+        const auto &state = demo_.snapshot();
         const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                          [&](const auto & a)
         {
             return a.id == state.actor && a.side == rules::Side::party;
         });
         std::vector<Command> targets;
-        for (const auto &command : demo_->combat().legal_commands())
+        for (const auto &command : demo_.legal_commands())
             if (command.verb == mode_ && matches_item(command))
                 targets.push_back(command);
         if (active != state.combatants.end() && !targets.empty())
@@ -1594,7 +1596,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         if (key->get_keycode() == Key::KEY_A)
         {
             std::vector<std::string> actions;
-            for (const auto &command : demo_->combat().legal_commands())
+            for (const auto &command : demo_.legal_commands())
                 if (command.verb != "end" && command.verb != "weapon_select" &&
                         std::find(actions.begin(), actions.end(), command.verb) == actions.end())
                     actions.push_back(command.verb);
@@ -1611,7 +1613,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
                             : (static_cast<std::size_t>(current - actions.begin()) + 1) %
                             actions.size()];
                 if ((mode_.starts_with("light_") || mode_.starts_with("nick_")))
-                    for (const auto &c : demo_->combat().legal_commands())
+                    for (const auto &c : demo_.legal_commands())
                         if (c.verb == mode_)
                         {
                             light_item_ = c.item;
@@ -1630,7 +1632,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         }
         if (key->get_keycode() == Key::KEY_SPACE)
         {
-            const auto offered = demo_->combat().legal_commands();
+            const auto &offered = demo_.legal_commands();
             // An action without a target, such as Rage or Wild Shape, is used at once.
             const auto untargeted =
                 std::find_if(offered.begin(), offered.end(), [&](const auto & c)
@@ -1749,10 +1751,10 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
         get_viewport()->set_input_as_handled();
         return;
     }
-    const auto s = demo_.snapshot();
+    const auto &s = demo_.snapshot();
     // A click on an ally that the selected action can target casts on it
     // instead of selecting it; these modes always target.
-    const auto offered_here = demo_->combat().legal_commands();
+    const auto &offered_here = demo_.legal_commands();
     const bool targets_clicked = std::any_of(offered_here.begin(), offered_here.end(),
                                  [&](const auto & c)
     {
@@ -1785,7 +1787,7 @@ void CombatView::respond_to_input(const Ref<InputEvent> &event)
     if (current == s.combatants.end() || current->side != rules::Side::party ||
             selected_ != s.actor)
         return;
-    for (const auto &c : demo_->combat().legal_commands())
+    for (const auto &c : demo_.legal_commands())
         if (c.verb == mode_ && matches_item(c))
         {
             if ((c.verb == "move" || c.verb == "effect_push") && c.destination == cell)
@@ -1919,9 +1921,8 @@ void CombatView::refresh()
     if (!ready_)
         return;
     const bool loaded = demo_ && demo_->has_combat();
-    Snapshot s;
-    if (loaded)
-        s = demo_.snapshot();
+    static const Snapshot none;
+    const auto &s = loaded ? demo_.snapshot() : none;
     if (loaded)
         for (const auto &actor : s.combatants)
         {
@@ -2141,7 +2142,8 @@ void CombatView::refresh()
         mode_ = s.spell_targeting->verb;
     if (s.area_targeting)
         mode_ = s.area_targeting->verb;
-    const auto offered = loaded ? demo_->combat().legal_commands() : std::vector<Command> {};
+    static const std::vector<Command> no_commands;
+    const auto &offered = loaded ? demo_.legal_commands() : no_commands;
     const auto enabled = [&](std::string_view verb)
     {
         return player && std::any_of(offered.begin(), offered.end(),
@@ -2507,7 +2509,7 @@ void CombatView::refresh()
                     chosen += (chosen.is_empty() ? "" : ", ") + gs(a.name);
         const auto &targeting = *s.spell_targeting;
         String spell;
-        for (const auto &c : demo_->combat().legal_commands())
+        for (const auto &c : demo_.legal_commands())
             if (c.verb == targeting.verb)
                 spell = i18n::text(c.label);
         if (targeting.repeats)
@@ -2683,7 +2685,7 @@ Dictionary CombatView::battlefield_visuals()
         add_overlay(selected->cell, "selected");
     }
     if (active != s.combatants.end() && active->side == rules::Side::party && mode_ != "move")
-        for (const auto &command : demo_->combat().legal_commands())
+        for (const auto &command : demo_.legal_commands())
             if (command.verb == mode_ && matches_item(command) && command.target &&
                     !s.effect_targeting)
             {
@@ -2722,7 +2724,7 @@ Dictionary CombatView::battlefield_visuals()
     if (s.effect_targeting && active != s.combatants.end() && active->side == rules::Side::party)
     {
         unsigned index = 0;
-        for (const auto &command : demo_->combat().legal_commands())
+        for (const auto &command : demo_.legal_commands())
             if (command.verb == s.effect_targeting->verb)
             {
                 auto cell = command.destination;
@@ -2812,7 +2814,12 @@ void CombatView::_process(double delta)
         }
         if (!demo_->has_combat())
             return;
-        const auto s = demo_.snapshot();
+        // The checks below act and then compare with the snapshot from before,
+        // so only they pay for a copy; play reads the cached one each frame.
+        std::optional<Snapshot> kept;
+        if (checking_ || party_check_ || defeat_check_ || expedition_check_)
+            kept = demo_.snapshot();
+        const auto &s = kept ? *kept : demo_.snapshot();
         if (zoom_center_frames_)
             --zoom_center_frames_;
         else
@@ -2969,7 +2976,7 @@ void CombatView::_process(double delta)
                     throw std::runtime_error("Defeat check command limit exceeded");
                 if (active->side == rules::Side::party)
                 {
-                    const auto offered = demo_->combat().legal_commands();
+                    const auto &offered = demo_.legal_commands();
                     const auto pass =
                         std::find_if(offered.begin(), offered.end(),
                                      [&](const auto & c)

@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 namespace presentation
 {
@@ -21,6 +22,7 @@ class CachedCombat
     {
         demo_ = std::move(demo);
         snapshot_.reset();
+        legal_.reset();
         return *this;
     }
 
@@ -39,6 +41,7 @@ class CachedCombat
     [[nodiscard]] opengold::CombatDemo &change() noexcept
     {
         snapshot_.reset();
+        legal_.reset();
         return *demo_;
     }
 
@@ -51,9 +54,19 @@ class CachedCombat
         return *snapshot_;
     }
 
+    // Requires a combat. The commands last until the next change(), as the
+    // snapshot does: a command taken from them is copied before acting on it.
+    [[nodiscard]] const std::vector<opengold::rules::Command> &legal_commands() const
+    {
+        if (!legal_)
+            legal_ = demo_->combat().legal_commands();
+        return *legal_;
+    }
+
   private:
     std::unique_ptr<opengold::CombatDemo> demo_;
     mutable std::optional<opengold::rules::Snapshot> snapshot_;
+    mutable std::optional<std::vector<opengold::rules::Command>> legal_;
 };
 } // namespace presentation
 #endif
