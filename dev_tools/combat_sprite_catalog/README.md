@@ -61,6 +61,9 @@ independently created PNGs at
   fits visible sprite bounds to about 90% of a combat cell. Detail must remain
   readable when the 128 x 128 image is displayed at that size.
 
+The generated monster set and its selection criteria are documented in
+[`art/README.md`](art/README.md).
+
 **Show new art when available** starts enabled; turn it off to inspect the
 original art. A missing or invalid PNG falls
 back to that monster's original pose, and the source label names the selected
