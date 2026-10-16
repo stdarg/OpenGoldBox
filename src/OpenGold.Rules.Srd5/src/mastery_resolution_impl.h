@@ -3,7 +3,8 @@
 Definition Session::mastery_definition(const PendingMastery &m) const
 {
     const auto &attacker = actor(m.actor);
-    return def(attacker, thrown_loadout(attacker, m.weapon));
+    const auto loadout = thrown_loadout(attacker, m.weapon);
+    return def(attacker, loadout);
 }
 
 std::vector<EntityId> Session::cleave_targets(const PendingMastery &m,

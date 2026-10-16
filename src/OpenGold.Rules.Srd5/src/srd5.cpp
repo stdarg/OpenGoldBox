@@ -3833,6 +3833,8 @@ class Session final : public CombatSession
     {
         return a.form ? *a.form : a.definition;
     }
+    // A temporary's definition would dangle (Effective Modern C++ Item 11).
+    const Definition &def(Actor &&) const = delete;
 
     const Actor &actor(EntityId id) const
     {
@@ -4500,6 +4502,7 @@ class Session final : public CombatSession
     {
         return a.form ? *a.form : loadout.definition;
     }
+    static const Definition &def(const Actor &a, Loadout &&loadout) = delete;
     detail::Mastery weapon_mastery(const Actor &, AttackRange range) const;
     detail::Mastery weapon_mastery(const Actor &, const Definition &, AttackRange range) const;
     bool mastery_capacity(const Actor &, const Definition &, const Actor &, AttackRange range) const;
@@ -8215,7 +8218,14 @@ std::vector<Command> Session::offered_commands() const
             if (item.holder == a.source.id && !item.stowed && detail::weapon(item.definition) &&
                     item.id != held_weapon(a))
             {
-                if (!reacting || weapon_reaction(a, def(a, item_loadout(a, item.id))))
+                // Mid-move, only a weapon that could make the reaction.
+                bool offer = !reacting;
+                if (!offer)
+                {
+                    const auto loadout = item_loadout(a, item.id);
+                    offer = weapon_reaction(a, def(a, loadout));
+                }
+                if (offer)
                 {
                     add(a.source.id, "weapon_select", "Select weapon");
                     commands.back().item = item.id;
@@ -8248,14 +8258,16 @@ std::vector<Command> Session::offered_commands() const
             // A thrown, light or nick attack is made with that weapon.
             if (command.item && (command.verb == "throw" || command.verb == "light_throw" ||
                                  command.verb == "nick_throw"))
-                return !mastery_capacity(attacker,
-                                         def(attacker, thrown_loadout(attacker,
-                                                 items_.at(command.item - 1).definition)),
-                                         target, range);
+            {
+                const auto thrown = thrown_loadout(attacker, items_.at(command.item - 1).definition);
+                return !mastery_capacity(attacker, def(attacker, thrown), target, range);
+            }
             if (command.item && (command.verb.starts_with("light_") ||
                                  command.verb.starts_with("nick_")))
-                return !mastery_capacity(attacker, def(attacker, item_loadout(attacker, command.item)),
-                                         target, range);
+            {
+                const auto held = item_loadout(attacker, command.item);
+                return !mastery_capacity(attacker, def(attacker, held), target, range);
+            }
             return !mastery_capacity(attacker, def(attacker), target, range);
         });
         return commands;
