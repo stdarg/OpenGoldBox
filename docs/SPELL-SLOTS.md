@@ -49,3 +49,16 @@ Verification: `opengold_paladin_levels_tests` (offers at each level, a
 level-3 Cure Wounds and Divine Smite, Protection from Evil and Good at its own
 level only), `opengold_spell_table_tests` (the offer baseline) and the save
 format tests.
+
+## Cantrip damage by level
+
+A cantrip's damage dice grow with the caster's character level (SRD 5.2.1's
+Cantrip Upgrade): two dice from level 5, three from 11, four from 17 (Fire
+Bolt 2d10 at 5). Eldritch Blast fires a beam for each step instead, each its
+own attack roll, aimed one creature at a time as Scorching Ray's rays are
+([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)); a beam
+whose creature has fallen turns to the nearest foe. True Strike adds 1d6
+Radiant damage from level 5 (2d6 from 11), and Shillelagh's die becomes a d10
+at 5 and a d12 at 11. A Dragonborn's Breath Weapon grows the same way (2d10 at
+5, 3d10 at 11). Rules 0.6.215.
+

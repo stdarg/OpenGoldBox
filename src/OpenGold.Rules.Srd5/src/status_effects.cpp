@@ -130,7 +130,8 @@ void apply_poisoned(EffectState &effects, EffectSource source,
             kind != EffectKind::dazed && kind != EffectKind::smite_protected &&
             kind != EffectKind::faith_tested && kind != EffectKind::pack_tested &&
             kind != EffectKind::beings_tested && kind != EffectKind::veiled &&
-            kind != EffectKind::guarded && kind != EffectKind::swarmed) ||
+            kind != EffectKind::guarded && kind != EffectKind::swarmed &&
+            kind != EffectKind::bladed) ||
             !can_apply(effects) ||
             !recorded(source, name) || !duration_ms ||
             duration_ms > 2 * round_ms)
@@ -533,6 +534,9 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4
+           : kind == EffectKind::drained ? 2000
+           : kind == EffectKind::feasted ? 20
+           : kind == EffectKind::animating ? 19
            : kind == EffectKind::metamagic ? 15
            : kind == EffectKind::hidden || kind == EffectKind::aid ? 40
            : kind == EffectKind::circle_ward ? static_cast<int>(ward_types.size()) - 1
@@ -566,6 +570,7 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::free_moving:
     case EffectKind::energy_ward:
     case EffectKind::stoneskin:
+    case EffectKind::true_seeing:
         return 3600000; // 1 hour
     case EffectKind::aid:
     case EffectKind::mage_armor:
@@ -577,7 +582,10 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 864000000; // 10 days
     case EffectKind::returned:
         return 345600000; // four Long Rests' worth, ended by them
+    case EffectKind::drained:
+        return 4000000000u; // until Greater Restoration ends it
     case EffectKind::prayer_of_healing:
+    case EffectKind::feasted:
     case EffectKind::raised:
     case EffectKind::relentless_used:
     case EffectKind::trait_uses:
@@ -669,11 +677,16 @@ const Effect *command_effect(const EffectState &effects)
 
 int hit_point_bonus(const EffectState &effects)
 {
-    int bonus = 0;
+    // Aid and Heroes' Feast each add their most; Harm's lowering subtracts.
+    int aid = 0, feast = 0, drained = 0;
     for (const auto &e : effects.active)
         if (e.kind == EffectKind::aid)
-            bonus = std::max(bonus, e.dc);
-    return bonus;
+            aid = std::max(aid, e.dc);
+        else if (e.kind == EffectKind::feasted)
+            feast = std::max(feast, e.dc);
+        else if (e.kind == EffectKind::drained)
+            drained += e.dc;
+    return aid + feast - drained;
 }
 
 bool has_effect(const EffectState &effects, EffectKind kind)
@@ -896,6 +909,7 @@ EffectState read_effects(std::istream &in)
                            kind == EffectKind::faith_tested || kind == EffectKind::pack_tested ||
                            kind == EffectKind::beings_tested || kind == EffectKind::veiled ||
                            kind == EffectKind::guarded || kind == EffectKind::swarmed ||
+                           kind == EffectKind::bladed ||
                            kind == EffectKind::shocking_grasp ||
                            kind == EffectKind::chill_touch ||
                            kind == EffectKind::sap || kind == EffectKind::vex ||

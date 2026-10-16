@@ -1145,6 +1145,13 @@ open decisions, with two questions the work on every class to 15 raised:
     Points that joins the party as a controlled creature.
   - **Tsunami:** a wall of water that moves across the battlefield, with
     Strength saves, damage and a push each round.
+- **Fire Storm** is aimed cube by cube: the player clicks up to ten 10-foot
+  cubes, each touching another, then casts, as the SRD lets the caster
+  arrange them.
+- **Create Undead** works at any hour: the SRD's night-only limit is dropped.
+- **Word of Recall** is cast outside fights, from the Camp dialog's Cast / Use
+  list, and takes the whole party back to the prepared temple; the SRD takes
+  the caster and five others.
 
 ## PUSH-1 (2026-10-14): pushed into a wall
 

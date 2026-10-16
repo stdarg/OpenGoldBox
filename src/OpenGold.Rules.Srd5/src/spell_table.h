@@ -147,7 +147,12 @@ enum class Rider : unsigned
     dispel_evil_and_good,
     insect_plague,
     mass_cure_wounds,
-    greater_restoration
+    greater_restoration,
+    blade_barrier,
+    create_undead,
+    harm,
+    sunbeam,
+    true_seeing
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -194,6 +199,8 @@ struct SpellDef
     // Radiant; upcasting adds to both.
     DamageType second_damage{DamageType::fire};
     DamageDice second_dice{};
+    // A wall that may also stand as a ring of this diameter, feet (LEVELS-3).
+    int ring{};
 };
 
 // Order matches the sequence legal_commands() emitted before the table existed:
@@ -1578,6 +1585,113 @@ inline constexpr std::array spell_table
         .pattern = SpellPattern::camp,
         .target = SpellTarget::dead_ally,
         .range = 5},
+    // SRD 5.2.1 p. 113: a wall of blades 100 feet long, or a ring 60 feet
+    // across, Difficult Terrain; a creature in it, entering it or ending its
+    // turn there saves, once a turn.
+    SpellDef{
+        .id = "blade_barrier",
+        .label = "Blade Barrier",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 90,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::force,
+        .dice = {6, 10, 0},
+        .rider = Rider::blade_barrier,
+        .concentration = true,
+        .evocation = true,
+        .wall = 100,
+        .ring = 60},
+    // SRD 5.2.1 p. 121: as Animate Dead, three corpses rise as Ghouls; four
+    // from a level-7 slot, five from a level-8 one.
+    SpellDef{
+        .id = "create_undead",
+        .label = "Create Undead",
+        .level = 6,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::corpse,
+        .range = 10,
+        .instances = 3,
+        .upcast = {.extra_instances = 1},
+        .rider = Rider::create_undead},
+    // SRD 5.2.1 p. 139: 14d6 Necrotic damage that lowers the Hit Point
+    // maximum as much; half and no lowering on a success.
+    SpellDef{
+        .id = "harm",
+        .label = "Harm",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::enemy,
+        .range = 60,
+        .requires_sight = true,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::necrotic,
+        .dice = {14, 6, 0},
+        .rider = Rider::harm},
+    // SRD 5.2.1 p. 139: 70 Hit Points, 10 more for each slot level above 6,
+    // and an end to Blinded and Poisoned.
+    SpellDef{
+        .id = "heal",
+        .label = "Heal",
+        .level = 6,
+        .pattern = SpellPattern::heal,
+        .target = SpellTarget::ally,
+        .range = 60,
+        .requires_sight = true,
+        .dice = {0, 0, 70}},
+    // SRD 5.2.1 p. 140: a feast in camp; up to twelve creatures gain Poison
+    // Resistance, Immunity to Frightened and Poisoned and 2d10 more Hit Points
+    // for a day. Its bowl is free (LEVELS-3).
+    SpellDef{
+        .id = "heroes_feast",
+        .label = "Heroes' Feast",
+        .level = 6,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::ally,
+        .range = 30,
+        .dice = {2, 10, 0},
+        .instances = 12},
+    // SRD 5.2.1 p. 166: a 5-foot-wide, 60-foot Line; Constitution save or
+    // 6d8 Radiant and Blinded until the caster's next turn; a Magic action
+    // fires a new Line while it lasts.
+    SpellDef{
+        .id = "sunbeam",
+        .label = "Sunbeam",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::constitution,
+        .half_on_success = true,
+        .damage = DamageType::radiant,
+        .dice = {6, 8, 0},
+        .rider = Rider::sunbeam,
+        .concentration = true,
+        .evocation = true,
+        .line = 60,
+        .narrow_line = true},
+    // SRD 5.2.1 p. 171: Truesight 120 feet for an hour.
+    SpellDef{
+        .id = "true_seeing",
+        .label = "True Seeing",
+        .level = 6,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 5,
+        .rider = Rider::true_seeing},
+    // SRD 5.2.1 p. 175: outside fights, the party returns to a temple it
+    // prepared earlier (LEVELS-3).
+    SpellDef{
+        .id = "word_of_recall",
+        .label = "Word of Recall",
+        .level = 6,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::self,
+        .range = 5,
+        .instances = 8},
     // SRD 5.2.1 p. 165: Resistance to Bludgeoning, Piercing and Slashing damage.
     SpellDef{
         .id = "stoneskin",
@@ -1928,8 +2042,9 @@ inline std::optional<int> curse_of(std::string_view verb)
     return static_cast<int>(found - curses.begin());
 }
 
-// What Greater Restoration ends, each offered as "greater_restoration_<harm>".
-inline constexpr std::array<std::string_view, 2> greater_harms{"charmed", "curse"};
+// What Greater Restoration ends, each offered as "greater_restoration_<harm>":
+// Charmed, a curse, or Harm's lowered Hit Point maximum.
+inline constexpr std::array<std::string_view, 3> greater_harms{"charmed", "curse", "drained"};
 
 // The index in greater_harms a Greater Restoration verb names, if it is one.
 inline std::optional<std::size_t> greater_harm(std::string_view verb)
@@ -1960,9 +2075,10 @@ inline std::optional<std::size_t> contagion_ability(std::string_view verb)
 }
 
 // A wall's directions on the battle map (LEVELS-3), each offered as
-// "<spell>_<direction>": along a row, along a column, or along either diagonal.
-inline constexpr std::array<std::string_view, 4> wall_directions{"horizontal", "vertical",
-    "rising", "falling"};
+// "<spell>_<direction>": along a row, along a column, along either diagonal,
+// or, for a wall that allows it, as a ring.
+inline constexpr std::array<std::string_view, 5> wall_directions{"horizontal", "vertical",
+    "rising", "falling", "ring"};
 
 // The direction a wall verb names, as an index into wall_directions, if it
 // names one.
@@ -1987,6 +2103,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "greater_restoration";
     if (contagion_ability(id))
         id = "contagion";
+    if (id == "sunbeam_line")
+        id = "sunbeam";
     if (const auto direction = wall_direction(id))
         id.remove_suffix(wall_directions[*direction].size() + 1);
     if (command_option(id))

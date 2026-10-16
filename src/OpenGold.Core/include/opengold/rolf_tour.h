@@ -166,6 +166,16 @@ class RolfTourSession
         return snapshot_.phase == TourPhase::completed;
     }
 
+    // Word of Recall from camp (LEVELS-3): cast on the square where the party
+    // used a temple of New Phlan, it prepares the party's sanctuary there;
+    // elsewhere it takes the whole party back to that sanctuary. Throws when
+    // it can do neither, before spending anything.
+    void recall(opengold::MemberId caster);
+    [[nodiscard]] bool has_sanctuary() const
+    {
+        return sanctuary_.has_value();
+    }
+
     // Outside events, and while shopping to choose the buyer. The shop script
     // receives whoever is selected when the shop closes.
     [[nodiscard]] bool can_select_member() const
@@ -399,6 +409,15 @@ class RolfTourSession
     void announce_camp_attack();
     [[nodiscard]] bool camp_warded() const;
     bool transition_{}, message_only_{};
+    // Word of Recall: the square where the party last used a temple of New
+    // Phlan this session, and the sanctuary it prepared (saved).
+    struct Sanctuary
+    {
+        unsigned script{};
+        PartyPose pose;
+        auto operator<=>(const Sanctuary &) const = default;
+    };
+    std::optional<Sanctuary> temple_square_, sanctuary_;
     std::uint64_t shop_request_{};
     void configure_town();
     void synchronize_clock();
@@ -413,7 +432,8 @@ class RolfTourSession
         camp = 2
     };
 
-    void begin_event(EventTrigger trigger);
+    // `entry` starts another script slot than the trigger's, such as a town's entry.
+    void begin_event(EventTrigger trigger, std::optional<std::size_t> entry = std::nullopt);
     void finish_event();
     bool handle_town_host(const EclRequest &request);
     // Scripts change coins relative to the view they were given, so the script

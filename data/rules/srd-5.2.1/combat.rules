@@ -146,3 +146,12 @@ damage_types zombie bludgeoning bludgeoning
 affinity zombie stat:poison immunity poison
 type zombie undead
 undead_fortitude zombie
+# Create Undead's Ghoul (SRD 5.2.1): two Bites, each 1d6 + 2 Piercing and 1d6
+# Necrotic; its Claw's paralysis is a second action the game leaves out.
+creature ghoul 12 22 2 30 4 1 6 2 0 0 0 0 0 0 0 0 0 1 0
+saves ghoul 1 2 0 -2 0 -2
+damage_types ghoul piercing piercing
+affinity ghoul stat:poison immunity poison
+type ghoul undead
+multiattack ghoul 2
+melee_extra_damage ghoul 1 6 necrotic

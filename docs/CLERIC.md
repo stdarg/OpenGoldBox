@@ -17,10 +17,12 @@ in [Cleric preparation](CLERIC-PREPARATION.md).
 | 8 | Ability Score Improvement | Delivered (rules 0.6.213) |
 | 9 | Level-5 spells | Delivered (rules 0.6.214) |
 | 10 | Divine Intervention | Delivered (rules 0.6.214) |
+| 11 | Level-6 spells, cantrip damage | Delivered (rules 0.6.215) |
+| 12 | Ability Score Improvement | Delivered (rules 0.6.215) |
 
 ## Levels 5–15
 
-The Cleric advances to level 10 for now; level 11 waits for its level-6
+The Cleric advances to level 12 for now; level 13 waits for its level-7
 spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
@@ -61,11 +63,21 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   prepared or not, without a slot: the A cycle lists each such spell again as
   "… (Divine Intervention)". A Bonus Action spell cast this way takes the
   Action. Revivify, Raise Dead and Magic Circle are not offered through it.
-- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 10,
+- **Level-6 spells** (11): one level-6 slot; prepared spells 16 at 11 and
+  12. Blade Barrier, Create Undead, Harm, Heal, Heroes' Feast, Sunbeam, True
+  Seeing and Word of Recall (below). Find the Path, Forbiddance and Planar Ally
+  are cut.
+- **Cantrips** deal two dice from level 5 and three from 11 (Sacred Flame 3d8
+  at 11), as every class's do (see [Spell slots](SPELL-SLOTS.md)).
+- **Ability Score Improvement** (12): a feat or ability points.
+- Verification: `opengold_cleric_levels_tests` (the campaign's stop at 12,
   features and prepared counts by level, the level-3 and level-4 spells,
   slots and Channel Divinity uses, each spell below, Sear Undead, Blessed
   Healer, Divine Strike once a turn, a campaign round trip, each level-5 spell
-  and Divine Intervention).
+  and Divine Intervention, each level-6 spell, Sacred Flame's dice at 4, 5
+  and 11) and `opengold_word_of_recall_tests` (with the installed game: the
+  refusal without a sanctuary, preparing it at the Temple of Tyr, the trip
+  back from the training schools).
 
 ### The new level-3 spells
 
@@ -137,6 +149,43 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   its level (LEVELS-1). It returns with 1 Hit Point and a −4 penalty to
   attack rolls, saving throws and Initiative that lessens by 1 with each Long
   Rest.
+
+### The level-6 spells
+
+- **Blade Barrier** (Action, 90 feet, Concentration up to 10 minutes): a wall
+  of blades 100 feet long, horizontal, vertical or along either diagonal, or
+  a ring 60 feet across (LEVELS-3), Difficult Terrain, drawn as a wall. Each
+  creature in it when it rises, entering it or ending its turn there makes a
+  Dexterity save, once a turn, against 6d10 Force damage, half on a success.
+  Its cover has nothing to act on (COVER-1).
+- **Create Undead** (a minute's casting, 10 feet): as Animate Dead, chosen
+  one corpse at a time: up to three corpses rise as Ghouls (four from a
+  level-7 slot, five from a level-8 one), at any hour (LEVELS-3). The Ghoul is
+  the SRD stat block: two Bites, each 1d6 + 2 Piercing and 1d6 Necrotic; its
+  paralyzing Claw, a second action, is left out. Ghasts and Wights have no
+  stat blocks in the game yet.
+- **Harm** (Action, 60 feet): a Constitution save against 14d6 Necrotic
+  damage; on a failure the Hit Point maximum drops by the damage taken, never
+  below 1, until Greater Restoration ends it ("Greater Restoration: Hit Point
+  maximum"). Aura of Life prevents the drop.
+- **Heal** (Action, 60 feet): 70 Hit Points (10 more for each slot level
+  above 6) and the end of Blinded and Poisoned.
+- **Heroes' Feast** (camp, the whole party): each member gains for a day
+  Poison Resistance, Immunity to Frightened and Poisoned, and 2d10 more Hit
+  Points at most, healed at once. Its bowl is free (LEVELS-3).
+- **Sunbeam** (Action, Concentration up to 1 minute): a 5-foot-wide, 60-foot
+  Line; each creature in it makes a Constitution save against 6d8 Radiant
+  damage and is Blinded until the Cleric's next turn on a failure, half and
+  not Blinded on a success. While it lasts, **Sunbeam: a new Line** (a Magic
+  action, no slot) fires another. Its sunlight has nothing to act on yet.
+- **True Seeing** (Action, touch, 1 hour): the creature sees Invisible and
+  hidden creatures and through magical Darkness.
+- **Word of Recall** (camp): cast from the Camp dialog's Cast / Use list. On
+  the square where the party just used the Temple of Tyr (or another temple
+  of New Phlan) it prepares the party's sanctuary; anywhere else it takes the
+  whole party back there (LEVELS-3), from a district by running the town's
+  entry script as the gate does. Without a prepared sanctuary it is refused
+  and spends nothing. The sanctuary is kept in campaign saves (format 30).
 
 ## Channel Divinity
 

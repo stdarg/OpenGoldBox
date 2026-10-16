@@ -218,7 +218,9 @@ void table()
               "Riders belong to attack and save-condition patterns");
         check(spell.pattern != SpellPattern::save_condition || spell.rider != Rider::none,
               "A save-condition spell applies a rider");
-        check(spell.pattern != SpellPattern::heal || spell.add_casting_modifier,
+        // Heal restores a fixed 70 instead.
+        check(spell.pattern != SpellPattern::heal || spell.add_casting_modifier ||
+              spell.id == std::string_view("heal"),
               "Healing adds the caster's spellcasting modifier");
     }
     // Deliberately not an exact row count: that would make adding a spell an
@@ -255,7 +257,7 @@ struct Probe
 };
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4},  {"cleric", 1},
-    {"cleric", 4}, {"cleric", 10}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
+    {"cleric", 4}, {"cleric", 12}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
     {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
 };
 
@@ -388,9 +390,10 @@ void row_behaviour(const RulesModule &rules, const SpellDef &row, const Characte
     // A rider is observable whenever the spell actually landed. Spiritual
     // Weapon's rider is its force on the battlefield, Ice Knife's a burst and
     // Dissonant Whispers' a flight, not conditions (a saved-against Whispers
-    // still deals half damage).
+    // still deals half damage, as a saved-against Harm does).
     if (row.rider != Rider::none && row.rider != Rider::spiritual_weapon &&
             row.rider != Rider::ice_knife && row.rider != Rider::dissonant_whispers &&
+            row.rider != Rider::harm &&
             after_target.hit_points < before_target.hit_points)
         check(!after_target.conditions.empty() || row.rider == Rider::chill_touch,
               "A landed rider is visible on the target");

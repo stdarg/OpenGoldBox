@@ -332,7 +332,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
     return true;
 }
 
-void RolfTourSession::begin_event(EventTrigger trigger)
+void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_t> entry)
 {
     claim_loot();
     synchronize_clock();
@@ -388,7 +388,7 @@ void RolfTourSession::begin_event(EventTrigger trigger)
                 EclAddress{0x6DCF},
                 static_cast<std::uint16_t>(2 *
                     campaign_->member(speaker).character.sheet().scores[rules::Ability::charisma]));
-    if (!machine_.start(static_cast<std::size_t>(trigger)))
+    if (!machine_.start(entry.value_or(static_cast<std::size_t>(trigger))))
     {
         fail("Unable to start town script");
         return;
@@ -398,6 +398,46 @@ void RolfTourSession::begin_event(EventTrigger trigger)
     snapshot_.diagnostic.clear();
     snapshot_.choices.clear();
     ++snapshot_.revision;
+}
+
+void RolfTourSession::recall(opengold::MemberId caster)
+{
+    if (!campaign_ || campaign_->in_combat() || !can_leave())
+        throw std::runtime_error("Word of Recall needs a quiet moment outside events");
+    const bool at_temple = temple_square_ && !current_area_ &&
+                           temple_square_->script == current_script_ &&
+                           temple_square_->pose == snapshot_.pose;
+    if (!at_temple && !sanctuary_)
+        throw std::runtime_error(
+            "No sanctuary is prepared: cast Word of Recall in a temple of New Phlan first.");
+    campaign_->use_camp_action(caster, caster, "word_of_recall");
+    if (at_temple)
+    {
+        sanctuary_ = temple_square_;
+        snapshot_.dialogue = "This temple is now the party's sanctuary for Word of Recall.";
+        ++snapshot_.revision;
+        return;
+    }
+    snapshot_.dialogue = "Word of Recall takes the party back to its sanctuary.";
+    if (!current_area_ && current_script_ == sanctuary_->script)
+    {
+        bind_pose(sanctuary_->pose);
+        return;
+    }
+    // From a district: the town's script takes over, as when the party walks
+    // back through a gate, and its entry runs on the sanctuary's square.
+    const auto program = town_->programs.find(sanctuary_->script);
+    if (program == town_->programs.end())
+        throw std::runtime_error("The sanctuary's town script is missing");
+    machine_.switch_program(program->second);
+    machine_.bind_variable(EclAddress{0x49F2}, static_cast<std::uint16_t>(current_script_));
+    machine_.bind_variable(ecl_script_bank, 3);
+    current_script_ = sanctuary_->script;
+    snapshot_.script_id = current_script_;
+    change_area(0);
+    bind_pose(sanctuary_->pose);
+    begin_event(EventTrigger::step, 4);
+    event_stage_ = EventStage::area_entry;
 }
 
 void RolfTourSession::claim_loot()
@@ -1571,6 +1611,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 }
             snapshot_.choices.push_back("Cancel");
             temple_request_ = request.id;
+            // Word of Recall may prepare its sanctuary on this square.
+            if (!current_area_)
+                temple_square_ = Sanctuary{current_script_, snapshot_.pose};
             snapshot_.dialogue +=
                 "\nCure Wounds costs 100 gp of the party's gold and heals 2d8 + 3 HP. Choose a wounded living member. Other temple services are not supported.";
             snapshot_.diagnostic.clear();

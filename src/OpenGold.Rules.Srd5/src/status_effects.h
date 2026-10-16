@@ -287,9 +287,18 @@ enum class EffectKind : unsigned
     // Back from the dead (Raise Dead): `dc` is the penalty to D20 Tests, one
     // less after each Long Rest.
     returned = 114,
+    // Harm: the Hit Point maximum is lower by `dc` until Greater Restoration.
+    drained = 115,
+    // Heroes' Feast: `dc` more Hit Points at most, Poison Resistance and
+    // Immunity to Frightened and Poisoned, for a day.
+    feasted = 116,
+    // True Seeing: Truesight, seeing the Invisible and through magical Darkness.
+    true_seeing = 117,
+    // Blade Barrier: the creature has saved against the blades this turn.
+    bladed = 118,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = returned
+    last = bladed
 };
 
 // Magic Circle's creature types, by `dc`.

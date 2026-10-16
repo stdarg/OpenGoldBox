@@ -20,7 +20,8 @@ The facts (XP, slots, every class and subclass feature at levels 5–10, and all
   ([Spell slots](SPELL-SLOTS.md)).
 - Paladin to level 15: done ([Paladin](PALADIN.md#levels-515)), with every
   kept Paladin spell.
-- Cleric to level 10: done ([Cleric](CLERIC.md#levels-515)).
+- Cleric to level 12: done ([Cleric](CLERIC.md#levels-515)).
+- Cantrip damage by character level (5, 11, 17): done ([Spell slots](SPELL-SLOTS.md#cantrip-damage-by-level)).
 - Ranger to level 15: done ([Ranger](RANGER.md#levels-515)), with the first
   wall (Wind Wall), Plant Growth's Overgrowth and the shared system for
   controlled creatures (Dominate Beast).

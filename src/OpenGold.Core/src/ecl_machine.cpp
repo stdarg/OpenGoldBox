@@ -832,18 +832,33 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
     finish_request();
     if (reply.next_program)
     {
-        program_ = reply.next_program;
-        image_ = std::move(next_image);
-        instruction_spans_.clear();
-        stack_.clear();
-        conditions_.fill(false);
-        for (auto &[address, v] : variables_)
-            if (address >= 0x4A00 && address <= 0x4A1F)
-                v = 0;
-        state_ = EclState::completed;
-        pc_ = program_->entries()[4];
+        load_program(reply.next_program, std::move(next_image));
         // Host installs map/party state, then starts slot 4; old-script fallthrough is forbidden.
     }
     return true;
+}
+
+void EclMachine::switch_program(std::shared_ptr<const EclProgram> next)
+{
+    require_configurable();
+    if (!next)
+        throw EclError("Missing program");
+    auto image = next->raw();
+    load_program(std::move(next), std::move(image));
+}
+
+void EclMachine::load_program(std::shared_ptr<const EclProgram> next,
+                              std::vector<std::uint8_t> image)
+{
+    program_ = std::move(next);
+    image_ = std::move(image);
+    instruction_spans_.clear();
+    stack_.clear();
+    conditions_.fill(false);
+    for (auto &[address, v] : variables_)
+        if (address >= 0x4A00 && address <= 0x4A1F)
+            v = 0;
+    state_ = EclState::completed;
+    pc_ = program_->entries()[4];
 }
 } // namespace opengold::por

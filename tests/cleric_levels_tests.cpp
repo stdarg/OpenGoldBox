@@ -16,9 +16,10 @@
 using namespace opengold;
 using namespace opengold::rules;
 
-// A Cleric (Life Domain) from level 5 to 10 (LEVELS-1, LEVELS-2): level-3 to
-// level-5 spells, Sear Undead, Blessed Healer, a third Channel Divinity use,
-// Blessed Strikes, Divine Spark's 2d8 and Divine Intervention.
+// A Cleric (Life Domain) from level 5 to 12 (LEVELS-1, LEVELS-2): level-3 to
+// level-6 spells, Sear Undead, Blessed Healer, a third Channel Divinity use,
+// Blessed Strikes, Divine Spark's 2d8, Divine Intervention, and its cantrips'
+// growing dice.
 namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
@@ -200,8 +201,8 @@ void progression_checks()
     party.award_experience(165000, "levels-xp");
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
-    check(party.member(id).character.sheet().level == 10,
-          "A Cleric stops at 10 until its level-6 spells exist");
+    check(party.member(id).character.sheet().level == 12,
+          "A Cleric stops at 12 until its level-7 spells exist");
     check(grants(cleric(5), "feature:sear_undead", 5) &&
           grants(cleric(6), "feature:blessed_healer", 6),
           "Sear Undead at 5, Blessed Healer at 6");
@@ -252,7 +253,16 @@ void progression_checks()
     next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(),
                                  "cleric-levels", nullptr).party);
     check(encode_campaign(next, nullptr, "cleric-levels") == bytes,
-          "A level-10 Cleric saves and reloads");
+          "A level-12 Cleric saves and reloads");
+    check(rules->spell_access(cleric(11).sheet()).prepared_choices == 16 &&
+          rules->spell_access(cleric(12).sheet()).prepared_choices == 16,
+          "Prepared spells: 16 at 11 and 12");
+    for (const auto *spell : {"blade_barrier", "create_undead", "harm", "heal", "heroes_feast",
+                              "sunbeam", "true_seeing", "word_of_recall"
+                             })
+        check(preparable(cleric(11), spell), std::string("A level-11 Cleric can prepare ") + spell);
+    check(slots(*chapel(*dummies, cleric(11).sheet(), "dummy", 1), 6) == 1,
+          "One level-6 slot at 11");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
     {9, 14}, {10, 15}
@@ -618,6 +628,113 @@ void raise_dead_checks()
           "Raise Dead's offering: 300 gp times the level");
 }
 
+void level_six_checks()
+{
+    const auto rules = dummy_rules();
+    // Harm: the Hit Point maximum drops with the Necrotic damage.
+    bool harmed = false;
+    for (std::uint64_t seed = 1; seed < 40 && !harmed; ++seed)
+    {
+        auto c = chapel(*rules, with_spells(cleric(11), {"harm"}), "brute", seed);
+        check(submit(*c, "harm", 98), "Cast Harm");
+        harmed = logged(*c, "Foe's Hit Point maximum drops by ");
+        if (harmed)
+            check(unit(*c, 98).max_hit_points < 1000, "Harm lowers the maximum");
+    }
+    check(harmed, "A seed where the brute fails its save");
+    // Heal: 70 Hit Points.
+    auto healing = chapel(*rules, with_spells(cleric(11), {"heal"}), "dummy", 1);
+    // 70, and Disciple of Life's 2 + the slot's level.
+    check(submit(*healing, "heal", 2) && unit(*healing, 2).hit_points == 3 + 70 + 8,
+          "Heal restores 70 Hit Points");
+    // Blade Barrier: a ring or a wall of blades, Difficult Terrain.
+    auto blades = chapel(*rules, with_spells(cleric(11), {"blade_barrier"}), "dummy", 1);
+    check(offered(*blades, "blade_barrier_ring") && offered(*blades, "blade_barrier_vertical"),
+          "Blade Barrier offers a ring and four directions");
+    check(submit(*blades, "blade_barrier_vertical") && submit_cell(*blades, "area_move", Cell{3, 2}) &&
+          submit(*blades, "area_cast") && !blades->snapshot().walls.empty() &&
+          blades->snapshot().battlefield.at({3, 0}) == Terrain::difficult &&
+          logged(*blades, "Foe Dexterity save:"), "Blade Barrier rises through the dummy");
+    // Sunbeam: a Line, then another for a Magic action.
+    auto sun = chapel(*rules, with_spells(cleric(11), {"sunbeam"}), "dummy", 1);
+    check(submit(*sun, "sunbeam") && submit_cell(*sun, "area_move", Cell{3, 2}) &&
+          submit(*sun, "area_cast") && logged(*sun, "Foe Constitution save:") &&
+          slots(*sun, 6) == 0, "Sunbeam's first Line");
+    to_turn(*sun, 98);
+    to_turn(*sun, 1);
+    check(offered(*sun, "sunbeam_line") && submit(*sun, "sunbeam_line") &&
+          submit_cell(*sun, "area_move", Cell{3, 2}) && submit(*sun, "area_cast"),
+          "A Magic action fires a new Line without a slot");
+    // True Seeing.
+    auto sight = chapel(*rules, with_spells(cleric(11), {"true_seeing"}), "dummy", 1);
+    check(submit(*sight, "true_seeing", 2) && logged(*sight, "Ally gains True Seeing."),
+          "True Seeing on an ally");
+    // Create Undead: a minute raises a Ghoul.
+    const auto sheet = with_spells(cleric(11), {"create_undead"});
+    const std::vector<std::string> gear{"mace"};
+    auto c = rules->create({{12, 5, std::vector<Terrain>(60)},
+        {   {1, "campaign-character", "Cleric", Side::party, {1, 2},
+                rules->character_profile(sheet, gear).data},
+            {97, "bandit", "Corpse", Side::opposition, {2, 2}, {}, VitalState{0, true, {}}},
+            {98, "dummy", "Foe", Side::opposition, {10, 4}}
+        }},
+    1);
+    to_turn(*c, 1);
+    check(submit(*c, "create_undead", 97) && c->snapshot().spell_targeting &&
+          submit(*c, "spell_cast") && logged(*c, "Cleric begins casting Create Undead."),
+          "Create Undead chooses up to three corpses and begins");
+    for (unsigned turns = 0; turns < 40 && !logged(*c, "Corpse rises as a Ghoul."); ++turns)
+        if (!submit(*c, "end"))
+        {
+            for (const auto &line : log_lines(*c))
+                std::cerr << line << '\n';
+            check(false, "Pass the minute of casting");
+        }
+    check(logged(*c, "Corpse rises as a Ghoul.") && unit(*c, 97).side == Side::party &&
+          unit(*c, 97).hit_points == 22, "The corpse rises as a Ghoul for the party");
+}
+
+void heroes_feast_checks()
+{
+    const auto rules = module();
+    const auto healer = with_spells(cleric(11), {"heroes_feast"});
+    VitalState healer_vitals{healer.hit_points, false, {}};
+    const auto actions = rules->camp_actions(healer, healer_vitals);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "heroes_feast" && a.whole_party;
+    }), "Heroes' Feast is a camp action for the whole party");
+    const auto guest = cleric(5).sheet();
+    VitalState guest_vitals{guest.hit_points, false, {}};
+    std::vector<CampTarget> party{{healer, healer_vitals}, {guest, guest_vitals}};
+    RandomState random{3};
+    rules->use_party_camp_action(healer, healer_vitals, party, "heroes_feast", random);
+    check(rules->hit_point_maximum(guest, guest_vitals) > guest.hit_points &&
+          guest_vitals.hit_points > guest.hit_points,
+          "Heroes' Feast raises the Hit Point maximum and heals as much");
+}
+
+void cantrip_checks()
+{
+    // Sacred Flame: 1d8 at 4, 2d8 from 5, 3d8 from 11.
+    const auto rules = dummy_rules();
+    const auto most = [&](unsigned level)
+    {
+        int best = 0;
+        for (std::uint64_t seed = 1; seed < 60; ++seed)
+        {
+            auto c = chapel(*rules, cleric(level).sheet(), "dummy", seed);
+            check(submit(*c, "sacred_flame", 98), "Cast Sacred Flame");
+            for (const auto &line : log_lines(*c))
+                if (line.starts_with("Foe takes ") && line.ends_with(" Radiant damage."))
+                    best = std::max(best, std::stoi(line.substr(10)));
+        }
+        return best;
+    };
+    check(most(4) <= 8 && most(5) > 8 && most(11) > 16,
+          "Sacred Flame's dice grow at levels 5 and 11");
+}
+
 void divine_intervention_checks()
 {
     const auto rules = dummy_rules();
@@ -651,6 +768,9 @@ int main()
         dispel_evil_checks();
         raise_dead_checks();
         divine_intervention_checks();
+        level_six_checks();
+        heroes_feast_checks();
+        cantrip_checks();
     }
     catch (const std::exception &error)
     {

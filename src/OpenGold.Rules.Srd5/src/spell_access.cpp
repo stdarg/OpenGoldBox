@@ -184,6 +184,15 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"insect_plague", "Insect Plague", 5, 0, cleric_list | druid_list | sorcerer_list},
     Spell{"mass_cure_wounds", "Mass Cure Wounds", 5, 0, bard_list | cleric_list | druid_list},
     Spell{"raise_dead", "Raise Dead", 5, 0, bard_list | cleric_list | paladin_list},
+    Spell{"blade_barrier", "Blade Barrier", 6, 0, cleric_list},
+    Spell{"create_undead", "Create Undead", 6, 0, cleric_list | warlock_list | wizard_list},
+    Spell{"harm", "Harm", 6, 0, cleric_list},
+    Spell{"heal", "Heal", 6, 0, cleric_list | druid_list},
+    Spell{"heroes_feast", "Heroes' Feast", 6, 0, bard_list | cleric_list | druid_list},
+    Spell{"sunbeam", "Sunbeam", 6, 0, cleric_list | druid_list | sorcerer_list | wizard_list},
+    Spell{"true_seeing", "True Seeing", 6, 0,
+        bard_list | cleric_list | sorcerer_list | warlock_list | wizard_list},
+    Spell{"word_of_recall", "Word of Recall", 6, 0, cleric_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
         bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
         warlock_list | wizard_list}};

@@ -15,7 +15,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 29;
+constexpr unsigned campaign_format = 30;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -545,6 +545,25 @@ template <bool Reading> struct SaveCodec
                         "Invalid saved district exploration");
                 v.visited_areas_[id] = std::bitset<256>(cells);
             }
+        }
+        // Word of Recall's sanctuary: a town script and a square (LEVELS-3).
+        bool sanctuary = v.sanctuary_.has_value();
+        unsigned sanctuary_script = sanctuary ? v.sanctuary_->script : 0,
+                 sanctuary_x = sanctuary ? v.sanctuary_->pose.x : 0,
+                 sanctuary_y = sanctuary ? v.sanctuary_->pose.y : 0,
+                 sanctuary_facing = sanctuary ? static_cast<unsigned>(por::index(v.sanctuary_->pose.facing)) : 0;
+        fields(sanctuary, sanctuary_script, sanctuary_x, sanctuary_y, sanctuary_facing);
+        if constexpr (reading)
+        {
+            require(!sanctuary || (v.town_->programs.contains(sanctuary_script) && sanctuary_x < 16 &&
+                                   sanctuary_y < 16 && sanctuary_facing < 4),
+                    "Invalid saved sanctuary");
+            v.sanctuary_.reset();
+            if (sanctuary)
+                v.sanctuary_ = por::RolfTourSession::Sanctuary{
+                    sanctuary_script,
+                    {sanctuary_x, sanctuary_y,
+                     *por::map_direction(static_cast<std::uint16_t>(sanctuary_facing))}};
         }
         std::uint64_t pending = v.pending_loot_.size();
         field(pending);

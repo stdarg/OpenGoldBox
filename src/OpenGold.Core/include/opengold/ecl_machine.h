@@ -141,6 +141,9 @@ class EclMachine
     [[nodiscard]] std::uint16_t variable(EclAddress address) const;
     [[nodiscard]] std::string string(EclAddress address) const;
     bool start(std::size_t entry_slot);
+    // Load another script while idle, keeping the variables, as the original's
+    // NEW ECL does; the host then installs the map and party and starts slot 4.
+    void switch_program(std::shared_ptr<const EclProgram> next);
     // Explicit isolated research entry. Bypasses campaign entry scheduling; the
     // caller must identify an instruction boundary from its compatibility profile.
     bool start_at_for_inspection(std::uint32_t address);
@@ -193,6 +196,7 @@ class EclMachine
     [[nodiscard]] EclAddress destination(const EclOperand &arg) const;
     [[nodiscard]] std::string text(const EclOperand &arg) const;
     void require_configurable() const;
+    void load_program(std::shared_ptr<const EclProgram> next, std::vector<std::uint8_t> image);
     void write(EclAddress address, std::uint16_t value);
     void write_string(EclAddress address, std::string_view value);
     void finish_request();

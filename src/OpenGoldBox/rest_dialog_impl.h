@@ -377,6 +377,16 @@ void RolfTourView::rest_use()
                     total += campaign_->member(member).vitals.hit_points;
             return total;
         };
+        // Word of Recall prepares the sanctuary or takes the party to it; the
+        // camp ends with the trip.
+        if (id == String("word_of_recall") && session_)
+        {
+            session_->recall(rest_member_);
+            presentation::required_node<Window>(*this, "RestDialog").hide();
+            rest_result_ = String();
+            refresh();
+            return;
+        }
         const int before = party_hp();
         const bool party = !target->is_visible();
         campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());
