@@ -441,6 +441,68 @@ bool CampaignParty::is_simulacrum(MemberId id) const
     return member(id).npc_source.starts_with("simulacrum:");
 }
 
+std::string CampaignParty::reincarnation_species() const
+{
+    auto dice = state_.random_state;
+    return rules_->reincarnation_species(dice);
+}
+
+void CampaignParty::reincarnate(const rules::CharacterRules &creation, MemberId caster,
+                                MemberId target, std::string_view action,
+                                ReincarnationChoices choices, por::CharacterAppearance appearance)
+{
+    editable();
+    outside_combat();
+    if (state_.short_rest || state_.spell_rest || state_.training_rest)
+        throw std::runtime_error("Finish the rest's choices before casting Reincarnate");
+    for (const auto id : {caster, target})
+        if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+            throw std::runtime_error("Camp actions are for active members");
+    const auto actions = camp_actions(caster);
+    if (!action.starts_with("reincarnate") || caster == target ||
+            std::none_of(actions.begin(), actions.end(), [&](const auto & a)
+{
+    return a.id == action;
+}))
+    throw std::runtime_error("That spell or feature cannot be used now");
+    auto next = state_;
+    // Rolled first, so the body is the species reincarnation_species() read.
+    const auto species = rules_->reincarnation_species(next.random_state);
+    for (const auto &[group, picks] : choices.training)
+        if (!group.starts_with("species:" + species + ":") || group.ends_with(":kept"))
+            throw std::runtime_error("A choice that is not the new species'");
+    for (const auto &[group, picks] : choices.initiate_spells)
+        if (!group.starts_with("feat:magic_initiate_"))
+            throw std::runtime_error("A spell choice that is not Magic Initiate's");
+    auto &druid = member_in(next, caster);
+    auto &body = member_in(next, target);
+    const auto gold = rules_->camp_action_gold(body.character.sheet(), body.vitals, action);
+    if (gold > coins(next.wealth, Coin::gold))
+        throw std::runtime_error("The party purse cannot pay the offering");
+    rules_->use_camp_action(druid.character.sheet(), druid.vitals, body.character.sheet(),
+                            body.vitals, action, next.random_state);
+    coins(next.wealth, Coin::gold) -= gold;
+    // The old species' traits and choices go; the rest of the character stays.
+    auto draft = reincarnation_draft(body.character, species);
+    draft.training.merge(choices.training);
+    if (!choices.initiate_spells.empty())
+    {
+        if (!draft.spells)
+            draft.spells.emplace();
+        for (auto &[group, picks] : choices.initiate_spells)
+            if (!draft.spells->learning.emplace(group, std::move(picks)).second)
+                throw std::runtime_error("A spell choice the character already made");
+    }
+    const auto before = body.character.sheet();
+    body.character = body.character.recreated(creation, *rules_, std::move(draft));
+    body.character.appearance(std::move(appearance));
+    const auto &after = body.character.sheet();
+    body.vitals = rules_->fitted_state(before, body.vitals, after);
+    rules_->set_hit_points(body.vitals, after, rules_->hit_point_maximum(after, body.vitals));
+    validate(next);
+    state_ = std::move(next);
+}
+
 void CampaignParty::end_combat() noexcept
 {
     combat_ = false;
@@ -1150,6 +1212,9 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         return member_in(next, id);
     };
     auto &caster = find(user);
+    // Reincarnate's new body takes the species' choices: reincarnate().
+    if (action.starts_with("reincarnate"))
+        throw std::runtime_error("Reincarnate needs the new species' choices");
     const auto actions = camp_actions(user);
     const auto chosen = std::find_if(actions.begin(), actions.end(), [&](const auto & a)
     {

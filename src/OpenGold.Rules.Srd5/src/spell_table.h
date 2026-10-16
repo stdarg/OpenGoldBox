@@ -3106,7 +3106,17 @@ inline constexpr std::array spell_table
         .dice = {6, 10, 0},
         .rider = Rider::tsunami,
         .concentration = true,
-        .wall = 300}};
+        .wall = 300},
+    // SRD 5.2.1 p. 158: an hour's casting forms a new body, of a rolled
+    // species, for a Humanoid dead up to ten days; cast in camp for Raise
+    // Dead's offering (LEVELS-5).
+    SpellDef{
+        .id = "reincarnate",
+        .label = "Reincarnate",
+        .level = 5,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::dead_ally,
+        .range = 5}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in

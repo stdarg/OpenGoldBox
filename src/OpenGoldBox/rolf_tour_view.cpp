@@ -67,6 +67,9 @@ void RolfTourView::_bind_methods()
     ADD_SIGNAL(MethodInfo("save_requested", PropertyInfo(Variant::BOOL, "saving")));
     ADD_SIGNAL(MethodInfo("party_member_selected", PropertyInfo(Variant::INT, "slot")));
     ADD_SIGNAL(MethodInfo("level_up_requested", PropertyInfo(Variant::INT, "id")));
+    // Reincarnate from camp: the new body's pages belong to the creation view.
+    ADD_SIGNAL(MethodInfo("reincarnation_requested", PropertyInfo(Variant::INT, "caster"),
+                          PropertyInfo(Variant::INT, "target"), PropertyInfo(Variant::STRING, "action")));
     ClassDB::bind_method(D_METHOD("tour_visuals"), &RolfTourView::tour_visuals);
 }
 

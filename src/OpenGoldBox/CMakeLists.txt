@@ -334,6 +334,7 @@ if(OPENGOLD_BUILD_TESTS)
         -DCHECK_FLAG=--equipment-art-check)
     opengold_creation_check(defeat "Godot defeat check passed" -DCHECK_FLAG=--defeat-check)
     opengold_creation_check(expedition "Godot expedition passed" -DCHECK_FLAG=--expedition-check)
+    opengold_creation_check(reincarnate "Godot reincarnation passed" -DCHECK_FLAG=--reincarnate-check)
     opengold_creation_check(training "Training UI checks passed" -DSCRIPT=training_view_tests)
     opengold_creation_check(portrait_fallback "Portrait fallback checks passed"
         -DSCRIPT=portrait_fallback_tests)

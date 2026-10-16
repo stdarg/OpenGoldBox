@@ -387,6 +387,22 @@ void RolfTourView::rest_use()
             refresh();
             return;
         }
+        // Reincarnate forms a new body: its species' pages come first, and the
+        // camp closes for them.
+        if (id.begins_with("reincarnate"))
+        {
+            const auto &body = campaign_->member(patient);
+            if (!body.vitals.dead || patient == rest_member_)
+                throw std::runtime_error("Reincarnate needs a Humanoid dead up to ten days");
+            if (campaign_->rule_module().camp_action_gold(body.character.sheet(), body.vitals,
+                    id.utf8().get_data()) > opengold::coins(campaign_->state().wealth, opengold::Coin::gold))
+                throw std::runtime_error("The party purse cannot pay the offering");
+            presentation::required_node<Window>(*this, "RestDialog").hide();
+            rest_result_ = String();
+            emit_signal("reincarnation_requested", static_cast<int64_t>(rest_member_),
+                        static_cast<int64_t>(patient), id);
+            return;
+        }
         // Simulacrum makes a copy of the chosen member, which joins the party.
         if (id.begins_with("simulacrum") && id != String("simulacrum_repair"))
         {

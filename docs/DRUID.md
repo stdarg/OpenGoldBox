@@ -135,8 +135,8 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
   Conjure Woodland Beings, Dominate Beast, Fire Shield, Freedom of Movement,
   Giant Insect, Ice Storm, Polymorph, Stoneskin and Wall of Fire; at 9
   Antilife Shell, Cone of Cold, Conjure Elemental, Contagion, Greater
-  Restoration, Insect Plague, Mass Cure Wounds and Wall of Stone. Reincarnate
-  comes next, with its new species; the cut spells stay cut.
+  Restoration, Insect Plague, Mass Cure Wounds, Reincarnate and Wall of
+  Stone; the cut spells stay cut.
 - **Circle Spells:** arid Fireball (5), Blight (7), Wall of Stone (9); polar
   Sleet Storm, Ice Storm, Cone of Cold; temperate Lightning Bolt, Freedom of
   Movement (Tree Stride is cut); tropical Stinking Cloud, Polymorph, Insect
@@ -210,6 +210,21 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
   each creature in it makes a Dexterity save against 7d8 Piercing, half on a
   success. Entering it or ending a turn in it is a Dexterity save against
   7d8 Slashing, once a turn (1d8 more of each per slot level above 6).
+- **Reincarnate** (camp, an hour's casting): from the Camp dialog's Cast /
+  Use list, on a member dead up to ten days, for Raise Dead's offering of
+  300 gp times its level (LEVELS-5). A d10 names the new body's species (a 1
+  rolls again: Dragonborn, Dwarf, Elf, Gnome, Goliath, Halfling, Human, Orc
+  or Tiefling). The creation pages open for it: the race page, with only that
+  species, the name and the gender fixed, for the species' choices; a
+  Human's Versatile Magic Initiate spells, when chosen; the combat icon; the
+  portrait, starting on a face of the new species; then the sheet, whose
+  **Reincarnate** casts the spell. **Cancel** goes back to town with nothing
+  spent; the dice are only read until the spell is cast, so casting again
+  forms the same species. The member returns with all its Hit Points and no
+  penalty; class, level, scores, background, skills and items stay, and its
+  levels are made again on the new body. A skill or cantrip it already has
+  is not offered among the species' choices, and a skill of the old species
+  that it built Expertise on stays ("Kept from the former body").
 - **Tsunami** (Action, Concentration up to 6 rounds): a wall of water across
   the field in any of four directions, 10 feet thick (LEVELS-5: the SRD's
   minute of casting and 50 feet would not fit a fight or a battle map); its

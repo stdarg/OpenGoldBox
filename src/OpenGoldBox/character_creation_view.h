@@ -118,6 +118,21 @@ class CharacterCreationView : public godot::Control
     // Offers a choice of hands when the item has one; false when it has none.
     bool open_equipment_choice(opengold::MemberId member, std::uint64_t item);
     void setup_party();
+    // Reincarnate from camp (LEVELS-5): the creation pages for a dead
+    // member's new body, then back to the town.
+    struct Reincarnation
+    {
+        opengold::MemberId caster{}, target{};
+        std::string action;
+    };
+    std::optional<Reincarnation> reincarnation_;
+    void open_reincarnation(std::int64_t caster, std::int64_t target, godot::String action);
+    void begin_reincarnation(Reincarnation spell, const std::string &species);
+    void reincarnate_check();
+    bool reincarnate_check_{};
+    unsigned reincarnate_stage_{}, reincarnate_frames_{};
+    void finish_reincarnation();
+    void leave_reincarnation();
     void setup_advancement();
     void refresh_advancement_arrows();
     void open_advancement(std::int64_t id);

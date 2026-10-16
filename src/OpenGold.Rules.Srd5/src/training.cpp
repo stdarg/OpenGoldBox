@@ -258,6 +258,18 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
 {
     const auto species = species_id(race);
     std::vector<TrainingChoiceGroup> result;
+    // Reincarnate (LEVELS-5): a skill of the former body's species that the
+    // character built Expertise on stays, with nothing to choose.
+    if (const auto &kept = selected(choices, "species:" + species + ":kept"); !kept.empty())
+    {
+        auto group = one_of("species:" + species + ":kept", "Kept from the former body", {});
+        group.count = static_cast<unsigned>(kept.size());
+        group.control = TrainingChoiceControl::checkboxes;
+        for (const auto &skill : skills)
+            if (std::find(kept.begin(), kept.end(), skill.id) != kept.end())
+                group.options.push_back({std::string(skill.id), std::string(skill.label), {}});
+        result.push_back(std::move(group));
+    }
     // The ability an Elf's or a Tiefling's lineage spells are cast with.
     const auto ability = [&]
     {
@@ -282,7 +294,7 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
         }));
         auto keen = one_of("species:elf:keen_senses", "Keen Senses",
         {{"insight", "Insight", {}}, {"perception", "Perception", {}}, {"survival", "Survival", {}}});
-        const auto background_skills = held_skills(race, background, choices, {});
+        const auto background_skills = held_skills(race, background, choices, {"kept"});
         std::erase_if(keen.options, [&](const auto & option)
         {
             return background_skills.contains(option.id);
@@ -328,7 +340,7 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
     {
         result.push_back(size());
         result.push_back(skill_group("species:human:skillful", "Skillful", 1,
-                                     held_skills(race, background, choices, {})));
+                                     held_skills(race, background, choices, {"kept"})));
         // Versatile: an Origin feat, other than the one the background gives.
         // Skilled comes first, the creator's default: it changes no fight.
         auto versatile = one_of("species:human:versatile", "Versatile",
@@ -348,7 +360,7 @@ std::vector<TrainingChoiceGroup> species_options(std::string_view race,
         const auto &feat = selected(choices, "species:human:versatile");
         if (std::find(feat.begin(), feat.end(), "skilled") != feat.end())
             result.push_back(skill_group("species:human:skilled", "Skilled", 3,
-                                         held_skills(race, background, choices, {"skillful"})));
+                                         held_skills(race, background, choices, {"kept", "skillful"})));
     }
     return result;
 }
@@ -362,7 +374,7 @@ std::string_view species_prefix(std::string_view group)
            : group.ends_with(":legacy")      ? "legacy:"
            : group.ends_with(":size")        ? "size:"
            : group.ends_with(":keen_senses") || group.ends_with(":skillful") ||
-             group.ends_with(":skilled") ? "skill:"
+             group.ends_with(":skilled") || group.ends_with(":kept") ? "skill:"
            : group.ends_with(":versatile")   ? "feat:"
            : group == "species:dragonborn:ancestry" ? "dragon:"
            : "giant:";

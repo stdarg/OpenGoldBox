@@ -1,6 +1,8 @@
 #ifndef OPENGOLD_CHARACTER_CREATOR_H
 #define OPENGOLD_CHARACTER_CREATOR_H
 #include "opengold/character.h"
+#include <optional>
+#include <set>
 
 namespace opengold
 {
@@ -26,11 +28,44 @@ struct ChoiceToggle
     bool selected{};
 };
 
+// Reincarnate (LEVELS-5): `former`'s creation draft for a new body of
+// `species`. The old species' choices go, with the spells a Human's Versatile
+// Magic Initiate taught; a species skill the character built Expertise on is
+// kept. The new species' own choices are left to make.
+[[nodiscard]] rules::CharacterDraft reincarnation_draft(const Character &former,
+        std::string_view species);
+
+// What Reincarnate's pages chose: the new species' "species:" training groups,
+// and the spells a Human's Versatile Magic Initiate teaches.
+struct ReincarnationChoices
+{
+    rules::TrainingChoices training, initiate_spells;
+};
+
 class CharacterCreator
 {
   public:
     CharacterCreator(std::unique_ptr<rules::CharacterRules> rules, std::uint64_t seed);
+    // Reincarnate's pages (LEVELS-5): `former`'s new body of `species`. Only
+    // the species' choices, a Human's Versatile Magic Initiate spells and the
+    // look change: the species page, those spells, the combat icon and the
+    // portrait, then the sheet. `rules` replays the character's levels and
+    // must outlive the creator.
+    CharacterCreator(std::unique_ptr<rules::CharacterRules> creation, const rules::RulesModule &rules,
+                     const Character &former, std::string_view species);
+    [[nodiscard]] bool reincarnating() const
+    {
+        return former_.has_value();
+    }
+    [[nodiscard]] ReincarnationChoices reincarnation_choices() const;
+    // The training choices on offer; while reincarnating, a species' skill or
+    // cantrip the character already has from elsewhere is not.
     [[nodiscard]] std::vector<rules::TrainingChoiceGroup> training_options() const;
+    // The spell choices on offer; while reincarnating, only Versatile Magic
+    // Initiate's, less the spells the character already knows.
+    [[nodiscard]] rules::SpellChoiceOptions spell_choice_options() const;
+    // The cantrips to choose; none while reincarnating.
+    [[nodiscard]] rules::TrainingChoiceGroup cantrip_options() const;
 
     [[nodiscard]] const rules::CharacterRules &rules() const
     {
@@ -88,6 +123,14 @@ class CharacterCreator
 
   private:
     std::unique_ptr<rules::CharacterRules> rules_;
+    // While reincarnating: the character, its rules module (borrowed) and
+    // the grants it has from anything but its species.
+    std::optional<Character> former_;
+    const rules::RulesModule *module_{};
+    std::set<std::string, std::less<>> held_;
+    [[nodiscard]] std::string initiate_group_prefix() const;
+    void fill_species(rules::CharacterDraft &candidate) const;
+    void check_reincarnation() const;
     RandomState random_;
     // Gold has its own stream so the seeded ability rolls are the same with it.
     RandomState gold_random_;

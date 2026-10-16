@@ -1,4 +1,5 @@
 #include <godot_cpp/classes/option_button.hpp>
+#include <chrono>
 #include <godot_cpp/classes/check_box.hpp>
 #include "godot_images.h"
 #include "godot_nodes.h"
@@ -12,6 +13,7 @@
 #include "combat_view.h"
 #include "rolf_tour_view.h"
 #include "save_slots.h"
+#include "vital_fixtures.h"
 #include "opengold/campaign_save.h"
 #include "opengold/combat_body_catalog.h"
 #include "opengold/srd5.h"
@@ -159,6 +161,138 @@ void CharacterCreationView::setup_party()
     equipment_art_check_ =
         OS::get_singleton()->get_cmdline_user_args().has("--equipment-art-check");
     expedition_check_ = OS::get_singleton()->get_cmdline_user_args().has("--expedition-check");
+    reincarnate_check_ = OS::get_singleton()->get_cmdline_user_args().has("--reincarnate-check");
+}
+
+// Reincarnate from camp (LEVELS-5): a Druid's spell gives a dead companion a
+// new body through the creation pages, captured page by page.
+void CharacterCreationView::reincarnate_check()
+{
+    if (++reincarnate_frames_ > 4000)
+        throw std::runtime_error("Reincarnation check timed out");
+    // Room for each page to draw before it is captured.
+    if (reincarnate_frames_ % 30)
+        return;
+    const auto check = [](bool ok, const char *message)
+    {
+        if (!ok)
+            throw std::runtime_error(message);
+    };
+    const auto press = [&](const char *path)
+    {
+        auto *button = &required_node<Button>(*this, path);
+        check(!button->is_disabled(), path);
+        button->emit_signal("pressed");
+        check(error_.is_empty(), error_.utf8().get_data());
+    };
+    const auto &slots = campaign_->state().slots;
+    switch (reincarnate_stage_++)
+    {
+    case 0:
+    {
+        rules::CharacterDraft druid;
+        druid.race = "human";
+        druid.gender = "female";
+        druid.character_class = "druid";
+        druid.background = "sage";
+        druid.alignment = "neutral_good";
+        druid.name = "Druid";
+        druid.rolled = true;
+        for (auto &roll : druid.rolls)
+            roll = {{6, 5, 4, 1}, 3};
+        druid.training = {{"class:druid", {"nature", "medicine"}}, {"class:druid:primal_order", {"warden"}}};
+        const auto caster = campaign_->add_pc(Character(*srd5::character_rules(), druid, {}));
+        campaign_->award_experience(48000, "fixture:reincarnate-druid");
+        while (campaign_->can_advance(caster))
+        {
+            auto choice = campaign_->default_advancement(caster);
+            if (campaign_->member(caster).character.sheet().level == 8 &&
+                    std::find(choice.spells.begin(), choice.spells.end(), "reincarnate") == choice.spells.end())
+                choice.spells.back() = "reincarnate";
+            campaign_->advance(caster, choice);
+        }
+        auto guard = preview_guard();
+        guard.rename("Fallen companion");
+        const auto fallen = campaign_->add_pc(std::move(guard));
+        campaign_->add_coins(Coin::gold, 5000);
+        auto state = campaign_->checkpoint();
+        for (auto &m : state.roster)
+            if (m.id == fallen)
+                m.vitals = {0, true, presentation::srd_vitals(m.character,
+                {.failures = 3, .hit_dice = 1, .effects = "FX8 2 1 1 113 1 1 \"Fallen companion\" 0 864000000 0 0"}),
+                "Dead"};
+        campaign_->restore(state);
+        party_action(PartyAction::explore);
+        break;
+    }
+    case 1:
+        open_reincarnation(slots[0], slots[1], "reincarnate");
+        check(creator_->reincarnating() && creator_->step() == CreationStep::race &&
+              !required_node<RolfTourView>(*this, "CampaignTown").is_visible(),
+              "Reincarnate opens the race page");
+        check(!required_node<LineEdit>(*this, "Name").is_editable(), "The name stays");
+        break;
+    case 2:
+        capture("reincarnate-race.png");
+        press("Next");
+        break;
+    case 3:
+        if (creator_->step() == CreationStep::spell_choices)
+        {
+            capture("reincarnate-spells.png");
+            for (const auto &group : creator_->spell_choice_options().learning)
+                for (unsigned n = 0; n < group.count; ++n)
+                    creator_->spell_choice({.group = group.id, .option = group.options[n].id, .selected = true});
+            press("Next");
+        }
+        check(creator_->step() == CreationStep::combat_icon, "The combat icon follows");
+        refresh();
+        break;
+    case 4:
+        capture("reincarnate-icon.png");
+        press("Next");
+        check(creator_->step() == CreationStep::portrait, "The portrait follows");
+        break;
+    case 5:
+        capture("reincarnate-portrait.png");
+        press("Next");
+        check(creator_->step() == CreationStep::sheet && required_node<Button>(*this, "AddParty").is_visible(),
+              "The sheet offers Reincarnate");
+        break;
+    case 6:
+    {
+        capture("reincarnate-sheet.png");
+        const auto species = campaign_->reincarnation_species();
+        press("AddParty");
+        const auto &body = campaign_->member(slots[1]);
+        check(!body.vitals.dead && body.character.creation_data().race == species &&
+              !reincarnation_ && required_node<RolfTourView>(*this, "CampaignTown").is_visible(),
+              "The companion returns in its new body, back in town");
+        break;
+    }
+    case 7:
+        capture("reincarnate-town.png");
+        // A Human body whose Versatile feat is Magic Initiate, for its spell page.
+        begin_reincarnation({slots[0], slots[1], "reincarnate"}, "human");
+        creator_->training_choice({.group = "species:human:versatile", .option = "magic_initiate_cleric",
+                                   .selected = true});
+        refresh();
+        break;
+    case 8:
+        capture("reincarnate-human.png");
+        press("Next");
+        check(creator_->step() == CreationStep::spell_choices, "Magic Initiate's spells come next");
+        break;
+    case 9:
+        capture("reincarnate-human-spells.png");
+        break;
+    default:
+        press("Restart");
+        check(!reincarnation_ && !creator_->reincarnating(), "Cancel leaves the pages");
+        UtilityFunctions::print("Godot reincarnation passed: race page, spells, combat icon, portrait, sheet, new body.");
+        reincarnate_check_ = false;
+        get_tree()->quit(0);
+    }
 }
 
 void CharacterCreationView::show_pool()
@@ -609,6 +743,78 @@ bool CharacterCreationView::open_equipment_choice(MemberId member, std::uint64_t
     return true;
 }
 
+void CharacterCreationView::open_reincarnation(std::int64_t caster, std::int64_t target, String action)
+{
+    if (!campaign_)
+        return;
+    begin_reincarnation({static_cast<MemberId>(caster), static_cast<MemberId>(target),
+                         action.utf8().get_data()},
+                        campaign_->reincarnation_species());
+}
+
+void CharacterCreationView::begin_reincarnation(Reincarnation spell, const std::string &species)
+{
+    auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown"));
+    if (!town)
+        return;
+    creator_ = std::make_unique<CharacterCreator>(srd5::character_rules(), campaign_->rule_module(),
+               campaign_->member(spell.target).character, species);
+    reincarnation_ = std::move(spell);
+    completed_.reset();
+    added_to_party_ = false;
+    // A face of the new species, which the portrait page may change.
+    portrait_chosen_ = false;
+    recommend_portrait();
+    recommend_icon_size();
+    error_ = "";
+    town->hide();
+    town->set_process(false);
+    town->set_process_input(false);
+    required_node<Button>(*this, "ReturnParty").hide();
+    required_node<Control>(*this, "PartyPanel").hide();
+    refresh();
+}
+
+void CharacterCreationView::finish_reincarnation()
+{
+    if (!reincarnation_ || !completed_)
+        return;
+    campaign_->reincarnate(*srd5::character_rules(), reincarnation_->caster, reincarnation_->target,
+                           reincarnation_->action, creator_->reincarnation_choices(),
+                           creator_->appearance());
+    leave_reincarnation();
+}
+
+void CharacterCreationView::leave_reincarnation()
+{
+    reincarnation_.reset();
+    creator_ = std::make_unique<CharacterCreator>(
+                   srd5::character_rules(),
+                   static_cast<std::uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    completed_.reset();
+    added_to_party_ = false;
+    portrait_chosen_ = false;
+    auto *name = &required_node<LineEdit>(*this, "Name");
+    name->set_editable(true);
+    name->set_text("");
+    required_node<OptionButton>(*this, "Gender").set_disabled(false);
+    required_node<Button>(*this, "Restart").set_text(i18n::text(N_("Start over")));
+    required_node<Button>(*this, "AddParty").set_text(i18n::text(N_("Add to party")));
+    recommend_portrait();
+    refresh();
+    refresh_party();
+    if (auto *town = Object::cast_to<RolfTourView>(get_node_or_null("CampaignTown")))
+    {
+        town->show();
+        town->set_process(true);
+        town->set_process_input(true);
+        town->resume_party();
+    }
+    auto *back = &required_node<Button>(*this, "ReturnParty");
+    move_child(back, get_child_count() - 1);
+    back->show();
+}
+
 void CharacterCreationView::connect_party_button(const char *path, PartyAction action)
 {
     // A bound signal argument travels as a Variant, which carries the action
@@ -633,6 +839,11 @@ void CharacterCreationView::party_action(PartyAction action)
         String equipment_notice;
         const auto id =
             campaign_->state().roster.empty() ? 0 : campaign_->state().roster.at(roster_index_).id;
+        if (action == PartyAction::add_created && reincarnation_)
+        {
+            finish_reincarnation();
+            return;
+        }
         if (action == PartyAction::add_created)
         {
             if (!completed_ || added_to_party_)
@@ -719,6 +930,8 @@ void CharacterCreationView::party_action(PartyAction action)
                                   presentation::guarded(sheet, &TownSheetDialog::show_member));
                     town->connect("level_up_requested",
                                   presentation::guarded(this, &CharacterCreationView::open_advancement));
+                    town->connect("reincarnation_requested",
+                                  presentation::guarded(this, &CharacterCreationView::open_reincarnation));
                     presentation::attach_child(*this, std::move(owned));
                 }
                 town->show();

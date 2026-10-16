@@ -30,6 +30,45 @@ void Character::rename(std::string name)
     sheet_.name = std::move(name);
 }
 
+Character Character::recreated(const rules::CharacterRules &creation, const rules::RulesModule &rules,
+                               rules::CharacterDraft draft) const
+{
+    Character result(creation, std::move(draft), appearance_);
+    result.replay(rules, advancements_, spell_edits_, training_edits_, hall_training_);
+    result.inventory_ = inventory_;
+    return result;
+}
+
+void Character::replay(const rules::RulesModule &rules,
+                       std::span<const rules::AdvancementChoice> history,
+                       std::span<const SpellChoiceEdit> spell_edits,
+                       std::span<const TrainingChoiceEdit> training_edits,
+                       std::span<const HallTraining> hall_training)
+{
+    rules::VitalState scratch;
+    const auto at_level = [&]
+    {
+        const auto level = static_cast<unsigned>(sheet_.level);
+        for (const auto &edit : spell_edits)
+            if (edit.level == level)
+                choose_spells(rules, edit.choices, edit.rest_session,
+                              rules::SpellChoiceContext::long_rest, rules::ChoiceCompleteness::partial);
+        for (const auto &edit : training_edits)
+            if (edit.level == level)
+                replace_rest_training(rules, edit.selections, edit.rest_session);
+        for (const auto &trained : hall_training)
+            if (trained.level == level)
+                train_at_hall(rules, trained.grant);
+    };
+    at_level();
+    for (const auto &choice : history)
+    {
+        if (!advance(rules, scratch, choice))
+            throw std::runtime_error("Unsupported saved advancement choice");
+        at_level();
+    }
+}
+
 void Character::appearance(por::CharacterAppearance value)
 {
     por::validate_character_appearance(value);

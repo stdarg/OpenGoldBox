@@ -1,6 +1,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
+#include "opengold/character_creator.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <filesystem>
@@ -235,6 +236,44 @@ void secrets_checks()
     auto fireball = field(*dummies, bard(10, "fireball").sheet());
     check(offered(*fireball, "fireball"), "A Bard of 10 casts Fireball");
 }
+// Reincarnate (LEVELS-5): an Elf's Keen Senses skill goes with its body, but
+// one the Bard built Expertise on stays.
+void reincarnation_checks()
+{
+    auto elf = draft();
+    elf.race = "elf";
+    elf.training["species:elf:lineage"] = {"wood_elf"};
+    elf.training["species:elf:keen_senses"] = {"perception"};
+    elf.training["species:elf:ability"] = {"charisma"};
+    Character hero(*srd5::character_rules(), elf, {});
+    VitalState life{hero.sheet().hit_points, false, {}};
+    const auto rules = module();
+    auto choice = rules->default_advancement(hero.sheet());
+    choice.training["class:bard:expertise:2"] = {"perception", "performance"};
+    check(hero.advance(*rules, life, choice), "Expertise in Perception at 2");
+    const auto body = reincarnation_draft(hero, "dwarf");
+    check(body.training.contains("species:dwarf:kept") &&
+          body.training.at("species:dwarf:kept") == std::vector<std::string> {"perception"} &&
+          !body.training.contains("species:elf:keen_senses"), "The new body keeps Perception");
+    auto bare = body;
+    bare.training.erase("species:dwarf:kept");
+    bool refused = false;
+    try
+    {
+        (void)hero.recreated(*srd5::character_rules(), *rules, bare);
+    }
+    catch (const std::exception &)
+    {
+        refused = true;
+    }
+    check(refused, "Without it, the Expertise would stand on nothing");
+    const auto dwarf = hero.recreated(*srd5::character_rules(), *rules, body);
+    check(granted(dwarf.sheet(), "skill:", 1) && dwarf.sheet().level == 2 &&
+          std::any_of(dwarf.sheet().grants.begin(), dwarf.sheet().grants.end(), [](const auto & g)
+    {
+        return g.id == "expertise:perception";
+    }), "Its Expertise stands on the kept skill");
+}
 } // namespace
 
 int main()
@@ -245,6 +284,7 @@ int main()
         inspiration_checks();
         countercharm_checks();
         secrets_checks();
+        reincarnation_checks();
     }
     catch (const std::exception &error)
     {

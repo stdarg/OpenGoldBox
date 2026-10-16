@@ -1155,7 +1155,11 @@ The user answered the questions left after every class reached level 15:
   10 feet thick instead of 50.
 - **Reincarnate** reuses the character-creation species page for the new
   body, and takes the same offering as Raise Dead, 300 gp × the character's
-  level.
+  level. The SRD leaves its Hit Points open: the new body has all of them,
+  without Raise Dead's penalty. A Human body whose Versatile feat is Magic
+  Initiate picks its spells on the next page. A species skill the character
+  built Expertise on stays with the new body, though the SRD takes the old
+  species' traits away.
 
 ## LEVELS-3 (2026-10-15): the open decisions of levels 11–15
 

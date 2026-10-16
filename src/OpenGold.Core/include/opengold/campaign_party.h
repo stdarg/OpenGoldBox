@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_CAMPAIGN_PARTY_H
 #define OPENGOLD_CAMPAIGN_PARTY_H
 #include "opengold/character.h"
+#include "opengold/character_creator.h"
 #include "opengold/coin_purse.h"
 #include "opengold/equipment.h"
 #include "opengold/training_hall.h"
@@ -179,6 +180,16 @@ class CampaignParty
                                std::string name);
     // Whether the member is a simulacrum, which gains no levels.
     [[nodiscard]] bool is_simulacrum(MemberId id) const;
+    // Reincarnate from camp (LEVELS-5): the species of the body the next
+    // casting forms. The dice are read, not spent, until reincarnate().
+    [[nodiscard]] std::string reincarnation_species() const;
+    // `action`, one of the caster's camp actions for Reincarnate, gives the
+    // dead `target` a body of reincarnation_species() (reincarnation_draft()),
+    // with that species' `choices` and `appearance`; Raise Dead's offering is
+    // paid. Atomic.
+    void reincarnate(const rules::CharacterRules &creation, MemberId caster, MemberId target,
+                     std::string_view action, ReincarnationChoices choices,
+                     por::CharacterAppearance appearance);
     void rejoin(MemberId id);
     void remove(MemberId id);
     [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,

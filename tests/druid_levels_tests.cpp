@@ -1,6 +1,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
+#include "opengold/character_creator.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <cstdlib>
@@ -85,6 +86,20 @@ Character druid(unsigned level, const std::string &spell = {}, std::string fury 
         check(hero.advance(*rules, life, choice), "An ordinary level-up");
     }
     return hero;
+}
+
+template <typename F>
+void check_throws(F action, const std::string &message)
+{
+    try
+    {
+        action();
+    }
+    catch (const std::exception &)
+    {
+        return;
+    }
+    throw std::runtime_error(message);
 }
 
 bool offered(const CombatSession &c, std::string_view verb, EntityId target = 0)
@@ -303,6 +318,90 @@ void tsunami_checks()
     check(unit(*c, 98).cell.x == 13, "The wave carries the foe to the field's edge");
     check(logged(*c, "Druid loses Concentration."), "Off the field, the wave is spent");
 }
+// Reincarnate (LEVELS-5): a dead member returns whole in a body of a rolled
+// species, which the dice read beforehand name; Raise Dead's offering.
+void reincarnate_checks()
+{
+    CampaignParty party(module());
+    const auto healer = party.add_pc(druid(9, "reincarnate"));
+    auto fallen_draft = draft();
+    fallen_draft.name = "Fallen";
+    const auto fallen = party.add_pc(Character(*srd5::character_rules(), fallen_draft, {}));
+    const auto actions = party.camp_actions(healer);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "reincarnate";
+    }), "Reincarnate is a camp action");
+    // A death in a fight: the brute hits the Fallen until it dies.
+    const auto dummies = dummy_rules();
+    const std::vector<std::string> gear{"quarterstaff"};
+    auto c = dummies->create({{12, 5, std::vector<Terrain>(60)},
+        {   {5, "campaign-character", "Fallen", Side::party, {1, 2},
+                dummies->character_profile(party.member(fallen).character.sheet(), gear).data},
+            {7, "dummy", "Watcher", Side::party, {10, 4}},
+            {98, "brute", "Foe", Side::opposition, {2, 2}}
+        }},
+    1);
+    for (unsigned turns = 0; turns < 40 && !unit(*c, 5).dead; ++turns)
+        if (!(c->snapshot().actor == 98 && submit(*c, "melee", 5)))
+            check(submit(*c, "end") || submit(*c, "decline"), "Pass the turn");
+    check(unit(*c, 5).dead, "The brute kills the Fallen");
+    auto state = party.state();
+    for (auto &m : state.roster)
+        if (m.id == fallen)
+            m.vitals = unit(*c, 5).persistent;
+    coins(state.wealth, Coin::gold) = 1000;
+    party.restore(state);
+    check_throws([&]
+    {
+        party.use_camp_action(healer, fallen, "reincarnate");
+    }, "Reincarnate is not an ordinary camp action");
+    const auto species = party.reincarnation_species();
+    check(party.reincarnation_species() == species, "Reading the species spends no dice");
+    // A Human body whose Versatile feat is Magic Initiate learns its spells.
+    CharacterCreator human(srd5::character_rules(), party.rule_module(),
+                           party.member(fallen).character, "human");
+    human.training_choice({.group = "species:human:versatile", .option = "magic_initiate_cleric",
+                           .selected = true});
+    check(human.species_complete(), "The Human's choices are made");
+    human.next();
+    check(human.step() == CreationStep::spell_choices, "Magic Initiate's spells come next");
+    for (const auto &group : human.spell_choice_options().learning)
+    {
+        check(group.id.starts_with("feat:magic_initiate_cleric:"), "Only Magic Initiate's spells");
+        for (unsigned n = 0; n < group.count; ++n)
+            human.spell_choice({.group = group.id, .option = group.options[n].id, .selected = true});
+    }
+    human.next();
+    check(human.step() == CreationStep::combat_icon, "Then the combat icon");
+    human.next();
+    human.next();
+    check(human.step() == CreationStep::sheet && human.create_character().sheet().level == 1 &&
+          !human.reincarnation_choices().initiate_spells.empty(), "The Human body is made");
+    // The rolled species, through its pages.
+    CharacterCreator pages(srd5::character_rules(), party.rule_module(),
+                           party.member(fallen).character, species);
+    while (pages.step() != CreationStep::sheet)
+        pages.next();
+    party.reincarnate(*srd5::character_rules(), healer, fallen, "reincarnate",
+                      pages.reincarnation_choices(), pages.appearance());
+    const auto &body = party.member(fallen);
+    auto race = body.character.sheet().race;
+    std::transform(race.begin(), race.end(), race.begin(), [](unsigned char letter)
+    {
+        return static_cast<char>(std::tolower(letter));
+    });
+    check(body.character.creation_data().race == species && race == species,
+          "The new body is of the species read");
+    check(!body.vitals.dead && body.vitals.hit_points == party.hit_point_maximum(fallen),
+          "It returns whole");
+    check(coins(party.state().wealth, Coin::gold) == 700, "Raise Dead's offering: 300 gp a level");
+    const auto bytes = encode_campaign(party, nullptr, "reincarnate");
+    CampaignParty next(module());
+    next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(), "reincarnate",
+                                 nullptr).party);
+    check(encode_campaign(next, nullptr, "reincarnate") == bytes, "The new body saves and reloads");
+}
 } // namespace
 
 int main()
@@ -316,6 +415,7 @@ int main()
         spells_checks();
         high_checks();
         tsunami_checks();
+        reincarnate_checks();
     }
     catch (const std::exception &error)
     {

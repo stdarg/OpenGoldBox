@@ -409,29 +409,7 @@ template <bool Reading> struct SaveCodec
                 // Built once the history is known to be sound: evaluating the
                 // character is the expensive part (Effective C++ Item 26).
                 Character character(*creation, std::move(draft), appearance);
-                rules::VitalState scratch;
-                auto replay = [&]
-                {
-                    for (const auto &edit : edits)
-                        if (edit.level == static_cast<unsigned>(character.sheet().level))
-                            character.choose_spells(*module, edit.choices, edit.rest_session,
-                                                    rules::SpellChoiceContext::long_rest,
-                                                    rules::ChoiceCompleteness::partial);
-                    for (const auto &edit : training)
-                        if (edit.level == static_cast<unsigned>(character.sheet().level))
-                            character.replace_rest_training(*module, edit.selections,
-                                                            edit.rest_session);
-                    for (const auto &trained : hall)
-                        if (trained.level == static_cast<unsigned>(character.sheet().level))
-                            character.train_at_hall(*module, trained.grant);
-                };
-                replay();
-                for (const auto &choice : history)
-                {
-                    require(character.advance(*module, scratch, choice),
-                            "Unsupported saved advancement choice");
-                    replay();
-                }
+                character.replay(*module, history, edits, training, hall);
                 Inventory inventory;
                 field(inventory);
                 character.replace_inventory(std::move(inventory));

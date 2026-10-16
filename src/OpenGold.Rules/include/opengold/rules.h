@@ -889,6 +889,22 @@ class RulesModule
         (void)original;
         throw std::runtime_error("This rules module has no Simulacrum");
     }
+    // The species of a body Reincarnate forms (SRD 5.2.1 p. 158), rolled
+    // with `random_state`; use_camp_action() has revived the member.
+    [[nodiscard]] virtual std::string reincarnation_species(RandomState &random_state) const
+    {
+        (void)random_state;
+        throw std::runtime_error("This rules module has no Reincarnate");
+    }
+    // A member's `state` fitted to its sheet `after` a change of body, from
+    // `before`: what it had, within what the new body allows.
+    [[nodiscard]] virtual VitalState fitted_state(const CharacterSheet &before,
+            const VitalState &state, const CharacterSheet &after) const
+    {
+        (void)before;
+        (void)after;
+        return state;
+    }
     // Whether the party's camp wards (Magic Circle) keep away every creature of
     // these definitions, so they cannot interrupt the rest.
     [[nodiscard]] virtual bool keeps_away(std::span<const CampTarget> party,

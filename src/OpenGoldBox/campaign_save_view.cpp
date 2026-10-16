@@ -131,6 +131,8 @@ void CharacterCreationView::load_campaign(const std::filesystem::path &path)
                       presentation::guarded(sheet, &TownSheetDialog::show_member));
         town->connect("level_up_requested",
                       presentation::guarded(this, &CharacterCreationView::open_advancement));
+        town->connect("reincarnation_requested",
+                      presentation::guarded(this, &CharacterCreationView::open_reincarnation));
         town->connect("save_requested", presentation::guarded(this, &CharacterCreationView::open_saves));
         presentation::attach_child(*this, std::move(owned));
     }

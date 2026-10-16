@@ -451,6 +451,10 @@ void CharacterCreationView::refresh()
         if (i == static_cast<unsigned>(CreationStep::spell_choices) &&
                 !creator_->has_spell_choices())
             continue;
+        // A new body keeps the alignment, scores, class and training.
+        if (creator_->reincarnating() && i >= static_cast<unsigned>(CreationStep::alignment) &&
+                i <= static_cast<unsigned>(CreationStep::training))
+            continue;
         progress +=
             (i == static_cast<unsigned>(step) ? "> " : "  ") + std::to_string(++ordinal) + ". " +
             i18n::utf8(i == static_cast<unsigned>(CreationStep::combat_icon) ? N_("Combat icon")
@@ -632,7 +636,7 @@ void CharacterCreationView::refresh()
             presentation::spell_rows(required_node<VBoxContainer>(*this, "SpellChoices/Rows"),
                                      "BookChoices");
         presentation::refresh_spell_groups(
-            *book, creator_->rules().spell_choice_options(d),
+            *book, creator_->spell_choice_options(),
             d.spells.value_or(opengold::rules::SpellChoices{}),
             presentation::guarded(this, &CharacterCreationView::creation_spell_toggled),
             i18n::text);
@@ -717,6 +721,36 @@ void CharacterCreationView::refresh()
         .call("render", presentation::sheet_text(*completed_));
     }
     required_node<Label>(*this, "Instructions").set_text(i18n::text(instructions));
+    // The party waits while a new body is made.
+    required_node<Button>(*this, "Party").set_visible(!creator_->reincarnating());
+    if (creator_->reincarnating())
+    {
+        // Only the species' choices change on the race page.
+        auto *list = &required_node<ItemList>(*this, "Choices");
+        const auto races = creator_->rules().choices(CreationField::race);
+        for (unsigned i = 0; i < races.size() && step == CreationStep::race; ++i)
+            list->set_item_disabled(i, races[i].id != d.race);
+        required_node<OptionButton>(*this, "Gender").set_disabled(true);
+        auto *name = &required_node<LineEdit>(*this, "Name");
+        name->set_text(String::utf8(d.name.c_str()));
+        name->set_editable(false);
+        required_node<Button>(*this, "Restart").set_text(i18n::text(N_("Cancel")));
+        required_node<Button>(*this, "AddParty").set_text(i18n::text(N_("Reincarnate")));
+        String species;
+        for (const auto &race : races)
+            if (race.id == d.race)
+                species = i18n::text(race.label);
+        if (step == CreationStep::race)
+            required_node<Label>(*this, "Instructions")
+            .set_text(i18n::format(N_("{name} returns in a new body: {species}. Make the species' choices, then continue."),
+            {{"name", String::utf8(d.name.c_str())}, {"species", species}}));
+        else if (step == CreationStep::spell_choices)
+            required_node<Label>(*this, "Instructions")
+            .set_text(i18n::text(N_("Choose the spells Magic Initiate teaches.")));
+        else if (step == CreationStep::sheet)
+            required_node<Label>(*this, "Instructions")
+            .set_text(i18n::text(N_("Review the new body, then cast Reincarnate.")));
+    }
     // The portrait page names the character's race, gender and class so a
     // matching portrait is easy to find.
     const auto chosen_label = [&](CreationField field)
@@ -817,7 +851,9 @@ void CharacterCreationView::cantrip_toggled(bool selected, String option)
 
 void CharacterCreationView::training_toggled(bool selected, String group, String option)
 {
-    if (refreshing_ || !creator_ || creator_->step() != CreationStep::training)
+    // The training page, or a species' choices on the race page.
+    if (refreshing_ || !creator_ ||
+            (creator_->step() != CreationStep::training && creator_->step() != CreationStep::race))
         return;
     // A radio button turning off only means another of its group was chosen,
     // and that choice replaces it.
@@ -866,6 +902,15 @@ void CharacterCreationView::back()
 
 void CharacterCreationView::restart()
 {
+    // While reincarnating, the button cancels the spell.
+    if (reincarnation_)
+    {
+        perform([&]
+        {
+            leave_reincarnation();
+        });
+        return;
+    }
     perform(
         [&]
     {
@@ -1125,12 +1170,17 @@ void CharacterCreationView::_process(double)
             expedition_check();
             return;
         }
+        if (reincarnate_check_)
+        {
+            reincarnate_check();
+            return;
+        }
     }
     catch (const std::exception &e)
     {
         error_ = i18n::text(e.what());
         UtilityFunctions::push_error(error_);
-        if (expedition_check_ || party_check_ || defeat_check_)
+        if (expedition_check_ || party_check_ || defeat_check_ || reincarnate_check_)
         {
             get_tree()->quit(1);
             return;

@@ -965,6 +965,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "conjure_fey", 11},
     SpellAccessRow{CharacterClass::druid, "animal_shapes", 15},
     SpellAccessRow{CharacterClass::druid, "tsunami", 15},
+    SpellAccessRow{CharacterClass::druid, "reincarnate", 9},
     SpellAccessRow{CharacterClass::druid, "wall_of_thorns", 11},
     // Druid level-3 spells, with the level-3 slot of Druid level 5.
     SpellAccessRow{CharacterClass::druid, "call_lightning", 5},
@@ -21093,7 +21094,7 @@ class Module final : public RulesModule
             result.description = "A feat or ability points.\nWild Shape: the Tiger.";
         if (klass == CharacterClass::druid && result.level == 9)
             result.description =
-                "A level 5 spell slot and Druid spells: Antilife Shell, Cone of Cold, Conjure Elemental, Contagion, Greater Restoration, Insect Plague, Mass Cure Wounds and Wall of Stone; your land's next Circle Spell.\nProficiency Bonus +4.";
+                "A level 5 spell slot and Druid spells: Antilife Shell, Cone of Cold, Conjure Elemental, Contagion, Greater Restoration, Insect Plague, Mass Cure Wounds, Reincarnate and Wall of Stone; your land's next Circle Spell.\nProficiency Bonus +4.";
         if (klass == CharacterClass::druid && result.level == 10)
             result.description =
                 "Nature's Ward: you cannot be Poisoned, and you resist your land's element: Fire (arid), Cold (polar), Lightning (temperate) or Poison (tropical).\nLand's Aid deals and heals 3d6. A fourth cantrip.";
@@ -22431,7 +22432,7 @@ class Module final : public RulesModule
         // Revivify's offering: 300 gp times the revived member's level (LEVELS-1).
         const auto *spell = detail::find_spell(action);
         return spell && (spell->rider == detail::Rider::revivify || spell->id == "raise_dead" ||
-                         spell->id == "resurrection")
+                         spell->id == "resurrection" || spell->id == "reincarnate")
                ? static_cast<unsigned>(300 * target.level) : 0;
     }
 
@@ -22443,6 +22444,33 @@ class Module final : public RulesModule
             return camp_action_gold(target, action);
         const auto patient = camp_actor(target, state);
         return 100u * static_cast<unsigned>(std::max(0, max_hp(patient) - patient.life.hp));
+    }
+
+    std::string reincarnation_species(RandomState &random_state) const override
+    {
+        // A d10, rolled again on a 1. Same SplitMix64 as combat.
+        constexpr std::array<std::string_view, 9> species{"dragonborn", "dwarf", "elf", "gnome",
+            "goliath", "halfling", "human", "orc", "tiefling"};
+        auto rng = random_state.value;
+        int rolled = 1;
+        while (rolled == 1)
+            rolled = roll_die(rng, 10);
+        random_state.value = rng;
+        return std::string(species[static_cast<std::size_t>(rolled - 2)]);
+    }
+
+    VitalState fitted_state(const CharacterSheet &before, const VitalState &state,
+                            const CharacterSheet &after) const override
+    {
+        auto actor = camp_actor(before, state);
+        actor.definition = character_definition(character_profile(after, {}).data);
+        const auto &d = actor.definition;
+        // A species' own casts (a Tiefling's legacy spells) go with the old body.
+        actor.free_casts = std::min(actor.free_casts, free_cast_capacity(d));
+        actor.initiate_casts &= initiate_capacity(d);
+        actor.lay_on_hands = std::min(actor.lay_on_hands, lay_capacity(d));
+        actor.life.hp = std::min(actor.life.hp, max_hp(actor));
+        return vitals(actor);
     }
 
     VitalState simulacrum_state(const CharacterSheet &original) const override
@@ -22680,15 +22708,20 @@ class Module final : public RulesModule
             return;
         }
         // Resurrection: an hour's casting on any dead member, who returns with
-        // all its Hit Points (LEVELS-3: even one turned to dust).
+        // all its Hit Points (LEVELS-3: even one turned to dust). Reincarnate
+        // forms a new body, whole and without Raise Dead's penalty, for a
+        // member dead up to ten days; a simulacrum is no Humanoid.
         const auto *raise = detail::find_spell(action);
         const bool resurrection = raise && raise->id == "resurrection";
-        if (raise && (raise->id == "raise_dead" || resurrection))
+        const bool reincarnation = raise && raise->id == "reincarnate";
+        if (raise && (raise->id == "raise_dead" || resurrection || reincarnation))
         {
             if (self || !patient.life.dead ||
                     (!resurrection && (!detail::has_effect(patient.effects, detail::EffectKind::deceased) ||
-                                       detail::has_effect(patient.effects, detail::EffectKind::dust))))
+                                       detail::has_effect(patient.effects, detail::EffectKind::dust))) ||
+                    (reincarnation && detail::has_effect(patient.effects, detail::EffectKind::simulacrum)))
                 throw std::runtime_error(resurrection ? "Resurrection needs a dead member"
+                                         : reincarnation ? "Reincarnate needs a Humanoid dead up to ten days"
                                          : "Raise Dead needs a member dead up to ten days");
             pay_for_spell(caster, action, *raise);
             std::erase_if(patient.effects.active, [](const auto & e)
@@ -22700,7 +22733,13 @@ class Module final : public RulesModule
             patient.life.successes = patient.life.failures = 0;
             patient.life.stable = false;
             patient.life.recovery = {};
-            patient.life.hp = resurrection ? max_hp(patient) : 1;
+            patient.life.hp = resurrection || reincarnation ? max_hp(patient) : 1;
+            if (reincarnation)
+            {
+                user_state = vitals(caster);
+                target_state = vitals(healed);
+                return;
+            }
             // Camp effects carry scope 1: there is no encounter to source them.
             if (detail::can_apply(patient.effects))
                 detail::apply_spell_benefit(patient.effects, detail::EffectSource{.scope = 1, .actor = 1},
@@ -23770,7 +23809,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.233", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.234", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

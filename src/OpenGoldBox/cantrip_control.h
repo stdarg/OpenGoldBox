@@ -10,7 +10,7 @@ void refresh_cantrip_controls(godot::Node &parent, const opengold::CharacterCrea
 {
     using namespace godot;
     auto *rows = &required_node<VBoxContainer>(parent, "SpellChoices/Rows");
-    const auto group = creator.rules().cantrip_options(creator.draft());
+    const auto group = creator.cantrip_options();
     const auto picked = creator.draft().cantrips.value_or(std::vector<std::string> {});
     required_node<Label>(*rows, "Count").set_text(tr(group.label) + " (" +
             String::num_uint64(picked.size()) + " / " +

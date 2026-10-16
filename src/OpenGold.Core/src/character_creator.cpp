@@ -17,6 +17,34 @@ std::vector<std::string> selected_species(const CharacterDraft &draft, const std
 }
 } // namespace
 
+CharacterDraft reincarnation_draft(const Character &former, std::string_view species)
+{
+    auto draft = former.creation_data();
+    const auto versatile = selected_species(draft, "species:human:versatile");
+    if (draft.spells && !versatile.empty())
+        std::erase_if(draft.spells->learning, [&](const auto & group)
+    {
+        return group.first.starts_with("feat:" + versatile.front() + ":");
+    });
+    std::erase_if(draft.training, [](const auto & group)
+    {
+        return group.first.starts_with("species:");
+    });
+    draft.race = species;
+    std::vector<std::string> kept;
+    const auto &grants = former.sheet().grants;
+    for (const auto &grant : grants)
+        if (grant.source_id.starts_with("species:") && grant.id.starts_with("skill:") &&
+                std::any_of(grants.begin(), grants.end(), [&](const auto & other)
+    {
+        return other.id == "expertise:" + grant.id.substr(6);
+        }))
+        kept.push_back(grant.id.substr(6));
+    if (!kept.empty())
+        draft.training["species:" + std::string(species) + ":kept"] = std::move(kept);
+    return draft;
+}
+
 CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::uint64_t seed)
     : rules_(std::move(rules)), random_{seed}, gold_random_{~seed}
 {
@@ -25,13 +53,99 @@ CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> rules, std::u
     restart();
 }
 
+CharacterCreator::CharacterCreator(std::unique_ptr<CharacterRules> creation, const RulesModule &rules,
+                                   const Character &former, std::string_view species)
+    : rules_(std::move(creation)), random_{0}, gold_random_{0}, former_(former), module_(&rules)
+{
+    if (!rules_)
+        throw std::runtime_error("Character creator requires a rules module");
+    for (const auto &grant : former.sheet().grants)
+        if (!grant.source_id.starts_with("species:"))
+            held_.insert(grant.id);
+    draft_ = reincarnation_draft(former, species);
+    appearance_ = former.appearance();
+    fill_species(draft_);
+}
+
 std::vector<TrainingChoiceGroup> CharacterCreator::training_options() const
 {
-    return rules_->training_options(draft_);
+    auto groups = rules_->training_options(draft_);
+    if (former_)
+        for (auto &group : groups)
+            if (group.id.starts_with("species:") && !group.id.ends_with(":kept"))
+                std::erase_if(group.options, [&](const auto & option)
+        {
+            return held_.contains("skill:" + option.id) || held_.contains("cantrip:" + option.id) ||
+                   held_.contains("spell:" + option.id);
+        });
+    return groups;
+}
+
+TrainingChoiceGroup CharacterCreator::cantrip_options() const
+{
+    return former_ ? TrainingChoiceGroup{} : rules_->cantrip_options(draft_);
+}
+
+std::string CharacterCreator::initiate_group_prefix() const
+{
+    const auto versatile = selected_species(draft_, "species:human:versatile");
+    return versatile.empty() || !versatile.front().starts_with("magic_initiate_") ? std::string{}
+           : "feat:" + versatile.front() + ":";
+}
+
+SpellChoiceOptions CharacterCreator::spell_choice_options() const
+{
+    auto options = rules_->spell_choice_options(draft_);
+    if (!former_)
+        return options;
+    SpellChoiceOptions initiate;
+    const auto prefix = initiate_group_prefix();
+    for (auto &group : options.learning)
+        if (!prefix.empty() && group.id.starts_with(prefix))
+        {
+            std::erase_if(group.options, [&](const auto & option)
+            {
+                return held_.contains("spell:" + option.id) || held_.contains("cantrip:" + option.id);
+            });
+            group.count = std::min(group.count, static_cast<unsigned>(group.options.size()));
+            initiate.learning.push_back(std::move(group));
+        }
+    return initiate;
+}
+
+ReincarnationChoices CharacterCreator::reincarnation_choices() const
+{
+    if (!former_)
+        throw std::runtime_error("Not a reincarnation");
+    ReincarnationChoices choices;
+    for (const auto &[group, picks] : draft_.training)
+        if (group.starts_with("species:") && !group.ends_with(":kept"))
+            choices.training[group] = picks;
+    const auto prefix = initiate_group_prefix();
+    if (draft_.spells && !prefix.empty())
+        for (const auto &[group, picks] : draft_.spells->learning)
+            if (group.starts_with(prefix))
+                choices.initiate_spells[group] = picks;
+    return choices;
+}
+
+void CharacterCreator::check_reincarnation() const
+{
+    try
+    {
+        (void)former_->recreated(*rules_, *module_, draft_);
+    }
+    catch (const std::exception &)
+    {
+        throw std::runtime_error(
+            "These choices clash with what the character learned later. Choose others.");
+    }
 }
 
 void CharacterCreator::restart()
 {
+    if (former_)
+        throw std::runtime_error("A new body keeps the character");
     draft_ = {};
     appearance_ = {};
     step_ = CreationStep::race;
@@ -55,9 +169,55 @@ void CharacterCreator::require_editable() const
         throw std::runtime_error("Return to editing before changing the character.");
 }
 
+void CharacterCreator::fill_species(CharacterDraft &candidate) const
+{
+    // A new species starts with the first option of each of its choices,
+    // shown on the race page for the player to change. A choice another field
+    // took away (Versatile's feat, when the background gives that feat; a
+    // Skilled skill the new background gives) is refilled the same way.
+    // A filled choice can bring another (Versatile's Skilled, its skills).
+    const auto offered = [&]
+    {
+        auto groups = rules_->training_options(candidate);
+        if (former_)
+            for (auto &group : groups)
+                if (!group.id.ends_with(":kept"))
+                    std::erase_if(group.options, [&](const auto & option)
+            {
+                return held_.contains("skill:" + option.id) || held_.contains("cantrip:" + option.id) ||
+                       held_.contains("spell:" + option.id);
+            });
+        return groups;
+    };
+    for (bool filled = true; filled;)
+    {
+        filled = false;
+        for (const auto &group : offered())
+        {
+            // A partial choice the player left, untouched by this change, stays.
+            const auto picked = selected_species(candidate, group.id);
+            if (!group.id.starts_with("species:") || picked.size() >= group.count ||
+                    (!picked.empty() && picked == selected_species(draft_, group.id)))
+                continue;
+            auto &picks = candidate.training[group.id];
+            for (const auto &option : group.options)
+                if (picks.size() < group.count &&
+                        std::find(picks.begin(), picks.end(), option.id) == picks.end())
+                {
+                    picks.push_back(option.id);
+                    filled = true;
+                }
+            if (picks.empty())
+                candidate.training.erase(group.id);
+        }
+    }
+}
+
 void CharacterCreator::select(CreationField field, std::string_view id)
 {
     require_editable();
+    if (former_)
+        throw std::runtime_error("A new body keeps the character");
     const auto choices = rules_->choices(field);
     if (std::none_of(choices.begin(), choices.end(),
                      [&](const auto & c)
@@ -131,39 +291,15 @@ void CharacterCreator::select(CreationField field, std::string_view id)
     if (candidate.cantrips->size() > cantrips.count)
         candidate.cantrips->resize(cantrips.count);
     prune_training(candidate);
-    // A new species starts with the first option of each of its choices,
-    // shown on the race page for the player to change. A choice another field
-    // took away (Versatile's feat, when the background gives that feat; a
-    // Skilled skill the new background gives) is refilled the same way.
-    // A filled choice can bring another (Versatile's Skilled, its skills).
-    for (bool filled = true; filled;)
-    {
-        filled = false;
-        for (const auto &group : rules_->training_options(candidate))
-        {
-            // A partial choice the player left, untouched by this change, stays.
-            const auto picked = selected_species(candidate, group.id);
-            if (!group.id.starts_with("species:") || picked.size() >= group.count ||
-                    (!picked.empty() && picked == selected_species(draft_, group.id)))
-                continue;
-            auto &picks = candidate.training[group.id];
-            for (const auto &option : group.options)
-                if (picks.size() < group.count &&
-                        std::find(picks.begin(), picks.end(), option.id) == picks.end())
-                {
-                    picks.push_back(option.id);
-                    filled = true;
-                }
-            if (picks.empty())
-                candidate.training.erase(group.id);
-        }
-    }
+    fill_species(candidate);
     draft_ = std::move(candidate);
 }
 
 void CharacterCreator::cantrip_choice(std::string_view option, bool selected)
 {
     require_editable();
+    if (former_)
+        throw std::runtime_error("A new body keeps the character's cantrips");
     const auto group = rules_->cantrip_options(draft_);
     if (std::none_of(group.options.begin(), group.options.end(),
                      [&](const auto & o)
@@ -191,7 +327,7 @@ void CharacterCreator::spell_choice(ChoiceToggle toggle)
 {
     const auto [group, option, selected] = toggle;
     require_editable();
-    const auto options = rules_->spell_choice_options(draft_);
+    const auto options = spell_choice_options();
     auto next = draft_;
     if (!next.spells)
         next.spells.emplace();
@@ -254,25 +390,27 @@ void CharacterCreator::spell_choice(ChoiceToggle toggle)
     draft_ = std::move(next);
 }
 
-// The Spell Choices step appears for cantrips, spells to learn or spells to prepare.
+// The Spell Choices step appears for cantrips, spells to learn or spells to
+// prepare; while reincarnating, for Versatile Magic Initiate's spells alone.
 bool CharacterCreator::has_spell_choices() const
 {
-    if (!rules_->cantrip_options(draft_).options.empty())
+    if (!former_ && !rules_->cantrip_options(draft_).options.empty())
         return true;
-    const auto options = rules_->spell_choice_options(draft_);
+    const auto options = spell_choice_options();
     return options.may_prepare || !options.learning.empty();
 }
 
 bool CharacterCreator::spell_choices_complete() const
 {
-    const auto options = rules_->spell_choice_options(draft_);
+    const auto options = spell_choice_options();
     if (!options.may_prepare && options.learning.empty())
         return true;
     if (!draft_.spells)
         return false;
     const auto cantrips = rules_->cantrip_options(draft_);
-    if (!draft_.cantrips ||
-            draft_.cantrips->size() != std::min<std::size_t>(cantrips.count, cantrips.options.size()))
+    if (!former_ && (!draft_.cantrips ||
+                     draft_.cantrips->size() !=
+                     std::min<std::size_t>(cantrips.count, cantrips.options.size())))
         return false;
     for (const auto &group : options.learning)
     {
@@ -340,6 +478,8 @@ void CharacterCreator::training_choice(ChoiceToggle toggle)
     {
         return g.id == id;
     });
+    if (former_ && (!id.starts_with("species:") || id.ends_with(":kept")))
+        throw std::runtime_error("A new body changes only the species' choices");
     if (group == groups.end() || std::none_of(group->options.begin(), group->options.end(),
             [&](const auto & o)
 {
@@ -363,6 +503,22 @@ void CharacterCreator::training_choice(ChoiceToggle toggle)
     else if (!selected && found != values.end())
         values.erase(found);
     prune_training(candidate);
+    // A Versatile feat no longer Magic Initiate takes its spells with it.
+    if (former_ && candidate.spells)
+    {
+        const auto keep = [&]
+        {
+            const auto versatile = selected_species(candidate, "species:human:versatile");
+            return versatile.empty() ? std::string{} : "feat:" + versatile.front() + ":";
+        }();
+        const auto before = reincarnation_draft(*former_, candidate.race);
+        std::erase_if(candidate.spells->learning, [&](const auto & entry)
+        {
+            return entry.first.starts_with("feat:magic_initiate_") &&
+                   (keep.empty() || !entry.first.starts_with(keep)) &&
+                   (!before.spells || !before.spells->learning.contains(entry.first));
+        });
+    }
     draft_ = std::move(candidate);
 }
 
@@ -405,6 +561,8 @@ bool CharacterCreator::training_complete() const
 void CharacterCreator::target_class(std::string_view id, bool selected)
 {
     require_editable();
+    if (former_)
+        throw std::runtime_error("A new body keeps the character");
     (void)rules_->class_requirements(id);
     const auto found = std::find(draft_.target_classes.begin(), draft_.target_classes.end(), id);
     if (selected && found == draft_.target_classes.end())
@@ -416,6 +574,8 @@ void CharacterCreator::target_class(std::string_view id, bool selected)
 void CharacterCreator::select_adjustment(unsigned index)
 {
     require_editable();
+    if (former_)
+        throw std::runtime_error("A new body keeps the character");
     if (index >= rules_->adjustments(draft_.background).size())
         throw std::runtime_error("Invalid score adjustment");
     draft_.adjustment = index;
@@ -424,6 +584,8 @@ void CharacterCreator::select_adjustment(unsigned index)
 void CharacterCreator::roll()
 {
     require_editable();
+    if (former_)
+        throw std::runtime_error("A new body keeps the character's scores");
     draft_.rolls = rules_->roll(random_);
     draft_.rolled = true;
     draft_.assignment = {6, 6, 6, 6, 6, 6}; // Every rolled result starts unassigned.
@@ -466,6 +628,8 @@ void CharacterCreator::swap_scores(rules::Ability first, rules::Ability second)
 void CharacterCreator::name(std::string text)
 {
     require_editable();
+    if (former_)
+        throw std::runtime_error("A new body keeps the character's name");
     const auto first = text.find_first_not_of(" \t\r\n"), last = text.find_last_not_of(" \t\r\n");
     draft_.name = first == std::string::npos ? "" : text.substr(first, last - first + 1);
 }
@@ -488,6 +652,13 @@ Character CharacterCreator::create_character() const
 {
     if (step_ != CreationStep::sheet)
         throw std::runtime_error("Finish character creation before exporting the character");
+    if (former_)
+    {
+        check_reincarnation();
+        auto body = former_->recreated(*rules_, *module_, draft_);
+        body.appearance(appearance_);
+        return body;
+    }
     if (!training_complete())
         throw std::runtime_error("Complete the required training choices.");
     if (!rules::class_eligible(*rules_, draft_, draft_.character_class))
@@ -499,6 +670,30 @@ void CharacterCreator::next()
 {
     if (step_ == CreationStep::sheet)
         return;
+    // Reincarnate's pages: the species, any Magic Initiate spells, the combat
+    // icon, the portrait, the sheet.
+    if (former_)
+    {
+        if (step_ == CreationStep::race && !species_complete())
+            throw std::runtime_error("Make the species' choices.");
+        if (step_ == CreationStep::spell_choices && !spell_choices_complete())
+            throw std::runtime_error("Complete available spell choices.");
+        if (step_ == CreationStep::race && has_spell_choices())
+        {
+            if (!draft_.spells)
+                draft_.spells = SpellChoices{};
+            step_ = CreationStep::spell_choices;
+            return;
+        }
+        if (step_ == CreationStep::race || step_ == CreationStep::spell_choices)
+        {
+            check_reincarnation();
+            step_ = CreationStep::combat_icon;
+            return;
+        }
+        step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) + 1);
+        return;
+    }
     if (step_ >= CreationStep::spell_choices && !spell_choices_complete())
         throw std::runtime_error("Complete available spell choices.");
     if (step_ >= CreationStep::training && !training_complete())
@@ -523,6 +718,12 @@ void CharacterCreator::next()
 
 void CharacterCreator::back()
 {
+    if (former_ && (step_ == CreationStep::combat_icon || step_ == CreationStep::spell_choices))
+    {
+        step_ = step_ == CreationStep::combat_icon && has_spell_choices() ? CreationStep::spell_choices
+                : CreationStep::race;
+        return;
+    }
     if (step_ != CreationStep::race)
         step_ = static_cast<CreationStep>(static_cast<unsigned>(step_) - 1);
     if (step_ == CreationStep::spell_choices && !has_spell_choices())

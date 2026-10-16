@@ -4,6 +4,7 @@
 #include "opengold/character_rules.h"
 #include "opengold/inventory.h"
 #include "opengold/rules.h"
+#include <span>
 
 namespace opengold
 {
@@ -58,6 +59,19 @@ class Character
     // A new name, as a simulacrum takes: creation and the sheet both carry it,
     // so a saved character rebuilds the same.
     void rename(std::string name);
+    // This character built on another creation draft, such as the species of
+    // a body Reincarnate forms, with its level-ups, rest choices and hall
+    // training made again. Throws when one of them no longer fits.
+    [[nodiscard]] Character recreated(const rules::CharacterRules &creation,
+                                      const rules::RulesModule &rules,
+                                      rules::CharacterDraft draft) const;
+    // Makes a level-1 character's saved history again: each level's rest
+    // choices and hall training, then the next level-up. Throws on one that
+    // does not fit.
+    void replay(const rules::RulesModule &rules, std::span<const rules::AdvancementChoice> history,
+                std::span<const SpellChoiceEdit> spell_edits,
+                std::span<const TrainingChoiceEdit> training_edits,
+                std::span<const HallTraining> hall_training);
 
     [[nodiscard]] const Inventory &inventory() const
     {
