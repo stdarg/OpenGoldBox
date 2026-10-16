@@ -22,6 +22,14 @@ Character::Character(const rules::CharacterRules &rules, rules::CharacterDraft c
 {
 }
 
+void Character::rename(std::string name)
+{
+    if (name.empty())
+        throw std::runtime_error("A character needs a name");
+    creation_.name = name;
+    sheet_.name = std::move(name);
+}
+
 void Character::appearance(por::CharacterAppearance value)
 {
     por::validate_character_appearance(value);

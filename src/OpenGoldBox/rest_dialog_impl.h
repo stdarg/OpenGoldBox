@@ -387,6 +387,16 @@ void RolfTourView::rest_use()
             refresh();
             return;
         }
+        // Simulacrum makes a copy of the chosen member, which joins the party.
+        if (id.begins_with("simulacrum") && id != String("simulacrum_repair"))
+        {
+            const auto original = String::utf8(campaign_->member(patient).character.sheet().name.c_str());
+            const auto name = i18n::formatted(N_("{name}'s simulacrum"), {{"name", original}});
+            campaign_->create_simulacrum(rest_member_, patient, id.utf8().get_data(), name);
+            rest_result_ = i18n::format(N_("{name} joins the party."), {{"name", String::utf8(name.c_str())}});
+            refresh_rest();
+            return;
+        }
         const int before = party_hp();
         const bool party = !target->is_visible();
         campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());

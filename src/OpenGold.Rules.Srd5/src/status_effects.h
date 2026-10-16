@@ -435,9 +435,12 @@ enum class EffectKind : unsigned
     overchannel = 176,
     // Overchannel's uses since the last Long Rest, in `dc`.
     overchanneled = 177,
+    // Simulacrum, on the copy: a Construct whose Hit Point maximum is lowered
+    // by `dc` to half the original's, healed only by repair; it never wears off.
+    simulacrum = 178,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = overchanneled
+    last = simulacrum
 };
 
 // Magic Circle's creature types, by `dc`.

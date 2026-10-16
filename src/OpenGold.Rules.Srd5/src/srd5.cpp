@@ -727,6 +727,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::wizard, "forcecage", 13},
     SpellAccessRow{CharacterClass::wizard, "prismatic_spray", 13},
     SpellAccessRow{CharacterClass::wizard, "reverse_gravity", 13},
+    SpellAccessRow{CharacterClass::wizard, "simulacrum", 13},
     // Wizard level-8 spells, with the level-8 slot of Wizard level 15.
     SpellAccessRow{CharacterClass::wizard, "antimagic_field", 15},
     SpellAccessRow{CharacterClass::wizard, "befuddlement", 15},
@@ -2628,6 +2629,9 @@ void restore_vitals(Actor &a, const VitalState &state)
         if (!in.eof())
             throw std::runtime_error("Trailing character resource state");
     }
+    // A simulacrum is a Construct.
+    if (detail::has_effect(a.effects, detail::EffectKind::simulacrum))
+        a.definition.creature_type = "construct";
     const auto &d = a.definition;
     if (!slots_in_range(a.slots, d))
         throw std::runtime_error("Invalid character vitals");
@@ -8778,11 +8782,20 @@ void Session::damage(Actor &target, int amount, bool critical)
                 ((e.dc % 4 == 0 && target.life.hp * 2 <= max_hp(target)) ||
                  (e.dc % 4 == 2 && target.life.hp == 0)))
             fire_contingency(target);
-    // A summoned creature vanishes at 0 Hit Points.
+    // A summoned creature vanishes at 0 Hit Points; a simulacrum melts away.
     if (target.life.hp == 0 && detail::has_effect(target.effects, detail::EffectKind::summoned))
     {
         target.fled = true;
         log(target.source.name + " vanishes.", {"{name} vanishes.", {{"name", target.source.name}}});
+        return;
+    }
+    if (target.life.hp == 0 && !target.life.dead &&
+            detail::has_effect(target.effects, detail::EffectKind::simulacrum))
+    {
+        target.life.dead = true;
+        target.life.recovery = {};
+        end_concentration(target);
+        log(target.source.name + " melts away.", {"{name} melts away.", {{"name", target.source.name}}});
         return;
     }
     // Polymorph ends once the Beast form's Temporary Hit Points are gone.
@@ -19566,7 +19579,7 @@ class Module final : public RulesModule
             result.description = "A feat or ability points.";
         if (klass == CharacterClass::wizard && result.level == 13)
             result.description =
-                "A level 7 spell slot and Wizard spells: Arcane Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray and Reverse Gravity.";
+                "A level 7 spell slot and Wizard spells: Arcane Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray, Reverse Gravity and Simulacrum.";
         if (klass == CharacterClass::wizard && result.level == 14)
             result.description =
                 "Overchannel: a damaging Wizard spell cast with a level 1-5 slot deals its maximum damage. Free once per Long Rest; each later use deals you Necrotic damage, more each time.";
@@ -20573,6 +20586,9 @@ class Module final : public RulesModule
         auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("Long rest requires at least one HP at its start");
+        // A simulacrum takes no rests.
+        if (detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+            return;
         (void)detail::heal_life(actor.life, max_hp(actor), max_hp(actor),
                                 !detail::healing_blocked(actor.effects));
         // A Long Rest makes Prayer of Healing able to help the creature again,
@@ -20620,8 +20636,10 @@ class Module final : public RulesModule
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
+        // A simulacrum spends no Hit Dice: it takes no rests.
+        const bool simulacrum = detail::has_effect(actor.effects, detail::EffectKind::simulacrum);
         RecoveryInfo result{static_cast<unsigned>(d.hit_die),
-                            static_cast<unsigned>(actor.hit_dice),
+                            simulacrum ? 0u : static_cast<unsigned>(actor.hit_dice),
                             static_cast<unsigned>(d.level),
                             !actor.life.dead && actor.life.hp > 0,
                             {},
@@ -20632,7 +20650,7 @@ class Module final : public RulesModule
         add_initiate_pools(result.resources, actor, d);
         add_trait_pool(result.resources, actor, d);
         for (const auto &choice : arcane_allocations(static_cast<unsigned>(d.level + 1) / 2))
-            if (can_recover(actor, choice))
+            if (can_recover(actor, choice) && !simulacrum)
                 result.choices.push_back({choice.id, choice.label});
         return result;
     }
@@ -20654,6 +20672,8 @@ class Module final : public RulesModule
         auto actor = actor_from(d, state);
         if (actor.life.dead || actor.life.hp < 1)
             throw std::runtime_error("Short rest requires at least one HP at its start");
+        if (detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+            return;
         actor.winds = std::min(d.winds, actor.winds + 1);
         actor.rushes = d.rushes;
         actor.surges = surge_capacity(d);
@@ -20698,7 +20718,8 @@ class Module final : public RulesModule
     {
         const auto d = character_definition(character_profile(sheet, {}).data);
         auto actor = actor_from(d, state);
-        if (actor.life.dead || actor.life.hp < 1 || actor.hit_dice < 1)
+        if (actor.life.dead || actor.life.hp < 1 || actor.hit_dice < 1 ||
+                detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
             throw std::runtime_error("No Hit Die can be spent by this character");
         auto rng = random_state.value;
         const int rolled = roll_die(rng, d.hit_die);
@@ -20774,6 +20795,30 @@ class Module final : public RulesModule
         return spell && (spell->rider == detail::Rider::revivify || spell->id == "raise_dead" ||
                          spell->id == "resurrection")
                ? static_cast<unsigned>(300 * target.level) : 0;
+    }
+
+    unsigned camp_action_gold(const CharacterSheet &target, const VitalState &state,
+                              std::string_view action) const override
+    {
+        // A simulacrum's repair: 100 gp for each Hit Point it lacks.
+        if (action != "simulacrum_repair")
+            return camp_action_gold(target, action);
+        const auto patient = camp_actor(target, state);
+        return 100u * static_cast<unsigned>(std::max(0, max_hp(patient) - patient.life.hp));
+    }
+
+    VitalState simulacrum_state(const CharacterSheet &original) const override
+    {
+        // The original's statistics with fresh resources, and half its Hit
+        // Point maximum, rounded down.
+        auto copy = camp_actor(original, {});
+        const int maximum = max_hp(copy);
+        // Camp effects carry scope 1: there is no encounter to source them.
+        detail::apply_spell_benefit(copy.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                    original.name, detail::EffectKind::simulacrum,
+                                    maximum - maximum / 2);
+        copy.life.hp = max_hp(copy);
+        return vitals(copy);
     }
 
     bool keeps_away(std::span<const CampTarget> party,
@@ -20903,6 +20948,14 @@ class Module final : public RulesModule
                                                }, true});
                 continue;
             }
+            // Simulacrum: a copy of a member, and the repair of one; a
+            // simulacrum does neither.
+            if (spell.id == "simulacrum")
+            {
+                if (detail::has_effect(actor.effects, detail::EffectKind::simulacrum))
+                    continue;
+                actions.push_back({"simulacrum_repair", {"Repair a simulacrum (100 gp per Hit Point)", {}}});
+            }
             const bool party = spell.instances > 1;
             for (const unsigned level : cast_levels(actor, spell))
             {
@@ -20968,6 +21021,26 @@ class Module final : public RulesModule
             target_state = vitals(healed);
             return;
         }
+        // Simulacrum: a copy of a living member that is no simulacrum itself;
+        // the campaign adds the copy to the party (LEVELS-3).
+        if (const auto *copy = detail::find_spell(action); copy && copy->id == "simulacrum")
+        {
+            if (patient.life.dead || detail::has_effect(patient.effects, detail::EffectKind::simulacrum))
+                throw std::runtime_error("Simulacrum copies a living member that is no simulacrum");
+            pay_for_spell(caster, action, *copy);
+            user_state = vitals(caster);
+            return;
+        }
+        // A repair restores all the simulacrum's Hit Points, 100 gp each.
+        if (action == "simulacrum_repair")
+        {
+            if (!detail::has_effect(patient.effects, detail::EffectKind::simulacrum) ||
+                    patient.life.dead || patient.life.hp >= max_hp(patient))
+                throw std::runtime_error("Only a damaged simulacrum can be repaired");
+            patient.life.hp = max_hp(patient);
+            target_state = vitals(healed);
+            return;
+        }
         // Resurrection: an hour's casting on any dead member, who returns with
         // all its Hit Points (LEVELS-3: even one turned to dust).
         const auto *raise = detail::find_spell(action);
@@ -21016,6 +21089,8 @@ class Module final : public RulesModule
         const int maximum = max_hp(patient);
         if (patient.life.dead || patient.life.hp >= maximum)
             throw std::runtime_error("Healing requires a wounded living member");
+        if (detail::has_effect(patient.effects, detail::EffectKind::simulacrum))
+            throw std::runtime_error("Only a repair restores a simulacrum's Hit Points");
         const bool can_heal = !detail::healing_blocked(patient.effects);
         if (const auto *regenerate = detail::find_spell(action);
                 regenerate && regenerate->rider == detail::Rider::regenerate)
@@ -22055,7 +22130,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.222", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.223", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

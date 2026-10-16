@@ -55,6 +55,9 @@ class Character
     }
 
     void appearance(por::CharacterAppearance value);
+    // A new name, as a simulacrum takes: creation and the sheet both carry it,
+    // so a saved character rebuilds the same.
+    void rename(std::string name);
 
     [[nodiscard]] const Inventory &inventory() const
     {

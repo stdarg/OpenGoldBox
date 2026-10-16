@@ -19,7 +19,7 @@ described in [Wizard spell choices](WIZARD-SPELL-CHOICES.md).
 | 10 | Empowered Evocation (Evoker), fifth cantrip | Delivered (rules 0.6.220) |
 | 11 | Level-6 spells | Delivered (rules 0.6.221) |
 | 12 | Ability Score Improvement | Delivered (rules 0.6.221) |
-| 13 | Level-7 spells | Delivered (rules 0.6.222); Simulacrum next, Teleport waits for travel |
+| 13 | Level-7 spells | Delivered (rules 0.6.222, Simulacrum 0.6.223); Teleport waits for travel |
 | 14 | Overchannel (Evoker) | Delivered (rules 0.6.222) |
 | 15 | Level-8 spells | Delivered (rules 0.6.222) |
 
@@ -79,10 +79,10 @@ The Wizard advances to level 15, the cap
   Earth, Programmed Illusion and the like are cut.
 - **Ability Score Improvement** (12): a feat or ability points.
 - **Level-7 spells** (13): one level-7 slot; prepared spells 17. Arcane
-  Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray
-  and Reverse Gravity (below). Simulacrum comes next, as a camp spell.
-  Teleport takes the party to towns and areas it has visited (LEVELS-3); New
-  Phlan is the only one built, so it waits for travel beyond the city.
+  Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray,
+  Reverse Gravity and Simulacrum (below). Teleport takes the party to towns
+  and areas it has visited (LEVELS-3); New Phlan is the only one built, so it
+  waits for travel beyond the city.
   Etherealness, Magnificent Mansion, Mirage Arcane, Plane Shift, Project
   Image, Sequester and Symbol are cut.
 - **Overchannel** (Evoker 14): **Overchannel (free)** in the turn's menu,
@@ -105,8 +105,9 @@ The Wizard advances to level 15, the cap
   Rest window, Arcane Recovery of a level-3 slot, each level-3 and level-4
   spell, each level-5 spell and its summoned creatures, Sculpt Spells at 6
   and not 5, Empowered Evocation and the fifth cantrip at 10, each level-6,
-  level-7 and level-8 spell tested, and Overchannel's free first use and the
-  damage after it) and `opengold_wizard_spell_tests`.
+  level-7 and level-8 spell tested, Overchannel's free first use and the
+  damage after it, and Simulacrum's copy, repair price, recasting, campaign
+  round trip and melting) and `opengold_wizard_spell_tests`.
 
 ### The level-3 spells
 
@@ -221,6 +222,20 @@ The Wizard advances to level 15, the cap
   the Wizard's next turn: a success ends the blindness, a failure sends it to
   another plane, which counts as defeated (LEVELS-1). An 8 strikes with two
   rays, rolling again for each and rerolling 8s.
+- **Simulacrum** (camp, twelve hours): **Simulacrum** in the Camp dialog,
+  with a member as its target (the Wizard itself, too), makes a copy that
+  joins the party in a free NPC position, named "<name>'s simulacrum"
+  (LEVELS-3). It has the member's statistics with full spell slots and other
+  uses, half its Hit Point maximum (rounded down), and is a Construct. It
+  carries nothing: the member's gear is not copied. It gains no levels and
+  takes no rests: no Short or Long Rest, Hit Die, Arcane Recovery or healing
+  restores anything. **Repair a simulacrum (100 gp per Hit Point)**, the
+  Wizard's camp action on it, restores all its Hit Points for that price,
+  paid from the party purse; the SRD makes the repair part of the Wizard's
+  Long Rest. At 0 Hit Points it melts away and leaves the party after the
+  fight. A new casting destroys the Wizard's earlier simulacrum; a
+  simulacrum cannot cast the spell. Both NPC positions taken, the spell is
+  refused before anything is spent. Twelve hours pass.
 - **Reverse Gravity** (Action, 100 feet, Concentration up to 1 minute): each
   creature in a 50-foot-radius circle, the Wizard included, makes a Dexterity
   save; on a failure it falls upward, taking 3d6 Bludgeoning, the PUSH-1

@@ -95,7 +95,8 @@ bool healing_blocked(const EffectState &effects, std::uint64_t after_ms)
     return std::any_of(effects.active.begin(), effects.active.end(),
                        [&](const auto & e)
     {
-        return e.kind == EffectKind::chill_touch && e.remaining_ms > after_ms;
+        return (e.kind == EffectKind::chill_touch && e.remaining_ms > after_ms) ||
+               e.kind == EffectKind::simulacrum;
     });
 }
 
@@ -580,7 +581,7 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4
-           : kind == EffectKind::drained ? 2000
+           : kind == EffectKind::drained || kind == EffectKind::simulacrum ? 2000
            : kind == EffectKind::feasted ? 20
            : kind == EffectKind::animating ? 19
            : kind == EffectKind::worded ? 2
@@ -650,6 +651,7 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 345600000; // four Long Rests' worth, ended by them
     case EffectKind::drained:
     case EffectKind::dust:
+    case EffectKind::simulacrum: // never counted down
     case EffectKind::petrified: // a minute, or for good once its spell lasted it
         return 4000000000u; // until Greater Restoration ends it
     case EffectKind::contingency:
@@ -788,7 +790,7 @@ int hit_point_bonus(const EffectState &effects)
             aid = std::max(aid, e.dc);
         else if (e.kind == EffectKind::feasted)
             feast = std::max(feast, e.dc);
-        else if (e.kind == EffectKind::drained)
+        else if (e.kind == EffectKind::drained || e.kind == EffectKind::simulacrum)
             drained += e.dc;
     return aid + feast - drained;
 }
@@ -879,7 +881,9 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
             bool inspiration_spent = false;
             for (auto &e : effects)
             {
-                e.remaining_ms -= static_cast<unsigned>(step);
+                // A simulacrum lasts until it is destroyed.
+                if (e.kind != EffectKind::simulacrum)
+                    e.remaining_ms -= static_cast<unsigned>(step);
                 if (e.save_in_ms)
                     e.save_in_ms -= static_cast<unsigned>(step);
                 EffectEvent event{subject.id, e};

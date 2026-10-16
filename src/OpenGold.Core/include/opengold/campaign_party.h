@@ -171,6 +171,14 @@ class CampaignParty
     [[nodiscard]] MemberId spokesman() const;
     MemberId add_pc(Character character);
     MemberId recruit(std::string source, Character converted, unsigned morale = 100);
+    // Simulacrum from camp (LEVELS-3): `action`, one of the caster's camp
+    // actions for the spell, makes a copy of `original` named `name` that
+    // joins the party in an NPC position. The caster's earlier simulacrum is
+    // destroyed; twelve hours pass. Atomic.
+    MemberId create_simulacrum(MemberId caster, MemberId original, std::string_view action,
+                               std::string name);
+    // Whether the member is a simulacrum, which gains no levels.
+    [[nodiscard]] bool is_simulacrum(MemberId id) const;
     void rejoin(MemberId id);
     void remove(MemberId id);
     [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,
@@ -276,10 +284,8 @@ class CampaignParty
     // Combat changes vitals only: characters keep their gear throughout.
     void apply_combat(const rules::Snapshot &snapshot);
 
-    void end_combat() noexcept
-    {
-        combat_ = false;
-    }
+    // A simulacrum that melted away in the fight leaves the party.
+    void end_combat() noexcept;
 
     [[nodiscard]] bool in_combat() const
     {

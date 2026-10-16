@@ -2703,6 +2703,15 @@ inline constexpr std::array spell_table
         .rider = Rider::reverse_gravity,
         .concentration = true,
         .radius = 50},
+    // SRD 5.2.1 p. 162: in camp, twelve hours make a lasting copy of a member
+    // with half its Hit Points, which joins the party (LEVELS-3).
+    SpellDef{
+        .id = "simulacrum",
+        .label = "Simulacrum",
+        .level = 7,
+        .pattern = SpellPattern::camp,
+        .target = SpellTarget::ally,
+        .range = 5},
     // SRD 5.2.1 p. 112: an Intelligence save against 10d12 Psychic, half on a
     // success; a failure also stops the creature's spells and Magic actions.
     SpellDef{

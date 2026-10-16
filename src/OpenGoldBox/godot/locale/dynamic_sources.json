@@ -1302,7 +1302,13 @@
   "violet",
   "{name} Investigation check: d20 {roll} + {bonus} vs DC 20 (escapes).",
   "{name} Investigation check: d20 {roll} + {bonus} vs DC 20 (still lost).",
-  "A level 7 spell slot and Wizard spells: Arcane Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray and Reverse Gravity.",
   "Overchannel: a damaging Wizard spell cast with a level 1-5 slot deals its maximum damage. Free once per Long Rest; each later use deals you Necrotic damage, more each time.",
-  "A level 8 spell slot and Wizard spells: Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud, Maze, Mind Blank, Power Word Stun and Sunburst."
+  "A level 8 spell slot and Wizard spells: Antimagic Field, Befuddlement, Dominate Monster, Incendiary Cloud, Maze, Mind Blank, Power Word Stun and Sunburst.",
+  "Simulacrum",
+  "Repair a simulacrum (100 gp per Hit Point)",
+  "Simulacrum copies a living member that is no simulacrum",
+  "Only a damaged simulacrum can be repaired",
+  "Only a repair restores a simulacrum's Hit Points",
+  "Finish the rest's choices before casting Simulacrum",
+  "A level 7 spell slot and Wizard spells: Arcane Sword, Delayed Blast Fireball, Finger of Death, Forcecage, Prismatic Spray, Reverse Gravity and Simulacrum."
 ]

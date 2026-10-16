@@ -372,6 +372,96 @@ MemberId CampaignParty::recruit(std::string source, Character converted, unsigne
     return id;
 }
 
+MemberId CampaignParty::create_simulacrum(MemberId caster, MemberId original,
+        std::string_view action, std::string name)
+{
+    editable();
+    outside_combat();
+    if (state_.short_rest || state_.spell_rest || state_.training_rest)
+        throw std::runtime_error("Finish the rest's choices before casting Simulacrum");
+    for (const auto id : {caster, original})
+        if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+            throw std::runtime_error("Camp actions are for active members");
+    const auto actions = camp_actions(caster);
+    if (!action.starts_with("simulacrum") || action == "simulacrum_repair" ||
+            std::none_of(actions.begin(), actions.end(), [&](const auto & a)
+{
+    return a.id == action;
+}))
+    throw std::runtime_error("That spell or feature cannot be used now");
+    if (state_.roster.size() >= 128)
+        throw std::runtime_error("Roster is full");
+    auto next = state_;
+    // The caster's earlier simulacrum is destroyed.
+    const auto source = "simulacrum:" + std::to_string(caster) + ":";
+    for (auto &slot : next.slots)
+        if (slot && member_in(next, slot).npc_source.starts_with(source))
+        {
+            auto &old = member_in(next, slot);
+            old.vitals.hit_points = 0;
+            old.vitals.dead = true;
+            if (next.leader == slot)
+                next.leader = 0;
+            slot = 0;
+        }
+    const auto position = std::find(next.slots.begin() + 6, next.slots.end(), MemberId{});
+    if (position == next.slots.end())
+        throw std::runtime_error("Both NPC positions are occupied");
+    // Copying oneself passes one state as both, as camp actions do.
+    auto &wizard = member_in(next, caster);
+    auto &copied = member_in(next, original);
+    rules_->use_camp_action(wizard.character.sheet(), wizard.vitals, copied.character.sheet(),
+                            caster == original ? wizard.vitals : copied.vitals, action,
+                            next.random_state);
+    // A copy of the creature, not of what it carries.
+    auto copy = copied.character;
+    copy.rename(std::move(name));
+    copy.replace_inventory({});
+    auto vitals = rules_->simulacrum_state(copy.sheet());
+    const auto id = next.next_id++;
+    next.roster.push_back(
+    {
+        .id = id,
+        .character = std::move(copy),
+        .npc_source = source + std::to_string(id),
+        .vitals = std::move(vitals)
+    });
+    *position = id;
+    if (!next.slots[next.selected_slot.index])
+        next.selected_slot = PartySlot{static_cast<unsigned>(position - next.slots.begin())};
+    // The casting takes twelve hours.
+    elapse(next, std::chrono::hours{12});
+    next.short_rest.reset();
+    state_ = std::move(next);
+    return id;
+}
+
+bool CampaignParty::is_simulacrum(MemberId id) const
+{
+    return member(id).npc_source.starts_with("simulacrum:");
+}
+
+void CampaignParty::end_combat() noexcept
+{
+    combat_ = false;
+    for (auto &slot : state_.slots)
+        for (const auto &m : state_.roster)
+            if (slot && m.id == slot && m.vitals.dead && m.npc_source.starts_with("simulacrum:"))
+            {
+                if (state_.leader == slot)
+                    state_.leader = 0;
+                slot = 0;
+            }
+    if (state_.slots[state_.selected_slot.index])
+        return;
+    for (unsigned i = 0; i < 8; ++i)
+        if (state_.slots[i])
+        {
+            state_.selected_slot = PartySlot{i};
+            return;
+        }
+}
+
 void CampaignParty::rejoin(MemberId id)
 {
     editable();
@@ -721,7 +811,9 @@ bool CampaignParty::can_advance(MemberId id) const
         return false;
     const auto &m = member(id);
     const auto level = next_level(m);
-    return !m.vitals.dead && level && m.experience >= rules_->experience_for_level(level);
+    // A simulacrum gains no levels.
+    return !m.vitals.dead && level && !is_simulacrum(id) &&
+           m.experience >= rules_->experience_for_level(level);
 }
 
 unsigned CampaignParty::next_level(const PartyMember &m) const
@@ -1081,7 +1173,7 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
     {
         auto &patient = find(target);
         // An offering, such as Revivify's, is paid from the party purse's gold.
-        const auto gold = rules_->camp_action_gold(patient.character.sheet(), action);
+        const auto gold = rules_->camp_action_gold(patient.character.sheet(), patient.vitals, action);
         if (gold > coins(next.wealth, Coin::gold))
             throw std::runtime_error("The party purse cannot pay the offering");
         rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),

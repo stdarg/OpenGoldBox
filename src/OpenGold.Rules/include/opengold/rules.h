@@ -16,6 +16,7 @@
 #include <map>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -871,6 +872,22 @@ class RulesModule
         (void)target;
         (void)action;
         return 0;
+    }
+    // The same, for an action whose price depends on the target's state, such
+    // as a simulacrum's repair.
+    [[nodiscard]] virtual unsigned camp_action_gold(const CharacterSheet &target,
+            const VitalState &target_state, std::string_view action) const
+    {
+        (void)target_state;
+        return camp_action_gold(target, action);
+    }
+    // The state of a new simulacrum of `original` (SRD 5.2.1 p. 162), made
+    // after use_camp_action() has cast the spell; the campaign adds it to the
+    // party.
+    [[nodiscard]] virtual VitalState simulacrum_state(const CharacterSheet &original) const
+    {
+        (void)original;
+        throw std::runtime_error("This rules module has no Simulacrum");
     }
     // Whether the party's camp wards (Magic Circle) keep away every creature of
     // these definitions, so they cannot interrupt the rest.

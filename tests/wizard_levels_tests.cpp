@@ -171,6 +171,18 @@ unsigned slots(const CombatSession &c, unsigned level, EntityId id = 1)
     return count;
 }
 
+// A member's spell slots of a level left, read from its saved vital state.
+unsigned slots_left(const CampaignParty &party, MemberId id, unsigned level)
+{
+    std::istringstream in(party.member(id).vitals.resources);
+    std::string magic;
+    unsigned winds{}, count{};
+    in >> magic >> winds;
+    for (unsigned n = 1; n <= level; ++n)
+        in >> count;
+    return count;
+}
+
 void to_turn(CombatSession &c, EntityId id)
 {
     for (unsigned turns = 0; c.snapshot().actor != id && turns < 12; ++turns)
@@ -1295,6 +1307,92 @@ void overchannel_checks()
           logged(*c, "Necrotic damage from Overchannel."), "A second use hurts the Wizard");
 }
 
+// A Wizard of the level whose level-up to `learned_at` learns and prepares `spell`.
+Character wizard_knowing(unsigned level, const std::string &spell, unsigned learned_at)
+{
+    Character hero(*srd5::character_rules(), draft(), {});
+    VitalState life{hero.sheet().hit_points, false, {}};
+    const auto rules = module();
+    while (hero.sheet().level < static_cast<int>(level))
+    {
+        auto choice = rules->default_advancement(hero.sheet());
+        if (hero.sheet().level + 1 == static_cast<int>(learned_at))
+        {
+            auto &book = choice.spell_learning->at("spellbook:" + std::to_string(learned_at));
+            if (std::find(book.begin(), book.end(), spell) == book.end())
+                book.front() = spell;
+            if (std::find(choice.spells.begin(), choice.spells.end(), spell) == choice.spells.end())
+                choice.spells.back() = spell;
+        }
+        check(hero.advance(*rules, life, choice), "An ordinary level-up");
+    }
+    return hero;
+}
+
+void simulacrum_checks()
+{
+    const auto rules = module();
+    // The copy: half the Hit Point maximum, a Construct, healed only by repair.
+    const auto original = wizard(13).sheet();
+    auto copy = rules->simulacrum_state(original);
+    const int maximum = rules->hit_point_maximum(original, {original.hit_points, false, {}});
+    check(rules->hit_point_maximum(original, copy) == maximum / 2 && copy.hit_points == maximum / 2,
+          "A simulacrum has half the original's Hit Point maximum");
+    rules->set_hit_points(copy, original, maximum / 2 - 5);
+    check(rules->camp_action_gold(original, copy, "simulacrum_repair") == 500,
+          "A repair costs 100 gp per missing Hit Point");
+    rules->recover(copy, original);
+    check(copy.hit_points == maximum / 2 - 5, "A simulacrum takes no Long Rest");
+    // The campaign: the copy joins in an NPC position and gains no levels.
+    CampaignParty party(module());
+    const auto id = party.add_pc(wizard_knowing(13, "simulacrum", 13));
+    party.award_experience(165000, "simulacrum-xp");
+    const auto actions = party.camp_actions(id);
+    check(std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "simulacrum";
+    }) && std::any_of(actions.begin(), actions.end(), [](const auto & a)
+    {
+        return a.id == "simulacrum_repair";
+    }), "Simulacrum and its repair are camp actions");
+    const auto minutes = party.state().time_minutes;
+    const auto first = party.create_simulacrum(id, id, "simulacrum", "Wizard's simulacrum");
+    check(party.state().slots[6] == first && party.is_simulacrum(first) && !party.can_advance(first) &&
+          party.member(first).character.sheet().name == "Wizard's simulacrum" &&
+          party.state().time_minutes == minutes + 720, "The simulacrum joins after twelve hours");
+    check(slots_left(party, id, 7) == 0, "Simulacrum spends the level-7 slot");
+    // A second casting destroys the first simulacrum.
+    CampaignParty again(module());
+    const auto caster = again.add_pc(wizard_knowing(15, "simulacrum", 13));
+    const auto older = again.create_simulacrum(caster, caster, "simulacrum", "First copy");
+    const auto newer = again.create_simulacrum(caster, caster, "simulacrum_8", "Second copy");
+    check(again.state().slots[6] == newer && again.member(older).vitals.dead &&
+          std::count(again.state().slots.begin(), again.state().slots.end(), older) == 0,
+          "A new simulacrum destroys the old one");
+    const auto bytes = encode_campaign(party, nullptr, "simulacrum");
+    CampaignParty next(module());
+    next.restore(decode_campaign(bytes, *srd5::character_rules(), party.rule_module(), "simulacrum",
+                                 nullptr).party);
+    check(encode_campaign(next, nullptr, "simulacrum") == bytes, "A simulacrum saves and reloads");
+    // A simulacrum melts away at 0 Hit Points.
+    const auto dummies = dummy_rules();
+    const std::vector<std::string> gear{"quarterstaff"};
+    auto weak = copy;
+    dummies->set_hit_points(weak, original, 1);
+    auto c = dummies->create({{14, 7, std::vector<Terrain>(98)},
+        {   {1, "campaign-character", "Copy", Side::party, {1, 2},
+                dummies->character_profile(original, gear).data, weak},
+            {98, "brute", "Brute", Side::opposition, {2, 2}},
+            {99, "dummy", "Other", Side::opposition, {12, 6}}
+        }},
+    1);
+    to_turn(*c, 98);
+    // The copy's Shield is declined.
+    check(submit(*c, "melee", 1) && (!c->snapshot().reaction_pending || submit(*c, "decline")) &&
+          logged(*c, "Copy melts away.") && unit(*c, 1).dead,
+          "A simulacrum melts away at 0 Hit Points");
+}
+
 void contingency_checks()
 {
     const auto rules = module();
@@ -1390,6 +1488,7 @@ int main()
         prismatic_and_gravity_checks();
         level_eight_checks();
         overchannel_checks();
+        simulacrum_checks();
     }
     catch (const std::exception &error)
     {
