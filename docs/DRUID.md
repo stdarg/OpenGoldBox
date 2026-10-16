@@ -1,6 +1,6 @@
 # Druid
 
-Levels 1–4 of the SRD 5.2.1 Druid (pp. 41–46). Wisdom is the spellcasting
+Levels 1–10 of the SRD 5.2.1 Druid (pp. 41–46). Wisdom is the spellcasting
 ability.
 
 ## Spellcasting, Primal Order and the Circle of the Land
@@ -121,3 +121,74 @@ ability.
   ending at 0 Hit Points, on a turn begun Incapacitated and when it lapses; and
   Land's Aid's thorns, healing and spent use). A form carried into a new fight
   applies from its start (rules 0.6.167; it used to wait for the Druid's turn).
+
+## Levels 5–10
+
+The Druid advances to level 10 for now; level 11 waits for its level-6
+spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+[LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
+
+- **Spellcasting** (SRD 5.2.1 p. 41): a full caster's slots; prepared spells
+  9, 10, 11, 12, 14 and 15 at levels 5–10; a fourth cantrip at 10. The kept
+  Druid spells open with their slots: at 5 Call Lightning, Conjure Animals,
+  Dispel Magic, Plant Growth, Protection from Energy, Revivify, Sleet Storm and
+  Wind Wall; at 7 Blight, Charm Monster, Confusion, Conjure Minor Elementals,
+  Conjure Woodland Beings, Dominate Beast, Fire Shield, Freedom of Movement,
+  Giant Insect, Ice Storm, Polymorph, Stoneskin and Wall of Fire; at 9
+  Antilife Shell, Cone of Cold, Conjure Elemental, Contagion, Greater
+  Restoration, Insect Plague, Mass Cure Wounds and Wall of Stone. Reincarnate
+  comes next, with its new species; the cut spells stay cut.
+- **Circle Spells:** arid Fireball (5), Blight (7), Wall of Stone (9); polar
+  Sleet Storm, Ice Storm, Cone of Cold; temperate Lightning Bolt, Freedom of
+  Movement (Tree Stride is cut); tropical Stinking Cloud, Polymorph, Insect
+  Plague, always prepared.
+- **Call Lightning** (Action, Concentration up to 10 minutes): a storm cloud
+  forms over the Druid; a bolt strikes a point within 60 feet of the square
+  under the cloud's centre: each creature within 5 feet of it makes a
+  Dexterity save against 3d10 Lightning (1d10 more per slot level above 3),
+  half on a success. **Call Lightning: another bolt** (a Magic action) calls
+  one more under the cloud, wherever the Druid has gone. There is no weather,
+  so the storm's extra 1d10 is never gained.
+- **Giant Insect** (Action, Concentration up to 10 minutes): one entry each
+  for a centipede, a spider and a wasp. It joins the fight right after the
+  Druid, played by the player (LEVELS-4), drawn as the game's Large
+  Scorpion: AC 11 + the slot level, 30 Hit Points and 10 more per slot level
+  above 4, half the slot level in Poison Jabs (reach 10 feet, the Druid's
+  spell attack, 1d6 + 3 + the slot level Piercing and 1d4 Poison); the spider
+  also has Web Bolt (60 feet, 1d10 + 3 + the slot level Bludgeoning). The Web
+  Bolt's Speed 0, the centipede's Venomous Spew and the wasp's flight are
+  left out. It vanishes at 0 Hit Points or with the spell.
+- **Antilife Shell** (Action, Concentration up to 1 hour): a 10-foot
+  Emanation around the Druid. No creature but the Druid, a Construct or an
+  Undead walks across its edge, in or out, and no such creature's melee
+  attack reaches across it; spells and ranged attacks pass. If the Druid
+  moves so that a creature passes through it, the spell ends.
+- **Wild Resurgence** (5): with no Wild Shape use left, **Wild Resurgence: a
+  level-N slot for Wild Shape**, no action, once a turn, trades a slot for a
+  use; once per Long Rest, **Wild Resurgence: Wild Shape for a level-1 slot**
+  trades a use for a spent level-1 slot.
+- **Natural Recovery** (Land 6): once per Long Rest, any levelled Circle
+  Spell is also offered as "<spell> (Natural Recovery)", cast without a slot;
+  after a Short Rest, the rest's recovery choices recover spent slots of
+  levels 1–5 adding up to half the Druid level, rounded up, as Arcane Recovery
+  does for a Wizard.
+- **Wild Shape** has three uses from 6, and from 8 the **Tiger** (CR 1; the
+  game's Tiger art): AC 13, 30 Hit Points, Speed 40, Rend +5 for 2d6 + 3
+  Slashing, knocking a Large or smaller creature Prone. Its Nimble Escape is
+  left out; no other CR 1 Beast has art.
+- **Elemental Fury** (7): a level-up choice. **Potent Spellcasting** adds the
+  Wisdom modifier to a Druid cantrip's damage; **Primal Strike**: once on each
+  of the Druid's turns, right after a weapon or Beast form hit, **Primal Strike
+  (Cold)**, **(Fire)**, **(Lightning)** or **(Thunder)** adds 1d8 of it,
+  doubled on a critical hit.
+- **Ability Score Improvement** (8).
+- **Nature's Ward** (Land 10): the Druid cannot be Poisoned (any Poisoned
+  effect falls away at once), and resists its land's element: Fire (arid),
+  Cold (polar), Lightning (temperate) or Poison (tropical).
+- **Land's Aid** deals and heals 3d6 from 10.
+- Verification: `opengold_druid_levels_tests` (the campaign's stop at 10,
+  prepared counts, the features' grants, level 5's description, a level-10
+  round trip, Fireball as an arid Circle Spell and Natural Recovery's free
+  cast once, Natural Recovery's Short Rest choice, Wild Resurgence's slot,
+  Primal Strike, the Tiger from 8, Call Lightning and its second bolt, Giant
+  Insect, Antilife Shell keeping a brute out).

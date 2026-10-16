@@ -105,6 +105,11 @@ String text(std::string_view source)
     if (translated == gs(source) && source.size() > arcanum.size() && source.ends_with(arcanum))
         return format(N_("{spell} (Mystic Arcanum)"),
                       {{"spell", text(source.substr(0, source.size() - arcanum.size()))}});
+    // "Fireball (Natural Recovery)", a Druid's free Circle Spell, likewise.
+    constexpr std::string_view natural = " (Natural Recovery)";
+    if (translated == gs(source) && source.size() > natural.size() && source.ends_with(natural))
+        return format(N_("{spell} (Natural Recovery)"),
+                      {{"spell", text(source.substr(0, source.size() - natural.size()))}});
     // "Dimension Door with Ilsa", a spell that takes a companion, is
     // translated in two parts: the companion is a name.
     constexpr std::string_view companion = "Dimension Door with ";

@@ -263,6 +263,9 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"prismatic_spray", "Prismatic Spray", 7, 0, bard_list | sorcerer_list | wizard_list},
     Spell{"reverse_gravity", "Reverse Gravity", 7, 0, druid_list | sorcerer_list | wizard_list},
     Spell{"simulacrum", "Simulacrum", 7, 0, wizard_list},
+    Spell{"call_lightning", "Call Lightning", 3, 0, druid_list},
+    Spell{"giant_insect", "Giant Insect", 4, 0, druid_list},
+    Spell{"antilife_shell", "Antilife Shell", 5, 0, druid_list},
     Spell{"befuddlement", "Befuddlement", 8, 0,
         bard_list | druid_list | warlock_list | wizard_list},
     Spell{"dominate_monster", "Dominate Monster", 8, 0,
@@ -376,6 +379,19 @@ constexpr std::array always_prepared_table{
     AlwaysPrepared{CharacterClass::druid, "acid_splash", 3, "tropical"},
     AlwaysPrepared{CharacterClass::druid, "ray_of_sickness", 3, "tropical"},
     AlwaysPrepared{CharacterClass::druid, "web", 3, "tropical"},
+    // The lands' later Circle Spells (SRD 5.2.1 p. 46); temperate's Tree
+    // Stride is cut.
+    AlwaysPrepared{CharacterClass::druid, "fireball", 5, "arid"},
+    AlwaysPrepared{CharacterClass::druid, "blight", 7, "arid"},
+    AlwaysPrepared{CharacterClass::druid, "wall_of_stone", 9, "arid"},
+    AlwaysPrepared{CharacterClass::druid, "sleet_storm", 5, "polar"},
+    AlwaysPrepared{CharacterClass::druid, "ice_storm", 7, "polar"},
+    AlwaysPrepared{CharacterClass::druid, "cone_of_cold", 9, "polar"},
+    AlwaysPrepared{CharacterClass::druid, "lightning_bolt", 5, "temperate"},
+    AlwaysPrepared{CharacterClass::druid, "freedom_of_movement", 7, "temperate"},
+    AlwaysPrepared{CharacterClass::druid, "stinking_cloud", 5, "tropical"},
+    AlwaysPrepared{CharacterClass::druid, "polymorph", 7, "tropical"},
+    AlwaysPrepared{CharacterClass::druid, "insect_plague", 9, "tropical"},
     // Fiend Spells, p. 76 (Suggestion removed by DM-3).
     AlwaysPrepared{CharacterClass::warlock, "burning_hands", 3},
     AlwaysPrepared{CharacterClass::warlock, "command", 3},
@@ -1367,6 +1383,15 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
             throw std::runtime_error("Complete the available spell choices.");
     }
     sheet = std::move(candidate);
+}
+
+std::vector<std::string> circle_spells(unsigned level, std::string_view land)
+{
+    std::vector<std::string> result;
+    for (const auto &entry : always_prepared_table)
+        if (entry.klass == CharacterClass::druid && level >= entry.level && entry.land == land)
+            result.emplace_back(entry.spell);
+    return result;
 }
 
 std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned level,

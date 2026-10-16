@@ -258,7 +258,7 @@ struct Probe
 
 constexpr Probe probes[] {{"wizard", 1}, {"wizard", 4}, {"wizard", 15}, {"cleric", 1},
     {"cleric", 4}, {"cleric", 15}, {"warlock", 1}, {"sorcerer", 1}, {"paladin", 1}, {"paladin", 4}, {"paladin", 10}, {"paladin", 15},
-    {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}
+    {"ranger", 1}, {"ranger", 4}, {"ranger", 12}, {"ranger", 15}, {"bard", 1}, {"bard", 4}, {"druid", 1}, {"druid", 4}, {"druid", 10}
 };
 
 // The widest legitimate caster for a class and level: every cantrip its own

@@ -767,6 +767,22 @@ TrainingChoiceGroup defensive_tactics_options()
     return group;
 }
 
+// Elemental Fury: the Druid's choice at level seven (SRD 5.2.1 p. 43).
+TrainingChoiceGroup elemental_fury_options()
+{
+    TrainingChoiceGroup group{std::string(elemental_fury), "Elemental Fury", 1, {},
+                              TrainingChoiceControl::single_selection};
+    group.acquired_level = 7;
+    group.options = {
+        {   "potent_spellcasting", "Potent Spellcasting",
+            "Add your Wisdom modifier to the damage of your Druid cantrips."
+        },
+        {   "primal_strike", "Primal Strike",
+            "Once on each of your turns, a weapon or Beast form hit deals 1d8 more Cold, Fire, Lightning or Thunder damage."
+        }};
+    return group;
+}
+
 // Blessed Strikes: the Cleric's choice at level seven (SRD 5.2.1 p. 38).
 TrainingChoiceGroup blessed_strikes_options()
 {

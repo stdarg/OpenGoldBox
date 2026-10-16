@@ -582,6 +582,7 @@ int benefit_value_limit(EffectKind kind)
            : kind == EffectKind::overchanneled || kind == EffectKind::luck_used ? 20
            : kind == EffectKind::arcanum_used ? 7
            : kind == EffectKind::inspired ? 12
+           : kind == EffectKind::resurged ? 1
            : kind == EffectKind::cursed ? 18
            : kind == EffectKind::contagion ? 335
            : kind == EffectKind::returned ? 4
@@ -670,6 +671,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::luck_used:
     case EffectKind::hurl_used:
     case EffectKind::arcanum_used:
+    case EffectKind::resurged:
+    case EffectKind::natural_cast:
     case EffectKind::trait_uses:
     case EffectKind::heroic_inspiration:
         return 86400000; // until a Long Rest, at most a day

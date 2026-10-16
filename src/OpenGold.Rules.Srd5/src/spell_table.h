@@ -209,7 +209,10 @@ enum class Rider : unsigned
     incendiary_cloud,
     maze,
     mind_blank,
-    power_word_stun
+    power_word_stun,
+    call_lightning,
+    antilife_shell,
+    giant_insect
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2703,6 +2706,47 @@ inline constexpr std::array spell_table
         .rider = Rider::reverse_gravity,
         .concentration = true,
         .radius = 50},
+    // SRD 5.2.1 p. 114: a storm cloud over the caster; a bolt strikes a point
+    // under it, within 60 feet of the caster: Dexterity save, 3d10 Lightning
+    // within 5 feet, half on a success; a Magic action calls another; 1d10
+    // more per slot level above 3.
+    SpellDef{
+        .id = "call_lightning",
+        .label = "Call Lightning",
+        .level = 3,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 60,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::lightning,
+        .dice = {3, 10, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::call_lightning,
+        .concentration = true,
+        .radius = 5},
+    // SRD 5.2.1 p. 109: a 10-foot Emanation no creature but a Construct or an
+    // Undead passes or reaches through.
+    SpellDef{
+        .id = "antilife_shell",
+        .label = "Antilife Shell",
+        .level = 5,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::self,
+        .range = 5,
+        .rider = Rider::antilife_shell,
+        .concentration = true},
+    // SRD 5.2.1 p. 135: a giant centipede, spider or wasp, chosen at the
+    // casting, fights for the caster; its stat block grows with the slot.
+    SpellDef{
+        .id = "giant_insect",
+        .label = "Giant Insect",
+        .level = 4,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 60,
+        .rider = Rider::giant_insect,
+        .concentration = true},
     // SRD 5.2.1 p. 162: in camp, twelve hours make a lasting copy of a member
     // with half its Hit Points, which joins the party (LEVELS-3).
     SpellDef{
@@ -2971,6 +3015,9 @@ inline constexpr std::string_view initiate_suffix = "_initiate";
 inline constexpr std::string_view intervention_suffix = "_intervention";
 // A Warlock's Mystic Arcanum: its spell cast once per Long Rest without a slot.
 inline constexpr std::string_view arcanum_suffix = "_arcanum";
+// Natural Recovery (Land Druid 6): a Circle spell cast once per Long Rest
+// without a slot.
+inline constexpr std::string_view natural_suffix = "_natural";
 
 // The slot level a "_N" verb names, or 0.
 inline unsigned cast_slot_level(std::string_view verb)
@@ -2993,6 +3040,8 @@ inline std::string_view without_cast_suffix(std::string_view verb)
         verb.remove_suffix(intervention_suffix.size());
     else if (verb.ends_with(arcanum_suffix))
         verb.remove_suffix(arcanum_suffix.size());
+    else if (verb.ends_with(natural_suffix))
+        verb.remove_suffix(natural_suffix.size());
     return verb;
 }
 
@@ -3259,6 +3308,10 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "contingency";
     if (id.starts_with("forcecage_"))
         id = "forcecage";
+    if (id.starts_with("giant_insect_"))
+        id = "giant_insect";
+    if (id == "call_lightning_again")
+        id = "call_lightning";
     if (id.starts_with("polymorph_"))
         id = "polymorph";
     if (id == "dimension_door_with")

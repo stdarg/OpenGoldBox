@@ -106,7 +106,9 @@ unsigned level_cap(CharacterClass character_class)
            character_class == CharacterClass::wizard ||
            character_class == CharacterClass::sorcerer ||
            character_class == CharacterClass::warlock ||
-           character_class == CharacterClass::bard ? 15 : 4;
+           character_class == CharacterClass::bard ? 15
+           // A Druid stops at 10 until its level-6 spells exist.
+           : character_class == CharacterClass::druid ? 10 : 4;
 }
 
 bool gains_feat(CharacterClass character_class, unsigned level)

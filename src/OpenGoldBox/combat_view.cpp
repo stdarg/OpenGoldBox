@@ -855,11 +855,13 @@ resolved.selection.matched ? std::string{} : resolved.selection.label});
         std::uint8_t icon;
     };
     // Summon Dragon's spirit wears Tyranthraxus's icon, Animate Objects' objects
-    // the Skeleton's (LEVELS-4).
+    // the Skeleton's (LEVELS-4), Giant Insect's insects the Large Scorpion's.
     constexpr std::array form_icons{FormIcon{"wolf", "CPIC4.DAX", 106},
                                     FormIcon{"boar", "CPIC6.DAX", 120},
                                     FormIcon{"giant_lizard", "CPIC8.DAX", 59},
                                     FormIcon{"giant_snake", "CPIC5.DAX", 60},
+                                    FormIcon{"tiger", "CPIC6.DAX", 119},
+                                    FormIcon{"giant_insect", "CPIC4.DAX", 18},
                                     FormIcon{"draconic_spirit", "CPIC5.DAX", 66},
                                     FormIcon{"animated_object", "CPIC4.DAX", 34}};
     if (std::filesystem::is_directory(directory))

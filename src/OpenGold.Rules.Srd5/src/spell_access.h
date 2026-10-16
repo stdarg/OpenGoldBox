@@ -26,6 +26,8 @@ void apply_spell_choices(rules::CharacterSheet &, const rules::SpellChoices &,
 std::vector<std::string> known_cantrip_ids(const rules::SpellAccess &);
 // Spells a class feature or Magic Initiate keeps prepared at this level,
 // outside the prepared count.
+// The Circle Spells of a land a Druid of the level has (Circle of the Land).
+std::vector<std::string> circle_spells(unsigned level, std::string_view land);
 std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned level,
         std::span<const rules::FeatureGrant> grants);
 // Wizards prepare from a spellbook; Clerics and Paladins from their class list.

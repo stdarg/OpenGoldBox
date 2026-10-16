@@ -244,6 +244,15 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         add("feature:dark_ones_own_luck", "subclass:warlock:fiend");
     if (klass == CharacterClass::warlock && level == 14)
         add("feature:hurl_through_hell", "subclass:warlock:fiend");
+    if (klass == CharacterClass::druid)
+    {
+        if (level == 5)
+            add("feature:wild_resurgence", "class:druid");
+        if (level == 6)
+            add("feature:natural_recovery", "subclass:druid:land");
+        if (level == 10)
+            add("feature:natures_ward", "subclass:druid:land");
+    }
     if (klass == CharacterClass::bard)
     {
         if (level == 5)
@@ -555,6 +564,13 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
                     types.end());
             require(entitlements.emplace(grant.source_id, 0).second);
         }
+        else if (grant.source_id == elemental_fury)
+        {
+            // Elemental Fury: one of its two options, chosen at level seven.
+            require(klass == CharacterClass::druid && grant.level == 7 && grant.choices.empty() &&
+                    (grant.id == "fury:potent_spellcasting" || grant.id == "fury:primal_strike"));
+            require(entitlements.emplace(grant.source_id, 0).second);
+        }
         else if (grant.source_id == defensive_tactics)
         {
             // Defensive Tactics: one of its two options, chosen at level seven.
@@ -639,6 +655,8 @@ GrantEffects validate_grants(std::span<const rules::FeatureGrant> grants, Charac
         require(entitlements.contains({std::string(fiendish_resilience), 0}));
     if (klass == CharacterClass::bard && level >= 6)
         require(entitlements.contains({"subclass:bard:discoveries", 1}));
+    if (klass == CharacterClass::druid && level >= 7)
+        require(entitlements.contains({std::string(elemental_fury), 0}));
     if (klass == CharacterClass::warlock)
         for (const unsigned arcanum : {11u, 13u, 15u})
             if (level >= arcanum)

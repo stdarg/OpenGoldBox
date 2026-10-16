@@ -453,9 +453,14 @@ enum class EffectKind : unsigned
     // Mystic Arcanum's spells cast since the last Long Rest: `dc` has a bit
     // for each, 1 for level 6, 2 for 7 and 4 for 8.
     arcanum_used = 184,
+    // Wild Resurgence (Druid 5): a slot spent for Wild Shape this turn, or
+    // (`dc` 1) a Wild Shape use spent for a slot until a Long Rest.
+    resurged = 185,
+    // Natural Recovery (Land 6): the free Circle spell cast until a Long Rest.
+    natural_cast = 186,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = arcanum_used
+    last = natural_cast
 };
 
 // Magic Circle's creature types, by `dc`.
