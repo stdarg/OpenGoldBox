@@ -1,0 +1,26 @@
+{
+  "description": "SPECTRE. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "SPECTRE",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 17,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 17,
+    "key": "MON4CHA.DAX:17"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_17/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon4cha_dax_17/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

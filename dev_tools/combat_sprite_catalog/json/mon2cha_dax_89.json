@@ -1,0 +1,37 @@
+{
+  "description": "5TH LVL MU. Gear: Dagger.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Dagger",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 1,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "5TH LVL MU",
+  "source": {
+    "art_archive": "MON2CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 89,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 89,
+    "key": "MON2CHA.DAX:89"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_89/item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "label": "Dagger",
+      "ready": "art/mon2cha_dax_89/item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "description": "8TH LVL FIGHTER. Gear: Item type 93 +3, Two-handed sword +2, Plate armor +2.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Item type 93 +3",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 93,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Two-handed sword +2",
+      "readied": true,
+      "source_hands": 2,
+      "source_range": 0,
+      "source_type": 38,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Plate armor +2",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 58,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "8TH LVL FIGHTER",
+  "source": {
+    "art_archive": "MON3CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 85,
+    "creature_archive": "MON3CHA.DAX",
+    "creature_record": 85,
+    "key": "MON3CHA.DAX:85"
+  },
+  "variants": [
+    {
+      "action": "art/mon3cha_dax_85/item_001__two_hand/action.png",
+      "id": "item_001__two_hand",
+      "label": "Two-handed sword +2",
+      "ready": "art/mon3cha_dax_85/item_001__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001",
+      "weapon_role": "two_hand"
+    }
+  ]
+}

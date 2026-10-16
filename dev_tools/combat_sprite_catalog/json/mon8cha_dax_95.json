@@ -1,0 +1,26 @@
+{
+  "description": "DRYTHH. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "DRYTHH",
+  "source": {
+    "art_archive": "MON8CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 95,
+    "creature_archive": "MON8CHA.DAX",
+    "creature_record": 95,
+    "key": "MON8CHA.DAX:95"
+  },
+  "variants": [
+    {
+      "action": "art/mon8cha_dax_95/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon8cha_dax_95/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

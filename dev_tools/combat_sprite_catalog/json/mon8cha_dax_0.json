@@ -1,0 +1,37 @@
+{
+  "description": "KOBOLD. Gear: Short sword.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Short sword",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 37,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "KOBOLD",
+  "source": {
+    "art_archive": "CPIC8.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 0,
+    "creature_archive": "MON8CHA.DAX",
+    "creature_record": 0,
+    "key": "MON8CHA.DAX:0"
+  },
+  "variants": [
+    {
+      "action": "art/mon8cha_dax_0/item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "label": "Short sword",
+      "ready": "art/mon8cha_dax_0/item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    }
+  ]
+}

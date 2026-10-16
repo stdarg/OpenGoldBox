@@ -1,0 +1,67 @@
+{
+  "description": "YARASH. Gear: 2 × Item type 71, Item type 78, Item type 77 +6.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Item type 71",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 71,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Item type 78",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 90,
+      "source_type": 78,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Item type 71",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 71,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "gear",
+      "name": "Item type 77 +6",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 77,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "YARASH",
+  "source": {
+    "art_archive": "MON7CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 81,
+    "creature_archive": "MON7CHA.DAX",
+    "creature_record": 81,
+    "key": "MON7CHA.DAX:81"
+  },
+  "variants": [
+    {
+      "action": "art/mon7cha_dax_81/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon7cha_dax_81/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

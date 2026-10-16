@@ -1,0 +1,66 @@
+{
+  "description": "6TH LVL FIGHTER. Gear: Javelin +1, Two-handed sword +2, Chain armor +1.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Javelin +1",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 7,
+      "source_type": 21,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Two-handed sword +2",
+      "readied": true,
+      "source_hands": 2,
+      "source_range": 0,
+      "source_type": 38,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Chain armor +1",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 55,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "6TH LVL FIGHTER",
+  "source": {
+    "art_archive": "MON5CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 84,
+    "creature_archive": "MON5CHA.DAX",
+    "creature_record": 84,
+    "key": "MON5CHA.DAX:84"
+  },
+  "variants": [
+    {
+      "action": "art/mon5cha_dax_84/item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "label": "Javelin +1",
+      "ready": "art/mon5cha_dax_84/item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon5cha_dax_84/item_001__two_hand/action.png",
+      "id": "item_001__two_hand",
+      "label": "Two-handed sword +2",
+      "ready": "art/mon5cha_dax_84/item_001__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001",
+      "weapon_role": "two_hand"
+    }
+  ]
+}

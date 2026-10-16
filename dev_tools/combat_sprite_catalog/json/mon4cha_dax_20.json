@@ -1,0 +1,26 @@
+{
+  "description": "WIGHT. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "WIGHT",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 20,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 20,
+    "key": "MON4CHA.DAX:20"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_20/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon4cha_dax_20/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

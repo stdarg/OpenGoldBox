@@ -1,0 +1,66 @@
+{
+  "description": "HOBGOBLIN LDR. Gear: Long sword, Arrows, Long bow.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Long sword",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 36,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 73,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Long bow",
+      "readied": false,
+      "source_hands": 2,
+      "source_range": 22,
+      "source_type": 43,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "HOBGOBLIN LDR",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 7,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 7,
+    "key": "MON4CHA.DAX:7"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_7/item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "label": "Long sword",
+      "ready": "art/mon4cha_dax_7/item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon4cha_dax_7/item_002__ranged/action.png",
+      "id": "item_002__ranged",
+      "label": "Long bow",
+      "ready": "art/mon4cha_dax_7/item_002__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_002",
+      "weapon_role": "ranged"
+    }
+  ]
+}

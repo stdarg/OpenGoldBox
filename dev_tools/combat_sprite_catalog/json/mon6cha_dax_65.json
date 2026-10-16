@@ -1,0 +1,26 @@
+{
+  "description": "AHNKHEG. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "AHNKHEG",
+  "source": {
+    "art_archive": "CPIC6.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 65,
+    "creature_archive": "MON6CHA.DAX",
+    "creature_record": 65,
+    "key": "MON6CHA.DAX:65"
+  },
+  "variants": [
+    {
+      "action": "art/mon6cha_dax_65/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon6cha_dax_65/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

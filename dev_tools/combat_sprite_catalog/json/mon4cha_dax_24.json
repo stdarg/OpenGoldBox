@@ -1,0 +1,37 @@
+{
+  "description": "LEVEL 6 MU. Gear: Item type 93 +2.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Item type 93 +2",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 93,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "LEVEL 6 MU",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 24,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 24,
+    "key": "MON4CHA.DAX:24"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_24/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon4cha_dax_24/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

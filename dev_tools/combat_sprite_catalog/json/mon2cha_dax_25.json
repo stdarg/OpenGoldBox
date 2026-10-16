@@ -1,0 +1,26 @@
+{
+  "description": "MAD MAN. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "MAD MAN",
+  "source": {
+    "art_archive": "MON2CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 25,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 25,
+    "key": "MON2CHA.DAX:25"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_25/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon2cha_dax_25/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "description": "FIRE GIANT. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "FIRE GIANT",
+  "source": {
+    "art_archive": "CPIC5.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 56,
+    "creature_archive": "MON5CHA.DAX",
+    "creature_record": 56,
+    "key": "MON5CHA.DAX:56"
+  },
+  "variants": [
+    {
+      "action": "art/mon5cha_dax_56/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon5cha_dax_56/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "description": "SHAMAN. Gear: Item type 79, Item type 77 +6, Dagger +2.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Item type 79",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 79,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Item type 77 +6",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 77,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Dagger +2",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 1,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "SHAMAN",
+  "source": {
+    "art_archive": "MON7CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 43,
+    "creature_archive": "MON7CHA.DAX",
+    "creature_record": 43,
+    "key": "MON7CHA.DAX:43"
+  },
+  "variants": [
+    {
+      "action": "art/mon7cha_dax_43/item_002__one_hand/action.png",
+      "id": "item_002__one_hand",
+      "label": "Dagger +2",
+      "ready": "art/mon7cha_dax_43/item_002__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_002",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon7cha_dax_43/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Item type 79",
+      "ready": "art/mon7cha_dax_43/item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
+    }
+  ]
+}

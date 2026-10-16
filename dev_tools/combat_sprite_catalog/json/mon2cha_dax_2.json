@@ -1,0 +1,57 @@
+{
+  "description": "GOBLIN GUARD. Gear: Short sword, Shield, Studded armor.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Short sword",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 37,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Studded armor",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 52,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "GOBLIN GUARD",
+  "source": {
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 2,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 2,
+    "key": "MON2CHA.DAX:2"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_2/item_000__item_001/action.png",
+      "id": "item_000__item_001",
+      "label": "Short sword + Shield",
+      "ready": "art/mon2cha_dax_2/item_000__item_001/ready.png",
+      "shield_id": "item_001",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    }
+  ]
+}

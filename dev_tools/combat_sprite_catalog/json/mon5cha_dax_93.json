@@ -1,0 +1,26 @@
+{
+  "description": "6TH LVL THIEF. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "6TH LVL THIEF",
+  "source": {
+    "art_archive": "MON5CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 93,
+    "creature_archive": "MON5CHA.DAX",
+    "creature_record": 93,
+    "key": "MON5CHA.DAX:93"
+  },
+  "variants": [
+    {
+      "action": "art/mon5cha_dax_93/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon5cha_dax_93/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

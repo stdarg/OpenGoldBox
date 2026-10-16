@@ -1,0 +1,37 @@
+{
+  "description": "JUJU ZOMBIE. Gear: Short bow.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Short bow",
+      "readied": false,
+      "source_hands": 2,
+      "source_range": 16,
+      "source_type": 44,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "JUJU ZOMBIE",
+  "source": {
+    "art_archive": "MON4CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 29,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 29,
+    "key": "MON4CHA.DAX:29"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_29/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Short bow",
+      "ready": "art/mon4cha_dax_29/item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
+    }
+  ]
+}

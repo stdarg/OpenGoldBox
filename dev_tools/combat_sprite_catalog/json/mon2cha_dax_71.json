@@ -1,0 +1,26 @@
+{
+  "description": "ETTIN. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "ETTIN",
+  "source": {
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 71,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 71,
+    "key": "MON2CHA.DAX:71"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_71/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon2cha_dax_71/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

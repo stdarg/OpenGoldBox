@@ -1,0 +1,26 @@
+{
+  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "Unidentified combat sprite",
+  "source": {
+    "art_archive": "CPIC6.DAX",
+    "art_basis": "Unidentified archive pair",
+    "art_record": 15,
+    "creature_archive": "",
+    "creature_record": -1,
+    "key": "CPIC6.DAX:15"
+  },
+  "variants": [
+    {
+      "action": "art/cpic6_dax_15/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/cpic6_dax_15/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

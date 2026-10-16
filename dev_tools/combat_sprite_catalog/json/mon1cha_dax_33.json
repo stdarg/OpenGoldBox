@@ -1,0 +1,57 @@
+{
+  "description": "MACE. Gear: Mace +1, Shield, Chain armor.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Mace +1",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 23,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Chain armor",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 55,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "MACE",
+  "source": {
+    "art_archive": "CPIC1.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 33,
+    "creature_archive": "MON1CHA.DAX",
+    "creature_record": 33,
+    "key": "MON1CHA.DAX:33"
+  },
+  "variants": [
+    {
+      "action": "art/mon1cha_dax_33/item_000__item_001/action.png",
+      "id": "item_000__item_001",
+      "label": "Mace +1 + Shield",
+      "ready": "art/mon1cha_dax_33/item_000__item_001/ready.png",
+      "shield_id": "item_001",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    }
+  ]
+}

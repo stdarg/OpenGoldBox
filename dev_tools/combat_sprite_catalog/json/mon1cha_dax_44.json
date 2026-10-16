@@ -1,0 +1,47 @@
+{
+  "description": "ORC. Gear: Arrows, Short bow.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 73,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Short bow",
+      "readied": true,
+      "source_hands": 2,
+      "source_range": 16,
+      "source_type": 44,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "ORC",
+  "source": {
+    "art_archive": "CPIC1.DAX",
+    "art_basis": "Same name alias (weak candidate)",
+    "art_record": 4,
+    "creature_archive": "MON1CHA.DAX",
+    "creature_record": 44,
+    "key": "MON1CHA.DAX:44"
+  },
+  "variants": [
+    {
+      "action": "art/mon1cha_dax_44/item_001__ranged/action.png",
+      "id": "item_001__ranged",
+      "label": "Short bow",
+      "ready": "art/mon1cha_dax_44/item_001__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001",
+      "weapon_role": "ranged"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "description": "ORC LEADER. Gear: Flail +1, Chain armor +1, Arrows, Long bow.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Flail +1",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 12,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Chain armor +1",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 55,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 73,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "weapon",
+      "name": "Long bow",
+      "readied": true,
+      "source_hands": 2,
+      "source_range": 22,
+      "source_type": 43,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "ORC LEADER",
+  "source": {
+    "art_archive": "CPIC3.DAX",
+    "art_basis": "Same ID, different bank (candidate)",
+    "art_record": 15,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 15,
+    "key": "MON2CHA.DAX:15"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_15/item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "label": "Flail +1",
+      "ready": "art/mon2cha_dax_15/item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon2cha_dax_15/item_003__ranged/action.png",
+      "id": "item_003__ranged",
+      "label": "Long bow",
+      "ready": "art/mon2cha_dax_15/item_003__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_003",
+      "weapon_role": "ranged"
+    }
+  ]
+}

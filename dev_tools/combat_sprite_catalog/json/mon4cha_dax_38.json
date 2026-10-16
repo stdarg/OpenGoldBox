@@ -1,0 +1,26 @@
+{
+  "description": "POISONOUS FROG. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "POISONOUS FROG",
+  "source": {
+    "art_archive": "MON4CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 38,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 38,
+    "key": "MON4CHA.DAX:38"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_38/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon4cha_dax_38/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

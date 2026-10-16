@@ -1,0 +1,37 @@
+{
+  "description": "LEVEL 3 MU. Gear: Item type 79.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Item type 79",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 79,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "LEVEL 3 MU",
+  "source": {
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 94,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 94,
+    "key": "MON2CHA.DAX:94"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_94/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Item type 79",
+      "ready": "art/mon2cha_dax_94/item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
+    }
+  ]
+}

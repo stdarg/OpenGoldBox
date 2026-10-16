@@ -1,0 +1,26 @@
+{
+  "description": "STIRGE. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "STIRGE",
+  "source": {
+    "art_archive": "CPIC7.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 61,
+    "creature_archive": "MON7CHA.DAX",
+    "creature_record": 61,
+    "key": "MON7CHA.DAX:61"
+  },
+  "variants": [
+    {
+      "action": "art/mon7cha_dax_61/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon7cha_dax_61/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

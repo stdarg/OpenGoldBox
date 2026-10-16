@@ -1,0 +1,76 @@
+{
+  "description": "3RD LVL FIGHTER. Gear: Long sword, Plate armor, Quarrel, Heavy crossbow.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Long sword",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 36,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Plate armor",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 58,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Quarrel",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 28,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "weapon",
+      "name": "Heavy crossbow",
+      "readied": false,
+      "source_hands": 2,
+      "source_range": 20,
+      "source_type": 45,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "3RD LVL FIGHTER",
+  "source": {
+    "art_archive": "MON6CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 100,
+    "creature_archive": "MON6CHA.DAX",
+    "creature_record": 100,
+    "key": "MON6CHA.DAX:100"
+  },
+  "variants": [
+    {
+      "action": "art/mon6cha_dax_100/item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "label": "Long sword",
+      "ready": "art/mon6cha_dax_100/item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon6cha_dax_100/item_003__ranged/action.png",
+      "id": "item_003__ranged",
+      "label": "Heavy crossbow",
+      "ready": "art/mon6cha_dax_100/item_003__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_003",
+      "weapon_role": "ranged"
+    }
+  ]
+}

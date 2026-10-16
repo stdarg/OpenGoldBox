@@ -1,0 +1,67 @@
+{
+  "description": "KOBOLD LEADER. Gear: Item type 77 +4, Short sword, Shield, Studded armor.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Item type 77 +4",
+      "readied": false,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 77,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Short sword",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 37,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "gear",
+      "name": "Studded armor",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 52,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "KOBOLD LEADER",
+  "source": {
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 11,
+    "creature_archive": "MON2CHA.DAX",
+    "creature_record": 11,
+    "key": "MON2CHA.DAX:11"
+  },
+  "variants": [
+    {
+      "action": "art/mon2cha_dax_11/item_001__item_002/action.png",
+      "id": "item_001__item_002",
+      "label": "Short sword + Shield",
+      "ready": "art/mon2cha_dax_11/item_001__item_002/ready.png",
+      "shield_id": "item_002",
+      "weapon_id": "item_001",
+      "weapon_role": "one_hand"
+    }
+  ]
+}

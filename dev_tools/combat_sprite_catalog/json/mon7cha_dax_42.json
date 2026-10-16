@@ -1,0 +1,57 @@
+{
+  "description": "HASSAD. Gear: Long sword +2, Shield +1, Scale armor +2.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Long sword +2",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 36,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "shield",
+      "name": "Shield +1",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Scale armor +2",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 54,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "HASSAD",
+  "source": {
+    "art_archive": "MON7CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 42,
+    "creature_archive": "MON7CHA.DAX",
+    "creature_record": 42,
+    "key": "MON7CHA.DAX:42"
+  },
+  "variants": [
+    {
+      "action": "art/mon7cha_dax_42/item_000__item_001/action.png",
+      "id": "item_000__item_001",
+      "label": "Long sword +2 + Shield +1",
+      "ready": "art/mon7cha_dax_42/item_000__item_001/ready.png",
+      "shield_id": "item_001",
+      "weapon_id": "item_000",
+      "weapon_role": "one_hand"
+    }
+  ]
+}

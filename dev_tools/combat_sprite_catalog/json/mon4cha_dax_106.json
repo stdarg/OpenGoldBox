@@ -1,0 +1,26 @@
+{
+  "description": "WOLF. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "WOLF",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 106,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 106,
+    "key": "MON4CHA.DAX:106"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_106/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon4cha_dax_106/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

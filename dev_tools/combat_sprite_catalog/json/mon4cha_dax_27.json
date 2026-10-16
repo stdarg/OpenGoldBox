@@ -1,0 +1,26 @@
+{
+  "description": "SKULLCRUSHER. Gear: none recorded.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "SKULLCRUSHER",
+  "source": {
+    "art_archive": "MON4CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 27,
+    "creature_archive": "MON4CHA.DAX",
+    "creature_record": 27,
+    "key": "MON4CHA.DAX:27"
+  },
+  "variants": [
+    {
+      "action": "art/mon4cha_dax_27/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon4cha_dax_27/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}
