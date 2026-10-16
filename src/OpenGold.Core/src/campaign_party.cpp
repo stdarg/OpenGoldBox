@@ -1069,14 +1069,14 @@ CampaignParty::Elapsed CampaignParty::elapsed(const PartyState &state,
     {
         if (std::find(in_combat.begin(), in_combat.end(), member.id) != in_combat.end())
             continue;
-        const auto profile =
+        auto profile =
             rules_->character_profile(member.character.sheet(), equipped_definitions(member));
         participants.push_back({member.id,
                                 "campaign-character",
                                 member.character.sheet().name,
                                 rules::Side::party,
                                 {},
-                                profile.data,
+                                std::move(profile.data),
                                 member.vitals});
     }
     rules_->elapse(participants, elapsed, result.random);
@@ -1485,13 +1485,13 @@ std::vector<rules::Participant> CampaignParty::participants() const
             const auto &m = member(id);
             if (m.vitals.dead)
                 continue;
-            const auto p = rules_->character_profile(m.character.sheet(), equipped_definitions(m));
+            auto p = rules_->character_profile(m.character.sheet(), equipped_definitions(m));
             result.push_back({id,
                               "campaign-character",
                               m.character.sheet().name,
                               rules::Side::party,
             {1 + static_cast<int>(slot / 4), 1 + static_cast<int>(slot % 4) * 2},
-            p.data,
+            std::move(p.data),
             m.vitals});
             for (const auto &item : m.character.inventory().items())
             {

@@ -94,7 +94,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     auto wall_art = decode_wall_art(find_record(definitions, 0), tiles);
     if (!wall_art || wall_art->appearances.size() != 15)
         throw EclError("Invalid Phlan wall definitions");
-    const auto bytes = read_archive(resolve_archive(directory, "SPRIT3.DAX"));
+    auto bytes = read_archive(resolve_archive(directory, "SPRIT3.DAX"));
     std::array<opengold::Image, 3> sprites;
     for (std::uint8_t i = 0; i < sprites.size(); ++i)
     {
@@ -167,7 +167,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         general_store.push_back(std::move(item));
     }
     town->item_templates = *templates;
-    town->sprite_archive = bytes;
+    town->sprite_archive = std::move(bytes);
     const auto pictures = [&](const char *name, auto & destination)
     {
         for (const auto &record : archive(name).records)
@@ -606,10 +606,10 @@ void RolfTourSession::advance(double seconds)
         }
         for (unsigned requests = 0; requests < 64; ++requests)
         {
-            const auto result = machine_.run(256);
+            auto result = machine_.run(256);
             if (result.state == EclState::faulted)
             {
-                fail(result.diagnostic);
+                fail(std::move(result.diagnostic));
                 return;
             }
             if (result.state == EclState::completed)
@@ -626,7 +626,7 @@ void RolfTourSession::advance(double seconds)
             }
             if (!result.request)
                 return; // Instruction budget yield.
-            const auto &request = *result.request;
+            auto &request = *result.request;
             if (request.kind == EclRequestKind::text)
             {
                 if (request.clear)
@@ -644,7 +644,7 @@ void RolfTourSession::advance(double seconds)
                     snapshot_.dialogue += "\n" + request.text;
                 if (request.instruction && request.instruction->opcode == 44)
                     announce_spokesman();
-                snapshot_.choices = request.choices;
+                snapshot_.choices = std::move(request.choices);
                 menu_request_ = request.id;
                 snapshot_.continue_ticket = ++next_ticket_;
                 snapshot_.phase = TourPhase::awaiting_continue;

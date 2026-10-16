@@ -3328,10 +3328,10 @@ class Session final : public CombatSession
                 throw std::runtime_error("Invalid participant or unsupported rules definition: " +
                                          p.definition);
             sides.insert(p.side);
-            const auto d = p.character_profile.empty() ? content_->definitions.at(p.definition)
-                           : character_definition(p.character_profile);
             Actor a;
-            a.definition = d;
+            a.definition = p.character_profile.empty() ? content_->definitions.at(p.definition)
+                           : character_definition(p.character_profile);
+            const auto &d = a.definition;
             a.source = std::move(p);
             a.life.hp = d.hp;
             a.winds = d.winds;
@@ -21682,7 +21682,7 @@ class Module final : public RulesModule
             options.training.push_back(detail::lessons_skilled_options(sheet.grants, options.level));
         if (choice.fighting_style && detail::class_of(sheet) == CharacterClass::fighter)
         {
-            const auto source = "class:fighter:fighting_style";
+            constexpr std::string_view source = "class:fighter:fighting_style";
             for (auto &feat : options.feats)
                 if (feat.id == "defense" || feat.id == "archery" ||
                         feat.id == "great_weapon_fighting" || feat.id == "two_weapon_fighting")
@@ -21927,7 +21927,7 @@ class Module final : public RulesModule
             throw std::runtime_error("Invalid advancement training choice");
             for (const auto &value : values)
             {
-                const FeatureGrant grant
+                FeatureGrant grant
                 {
                     // Skilled spans both catalogs, so its options carry the prefixed id.
                     id == "feat:skilled"             ? value
@@ -21954,7 +21954,7 @@ class Module final : public RulesModule
                     {}};
                 // spell_choice_sheet already granted Lessons' Magic Initiate.
                 if (std::find(next.grants.begin(), next.grants.end(), grant) == next.grants.end())
-                    next.grants.push_back(grant);
+                    next.grants.push_back(std::move(grant));
             }
         }
         if (klass == CharacterClass::warlock && next.level == 2)
@@ -22104,10 +22104,10 @@ class Module final : public RulesModule
         // spell_choice_sheet already granted Magic Initiate, whose spells it
         // offers. The same feat from another source (a Human's Versatile
         // Skilled) is a second grant.
-        if (const auto feat = detail::advancement_grant(klass, next.level, choice);
+        if (auto feat = detail::advancement_grant(klass, next.level, choice);
                 !choice.feat.empty() &&
                 std::find(next.grants.begin(), next.grants.end(), feat) == next.grants.end())
-            next.grants.push_back(feat);
+            next.grants.push_back(std::move(feat));
         next.prepared_spells = choice.spells;
         if (choice.spell_learning)
         {
@@ -23424,7 +23424,7 @@ class Module final : public RulesModule
         out << ' ' << std::quoted(detail::background_id(sheet.background));
         detail::write_grants(out, sheet.grants);
         out << ' ' << std::quoted(sheet.alignment);
-        const auto data = out.str();
+        auto data = out.str();
         const auto d = character_definition(data);
         const int proficiency = 2 + (static_cast<int>(sheet.level) - 1) / 4;
         const auto bonus = std::to_string(proficiency);
@@ -23432,7 +23432,7 @@ class Module final : public RulesModule
             throw std::runtime_error("Character HP does not match rules profile");
         CharacterProfile result
         {
-            data,
+            std::move(data),
             d.hp,
             d.ac,
             "Level 1-4 subset: HP, selected feats, supported prepared spells and level-one/two slots. Additional class/subclass and species features remain unavailable.",

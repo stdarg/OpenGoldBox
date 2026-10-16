@@ -1358,10 +1358,10 @@ TrainingProfile training_profile(std::span<const FeatureGrant> grants, Character
         result.complete &= scholar.size() == 1;
     for (const auto &s : skills)
     {
-        const auto bonus = check_modifier(grants, scores, level, s.ability, s.id);
+        auto bonus = check_modifier(grants, scores, level, s.ability, s.id);
         result.skills.push_back({std::string(s.id), std::string(s.label), s.ability, bonus.total,
                                  source(grants, "skill:" + std::string(s.id)), bonus.expertise,
-                                 bonus.sources});
+                                 std::move(bonus.sources)});
     }
     return result;
 }

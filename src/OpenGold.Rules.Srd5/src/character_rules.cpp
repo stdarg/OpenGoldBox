@@ -7,6 +7,7 @@
 #include "status_effects.h"
 #include <algorithm>
 #include <cstdlib>
+#include <iterator>
 #include <set>
 #include <stdexcept>
 
@@ -439,8 +440,9 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
     s.alignment = label(CreationField::alignment, d.alignment);
     s.background = label(CreationField::background, d.background);
     s.grants = detail::starting_grants(klass, d.race, d.background);
-    const auto training = detail::training_grants(klass, d.race, d.background, d.training);
-    s.grants.insert(s.grants.end(), training.begin(), training.end());
+    auto training = detail::training_grants(klass, d.race, d.background, d.training);
+    s.grants.insert(s.grants.end(), std::make_move_iterator(training.begin()),
+                    std::make_move_iterator(training.end()));
     if (name == NameRequirement::required && (d.name.empty() || d.name.size() > 160 ||
                          d.name.find_first_not_of(" \t\r\n") == std::string::npos ||
                          std::any_of(d.name.begin(), d.name.end(),
@@ -584,8 +586,9 @@ CharacterSheet CreatorRules::evaluate(const CharacterDraft &d, NameRequirement n
                        std::to_string(s.hit_points) + " HP";
     s.training =
         detail::training_profile(s.grants, klass, d.race, d.background, s.level, s.scores);
-    const auto spells = detail::starting_spell_grants(klass, d.cantrips);
-    s.grants.insert(s.grants.end(), spells.begin(), spells.end());
+    auto spells = detail::starting_spell_grants(klass, d.cantrips);
+    s.grants.insert(s.grants.end(), std::make_move_iterator(spells.begin()),
+                    std::make_move_iterator(spells.end()));
     using enum detail::CharacterClass;
     if (klass == wizard)
         s.prepared_spells = {"magic_missile"};

@@ -718,9 +718,9 @@ std::optional<FeatureGrant> initiate_choice_grant(const TrainingChoiceGroup &gro
     const auto split = group.id.rfind(':');
     if (split == std::string::npos || !initiate_list(std::string_view(group.id).substr(0, split)))
         return std::nullopt;
-    const auto feat = group.id.substr(0, split);
+    auto feat = group.id.substr(0, split);
     if (group.id.ends_with(":ability"))
-        return FeatureGrant{std::string(ability_prefix) + std::string(value), feat,
+        return FeatureGrant{std::string(ability_prefix) + std::string(value), std::move(feat),
                             group.acquired_level, {}};
     return initiate_spell_grant(feat, value, group.acquired_level);
 }
@@ -1317,8 +1317,8 @@ void apply_spell_choices(CharacterSheet &sheet, const SpellChoices &choices,
             {
                 return o.id == value;
             }));
-            if (const auto initiate = initiate_choice_grant(*group, value))
-                candidate.grants.push_back(*initiate);
+            if (auto initiate = initiate_choice_grant(*group, value))
+                candidate.grants.push_back(std::move(*initiate));
             else
                 candidate.grants.push_back(grant(value, group->acquired_level, origin));
         }

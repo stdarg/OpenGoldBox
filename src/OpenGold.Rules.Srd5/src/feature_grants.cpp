@@ -68,8 +68,8 @@ std::vector<rules::FeatureGrant> starting_grants(CharacterClass klass, std::stri
         std::string_view background)
 {
     std::vector<rules::FeatureGrant> result;
-    if (const auto feat = background_feat(background); !feat.empty())
-        result.push_back({feat, "background:" + std::string(background), 1, {}});
+    if (auto feat = background_feat(background); !feat.empty())
+        result.push_back({std::move(feat), "background:" + std::string(background), 1, {}});
     if (klass == CharacterClass::fighter)
     {
         // Entitlement already used by the existing Defense selection. Completing

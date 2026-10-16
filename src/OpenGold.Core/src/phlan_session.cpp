@@ -1832,7 +1832,7 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
             if (offer.denial == TrainingDenial::other_hall || offer.denial == TrainingDenial::not_active)
                 continue;
             const auto name = name_of(id);
-            const auto session = [&]() -> Message
+            auto session = [&]() -> Message
             {
                 switch (offer.denial)
                 {
@@ -1850,7 +1850,7 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
                         }};
                 }
             }();
-            add(session, {HallChoice::Kind::session, id});
+            add(std::move(session), {HallChoice::Kind::session, id});
             const auto lessons = campaign_->skill_lessons(id, visit.hall);
             if (lessons.options.empty())
                 continue;
