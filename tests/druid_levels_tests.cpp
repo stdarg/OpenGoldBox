@@ -167,7 +167,7 @@ void progression_checks()
     while (party.can_advance(id))
         party.advance(id, party.default_advancement(id));
     const auto sheet = party.member(id).character.sheet();
-    check(sheet.level == 10, "A Druid stops at 10 for now");
+    check(sheet.level == 15, "A Druid reaches 15");
     for (const auto &[level, count] : std::vector<std::pair<unsigned, unsigned>>
 {
     {5, 9}, {6, 10}, {7, 11}, {8, 12}, {9, 14}, {10, 15}
@@ -256,6 +256,26 @@ void spells_checks()
                std::abs(command.destination.y - 2) <= 2;
     }), "The brute cannot enter the shell");
 }
+// Druid levels 11 to 15.
+void high_checks()
+{
+    const auto rules = dummy_rules();
+    auto fey = field(*rules, druid(11, "conjure_fey").sheet(), {6, 2});
+    check(submit(*fey, "conjure_fey", 98) && fey->snapshot().spiritual_weapons.size() == 1 &&
+          !offered(*fey, "conjure_fey_strike", 98), "Conjure Fey's spirit attacks as it appears");
+    check(submit(*fey, "end"), "End the turn");
+    to_turn(*fey, 1);
+    check(submit(*fey, "conjure_fey_strike", 98) && logged(*fey, "Druid's fey spirit strikes."),
+          "A Bonus Action strikes again");
+    auto thorns = field(*rules, druid(11, "wall_of_thorns").sheet(), {6, 2});
+    check(submit(*thorns, "wall_of_thorns_vertical") && submit_cell(*thorns, "area_move", Cell{6, 2}) &&
+          submit(*thorns, "area_cast") && logged(*thorns, "A wall of thorns grows.") &&
+          logged(*thorns, " Piercing damage."), "Wall of Thorns pierces as it rises");
+    auto trees = field(*rules, druid(14).sheet(), {6, 2});
+    check(submit(*trees, "natures_sanctuary") && submit_cell(*trees, "area_move", Cell{2, 2}) &&
+          submit(*trees, "area_cast") && logged(*trees, "Druid raises Nature's Sanctuary.") &&
+          offered(*trees, "move_sanctuary"), "Nature's Sanctuary, then a Bonus Action moves it");
+}
 } // namespace
 
 int main()
@@ -267,6 +287,7 @@ int main()
         resurgence_and_fury_checks();
         tiger_checks();
         spells_checks();
+        high_checks();
     }
     catch (const std::exception &error)
     {

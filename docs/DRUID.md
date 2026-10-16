@@ -1,6 +1,6 @@
 # Druid
 
-Levels 1–10 of the SRD 5.2.1 Druid (pp. 41–46). Wisdom is the spellcasting
+Levels 1–15 of the SRD 5.2.1 Druid (pp. 41–46). Wisdom is the spellcasting
 ability.
 
 ## Spellcasting, Primal Order and the Circle of the Land
@@ -122,10 +122,9 @@ ability.
   Land's Aid's thorns, healing and spent use). A form carried into a new fight
   applies from its start (rules 0.6.167; it used to wait for the Druid's turn).
 
-## Levels 5–10
+## Levels 5–15
 
-The Druid advances to level 10 for now; level 11 waits for its level-6
-spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
+The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
 [LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 
 - **Spellcasting** (SRD 5.2.1 p. 41): a full caster's slots; prepared spells
@@ -186,9 +185,37 @@ spells ([LEVELS-1](SRD-DECISIONS.md#levels-1-2026-10-14-levels-510),
   effect falls away at once), and resists its land's element: Fire (arid),
   Cold (polar), Lightning (temperate) or Poison (tropical).
 - **Land's Aid** deals and heals 3d6 from 10.
-- Verification: `opengold_druid_levels_tests` (the campaign's stop at 10,
+- **Level-6 to level-8 spells:** at 11 Conjure Fey, Flesh to Stone, Heal,
+  Heroes' Feast, Sunbeam and Wall of Thorns; at 13 Fire Storm, Regenerate and
+  Reverse Gravity; at 15 Befuddlement, Earthquake, Incendiary Cloud and
+  Sunburst (the shared ones work as for the [Cleric](CLERIC.md#levels-515) and
+  the [Wizard](WIZARD.md#levels-515)). Animal Shapes and Tsunami come next.
+- **Conjure Fey** (Action, Concentration up to 10 minutes): a fey spirit
+  appears beside a creature and makes a melee spell attack for 3d12 + the
+  Wisdom modifier Psychic (1d12 more per slot level above 6); a hit leaves the
+  creature Frightened of the Druid until the start of the Druid's next turn.
+  On later turns **Fey spirit attack** (a Bonus Action) teleports it up to 30
+  feet and attacks again. It is drawn as Spiritual Weapon's force is.
+- **Wall of Thorns** (Action, Concentration up to 10 minutes): a wall 60 feet
+  long in any of four directions or a ring 20 feet across (LEVELS-3); it hides
+  what is in it, its squares cost 4 feet of movement a foot, and as it rises
+  each creature in it makes a Dexterity save against 7d8 Piercing, half on a
+  success. Entering it or ending a turn in it is a Dexterity save against
+  7d8 Slashing, once a turn (1d8 more of each per slot level above 6).
+- **Ability Score Improvement** (12).
+- **Nature's Sanctuary** (Land 14): **Nature's Sanctuary**, a Magic action
+  and a Wild Shape use, raises a 15-foot cube of spectral trees within 120
+  feet for a minute: allies among them share the Druid's Nature's Ward
+  Resistance; **Move Nature's Sanctuary** (a Bonus Action) moves it up to 60
+  feet. Its Half Cover is cut (COVER-1).
+- **Land's Aid** deals and heals 4d6 from 14.
+- **Improved Elemental Fury** (15): Primal Strike deals 2d8. Potent
+  Spellcasting's 300 more feet of cantrip range outreach every battle map, so
+  it adds nothing.
+- Verification: `opengold_druid_levels_tests` (the campaign to 15,
   prepared counts, the features' grants, level 5's description, a level-10
   round trip, Fireball as an arid Circle Spell and Natural Recovery's free
   cast once, Natural Recovery's Short Rest choice, Wild Resurgence's slot,
   Primal Strike, the Tiger from 8, Call Lightning and its second bolt, Giant
-  Insect, Antilife Shell keeping a brute out).
+  Insect, Antilife Shell keeping a brute out, Conjure Fey's two attacks, Wall
+  of Thorns, Nature's Sanctuary and its move).

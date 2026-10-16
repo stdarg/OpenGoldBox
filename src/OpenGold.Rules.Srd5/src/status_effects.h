@@ -458,9 +458,13 @@ enum class EffectKind : unsigned
     resurged = 185,
     // Natural Recovery (Land 6): the free Circle spell cast until a Long Rest.
     natural_cast = 186,
+    // Conjure Fey: Frightened of the caster until the start of its next turn.
+    fey_fright = 187,
+    // Wall of Thorns: the thorns have tested the creature this turn.
+    thorned = 188,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = natural_cast
+    last = thorned
 };
 
 // Magic Circle's creature types, by `dc`.

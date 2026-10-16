@@ -212,7 +212,10 @@ enum class Rider : unsigned
     power_word_stun,
     call_lightning,
     antilife_shell,
-    giant_insect
+    giant_insect,
+    conjure_fey,
+    wall_of_thorns,
+    natures_sanctuary
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2747,6 +2750,57 @@ inline constexpr std::array spell_table
         .range = 60,
         .rider = Rider::giant_insect,
         .concentration = true},
+    // SRD 5.2.1 p. 118: a fey spirit appears and makes a melee spell attack
+    // for 3d12 + the spellcasting modifier Psychic, frightening the target
+    // until the caster's next turn; later a Bonus Action teleports it 30 feet
+    // and attacks again; 1d12 more per slot level above 6.
+    SpellDef{
+        .id = "conjure_fey",
+        .label = "Conjure Fey",
+        .level = 6,
+        .pattern = SpellPattern::spell_attack,
+        .target = SpellTarget::enemy,
+        .range = 65,
+        .melee = true,
+        .damage = DamageType::psychic,
+        .dice = {3, 12, 0},
+        .add_casting_modifier = true,
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::conjure_fey,
+        .concentration = true},
+    // SRD 5.2.1 p. 173: a wall of thorns 60 feet long or a ring 20 feet
+    // across that blocks sight; Dexterity save, 7d8 Piercing as it rises, half
+    // on a success; its squares cost 4 feet of movement a foot, and entering or
+    // ending a turn in it is a Dexterity save against 7d8 Slashing, once a
+    // turn; 1d8 more per slot level above 6.
+    SpellDef{
+        .id = "wall_of_thorns",
+        .label = "Wall of Thorns",
+        .level = 6,
+        .pattern = SpellPattern::save_damage,
+        .target = SpellTarget::area,
+        .range = 120,
+        .save = Ability::dexterity,
+        .half_on_success = true,
+        .damage = DamageType::piercing,
+        .dice = {7, 8, 0},
+        .upcast = {.extra_dice = 1},
+        .rider = Rider::wall_of_thorns,
+        .concentration = true,
+        .wall = 60,
+        .ring = 20},
+    // Nature's Sanctuary (SRD 5.2.1 p. 46), aimed by a Land Druid of 14 with a
+    // use of Wild Shape: a 15-foot cube of spectral trees within 120 feet for a
+    // minute. No one learns it as a spell.
+    SpellDef{
+        .id = "natures_sanctuary",
+        .label = "Nature's Sanctuary",
+        .level = 0,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::area,
+        .range = 120,
+        .rider = Rider::natures_sanctuary,
+        .area = 15},
     // SRD 5.2.1 p. 162: in camp, twelve hours make a lasting copy of a member
     // with half its Hit Points, which joins the party (LEVELS-3).
     SpellDef{
@@ -3312,6 +3366,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "giant_insect";
     if (id == "call_lightning_again")
         id = "call_lightning";
+    if (id == "move_sanctuary")
+        id = "natures_sanctuary";
     if (id.starts_with("polymorph_"))
         id = "polymorph";
     if (id == "dimension_door_with")

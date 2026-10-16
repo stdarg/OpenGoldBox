@@ -411,13 +411,13 @@ std::string_view contingency_label(std::size_t trigger)
 // the field where they are offered.
 bool magical_command(std::string_view verb)
 {
-    constexpr std::array<std::string_view, 24> verbs{
+    constexpr std::array<std::string_view, 25> verbs{
         "dispel_break", "dispel_dismissal", "move_moonbeam", "sunbeam_line", "vampiric_touch_again",
         "flame_blade_strike", "hurl_flame", "armor_of_shadows", "fiendish_vigor", "lands_aid",
         "divine_spark", "turn_undead", "preserve_life", "abjure_foes", "tireless",
         "spiritual_weapon_strike", "move_spirit_pack", "move_pillar", "potent_vitality",
         "sacred_weapon", "sacred_weapon_radiant", "move_hound", "arcane_sword_strike",
-        "call_lightning_again"};
+        "call_lightning_again", "conjure_fey_strike"};
     return std::find(verbs.begin(), verbs.end(), verb) != verbs.end() ||
            verb.starts_with("lay_on_hands") || verb.starts_with("wild_shape") ||
            verb.starts_with("dragons_breath_exhale") || verb.starts_with("breath_weapon") ||
@@ -957,6 +957,8 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "fireball", 5},
     SpellAccessRow{CharacterClass::druid, "lightning_bolt", 5},
     SpellAccessRow{CharacterClass::druid, "stinking_cloud", 5},
+    SpellAccessRow{CharacterClass::druid, "conjure_fey", 11},
+    SpellAccessRow{CharacterClass::druid, "wall_of_thorns", 11},
     // Druid level-3 spells, with the level-3 slot of Druid level 5.
     SpellAccessRow{CharacterClass::druid, "call_lightning", 5},
     SpellAccessRow{CharacterClass::druid, "conjure_animals", 5},
@@ -1211,7 +1213,7 @@ struct Definition
     // (Land 10).
     std::string land;
     std::set<std::string, std::less<>> circle; // the land's levelled Circle Spells
-    bool wild_resurgence{}, druid_potent{}, natures_ward{};
+    bool wild_resurgence{}, druid_potent{}, natures_ward{}, natures_sanctuary{};
     int natural_recovery{}, primal_strike{};
     int divine_strike{};
     // Cleric 10: Divine Intervention's use per Long Rest (in Actor::arcane).
@@ -2385,6 +2387,7 @@ character_definition(std::string_view bytes,
     d.wild_resurgence = klass == CharacterClass::druid && level >= 5;
     d.natural_recovery = klass == CharacterClass::druid && level >= 6 ? 1 : 0;
     d.natures_ward = klass == CharacterClass::druid && level >= 10;
+    d.natures_sanctuary = klass == CharacterClass::druid && level >= 14;
     d.lands_aid = klass == CharacterClass::druid && level >= 3;
     d.rage_damage = klass == CharacterClass::barbarian ? (level >= 9 ? 3 : 2) : 0;
     d.strength = str;
@@ -3488,7 +3491,10 @@ class Session final : public CombatSession
         box,            // Forcecage's solid box, which nothing crosses
         embers,         // Incendiary Cloud; cells.front() is its centre
         storm,          // Call Lightning's cloud; cells.front() is the square under its centre
-        antilife        // Antilife Shell's 10-foot Emanation, around its caster
+        antilife,       // Antilife Shell's 10-foot Emanation, around its caster
+        fey,            // one square: Conjure Fey's spirit
+        thorns,         // Wall of Thorns, 4 feet of movement a foot, opaque
+        sanctuary       // Nature's Sanctuary's spectral trees, until it ends_ms
     };
     struct Zone
     {
@@ -4131,6 +4137,8 @@ class Session final : public CombatSession
     void overchannel_backlash();
     // Nature's Ward (Land 10): the Druid cannot be Poisoned.
     void ward_nature();
+    // Conjure Fey: Frightened of the caster until the start of its next turn.
+    void fey_frighten(Actor &caster, Actor &target);
     // Hypnotic Pattern and Fear: each creature in the area that fails its
     // Wisdom save is entranced or terrified while the caster concentrates.
     void enchant_area(Actor &caster, const detail::SpellDef &spell, const std::vector<Cell> &cells);
@@ -5172,6 +5180,13 @@ Battlefield Session::zoned_board() const
                 board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
                     Terrain::obstacle;
     for (const auto &zone : zones_)
+        // Wall of Thorns: 4 feet of movement for each foot, as Overgrowth.
+        if (zone.kind == ZoneKind::thorns)
+            for (const auto cell : zone.cells)
+                if (board.at(cell) != Terrain::obstacle)
+                    board.terrain[static_cast<std::size_t>(cell.y * board.width + cell.x)] =
+                        Terrain::overgrown;
+    for (const auto &zone : zones_)
         if (zone.kind == ZoneKind::plants || zone.kind == ZoneKind::grease ||
                 zone.kind == ZoneKind::web || zone.kind == ZoneKind::gust ||
                 zone.kind == ZoneKind::spikes || zone.kind == ZoneKind::swarm ||
@@ -5238,6 +5253,7 @@ bool Session::obscured(const Actor &viewer, Cell cell) const
         return (zone.kind == ZoneKind::fog || zone.kind == ZoneKind::sleet ||
                 zone.kind == ZoneKind::stench || zone.kind == ZoneKind::fire_wall ||
                 zone.kind == ZoneKind::cloud || zone.kind == ZoneKind::embers ||
+                zone.kind == ZoneKind::thorns ||
                 (zone.kind == ZoneKind::darkness && !def(viewer).devils_sight &&
                  !detail::has_effect(viewer.effects, detail::EffectKind::true_seeing) &&
                  !(def(viewer).witch_sight && distance(viewer.source.cell, cell) <= 30))) &&
@@ -5370,8 +5386,10 @@ Snapshot Session::snapshot() const
             s.obscured.insert(s.obscured.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::silence)
             s.silenced.insert(s.silenced.end(), zone.cells.begin(), zone.cells.end());
-        // Arcane Sword's sword is drawn as Spiritual Weapon's force is.
-        else if (zone.kind == ZoneKind::spiritual_weapon || zone.kind == ZoneKind::sword)
+        // Arcane Sword's sword and Conjure Fey's spirit are drawn as Spiritual
+        // Weapon's force is.
+        else if (zone.kind == ZoneKind::spiritual_weapon || zone.kind == ZoneKind::sword ||
+                 zone.kind == ZoneKind::fey)
             s.spiritual_weapons.push_back(zone.cells.front());
         else if (zone.kind == ZoneKind::flaming_sphere)
             s.flaming_spheres.push_back(zone.cells.front());
@@ -5399,7 +5417,7 @@ Snapshot Session::snapshot() const
                         s.spirits.push_back(cell);
         }
         else if (zone.kind == ZoneKind::wind_wall || zone.kind == ZoneKind::blades ||
-                 zone.kind == ZoneKind::fire_wall)
+                 zone.kind == ZoneKind::fire_wall || zone.kind == ZoneKind::thorns)
             s.walls.insert(s.walls.end(), zone.cells.begin(), zone.cells.end());
         else if (zone.kind == ZoneKind::tentacles)
             s.spirits.insert(s.spirits.end(), zone.cells.begin(), zone.cells.end());
@@ -5871,6 +5889,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::overchannel, "Overchannel"},
                     std::pair{detail::EffectKind::dragon_wings, "Dragon Wings"},
                     std::pair{detail::EffectKind::hurled, "Hurled through the Lower Planes"},
+                    std::pair{detail::EffectKind::fey_fright, "Frightened (Conjure Fey)"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -6246,6 +6265,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         return;
     case detail::Rider::call_lightning:
     case detail::Rider::giant_insect:
+    case detail::Rider::wall_of_thorns:
+    case detail::Rider::natures_sanctuary:
     case detail::Rider::finger_of_death:
     case detail::Rider::delayed_blast_fireball:
     case detail::Rider::forcecage:
@@ -6264,6 +6285,9 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                                     detail::EffectKind::mazed, 0);
         log(target.source.name + " is lost in a maze.", {"{name} is lost in a maze.", {{"name", target.source.name}}});
         end_incapacitated_effects(target);
+        return;
+    case detail::Rider::conjure_fey:
+        fey_frighten(a, target);
         return;
     case detail::Rider::antilife_shell:
         zones_.push_back({a.source.id, ZoneKind::antilife, {a.source.cell}});
@@ -6956,14 +6980,17 @@ void Session::strike_with_spell(const detail::SpellDef &spell, std::string_view 
         zones_.push_back({a.source.id, ZoneKind::spiritual_weapon,
                           {spectral_cell(target, a.source.cell)}});
     }
-    // Arcane Sword's sword appears beside the target the same way; it waits
-    // for the caster's later turns to strike again.
-    if (spell.rider == detail::Rider::arcane_sword)
+    // Arcane Sword's sword and Conjure Fey's spirit appear beside the target
+    // the same way; they wait for the caster's later turns to strike again.
+    if (spell.rider == detail::Rider::arcane_sword || spell.rider == detail::Rider::conjure_fey)
     {
         begin_concentration(a, spell);
-        Zone sword{a.source.id, ZoneKind::sword, {spectral_cell(target, a.source.cell)}};
-        sword.dealt = 1;
-        zones_.push_back(std::move(sword));
+        Zone spirit{a.source.id,
+                    spell.rider == detail::Rider::arcane_sword ? ZoneKind::sword : ZoneKind::fey,
+                    {spectral_cell(target, a.source.cell)}};
+        spirit.dealt = 1;
+        spirit.slot = spell.rider == detail::Rider::conjure_fey ? slot_level_of(verb, spell) : 0;
+        zones_.push_back(std::move(spirit));
     }
     const auto type = cast_damage_type(
                           detail::chromatic_type(verb)
@@ -7942,9 +7969,15 @@ std::vector<Command> Session::offered_commands() const
             for (const auto &zone : zones_)
                 if (zone.kind == ZoneKind::storm && zone.caster == caster.source.id)
                     origin = zone.cells.front();
+        // Nature's Sanctuary moves up to 60 feet from where it stands.
+        const bool trees_move = area_->verb == "move_sanctuary";
+        if (trees_move)
+            for (const auto &zone : zones_)
+                if (zone.kind == ZoneKind::sanctuary && zone.caster == caster.source.id)
+                    origin = zone.cells[zone.cells.size() / 2];
         for (int y = 0; y < board_.height; ++y)
             for (int x = 0; x < board_.width; ++x)
-                if (distance(origin, Cell{x, y}) <= spell_range(caster, spell) &&
+                if (distance(origin, Cell{x, y}) <= (trees_move ? 60 : spell_range(caster, spell)) &&
                         aimable(Cell{x, y}))
                     add(caster.source.id, "area_move", std::string(spell.label), 0, Cell{x, y});
         if (spell.storm ? !area_->cubes.empty() : aimable(area_->center))
@@ -8629,6 +8662,23 @@ std::vector<Command> Session::offered_commands() const
                 if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
                         !absent(other) && distance(zone.cells.front(), other.source.cell) <= 35)
                     add(id, "arcane_sword_strike", "Arcane Sword attack", other.source.id);
+    // Conjure Fey: on later turns a Bonus Action teleports the spirit 30 feet
+    // and attacks a creature within 5 feet of it.
+    for (const auto &zone : zones_)
+        if (zone.kind == ZoneKind::fey && zone.caster == id && !zone.dealt && a.bonus)
+            for (const auto &other : actors_)
+                if (other.source.side != a.source.side && other.life.hp > 0 && !other.life.dead &&
+                        !absent(other) && distance(zone.cells.front(), other.source.cell) <= 35)
+                    add(id, "conjure_fey_strike", "Fey spirit attack", other.source.id);
+    // Nature's Sanctuary (Land 14): a Magic action and a Wild Shape use raise
+    // it; a Bonus Action moves it 60 feet.
+    if (d.natures_sanctuary && a.channel_divinity > 0 && a.actions.available(true))
+        commands.push_back({revision_, id, 0, "natures_sanctuary", "Nature's Sanctuary", Cell{}, 0, true});
+    if (a.bonus && std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
+{
+    return zone.kind == ZoneKind::sanctuary && zone.caster == id;
+}))
+    commands.push_back({revision_, id, 0, "move_sanctuary", "Move Nature's Sanctuary", Cell{}, 0, true});
     // Delayed Blast Fireball: ending the spell, which takes no action, bursts
     // the bead.
     if (std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
@@ -10610,8 +10660,9 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
 {
     // Every creature in it but the caster saves, once per turn; the swarm may
     // have ended with its caster's Concentration mid-turn.
-    const bool blades = swarm.kind == ZoneKind::blades;
-    const auto tested = blades ? detail::EffectKind::bladed : detail::EffectKind::swarmed;
+    const bool blades = swarm.kind == ZoneKind::blades, thorns = swarm.kind == ZoneKind::thorns;
+    const auto tested = blades ? detail::EffectKind::bladed
+                        : thorns ? detail::EffectKind::thorned : detail::EffectKind::swarmed;
     const bool standing = std::any_of(zones_.begin(), zones_.end(), [&](const auto & zone)
     {
         return zone.kind == swarm.kind && zone.caster == swarm.caster;
@@ -10630,12 +10681,22 @@ void Session::swarm_strikes(const Zone &swarm, Actor &creature)
                                caster != actors_.end() ? effect_source(*caster) : effect_source(creature),
                                caster != actors_.end() ? caster->source.name : creature.source.name,
                                rest_of_turn, tested);
-    const auto &spell = *detail::find_spell(blades ? "blade_barrier" : "insect_plague");
+    const auto &spell = *detail::find_spell(blades ? "blade_barrier" : thorns ? "wall_of_thorns"
+                                            : "insect_plague");
     const bool saved = saving_throw_succeeds(creature, spell.save, swarm.save_dc);
     const int count = spell.dice.count + static_cast<int>(swarm.slot - spell.level);
     const int rolled = dice({count, spell.dice.sides, 0});
-    const int amount = resolved_damage(creature, spell.damage, saved ? rolled / 2 : rolled);
-    if (blades)
+    // The thorns slash a creature moving in them; they pierced as they rose.
+    const auto type = thorns ? detail::DamageType::slashing : spell.damage;
+    const int amount = resolved_damage(creature, type, saved ? rolled / 2 : rolled);
+    if (thorns)
+        log(creature.source.name + " takes " + std::to_string(amount) +
+            " Slashing damage from the thorns.",
+        {
+            "{name} takes {damage} Slashing damage from the thorns.",
+            {{"name", creature.source.name}, {"damage", std::to_string(amount)}}
+        });
+    else if (blades)
         log(creature.source.name + " takes " + std::to_string(amount) +
             " Force damage from the blades.",
         {
@@ -11454,6 +11515,15 @@ void Session::take_overchannel(Actor &caster, const detail::SpellDef &spell, std
     {"{name} overchannels the spell.", {{"name", caster.source.name}}});
 }
 
+void Session::fey_frighten(Actor &caster, Actor &target)
+{
+    if (target.life.dead || fearless(target) || !detail::can_apply(target.effects))
+        return;
+    detail::apply_poisoned(target.effects, effect_source(caster), caster.source.name,
+                           next_turn_ms(caster), detail::EffectKind::fey_fright);
+    log(target.source.name + " is Frightened.", {"{name} is Frightened.", {{"name", target.source.name}}});
+}
+
 void Session::ward_nature()
 {
     for (auto &a : actors_)
@@ -12066,6 +12136,31 @@ void Session::cast_area()
         lands_aid(a, aimed.center);
         return;
     }
+    if (aimed.verb == "natures_sanctuary" || aimed.verb == "move_sanctuary")
+    {
+        const auto &trees = *detail::find_spell("natures_sanctuary");
+        auto cells = area_cells(trees, trees.id, a.source.cell, aimed.center);
+        if (aimed.verb == "move_sanctuary")
+        {
+            a.bonus = false;
+            for (auto &zone : zones_)
+                if (zone.kind == ZoneKind::sanctuary && zone.caster == a.source.id)
+                    zone.cells = std::move(cells);
+            log("The spectral trees move.", {"The spectral trees move.", {}});
+            return;
+        }
+        a.nick_origin = 0;
+        (void)a.actions.spend(true);
+        --a.channel_divinity;
+        std::erase_if(zones_, [&](const auto & zone)
+        {
+            return zone.kind == ZoneKind::sanctuary && zone.caster == a.source.id;
+        });
+        zones_.push_back({a.source.id, ZoneKind::sanctuary, std::move(cells), elapsed_ms_ + 60000});
+        log(a.source.name + " raises Nature's Sanctuary.",
+        {"{name} raises Nature's Sanctuary.", {{"name", a.source.name}}});
+        return;
+    }
     // Not a spell: the teleport leaves Sanctuary, Invisibility and hiding be.
     if (aimed.verb == "clouds_jaunt")
     {
@@ -12258,6 +12353,19 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
         for (auto &other : actors_)
             if (in_zone(swarm, other.source.cell))
                 swarm_strikes(swarm, other);
+        return;
+    }
+    if (spell.rider == detail::Rider::wall_of_thorns)
+    {
+        // The thorns pierce those in the wall as it rises; later they slash.
+        begin_concentration(a, spell);
+        Zone thorns{a.source.id, ZoneKind::thorns,
+                    area_cells(spell, aimed.verb, a.source.cell, aimed.center)};
+        thorns.save_dc = area_dc(a, spell);
+        thorns.slot = slot_level_of(aimed.verb, spell);
+        damage_area(a, spell, aimed.verb, thorns.cells, thorns.save_dc);
+        zones_.push_back(std::move(thorns));
+        log("A wall of thorns grows.", {"A wall of thorns grows.", {}});
         return;
     }
     if (spell.rider == detail::Rider::blade_barrier)
@@ -13219,7 +13327,8 @@ std::vector<const Actor *> Session::fears_in_sight(const Actor &a) const
         return result;
     for (const auto &e : a.effects.active)
         if ((e.kind == detail::EffectKind::frightened || e.kind == detail::EffectKind::abjured ||
-                e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::eye_panic) &&
+                e.kind == detail::EffectKind::terrified || e.kind == detail::EffectKind::eye_panic ||
+                e.kind == detail::EffectKind::fey_fright) &&
                 e.source_scope == scope_)
             for (const auto &other : actors_)
                 if (other.source.id == e.source_actor && !other.life.dead &&
@@ -13624,6 +13733,15 @@ std::vector<detail::DamageAffinity> Session::affinities(const Actor &target) con
     if (detail::has_effect(target.effects, detail::EffectKind::feasted))
         result.push_back({detail::AffinityKind::resistance, detail::DamageType::poison,
                           "spell:heroes_feast"});
+    // Nature's Sanctuary: an ally among its trees shares the Druid's Nature's
+    // Ward Resistance.
+    for (const auto &zone : zones_)
+        if (const auto *druid = find_actor(zone.caster); zone.kind == ZoneKind::sanctuary && druid &&
+                druid->source.side == target.source.side && in_zone(zone, target.source.cell))
+            for (const auto &ward : def(*druid).affinities)
+                if (ward.source_id == "feature:natures_ward")
+                    result.push_back({detail::AffinityKind::resistance, ward.type,
+                                      "feature:natures_sanctuary"});
     // Mind Blank: Immunity to Psychic damage.
     if (detail::has_effect(target.effects, detail::EffectKind::mind_blank))
         result.push_back({detail::AffinityKind::immunity, detail::DamageType::psychic,
@@ -16595,7 +16713,8 @@ void Session::end_turn()
     for (auto &zone : zones_)
         if (zone.kind == ZoneKind::bead && zone.caster == actors_[turn_].source.id)
             zone.dealt = std::min(zone.dealt + 1, 59);
-        else if (zone.kind == ZoneKind::sword && zone.caster == actors_[turn_].source.id)
+        else if ((zone.kind == ZoneKind::sword || zone.kind == ZoneKind::fey) &&
+                 zone.caster == actors_[turn_].source.id)
             zone.dealt = 0;
     restore_self(actors_[turn_]);
     contagion_save(actors_[turn_]);
@@ -16608,8 +16727,8 @@ void Session::end_turn()
         if (zone.kind == ZoneKind::gust && in_zone(zone, actors_[turn_].source.cell))
             blow(zone, actors_[turn_]);
     for (const auto &zone : std::vector<Zone>(zones_))
-        if ((zone.kind == ZoneKind::swarm || zone.kind == ZoneKind::blades) &&
-                in_zone(zone, actors_[turn_].source.cell))
+        if ((zone.kind == ZoneKind::swarm || zone.kind == ZoneKind::blades ||
+                zone.kind == ZoneKind::thorns) && in_zone(zone, actors_[turn_].source.cell))
             swarm_strikes(zone, actors_[turn_]);
         else if ((zone.kind == ZoneKind::animals && near_pack(zone, actors_[turn_].source.cell)) ||
                 (emanates(zone) && zone.caster != actors_[turn_].source.id &&
@@ -18179,6 +18298,23 @@ void Session::dispatch(const Command &command)
         {"{name}'s Arcane Sword strikes.", {{"name", a.source.name}}});
         attack(a, target, AttackRange::melee,
                SpellAttack{.dice = {4, 12, casting_modifier(d)}, .type = detail::DamageType::force});
+    }
+    else if (command.verb == "conjure_fey_strike")
+    {
+        a.bonus = false;
+        end_sanctuary(a);
+        auto &target = actor(command.target);
+        auto &spirit = *std::find_if(zones_.begin(), zones_.end(), [&](const auto & zone)
+        {
+            return zone.kind == ZoneKind::fey && zone.caster == a.source.id;
+        });
+        spirit.cells.front() = spectral_cell(target, spirit.cells.front());
+        const int count = 3 + static_cast<int>(spirit.slot) - 6;
+        log(a.source.name + "'s fey spirit strikes.",
+        {"{name}'s fey spirit strikes.", {{"name", a.source.name}}});
+        if (attack(a, target, AttackRange::melee,
+                   SpellAttack{.dice = {count, 12, casting_modifier(d)}, .type = detail::DamageType::psychic}))
+            fey_frighten(a, target);
     }
     else if (command.verb == "detonate")
         end_concentration(a);
@@ -19989,11 +20125,12 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                            kind == static_cast<unsigned>(ZoneKind::guardian) ||
                            kind == static_cast<unsigned>(ZoneKind::overgrowth) ||
                            kind == static_cast<unsigned>(ZoneKind::hail) ||
-                           kind == static_cast<unsigned>(ZoneKind::hound);
+                           kind == static_cast<unsigned>(ZoneKind::hound) ||
+                           kind == static_cast<unsigned>(ZoneKind::sanctuary);
         // A Magic Circle is held by Concentration while it is cast, then keeps time.
         const bool circle = kind == static_cast<unsigned>(ZoneKind::circle);
         if (!input || (!zone.ends_ms && !known_actor(zone.caster)) ||
-                kind > static_cast<unsigned>(ZoneKind::antilife) || zone.slot > 9 ||
+                kind > static_cast<unsigned>(ZoneKind::sanctuary) || zone.slot > 9 ||
                 (zone.slot && kind != static_cast<unsigned>(ZoneKind::animals) &&
                  kind != static_cast<unsigned>(ZoneKind::beings) &&
                  kind != static_cast<unsigned>(ZoneKind::guardians) &&
@@ -20009,12 +20146,17 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
                  kind != static_cast<unsigned>(ZoneKind::embers) &&
                  kind != static_cast<unsigned>(ZoneKind::elemental) &&
                  kind != static_cast<unsigned>(ZoneKind::globe) &&
-                 kind != static_cast<unsigned>(ZoneKind::bead)) ||
+                 kind != static_cast<unsigned>(ZoneKind::bead) &&
+                 kind != static_cast<unsigned>(ZoneKind::storm) &&
+                 kind != static_cast<unsigned>(ZoneKind::fey) &&
+                 kind != static_cast<unsigned>(ZoneKind::thorns)) ||
                 (!circle && timed != (zone.ends_ms != 0)) ||
                 zone.warded >= detail::ward_types.size() || (zone.warded && !circle) ||
                 zone.dealt < 0 || zone.dealt >= 60 ||
                 (zone.dealt && kind != static_cast<unsigned>(ZoneKind::guardian) &&
-                 kind != static_cast<unsigned>(ZoneKind::bead)) ||
+                 kind != static_cast<unsigned>(ZoneKind::bead) &&
+                 kind != static_cast<unsigned>(ZoneKind::sword) &&
+                 kind != static_cast<unsigned>(ZoneKind::fey)) ||
                 !cells ||
                 cells > session->board_.terrain.size())
             throw std::runtime_error("Invalid spell zone");
@@ -20538,6 +20680,20 @@ class Module final : public RulesModule
         if (klass == CharacterClass::druid && result.level == 10)
             result.description =
                 "Nature's Ward: you cannot be Poisoned, and you resist your land's element: Fire (arid), Cold (polar), Lightning (temperate) or Poison (tropical).\nLand's Aid deals and heals 3d6. A fourth cantrip.";
+        if (klass == CharacterClass::druid && result.level == 11)
+            result.description =
+                "A level 6 spell slot and Druid spells: Conjure Fey, Flesh to Stone, Heal, Heroes' Feast, Sunbeam and Wall of Thorns.";
+        if (klass == CharacterClass::druid && result.level == 12)
+            result.description = "A feat or ability points.";
+        if (klass == CharacterClass::druid && result.level == 13)
+            result.description =
+                "A level 7 spell slot and Druid spells: Fire Storm, Regenerate and Reverse Gravity.\nProficiency Bonus +5.";
+        if (klass == CharacterClass::druid && result.level == 14)
+            result.description =
+                "Nature's Sanctuary: a Magic action and a Wild Shape use raise a 15-foot cube of spectral trees for a minute; allies among them share your Nature's Ward Resistance, and a Bonus Action moves it 60 feet.\nLand's Aid deals and heals 4d6.";
+        if (klass == CharacterClass::druid && result.level == 15)
+            result.description =
+                "A level 8 spell slot and Druid spells: Befuddlement, Earthquake, Incendiary Cloud and Sunburst.\nImproved Elemental Fury: Primal Strike deals 2d8.";
         if (klass == CharacterClass::bard && result.level == 5)
             result.description =
                 "Font of Inspiration: Bardic Inspiration returns on a Short Rest, and a spell slot (no action) gives back a use. The Bardic Inspiration die is a d8.\nLevel 3 spell slots and Bard spells: Bestow Curse, Dispel Magic, Fear, Hypnotic Pattern, Mass Healing Word, Plant Growth, Stinking Cloud and Tiny Hut.\nProficiency Bonus +3.";
@@ -23196,7 +23352,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.228", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.229", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))
