@@ -36,7 +36,7 @@ std::vector<std::uint8_t> read_archive_bytes(const std::filesystem::path &path,
     std::ifstream input(path, std::ios::binary);
     if (!input)
         throw Error(std::move(cannot_open));
-    std::vector<std::uint8_t> bytes{std::istreambuf_iterator<char>(input), {}};
+    std::vector<std::uint8_t> bytes(std::istreambuf_iterator<char>(input), {});
     if (input.bad() || bytes.size() != size)
         throw Error(std::move(cannot_read));
     return bytes;

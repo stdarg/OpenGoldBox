@@ -9462,7 +9462,8 @@ void Session::obey_command(std::vector<Command> &commands, const Actor &a) const
     auto kept = best                                                      ? *best
                 : !approach && offered("dash") != commands.end() ? *offered("dash")
                 : *offered("end");
-    commands = {std::move(kept)};
+    commands.clear();
+    commands.push_back(std::move(kept));
 }
 
 std::vector<Cell> Session::movement_reach(EntityId id) const
@@ -13501,7 +13502,8 @@ void Session::hold_still(std::vector<Command> &commands, const Actor &a) const
         return offer.verb == "end";
     });
     auto kept = *end;
-    commands = {std::move(kept)};
+    commands.clear();
+    commands.push_back(std::move(kept));
 }
 
 void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
@@ -13533,7 +13535,8 @@ void Session::flee_turning(std::vector<Command> &commands, const Actor &a) const
         return offer.verb == "end";
     });
     auto kept = farthest ? *farthest : *end;
-    commands = {std::move(kept)};
+    commands.clear();
+    commands.push_back(std::move(kept));
 }
 
 void Session::resolve_ensnaring_strike(Actor &a, std::string_view verb)
@@ -20811,6 +20814,15 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     return session;
 }
 
+// A one-group list with the group moved in: a braced initializer list would
+// copy it (Effective Modern C++ Item 7).
+std::vector<TrainingChoiceGroup> only(TrainingChoiceGroup group)
+{
+    std::vector<TrainingChoiceGroup> result;
+    result.push_back(std::move(group));
+    return result;
+}
+
 class Module final : public RulesModule
 {
   public:
@@ -21098,13 +21110,13 @@ class Module final : public RulesModule
             });
         }
         if (klass == CharacterClass::wizard && result.level == 2)
-            result.training = {detail::scholar_options(sheet.grants)};
+            result.training = only(detail::scholar_options(sheet.grants));
         if (klass == CharacterClass::fighter && (result.level == 4 || result.level == 10))
-            result.training = {
-                detail::mastery_options(CharacterClass::fighter, result.level, sheet.grants)};
+            result.training =
+                only(detail::mastery_options(CharacterClass::fighter, result.level, sheet.grants));
         for (const auto &pick : detail::expertise_picks)
             if (klass == pick.klass && result.level == pick.level)
-                result.training = {detail::expertise_options(pick, sheet.grants)};
+                result.training = only(detail::expertise_options(pick, sheet.grants));
         // The Champion's Additional Fighting Style: a Fighting Style feat it
         // does not have yet.
         if (klass == CharacterClass::fighter && result.level == 7)
@@ -21114,50 +21126,47 @@ class Module final : public RulesModule
             for (const auto &style : detail::fighting_styles())
                 if (!detail::has_grant(sheet.grants, "feat:" + style.id))
                     group.options.push_back({style.id, style.label, style.description});
-            result.training = {std::move(group)};
+            result.training = only(std::move(group));
         }
         if (klass == CharacterClass::barbarian && result.level == 3)
-            result.training = {detail::primal_knowledge_options(sheet.grants)};
+            result.training = only(detail::primal_knowledge_options(sheet.grants));
         if (klass == CharacterClass::sorcerer && result.level == 2)
-            result.training = {detail::metamagic_options()};
+            result.training = only(detail::metamagic_options());
         if (klass == CharacterClass::sorcerer && result.level == 6)
-            result.training = {detail::elemental_affinity_options()};
+            result.training = only(detail::elemental_affinity_options());
         if (klass == CharacterClass::warlock && result.level == 10)
-            result.training = {detail::fiendish_resilience_options()};
+            result.training = only(detail::fiendish_resilience_options());
         if (klass == CharacterClass::bard && result.level == 6)
-            result.training = {detail::discovery_options(sheet.grants)};
+            result.training = only(detail::discovery_options(sheet.grants));
         if (klass == CharacterClass::druid && result.level == 7)
-            result.training = {detail::elemental_fury_options()};
+            result.training = only(detail::elemental_fury_options());
         // Mystic Arcanum beside the level's invocations.
         if (klass == CharacterClass::warlock &&
                 (result.level == 11 || result.level == 13 || result.level == 15))
             result.training.push_back(detail::arcanum_options(static_cast<unsigned>(result.level)));
         if (klass == CharacterClass::sorcerer && result.level == 10)
-            result.training = {detail::metamagic_options(10, sheet.grants)};
+            result.training = only(detail::metamagic_options(10, sheet.grants));
         if (klass == CharacterClass::bard && result.level == 3)
-            result.training = {detail::lore_options(sheet.grants)};
+            result.training = only(detail::lore_options(sheet.grants));
         if (klass == CharacterClass::druid && result.level == 3)
-            result.training = {detail::land_options()};
+            result.training = only(detail::land_options());
         if (klass == CharacterClass::warlock && result.level >= 2 &&
                 detail::new_invocations(static_cast<unsigned>(result.level)))
             result.training.push_back(detail::invocation_options(
                                           static_cast<unsigned>(result.level), sheet.grants,
                                           detail::invocations_source(static_cast<unsigned>(result.level))));
         if (klass == CharacterClass::barbarian && (result.level == 4 || result.level == 10))
-            result.training = {
-                detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants)};
+            result.training =
+                only(detail::mastery_options(CharacterClass::barbarian, result.level, sheet.grants));
         if (klass == CharacterClass::ranger && result.level == 7)
-            result.training = {detail::defensive_tactics_options()};
+            result.training = only(detail::defensive_tactics_options());
         if (klass == CharacterClass::cleric && result.level == 7)
-            result.training = {detail::blessed_strikes_options()};
+            result.training = only(detail::blessed_strikes_options());
         // The Hunter is the SRD's only Ranger subclass; Hunter's Prey is its choice.
         if (klass == CharacterClass::ranger && result.level == 3)
-            result.training = {{
-                "subclass:ranger:hunter", "Hunter's Prey", 1,
-                detail::hunters_prey_options().options,
-                TrainingChoiceControl::single_selection
-            }
-        };
+            result.training = only({"subclass:ranger:hunter", "Hunter's Prey", 1,
+                                     detail::hunters_prey_options().options,
+                                     TrainingChoiceControl::single_selection});
         result.description =
             "Fixed-average HP growth. Resources gain only their new capacity;\nexisting expenditure remains.";
         if (klass == CharacterClass::cleric && result.level == 2)
