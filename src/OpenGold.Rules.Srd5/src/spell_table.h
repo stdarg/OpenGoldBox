@@ -215,7 +215,8 @@ enum class Rider : unsigned
     giant_insect,
     conjure_fey,
     wall_of_thorns,
-    natures_sanctuary
+    natures_sanctuary,
+    animal_shapes
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2789,6 +2790,18 @@ inline constexpr std::array spell_table
         .concentration = true,
         .wall = 60,
         .ring = 20},
+    // SRD 5.2.1 p. 108: willing creatures within 30 feet take one Beast form,
+    // chosen at the casting, keeping their own Hit Points, with Temporary Hit
+    // Points equal to the form's; it lasts the fight (LEVELS-3).
+    SpellDef{
+        .id = "animal_shapes",
+        .label = "Animal Shapes",
+        .level = 8,
+        .pattern = SpellPattern::buff,
+        .target = SpellTarget::ally,
+        .range = 30,
+        .instances = 12,
+        .rider = Rider::animal_shapes},
     // Nature's Sanctuary (SRD 5.2.1 p. 46), aimed by a Land Druid of 14 with a
     // use of Wild Shape: a 15-foot cube of spectral trees within 120 feet for a
     // minute. No one learns it as a spell.
@@ -3364,6 +3377,8 @@ inline const SpellDef *find_spell(std::string_view id)
         id = "forcecage";
     if (id.starts_with("giant_insect_"))
         id = "giant_insect";
+    if (id.starts_with("animal_shapes_"))
+        id = "animal_shapes";
     if (id == "call_lightning_again")
         id = "call_lightning";
     if (id == "move_sanctuary")

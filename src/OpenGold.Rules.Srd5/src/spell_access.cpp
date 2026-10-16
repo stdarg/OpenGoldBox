@@ -268,6 +268,7 @@ constexpr std::array spells{Spell{"chill_touch", "Chill Touch", 0, 2048, wizard_
     Spell{"antilife_shell", "Antilife Shell", 5, 0, druid_list},
     Spell{"conjure_fey", "Conjure Fey", 6, 0, druid_list},
     Spell{"wall_of_thorns", "Wall of Thorns", 6, 0, druid_list},
+    Spell{"animal_shapes", "Animal Shapes", 8, 0, druid_list},
     Spell{"befuddlement", "Befuddlement", 8, 0,
         bard_list | druid_list | warlock_list | wizard_list},
     Spell{"dominate_monster", "Dominate Monster", 8, 0,

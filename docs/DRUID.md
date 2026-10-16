@@ -189,7 +189,16 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
   Heroes' Feast, Sunbeam and Wall of Thorns; at 13 Fire Storm, Regenerate and
   Reverse Gravity; at 15 Befuddlement, Earthquake, Incendiary Cloud and
   Sunburst (the shared ones work as for the [Cleric](CLERIC.md#levels-515) and
-  the [Wizard](WIZARD.md#levels-515)). Animal Shapes and Tsunami come next.
+  the [Wizard](WIZARD.md#levels-515)). Tsunami waits for a decision on its
+  1-minute casting and its 50-foot thickness on small maps.
+- **Animal Shapes** (Action, 30 feet): one entry per Beast form (Wolf, Boar,
+  Giant Lizard, Giant Snake, Tiger), then the willing creatures are chosen,
+  the Druid among them if it likes. Each takes the form, keeping its own Hit
+  Points, with Temporary Hit Points equal to the form's, and casts no spells.
+  It lasts the fight (LEVELS-3); **Leave the animal shape** (a Bonus Action)
+  ends it sooner, and the Temporary Hit Points go with it. Changing forms with a
+  later Magic action is not offered; the Giant Scorpion, the one CR 2–4 Beast
+  with art, is left out, its claws and poison sting not modelled.
 - **Conjure Fey** (Action, Concentration up to 10 minutes): a fey spirit
   appears beside a creature and makes a melee spell attack for 3d12 + the
   Wisdom modifier Psychic (1d12 more per slot level above 6); a hit leaves the
@@ -218,4 +227,5 @@ The Druid advances to level 15, the cap ([LEVELS-1](SRD-DECISIONS.md#levels-1-20
   cast once, Natural Recovery's Short Rest choice, Wild Resurgence's slot,
   Primal Strike, the Tiger from 8, Call Lightning and its second bolt, Giant
   Insect, Antilife Shell keeping a brute out, Conjure Fey's two attacks, Wall
-  of Thorns, Nature's Sanctuary and its move).
+  of Thorns, Nature's Sanctuary and its move, Animal Shapes' Tiger and its
+  end).

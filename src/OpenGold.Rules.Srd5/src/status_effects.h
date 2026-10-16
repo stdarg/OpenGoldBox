@@ -462,9 +462,12 @@ enum class EffectKind : unsigned
     fey_fright = 187,
     // Wall of Thorns: the thorns have tested the creature this turn.
     thorned = 188,
+    // Animal Shapes: a Beast form, `dc` its index in beast_forms plus one,
+    // until the fight ends or the creature leaves it.
+    animal_shaped = 189,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = thorned
+    last = animal_shaped
 };
 
 // Magic Circle's creature types, by `dc`.

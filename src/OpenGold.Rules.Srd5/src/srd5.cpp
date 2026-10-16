@@ -958,6 +958,7 @@ constexpr std::array class_spell_access
     SpellAccessRow{CharacterClass::druid, "lightning_bolt", 5},
     SpellAccessRow{CharacterClass::druid, "stinking_cloud", 5},
     SpellAccessRow{CharacterClass::druid, "conjure_fey", 11},
+    SpellAccessRow{CharacterClass::druid, "animal_shapes", 15},
     SpellAccessRow{CharacterClass::druid, "wall_of_thorns", 11},
     // Druid level-3 spells, with the level-3 slot of Druid level 5.
     SpellAccessRow{CharacterClass::druid, "call_lightning", 5},
@@ -4178,6 +4179,8 @@ class Session final : public CombatSession
     // Wild Shape's Beast form, kept in step with the wild_shape effect.
     static void refresh_form(Actor &a);
     void end_wild_shape(Actor &a);
+    // Animal Shapes' form ends, and its Temporary Hit Points with it.
+    void end_animal_shape(Actor &a);
     void change_speed(Actor &a, int old_speed);
     // Land's Aid: thorns in a 10-foot Sphere and flowers that heal one ally.
     void lands_aid(Actor &druid, Cell center);
@@ -5058,8 +5061,10 @@ void Session::run_off_field(Actor &a)
         return;
     }
     end_concentration(a);
-    // Wild Shape lasts until the fight ends (WILD-1); for the one who flees, it has.
+    // Wild Shape lasts until the fight ends (WILD-1); for the one who flees, it
+    // has, as Animal Shapes has (LEVELS-3).
     end_wild_shape(a);
+    end_animal_shape(a);
     a.fled = true;
     log(a.source.name + " flees the battle.",
     {"{name} flees the battle.", {{"name", a.source.name}}});
@@ -5890,6 +5895,7 @@ Snapshot Session::snapshot() const
                     std::pair{detail::EffectKind::dragon_wings, "Dragon Wings"},
                     std::pair{detail::EffectKind::hurled, "Hurled through the Lower Planes"},
                     std::pair{detail::EffectKind::fey_fright, "Frightened (Conjure Fey)"},
+                    std::pair{detail::EffectKind::animal_shaped, "Animal Shapes"},
                     std::pair{detail::EffectKind::enlarged, "Enlarged"},
                     std::pair{detail::EffectKind::reduced, "Reduced"},
                     std::pair{detail::EffectKind::charmed, "Charmed"},
@@ -6596,6 +6602,28 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         log(target.source.name + " is gripped by its worst fears.",
         {"{name} is gripped by its worst fears.", {{"name", target.source.name}}});
         return;
+    case detail::Rider::animal_shapes:
+    {
+        const auto key = detail::without_cast_suffix(verb).substr(std::string_view("animal_shapes_").size());
+        const auto *form = detail::beast_form(key);
+        const int old_speed = def(target).speed;
+        std::erase_if(target.effects.active, [](const auto & e)
+        {
+            return e.kind == detail::EffectKind::wild_shape || e.kind == detail::EffectKind::polymorphed ||
+                   e.kind == detail::EffectKind::animal_shaped;
+        });
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::animal_shaped,
+                                    static_cast<int>(form - detail::beast_forms.data()) + 1);
+        refresh_form(target);
+        change_speed(target, old_speed);
+        if (target.life.temporary_hp.amount < form->hit_points)
+            detail::grant_temporary_hp(target.life, {form->hit_points, "spell:animal_shapes"},
+                                       TemporaryHpChoice::use_new);
+        log(target.source.name + " turns into a " + std::string(form->label) + ".",
+        {"{name} turns into a {form}.", {{"name", target.source.name}, {"form", std::string(form->label), true}}});
+        return;
+    }
     case detail::Rider::polymorph:
     {
         const auto key = detail::without_cast_suffix(verb).substr(std::string_view("polymorph_").size());
@@ -7751,6 +7779,14 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             }
             continue;
         }
+        // Animal Shapes: one Beast form for every creature chosen.
+        if (spell.rider == detail::Rider::animal_shapes)
+        {
+            for (const auto &form : detail::beast_forms)
+                offer_leveled("animal_shapes_" + std::string(form.key),
+                              "Animal Shapes: " + std::string(form.label));
+            continue;
+        }
         // Giant Insect: a centipede, a spider or a wasp.
         if (spell.rider == detail::Rider::giant_insect)
         {
@@ -8440,6 +8476,9 @@ std::vector<Command> Session::offered_commands() const
                 }
         }
     }
+    // Animal Shapes: a Bonus Action leaves the form.
+    if (a.bonus && detail::has_effect(a.effects, detail::EffectKind::animal_shaped))
+        add(id, "leave_animal_shape", "Leave the animal shape");
     // Wild Resurgence (Druid 5): with no Wild Shape use left, a spell slot, no
     // action, once a turn, gives one; once per Long Rest a use gives a
     // level-1 slot.
@@ -10180,11 +10219,11 @@ void Session::refresh_form(Actor &a)
     {
         return e.kind == detail::EffectKind::wild_shape;
     });
-    // Polymorph's form, or else Wild Shape's.
+    // Polymorph's or Animal Shapes' form, or else Wild Shape's.
     const auto polymorph = std::find_if(a.effects.active.begin(), a.effects.active.end(),
                                         [](const auto & e)
     {
-        return e.kind == detail::EffectKind::polymorphed;
+        return e.kind == detail::EffectKind::polymorphed || e.kind == detail::EffectKind::animal_shaped;
     });
     // A summoned creature attacks with its summoner's spell attack bonus; a
     // Draconic Spirit's Rend reaches 10 feet.
@@ -10214,6 +10253,22 @@ void Session::refresh_form(Actor &a)
     else
         a.form = shaped(a.definition,
                         detail::beast_forms.at(static_cast<std::size_t>(shape->dc - 1)));
+}
+
+void Session::end_animal_shape(Actor &a)
+{
+    if (!std::erase_if(a.effects.active, [](const auto & e)
+{
+    return e.kind == detail::EffectKind::animal_shaped;
+}))
+    return;
+    if (a.life.temporary_hp.source_id == "spell:animal_shapes")
+        a.life.temporary_hp = {};
+    const int form_speed = def(a).speed;
+    refresh_form(a);
+    change_speed(a, form_speed);
+    log(a.source.name + " returns to its own shape.",
+    {"{name} returns to its own shape.", {{"name", a.source.name}}});
 }
 
 void Session::end_wild_shape(Actor &a)
@@ -15586,6 +15641,7 @@ void Session::update_outcome()
         {
             end_concentration(a);
             end_wild_shape(a);
+            end_animal_shape(a);
         }
         for (auto &a : actors_)
             release(a);
@@ -18315,6 +18371,11 @@ void Session::dispatch(const Command &command)
         if (attack(a, target, AttackRange::melee,
                    SpellAttack{.dice = {count, 12, casting_modifier(d)}, .type = detail::DamageType::psychic}))
             fey_frighten(a, target);
+    }
+    else if (command.verb == "leave_animal_shape")
+    {
+        a.bonus = false;
+        end_animal_shape(a);
     }
     else if (command.verb == "detonate")
         end_concentration(a);
@@ -23352,7 +23413,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
     if (!header.eof() || revision.empty() || revision.size() > 80)
         throw std::runtime_error("Invalid rules content header");
     Content content;
-    content.identity = {"opengold.srd5", "0.6.229", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.230", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

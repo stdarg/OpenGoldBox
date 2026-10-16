@@ -275,6 +275,12 @@ void high_checks()
     check(submit(*trees, "natures_sanctuary") && submit_cell(*trees, "area_move", Cell{2, 2}) &&
           submit(*trees, "area_cast") && logged(*trees, "Druid raises Nature's Sanctuary.") &&
           offered(*trees, "move_sanctuary"), "Nature's Sanctuary, then a Bonus Action moves it");
+    auto shapes = field(*rules, druid(15, "animal_shapes").sheet(), {6, 2});
+    check(submit(*shapes, "animal_shapes_tiger", 1) && submit(*shapes, "spell_cast") &&
+          logged(*shapes, "Druid turns into a Tiger.") && unit(*shapes, 1).temporary_hp.amount == 30,
+          "Animal Shapes turns the Druid into a Tiger with its Hit Points as Temporary ones");
+    check(submit(*shapes, "leave_animal_shape") && logged(*shapes, "Druid returns to its own shape."),
+          "A Bonus Action leaves the shape");
 }
 } // namespace
 
