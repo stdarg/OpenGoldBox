@@ -1,8 +1,6 @@
 #include "opengold/ecl_machine.h"
 #include <charconv>
-#include <deque>
 #include <iostream>
-#include <set>
 
 using namespace opengold::por;
 
@@ -64,93 +62,51 @@ std::shared_ptr<const EclProgram> demo()
 
 int inspect(const EclProgram &p)
 {
-    using Edge = std::pair<std::uint32_t, std::optional<std::uint16_t>>;
-    std::deque<Edge> queue;
-    for (auto entry : p.entries())
+    const auto walk = walk_reachable(p);
+
+    for (const auto &i : walk.instructions)
     {
-        queue.emplace_back(entry, std::nullopt);
+        const auto &spec = ecl_opcode(i.opcode);
+        std::cout << "0x" << std::hex << i.address << std::dec << " " << spec.name;
+
+        for (const auto &a : i.operands)
+        {
+            if (a.tag == 128)
+            {
+                std::cout << " \"" << a.text << '"';
+            }
+            else
+            {
+                std::cout << " {tag=" << static_cast<unsigned>(a.tag) << ",value=" << a.value
+                          << '}';
+            }
+        }
+
+        if (!spec.executable)
+        {
+            std::cout << " [execution unsupported]";
+        }
+        else if (spec.requires_host)
+        {
+            std::cout << " [host required]";
+        }
+
+        std::cout << '\n';
     }
-    std::set<std::uint32_t> seen;
-    std::map<std::uint32_t, std::uint32_t> spans;
-    bool failed = false;
-    while (!queue.empty())
+
+    for (const auto &e : walk.errors)
     {
-        const auto [pc, speculative] = queue.front();
-        queue.pop_front();
-        if (!seen.insert(pc).second)
+        std::cerr << p.source() << " @ 0x" << std::hex << e.address;
+
+        if (e.fallthrough_from)
         {
-            continue;
+            std::cerr << " (possible ON GOTO fallthrough from 0x" << *e.fallthrough_from << ")";
         }
-        try
-        {
-            if (pc < p.body_start())
-            {
-                throw EclError("Target in entry table");
-            }
-            const auto i = p.instruction(pc);
-            for (const auto &[start, end] : spans)
-            {
-                if (pc < end && i.next > start)
-                {
-                    throw EclError("Overlapping instructions");
-                }
-            }
-            spans[pc] = i.next;
-            const auto &spec = ecl_opcode(i.opcode);
-            std::cout << "0x" << std::hex << pc << std::dec << " " << spec.name;
-            for (const auto &a : i.operands)
-            {
-                if (a.tag == 128)
-                {
-                    std::cout << " \"" << a.text << '"';
-                }
-                else
-                {
-                    std::cout << " {tag=" << static_cast<unsigned>(a.tag) << ",value=" << a.value
-                              << '}';
-                }
-            }
-            if (!spec.executable)
-            {
-                std::cout << " [execution unsupported]";
-            }
-            else if (spec.requires_host)
-            {
-                std::cout << " [host required]";
-            }
-            std::cout << '\n';
-            if (i.opcode == 1 || i.opcode == 2)
-            {
-                queue.emplace_back(i.operands[0].value, speculative);
-            }
-            if (i.opcode == 37 || i.opcode == 38)
-            {
-                for (std::size_t n = 2; n < i.operands.size(); ++n)
-                {
-                    queue.emplace_back(i.operands[n].value, speculative);
-                }
-            }
-            if (i.opcode >= 22 && i.opcode <= 27)
-            {
-                queue.emplace_back(p.instruction(i.next).next, speculative);
-            }
-            if (i.opcode != 0 && i.opcode != 1 && i.opcode != 19 && i.opcode != 32)
-            {
-                queue.emplace_back(i.next, i.opcode == 37 ? std::optional(i.address) : speculative);
-            }
-        }
-        catch (const EclError &e)
-        {
-            failed = true;
-            std::cerr << p.source() << " @ 0x" << std::hex << pc;
-            if (speculative)
-            {
-                std::cerr << " (possible ON GOTO fallthrough from 0x" << *speculative << ")";
-            }
-            std::cerr << std::dec << ": " << e.what() << '\n';
-        }
+
+        std::cerr << std::dec << ": " << e.message << '\n';
     }
-    return failed ? 1 : 0;
+
+    return walk.errors.empty() ? 0 : 1;
 }
 
 int run(EclMachine &vm)

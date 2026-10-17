@@ -2,6 +2,7 @@
 #include "little_endian.h"
 
 #include <algorithm>
+#include <string_view>
 #include <utility>
 
 namespace opengold::por
@@ -22,6 +23,70 @@ void copy(std::span<const std::uint8_t> b, std::size_t p, std::array<std::uint8_
 DamageDice damage(std::span<const std::uint8_t> b, std::size_t p, std::size_t stride = 1)
 {
     return {b[p], b[p + stride], signed_byte(b[p + stride * 2])};
+}
+
+struct StringTable
+{
+    std::size_t start{}, slot{};
+};
+
+std::vector<std::uint8_t> pascal(std::string_view text)
+{
+    std::vector<std::uint8_t> bytes{static_cast<std::uint8_t>(text.size())};
+    bytes.insert(bytes.end(), text.begin(), text.end());
+    return bytes;
+}
+
+// START.EXE keeps each name table as Pascal strings in fixed-size slots. The tables have no
+// header, so one is found by its first two entries; their distance is the slot size.
+std::optional<StringTable> find_string_table(std::span<const std::uint8_t> image,
+                                             std::string_view first, std::string_view second)
+{
+    const auto head = pascal(first), next = pascal(second);
+
+    for (auto at = std::search(image.begin(), image.end(), head.begin(), head.end());
+         at != image.end(); at = std::search(at + 1, image.end(), head.begin(), head.end()))
+    {
+        const auto start = static_cast<std::size_t>(at - image.begin());
+
+        for (std::size_t slot = head.size(); slot <= 256 && start + slot < image.size(); ++slot)
+        {
+            const auto candidate = image.subspan(start + slot);
+
+            if (candidate.size() >= next.size() &&
+                std::equal(next.begin(), next.end(), candidate.begin()))
+            {
+                return StringTable{start, slot};
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
+// nullopt when the slot is outside the image or does not hold a printable string.
+std::optional<std::string> slot_text(std::span<const std::uint8_t> image, const StringTable &table,
+                                     std::size_t index)
+{
+    const auto offset = table.start + index * table.slot;
+
+    if (offset + table.slot > image.size() || image[offset] >= table.slot)
+    {
+        return std::nullopt;
+    }
+
+    const auto text = image.subspan(offset + 1, image[offset]);
+
+    if (!std::all_of(text.begin(), text.end(),
+                     [](auto c)
+                     {
+                         return c >= 32 && c < 127;
+                     }))
+    {
+        return std::nullopt;
+    }
+
+    return std::string(text.begin(), text.end());
 }
 } // namespace
 
@@ -175,5 +240,79 @@ std::optional<std::vector<ItemTemplate>> decode_item_templates(std::span<const s
         result.push_back(item);
     }
     return result;
+}
+
+std::optional<std::vector<std::string>> decode_item_words(std::span<const std::uint8_t> image)
+{
+    const auto table = find_string_table(image, "Battle Axe", "Hand Axe");
+
+    if (!table)
+    {
+        return std::nullopt;
+    }
+
+    std::vector<std::string> words{""};
+
+    for (std::size_t index = 0; index < 255; ++index)
+    {
+        auto text = slot_text(image, *table, index);
+
+        if (!text)
+        {
+            return std::nullopt;
+        }
+
+        words.push_back(std::move(*text));
+    }
+
+    return words;
+}
+
+std::optional<std::vector<std::string>> decode_spell_names(std::span<const std::uint8_t> image)
+{
+    const auto table = find_string_table(image, "Bless", "Curse");
+
+    if (!table)
+    {
+        return std::nullopt;
+    }
+
+    // The table ends at the first slot without a name.
+    std::vector<std::string> spells{""};
+
+    for (std::size_t index = 0;; ++index)
+    {
+        auto text = slot_text(image, *table, index);
+
+        if (!text || text->empty())
+        {
+            return spells;
+        }
+
+        spells.push_back(std::move(*text));
+    }
+}
+
+std::string item_name(const ItemRecord &item, std::span<const std::string> words)
+{
+    std::string name;
+
+    for (auto component = item.name_components.rbegin(); component != item.name_components.rend();
+         ++component)
+    {
+        if (*component == 0 || *component >= words.size() || words[*component].empty())
+        {
+            continue;
+        }
+
+        if (!name.empty())
+        {
+            name += ' ';
+        }
+
+        name += words[*component];
+    }
+
+    return name;
 }
 } // namespace opengold::por

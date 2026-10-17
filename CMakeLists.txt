@@ -139,6 +139,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
     src/OpenGold.Core/src/random_treasure.cpp
+    src/OpenGold.Core/src/magic_item_catalog.cpp
     src/OpenGold.Core/src/encounter_budget.cpp
     src/OpenGold.Core/src/combat_demo.cpp
     src/OpenGold.Core/src/dungeon_battlefield.cpp
@@ -612,6 +613,9 @@ if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_sound_tests tests/sound_tests.cpp)
     target_link_libraries(opengold_sound_tests PRIVATE opengold_core)
     add_test(NAME opengold_sound_tests COMMAND opengold_sound_tests)
+    add_executable(opengold_magic_item_tests tests/magic_item_tests.cpp)
+    target_link_libraries(opengold_magic_item_tests PRIVATE opengold_core)
+    add_test(NAME opengold_magic_item_tests COMMAND opengold_magic_item_tests)
     add_executable(opengold_sound_player_tests tests/sound_player_tests.cpp)
     target_link_libraries(opengold_sound_player_tests PRIVATE opengold_core)
     add_test(NAME opengold_sound_player_tests COMMAND opengold_sound_player_tests)
@@ -624,6 +628,8 @@ add_executable(opengold_maps tools/maps.cpp)
 target_link_libraries(opengold_maps PRIVATE opengold_core)
 add_executable(opengold_scripts tools/scripts.cpp)
 target_link_libraries(opengold_scripts PRIVATE opengold_core)
+add_executable(opengold_magic_items tools/magic_items.cpp)
+target_link_libraries(opengold_magic_items PRIVATE opengold_core)
 add_executable(opengold_campaign_sim tools/campaign_sim.cpp)
 target_link_libraries(opengold_campaign_sim PRIVATE opengold_core opengold_rules_srd5)
 target_compile_definitions(opengold_campaign_sim PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

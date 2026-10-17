@@ -2,6 +2,7 @@
 #define OPENGOLD_ECL_H
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -82,5 +83,23 @@ class EclProgram
     std::array<std::uint16_t, 5> entries_{};
     std::uint32_t body_start_{};
 };
+
+struct EclWalkError
+{
+    std::uint32_t address{};
+    // Set when the address was only reached by falling through this ON GOTO.
+    std::optional<std::uint16_t> fallthrough_from;
+    std::string message;
+};
+
+struct EclWalk
+{
+    std::vector<EclInstruction> instructions; // In visit order.
+    std::vector<EclWalkError> errors;
+};
+
+// Every instruction reachable from the entries through jumps, calls, ON GOTO/GOSUB
+// targets and IF skips, without running the script.
+[[nodiscard]] EclWalk walk_reachable(const EclProgram &program);
 } // namespace opengold::por
 #endif
