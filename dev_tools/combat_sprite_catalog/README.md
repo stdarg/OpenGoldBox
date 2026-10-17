@@ -81,6 +81,12 @@ independently created PNGs at
 
 ### Replacement combat sprite art specification
 
+For every bipedal monster generation/regeneration, follow the
+[generation and review workflow](generation/README.md). It supplies the mandatory
+screen-right front three-quarter facing, raised melee ready guard, late-strike
+action, loaded/released projectile poses, original pose guide, prompt preparation
+and acceptance checks. The guide's user approval status is tracked separately.
+
 - Export each ready and action image as a **128 x 128 pixel transparent PNG** in
   a **pixel art style**. This is the final game asset size; larger working images
   may be used while creating the art.

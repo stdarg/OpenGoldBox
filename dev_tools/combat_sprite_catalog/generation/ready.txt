@@ -1,0 +1,8 @@
+POSE TO GENERATE: READY only.
+Apply the READY rule for the selected weapon from the specification above.
+For melee, weapon UP in a ready-to-strike guard, never lowered at rest.
+For projectile weapons, loaded before release. Preserve an included shield.
+Reference 1: approved original pose guide, for facing and ready-pose mechanics.
+Reference 2, when available: this monster's first approved NEW ready sprite,
+for identity, clothing, palette, scale and foot baseline across weapon sets.
+Output one character only, not the guide sheet or multiple animation frames.

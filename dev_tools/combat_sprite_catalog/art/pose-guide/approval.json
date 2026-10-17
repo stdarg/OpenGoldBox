@@ -1,0 +1,9 @@
+{
+  "format": "opengold-pose-guide-approval-v1",
+  "specification": "bipedal-v1",
+  "image": "bipedal-v1.png",
+  "image_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "status": "pending_user_approval",
+  "approved_by": "",
+  "approved_at": ""
+}

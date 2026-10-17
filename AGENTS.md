@@ -115,3 +115,23 @@
   focus states. Preserve keyboard access and clear labels.
 - Apply this rule to new screens and when updating existing UI. Confirm layout
   and control behavior with numbered questions as required above.
+
+## Combat sprite generation
+
+- Before generating or regenerating monster combat sprites, read and follow
+  `dev_tools/combat_sprite_catalog/generation/README.md` and `rules.txt` in that
+  directory. Use its prompt preparation and acceptance commands for each bipedal
+  monster weapon set. These rules apply even when a later request only says
+  "regenerate"; do not rely on conversational memory.
+- Bipedal monsters face screen right in front three-quarter view with the chest
+  partly visible. Melee ready poses hold the weapon UP, ready to strike; action
+  poses are near the end of a swing or thrust. Projectile weapons are loaded in
+  ready and have just released their projectile in action.
+- Use the user-approved original pose guide and approved newly created character
+  art as references. Original game artwork must not be generation references.
+  A pending guide must receive explicit user approval before production use.
+- File validation does not establish correct poses. Visually review both frames
+  at combat size and alternating in the catalog; record approval for the exact
+  image hashes. Reject and regenerate failures before installing either frame
+  or clearing the monster's regeneration flag. Keep existing art until the pair
+  passes. Follow the documented review for every weapon set.

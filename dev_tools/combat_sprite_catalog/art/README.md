@@ -1,5 +1,11 @@
 # Replacement monster combat sprites
 
+**For new generation/regeneration:** follow the
+[generation and review workflow](../generation/README.md). Its bipedal facing and
+pose requirements supersede this historical generation summary. Existing images
+have not been certified against the new specification. The new original
+[pose guide](pose-guide/README.md) is awaiting user approval.
+
 This set contains 128 x 128 transparent pixel-art PNGs for the **72 referenced
 monster records** in the local Pool of Radiance catalog: **81 complete weapon
 sets**, each with `ready.png` and `action.png` (162 images). The paths match the
