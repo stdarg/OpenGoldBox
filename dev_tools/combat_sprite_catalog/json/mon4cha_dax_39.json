@@ -1,16 +1,18 @@
 {
   "description": "HUGE SCORPION. Gear: none recorded.",
   "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "HUGE SCORPION",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON4CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 39,
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 18,
     "creature_archive": "MON4CHA.DAX",
     "creature_record": 39,
-    "key": "MON4CHA.DAX:39"
+    "key": "MON4CHA.DAX:39",
+    "linked_creature_keys": []
   },
   "variants": [
     {

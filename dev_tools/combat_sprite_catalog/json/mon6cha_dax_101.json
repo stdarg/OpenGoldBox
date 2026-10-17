@@ -4,13 +4,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "5TH LVL FIGHTER",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON6CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 101,
+    "art_archive": "CPIC6.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 11,
     "creature_archive": "MON6CHA.DAX",
     "creature_record": 101,
-    "key": "MON6CHA.DAX:101"
+    "key": "MON6CHA.DAX:101",
+    "linked_creature_keys": []
   },
   "variants": [
     {

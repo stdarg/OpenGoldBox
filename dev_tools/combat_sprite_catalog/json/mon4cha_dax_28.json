@@ -4,13 +4,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "GRISHNAK",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON4CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 28,
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 2,
     "creature_archive": "MON4CHA.DAX",
     "creature_record": 28,
-    "key": "MON4CHA.DAX:28"
+    "key": "MON4CHA.DAX:28",
+    "linked_creature_keys": []
   },
   "variants": [
     {

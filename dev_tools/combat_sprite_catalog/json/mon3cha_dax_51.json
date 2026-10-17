@@ -25,13 +25,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "6TH LVL THIEF",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON3CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 51,
+    "art_archive": "CPIC3.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (2 script candidates)",
+    "art_record": 12,
     "creature_archive": "MON3CHA.DAX",
     "creature_record": 51,
-    "key": "MON3CHA.DAX:51"
+    "key": "MON3CHA.DAX:51",
+    "linked_creature_keys": []
   },
   "variants": [
     {

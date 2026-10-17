@@ -15,13 +15,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "5TH LVL MU",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON2CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 89,
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 14,
     "creature_archive": "MON2CHA.DAX",
     "creature_record": 89,
-    "key": "MON2CHA.DAX:89"
+    "key": "MON2CHA.DAX:89",
+    "linked_creature_keys": []
   },
   "variants": [
     {

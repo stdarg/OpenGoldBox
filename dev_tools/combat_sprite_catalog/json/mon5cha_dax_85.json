@@ -35,13 +35,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "8TH LVL FIGHTER",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON5CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 85,
+    "art_archive": "CPIC5.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 11,
     "creature_archive": "MON5CHA.DAX",
     "creature_record": 85,
-    "key": "MON5CHA.DAX:85"
+    "key": "MON5CHA.DAX:85",
+    "linked_creature_keys": []
   },
   "variants": [
     {

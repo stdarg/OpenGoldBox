@@ -15,13 +15,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "GENHEERIS",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON5CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 88,
+    "art_archive": "CPIC5.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 14,
     "creature_archive": "MON5CHA.DAX",
     "creature_record": 88,
-    "key": "MON5CHA.DAX:88"
+    "key": "MON5CHA.DAX:88",
+    "linked_creature_keys": []
   },
   "variants": [
     {

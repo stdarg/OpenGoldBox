@@ -4,13 +4,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "CORPORAL",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON3CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 54,
+    "art_archive": "CPIC3.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (2 script candidates)",
+    "art_record": 16,
     "creature_archive": "MON3CHA.DAX",
     "creature_record": 54,
-    "key": "MON3CHA.DAX:54"
+    "key": "MON3CHA.DAX:54",
+    "linked_creature_keys": []
   },
   "variants": [
     {

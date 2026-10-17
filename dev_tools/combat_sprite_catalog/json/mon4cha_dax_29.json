@@ -12,16 +12,18 @@
       "weapon_role": "ranged"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "JUJU ZOMBIE",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON4CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 29,
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 35,
     "creature_archive": "MON4CHA.DAX",
     "creature_record": 29,
-    "key": "MON4CHA.DAX:29"
+    "key": "MON4CHA.DAX:29",
+    "linked_creature_keys": []
   },
   "variants": [
     {

@@ -35,13 +35,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "HASSAD",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON7CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 42,
+    "art_archive": "CPIC7.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 11,
     "creature_archive": "MON7CHA.DAX",
     "creature_record": 42,
-    "key": "MON7CHA.DAX:42"
+    "key": "MON7CHA.DAX:42",
+    "linked_creature_keys": []
   },
   "variants": [
     {

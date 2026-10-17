@@ -35,13 +35,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "PRINCESS FATIMA",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON8CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 104,
+    "art_archive": "CPIC8.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 11,
     "creature_archive": "MON8CHA.DAX",
     "creature_record": 104,
-    "key": "MON8CHA.DAX:104"
+    "key": "MON8CHA.DAX:104",
+    "linked_creature_keys": []
   },
   "variants": [
     {

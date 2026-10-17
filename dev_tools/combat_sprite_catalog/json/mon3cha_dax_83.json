@@ -35,13 +35,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "7TH LVL CLERIC",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON3CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 83,
+    "art_archive": "CPIC3.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 12,
     "creature_archive": "MON3CHA.DAX",
     "creature_record": 83,
-    "key": "MON3CHA.DAX:83"
+    "key": "MON3CHA.DAX:83",
+    "linked_creature_keys": []
   },
   "variants": [
     {

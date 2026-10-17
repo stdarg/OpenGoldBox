@@ -35,13 +35,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "4TH LVL FIGHTER",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON7CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 41,
+    "art_archive": "CPIC7.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 13,
     "creature_archive": "MON7CHA.DAX",
     "creature_record": 41,
-    "key": "MON7CHA.DAX:41"
+    "key": "MON7CHA.DAX:41",
+    "linked_creature_keys": []
   },
   "variants": [
     {

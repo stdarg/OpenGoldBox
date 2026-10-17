@@ -55,13 +55,15 @@
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "CAPTAIN",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "MON6CHA.DAX",
-    "art_basis": "MON character components (candidate)",
-    "art_record": 102,
+    "art_archive": "CPIC6.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 16,
     "creature_archive": "MON6CHA.DAX",
     "creature_record": 102,
-    "key": "MON6CHA.DAX:102"
+    "key": "MON6CHA.DAX:102",
+    "linked_creature_keys": []
   },
   "variants": [
     {
