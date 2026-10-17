@@ -21,11 +21,11 @@ The authoritative prompt text is [rules.txt](rules.txt). The user confirmed on
 - Preserve identity, selected equipment, camera, scale and ground alignment.
   Export 128 x 128 transparent pixel-art PNGs, readable at normal combat zoom.
 
-The independently generated [pose guide](../art/pose-guide/README.md) is currently
-**pending user approval**. Prepare/review commands can be exercised, but do not
-generate production sprites using it until the user approves it. Acceptance is
-blocked while its recorded approval is pending. This workflow does not certify
-existing replacement sprites retrospectively.
+The independently generated [pose guide](../art/pose-guide/README.md) was
+**approved by the user on 2026-10-17** for production generation. Acceptance
+checks its recorded approval against the exact guide image hash; a changed guide
+requires fresh user approval. This workflow does not certify existing replacement
+sprites retrospectively.
 
 ## 1. Prepare from the current JSON
 

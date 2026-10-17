@@ -4,7 +4,7 @@
 [generation and review workflow](../generation/README.md). Its bipedal facing and
 pose requirements supersede this historical generation summary. Existing images
 have not been certified against the new specification. The new original
-[pose guide](pose-guide/README.md) is awaiting user approval.
+[pose guide](pose-guide/README.md) was approved by the user on 2026-10-17.
 
 This set contains 128 x 128 transparent pixel-art PNGs for the **72 referenced
 monster records** in the local Pool of Radiance catalog: **81 complete weapon
