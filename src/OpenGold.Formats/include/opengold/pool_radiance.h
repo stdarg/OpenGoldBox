@@ -132,6 +132,15 @@ decode_effects(std::span<const std::uint8_t> bytes);
 // DOS ITEMS: two uninterpreted header bytes followed by 16-byte templates, indexed by item type.
 [[nodiscard]] std::optional<std::vector<ItemTemplate>>
 decode_item_templates(std::span<const std::uint8_t> bytes);
+// START.EXE's name tables, read from its unpacked image (unpack_sound_executable). Item words
+// are indexed by name component: 0 is empty, 1 is "Battle Axe", 255 the last. Spells are
+// indexed by spell number: 0 is empty, 1 is "Bless".
+[[nodiscard]] std::optional<std::vector<std::string>>
+decode_item_words(std::span<const std::uint8_t> image);
+[[nodiscard]] std::optional<std::vector<std::string>>
+decode_spell_names(std::span<const std::uint8_t> image);
+// The identified name: the components' words, last component first ("Ring Of Protection +1").
+[[nodiscard]] std::string item_name(const ItemRecord &item, std::span<const std::string> words);
 
 } // namespace opengold::por
 #endif

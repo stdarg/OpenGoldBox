@@ -1,4 +1,7 @@
 #include "opengold/ecl.h"
+#include <deque>
+#include <map>
+#include <set>
 #include <utility>
 
 namespace opengold::por
@@ -207,5 +210,82 @@ EclProgram EclProgram::decode(std::span<const std::uint8_t> bytes, std::string_v
     {
         throw EclError(std::string(source) + ": " + e.what());
     }
+}
+
+EclWalk walk_reachable(const EclProgram &program)
+{
+    using Edge = std::pair<std::uint32_t, std::optional<std::uint16_t>>;
+    std::deque<Edge> queue;
+
+    for (auto entry : program.entries())
+    {
+        queue.emplace_back(entry, std::nullopt);
+    }
+
+    std::set<std::uint32_t> seen;
+    std::map<std::uint32_t, std::uint32_t> spans;
+    EclWalk walk;
+
+    while (!queue.empty())
+    {
+        const auto [pc, fallthrough_from] = queue.front();
+        queue.pop_front();
+
+        if (!seen.insert(pc).second)
+        {
+            continue;
+        }
+
+        try
+        {
+            if (pc < program.body_start())
+            {
+                throw EclError("Target in entry table");
+            }
+
+            const auto i = program.instruction(pc);
+
+            for (const auto &[start, end] : spans)
+            {
+                if (pc < end && i.next > start)
+                {
+                    throw EclError("Overlapping instructions");
+                }
+            }
+
+            spans[pc] = i.next;
+            walk.instructions.push_back(i);
+
+            if (i.opcode == 1 || i.opcode == 2)
+            {
+                queue.emplace_back(i.operands[0].value, fallthrough_from);
+            }
+
+            if (i.opcode == 37 || i.opcode == 38)
+            {
+                for (std::size_t n = 2; n < i.operands.size(); ++n)
+                {
+                    queue.emplace_back(i.operands[n].value, fallthrough_from);
+                }
+            }
+
+            if (i.opcode >= 22 && i.opcode <= 27)
+            {
+                queue.emplace_back(program.instruction(i.next).next, fallthrough_from);
+            }
+
+            if (i.opcode != 0 && i.opcode != 1 && i.opcode != 19 && i.opcode != 32)
+            {
+                queue.emplace_back(i.next,
+                                   i.opcode == 37 ? std::optional(i.address) : fallthrough_from);
+            }
+        }
+        catch (const EclError &e)
+        {
+            walk.errors.push_back({pc, fallthrough_from, e.what()});
+        }
+    }
+
+    return walk;
 }
 } // namespace opengold::por

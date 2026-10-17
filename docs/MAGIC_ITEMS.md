@@ -32,6 +32,15 @@ graveyard sword, Ohlo's potion), so this list comes from the data itself.
 The shops sell no magic items: none of the shop lists (`ITEM3.DAX` 52 to 55,
 `ITEM1.DAX` 53) contains one.
 
+### Regenerating the list
+
+`opengold_magic_items GAME_DIR` prints every magic item in the item lists and
+creature gear, with each record's type, bonus, curse, charges and spells, and
+the scripts that name the list or creature by a constant. Lists it reports as
+named by no constant were traced by hand below. `opengold_magic_item_tests`
+checks the totals and the key facts on this page when `OPENGOLD_GAME_DIR` is
+set.
+
 ### Record fields used here
 
 Item records are 63 bytes ([creature-catalog.md](creature-catalog.md)).
