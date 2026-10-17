@@ -1,16 +1,19 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "GRISHNAK combat icon. Original gear: none recorded.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "GRISHNAK combat icon",
   "source": {
     "art_archive": "CPIC4.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 1 creature",
     "art_record": 2,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC4.DAX:2"
+    "key": "CPIC4.DAX:2",
+    "linked_creature_keys": [
+      "MON4CHA.DAX:28"
+    ]
   },
   "variants": [
     {

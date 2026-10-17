@@ -1,16 +1,20 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by PRINCESS FATIMA, ENVOY. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: PRINCESS FATIMA, ENVOY",
   "source": {
     "art_archive": "CPIC8.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 2 creatures",
     "art_record": 11,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC8.DAX:11"
+    "key": "CPIC8.DAX:11",
+    "linked_creature_keys": [
+      "MON8CHA.DAX:104",
+      "MON8CHA.DAX:87"
+    ]
   },
   "variants": [
     {

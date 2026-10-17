@@ -1,16 +1,25 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by 3RD LVL FIGHTER, 5TH LVL FIGHTER, 4TH LVL FIGHTER, AIDES, CORPORAL, GUARD, BUCCANEER. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: 3RD LVL FIGHTER, 5TH LVL FIGHTER, 4TH LVL FIGHTER, AIDES, CORPORAL, GUARD, BUCCANEER",
   "source": {
     "art_archive": "CPIC6.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 7 creatures",
     "art_record": 11,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC6.DAX:11"
+    "key": "CPIC6.DAX:11",
+    "linked_creature_keys": [
+      "MON6CHA.DAX:100",
+      "MON6CHA.DAX:101",
+      "MON6CHA.DAX:41",
+      "MON6CHA.DAX:53",
+      "MON6CHA.DAX:54",
+      "MON6CHA.DAX:96",
+      "MON6CHA.DAX:99"
+    ]
   },
   "variants": [
     {

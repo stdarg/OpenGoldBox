@@ -1,16 +1,20 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by SHAMAN, YARASH. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: SHAMAN, YARASH",
   "source": {
     "art_archive": "CPIC7.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 2 creatures",
     "art_record": 14,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC7.DAX:14"
+    "key": "CPIC7.DAX:14",
+    "linked_creature_keys": [
+      "MON7CHA.DAX:43",
+      "MON7CHA.DAX:81"
+    ]
   },
   "variants": [
     {

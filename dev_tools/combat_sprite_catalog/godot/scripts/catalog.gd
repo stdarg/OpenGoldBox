@@ -15,10 +15,12 @@ var monster_list: ItemList
 var hide_unused: CheckButton
 var name_filter: LineEdit
 var monster_title: Label
+var name_edit: LineEdit
 var monster_image: TextureRect
 var monster_source: Label
 var description_edit: TextEdit
 var gear_rows: VBoxContainer
+var gear_source_hint: Label
 var regeneration_flag: CheckButton
 var show_new_art: CheckButton
 var variant_choice: OptionButton
@@ -27,6 +29,8 @@ var metadata_status: Label
 var draft_records: Dictionary = {}
 var load_errors: Dictionary = {}
 var metadata_root := ""
+var native_index_by_key: Dictionary = {}
+var art_users: Dictionary = {}
 var status: Label
 var character_panel
 
@@ -42,9 +46,14 @@ func _ready() -> void:
         status.text = "Cannot load sprite catalog: " + error
         return
     rows = catalog.creatures()
+    for index in range(rows.size()):
+        rows[index]["native_index"] = index
+        rows[index]["origin_key"] = str(rows[index].key)
+        native_index_by_key[rows[index].key] = index
     character_panel.set_catalog(catalog)
     var evidence := Evidence.new()
     evidence.build(game_dir)
+    _apply_script_bindings(evidence)
     for script in evidence.scripts:
         for node in script.nodes.values():
             if node.opcode in [11, 54] and not node.args.is_empty() and node.args[0].kind == "constant":
@@ -56,6 +65,14 @@ func _ready() -> void:
                 used["%s:%d" % [archive, ref.art_id]] = true
             for candidate in ref.candidates:
                 if candidate.has("key"): used[candidate.key] = true
+    for row in MonsterMetadata.list_custom_rows(metadata_root):
+        rows.append(row)
+        used[row.key] = true
+    for index in range(rows.size()):
+        var row: Dictionary = rows[index]
+        var loaded: Dictionary = MonsterMetadata.load_record(row, _art_for(index), metadata_root)
+        if loaded.error.is_empty():
+            row.name = loaded.data.name
     _rebuild_list()
     status.text = "%d monster/NPC records and combat image pairs. Unused means no reference in decoded ECL evidence; dynamic paths may be unresolved." % rows.size()
     if "--metadata-check" in OS.get_cmdline_user_args():
@@ -70,6 +87,67 @@ func _process(delta: float) -> void:
         elapsed = fmod(elapsed, 1.0)
         action = not action
         _show_monster_image()
+
+func _apply_script_bindings(evidence) -> void:
+    var choices := {}
+    for art_key in evidence.references:
+        for ref in evidence.references[art_key]:
+            if ref.family != "CPIC": continue
+            for candidate in ref.candidates:
+                if not candidate.has("key") or not native_index_by_key.has(candidate.key): continue
+                var creature_key := str(candidate.key)
+                if not choices.has(creature_key): choices[creature_key] = {}
+                for archive in ref.art_archives:
+                    var key := "%s:%d" % [archive, ref.art_id]
+                    if not choices[creature_key].has(key):
+                        choices[creature_key][key] = {"archive":archive,"record":ref.art_id,"count":0}
+                    choices[creature_key][key].count += 1
+                    if not art_users.has(key): art_users[key] = {}
+                    art_users[key][creature_key] = true
+    for creature_key in choices:
+        var best_key := ""
+        var best_score := -1
+        for art_key in choices[creature_key]:
+            var option: Dictionary = choices[creature_key][art_key]
+            var same_bank := str(option.archive).substr(4, 1) == str(creature_key).substr(3, 1)
+            var score := int(option.count) * 2 + (1 if same_bank else 0)
+            if score > best_score or (score == best_score and (best_key.is_empty() or art_key < best_key)):
+                best_key = art_key
+                best_score = score
+        var chosen: Dictionary = choices[creature_key][best_key]
+        var index: int = native_index_by_key[creature_key]
+        var count: int = choices[creature_key].size()
+        var basis := "ECL LOAD MONSTER icon (%d script candidate%s)" % [count, "s" if count != 1 else ""]
+        if catalog.bind_monster_art(index, str(chosen.archive), int(chosen.record), basis):
+            rows[index].art_basis = basis
+            rows[index]["script_alternatives"] = choices[creature_key].keys()
+    for index in range(rows.size()):
+        var row: Dictionary = rows[index]
+        if not str(row.key).begins_with("CPIC") or not art_users.has(row.key): continue
+        var keys: Array = art_users[row.key].keys()
+        keys.sort()
+        var names: Array[String] = []
+        for key in keys:
+            names.append(str(rows[native_index_by_key[key]].name))
+        row["linked_name"] = "%s combat icon" % names[0] if keys.size() == 1 else "Shared combat icon: %s" % ", ".join(names)
+        row["linked_keys"] = keys
+        if keys.size() == 1:
+            row.equipment = rows[native_index_by_key[keys[0]]].equipment.duplicate(true)
+
+func _art_for(index: int) -> Dictionary:
+    var row: Dictionary = rows[index]
+    if int(row.get("native_index", -1)) >= 0:
+        var art: Dictionary = catalog.monster_art(int(row.native_index))
+        if row.has("linked_keys"):
+            art.basis = "ECL LOAD MONSTER icon shared by %d creature%s" % [row.linked_keys.size(), "s" if row.linked_keys.size() != 1 else ""]
+        return art
+    var source: Dictionary = draft_records.get(row.key, {}).get("source", {})
+    if source.is_empty():
+        var loaded: Dictionary = MonsterMetadata.load_record(row, {}, metadata_root)
+        source = loaded.data.source
+    return {"archive":str(source.get("art_archive", "")),
+        "record":int(source.get("art_record", -1)),
+        "basis":str(source.get("art_basis", "Copied monster art"))}
 
 func _build_ui() -> void:
     var margin := MarginContainer.new()
@@ -110,6 +188,25 @@ func _build_ui() -> void:
     monster_title = Label.new()
     monster_title.add_theme_font_size_override("font_size", 24)
     detail.add_child(monster_title)
+    var identity := HBoxContainer.new()
+    detail.add_child(identity)
+    var identity_label := Label.new()
+    identity_label.text = "Name"
+    identity.add_child(identity_label)
+    name_edit = LineEdit.new()
+    name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    name_edit.placeholder_text = "Monster or NPC name"
+    identity.add_child(name_edit)
+    var rename_button := Button.new()
+    rename_button.text = "Rename"
+    rename_button.tooltip_text = "Save this name for the selected catalog record"
+    rename_button.pressed.connect(_rename_monster)
+    identity.add_child(rename_button)
+    var copy_button := Button.new()
+    copy_button.text = "Copy as new monster"
+    copy_button.tooltip_text = "Copy metadata and replacement PNGs under a new name"
+    copy_button.pressed.connect(_copy_monster)
+    identity.add_child(copy_button)
     var columns := HBoxContainer.new()
     columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
     columns.add_theme_constant_override("separation", 18)
@@ -162,6 +259,9 @@ func _build_ui() -> void:
     gear_heading.text = "Weapons, shields and gear"
     gear_heading.add_theme_font_size_override("font_size", 20)
     editor.add_child(gear_heading)
+    gear_source_hint = Label.new()
+    gear_source_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    editor.add_child(gear_source_hint)
     var gear_hint := Label.new()
     gear_hint.text = "Click an item's type to change it. The art selector pairs 1H weapons with shields; ranged and 2H weapons use separate art."
     gear_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -213,8 +313,10 @@ func _rebuild_list() -> void:
         monster_image.texture = null
         monster_image.offset_top = 0.0
         monster_source.text = ""
+        name_edit.text = ""
         variant_choice.clear()
         description_edit.text = ""
+        gear_source_hint.text = ""
         for child in gear_rows.get_children():
             gear_rows.remove_child(child)
             child.queue_free()
@@ -235,15 +337,28 @@ func _select_monster(list_index: int) -> void:
     elapsed = 0.0
     var row: Dictionary = rows[selected]
     monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
+    name_edit.text = str(row.name)
     # The Medusa icon sits at the top edge of its source frame. Lower its
     # presentation within the existing preview area so the head has breathing room.
     monster_image.offset_top = 64.0 if str(row.name).to_upper() == "MEDUSA" else 0.0
     if not draft_records.has(row.key):
-        var loaded: Dictionary = MonsterMetadata.load_record(row, catalog.monster_art(selected), metadata_root)
+        var loaded: Dictionary = MonsterMetadata.load_record(row, _art_for(selected), metadata_root)
         draft_records[row.key] = loaded.data
         if not loaded.error.is_empty(): load_errors[row.key] = loaded.error
     metadata_status.text = str(load_errors.get(row.key, ""))
     var record: Dictionary = draft_records[row.key]
+    row.name = record.name
+    monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
+    name_edit.text = record.name
+    if row.has("linked_keys"):
+        gear_source_hint.text = "Gear from %s" % row.linked_keys[0] if row.linked_keys.size() == 1 else \
+            "Shared icon. Select a named creature to edit its gear."
+    elif str(row.key).begins_with("CUSTOM:"):
+        gear_source_hint.text = "Independent copied gear. Original source: %s" % row.origin_key
+    elif row.equipment.is_empty():
+        gear_source_hint.text = "No items recorded for this creature in the original MONnITM archive."
+    else:
+        gear_source_hint.text = "Original gear loaded from the matching MONnITM record."
     description_edit.text = record.description
     regeneration_flag.set_pressed_no_signal(bool(record.flag_for_regeneration))
     for child in gear_rows.get_children():
@@ -332,7 +447,17 @@ func _store_draft() -> void:
     MonsterMetadata.rebuild_variants(record)
 
 func _gear_changed() -> void:
+    var previous := _selected_variant()
     _store_draft()
+    if not previous.is_empty():
+        var key: String = rows[selected].key
+        var record: Dictionary = draft_records[key]
+        var remains := false
+        for variant in record.variants:
+            if variant.id == previous.id: remains = true
+        if not remains and (FileAccess.file_exists(MonsterMetadata.art_path(key, str(previous.id), false, metadata_root)) or \
+                FileAccess.file_exists(MonsterMetadata.art_path(key, str(previous.id), true, metadata_root))):
+            record.preview_fallback_variant = previous.id
     _refresh_variants()
 
 func _refresh_variants() -> void:
@@ -365,6 +490,52 @@ func _save_monster() -> void:
     else:
         metadata_status.text = error
 
+func _rename_monster() -> void:
+    if selected < 0: return
+    var renamed := name_edit.text.strip_edges()
+    if renamed.is_empty():
+        metadata_status.text = "Enter a monster name."
+        return
+    _store_draft()
+    var row: Dictionary = rows[selected]
+    var record: Dictionary = draft_records[row.key]
+    var old_name: String = record.name
+    record.name = renamed
+    var error: String = MonsterMetadata.save_record(record, metadata_root)
+    if not error.is_empty():
+        record.name = old_name
+        metadata_status.text = error
+        return
+    row.name = renamed
+    monster_title.text = renamed
+    _rebuild_list()
+    metadata_status.text = "Renamed catalog record. Original game data was not changed."
+
+func _copy_monster() -> void:
+    if selected < 0: return
+    _store_draft()
+    var source: Dictionary = draft_records[rows[selected].key]
+    var result: Dictionary = MonsterMetadata.copy_record(source, name_edit.text, metadata_root)
+    if not result.error.is_empty():
+        metadata_status.text = result.error
+        return
+    var copied: Dictionary = result.data
+    var copied_key: String = copied.source.key
+    for row in MonsterMetadata.list_custom_rows(metadata_root):
+        if row.key == copied_key:
+            rows.append(row)
+            draft_records[copied_key] = copied
+            used[copied_key] = true
+            break
+    name_filter.text = ""
+    _rebuild_list()
+    for index in range(visible_rows.size()):
+        if rows[visible_rows[index]].key == copied_key:
+            monster_list.select(index)
+            _select_monster(index)
+            break
+    metadata_status.text = "Copied metadata and replacement PNGs. Original game data was not changed."
+
 func _selected_variant() -> Dictionary:
     if selected < 0 or variant_choice.selected < 0: return {}
     var record: Dictionary = draft_records[rows[selected].key]
@@ -372,11 +543,12 @@ func _selected_variant() -> Dictionary:
 
 func _show_monster_image() -> void:
     if selected < 0: return
-    var art: Dictionary = catalog.monster_art(selected)
+    var row: Dictionary = rows[selected]
+    var art: Dictionary = _art_for(selected)
     var source_note := ""
     var variant := _selected_variant()
     if show_new_art.button_pressed and not variant.is_empty():
-        var replacement_path: String = MonsterMetadata.art_path(str(rows[selected].key), str(variant.id), action, metadata_root)
+        var replacement_path: String = MonsterMetadata.art_path(str(row.key), str(variant.id), action, metadata_root)
         if FileAccess.file_exists(replacement_path):
             var image := Image.new()
             if image.load(replacement_path) == OK:
@@ -384,16 +556,35 @@ func _show_monster_image() -> void:
                 # set or the pose changes so a replaced PNG appears immediately.
                 monster_image.texture = ImageTexture.create_from_image(image)
                 source_note = "New art · %s · %s · %s" % [variant.label, "Action" if action else "Ready", replacement_path]
+        if source_note.is_empty():
+            var record: Dictionary = draft_records[row.key]
+            var prior_id := str(record.get("preview_fallback_variant", ""))
+            if not prior_id.is_empty():
+                var prior_path: String = MonsterMetadata.art_path(str(row.key), prior_id, action, metadata_root)
+                if FileAccess.file_exists(prior_path):
+                    var prior_image := Image.new()
+                    if prior_image.load(prior_path) == OK:
+                        monster_image.texture = ImageTexture.create_from_image(prior_image)
+                        source_note = "Previous new art · %s · regenerate for current gear · %s" % ["Action" if action else "Ready", prior_path]
     if source_note.is_empty():
-        monster_image.texture = catalog.monster_image(selected, action)
+        var original_index := int(row.get("native_index", -1))
+        if original_index < 0:
+            original_index = int(native_index_by_key.get(row.get("origin_key", ""), -1))
+        monster_image.texture = catalog.monster_image(original_index, action) if original_index >= 0 else null
         if show_new_art.button_pressed:
             source_note = "Original fallback · no new %s image for %s. " % ["action" if action else "ready", variant.get("label", "default")]
+    var uses: Array = row.get("script_alternatives", [])
+    var uses_note := " · Other script icons: %s" % ", ".join(uses) if uses.size() > 1 else ""
+    var linked: Array = row.get("linked_keys", [])
+    var linked_note := " · Script-linked creatures: %s" % ", ".join(linked) if not linked.is_empty() else ""
+    var replacement_visible := source_note.begins_with("New art") or source_note.begins_with("Previous new art")
     if art.is_empty():
-        monster_source.text = source_note if source_note.begins_with("New art") else source_note + "No supported ready/action CPIC binding. Source: %s" % rows[selected].key
+        monster_source.text = source_note if replacement_visible else source_note + "No supported ready/action CPIC binding. Source: %s" % row.key
     elif art.get("assembled", false):
-        monster_source.text = source_note if source_note.begins_with("New art") else source_note + "%s · %s · %s" % ["Action" if action else "Ready", rows[selected].key, art.basis]
+        monster_source.text = source_note if replacement_visible else source_note + "%s · %s · %s" % ["Action" if action else "Ready", row.key, art.basis]
     else:
-        monster_source.text = source_note if source_note.begins_with("New art") else source_note + "%s · %s record %d / %d · %s" % ["Action" if action else "Ready", art.archive, art.record + (128 if action else 0), art.record, art.basis]
+        monster_source.text = source_note if replacement_visible else source_note + "%s · %s record %d / %d · %s" % ["Action" if action else "Ready", art.archive, art.record + (128 if action else 0), art.record, art.basis]
+    monster_source.text += uses_note + linked_note
 
 func _metadata_check() -> void:
     assert(rows.size() >= 170)
@@ -541,9 +732,35 @@ func _metadata_check() -> void:
     assert(monster_source.text.begins_with("Original fallback"))
     assert(monster_source.text.contains("Long bow"))
     assert(JSON.stringify(draft_records[first.key].equipment) == equipment_before)
+    variant_choice.select(0)
+    variant_choice.item_selected.emit(0)
+    var removed_shield: HBoxContainer = gear_rows.get_child(3)
+    gear_rows.remove_child(removed_shield)
+    removed_shield.queue_free()
+    _gear_changed()
+    assert(draft_records[first.key].preview_fallback_variant == "w1__s1")
+    assert(monster_source.text.begins_with("Previous new art"))
+    pixel = monster_image.texture.get_image().get_pixel(0, 0)
+    assert(pixel.b > 0.7 and pixel.g < 0.3)
+    save_button.pressed.emit()
+    var edited: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
+    assert(edited.error.is_empty() and edited.data.preview_fallback_variant == "w1__s1")
+    name_edit.text = "Renamed test monster"
+    _rename_monster()
+    edited = MonsterMetadata.load_record(first, art, metadata_root)
+    assert(edited.error.is_empty() and edited.data.name == "Renamed test monster")
+    name_edit.text = "Copied test monster"
+    _copy_monster()
+    assert(str(rows[selected].key).begins_with("CUSTOM:"))
+    assert(rows[selected].name == "Copied test monster")
+    assert(FileAccess.file_exists(MonsterMetadata.art_path(str(rows[selected].key), "w1__s1", true, metadata_root)))
+    assert(monster_source.text.begins_with("Previous new art"))
+    var reloaded: Dictionary = MonsterMetadata.load_record(rows[selected], _art_for(selected), metadata_root)
+    assert(reloaded.error.is_empty() and reloaded.data.name == "Copied test monster")
+    assert(reloaded.data.source.origin_key == first.key and reloaded.data.equipment.size() == 5)
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
-    print("Monster metadata checks passed: decoded sword/shield plus crossbow, JSON save/load, editable drafts, one weapon-set dropdown swaps ready/action art without changing gear, PNG reload, original fallback")
+    print("Monster metadata checks passed: JSON save/load, rename/copy with PNGs, gear-edit preview retention, weapon sets, original fallback")
     get_tree().quit()
 
 func _remove_check_tree(path: String) -> void:
@@ -564,14 +781,33 @@ func _remove_check_tree(path: String) -> void:
 func _catalog_check() -> void:
     assert(rows.size() >= 170)
     assert(monster_list.item_count == rows.size())
+    var mad_man: Dictionary = catalog.monster_art(native_index_by_key["MON2CHA.DAX:25"])
+    assert(mad_man.archive == "CPIC2.DAX" and mad_man.record == 11)
+    var skullcrusher: Dictionary = catalog.monster_art(native_index_by_key["MON4CHA.DAX:27"])
+    assert(skullcrusher.archive == "CPIC4.DAX" and skullcrusher.record == 11)
+    assert(catalog.monster_art(native_index_by_key["MON3CHA.DAX:107"]).get("assembled", false))
+    assert(str(rows[native_index_by_key["CPIC4.DAX:11"]].name).contains("SKULLCRUSHER"))
+    assert(not rows[native_index_by_key["MON8CHA.DAX:104"]].equipment.is_empty())
+    var norris_icon_index: int = native_index_by_key["CPIC8.DAX:7"]
+    var norris_icon: Dictionary = MonsterMetadata.load_record(rows[norris_icon_index], _art_for(norris_icon_index), metadata_root)
+    assert(norris_icon.error.is_empty() and norris_icon.data.name.contains("NORRIS"))
+    assert(norris_icon.data.equipment.size() == 3)
+    assert(rows[native_index_by_key["MON2CHA.DAX:55"]].equipment[0].label == "Boulder")
+    var script_bound := 0
+    for row in rows:
+        if not str(row.key).begins_with("MON") or not used.has(row.key): continue
+        if row.key == "MON3CHA.DAX:107": continue # SETUP MONSTER has no icon operand.
+        assert(str(catalog.monster_art(int(row.native_index)).basis).begins_with("ECL LOAD MONSTER"))
+        script_bound += 1
+    assert(script_bound == 124)
     var pictured := -1
     for index in range(rows.size()):
-        if not catalog.monster_art(index).is_empty():
+        if not _art_for(index).is_empty():
             pictured = index
             break
     assert(pictured >= 0)
-    assert(catalog.monster_image(pictured, false) != null)
-    assert(catalog.monster_image(pictured, true) != null)
+    assert(catalog.monster_image(int(rows[pictured].native_index), false) != null)
+    assert(catalog.monster_image(int(rows[pictured].native_index), true) != null)
     for index in range(rows.size()):
         if str(rows[index].name).to_upper() == "MEDUSA":
             _select_monster(index)
@@ -608,10 +844,14 @@ func _catalog_check() -> void:
     var unresolved := 0
     for index in range(rows.size()):
         if used.has(rows[index].key): referenced += 1
-        if catalog.monster_art(index).is_empty(): unresolved += 1
-        assert(catalog.monster_image(index, false) != null)
-        assert(catalog.monster_image(index, true) != null)
-    print("Combat sprite catalog checks passed: %d rows, %d referenced, %d unresolved art bindings, name filter, all weapon and shield previews" % [rows.size(), referenced, unresolved])
+        if _art_for(index).is_empty(): unresolved += 1
+        var original_index := int(rows[index].get("native_index", -1))
+        if original_index < 0:
+            original_index = int(native_index_by_key.get(rows[index].get("origin_key", ""), -1))
+        assert(original_index >= 0)
+        assert(catalog.monster_image(original_index, false) != null)
+        assert(catalog.monster_image(original_index, true) != null)
+    print("Combat sprite catalog checks passed: %d rows, %d referenced, %d missing original previews, ECL NPC icons and gear, name filter, all weapon and shield previews" % [rows.size(), referenced, unresolved])
     get_tree().quit()
 
 func _check_name_filter() -> String:

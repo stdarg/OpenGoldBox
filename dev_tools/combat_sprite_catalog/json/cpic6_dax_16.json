@@ -1,16 +1,20 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by CAPTAIN, COMMANDANT. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: CAPTAIN, COMMANDANT",
   "source": {
     "art_archive": "CPIC6.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 2 creatures",
     "art_record": 16,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC6.DAX:16"
+    "key": "CPIC6.DAX:16",
+    "linked_creature_keys": [
+      "MON6CHA.DAX:102",
+      "MON6CHA.DAX:50"
+    ]
   },
   "variants": [
     {

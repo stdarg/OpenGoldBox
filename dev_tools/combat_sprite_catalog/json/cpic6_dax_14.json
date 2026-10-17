@@ -1,16 +1,51 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
-  "equipment": [],
+  "description": "AL-HYAM DAZID combat icon. Original gear: Item type 78, Item type 69, Item type 77 +7.",
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Item type 78",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 90,
+      "source_type": 78,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Item type 69",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 69,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Item type 77 +7",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 77,
+      "weapon_role": ""
+    }
+  ],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "AL-HYAM DAZID combat icon",
+  "preview_fallback_variant": "default",
   "source": {
     "art_archive": "CPIC6.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 1 creature",
     "art_record": 14,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC6.DAX:14"
+    "key": "CPIC6.DAX:14",
+    "linked_creature_keys": [
+      "MON6CHA.DAX:86"
+    ]
   },
   "variants": [
     {

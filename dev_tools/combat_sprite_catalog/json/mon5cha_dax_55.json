@@ -1,10 +1,10 @@
 {
-  "description": "HILL GIANT. Gear: 2 × Item type 87.",
+  "description": "HILL GIANT. Gear: 2 × Boulder.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 87",
+      "name": "Boulder",
       "readied": false,
       "source_hands": 2,
       "source_range": 10,
@@ -14,7 +14,7 @@
     {
       "id": "item_001",
       "kind": "gear",
-      "name": "Item type 87",
+      "name": "Boulder",
       "readied": false,
       "source_hands": 2,
       "source_range": 10,

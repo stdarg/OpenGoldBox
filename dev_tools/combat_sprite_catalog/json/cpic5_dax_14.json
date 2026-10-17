@@ -1,16 +1,21 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by AL-HYAM DAZID, ENVOY, GENHEERIS. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: AL-HYAM DAZID, ENVOY, GENHEERIS",
   "source": {
     "art_archive": "CPIC5.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 3 creatures",
     "art_record": 14,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC5.DAX:14"
+    "key": "CPIC5.DAX:14",
+    "linked_creature_keys": [
+      "MON5CHA.DAX:86",
+      "MON5CHA.DAX:87",
+      "MON5CHA.DAX:88"
+    ]
   },
   "variants": [
     {

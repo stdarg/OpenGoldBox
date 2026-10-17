@@ -20,6 +20,8 @@ class SpriteCatalog : public godot::RefCounted
     godot::String load_data(const godot::String &game_directory,
                             const godot::String &art_directory);
     godot::Array creatures() const;
+    bool bind_monster_art(int index, const godot::String &archive, int record,
+                          const godot::String &basis);
     godot::Dictionary monster_art(int index) const;
     godot::Ref<godot::Texture2D> monster_image(int index, bool action) const;
     godot::Array weapons() const;

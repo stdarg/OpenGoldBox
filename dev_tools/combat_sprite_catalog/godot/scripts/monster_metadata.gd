@@ -70,9 +70,11 @@ static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
             "art_archive": str(art.get("archive", "")),
             "art_record": int(art.get("record", -1)),
             "art_basis": str(art.get("basis", "Unresolved binding")),
+            "linked_creature_keys": row.get("linked_keys", []),
         },
         "description": "",
         "flag_for_regeneration": false,
+        "preview_fallback_variant": "",
         "equipment": equipment,
         "variants": [],
     }
@@ -170,12 +172,101 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
                 item["weapon_role"] = source_weapon_role(original_type, hands)
         else:
             item["weapon_role"] = ""
-    parsed["name"] = str(row.name)
-    parsed["source"] = new_record(row, art).source
+    if str(parsed.get("name", "")) == "Unidentified combat sprite" and row.has("linked_name"):
+        parsed["name"] = row.linked_name
+    else:
+        parsed["name"] = str(parsed.get("name", row.name)).strip_edges()
+    if parsed.name.is_empty(): parsed.name = str(row.name)
+    if row.has("linked_name") and parsed.equipment.is_empty() and not row.equipment.is_empty():
+        parsed.equipment = new_record(row, art).equipment
+    if not str(row.key).begins_with("CUSTOM:"):
+        parsed["source"] = new_record(row, art).source
     parsed["description"] = str(parsed.get("description", ""))
     parsed["flag_for_regeneration"] = bool(parsed.get("flag_for_regeneration", false))
+    var fallback := str(parsed.get("preview_fallback_variant", ""))
+    parsed["preview_fallback_variant"] = fallback if fallback.is_empty() or _safe_item_id(fallback) else ""
     rebuild_variants(parsed)
     return {"data": parsed, "error": ""}
+
+
+static func list_custom_rows(root: String = "") -> Array:
+    var result: Array = []
+    var folder := (root if not root.is_empty() else tool_root()).path_join("json")
+    var directory := DirAccess.open(folder)
+    if directory == null: return result
+    for filename in directory.get_files():
+        if not filename.begins_with("custom_") or not filename.ends_with(".json"): continue
+        var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join(filename)))
+        if not parsed is Dictionary or not parsed.get("source") is Dictionary: continue
+        var source: Dictionary = parsed.source
+        var key := str(source.get("key", ""))
+        if not key.begins_with("CUSTOM:") or json_path(key, root).get_file() != filename: continue
+        result.append({"key":key,"name":str(parsed.get("name", "Unnamed copy")),
+            "archive":str(source.get("creature_archive", "")),
+            "record":int(source.get("creature_record", -1)),"npc":false,
+            "equipment":[],"art_basis":str(source.get("art_basis", "Copied monster art")),
+            "origin_key":str(source.get("origin_key", "")),"native_index":-1})
+    result.sort_custom(func(a: Dictionary, b: Dictionary): return str(a.name) < str(b.name))
+    return result
+
+
+static func _copy_art_folder(source: String, target: String) -> String:
+    var directory := DirAccess.open(source)
+    if directory == null: return ""
+    var error := DirAccess.make_dir_recursive_absolute(target)
+    if error != OK: return "Cannot create %s (error %d)" % [target, error]
+    for folder in directory.get_directories():
+        var failure := _copy_art_folder(source.path_join(folder), target.path_join(folder))
+        if not failure.is_empty(): return failure
+    for filename in directory.get_files():
+        if not filename.ends_with(".png"): continue
+        error = DirAccess.copy_absolute(source.path_join(filename), target.path_join(filename))
+        if error != OK: return "Cannot copy %s (error %d)" % [filename, error]
+    return ""
+
+
+static func _remove_art_folder(path: String) -> void:
+    var directory := DirAccess.open(path)
+    if directory == null: return
+    for folder in directory.get_directories():
+        _remove_art_folder(path.path_join(folder))
+    for filename in directory.get_files():
+        DirAccess.remove_absolute(path.path_join(filename))
+    DirAccess.remove_absolute(path)
+
+
+static func copy_record(record: Dictionary, name: String, root: String = "") -> Dictionary:
+    var clean_name := name.strip_edges()
+    if clean_name.is_empty(): return {"error":"Enter a name for the new monster."}
+    var base := root if not root.is_empty() else tool_root()
+    var key := ""
+    var allocated := false
+    for attempt in range(100):
+        key = "CUSTOM:%d_%d" % [Time.get_ticks_usec(), attempt]
+        if not FileAccess.file_exists(json_path(key, root)) and \
+                not DirAccess.dir_exists_absolute(base.path_join("art").path_join(record_id(key))):
+            allocated = true
+            break
+    if not allocated:
+        return {"error":"Could not allocate a unique monster ID."}
+    var copied: Dictionary = record.duplicate(true)
+    var old_key := str(record.source.key)
+    copied.name = clean_name
+    copied.source.key = key
+    copied.source.copied_from = old_key
+    copied.source.origin_key = str(record.source.get("origin_key", old_key))
+    rebuild_variants(copied)
+    var source_art := base.path_join("art").path_join(record_id(old_key))
+    var target_art := base.path_join("art").path_join(record_id(key))
+    var failure := _copy_art_folder(source_art, target_art)
+    if not failure.is_empty():
+        _remove_art_folder(target_art)
+        return {"error":failure}
+    failure = save_record(copied, root)
+    if not failure.is_empty():
+        _remove_art_folder(target_art)
+        return {"error":failure}
+    return {"data":copied,"error":""}
 
 
 static func save_record(record: Dictionary, root: String = "") -> String:

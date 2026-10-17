@@ -1,16 +1,20 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by 1ST LVL THIEF, 6TH LVL THIEF. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: 1ST LVL THIEF, 6TH LVL THIEF",
   "source": {
     "art_archive": "CPIC5.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 2 creatures",
     "art_record": 12,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC5.DAX:12"
+    "key": "CPIC5.DAX:12",
+    "linked_creature_keys": [
+      "MON5CHA.DAX:45",
+      "MON5CHA.DAX:93"
+    ]
   },
   "variants": [
     {

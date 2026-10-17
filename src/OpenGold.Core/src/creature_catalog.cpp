@@ -82,6 +82,11 @@ std::string_view item_type_name(std::uint8_t type)
     {
         return "Arrows";
     }
+    if (type == 87)
+    {
+        // Name component 244 in the original START.EXE item word table.
+        return "Boulder";
+    }
     if (type == authored_item::torch)
     {
         return "Torch";

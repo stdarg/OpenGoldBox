@@ -32,6 +32,8 @@ void SpriteCatalog::_bind_methods()
     ClassDB::bind_method(D_METHOD("load_data", "game_directory", "art_directory"),
                          &SpriteCatalog::load_data);
     ClassDB::bind_method(D_METHOD("creatures"), &SpriteCatalog::creatures);
+    ClassDB::bind_method(D_METHOD("bind_monster_art", "index", "archive", "record", "basis"),
+                         &SpriteCatalog::bind_monster_art);
     ClassDB::bind_method(D_METHOD("monster_art", "index"), &SpriteCatalog::monster_art);
     ClassDB::bind_method(D_METHOD("monster_image", "index", "action"),
                          &SpriteCatalog::monster_image);
@@ -238,6 +240,26 @@ Array SpriteCatalog::creatures() const
         result.push_back(row);
     }
     return result;
+}
+
+bool SpriteCatalog::bind_monster_art(int index, const String &archive, int record,
+                                     const String &basis)
+{
+    if (index < 0 || static_cast<std::size_t>(index) >= ids_.size() || record < 0 || record >= 128)
+    {
+        return false;
+    }
+    const auto name = opengold::por::detail::upper_ascii(std::string(archive.utf8().get_data()));
+    const auto found = archive_bytes_.find(name);
+    if (found == archive_bytes_.end() ||
+        !decode_ega_combat_icon(found->second, static_cast<std::uint8_t>(record), 0) ||
+        !decode_ega_combat_icon(found->second, static_cast<std::uint8_t>(record + 128), 0))
+    {
+        return false;
+    }
+    art_[ids_[index]] = MonsterArt{std::filesystem::path(name), static_cast<unsigned>(record),
+                                   std::string(basis.utf8().get_data())};
+    return true;
 }
 
 Dictionary SpriteCatalog::monster_art(int index) const

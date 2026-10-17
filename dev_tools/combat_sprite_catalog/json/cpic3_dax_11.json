@@ -1,16 +1,22 @@
 {
-  "description": "Unidentified combat sprite. Gear: none recorded.",
+  "description": "Shared combat icon used by NOMAD, 4TH LVL FIGHTER, AIDES, 6TH LVL FIGHTER. Gear depends on the creature; see its named record.",
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
-  "name": "Unidentified combat sprite",
+  "name": "Shared combat icon: NOMAD, 4TH LVL FIGHTER, AIDES, 6TH LVL FIGHTER",
   "source": {
     "art_archive": "CPIC3.DAX",
-    "art_basis": "Unidentified archive pair",
+    "art_basis": "ECL LOAD MONSTER icon linked to 4 creatures",
     "art_record": 11,
     "creature_archive": "",
     "creature_record": -1,
-    "key": "CPIC3.DAX:11"
+    "key": "CPIC3.DAX:11",
+    "linked_creature_keys": [
+      "MON3CHA.DAX:40",
+      "MON3CHA.DAX:41",
+      "MON3CHA.DAX:53",
+      "MON3CHA.DAX:84"
+    ]
   },
   "variants": [
     {
