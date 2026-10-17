@@ -87,12 +87,16 @@ static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
             "art_basis": str(art.get("basis", "Unresolved binding")),
             "linked_creature_keys": row.get("linked_keys", []),
         },
-        "description": "",
+        "description": str(row.get("art_description", "")),
         "flag_for_regeneration": false,
         "preview_fallback_variant": "",
         "equipment": equipment,
         "variants": [],
     }
+    if row.has("identical_art_keys"):
+        record.source["identical_art_keys"] = row.identical_art_keys.duplicate()
+        record.source["shared_art_creature_keys"] = row.shared_art_user_keys.duplicate()
+        record.source["direct_script_reference_found"] = row.direct_script_reference_found
     rebuild_variants(record)
     return record
 
@@ -206,8 +210,9 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
                 item["weapon_role"] = source_weapon_role(original_type, hands)
         else:
             item["weapon_role"] = ""
-    if str(parsed.get("name", "")) == "Unidentified combat sprite" and row.has("linked_name"):
-        parsed["name"] = row.linked_name
+    if str(parsed.get("name", "")) == "Unidentified combat sprite" and \
+            (row.has("linked_name") or row.has("identified_name")):
+        parsed["name"] = row.get("identified_name", row.get("linked_name", row.name))
     else:
         parsed["name"] = str(parsed.get("name", row.name)).strip_edges()
     if parsed.name.is_empty(): parsed.name = str(row.name)

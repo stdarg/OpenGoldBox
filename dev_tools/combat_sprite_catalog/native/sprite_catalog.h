@@ -20,6 +20,7 @@ class SpriteCatalog : public godot::RefCounted
     godot::String load_data(const godot::String &game_directory,
                             const godot::String &art_directory);
     godot::Array creatures() const;
+    godot::Array identical_art_groups() const;
     bool bind_monster_art(int index, const godot::String &archive, int record,
                           const godot::String &basis);
     godot::Dictionary monster_art(int index) const;
@@ -45,6 +46,7 @@ class SpriteCatalog : public godot::RefCounted
     std::optional<opengold::por::CombatBodyCatalog> bodies_;
     std::vector<opengold::por::CreatureId> ids_;
     std::vector<MonsterArt> extra_art_;
+    std::vector<std::vector<std::string>> identical_art_groups_;
     std::map<opengold::por::CreatureId, MonsterArt> art_;
     std::map<std::string, std::vector<std::uint8_t>> archive_bytes_;
 };

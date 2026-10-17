@@ -65,6 +65,7 @@ func _ready() -> void:
                 used["%s:%d" % [archive, ref.art_id]] = true
             for candidate in ref.candidates:
                 if candidate.has("key"): used[candidate.key] = true
+    _apply_shared_art_identities()
     for row in MonsterMetadata.list_custom_rows(metadata_root):
         rows.append(row)
         used[row.key] = true
@@ -134,12 +135,46 @@ func _apply_script_bindings(evidence) -> void:
         if keys.size() == 1:
             row.equipment = rows[native_index_by_key[keys[0]]].equipment.duplicate(true)
 
+func _apply_shared_art_identities() -> void:
+    for group in catalog.identical_art_groups():
+        var users := {}
+        for art_key in group:
+            for creature_key in art_users.get(art_key, {}):
+                users[creature_key] = true
+        if users.is_empty(): continue
+        var keys: Array = users.keys()
+        keys.sort()
+        var names: Array[String] = []
+        for key in keys:
+            var name := str(rows[native_index_by_key[key]].name)
+            if not names.has(name): names.append(name)
+        names.sort()
+        for art_key in group:
+            if not native_index_by_key.has(art_key): continue
+            var row: Dictionary = rows[native_index_by_key[art_key]]
+            if row.has("linked_keys"): continue
+            var copies: Array = group.duplicate()
+            copies.erase(art_key)
+            row["identical_art_keys"] = copies
+            row["shared_art_user_keys"] = keys.duplicate()
+            row["identified_name"] = "%s combat icon (duplicate)" % names[0] if names.size() == 1 else \
+                "Shared combat icon: %s" % ", ".join(names)
+            row.name = row.identified_name
+            row["art_basis"] = "Identical ready/action records; shared art identity"
+            row["direct_script_reference_found"] = used.has(art_key)
+            row["art_usage_note"] = "Direct script reference found for this archive copy." if used.has(art_key) else \
+                "No direct script reference found for this archive copy."
+            row["art_description"] = "%s. Identical originals: %s. Known users of this art: %s. %s" % [
+                row.identified_name, ", ".join(copies), ", ".join(names), row.art_usage_note]
+
 func _art_for(index: int) -> Dictionary:
     var row: Dictionary = rows[index]
     if int(row.get("native_index", -1)) >= 0:
         var art: Dictionary = catalog.monster_art(int(row.native_index))
         if row.has("linked_keys"):
             art.basis = "ECL LOAD MONSTER icon shared by %d creature%s" % [row.linked_keys.size(), "s" if row.linked_keys.size() != 1 else ""]
+        elif row.has("identical_art_keys"):
+            art.basis = row.art_basis
         return art
     var source: Dictionary = draft_records.get(row.key, {}).get("source", {})
     if source.is_empty():
@@ -353,6 +388,8 @@ func _select_monster(list_index: int) -> void:
     if row.has("linked_keys"):
         gear_source_hint.text = "Gear from %s" % row.linked_keys[0] if row.linked_keys.size() == 1 else \
             "Shared icon. Select a named creature to edit its gear."
+    elif row.has("shared_art_user_keys"):
+        gear_source_hint.text = "Shared artwork. Select a named creature to edit its gear."
     elif str(row.key).begins_with("CUSTOM:"):
         gear_source_hint.text = "Independent copied gear. Original source: %s" % row.origin_key
     elif row.equipment.is_empty():
@@ -577,6 +614,15 @@ func _show_monster_image() -> void:
     var uses_note := " · Other script icons: %s" % ", ".join(uses) if uses.size() > 1 else ""
     var linked: Array = row.get("linked_keys", [])
     var linked_note := " · Script-linked creatures: %s" % ", ".join(linked) if not linked.is_empty() else ""
+    var shared_note := ""
+    if row.has("identical_art_keys"):
+        var shared_names: Array[String] = []
+        for key in row.shared_art_user_keys:
+            var name := str(rows[native_index_by_key[key]].name)
+            if not shared_names.has(name): shared_names.append(name)
+        shared_names.sort()
+        shared_note = " · Identical originals: %s · Known users of identical art: %s · %s" % [
+            ", ".join(row.identical_art_keys), ", ".join(shared_names), row.art_usage_note]
     var replacement_visible := source_note.begins_with("New art") or source_note.begins_with("Previous new art")
     if art.is_empty():
         monster_source.text = source_note if replacement_visible else source_note + "No supported ready/action CPIC binding. Source: %s" % row.key
@@ -584,7 +630,7 @@ func _show_monster_image() -> void:
         monster_source.text = source_note if replacement_visible else source_note + "%s · %s · %s" % ["Action" if action else "Ready", row.key, art.basis]
     else:
         monster_source.text = source_note if replacement_visible else source_note + "%s · %s record %d / %d · %s" % ["Action" if action else "Ready", art.archive, art.record + (128 if action else 0), art.record, art.basis]
-    monster_source.text += uses_note + linked_note
+    monster_source.text += uses_note + linked_note + shared_note
 
 func _metadata_check() -> void:
     assert(rows.size() >= 170)
@@ -603,6 +649,23 @@ func _metadata_check() -> void:
             assert(source_record.variants[1].weapon_role == "ranged")
             assert(source_record.variants[1].shield_id.is_empty())
     assert(captain_found)
+    var duplicate_index: int = native_index_by_key["CPIC1.DAX:11"]
+    var duplicate_row: Dictionary = rows[duplicate_index]
+    var duplicate_record: Dictionary = MonsterMetadata.new_record(duplicate_row, _art_for(duplicate_index))
+    duplicate_record.name = "My shared fighter art"
+    assert(duplicate_record.equipment.is_empty())
+    assert(not duplicate_record.source.direct_script_reference_found)
+    assert(MonsterMetadata.save_record(duplicate_record, metadata_root).is_empty())
+    var duplicate_loaded: Dictionary = MonsterMetadata.load_record(duplicate_row, _art_for(duplicate_index), metadata_root)
+    assert(duplicate_loaded.error.is_empty())
+    assert(duplicate_loaded.data.name == "My shared fighter art")
+    assert(duplicate_loaded.data.source.identical_art_keys == duplicate_record.source.identical_art_keys)
+    assert(duplicate_loaded.data.source.shared_art_creature_keys == duplicate_record.source.shared_art_creature_keys)
+    assert(duplicate_loaded.data.source.linked_creature_keys.is_empty())
+    duplicate_record.name = "Unidentified combat sprite"
+    assert(MonsterMetadata.save_record(duplicate_record, metadata_root).is_empty())
+    duplicate_loaded = MonsterMetadata.load_record(duplicate_row, _art_for(duplicate_index), metadata_root)
+    assert(duplicate_loaded.data.name == duplicate_row.identified_name)
     var commandant_index: int = native_index_by_key["MON6CHA.DAX:50"]
     var commandant_row: Dictionary = rows[commandant_index]
     var legacy: Dictionary = MonsterMetadata.new_record(commandant_row, _art_for(commandant_index))
@@ -807,9 +870,35 @@ func _catalog_check() -> void:
     assert(norris_icon.error.is_empty() and norris_icon.data.name.contains("NORRIS"))
     assert(norris_icon.data.equipment.size() == 3)
     assert(rows[native_index_by_key["MON2CHA.DAX:55"]].equipment[0].label == "Boulder")
+    var duplicate_examples := {
+        "CPIC1.DAX:11": ["CPIC2.DAX:11", "MON2CHA.DAX:25"],
+        "CPIC4.DAX:14": ["CPIC5.DAX:14", "MON5CHA.DAX:88"],
+        "CPIC6.DAX:4": ["CPIC1.DAX:4", "MON1CHA.DAX:4"],
+        "CPIC6.DAX:12": ["CPIC5.DAX:12", "MON5CHA.DAX:45"],
+        "CPIC6.DAX:13": ["CPIC5.DAX:13", "MON5CHA.DAX:90"],
+    }
+    for key in duplicate_examples:
+        var duplicate_index: int = native_index_by_key[key]
+        var row: Dictionary = rows[duplicate_index]
+        assert(row.name != "Unidentified combat sprite")
+        assert(row.identical_art_keys.has(duplicate_examples[key][0]))
+        assert(row.shared_art_user_keys.has(duplicate_examples[key][1]))
+        assert(not row.has("linked_keys") and not used.has(key))
+        assert(row.equipment.is_empty())
+        var art: Dictionary = _art_for(duplicate_index)
+        assert("%s:%d" % [art.archive, art.record] == key)
+        _select_monster(visible_rows.find(duplicate_index))
+        assert(monster_list.get_item_text(visible_rows.find(duplicate_index)).begins_with("[Unused]"))
+        assert(monster_source.text.contains("Known users of identical art:"))
+        assert(monster_source.text.contains("No direct script reference found for this archive copy."))
+        assert(gear_source_hint.text.begins_with("Shared artwork."))
+    for group in catalog.identical_art_groups():
+        # The same record ID in two archives can contain different images.
+        assert(not (group.has("CPIC3.DAX:24") and group.has("CPIC4.DAX:24")))
     for index in range(rows.size()):
         var row: Dictionary = rows[index]
         if int(row.get("native_index", -1)) < 0: continue
+        assert(str(row.name) != "Unidentified combat sprite")
         for item in row.equipment:
             assert(not str(item.label).begins_with("Item type "))
         var metadata: Dictionary = MonsterMetadata.load_record(row, _art_for(index), metadata_root)

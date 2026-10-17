@@ -1,0 +1,63 @@
+{
+  "description": "Shared human fighter artwork used by named NPCs and generic fighters. Identical originals: CPIC2.DAX:11, CPIC3.DAX:11, CPIC4.DAX:11, CPIC5.DAX:11, CPIC6.DAX:11, CPIC7.DAX:11, CPIC8.DAX:11. Known users of this art: 3RD LVL FIGHTER, 4TH LVL FIGHTER, 5TH LVL FIGHTER, 6TH LVL FIGHTER, 8TH LVL FIGHTER, AIDES, BUCCANEER, CORPORAL, ENVOY, GUARD, HASSAD, MAD MAN, NOMAD, PRINCESS FATIMA, SKULLCRUSHER, TYRANITHRAXUS. No direct script reference found for this archive copy.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "Shared fighter combat icon",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC1.DAX",
+    "art_basis": "Identical ready/action records; shared art identity",
+    "art_record": 11,
+    "creature_archive": "",
+    "creature_record": -1,
+    "direct_script_reference_found": false,
+    "identical_art_keys": [
+      "CPIC2.DAX:11",
+      "CPIC3.DAX:11",
+      "CPIC4.DAX:11",
+      "CPIC5.DAX:11",
+      "CPIC6.DAX:11",
+      "CPIC7.DAX:11",
+      "CPIC8.DAX:11"
+    ],
+    "key": "CPIC1.DAX:11",
+    "linked_creature_keys": [],
+    "shared_art_creature_keys": [
+      "MON2CHA.DAX:25",
+      "MON2CHA.DAX:53",
+      "MON2CHA.DAX:75",
+      "MON3CHA.DAX:40",
+      "MON3CHA.DAX:41",
+      "MON3CHA.DAX:53",
+      "MON3CHA.DAX:84",
+      "MON4CHA.DAX:27",
+      "MON5CHA.DAX:41",
+      "MON5CHA.DAX:75",
+      "MON5CHA.DAX:84",
+      "MON5CHA.DAX:85",
+      "MON5CHA.DAX:92",
+      "MON6CHA.DAX:100",
+      "MON6CHA.DAX:101",
+      "MON6CHA.DAX:41",
+      "MON6CHA.DAX:53",
+      "MON6CHA.DAX:54",
+      "MON6CHA.DAX:96",
+      "MON6CHA.DAX:99",
+      "MON7CHA.DAX:42",
+      "MON8CHA.DAX:104",
+      "MON8CHA.DAX:87"
+    ]
+  },
+  "variants": [
+    {
+      "action": "art/cpic1_dax_11/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/cpic1_dax_11/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

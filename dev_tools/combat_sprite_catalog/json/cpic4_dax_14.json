@@ -1,0 +1,47 @@
+{
+  "description": "Shared spellcaster artwork used by named NPCs and generic magic users. Identical originals: CPIC2.DAX:14, CPIC3.DAX:14, CPIC5.DAX:14, CPIC6.DAX:14, CPIC7.DAX:14. Known users of this art: 5TH LVL MU, AL-HYAM DAZID, ENVOY, GENHEERIS, LEVEL 3 MU, LEVEL 6 MU, SHAMAN, YARASH. No direct script reference found for this archive copy.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "Shared spellcaster combat icon",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Identical ready/action records; shared art identity",
+    "art_record": 14,
+    "creature_archive": "",
+    "creature_record": -1,
+    "direct_script_reference_found": false,
+    "identical_art_keys": [
+      "CPIC2.DAX:14",
+      "CPIC3.DAX:14",
+      "CPIC5.DAX:14",
+      "CPIC6.DAX:14",
+      "CPIC7.DAX:14"
+    ],
+    "key": "CPIC4.DAX:14",
+    "linked_creature_keys": [],
+    "shared_art_creature_keys": [
+      "MON2CHA.DAX:24",
+      "MON2CHA.DAX:89",
+      "MON3CHA.DAX:94",
+      "MON5CHA.DAX:86",
+      "MON5CHA.DAX:87",
+      "MON5CHA.DAX:88",
+      "MON6CHA.DAX:86",
+      "MON7CHA.DAX:43",
+      "MON7CHA.DAX:81"
+    ]
+  },
+  "variants": [
+    {
+      "action": "art/cpic4_dax_14/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/cpic4_dax_14/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

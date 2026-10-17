@@ -32,6 +32,7 @@ void SpriteCatalog::_bind_methods()
     ClassDB::bind_method(D_METHOD("load_data", "game_directory", "art_directory"),
                          &SpriteCatalog::load_data);
     ClassDB::bind_method(D_METHOD("creatures"), &SpriteCatalog::creatures);
+    ClassDB::bind_method(D_METHOD("identical_art_groups"), &SpriteCatalog::identical_art_groups);
     ClassDB::bind_method(D_METHOD("bind_monster_art", "index", "archive", "record", "basis"),
                          &SpriteCatalog::bind_monster_art);
     ClassDB::bind_method(D_METHOD("monster_art", "index"), &SpriteCatalog::monster_art);
@@ -51,6 +52,7 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
     bodies_.reset();
     ids_.clear();
     extra_art_.clear();
+    identical_art_groups_.clear();
     art_.clear();
     archive_bytes_.clear();
     try
@@ -146,6 +148,8 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
         }
         // Keep every archive-local combat pair visible, including art without a
         // confidently named MON record. An identical ID in another bank can differ.
+        using RecordPair = std::pair<std::vector<std::uint8_t>, std::vector<std::uint8_t>>;
+        std::map<RecordPair, std::vector<std::string>> pair_groups;
         for (const auto &[bank, files] : by_bank)
         {
             for (const auto &file : files)
@@ -163,6 +167,19 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
                     {
                         continue;
                     }
+                    const auto action = std::find_if(decoded.records.begin(), decoded.records.end(),
+                                                     [&](const auto &candidate)
+                                                     {
+                                                         return candidate.id == record.id + 128;
+                                                     });
+                    if (action != decoded.records.end())
+                    {
+                        // Compare both complete decompressed records, including dimensions,
+                        // frame data and offsets. Same IDs or one matching pose are insufficient.
+                        pair_groups[{record.bytes, action->bytes}].push_back(
+                            opengold::por::detail::upper_ascii(file.filename().string()) + ":" +
+                            std::to_string(record.id));
+                    }
                     const bool named = std::any_of(art_.begin(), art_.end(),
                                                    [&](const auto &item)
                                                    {
@@ -176,6 +193,13 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
                 }
             }
         }
+        for (auto &[pair, keys] : pair_groups)
+        {
+            if (keys.size() > 1)
+            {
+                identical_art_groups_.push_back(std::move(keys));
+            }
+        }
         return {};
     }
     catch (const std::exception &e)
@@ -185,10 +209,26 @@ String SpriteCatalog::load_data(const String &game_directory, const String &art_
         bodies_.reset();
         ids_.clear();
         extra_art_.clear();
+        identical_art_groups_.clear();
         art_.clear();
         archive_bytes_.clear();
         return gs(e.what());
     }
+}
+
+Array SpriteCatalog::identical_art_groups() const
+{
+    Array groups;
+    for (const auto &keys : identical_art_groups_)
+    {
+        Array group;
+        for (const auto &key : keys)
+        {
+            group.push_back(gs(key));
+        }
+        groups.push_back(group);
+    }
+    return groups;
 }
 
 Array SpriteCatalog::creatures() const

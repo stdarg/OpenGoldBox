@@ -1,0 +1,39 @@
+{
+  "description": "Orc combat artwork, identical to the orc pairs in other archives. Identical originals: CPIC1.DAX:4, CPIC2.DAX:4, CPIC4.DAX:4. Known users of this art: ORC. No direct script reference found for this archive copy.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "ORC combat icon (duplicate)",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC6.DAX",
+    "art_basis": "Identical ready/action records; shared art identity",
+    "art_record": 4,
+    "creature_archive": "",
+    "creature_record": -1,
+    "direct_script_reference_found": false,
+    "identical_art_keys": [
+      "CPIC1.DAX:4",
+      "CPIC2.DAX:4",
+      "CPIC4.DAX:4"
+    ],
+    "key": "CPIC6.DAX:4",
+    "linked_creature_keys": [],
+    "shared_art_creature_keys": [
+      "MON1CHA.DAX:4",
+      "MON2CHA.DAX:13",
+      "MON2CHA.DAX:4"
+    ]
+  },
+  "variants": [
+    {
+      "action": "art/cpic6_dax_4/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/cpic6_dax_4/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

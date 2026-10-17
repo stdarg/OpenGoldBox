@@ -49,6 +49,21 @@ it does not infer inventory from the picture. These are static script bindings,
 so dynamic encounters can remain uncertain. Original item type 87 is **Boulder**,
 identified by name component 244 in the supplied `START.EXE` word table.
 
+Unlinked archive copies can also be identified by comparing both complete,
+decompressed ready/action records with other `CPIC` pairs. Exact duplicates show
+their shared art identity, matching archive records and known users in the list
+and source details. The catalog keeps the original archive/record and its own
+usage status: a duplicate of used art can still show **Unused** when no direct
+script reference was found for that copy. Shared artwork does not imply shared
+inventory; select a named creature to edit its gear.
+
+The JSON `source` stores these relationships as `identical_art_keys` and
+`shared_art_creature_keys`, separately from direct `linked_creature_keys`.
+`direct_script_reference_found` records whether that archive copy has a decoded
+script reference. User names and descriptions remain editable. See
+[the identified duplicate copies](../../docs/npc-art-identification.md#identical-combat-art-in-other-archives)
+for the five formerly unidentified entries.
+
 The equipment editor labels each item **1H weapon**, **2H weapon**, **Ranged**,
 **Shield**, or **Gear** from the original item data. Click an item's type button
 to correct it. The **Weapon set** dropdown sits directly above the monster

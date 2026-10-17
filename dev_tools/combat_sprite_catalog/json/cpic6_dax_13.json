@@ -1,0 +1,40 @@
+{
+  "description": "Shared humanoid combat artwork used for clerics, a thief and a fighter. Identical originals: CPIC3.DAX:13, CPIC5.DAX:13, CPIC7.DAX:13. Known users of this art: 1ST LVL CLERIC, 1ST LVL THIEF, 4TH LVL FIGHTER, LEVEL 5 CLERIC. No direct script reference found for this archive copy.",
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "Shared humanoid icon (cleric / thief / fighter)",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC6.DAX",
+    "art_basis": "Identical ready/action records; shared art identity",
+    "art_record": 13,
+    "creature_archive": "",
+    "creature_record": -1,
+    "direct_script_reference_found": false,
+    "identical_art_keys": [
+      "CPIC3.DAX:13",
+      "CPIC5.DAX:13",
+      "CPIC7.DAX:13"
+    ],
+    "key": "CPIC6.DAX:13",
+    "linked_creature_keys": [],
+    "shared_art_creature_keys": [
+      "MON3CHA.DAX:45",
+      "MON5CHA.DAX:90",
+      "MON5CHA.DAX:91",
+      "MON7CHA.DAX:41"
+    ]
+  },
+  "variants": [
+    {
+      "action": "art/cpic6_dax_13/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/cpic6_dax_13/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ]
+}

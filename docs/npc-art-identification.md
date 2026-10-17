@@ -44,6 +44,35 @@ person accompanied by several enemies does not prove that every enemy named on
 an encounter branch is the person pictured. The review UI labels such links as
 possible encounter-path candidates and shows the dialogue for assessment.
 
+## Identical combat art in other archives
+
+The combat sprite catalog now identifies five additional archive copies by exact
+comparison of both decompressed ready/action records, including their headers and
+all frame data. These five pairs have no direct reference in the current decoded
+script index, but their artwork is identical to referenced pairs in other banks.
+
+| Archive copy | Identical copies | Shared art identity and known users |
+| --- | --- | --- |
+| CPIC1 / 11 | CPIC2 through CPIC8 / 11 | Shared fighter art; Mad Man, Skullcrusher, Hassad, Princess Fatima, TYRANITHRAXUS and generic fighters |
+| CPIC4 / 14 | CPIC2, CPIC3, CPIC5, CPIC6, CPIC7 / 14 | Shared spellcaster art; Al-Hyam Dazid, Genheeris, Yarash, Shaman, Envoy and generic magic users |
+| CPIC6 / 4 | CPIC1, CPIC2, CPIC4 / 4 | Orc art |
+| CPIC6 / 12 | CPIC3, CPIC5, CPIC7 / 12 | Shared humanoid art used for thieves, a cleric and Nomad |
+| CPIC6 / 13 | CPIC3, CPIC5, CPIC7 / 13 | Shared humanoid art used for clerics, a thief and a fighter |
+
+The identity of the duplicated artwork is established by matching record bytes.
+The known users come from the other copies' static script references, with the
+archive-selection limits described above. This does not establish that these five
+particular archive copies load during play or assign each shared image to one NPC.
+They retain their separate source identities and **Unused** status in the catalog.
+No gear is inferred or combined across users of shared artwork.
+
+The five metadata files are `cpic1_dax_11.json`, `cpic4_dax_14.json`,
+`cpic6_dax_4.json`, `cpic6_dax_12.json` and `cpic6_dax_13.json` in
+`dev_tools/combat_sprite_catalog/json`. The catalog rebuilds duplicate evidence
+from the installed assets, saves it separately from direct creature links and
+preserves edited names. Its `--catalog-check` covers the five identities and their
+usage flags; `--metadata-check` covers save/reload and name preservation.
+
 ## The previously missing combat icon
 
 ECL3/0 uses GETTABLE instructions to read parallel character and icon tables at
