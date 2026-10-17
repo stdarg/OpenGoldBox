@@ -37,6 +37,16 @@ identity, clothing, colors, handedness and equipment across the pair and all its
 weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
 not permission to invent a different setup.
 
+WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
+equipment list and enumerate every weapon set, including weapons not currently
+readied. Each set needs its own ready.png AND action.png. A one-handed weapon
+with an available shield is one unit; without a shield it is a weapon-only set.
+Each ranged weapon and each two-handed weapon is a separate set. Bow + mace +
+shield therefore needs a bow pair and a mace/shield pair. Bow + greatsword needs
+a bow pair and a greatsword pair. Ask the user if a set or equipment classification
+is unclear. This image request depicts ONLY its selected set and specified pose;
+create the other sets and poses in separate requests, not a combined sheet.
+
 PAIR REFERENCES: The approved original pose guide controls camera and pose.
 The approved new ready sprite controls this monster's identity, palette, scale
 and foot baseline when generating action. For another weapon set, also reference

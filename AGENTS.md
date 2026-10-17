@@ -123,6 +123,13 @@
   directory. Use its prompt preparation and acceptance commands for each bipedal
   monster weapon set. These rules apply even when a later request only says
   "regenerate"; do not rely on conversational memory.
+- For every monster, inspect its current saved equipment and enumerate all
+  weapon sets before generating art, including weapons not currently readied.
+  Generate a separate ready/action pair for EVERY set. A one-handed weapon and
+  shield are one unit when a shield is available; without a shield, the
+  one-handed weapon is its own set. Ranged weapons and two-handed weapons are
+  separate sets. For example, bow + mace + shield requires a bow pair AND a
+  mace/shield pair. Ask the user if any set or equipment classification is unclear.
 - Bipedal monsters face screen right in front three-quarter view with the chest
   partly visible. Melee ready poses hold the weapon UP, ready to strike; action
   poses are near the end of a swing or thrust. Projectile weapons are loaded in
@@ -134,4 +141,5 @@
   at combat size and alternating in the catalog; record approval for the exact
   image hashes. Reject and regenerate failures before installing either frame
   or clearing the monster's regeneration flag. Keep existing art until the pair
-  passes. Follow the documented review for every weapon set.
+  passes. Follow the documented review for every weapon set, and verify every
+  set has both images before calling a monster complete or clearing its flag.

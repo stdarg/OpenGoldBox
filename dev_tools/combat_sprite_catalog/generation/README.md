@@ -5,6 +5,8 @@ combat sprites**, including a request that only says "regenerate the flagged
 monsters." It uses the existing catalog JSON and Godot; no API key, new runtime,
 game code or catalog UI changes are required. Other body plans need their own
 pose decision; do not force a quadruped into this guide.
+The weapon-set coverage rule below applies to **every monster**, regardless of
+body plan.
 
 ## Approved requirements
 
@@ -20,6 +22,8 @@ The authoritative prompt text is [rules.txt](rules.txt). The user confirmed on
   Action: **just after release**, with the projectile no longer loaded.
 - Preserve identity, selected equipment, camera, scale and ground alignment.
   Export 128 x 128 transparent pixel-art PNGs, readable at normal combat zoom.
+- Inspect the monster's gear and create a ready/action pair for **every weapon
+  set**, including both ranged and melee alternatives (confirmed 2026-10-17).
 
 The independently generated [pose guide](../art/pose-guide/README.md) was
 **approved by the user on 2026-10-17** for production generation. Acceptance
@@ -29,8 +33,34 @@ sprites retrospectively.
 
 ## 1. Prepare from the current JSON
 
-Save description and equipment edits in the Combat Sprite Catalog first. Read
-the JSON's `variants` to identify the requested complete weapon/shield set.
+Save description and equipment edits in the Combat Sprite Catalog first. Inspect
+the **entire current equipment list**, including weapons not currently readied,
+then compare the JSON's `variants` with the complete weapon sets it should offer.
+Do not silently omit a weapon because it is missing from `variants` or classified
+as ordinary gear. Resolve uncertain classification or set membership with the
+user before generating art.
+
+A weapon set is the complete setup wielded together for one combat art pair:
+
+- **One-handed weapon + shield:** one unit when a shield is available. Do not
+  generate extra shield-only or weapon-without-shield alternatives for that unit.
+- **One-handed weapon without a shield:** its own set when no shield is available.
+- **Ranged weapon:** its own set, separate from melee equipment.
+- **Two-handed weapon:** its own set, separate from the ranged or one-handed set.
+
+| Monster's gear | Required sets | Required images |
+| --- | --- | --- |
+| Bow, mace, shield | Bow; mace + shield | 2 ready/action pairs (4 PNGs) |
+| Bow, sword, no shield | Bow; sword | 2 ready/action pairs (4 PNGs) |
+| Crossbow, greatsword | Crossbow; greatsword | 2 ready/action pairs (4 PNGs) |
+| Bow, mace, shield, greatsword | Bow; mace + shield; greatsword | 3 ready/action pairs (6 PNGs) |
+
+Enumerate all sets as a completion checklist before generation. For multiple
+one-handed weapons or shields, follow the catalog's existing set list (each
+one-handed weapon paired with each available shield); ask if an unusual loadout
+makes a combination unclear. Generate, review and accept **both images for each
+set**. A currently selected or readied set does not limit generation coverage.
+
 Resolve conflicts between the description and equipment with the user. For an
 unarmed, magical or unusual attack, ask for the pose behavior if unspecified.
 
@@ -51,6 +81,8 @@ Set `GODOT_BIN` to your Godot 4 executable on other installations. No extension
 build, editor import or original-game files are needed for these commands.
 Use absolute metadata/staging paths. Choose a **new** staging directory each
 time; preparation refuses to overwrite existing work.
+Run preparation separately for **every enumerated set**, using its variant ID
+and its own staging directory. The command prepares one pair at a time.
 
 The command reuses the catalog's equipment-set builder and writes:
 
@@ -134,8 +166,10 @@ After acceptance, copy the pair together to the two `install_paths` (relative to
 `dev_tools/combat_sprite_catalog`), and keep the prompts and `review.json` beside
 the installed pair. Run acceptance again against the installed directory and
 current JSON. Preserve the previous accepted pair until this succeeds. Clear
-**Flag for Regen** through the catalog's Save only after **all requested weapon
-sets** pass. This later flag-only JSON change naturally invalidates the earlier
+**Flag for Regen** through the catalog's Save only after the full weapon-set
+checklist is complete: **every set has an accepted ready AND action image**.
+An explicitly requested single-set revision leaves other outstanding sets on
+the checklist. This later flag-only JSON change naturally invalidates the earlier
 input hash; the saved review remains a historical record of the generation input.
 Future regeneration always prepares from the then-current JSON.
 
