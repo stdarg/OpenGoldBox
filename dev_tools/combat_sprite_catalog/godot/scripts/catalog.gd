@@ -603,6 +603,20 @@ func _metadata_check() -> void:
             assert(source_record.variants[1].weapon_role == "ranged")
             assert(source_record.variants[1].shield_id.is_empty())
     assert(captain_found)
+    var commandant_index: int = native_index_by_key["MON6CHA.DAX:50"]
+    var commandant_row: Dictionary = rows[commandant_index]
+    var legacy: Dictionary = MonsterMetadata.new_record(commandant_row, _art_for(commandant_index))
+    assert(legacy.equipment[0].name == "Potion Extra Healing")
+    assert(legacy.equipment[4].name == "Javelin of Lightning")
+    legacy.equipment[0].name = "Item type 71"
+    legacy.equipment[4].name = "Item type 71"
+    legacy.description = "COMMANDANT. Gear: 2 × Item type 71, Ring of Fire Resistance, Shield +1, Plate armor +2, Long sword +2."
+    assert(MonsterMetadata.save_record(legacy, metadata_root).is_empty())
+    var resolved: Dictionary = MonsterMetadata.load_record(commandant_row, _art_for(commandant_index), metadata_root)
+    assert(resolved.error.is_empty())
+    assert(resolved.data.equipment[0].name == "Potion Extra Healing")
+    assert(resolved.data.equipment[4].name == "Javelin of Lightning")
+    assert(resolved.data.description == "COMMANDANT. Gear: Potion Extra Healing, Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning, Long sword +2.")
     var first: Dictionary = rows[0]
     var art: Dictionary = catalog.monster_art(0)
     var migration_row: Dictionary = first.duplicate(true)
@@ -793,6 +807,16 @@ func _catalog_check() -> void:
     assert(norris_icon.error.is_empty() and norris_icon.data.name.contains("NORRIS"))
     assert(norris_icon.data.equipment.size() == 3)
     assert(rows[native_index_by_key["MON2CHA.DAX:55"]].equipment[0].label == "Boulder")
+    for index in range(rows.size()):
+        var row: Dictionary = rows[index]
+        if int(row.get("native_index", -1)) < 0: continue
+        for item in row.equipment:
+            assert(not str(item.label).begins_with("Item type "))
+        var metadata: Dictionary = MonsterMetadata.load_record(row, _art_for(index), metadata_root)
+        assert(metadata.error.is_empty())
+        for item in metadata.data.equipment:
+            assert(not str(item.name).begins_with("Item type "))
+        assert(not str(metadata.data.description).contains("Item type "))
     var script_bound := 0
     for row in rows:
         if not str(row.key).begins_with("MON") or not used.has(row.key): continue

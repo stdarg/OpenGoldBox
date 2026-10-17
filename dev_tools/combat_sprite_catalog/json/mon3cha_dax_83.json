@@ -1,10 +1,10 @@
 {
-  "description": "7TH LVL CLERIC. Gear: Item type 71, Banded armor +2, Mace +2.",
+  "description": "7TH LVL CLERIC. Gear: Potion of Healing, Banded armor +2, Mace +2.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 71",
+      "name": "Potion of Healing",
       "readied": false,
       "source_hands": 1,
       "source_range": 0,

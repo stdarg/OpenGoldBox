@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <set>
 #include <stdexcept>
 
 using namespace opengold;
@@ -700,6 +701,23 @@ void installed()
     }
     const auto c = CreatureCatalog::load(directory);
     require(c.all().size() == 172, "Stock Pool of Radiance has 172 records");
+    std::set<std::string> shared_type_names;
+    for (const auto &[id, creature] : c.all())
+    {
+        for (const auto &item : creature.equipment)
+        {
+            require(!item.label().starts_with("Item type "),
+                    "Every installed creature item has an identified name");
+            if (item.stored.type == 71)
+            {
+                shared_type_names.insert(item.label());
+            }
+        }
+    }
+    require(shared_type_names.contains("Potion of Healing") &&
+                shared_type_names.contains("Javelin of Lightning") &&
+                shared_type_names.contains("Wooden Holy Symbol"),
+            "Items sharing type 71 retain their individual names");
     const auto &troll = c.find({2, 31})->get();
     require(troll.stored.name == "TROLL" && troll.stored.max_hit_points == 36 &&
                 troll.stored.base_armor_class == 4 && troll.stored.base_thac0 == 13,

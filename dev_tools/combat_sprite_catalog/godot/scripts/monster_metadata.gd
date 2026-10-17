@@ -45,6 +45,21 @@ static func source_weapon_role(original_type: int, hands: int) -> String:
     return "two_hand" if hands >= 2 else "one_hand"
 
 
+static func _gear_summary(equipment: Array) -> String:
+    var counts := {}
+    for item in equipment:
+        var name := str(item.get("name", ""))
+        counts[name] = int(counts.get(name, 0)) + 1
+    var seen := {}
+    var parts := PackedStringArray()
+    for item in equipment:
+        var name := str(item.get("name", ""))
+        if seen.has(name): continue
+        seen[name] = true
+        parts.append("%d × %s" % [counts[name], name] if counts[name] > 1 else name)
+    return ", ".join(parts) if not parts.is_empty() else "none"
+
+
 static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
     var equipment: Array = []
     for index in range(row.equipment.size()):
@@ -148,7 +163,9 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
             not parsed.get("source") is Dictionary or parsed.source.get("key") != row.key or \
             not parsed.get("equipment") is Array or not parsed.get("variants") is Array:
         return {"data": new_record(row, art), "error": "Invalid monster metadata: %s" % path}
+    var original_summary := _gear_summary(parsed.equipment)
     var ids := {}
+    var legacy_names := {}
     for item in parsed.equipment:
         if not item is Dictionary or not (item.get("id") is String) or \
                 not _safe_item_id(item.get("id", "")) or \
@@ -167,6 +184,23 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
                     break
         item["source_hands"] = hands
         item["source_range"] = item_range
+        # Saved catalog entries predate per-item names decoded from START.EXE.
+        # Match the original slot and type so edited or newly added gear keeps its name.
+        var old_name := str(item.name)
+        var legacy_prefix := "Item type %d" % original_type
+        if old_name == legacy_prefix or old_name.begins_with(legacy_prefix + " +") or \
+                old_name.begins_with(legacy_prefix + " -"):
+            for index in range(row.equipment.size()):
+                var source_item: Dictionary = row.equipment[index]
+                if str(item.id) == "item_%03d" % index and int(source_item.type) == original_type:
+                    var current_name := str(source_item.label)
+                    if not current_name.begins_with("Item type "):
+                        item.name = current_name
+                        if legacy_names.has(old_name) and legacy_names[old_name] != current_name:
+                            legacy_names[old_name] = ""
+                        elif not legacy_names.has(old_name):
+                            legacy_names[old_name] = current_name
+                    break
         if item.kind == "weapon":
             if not (item.get("weapon_role") in ["one_hand", "two_hand", "ranged"]):
                 item["weapon_role"] = source_weapon_role(original_type, hands)
@@ -182,6 +216,14 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
     if not str(row.key).begins_with("CUSTOM:"):
         parsed["source"] = new_record(row, art).source
     parsed["description"] = str(parsed.get("description", ""))
+    if parsed.description.ends_with(original_summary + ".") and \
+            (parsed.description.contains(". Gear: ") or parsed.description.contains(". Original gear: ")):
+        parsed["description"] = parsed.description.trim_suffix(original_summary + ".") + \
+                _gear_summary(parsed.equipment) + "."
+    else:
+        for old_name in legacy_names:
+            if not str(legacy_names[old_name]).is_empty():
+                parsed["description"] = parsed.description.replace(old_name, legacy_names[old_name])
     parsed["flag_for_regeneration"] = bool(parsed.get("flag_for_regeneration", false))
     var fallback := str(parsed.get("preview_fallback_variant", ""))
     parsed["preview_fallback_variant"] = fallback if fallback.is_empty() or _safe_item_id(fallback) else ""

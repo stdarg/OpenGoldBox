@@ -1,10 +1,10 @@
 {
-  "description": "LEVEL 6 MU. Gear: Item type 93 +2.",
+  "description": "LEVEL 6 MU. Gear: Ring Of Protection +2.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 93 +2",
+      "name": "Ring Of Protection +2",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

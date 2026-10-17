@@ -1,10 +1,10 @@
 {
-  "description": "LEVEL 5 CLERIC. Gear: Item type 70, Mace +3, Plate armor +1.",
+  "description": "LEVEL 5 CLERIC. Gear: Necklace of Missiles, Mace +3, Plate armor +1.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 70",
+      "name": "Necklace of Missiles",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

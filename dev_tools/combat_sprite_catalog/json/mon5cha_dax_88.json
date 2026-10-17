@@ -1,10 +1,10 @@
 {
-  "description": "GENHEERIS. Gear: Item type 78.",
+  "description": "GENHEERIS. Gear: Wand of Lightning.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 78",
+      "name": "Wand of Lightning",
       "readied": true,
       "source_hands": 1,
       "source_range": 90,

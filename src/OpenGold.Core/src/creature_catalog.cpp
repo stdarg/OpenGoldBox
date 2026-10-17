@@ -2,6 +2,7 @@
 #include "opengold/authored_items.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/formats.h"
+#include "opengold/por_sound.h"
 
 #include <algorithm>
 #include <fstream>
@@ -84,7 +85,6 @@ std::string_view item_type_name(std::uint8_t type)
     }
     if (type == 87)
     {
-        // Name component 244 in the original START.EXE item word table.
         return "Boulder";
     }
     if (type == authored_item::torch)
@@ -307,6 +307,10 @@ std::string Equipment::label() const
     {
         return stored.stored_name;
     }
+    if (!decoded_name.empty())
+    {
+        return decoded_name;
+    }
     const auto type_name = item_type_name(stored.type);
     std::string name =
         type_name.empty() ? "Item type " + std::to_string(stored.type) : std::string(type_name);
@@ -331,7 +335,8 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
                 continue;
             }
             const auto name = detail::upper_ascii(entry.path().filename().string());
-            if (name != "ITEMS" && !(name.starts_with("MON") && name.ends_with(".DAX")))
+            if (name != "ITEMS" && name != "START.EXE" &&
+                !(name.starts_with("MON") && name.ends_with(".DAX")))
             {
                 continue;
             }
@@ -353,6 +358,17 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
         if (!templates)
         {
             throw CatalogError("Invalid ITEMS template file");
+        }
+        std::vector<std::string> item_words;
+        if (const auto start = files.find("START.EXE"); start != files.end())
+        {
+            const auto image = unpack_sound_executable(read_file(start->second));
+            auto decoded = decode_item_words(image);
+            if (!decoded)
+            {
+                throw CatalogError("START.EXE has no item name table");
+            }
+            item_words = std::move(*decoded);
         }
         CreatureCatalog catalog;
         for (std::uint8_t bank = 1; bank <= 8; ++bank)
@@ -414,6 +430,11 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
                         equipment.base = (*templates)[item.type];
                         equipment.bonuses = equipment_bonuses(item, equipment.base);
                         equipment.stored = std::move(item);
+                        if (item_type_name(equipment.stored.type).empty() &&
+                            equipment.stored.stored_name.empty())
+                        {
+                            equipment.decoded_name = item_name(equipment.stored, item_words);
+                        }
                         creature.equipment.push_back(std::move(equipment));
                     }
                 }

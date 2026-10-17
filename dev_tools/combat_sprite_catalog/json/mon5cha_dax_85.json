@@ -1,10 +1,10 @@
 {
-  "description": "8TH LVL FIGHTER. Gear: Item type 93 +3, Two-handed sword +2, Plate armor +2.",
+  "description": "8TH LVL FIGHTER. Gear: Ring Of Protection +3, Two-handed sword +2, Plate armor +2.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 93 +3",
+      "name": "Ring Of Protection +3",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

@@ -1,10 +1,10 @@
 {
-  "description": "AL-HYAM DAZID combat icon. Original gear: Item type 78, Item type 69, Item type 77 +7.",
+  "description": "AL-HYAM DAZID combat icon. Original gear: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 78",
+      "name": "Wand of Lightning",
       "readied": true,
       "source_hands": 1,
       "source_range": 90,
@@ -14,7 +14,7 @@
     {
       "id": "item_001",
       "kind": "gear",
-      "name": "Item type 69",
+      "name": "Ring of Fire Resistance",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,
@@ -24,7 +24,7 @@
     {
       "id": "item_002",
       "kind": "gear",
-      "name": "Item type 77 +7",
+      "name": "Bracers AC 3",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

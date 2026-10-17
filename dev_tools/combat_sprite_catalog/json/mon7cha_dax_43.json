@@ -1,10 +1,10 @@
 {
-  "description": "SHAMAN. Gear: Item type 79, Item type 77 +6, Dagger +2.",
+  "description": "SHAMAN. Gear: Wand of Magic Missiles, Bracers AC 2, Dagger +2.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
-      "name": "Item type 79",
+      "name": "Wand of Magic Missiles",
       "readied": true,
       "source_hands": 1,
       "source_range": 0,
@@ -14,7 +14,7 @@
     {
       "id": "item_001",
       "kind": "gear",
-      "name": "Item type 77 +6",
+      "name": "Bracers AC 2",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,
@@ -56,7 +56,7 @@
     {
       "action": "art/mon7cha_dax_43/item_000__ranged/action.png",
       "id": "item_000__ranged",
-      "label": "Item type 79",
+      "label": "Wand of Magic Missiles",
       "ready": "art/mon7cha_dax_43/item_000__ranged/ready.png",
       "shield_id": "",
       "weapon_id": "item_000",

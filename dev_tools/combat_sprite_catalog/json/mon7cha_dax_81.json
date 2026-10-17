@@ -1,10 +1,10 @@
 {
-  "description": "YARASH. Gear: 2 × Item type 71, Item type 78, Item type 77 +6.",
+  "description": "YARASH. Gear: Potion of Speed, Wand of Paralyzation, Potion of Healing, Bracers AC 4.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 71",
+      "name": "Potion of Speed",
       "readied": false,
       "source_hands": 1,
       "source_range": 0,
@@ -14,7 +14,7 @@
     {
       "id": "item_001",
       "kind": "gear",
-      "name": "Item type 78",
+      "name": "Wand of Paralyzation",
       "readied": true,
       "source_hands": 1,
       "source_range": 90,
@@ -24,7 +24,7 @@
     {
       "id": "item_002",
       "kind": "gear",
-      "name": "Item type 71",
+      "name": "Potion of Healing",
       "readied": false,
       "source_hands": 1,
       "source_range": 0,
@@ -34,7 +34,7 @@
     {
       "id": "item_003",
       "kind": "gear",
-      "name": "Item type 77 +6",
+      "name": "Bracers AC 4",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

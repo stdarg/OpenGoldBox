@@ -1,10 +1,10 @@
 {
-  "description": "TYRANITHRAXUS. Gear: Item type 63, Item type 93 +3, Long sword +5.",
+  "description": "TYRANITHRAXUS. Gear: Gauntlets of Ogre Power, Ring Of Protection +3, Long sword +5.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 63",
+      "name": "Gauntlets of Ogre Power",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,
@@ -14,7 +14,7 @@
     {
       "id": "item_001",
       "kind": "gear",
-      "name": "Item type 93 +3",
+      "name": "Ring Of Protection +3",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

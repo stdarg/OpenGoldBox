@@ -1,10 +1,10 @@
 {
-  "description": "DWARVEN FIGHTER combat icon. Original gear: Item type 63, Chain armor +1, Long sword +1.",
+  "description": "DWARVEN FIGHTER combat icon. Original gear: Gauntlets of Ogre Power, Chain armor +1, Long sword +1.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 63",
+      "name": "Gauntlets of Ogre Power",
       "readied": true,
       "source_hands": 0,
       "source_range": 0,

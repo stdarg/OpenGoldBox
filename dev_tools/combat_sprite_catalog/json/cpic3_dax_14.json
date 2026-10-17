@@ -1,10 +1,10 @@
 {
-  "description": "LEVEL 3 MU combat icon. Original gear: Item type 79.",
+  "description": "LEVEL 3 MU combat icon. Original gear: Wand of Magic Missiles.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
-      "name": "Item type 79",
+      "name": "Wand of Magic Missiles",
       "readied": true,
       "source_hands": 1,
       "source_range": 0,
@@ -31,7 +31,7 @@
     {
       "action": "art/cpic3_dax_14/item_000__ranged/action.png",
       "id": "item_000__ranged",
-      "label": "Item type 79",
+      "label": "Wand of Magic Missiles",
       "ready": "art/cpic3_dax_14/item_000__ranged/ready.png",
       "shield_id": "",
       "weapon_id": "item_000",

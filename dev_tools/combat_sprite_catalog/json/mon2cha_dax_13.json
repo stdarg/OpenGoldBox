@@ -1,10 +1,10 @@
 {
-  "description": "ORC. Gear: Item type 62.",
+  "description": "ORC. Gear: Clerical Scroll With 2 Spells.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
-      "name": "Item type 62",
+      "name": "Clerical Scroll With 2 Spells",
       "readied": false,
       "source_hands": 2,
       "source_range": 0,

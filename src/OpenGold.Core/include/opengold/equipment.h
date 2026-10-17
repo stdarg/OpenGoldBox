@@ -29,6 +29,8 @@ struct Equipment
     ItemRecord stored;
     ItemTemplate base;
     EquipmentBonuses bonuses;
+    // Full name decoded from START.EXE when the item type has no generic label.
+    std::string decoded_name;
     [[nodiscard]] std::string label() const;
 };
 } // namespace opengold::por
