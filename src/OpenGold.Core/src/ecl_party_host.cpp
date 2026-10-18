@@ -1,4 +1,5 @@
 #include "opengold/ecl_party_host.h"
+#include "opengold/item_key.h"
 #include "opengold/coin_purse.h"
 #include <algorithm>
 #include <array>
@@ -102,7 +103,8 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
         }
         const auto source = m.item_sources.find(equipped);
         const int magic = source == m.item_sources.end() ? 0 : source->second.stored.magic_bonus;
-        const auto &definition = item->get().definition_id;
+        // The magic comes from the original record; the key's base names the item.
+        const auto definition = rules::base_item_key(item->get().definition_id);
         if (definition == "shield")
         {
             values.armor_class -= 1 + magic;

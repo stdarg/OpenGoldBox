@@ -442,8 +442,8 @@ void campaign()
     check(bought.profile(buyer).weapon_hands == 2,
           "Purchased Fine Composite Long Bow equips through normal campaign inventory");
     original.stored.magic_bonus = 1;
-    check(equipment_conversion(original) == "por:unsupported:45",
-          "Unimplemented enchanted variants remain rejected");
+    check(equipment_conversion(original) == "longbow+1",
+          "An enchanted bow converts with its bonus");
 }
 } // namespace
 

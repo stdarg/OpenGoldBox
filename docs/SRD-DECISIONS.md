@@ -1215,3 +1215,23 @@ part of it, the push could not cover, up to 3d6. It applies to every push in
 the game: Thunderwave, Repelling Blast, Gust of Wind, the Open Hand's push,
 the Push mastery (when the creature is pushed as far as it can go) and, when
 built, Telekinesis. The battlefield's edge is open ground, not a wall.
+
+## MAGIC-1 (2026-10-17): the original's enchanted weapons and armor
+
+The user chose how the original's enchanted weapons, armor and shields
+([MAGIC_ITEMS.md](MAGIC_ITEMS.md#weapons), issue
+[#261](https://github.com/stdarg/OpenGold/issues/261)) work:
+
+- **+N as the original has it.** A weapon's bonus adds to its attack and
+  damage rolls; armor's and a shield's add to Armor Class. The original's +4
+  and +5 items (Tyranthraxus's Long Sword +5, the buccaneer captain's Long
+  Sword +4, the Leather Armor +4 in Kovel Mansion) keep their bonus, although
+  SRD 5.2.1 stops at +3.
+- **Long Sword +2 Flame Tongue** works as the SRD's Flame Tongue on top of its
+  +2: a Bonus Action lights or douses the blade, and while lit it deals an
+  extra 2d6 Fire damage on a hit. It needs attunement.
+- **Two-Handed Sword +1, +3 vs Undead** has +1, or +3 against an Undead
+  target, to attack and damage rolls.
+- **Cursed Broad Sword -2** follows the original: -2 to attack and damage
+  rolls, and a character wielding it cannot put it down until Remove Curse is
+  cast on them.

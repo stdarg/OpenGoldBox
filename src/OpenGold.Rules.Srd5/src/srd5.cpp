@@ -17,6 +17,7 @@
 #include "weapons.h"
 #include "thrown_gear.h"
 #include "armor.h"
+#include "opengold/item_key.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <initializer_list>
@@ -54,17 +55,74 @@ bool attack_hits(int natural, int bonus, int ac) noexcept
 
 namespace
 {
+// An enchanted item's label carries its bonus ("Longsword +2"); hosts translate
+// the base label and keep the bonus.
 std::string weapon_label(std::string_view key)
 {
+    std::string label;
     if (const auto *item = detail::weapon(key))
     {
-        return std::string(item->label);
+        label = item->label;
     }
-    if (const auto *item = detail::armor(key))
+    else if (const auto *item = detail::armor(key))
     {
-        return std::string(item->label);
+        label = item->label;
     }
-    return std::string(key);
+    else
+    {
+        return std::string(key);
+    }
+    if (const int bonus = rules::parse_item_key(key).bonus)
+    {
+        label += (bonus > 0 ? " +" : " -") + std::to_string(std::abs(bonus));
+    }
+    return label;
+}
+
+// A message in its English source, for the English-only summaries.
+std::string english(const Message &message)
+{
+    auto text = message.source;
+    for (const auto &argument : message.arguments)
+    {
+        const auto field = "{" + argument.name + "}";
+        for (auto at = text.find(field); at != std::string::npos; at = text.find(field, at))
+        {
+            text.replace(at, field.size(), argument.value);
+            at += argument.value.size();
+        }
+    }
+    return text;
+}
+
+// What an enchanted item's magic adds (MAGIC-1).
+std::vector<Message> enchantment_messages(std::string_view key)
+{
+    const auto enchantment = rules::parse_item_key(key);
+    std::vector<Message> messages;
+    if (!enchantment.bonus)
+    {
+        return messages;
+    }
+    const auto bonus = (enchantment.bonus > 0 ? "+" : "") + std::to_string(enchantment.bonus);
+    const auto *item = detail::weapon(key);
+    if (item)
+    {
+        messages.push_back(
+            {"Source: equipped {item}. Its magic adds {bonus} to attack and damage rolls.",
+             {{"item", weapon_label(key), true}, {"bonus", bonus}}});
+    }
+    else if (detail::armor(key))
+    {
+        messages.push_back({"Source: equipped {item}. Its magic adds {bonus} to Armor Class.",
+                            {{"item", weapon_label(key), true}, {"bonus", bonus}}});
+    }
+    if (item && enchantment.power == rules::ItemPower::bane_undead)
+    {
+        messages.push_back({"Source: equipped {item}. Against Undead it adds 2 more.",
+                            {{"item", weapon_label(key), true}}});
+    }
+    return messages;
 }
 
 std::string attack_ability(std::string_view key)
@@ -475,7 +533,7 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         text = "Class training: no untrained-use penalty.";
     }
-    else if (item == "shield")
+    else if (detail::is_shield(item))
     {
         text = "Untrained shield: no AC bonus.";
     }
@@ -488,7 +546,7 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         text = "Untrained weapon: no proficiency bonus on attack rolls.";
     }
-    if (item == "chain_mail" && sheet.scores[Ability::strength] < 13)
+    if (rules::base_item_key(item) == "chain_mail" && sheet.scores[Ability::strength] < 13)
     {
         text += " Chain mail requires Strength 13: speed reduced by 10 feet.";
     }
@@ -1261,6 +1319,11 @@ struct Definition
     std::string creature_type{"humanoid"}; // SRD creature type; player characters are Humanoid
     Dice melee;
     int ranged_bonus{};
+    // The wielded weapon's enchantment (MAGIC-1), kept out of melee_bonus and
+    // the damage dice so a light off-hand attack, which drops a positive
+    // damage modifier, still adds it. bane_undead adds 2 more against Undead.
+    int melee_magic{}, ranged_magic{};
+    bool bane_undead{};
     int reach{5};
     Dice ranged;
     int range{}, long_range{}, winds{}, casting{}, level{};
@@ -1930,6 +1993,8 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.finesse = d.ranged_weapon = d.shield = d.other_weapon = false;
     d.weapon_hands = 0;
     d.versatile_sides = 0;
+    d.melee_magic = d.ranged_magic = 0;
+    d.bane_undead = false;
     d.ranged = {};
     d.ranged_bonus = d.range = d.long_range = 0;
     d.masteries.clear();
@@ -2992,8 +3057,10 @@ character_definition(std::string_view bytes,
         d.alert = true;
         d.initiative = dex + proficiency;
     }
+    int shield_magic = 0;
     for (const auto &key : d.equipment_keys)
     {
+        const auto enchantment = rules::parse_item_key(key);
         if (const auto *item = detail::weapon(key))
         {
             monk_weapons &= item->dice && !item->ranged && (!item->martial || item->light);
@@ -3008,8 +3075,8 @@ character_definition(std::string_view bytes,
                 continue;
             }
             weapon = true;
-            d.weapon_label = item->label;
-            d.shillelagh_weapon = key == "club" || key == "quarterstaff";
+            d.weapon_label = weapon_label(key);
+            d.shillelagh_weapon = enchantment.base == "club" || enchantment.base == "quarterstaff";
             d.finesse = item->finesse;
             d.ranged_weapon = item->ranged;
             d.weapon_hands = item->hands;
@@ -3030,6 +3097,8 @@ character_definition(std::string_view bytes,
                 d.melee = {item->dice, item->sides,
                            item->fixed_damage ? item->fixed_damage : modifier};
                 d.melee_type = item->type;
+                d.melee_magic = enchantment.bonus;
+                d.bane_undead = enchantment.power == rules::ItemPower::bane_undead;
                 d.reach = melee_reach;
                 d.melee_heavy_disadvantage = item->heavy_disadvantage(scores);
             }
@@ -3040,6 +3109,7 @@ character_definition(std::string_view bytes,
                 d.ranged = {item->dice, item->sides,
                             item->fixed_damage ? item->fixed_damage : modifier};
                 d.ranged_type = item->type;
+                d.ranged_magic = enchantment.bonus;
                 d.range = item->range;
                 d.long_range = item->long_range;
                 d.ranged_heavy_disadvantage = item->heavy_disadvantage(scores);
@@ -3059,20 +3129,21 @@ character_definition(std::string_view bytes,
             }
             armor = true;
             d.heavy_armor = item->category == detail::ArmorCategory::heavy;
-            d.ac = item->base_ac + item->dexterity_contribution(dex);
+            d.ac = item->base_ac + item->dexterity_contribution(dex) + enchantment.bonus;
             d.stealth_disadvantage = item->stealth_disadvantage;
             if (scores[Ability::strength] < item->strength)
             {
                 d.speed -= 10;
             }
         }
-        else if (key == "shield")
+        else if (detail::is_shield(key))
         {
             if (shield)
             {
                 throw std::runtime_error("Only one shield may be equipped");
             }
             shield = true;
+            shield_magic = enchantment.bonus;
             ++hands;
         }
         else
@@ -3304,14 +3375,12 @@ character_definition(std::string_view bytes,
     {
         d.melee_type = detail::DamageType::force;
     }
-    if (shield && trained(klass, grants, "shield"))
-    {
-        d.ac += 2;
-    }
+    const int shield_ac = shield && trained(klass, grants, "shield") ? 2 + shield_magic : 0;
+    d.ac += shield_ac;
     // Mage Armor's AC for a creature wearing no armor.
     if (!armor)
     {
-        d.mage_armor_ac = 13 + dex + (shield && trained(klass, grants, "shield") ? 2 : 0);
+        d.mage_armor_ac = 13 + dex + shield_ac;
     }
     if (armor && (features & 1))
     {
@@ -3544,7 +3613,7 @@ Definition without_shield(std::string_view profile, const Definition &d)
     std::vector<std::string> keys;
     for (const auto &key : d.equipment_keys)
     {
-        if (key != "shield")
+        if (!detail::is_shield(key))
         {
             keys.push_back(key);
         }
@@ -3554,8 +3623,11 @@ Definition without_shield(std::string_view profile, const Definition &d)
 
 bool wears_shield(const Definition &d)
 {
-    return std::find(d.equipment_keys.begin(), d.equipment_keys.end(), "shield") !=
-           d.equipment_keys.end();
+    return std::any_of(d.equipment_keys.begin(), d.equipment_keys.end(),
+                       [](const auto &key)
+                       {
+                           return detail::is_shield(key);
+                       });
 }
 
 // Tactical Master's three masteries, by the attack verbs' suffixes, with
@@ -4922,6 +4994,13 @@ class Session final : public CombatSession
     }
 
     [[nodiscard]] int magic_weapon_bonus(const Actor &a) const;
+    // What the weapon's magic adds to the attack and damage rolls: its own
+    // enchantment and its ammunition's, or Magic Weapon's bonus on a weapon
+    // with none, since that spell enchants a nonmagical weapon.
+    [[nodiscard]] int weapon_magic(const Actor &a, const Actor &target, AttackRange range);
+    // The best enchantment among the carried ammunition the drawn bow or
+    // crossbow shoots. Ammunition is not used up in a fight.
+    [[nodiscard]] int ammunition_magic(const Actor &a) const;
     // Shillelagh is on the Club or Quarterstaff the creature holds.
     [[nodiscard]] bool shillelagh(const Actor &a) const;
 
@@ -5468,7 +5547,7 @@ bool Session::nick_weapon(const Actor &a, unsigned token) const
     const auto &key = items_[token - 1].definition;
     const auto *w = detail::weapon(key);
     return w && w->mastery == detail::Mastery::nick &&
-           std::find(def(a).masteries.begin(), def(a).masteries.end(), key) !=
+           std::find(def(a).masteries.begin(), def(a).masteries.end(), w->key) !=
                def(a).masteries.end();
 }
 
@@ -5635,17 +5714,16 @@ void Session::initialize_items()
         for (unsigned i = 0; i < a->definition.equipment_keys.size(); ++i)
         {
             const auto &key = a->definition.equipment_keys[i];
-            if (key != "shield" && !detail::weapon(key))
+            if (!detail::is_shield(key) && !detail::weapon(key))
             {
                 continue;
             }
-            HeldItemView item{
-                static_cast<unsigned>(items_.size() + 1),
-                a->source.id,
-                a->source.id,
-                i,
-                key,
-                {key == "shield" ? "Shield" : std::string(detail::weapon(key)->label), {}}};
+            HeldItemView item{static_cast<unsigned>(items_.size() + 1),
+                              a->source.id,
+                              a->source.id,
+                              i,
+                              key,
+                              {weapon_label(key), {}}};
             if (physical_inventory_)
             {
                 for (const auto &source : a->source.inventory)
@@ -5674,7 +5752,7 @@ void Session::initialize_items()
                                       a->source.id,
                                       0,
                                       source.definition,
-                                      {std::string(detail::weapon(source.definition)->label), {}},
+                                      {weapon_label(source.definition), {}},
                                       source.inventory_id,
                                       source.quantity,
                                       true});
@@ -5699,7 +5777,7 @@ Definition Session::equipped_definition(const Actor &a, const std::vector<HeldIt
     std::vector<std::string> keys;
     for (const auto &key : profiles_->of(a.source.character_profile).equipment_keys)
     {
-        if (key != "shield" && !detail::weapon(key))
+        if (!detail::is_shield(key) && !detail::weapon(key))
         {
             keys.push_back(key);
         }
@@ -5717,7 +5795,7 @@ Definition Session::equipped_definition(const Actor &a, const std::vector<HeldIt
     for (const auto &item : items)
     {
         if (item.holder == a.source.id && !item.stowed && item.id != selected &&
-            !(a.shield_off && item.definition == "shield"))
+            !(a.shield_off && detail::is_shield(item.definition)))
         {
             keys.push_back(item.definition);
         }
@@ -5774,7 +5852,8 @@ std::string_view Session::carried_ranged_weapon(const Actor &a) const
             w && w->ranged && item.quantity && has_ammunition(w->ammunition) &&
             (w->hands == 1 || !wears_shield(def(a))))
         {
-            return w->key;
+            // The whole key, so a Short Bow +1 is drawn with its enchantment.
+            return item.definition;
         }
     }
     return {};
@@ -17674,7 +17753,7 @@ detail::Mastery Session::weapon_mastery(const Actor &a, const Definition &d,
     {
         if (const auto *weapon = detail::weapon(key))
         {
-            if (std::find(d.masteries.begin(), d.masteries.end(), key) == d.masteries.end())
+            if (std::find(d.masteries.begin(), d.masteries.end(), weapon->key) == d.masteries.end())
             {
                 return detail::Mastery::none;
             }
@@ -18233,7 +18312,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                              (e.kind == detail::EffectKind::studied &&
                               e.source_scope == attacker.scope && e.source_actor == attacker.actor);
                   });
-    const int weapon_magic = spell ? 0 : magic_weapon_bonus(a);
+    const int weapon_magic = spell ? 0 : this->weapon_magic(a, target, range);
     const bool charging = !spell && !ranged && charges(a, target);
     a.run_feet = 0;
     bool lucky_reroll = false;
@@ -19236,6 +19315,51 @@ bool Session::shillelagh(const Actor &a) const
 {
     return def(a).shillelagh_weapon &&
            detail::has_effect(a.effects, detail::EffectKind::shillelagh);
+}
+
+int Session::weapon_magic(const Actor &a, const Actor &target, AttackRange range)
+{
+    const auto &d = def(a);
+    const bool ranged = range == AttackRange::ranged;
+    int bonus = ranged ? d.ranged_magic : d.melee_magic;
+    if (!ranged && d.bane_undead && def(target).creature_type == "undead")
+    {
+        bonus += 2;
+        log("The weapon adds 2 more against the Undead.",
+            {"The weapon adds 2 more against the Undead.", {}});
+    }
+    if (!bonus)
+    {
+        bonus = magic_weapon_bonus(a);
+    }
+    return bonus + (ranged ? ammunition_magic(a) : 0);
+}
+
+int Session::ammunition_magic(const Actor &a) const
+{
+    const auto &d = def(a);
+    if (!d.ranged_weapon)
+    {
+        return 0;
+    }
+    const auto bow = std::find_if(d.equipment_keys.begin(), d.equipment_keys.end(),
+                                  [](const auto &key)
+                                  {
+                                      return detail::weapon(key) != nullptr;
+                                  });
+    const auto shoots =
+        bow == d.equipment_keys.end() ? detail::Ammunition::none : detail::weapon(*bow)->ammunition;
+    int best = 0;
+    for (const auto &item : a.source.inventory)
+    {
+        const auto *ammunition = detail::ammunition(item.definition);
+        if (shoots != detail::Ammunition::none && ammunition && ammunition->type == shoots &&
+            item.quantity)
+        {
+            best = std::max(best, rules::parse_item_key(item.definition).bonus);
+        }
+    }
+    return best;
 }
 
 int Session::magic_weapon_bonus(const Actor &a) const
@@ -24536,7 +24660,7 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
             const auto *weapon = detail::weapon(item.definition);
             if (!input || source == session->actors_.end() ||
                 source->source.character_profile.empty() ||
-                (!weapon && item.definition != "shield") || !item.quantity)
+                (!weapon && !detail::is_shield(item.definition)) || !item.quantity)
             {
                 throw std::runtime_error("Invalid physical inventory source");
             }
@@ -27986,7 +28110,7 @@ class Module final : public RulesModule
         {
             return {EquipmentSlot::weapon, item->hands};
         }
-        if (key == "shield")
+        if (detail::is_shield(key))
         {
             return {EquipmentSlot::shield, 1};
         }
@@ -28292,7 +28416,7 @@ class Module final : public RulesModule
             d.ac,
             "Level 1-4 subset: HP, selected feats, supported prepared spells and level-one/two slots. Additional class/subclass and species features remain unavailable.",
             d.speed,
-            d.melee_bonus};
+            d.melee_bonus + d.melee_magic};
         result.strength_dexterity_disadvantage = d.str_dex_disadvantage;
         result.weapon_hands = d.weapon_hands;
         unsigned hand_index = 0;
@@ -28314,7 +28438,7 @@ class Module final : public RulesModule
         }
         for (const auto &key : gear)
         {
-            if (key == "shield")
+            if (detail::is_shield(key))
             {
                 result.item_modifiers += trained(klass, sheet.grants, key)
                                              ? "Source: equipped Shield: +2 AC.\n"
@@ -28430,7 +28554,7 @@ class Module final : public RulesModule
         // Language-independent presentation of the same computed rule results.
         for (const auto &key : gear)
         {
-            if (key == "shield")
+            if (detail::is_shield(key))
             {
                 result.item_messages.push_back({trained(klass, sheet.grants, key)
                                                     ? "Source: equipped Shield: +2 AC."
@@ -28491,6 +28615,11 @@ class Module final : public RulesModule
                       {"bonus", bonus}}});
             }
             result.item_messages.push_back({equipment_note(sheet, key), {}});
+            for (auto &message : enchantment_messages(key))
+            {
+                result.item_modifiers += english(message) + "\n";
+                result.item_messages.push_back(std::move(message));
+            }
             if (const auto *item = detail::armor(key))
             {
                 const auto note = [&](std::string text)

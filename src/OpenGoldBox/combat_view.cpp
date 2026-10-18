@@ -16,6 +16,7 @@
 #include "opengold/srd5.h"
 #include "opengold/character_art.h"
 #include "opengold/combat_body_catalog.h"
+#include "opengold/item_key.h"
 #include "opengold/formats.h"
 #include "opengold/save_file.h"
 #include "godot_path.h"
@@ -2227,7 +2228,7 @@ void CombatView::update_hover(const Vector2 &pointer)
         {
             if (const auto item = npc_member->get().character.inventory().find(id))
             {
-                const auto &key = item->get().definition_id;
+                const auto key = opengold::rules::base_item_key(item->get().definition_id);
                 if (key == "longsword" || key == "shortsword" || key == "short_sword" ||
                     key == "dagger" || key == "mace" || key == "quarterstaff" ||
                     key == "scimitar" || key == "shortbow" || key == "longbow")

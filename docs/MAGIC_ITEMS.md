@@ -239,6 +239,30 @@ Any random item can come from Ohlo's reward (one item), the Slums treasure
 (three), the Sorcerer's Island pyramid (three), the Kobold Caves (two) and the
 wilderness lairs.
 
+## In OpenGoldBox
+
+Issue [#234](https://github.com/stdarg/OpenGold/issues/234) tracks the work;
+[MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor)
+records the decisions.
+
+- **Enchanted weapons, ammunition, armor and shields** (#261) convert to an item
+  key that carries the enchantment: `longsword+2`, `chain_mail+1`, `arrow+1`.
+  A special weapon adds a power: `longsword+2:flame_tongue`,
+  `greatsword+1:undead`, `longsword-2:cursed`. The format is in
+  `src/OpenGold.Rules/include/opengold/item_key.h`. The weapon's bonus adds
+  to attack and damage rolls; armor's and a shield's add to Armor Class.
+  Magic Weapon adds nothing to a weapon that has its own bonus. Ammunition is
+  not used up in a fight, so the best enchanted arrows or quarrels carried
+  always add their bonus.
+- The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
+  vs Undead" and 255 Cursed (byte 54). The bit-0x80 effects in byte 62 on the
+  Long Swords +2 and +3 are not decoded, so those swords have only their +N.
+- The Javelin of Lightning, wands, potions, rings, bracers, scrolls and the
+  other worn items are still unsupported (#262 to #265).
+- Fixed treasure lists show magic items under their original names ("Long
+  Sword +2 Flame Tongue"). Identification, which hides parts of a name until
+  the item is identified, is #262.
+
 ## Open questions
 
 1. **Item powers above spell 56.** Powers 80 to 90 are named only by the items

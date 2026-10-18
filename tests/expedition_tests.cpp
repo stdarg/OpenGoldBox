@@ -99,8 +99,7 @@ void armor_conversion_tests()
         item.stored.type = std::uint8_t(type);
         check(equipment_conversion(item) == key, "Original armor converts by name");
         item.stored.magic_bonus = 1;
-        check(equipment_conversion(item) == "por:unsupported:" + std::to_string(type),
-              "Magic armor keeps its unsupported original record");
+        check(equipment_conversion(item) == key + "+1", "Magic armor converts with its bonus");
     }
 
     // The audited case: a new Cleric buys Scale Mail, pays once and equips it.

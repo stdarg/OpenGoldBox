@@ -1,5 +1,6 @@
 #include "opengold/combat_body_catalog.h"
 #include "opengold/campaign_party.h"
+#include "opengold/item_key.h"
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -244,7 +245,9 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
     int weapon_type = -1;
     for (const auto &item : equipped)
     {
-        if (item.original_type == 59 || item.definition_id == "shield")
+        // The base key: an enchanted item looks like its plain one.
+        const auto definition = rules::base_item_key(item.definition_id);
+        if (item.original_type == 59 || definition == "shield")
         {
             shield = true;
         }
@@ -253,27 +256,27 @@ CombatBodySelection CombatBodyCatalog::choose(std::span<const CombatEquipment> e
             int type = item.original_type;
             if (type < 0)
             {
-                if (item.definition_id == "dagger")
+                if (definition == "dagger")
                 {
                     type = 8;
                 }
-                else if (item.definition_id == "mace")
+                else if (definition == "mace")
                 {
                     type = 23;
                 }
-                else if (item.definition_id == "quarterstaff")
+                else if (definition == "quarterstaff")
                 {
                     type = 33;
                 }
-                else if (item.definition_id == "longsword")
+                else if (definition == "longsword")
                 {
                     type = 36;
                 }
-                else if (item.definition_id == "longbow")
+                else if (definition == "longbow")
                 {
                     type = 43;
                 }
-                else if (item.definition_id == "shortbow")
+                else if (definition == "shortbow")
                 {
                     type = 44;
                 }

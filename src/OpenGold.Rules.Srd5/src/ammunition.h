@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SRD5_AMMUNITION_H
 #define OPENGOLD_SRD5_AMMUNITION_H
 #include <array>
+#include "opengold/item_key.h"
 #include <string_view>
 
 namespace opengold::srd5::detail
@@ -33,9 +34,11 @@ inline constexpr std::array ammunition_definitions{
 
 inline constexpr const AmmunitionDefinition *ammunition(std::string_view key)
 {
+    // An enchanted key ("longsword+2") names its base entry.
+    const auto base = rules::base_item_key(key);
     for (const auto &item : ammunition_definitions)
     {
-        if (item.key == key)
+        if (item.key == base)
         {
             return &item;
         }

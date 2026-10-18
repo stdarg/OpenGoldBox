@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_SRD5_ARMOR_H
 #define OPENGOLD_SRD5_ARMOR_H
 #include "character_class.h"
+#include "opengold/item_key.h"
 #include <algorithm>
 #include <array>
 #include <string_view>
@@ -52,14 +53,23 @@ inline constexpr std::array armors{
 
 inline constexpr const Armor *armor(std::string_view key)
 {
+    // An enchanted key ("longsword+2") names its base entry.
+    const auto base = rules::base_item_key(key);
     for (const auto &item : armors)
     {
-        if (item.key == key)
+        if (item.key == base)
         {
             return &item;
         }
     }
     return nullptr;
+}
+
+// A plain or enchanted shield ("shield", "shield+1").
+inline constexpr bool is_shield(std::string_view key)
+{
+    const auto *item = armor(key);
+    return item && item->category == ArmorCategory::shield;
 }
 
 inline bool armor_trained(CharacterClass klass, ArmorCategory category)

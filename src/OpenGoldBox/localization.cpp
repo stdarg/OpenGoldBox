@@ -108,6 +108,14 @@ String text(std::string_view source)
         return {};
     }
     const String translated = TranslationServer::get_singleton()->translate(gs(source));
+    // "Longsword +2", an enchanted item, is its translated label and its bonus.
+    const auto size = source.size();
+    if (translated == gs(source) && size > 3 && source[size - 3] == ' ' &&
+        (source[size - 2] == '+' || source[size - 2] == '-') && source[size - 1] >= '1' &&
+        source[size - 1] <= '9')
+    {
+        return text(source.substr(0, size - 3)) + gs(source.substr(size - 3));
+    }
     // "Flame Strike (Divine Intervention)", a spell cast through a Cleric's
     // Divine Intervention, is translated in two parts.
     constexpr std::string_view intervention = " (Divine Intervention)";

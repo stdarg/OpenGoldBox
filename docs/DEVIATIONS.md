@@ -39,6 +39,10 @@ Add an entry whenever a new departure is decided.
   fled by moving off the battlefield's edge, which OpenGoldBox keeps. A
   **Flee** button beside End turn hands the party to the AI to run for the
   edges. [FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did).
+- **Flame Tongue** (2026-10-17). The original's Long Sword +2 Flame Tongue
+  becomes the SRD's Flame Tongue with its +2 kept: a Bonus Action lights the
+  blade for an extra 2d6 Fire damage, and it needs attunement.
+  [MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.

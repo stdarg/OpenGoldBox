@@ -1,11 +1,14 @@
 #include "archive_io.h"
 #include "opengold/authored_items.h"
+#include "opengold/magic_item_catalog.h"
+#include "opengold/por_sound.h"
 #include "opengold/rolf_tour.h"
 #include "opengold/exploration_view.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iterator>
+#include <optional>
 
 namespace opengold::por
 {
@@ -138,6 +141,27 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     {
         throw EclError("Invalid item templates");
     }
+    // Fixed lists name their magic items as the original does ("Long Sword +2
+    // Flame Tongue"). START.EXE holds the words; without it they keep the
+    // generic label and bonus.
+    std::vector<std::string> item_words;
+    std::optional<std::filesystem::path> start;
+    try
+    {
+        start = resolve_archive(directory, "START.EXE");
+    }
+    catch (const EclError &)
+    {
+    }
+    if (start)
+    {
+        auto words = decode_item_words(unpack_sound_executable(read_archive(*start)));
+        if (!words)
+        {
+            throw EclError("START.EXE has no item name table");
+        }
+        item_words = std::move(*words);
+    }
     // An archive's fixed item lists (shop stock in town, script treasure in areas).
     const auto item_lists = [&](const std::string &name)
     {
@@ -160,6 +184,11 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 equipment.index = stock.size();
                 equipment.stored = item;
                 equipment.base = (*templates)[item.type];
+                equipment.bonuses = equipment_bonuses(item, equipment.base);
+                if (is_magic(item) && !item_words.empty())
+                {
+                    equipment.decoded_name = item_name(item, item_words);
+                }
                 stock.push_back(std::move(equipment));
             }
         }

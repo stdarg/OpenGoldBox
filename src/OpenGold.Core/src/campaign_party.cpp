@@ -2,6 +2,7 @@
 #include "opengold/authored_items.h"
 #include "opengold/dice.h"
 #include "opengold/ecl_party_host.h"
+#include "opengold/item_key.h"
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -64,21 +65,12 @@ std::vector<std::string> equipped_definitions(const PartyMember &member)
     }
     return definitions;
 }
-} // namespace
 
-std::string equipment_conversion(const por::Equipment &item)
+// The catalog key of an original weapon, ammunition, armor or shield type,
+// the items that can be enchanted; empty for any other type.
+std::string_view enchantable_conversion(int type)
 {
-    const auto &raw = item.stored;
-    if (raw.magic_bonus || raw.cursed_raw ||
-        std::any_of(raw.effect_codes.begin(), raw.effect_codes.end(),
-                    [](auto n)
-                    {
-                        return n != 0;
-                    }))
-    {
-        return "por:unsupported:" + std::to_string(raw.type);
-    }
-    switch (raw.type)
+    switch (type)
     {
     case 1:
         return "battleaxe";
@@ -151,8 +143,6 @@ std::string equipment_conversion(const por::Equipment &item)
         return "light_crossbow";
     case 47:
         return "sling";
-    case 79:
-        return "wand";
     case 28:
         return "bolt";
     case 73:
@@ -177,6 +167,68 @@ std::string equipment_conversion(const por::Equipment &item)
         return "plate";
     case 59:
         return "shield";
+    default:
+        return {};
+    }
+}
+
+// The original's special weapons, known by the name word START.EXE gives them.
+constexpr std::uint8_t flame_tongue_word = 241, bane_undead_word = 253;
+
+rules::ItemPower item_power(const por::ItemRecord &raw)
+{
+    const auto named = [&](std::uint8_t word)
+    {
+        return std::find(raw.name_components.begin(), raw.name_components.end(), word) !=
+               raw.name_components.end();
+    };
+    if (raw.cursed_raw)
+    {
+        return rules::ItemPower::cursed;
+    }
+    if (named(flame_tongue_word))
+    {
+        return rules::ItemPower::flame_tongue;
+    }
+    if (named(bane_undead_word))
+    {
+        return rules::ItemPower::bane_undead;
+    }
+    return rules::ItemPower::none;
+}
+
+bool has_effects(const por::ItemRecord &raw)
+{
+    return std::any_of(raw.effect_codes.begin(), raw.effect_codes.end(),
+                       [](auto n)
+                       {
+                           return n != 0;
+                       });
+}
+} // namespace
+
+std::string equipment_conversion(const por::Equipment &item)
+{
+    const auto &raw = item.stored;
+    const auto unsupported = "por:unsupported:" + std::to_string(raw.type);
+    if (const auto base = enchantable_conversion(raw.type); !base.empty())
+    {
+        const auto power = item_power(raw);
+        // Charges (the Javelin of Lightning) are a power of their own, not an
+        // enchantment. Flame Tongue's byte 61 and the bit-0x80 effects in byte
+        // 62 are not decoded; the name word says what the weapon does.
+        const bool decoded = !has_effects(raw) || power == rules::ItemPower::flame_tongue ||
+                             (raw.effect_codes[0] == 0 && (raw.effect_codes[2] & 0x80));
+        return decoded ? rules::item_key(base, raw.magic_bonus, power) : unsupported;
+    }
+    if (raw.magic_bonus || raw.cursed_raw || has_effects(raw))
+    {
+        return unsupported;
+    }
+    switch (raw.type)
+    {
+    case 79:
+        return "wand";
     case original_item::flask_of_oil:
         return "oil";
     case authored_item::torch:
@@ -186,7 +238,7 @@ std::string equipment_conversion(const por::Equipment &item)
     case authored_item::alchemists_fire:
         return "alchemists_fire";
     default:
-        return "por:unsupported:" + std::to_string(raw.type);
+        return unsupported;
     }
 }
 

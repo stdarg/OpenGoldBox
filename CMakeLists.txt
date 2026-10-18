@@ -576,6 +576,11 @@ if(OPENGOLD_BUILD_TESTS)
     target_compile_definitions(opengold_weapon_catalog_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_weapon_catalog_tests COMMAND opengold_weapon_catalog_tests)
 
+    add_executable(opengold_enchanted_item_tests tests/enchanted_item_tests.cpp)
+    target_link_libraries(opengold_enchanted_item_tests PRIVATE opengold_rules_srd5 opengold_core)
+    target_compile_definitions(opengold_enchanted_item_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_enchanted_item_tests COMMAND opengold_enchanted_item_tests)
+
     add_executable(opengold_heavy_weapon_tests tests/heavy_weapon_tests.cpp)
     target_link_libraries(opengold_heavy_weapon_tests PRIVATE opengold_rules_srd5 opengold_core)
     target_compile_definitions(opengold_heavy_weapon_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

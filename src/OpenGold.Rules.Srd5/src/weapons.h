@@ -4,6 +4,7 @@
 #include "ammunition.h"
 #include "character_class.h"
 #include "opengold/rules.h"
+#include "opengold/item_key.h"
 #include <array>
 #include <string_view>
 
@@ -507,9 +508,11 @@ inline bool weapon_proficient(CharacterClass klass, const Weapon &weapon)
 
 inline constexpr const Weapon *weapon(std::string_view key)
 {
+    // An enchanted key ("longsword+2") names its base entry.
+    const auto base = rules::base_item_key(key);
     for (const auto &value : weapons)
     {
-        if (value.key == key)
+        if (value.key == base)
         {
             return &value;
         }

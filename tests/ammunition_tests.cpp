@@ -191,8 +191,13 @@ void inventory_paths()
                 {
                     special.stored.effect_codes[0] = 1;
                 }
-                check(equipment_conversion(special) == "por:unsupported:" + std::to_string(type),
-                      "Magic, cursed and effect-bearing ammunition remains unsupported");
+                const std::string plain = type == 28 ? "bolt" : "arrow";
+                const std::string expected = variant == 0 ? plain + "+1"
+                                             : variant == 1
+                                                 ? plain + ":cursed"
+                                                 : "por:unsupported:" + std::to_string(type);
+                check(equipment_conversion(special) == expected,
+                      "Enchanted and cursed ammunition convert; effect-bearing stays unsupported");
                 party.purchase(id, special);
             }
         }
