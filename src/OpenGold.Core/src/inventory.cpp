@@ -36,6 +36,20 @@ std::uint64_t Inventory::add(NewItem item)
     return next_id_++;
 }
 
+void Inventory::redefine(std::uint64_t id, std::string definition_id)
+{
+    const auto it = std::find_if(items_.begin(), items_.end(),
+                                 [&](const auto &item)
+                                 {
+                                     return item.id == id;
+                                 });
+    if (it == items_.end() || definition_id.find_first_not_of(" \t\r\n") == std::string::npos)
+    {
+        throw std::runtime_error("Unknown item or empty definition");
+    }
+    it->definition_id = std::move(definition_id);
+}
+
 void Inventory::remove(std::uint64_t id, std::uint32_t quantity)
 {
     const auto it = std::find_if(items_.begin(), items_.end(),

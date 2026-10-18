@@ -273,6 +273,35 @@ void attunement()
           "A save keeps the attunement");
 }
 
+// The original's cursed Broad Sword cannot be put down once equipped.
+void cursed_sword()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    auto broad = original(35, -2, {255, 202, 35});
+    broad.stored.cursed_raw = 1;
+    check(party.award_loot({}, {broad, original(37, 0, {0, 0, 37})}, "test:cursed"),
+          "Collect the cursed sword and a short sword");
+    const auto items = party.member(id).character.inventory().items();
+    const auto sword = items[items.size() - 2].id, other = items.back().id;
+    party.unequip(id, other);
+    party.equip(id, sword);
+    test::rejects(
+        [&]
+        {
+            party.unequip(id, sword);
+        },
+        "A cursed sword cannot be unequipped");
+    test::rejects(
+        [&]
+        {
+            party.equip(id, other, EquipmentOperation::equip_main);
+        },
+        "Another weapon cannot replace it");
+    check(party.profile(id).item_modifiers.find("It is cursed") != std::string::npos,
+          "The sheet says the sword is cursed");
+}
+
 // Loot from the original keeps its enchantment in the party and in a save.
 void campaign()
 {
@@ -308,6 +337,7 @@ int main()
         campaign();
         flame_tongue();
         attunement();
+        cursed_sword();
         std::cout << "Enchanted item tests passed\n";
         return 0;
     }

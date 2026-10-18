@@ -118,6 +118,12 @@ std::vector<Message> enchantment_messages(std::string_view key)
         messages.push_back({"Source: equipped {item}. Against Undead it adds 2 more.",
                             {{"item", weapon_label(key), true}}});
     }
+    if (enchantment.power == rules::ItemPower::cursed)
+    {
+        messages.push_back(
+            {"Source: equipped {item}. It is cursed: it cannot be unequipped until Remove Curse is cast on its wielder.",
+             {{"item", weapon_label(key), true}}});
+    }
     if (item && enchantment.power == rules::ItemPower::flame_tongue)
     {
         messages.push_back(
@@ -572,7 +578,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 62;
+constexpr unsigned checkpoint_format = 63;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1693,6 +1699,7 @@ struct Actor
     std::array<unsigned, 3> thrown_gear_left{};
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     bool flame_lit{};        // Its Flame Tongue's blade is lit (a Bonus Action lights it)
+    bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
     // Tried to run off the field as fast as the fastest enemy and failed: it
@@ -2398,13 +2405,25 @@ bool curse(detail::EffectKind kind)
     return kind == detail::EffectKind::hex || kind == detail::EffectKind::cursed;
 }
 
+// It wields a cursed item and cannot put it down until Remove Curse (MAGIC-1).
+bool bound_to_cursed_item(const Actor &a)
+{
+    const auto &keys = a.definition.equipment_keys;
+    return !a.curse_lifted && std::any_of(keys.begin(), keys.end(),
+                                          [](const auto &key)
+                                          {
+                                              return rules::parse_item_key(key).power ==
+                                                     rules::ItemPower::cursed;
+                                          });
+}
+
 bool cursed(const Actor &a)
 {
-    return std::any_of(a.effects.active.begin(), a.effects.active.end(),
-                       [](const auto &e)
-                       {
-                           return curse(e.kind);
-                       });
+    return bound_to_cursed_item(a) || std::any_of(a.effects.active.begin(), a.effects.active.end(),
+                                                  [](const auto &e)
+                                                  {
+                                                      return curse(e.kind);
+                                                  });
 }
 
 // "Celestials", "Elementals", "Fey", "Fiends" or "Undead".
@@ -6654,6 +6673,7 @@ Snapshot Session::snapshot() const
                          std::find(def(a).equipment_keys.begin(), def(a).equipment_keys.end(),
                                    "torch") != def(a).equipment_keys.end();
         view.burning = a.burning;
+        view.curse_lifted = a.curse_lifted;
         view.oiled = a.oiled_until_round >= static_cast<int>(round_);
         view.hidden = hidden(a);
         view.banished = absent(a);
@@ -8144,6 +8164,12 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                       });
         log(target.source.name + "'s curses end.",
             {"{name}'s curses end.", {{"name", target.source.name}}});
+        if (bound_to_cursed_item(target))
+        {
+            target.curse_lifted = true;
+            log(target.source.name + " can put down the cursed weapon.",
+                {"{name} can put down the cursed weapon.", {{"name", target.source.name}}});
+        }
         return;
     case detail::Rider::banishment:
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
@@ -11093,12 +11119,14 @@ std::vector<Command> Session::offered_commands() const
         const bool wields_equipment = !a.form;
         // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
         // can be equipped with each attack of the Attack action).
-        if (wields_equipment && feet <= 5 && carries(a, "torch"))
+        if (wields_equipment && feet <= 5 && carries(a, "torch") && !bound_to_cursed_item(a))
         {
             add(id, "torch", "Torch attack", other.source.id);
         }
         // A carried bow or crossbow is drawn as part of the attack, too.
-        if (const auto bow = wields_equipment ? carried_ranged_weapon(a) : std::string_view{};
+        // A cursed weapon cannot be put down to draw it.
+        if (const auto bow = wields_equipment && !bound_to_cursed_item(a) ? carried_ranged_weapon(a)
+                                                                         : std::string_view{};
             !bow.empty() && feet <= detail::weapon(bow)->long_range)
         {
             add(id, "shoot", "Shoot", other.source.id);
@@ -23553,7 +23581,8 @@ std::string Session::save() const
             << a.oiled_until_round << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
-            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' ';
+            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
+            << a.curse_lifted << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -23796,7 +23825,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
         actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
-        actor.run_step.y >> actor.run_feet >> actor.flame_lit;
+        actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted;
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
     {
         throw std::runtime_error("Invalid checkpoint morale");
@@ -27540,11 +27569,13 @@ class Module final : public RulesModule
         for (const auto &spell : detail::spell_table)
         {
             // Aid's and Death Ward's eight hours outlast a fight, so they are
-            // cast in camp too.
+            // cast in camp too; so is Remove Curse, as in the original, to put
+            // down a cursed item (MAGIC-1).
             if ((spell.pattern != detail::SpellPattern::heal &&
                  spell.pattern != detail::SpellPattern::camp && spell.rider != detail::Rider::aid &&
                  spell.rider != detail::Rider::death_ward &&
-                 spell.rider != detail::Rider::regenerate) ||
+                 spell.rider != detail::Rider::regenerate &&
+                 spell.rider != detail::Rider::remove_curse) ||
                 !detail::knows_spell(d.spells, spell.id))
             {
                 continue;
@@ -27745,6 +27776,28 @@ class Module final : public RulesModule
             }
             user_state = vitals(caster);
             target_state = vitals(healed);
+            return;
+        }
+        // Remove Curse ends the member's curses; the campaign frees it from
+        // its cursed items.
+        if (const auto *uncurse = detail::find_spell(action);
+            uncurse && uncurse->rider == detail::Rider::remove_curse)
+        {
+            if (patient.life.dead)
+            {
+                throw std::runtime_error("Remove Curse needs a living member");
+            }
+            pay_for_spell(caster, action, *uncurse);
+            std::erase_if(patient.effects.active,
+                          [](const auto &e)
+                          {
+                              return curse(e.kind);
+                          });
+            user_state = vitals(caster);
+            if (!self)
+            {
+                target_state = vitals(healed);
+            }
             return;
         }
         if (const auto *ward = detail::find_spell(action);
@@ -29029,7 +29082,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.241", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.242", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

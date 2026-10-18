@@ -137,7 +137,7 @@ void physical_inventory()
                     act(*combat, "end");
                 }
                 auto before = combat->save();
-                check(before.starts_with("OGCOMBAT 62 "),
+                check(before.starts_with("OGCOMBAT 63 "),
                       "New physical encounters use the current checkpoint format");
                 check(rules->restore(before)->save() == before,
                       "Physical inventory round trips before throw");

@@ -53,6 +53,9 @@ class Inventory
     // References from items()/find() must be reacquired after mutation.
     std::uint64_t add(NewItem item);
     void remove(std::uint64_t id, std::uint32_t quantity = 1);
+    // An item whose nature changes where it is, such as a sword whose curse is
+    // lifted: its stack keeps its ID, name and quantity.
+    void redefine(std::uint64_t id, std::string definition_id);
 
   private:
     template <bool Reading> friend struct opengold::SaveCodec;

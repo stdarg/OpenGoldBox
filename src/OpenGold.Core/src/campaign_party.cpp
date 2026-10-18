@@ -50,6 +50,23 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Remove Curse frees a member from its cursed items for good: each keeps its
+// enchantment but can now be put down.
+void lift_item_curses(PartyMember &member)
+{
+    auto inventory = member.character.inventory();
+    for (const auto worn : member.equipped)
+    {
+        const auto source = member.item_sources.find(worn);
+        if (source != member.item_sources.end() && source->second.stored.cursed_raw)
+        {
+            source->second.stored.cursed_raw = 0;
+            inventory.redefine(worn, equipment_conversion(source->second));
+        }
+    }
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // The key the rules see for an item: one its holder is attuned to says so.
 std::string rules_definition(const PartyMember &member, const InventoryItem &item)
 {
@@ -841,6 +858,18 @@ void CampaignParty::change_equipment(MemberId id, std::uint64_t item,
         }
         next.push_back(candidates[index]);
     }
+    // A cursed item cannot be put down until Remove Curse is cast on its
+    // wielder (MAGIC-1).
+    for (const auto worn : before.equipped)
+    {
+        const auto &definition = before.character.inventory().find(worn)->get().definition_id;
+        if (std::find(next.begin(), next.end(), worn) == next.end() &&
+            rules::parse_item_key(definition).power == rules::ItemPower::cursed)
+        {
+            throw std::runtime_error("This item is cursed. It cannot be unequipped until Remove "
+                                     "Curse is cast on its wielder.");
+        }
+    }
     auto &target = edit(id);
     if (inventory_changed)
     {
@@ -1616,6 +1645,10 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         rules_->use_camp_action(caster.character.sheet(), caster.vitals, patient.character.sheet(),
                                 patient.vitals, action, next.random_state);
         coins(next.wealth, Coin::gold) -= gold;
+        if (action.starts_with("remove_curse"))
+        {
+            lift_item_curses(patient);
+        }
     }
     state_ = std::move(next);
 }
@@ -2025,12 +2058,16 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
             }
             vitals.emplace_back(actor.id, actor.persistent);
-            if (!actor.thrown_gear_left.empty())
+            if (!actor.thrown_gear_left.empty() || actor.curse_lifted)
             {
                 auto member = *it;
                 for (const auto &[definition, left] : actor.thrown_gear_left)
                 {
                     keep_thrown_gear(member, definition, left);
+                }
+                if (actor.curse_lifted)
+                {
+                    lift_item_curses(member);
                 }
                 thrown.push_back(std::move(member));
             }

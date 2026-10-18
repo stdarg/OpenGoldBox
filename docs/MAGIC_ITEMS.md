@@ -262,6 +262,11 @@ records the decisions.
   douse it); while it is lit, each hit deals an extra 2d6 Fire damage. Every
   fight starts with the blade unlit, and its light is not modeled. Its +2
   works with or without attunement.
+- **The cursed Broad Sword -2** cannot be unequipped, or replaced by another
+  weapon, once equipped; in a fight its wielder cannot put it down to draw a
+  bow or a Torch. Remove Curse, cast on the wielder in camp or in a fight,
+  ends the curse for good: the sword stays a -2 weapon that can be put down.
+  The original let the character drop the item; OpenGoldBox has no dropping.
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
   vs Undead" and 255 Cursed (byte 54). The bit-0x80 effects in byte 62 on the
   Long Swords +2 and +3 are not decoded, so those swords have only their +N.

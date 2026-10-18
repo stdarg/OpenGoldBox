@@ -560,6 +560,9 @@ struct CombatantView
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.
     bool regenerates{}, regeneration_stopped{}, burning{}, oiled{}, has_torch{};
+    // Remove Curse freed it from its cursed weapon; the campaign lifts the
+    // item's curse when the fight ends.
+    bool curse_lifted{};
     bool fled{};     // Ran off the field; it rejoins the party when the fight ends.
     bool hidden{};   // Hidden by the Hide action until an enemy finds it.
     bool banished{}; // Banishment: off the field until the spell ends.
