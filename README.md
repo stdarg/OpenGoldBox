@@ -25,7 +25,7 @@ this section only summarizes.
 
 ### Play the game
 
-The game is [`src/OpenGoldBox/`](src/OpenGoldBox/README.md). It starts at
+The game starts at
 character creation and needs your Pool of Radiance installation (the game asks
 for the folder on first run, or set `OPENGOLD_GAME_DIR`).
 
