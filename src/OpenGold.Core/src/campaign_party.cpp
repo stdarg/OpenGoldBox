@@ -50,20 +50,24 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     member.character.replace_inventory(std::move(inventory));
 }
 
-// Remove Curse frees a member from its cursed items for good: each keeps its
-// enchantment but can now be put down.
-void lift_item_curses(PartyMember &member)
+// Remove Curse lets a member put down its cursed items, which are then lost:
+// the original's Remove Curse let a character drop a cursed object (MAGIC-1).
+void put_down_cursed_items(PartyMember &member)
 {
     auto inventory = member.character.inventory();
-    for (const auto worn : member.equipped)
-    {
-        const auto source = member.item_sources.find(worn);
-        if (source != member.item_sources.end() && source->second.stored.cursed_raw)
-        {
-            source->second.stored.cursed_raw = 0;
-            inventory.redefine(worn, equipment_conversion(source->second));
-        }
-    }
+    std::erase_if(member.equipped,
+                  [&](std::uint64_t worn)
+                  {
+                      const auto &definition = inventory.find(worn)->get().definition_id;
+                      if (rules::parse_item_key(definition).power != rules::ItemPower::cursed)
+                      {
+                          return false;
+                      }
+                      inventory.remove(worn, 1);
+                      member.item_sources.erase(worn);
+                      std::erase(member.attuned, worn);
+                      return true;
+                  });
     member.character.replace_inventory(std::move(inventory));
 }
 
@@ -1647,7 +1651,7 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         coins(next.wealth, Coin::gold) -= gold;
         if (action.starts_with("remove_curse"))
         {
-            lift_item_curses(patient);
+            put_down_cursed_items(patient);
         }
     }
     state_ = std::move(next);
@@ -2067,7 +2071,7 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 }
                 if (actor.curse_lifted)
                 {
-                    lift_item_curses(member);
+                    put_down_cursed_items(member);
                 }
                 thrown.push_back(std::move(member));
             }

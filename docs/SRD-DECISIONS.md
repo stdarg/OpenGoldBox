@@ -1234,4 +1234,5 @@ The user chose how the original's enchanted weapons, armor and shields
   target, to attack and damage rolls.
 - **Cursed Broad Sword -2** follows the original: -2 to attack and damage
   rolls, and a character wielding it cannot put it down until Remove Curse is
-  cast on them.
+  cast on them. Put down, it is lost: Remove Curse cast in camp takes it away
+  at once, and cast in a fight, when the fight ends (the user, 2026-10-18).

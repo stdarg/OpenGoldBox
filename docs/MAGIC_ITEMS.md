@@ -265,8 +265,9 @@ records the decisions.
 - **The cursed Broad Sword -2** cannot be unequipped, or replaced by another
   weapon, once equipped; in a fight its wielder cannot put it down to draw a
   bow or a Torch. Remove Curse, cast on the wielder in camp or in a fight,
-  ends the curse for good: the sword stays a -2 weapon that can be put down.
-  The original let the character drop the item; OpenGoldBox has no dropping.
+  lets the wielder put the sword down, as in the original, and it is lost: at
+  once in camp, or when the fight ends. In that fight the wielder may already
+  draw another weapon.
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
   vs Undead" and 255 Cursed (byte 54). The bit-0x80 effects in byte 62 on the
   Long Swords +2 and +3 are not decoded, so those swords have only their +N.

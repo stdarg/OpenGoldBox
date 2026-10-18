@@ -876,43 +876,57 @@ void cursed_weapon_checks()
     check(rules->restore(c->save())->save() == c->save(), "A checkpoint keeps the lifted curse");
 }
 
-// After a fight in which Remove Curse freed the wielder, the campaign lifts
-// the sword's curse: it keeps its -2 and can be unequipped.
-void cursed_weapon_campaign_checks()
+// The original's cursed Broad Sword -2, found and equipped by `wielder`.
+std::uint64_t equip_cursed_sword(CampaignParty &party, MemberId wielder, std::string reward_id)
 {
-    const auto rules = module();
-    CampaignParty party(module());
-    const auto hero = paladin(9);
-    const auto wielder_id = party.add_pc(paladin(5));
     por::Equipment broad;
     broad.stored.type = 35;
     broad.stored.magic_bonus = -2;
     broad.stored.cursed_raw = 1;
     broad.stored.name_components = {255, 202, 35};
     broad.stored.stack_size = 1;
-    check(party.award_loot({}, {broad}, "test:cursed"), "Collect the cursed sword");
-    const auto paladin_id = party.add_pc(hero);
+    check(party.award_loot({}, {broad}, std::move(reward_id)), "Collect the cursed sword");
     std::uint64_t sword{};
-    for (const auto &item : party.member(wielder_id).character.inventory().items())
+    for (const auto &item : party.member(wielder).character.inventory().items())
     {
         if (item.definition_id == "longsword-2:cursed")
         {
             sword = item.id;
         }
     }
-    for (const auto worn : std::vector(party.member(wielder_id).equipped))
+    for (const auto worn : std::vector(party.member(wielder).equipped))
     {
-        party.unequip(wielder_id, worn);
+        party.unequip(wielder, worn);
     }
-    party.equip(wielder_id, sword);
+    party.equip(wielder, sword);
+    return sword;
+}
+
+// As in the original, Remove Curse lets the wielder put the cursed sword
+// down, and it is lost: after a fight in which it was cast, or at once in camp.
+void cursed_weapon_campaign_checks()
+{
+    const auto rules = module();
+    CampaignParty party(module());
+    const auto wielder_id = party.add_pc(paladin(5));
+    const auto sword = equip_cursed_sword(party, wielder_id, "test:cursed");
+    const auto hero = paladin(9);
+    const auto paladin_id = party.add_pc(hero);
+    check(bool(party.rest(RestKind::long_rest)), "A Long Rest");
+    party.choose_spells(
+        paladin_id, SpellChoices{{}, preparing(hero, {"remove_curse"}).prepared_spells, {}, {}});
+    if (party.state().spell_rest)
+    {
+        party.keep_rest_spells(wielder_id);
+    }
+    if (party.state().training_rest)
+    {
+        party.keep_rest_training(party.state().training_rest->ticket, wielder_id);
+    }
     auto participants = party.participants();
     for (auto &p : participants)
     {
         p.cell = p.id == paladin_id ? Cell{1, 1} : Cell{1, 2};
-        if (p.id == paladin_id)
-        {
-            p.character_profile = rules->character_profile(preparing(hero, {"remove_curse"}), {}).data;
-        }
     }
     participants.push_back({98, "vanguard", "Foe", Side::opposition, {7, 1}});
     party.begin_combat();
@@ -929,27 +943,26 @@ void cursed_weapon_campaign_checks()
     check(submit(*c, "remove_curse", wielder_id), "Remove Curse on the wielder");
     party.apply_combat(c->snapshot());
     party.end_combat();
-    const auto lifted = party.member(wielder_id).character.inventory().find(sword);
-    check(lifted && lifted->get().definition_id == "longsword-2",
-          "The sword keeps its -2 without the curse");
-    party.unequip(wielder_id, sword);
-    check(party.member(wielder_id).equipped.empty(), "The freed wielder puts the sword down");
+    check(!party.member(wielder_id).character.inventory().find(sword) &&
+              party.member(wielder_id).equipped.empty() &&
+              !party.member(wielder_id).item_sources.contains(sword),
+          "The freed wielder puts the sword down and it is lost");
 
-    // As in the original, Remove Curse is cast in camp too.
-    const auto caster = preparing(hero, {"remove_curse"});
-    auto caster_state = party.member(paladin_id).vitals;
-    const auto camp = rules->camp_actions(caster, caster_state);
+    const auto camp = rules->camp_actions(party.member(paladin_id).character.sheet(),
+                                          party.member(paladin_id).vitals);
     check(std::any_of(camp.begin(), camp.end(),
                       [](const auto &action)
                       {
                           return action.id == "remove_curse" && !action.whole_party;
                       }),
           "The camp's Cast / Use list offers Remove Curse");
-    auto wielder_state = party.member(wielder_id).vitals;
-    RandomState random{1};
-    rules->use_camp_action(caster, caster_state, paladin(5).sheet(), wielder_state, "remove_curse",
-                           random);
-    check(caster_state.resources != party.member(paladin_id).vitals.resources,
+    const auto second = equip_cursed_sword(party, wielder_id, "test:cursed:again");
+    const auto slots = party.member(paladin_id).vitals.resources;
+    party.use_camp_action(paladin_id, wielder_id, "remove_curse");
+    check(!party.member(wielder_id).character.inventory().find(second) &&
+              party.member(wielder_id).equipped.empty(),
+          "Remove Curse in camp puts the sword down at once");
+    check(party.member(paladin_id).vitals.resources != slots,
           "Casting it in camp spends a spell slot");
 }
 
