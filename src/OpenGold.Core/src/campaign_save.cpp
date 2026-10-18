@@ -1,9 +1,11 @@
 #include "opengold/campaign_save.h"
+#include "opengold/item_key.h"
 #include "opengold/save_file.h"
 #include <algorithm>
 #include <charconv>
 #include <iomanip>
 #include <limits>
+#include <set>
 #include <sstream>
 #include <system_error>
 #include <utility>
@@ -15,7 +17,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 32;
+constexpr unsigned campaign_format = 33;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -366,7 +368,7 @@ template <bool Reading> struct SaveCodec
 
     void member(Visited<PartyMember> v)
     {
-        fields(v.id, v.npc_source, v.vitals, v.equipped, v.morale, v.experience,
+        fields(v.id, v.npc_source, v.vitals, v.equipped, v.attuned, v.morale, v.experience,
                v.last_rest_minutes, v.item_sources, v.creation_source, v.quick,
                v.hall_experience_level);
         // Grants are derived by replaying creation and advancement. Storing them
@@ -846,6 +848,16 @@ void validate_saved_member(const PartyMember &member, const rules::RulesModule &
             (void)module.character_profile(member.character.sheet(), definition);
         }
     }
+    std::set<std::uint64_t> attuned;
+    for (auto id : member.attuned)
+    {
+        const auto item = member.character.inventory().find(id);
+        require(item.has_value() && attuned.insert(id).second &&
+                    rules::needs_attunement(
+                        rules::parse_item_key(item->get().definition_id).power),
+                "Invalid saved attunement");
+    }
+    require(attuned.size() <= 3, "Invalid saved attunement");
     std::vector<std::string> gear;
     for (auto id : member.equipped)
     {

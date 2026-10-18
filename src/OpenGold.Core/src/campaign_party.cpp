@@ -50,6 +50,14 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     member.character.replace_inventory(std::move(inventory));
 }
 
+// The key the rules see for an item: one its holder is attuned to says so.
+std::string rules_definition(const PartyMember &member, const InventoryItem &item)
+{
+    const bool attuned =
+        std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end();
+    return attuned ? item.definition_id + ":attuned" : item.definition_id;
+}
+
 // The definitions of a member's equipped items, which the rules read as gear.
 std::vector<std::string> equipped_definitions(const PartyMember &member)
 {
@@ -61,7 +69,7 @@ std::vector<std::string> equipped_definitions(const PartyMember &member)
         {
             throw std::runtime_error("Equipped item is missing");
         }
-        definitions.push_back(item->get().definition_id);
+        definitions.push_back(rules_definition(member, item->get()));
     }
     return definitions;
 }
@@ -1924,7 +1932,7 @@ std::vector<rules::Participant> CampaignParty::participants() const
             {
                 const auto equipped = std::find(m.equipped.begin(), m.equipped.end(), item.id);
                 result.back().inventory.push_back(
-                    {item.id, item.definition_id, item.quantity,
+                    {item.id, rules_definition(m, item), item.quantity,
                      equipped == m.equipped.end()
                          ? -1
                          : static_cast<int>(equipped - m.equipped.begin())});

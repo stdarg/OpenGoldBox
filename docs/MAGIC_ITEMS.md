@@ -254,6 +254,14 @@ records the decisions.
   Magic Weapon adds nothing to a weapon that has its own bonus. Ammunition is
   not used up in a fight, so the best enchanted arrows or quarrels carried
   always add their bonus.
+- **Flame Tongue** needs attunement. A member is attuned to it after finishing
+  a Short or Long Rest with it equipped (at most three attuned items), and
+  stays attuned while carrying it; the character sheet says which. The
+  campaign hands the rules an attuned item's key with `:attuned` added.
+  Attuned, the wielder gets a Bonus Action to light the blade (and another to
+  douse it); while it is lit, each hit deals an extra 2d6 Fire damage. Every
+  fight starts with the blade unlit, and its light is not modeled. Its +2
+  works with or without attunement.
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
   vs Undead" and 255 Cursed (byte 54). The bit-0x80 effects in byte 62 on the
   Long Swords +2 and +3 are not decoded, so those swords have only their +N.

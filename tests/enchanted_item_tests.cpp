@@ -138,9 +138,21 @@ struct Strike
     int bonus{}, damage{};
 };
 
-// The fighter's first attack on a creature of the given kind, with a fixed seed.
-std::optional<Strike> strike(const RulesModule &rules, const std::string &weapon,
-                             const std::string &enemy)
+bool submit(CombatSession &c, std::string_view verb, EntityId target = 0)
+{
+    for (const auto &command : c.legal_commands())
+    {
+        if (command.verb == verb && (!target || command.target == target))
+        {
+            return c.submit(command);
+        }
+    }
+    return false;
+}
+
+// A fight, with a fixed seed, at the fighter's first turn.
+std::unique_ptr<CombatSession> fighter_turn(const RulesModule &rules, const std::string &weapon,
+                                            const std::string &enemy)
 {
     const auto profile = rules.character_profile(fighter().sheet(), std::vector{weapon}).data;
     auto c = rules.create({{12, 6, std::vector<Terrain>(72)},
@@ -150,24 +162,16 @@ std::optional<Strike> strike(const RulesModule &rules, const std::string &weapon
     test::keep_initiative(*c);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
     {
-        for (const auto &command : c->legal_commands())
-        {
-            if (command.verb == "end")
-            {
-                check(c->submit(command), "End the foe's turn");
-                break;
-            }
-        }
+        check(submit(*c, "end"), "End the foe's turn");
     }
-    for (const auto &command : c->legal_commands())
-    {
-        if (command.verb == "melee" && command.target == 2)
-        {
-            check(c->submit(command), "Attack");
-            break;
-        }
-    }
-    for (const auto &line : c->snapshot().log())
+    check(c->snapshot().actor == 1, "The fighter acts");
+    return c;
+}
+
+// The fighter's first attack's roll bonus and damage, when it hits.
+std::optional<Strike> logged_hit(const CombatSession &c)
+{
+    for (const auto &line : c.snapshot().log())
     {
         const auto hits = line.find(" hits for ");
         if (line.starts_with("Fighter -> Foe: d20 ") && hits != std::string::npos)
@@ -177,6 +181,14 @@ std::optional<Strike> strike(const RulesModule &rules, const std::string &weapon
         }
     }
     return std::nullopt;
+}
+
+std::optional<Strike> strike(const RulesModule &rules, const std::string &weapon,
+                             const std::string &enemy)
+{
+    auto c = fighter_turn(rules, weapon, enemy);
+    check(submit(*c, "melee", 2), "Attack");
+    return logged_hit(*c);
 }
 
 void attacks()
@@ -194,6 +206,71 @@ void attacks()
     check(bane && undead && greatsword, "The two-handed attacks hit");
     check(bane->bonus == greatsword->bonus + 1 && undead->bonus == greatsword->bonus + 3,
           "+1, or +3 against the Undead");
+}
+
+void flame_tongue()
+{
+    const auto rules = module();
+    check(parse_item_key("longsword+2:flame_tongue:attuned").attuned &&
+              !parse_item_key("longsword+2:flame_tongue").attuned &&
+              parse_item_key("longsword+2:attuned").base == "longsword+2:attuned",
+          "Attunement follows a power");
+
+    auto unattuned = fighter_turn(*rules, "longsword+2:flame_tongue", "target");
+    check(!submit(*unattuned, "ignite_flame_tongue"), "An unattuned Flame Tongue cannot be lit");
+
+    auto c = fighter_turn(*rules, "longsword+2:flame_tongue:attuned", "target");
+    check(submit(*c, "ignite_flame_tongue") && !submit(*c, "douse_flame_tongue"),
+          "Lighting the blade is a Bonus Action");
+    const auto restored = rules->restore(c->save());
+    check(restored->save() == c->save(), "A checkpoint keeps the blade lit");
+    check(submit(*c, "melee", 2) && test::logged(*c, "Fire damage from Flame Tongue."),
+          "A lit blade's hit deals extra Fire damage");
+
+    auto dark = fighter_turn(*rules, "longsword+2:flame_tongue:attuned", "target");
+    check(submit(*dark, "melee", 2) && logged_hit(*dark) &&
+              !test::logged(*dark, "Fire damage from Flame Tongue."),
+          "An unlit blade deals no Fire damage");
+
+    const auto hero = fighter();
+    const auto notes = [&](const std::string &key)
+    {
+        return rules->character_profile(hero.sheet(), std::vector{key}).item_modifiers;
+    };
+    check(notes("longsword+2:flame_tongue").find("needs attunement") != std::string::npos &&
+              notes("longsword+2:flame_tongue:attuned").find("A Bonus Action lights the blade") !=
+                  std::string::npos,
+          "The sheet says whether the fire works");
+}
+
+// A rest with Flame Tongue equipped attunes its wielder; a save keeps it.
+void attunement()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    check(party.award_loot({}, {original(36, 2, {241, 163, 36}, {0, 22, 0})}, "test:flame"),
+          "Collect Flame Tongue");
+    const auto sword = party.member(id).character.inventory().items().back().id;
+    party.equip(id, sword);
+    const auto lit = [&](const CampaignParty &p)
+    {
+        return p.profile(id).item_modifiers.find("A Bonus Action lights the blade") !=
+               std::string::npos;
+    };
+    check(!lit(party) && party.member(id).attuned.empty(), "Equipping does not attune");
+    const auto rested = party.rest(RestKind::short_rest);
+    check(rested && rested->spending, "Finish a Short Rest");
+    party.finish_short_rest(*rested->spending);
+    check(party.member(id).attuned == std::vector{sword} && lit(party),
+          "The rest attunes the fighter to the equipped Flame Tongue");
+
+    CampaignParty restored(module());
+    const auto rules = module();
+    restored.restore(decode_campaign(encode_campaign(party, nullptr, "flame"),
+                                     *srd5::character_rules(), *rules, "flame", nullptr)
+                         .party);
+    check(restored.member(id).attuned == std::vector{sword} && lit(restored),
+          "A save keeps the attunement");
 }
 
 // Loot from the original keeps its enchantment in the party and in a save.
@@ -229,6 +306,8 @@ int main()
         profile();
         attacks();
         campaign();
+        flame_tongue();
+        attunement();
         std::cout << "Enchanted item tests passed\n";
         return 0;
     }

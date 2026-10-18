@@ -1,4 +1,5 @@
 #include "opengold/campaign_party.h"
+#include "opengold/item_key.h"
 #include <algorithm>
 #include <limits>
 
@@ -121,6 +122,35 @@ std::optional<RestResult> CampaignParty::rest(RestKind kind)
     return result;
 }
 
+namespace
+{
+constexpr std::size_t attunement_limit = 3;
+
+// SRD 5.2.1 attunes a creature to a magic item over a Short Rest spent with it.
+// Here a finished Short or Long Rest attunes each member to the equipped items
+// that need it, up to three; attunement to an item no longer carried ends.
+void attune_equipped(PartyMember &member)
+{
+    const auto &inventory = member.character.inventory();
+    std::erase_if(member.attuned,
+                  [&](auto id)
+                  {
+                      return !inventory.find(id);
+                  });
+    for (const auto id : member.equipped)
+    {
+        const auto item = inventory.find(id);
+        const bool needs =
+            item && rules::needs_attunement(rules::parse_item_key(item->get().definition_id).power);
+        if (needs && member.attuned.size() < attunement_limit &&
+            std::find(member.attuned.begin(), member.attuned.end(), id) == member.attuned.end())
+        {
+            member.attuned.push_back(id);
+        }
+    }
+}
+} // namespace
+
 void CampaignParty::short_rest_benefits(PartyState &state,
                                         const std::vector<MemberId> &members) const
 {
@@ -137,6 +167,7 @@ void CampaignParty::short_rest_benefits(PartyState &state,
             continue;
         }
         rules_->recover_short_rest(member.vitals, member.character.sheet());
+        attune_equipped(member);
         eligible.push_back(id);
     }
     if (!eligible.empty())
@@ -157,6 +188,7 @@ void CampaignParty::long_rest_benefits(PartyState &state, const std::vector<Memb
             continue;
         }
         rules_->recover(member.vitals, member.character.sheet());
+        attune_equipped(member);
         const auto choices = rules_->spell_choice_options(member.character.sheet(),
                                                           rules::SpellChoiceContext::long_rest);
         if (choices.may_prepare || choices.may_replace)

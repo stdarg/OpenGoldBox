@@ -100,19 +100,15 @@ std::vector<Message> enchantment_messages(std::string_view key)
 {
     const auto enchantment = rules::parse_item_key(key);
     std::vector<Message> messages;
-    if (!enchantment.bonus)
-    {
-        return messages;
-    }
     const auto bonus = (enchantment.bonus > 0 ? "+" : "") + std::to_string(enchantment.bonus);
     const auto *item = detail::weapon(key);
-    if (item)
+    if (enchantment.bonus && item)
     {
         messages.push_back(
             {"Source: equipped {item}. Its magic adds {bonus} to attack and damage rolls.",
              {{"item", weapon_label(key), true}, {"bonus", bonus}}});
     }
-    else if (detail::armor(key))
+    else if (enchantment.bonus && detail::armor(key))
     {
         messages.push_back({"Source: equipped {item}. Its magic adds {bonus} to Armor Class.",
                             {{"item", weapon_label(key), true}, {"bonus", bonus}}});
@@ -121,6 +117,14 @@ std::vector<Message> enchantment_messages(std::string_view key)
     {
         messages.push_back({"Source: equipped {item}. Against Undead it adds 2 more.",
                             {{"item", weapon_label(key), true}}});
+    }
+    if (item && enchantment.power == rules::ItemPower::flame_tongue)
+    {
+        messages.push_back(
+            {enchantment.attuned
+                 ? "Source: equipped {item}, a Flame Tongue. A Bonus Action lights the blade; while it is lit, hits deal 2d6 more Fire damage."
+                 : "Source: equipped {item}, a Flame Tongue. Its fire needs attunement: finish a Short or Long Rest with it equipped.",
+             {{"item", weapon_label(key), true}}});
     }
     return messages;
 }
@@ -568,7 +572,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 61;
+constexpr unsigned checkpoint_format = 62;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1324,6 +1328,7 @@ struct Definition
     // damage modifier, still adds it. bane_undead adds 2 more against Undead.
     int melee_magic{}, ranged_magic{};
     bool bane_undead{};
+    bool flame_tongue{}; // The wielded weapon is a Flame Tongue its wielder is attuned to.
     int reach{5};
     Dice ranged;
     int range{}, long_range{}, winds{}, casting{}, level{};
@@ -1687,6 +1692,7 @@ struct Actor
     // counted from the inventory when combat begins and spent by each throw.
     std::array<unsigned, 3> thrown_gear_left{};
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
+    bool flame_lit{};        // Its Flame Tongue's blade is lit (a Bonus Action lights it)
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
     // Tried to run off the field as fast as the fastest enemy and failed: it
@@ -1994,7 +2000,7 @@ Definition shaped(Definition d, const detail::BeastForm &form)
     d.weapon_hands = 0;
     d.versatile_sides = 0;
     d.melee_magic = d.ranged_magic = 0;
-    d.bane_undead = false;
+    d.bane_undead = d.flame_tongue = false;
     d.ranged = {};
     d.ranged_bonus = d.range = d.long_range = 0;
     d.masteries.clear();
@@ -3099,6 +3105,8 @@ character_definition(std::string_view bytes,
                 d.melee_type = item->type;
                 d.melee_magic = enchantment.bonus;
                 d.bane_undead = enchantment.power == rules::ItemPower::bane_undead;
+                d.flame_tongue =
+                    enchantment.power == rules::ItemPower::flame_tongue && enchantment.attuned;
                 d.reach = melee_reach;
                 d.melee_heavy_disadvantage = item->heavy_disadvantage(scores);
             }
@@ -6807,6 +6815,10 @@ Snapshot Session::snapshot() const
         {
             view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
         }
+        if (def(a).flame_tongue)
+        {
+            view.bonus_actions.push_back(a.flame_lit ? "douse_flame_tongue" : "ignite_flame_tongue");
+        }
         if (def(a).intimidating_presence)
         {
             view.bonus_actions.insert(view.bonus_actions.end(),
@@ -10294,6 +10306,15 @@ std::vector<Command> Session::offered_commands() const
         {
             add(id, "leave_wild_shape", "Leave Wild Shape");
         }
+    }
+    // Flame Tongue: a Bonus Action lights the blade, and another douses it.
+    if (a.bonus && d.flame_tongue && a.flame_lit)
+    {
+        add(id, "douse_flame_tongue", "Flame Tongue: douse");
+    }
+    else if (a.bonus && d.flame_tongue)
+    {
+        add(id, "ignite_flame_tongue", "Flame Tongue: light");
     }
     // Rage: a Bonus Action outside Heavy armor; on a later turn a Bonus Action
     // extends it.
@@ -18631,6 +18652,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
              {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
         damage(target, extra, false);
     }
+    // Flame Tongue: while lit, a hit deals an extra 2d6 Fire damage.
+    if (hit && !spell && !ranged && def(a).flame_tongue && a.flame_lit && !target.life.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::fire,
+                                          dice({2, 6, 0}, critical_hit(a, target, natural)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+                " Fire damage from Flame Tongue.",
+            {"{name} takes {damage} Fire damage from Flame Tongue.",
+             {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
+        damage(target, extra, false);
+    }
     // Radiant Strikes (Paladin 11): a Melee weapon or Unarmed Strike hit deals
     // an extra 1d8 Radiant damage.
     if (hit && !spell && !ranged && def(a).radiant_strikes && !target.life.dead)
@@ -22487,6 +22519,14 @@ void Session::dispatch(const Command &command)
         a.bonus = false;
         attack_as(a, unarmed_loadout(a), actor(command.target), AttackRange::melee);
     }
+    else if (command.verb == "ignite_flame_tongue" || command.verb == "douse_flame_tongue")
+    {
+        a.bonus = false;
+        a.flame_lit = command.verb == "ignite_flame_tongue";
+        log(a.source.name + (a.flame_lit ? "'s blade bursts into flame." : " douses the blade."),
+            {a.flame_lit ? "{name}'s blade bursts into flame." : "{name} douses the blade.",
+             {{"name", a.source.name}}});
+    }
     else if (command.verb == "rage")
     {
         a.bonus = false;
@@ -23513,7 +23553,7 @@ std::string Session::save() const
             << a.oiled_until_round << ' ' << a.shield_off << ' ' << a.must_stay << ' ' << a.panicked
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
-            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ';
+            << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' ';
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -23756,7 +23796,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
         actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
-        actor.run_step.y >> actor.run_feet;
+        actor.run_step.y >> actor.run_feet >> actor.flame_lit;
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
     {
         throw std::runtime_error("Invalid checkpoint morale");
@@ -28989,7 +29029,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.240", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.241", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -13,7 +13,9 @@ namespace opengold::rules
 // the original's enchantment ("longsword+2") and one special power
 // ("longsword+2:flame_tongue", "greatsword+1:undead", "longsword-2:cursed").
 // The enchantment lives in the key so that saves, combat checkpoints and every
-// rules call that takes item keys carry it without a separate channel.
+// rules call that takes item keys carry it without a separate channel. The
+// campaign adds ":attuned" when it hands the rules an item whose wielder is
+// attuned to it; inventories store keys without it.
 enum class ItemPower : std::uint8_t
 {
     none,
@@ -27,31 +29,47 @@ struct ItemKey
     std::string_view base;
     int bonus{};
     ItemPower power{ItemPower::none};
+    bool attuned{};
 };
+
+// SRD Flame Tongue needs attunement; the original's other powers do not.
+[[nodiscard]] constexpr bool needs_attunement(ItemPower power) noexcept
+{
+    return power == ItemPower::flame_tongue;
+}
 
 namespace detail
 {
 inline constexpr std::array<std::string_view, 4> item_power_names{"", "flame_tongue", "undead",
                                                                   "cursed"};
+
+constexpr ItemPower item_power_named(std::string_view name) noexcept
+{
+    for (std::size_t power = 1; power < item_power_names.size(); ++power)
+    {
+        if (item_power_names[power] == name)
+        {
+            return static_cast<ItemPower>(power);
+        }
+    }
+    return ItemPower::none;
+}
 } // namespace detail
 
 // A key without a recognized enchantment, such as "por:unsupported:36", is all base.
 [[nodiscard]] constexpr ItemKey parse_item_key(std::string_view key) noexcept
 {
     ItemKey parsed{key};
-    const auto colon = key.find(':');
-    auto head = key.substr(0, colon);
-    if (colon != std::string_view::npos)
+    auto head = key.substr(0, key.find(':'));
+    if (auto rest = key.substr(head.size()); !rest.empty())
     {
-        const auto name = key.substr(colon + 1);
-        for (std::size_t power = 1; power < detail::item_power_names.size(); ++power)
-        {
-            if (detail::item_power_names[power] == name)
-            {
-                parsed.power = static_cast<ItemPower>(power);
-            }
-        }
-        if (parsed.power == ItemPower::none)
+        // ":power", then ":attuned" when the campaign adds it.
+        rest.remove_prefix(1);
+        const auto name = rest.substr(0, rest.find(':'));
+        parsed.power = detail::item_power_named(name);
+        rest.remove_prefix(name.size());
+        parsed.attuned = rest == ":attuned";
+        if (parsed.power == ItemPower::none || (!rest.empty() && !parsed.attuned))
         {
             return {key};
         }
@@ -81,7 +99,7 @@ inline constexpr std::array<std::string_view, 4> item_power_names{"", "flame_ton
 }
 
 [[nodiscard]] inline std::string item_key(std::string_view base, int bonus,
-                                          ItemPower power = ItemPower::none)
+                                          ItemPower power = ItemPower::none, bool attuned = false)
 {
     if (bonus < -9 || bonus > 9)
     {
@@ -99,6 +117,10 @@ inline constexpr std::array<std::string_view, 4> item_power_names{"", "flame_ton
     {
         key += ':';
         key += detail::item_power_names[static_cast<std::size_t>(power)];
+        if (attuned)
+        {
+            key += ":attuned";
+        }
     }
 
     return key;

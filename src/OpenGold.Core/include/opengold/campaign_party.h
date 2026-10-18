@@ -93,6 +93,9 @@ struct PartyMember
     std::string npc_source; // Empty for PCs; explicit campaign conversion identity for NPCs.
     rules::VitalState vitals;
     std::vector<std::uint64_t> equipped;
+    // Items it is attuned to (SRD 5.2.1, at most three): a finished rest
+    // attunes it to the equipped items that need it, such as Flame Tongue.
+    std::vector<std::uint64_t> attuned;
     unsigned morale{100};
     unsigned experience{};
     std::optional<std::uint64_t> last_rest_minutes;
