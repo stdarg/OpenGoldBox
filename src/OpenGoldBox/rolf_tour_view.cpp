@@ -150,6 +150,8 @@ void RolfTourView::prepare_view()
         .connect("pressed", presentation::guarded(this, &RolfTourView::equip_item).bind(true));
     required_node<Button>(*this, "InventoryPanel/Unequip")
         .connect("pressed", presentation::guarded(this, &RolfTourView::equip_item).bind(false));
+    required_node<Button>(*this, "InventoryPanel/Identify")
+        .connect("pressed", presentation::guarded(this, &RolfTourView::identify_item));
     required_node<Button>(*this, "MemberSheet/Close")
         .connect("pressed", presentation::guarded(this, &RolfTourView::close_sheet));
     required_node<Window>(*this, "MemberSheet")
@@ -393,6 +395,10 @@ void RolfTourView::refresh_inventory()
     }
     required_node<Button>(*this, "InventoryPanel/Equip").set_disabled(!items->get_item_count());
     required_node<Button>(*this, "InventoryPanel/Unequip").set_disabled(!items->get_item_count());
+    // As in the original, only a shop identifies items, and it takes any item.
+    auto &identify = required_node<Button>(*this, "InventoryPanel/Identify");
+    identify.set_visible(session_ && session_->snapshot().phase == TourPhase::shopping);
+    identify.set_disabled(!items->get_item_count());
     required_node<Label>(*this, "InventoryPanel/Status")
         .set_text(i18n::text(N_("Inventory is empty. Visit a shop to buy equipment.")));
     if (items->get_item_count())
@@ -465,6 +471,39 @@ void RolfTourView::equip_item(bool equip)
                                   i18n::text(opengold::srd5::equipment_note(
                                       campaign_->member(id).character.sheet(), definition))
                             : i18n::text("Item unequipped."));
+    }
+    catch (const std::exception &e)
+    {
+        required_node<Label>(*this, "InventoryPanel/Status").set_text(i18n::text(e.what()));
+    }
+}
+
+void RolfTourView::identify_item()
+{
+    try
+    {
+        const auto selection =
+            required_node<ItemList>(*this, "InventoryPanel/Items").get_selected_items();
+        if (selection.is_empty())
+        {
+            throw std::runtime_error("Select an item first.");
+        }
+        const auto id = campaign_->selected();
+        const auto items = campaign_->member(id).character.inventory().items();
+        if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+        {
+            throw std::runtime_error("Select an existing item.");
+        }
+        const auto item = items[selection[0]].id;
+        const bool revealed = campaign_->identify_at_shop(id, item);
+        refresh_inventory();
+        required_node<ItemList>(*this, "InventoryPanel/Items").select(selection[0]);
+        refresh();
+        const auto name = campaign_->member(id).character.inventory().find(item)->get().name;
+        required_node<Label>(*this, "InventoryPanel/Status")
+            .set_text(i18n::format(revealed ? N_("The shop identifies it: {item}.")
+                                            : N_("The shop learns nothing new about {item}."),
+                                   {{"item", i18n::text(name)}}));
     }
     catch (const std::exception &e)
     {
@@ -1489,6 +1528,22 @@ void RolfTourView::check_town()
             throw std::runtime_error("Inventory Unequip did not remove shield AC");
         }
         required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
+        // The shop's ID takes any item for 200 gp; a plain shield hides nothing.
+        auto purse = campaign_->state().wealth;
+        coins(purse, Coin::gold) = 250;
+        campaign_->set_wealth(purse);
+        auto &identify = required_node<Button>(*this, "InventoryPanel/Identify");
+        if (!identify.is_visible() || identify.is_disabled())
+        {
+            throw std::runtime_error("The shop must offer ID in the inventory");
+        }
+        identify.emit_signal("pressed");
+        if (gold() != 50 || !required_node<Label>(*this, "InventoryPanel/Status")
+                                 .get_text()
+                                 .contains("nothing new"))
+        {
+            throw std::runtime_error("ID must charge 200 gp and report what it learned");
+        }
         auto retained = campaign_->checkpoint();
         auto changed = retained;
         auto &member = changed.roster.at(0);

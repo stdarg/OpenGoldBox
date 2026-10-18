@@ -188,6 +188,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 if (is_magic(item) && !item_words.empty())
                 {
                     equipment.decoded_name = item_name(item, item_words);
+                    equipment.unidentified_name =
+                        item_name(item, item_words, item.hidden_name_words);
                 }
                 stock.push_back(std::move(equipment));
             }

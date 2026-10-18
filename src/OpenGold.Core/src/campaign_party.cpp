@@ -71,12 +71,23 @@ void put_down_cursed_items(PartyMember &member)
     member.character.replace_inventory(std::move(inventory));
 }
 
-// The key the rules see for an item: one its holder is attuned to says so.
+// The key the rules see for an item: it says so when its holder is attuned to
+// it, or when its enchantment is not yet identified.
 std::string rules_definition(const PartyMember &member, const InventoryItem &item)
 {
-    const bool attuned =
-        std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end();
-    return attuned ? item.definition_id + ":attuned" : item.definition_id;
+    auto definition = item.definition_id;
+    if (std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end())
+    {
+        definition += ":attuned";
+    }
+    const auto enchantment = rules::parse_item_key(item.definition_id);
+    const auto source = member.item_sources.find(item.id);
+    if ((enchantment.bonus || enchantment.power != rules::ItemPower::none) &&
+        source != member.item_sources.end() && !source->second.identified())
+    {
+        definition += ":unidentified";
+    }
+    return definition;
 }
 
 // The definitions of a member's equipped items, which the rules read as gear.
@@ -235,6 +246,24 @@ bool has_effects(const por::ItemRecord &raw)
                        });
 }
 } // namespace
+
+bool identify_item(PartyMember &member, std::uint64_t item)
+{
+    if (!member.character.inventory().find(item))
+    {
+        throw std::runtime_error("Unknown item");
+    }
+    const auto source = member.item_sources.find(item);
+    if (source == member.item_sources.end() || source->second.identified())
+    {
+        return false;
+    }
+    source->second.identify();
+    auto inventory = member.character.inventory();
+    inventory.rename(item, source->second.label());
+    member.character.replace_inventory(std::move(inventory));
+    return true;
+}
 
 std::string equipment_conversion(const por::Equipment &item)
 {
@@ -916,6 +945,21 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
     coins(state_.wealth, Coin::gold) -= item.stored.value;
+}
+
+bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)
+{
+    constexpr unsigned identify_fee = 200;
+    editable();
+    if (coins(state_.wealth, Coin::gold) < identify_fee)
+    {
+        throw std::runtime_error("Not enough gold");
+    }
+    auto holder = member(id);
+    const bool revealed = identify_item(holder, item);
+    edit(id) = std::move(holder);
+    coins(state_.wealth, Coin::gold) -= identify_fee;
+    return revealed;
 }
 
 void CampaignParty::set_wealth(Purse wealth)

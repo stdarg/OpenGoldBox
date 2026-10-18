@@ -72,8 +72,11 @@ std::string weapon_label(std::string_view key)
     {
         return std::string(key);
     }
-    if (const int bonus = rules::parse_item_key(key).bonus)
+    // An unidentified item is named without its enchantment (#262).
+    if (const auto enchantment = rules::parse_item_key(key);
+        enchantment.bonus && !enchantment.unidentified)
     {
+        const int bonus = enchantment.bonus;
         label += (bonus > 0 ? " +" : " -") + std::to_string(std::abs(bonus));
     }
     return label;
@@ -95,11 +98,16 @@ std::string english(const Message &message)
     return text;
 }
 
-// What an enchanted item's magic adds (MAGIC-1).
+// What an enchanted item's magic adds (MAGIC-1); nothing until it is
+// identified, though its numbers already count.
 std::vector<Message> enchantment_messages(std::string_view key)
 {
     const auto enchantment = rules::parse_item_key(key);
     std::vector<Message> messages;
+    if (enchantment.unidentified)
+    {
+        return messages;
+    }
     const auto bonus = (enchantment.bonus > 0 ? "+" : "") + std::to_string(enchantment.bonus);
     const auto *item = detail::weapon(key);
     if (enchantment.bonus && item)
@@ -29082,7 +29090,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.242", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.243", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

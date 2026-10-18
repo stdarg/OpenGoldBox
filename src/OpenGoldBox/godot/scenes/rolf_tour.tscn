@@ -431,6 +431,16 @@ offset_bottom = -18
 metadata/layout_reference = Rect2(390, 866, 150, 36)
 text = "Unequip"
 
+[node name="Identify" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 560
+offset_right = 760
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(560, 866, 200, 36)
+text = "ID (200 gp)"
+
 [node name="MemberSheet" type="Window" parent="."]
 size = Vector2i(1800, 960)
 metadata/layout_reference_size = Vector2i(1800, 960)

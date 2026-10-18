@@ -203,6 +203,9 @@ class CampaignParty
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     // The party's gold pays; the item goes to the member.
     void purchase(MemberId id, const por::Equipment &item);
+    // The shop's ID: for 200 gp from the party purse, any item's hidden name
+    // words are revealed, as in the original. False when there were none.
+    bool identify_at_shop(MemberId id, std::uint64_t item);
     void set_wealth(Purse wealth);
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);
@@ -364,5 +367,8 @@ class CampaignParty
 };
 
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
+// Reveals the item's hidden name words, so it takes its full name. False when
+// nothing was hidden.
+bool identify_item(PartyMember &member, std::uint64_t item);
 } // namespace opengold
 #endif

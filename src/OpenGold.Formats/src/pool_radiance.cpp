@@ -181,7 +181,7 @@ std::optional<std::vector<ItemRecord>> decode_items(std::span<const std::uint8_t
         item.magic_bonus = signed_byte(b[50]);
         item.save_bonus = signed_byte(b[51]);
         item.readied_raw = b[52];
-        item.revealed_components = b[53];
+        item.hidden_name_words = b[53];
         item.cursed_raw = b[54];
         item.weight = format::read_u16(b, 55);
         item.stack_size = b[57];
@@ -293,14 +293,17 @@ std::optional<std::vector<std::string>> decode_spell_names(std::span<const std::
     }
 }
 
-std::string item_name(const ItemRecord &item, std::span<const std::string> words)
+std::string item_name(const ItemRecord &item, std::span<const std::string> words,
+                      std::uint8_t hidden)
 {
     std::string name;
 
-    for (auto component = item.name_components.rbegin(); component != item.name_components.rend();
-         ++component)
+    for (std::size_t n = item.name_components.size(); n-- > 0;)
     {
-        if (*component == 0 || *component >= words.size() || words[*component].empty())
+        const auto component = item.name_components[n];
+        const auto mask = static_cast<std::uint8_t>(4 >> n);
+        if (component == 0 || component >= words.size() || words[component].empty() ||
+            (hidden & mask))
         {
             continue;
         }
@@ -310,7 +313,7 @@ std::string item_name(const ItemRecord &item, std::span<const std::string> words
             name += ' ';
         }
 
-        name += words[*component];
+        name += words[component];
     }
 
     return name;

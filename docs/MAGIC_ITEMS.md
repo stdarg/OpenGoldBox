@@ -50,6 +50,7 @@ Item records are 63 bytes ([creature-catalog.md](creature-catalog.md)).
 | 46 | Item type: an `ITEMS` template index (weapon 1-47, armor 50-58, shield 59, magic-user scroll 61, cleric scroll 62, bracers 77, wands 78-79, ring of protection 93, and others). |
 | 47-49 | Name components. |
 | 50 | Magic bonus: the +N of weapons, armor, shields and rings. On bracers it is the AC improvement (bracers +6 are "AC 4"). On wands, potions and other items it is not an enchantment. |
+| 53 | Name words hidden until the item is identified: bit 4 hides byte 47's word, bit 2 byte 48's, bit 1 byte 49's. Most weapons, shields, rings, potions, wands and scrolls have 6 (only the base word shows: "Long Sword"); body armor has 4 (its "+N" is hidden); the Cursed Necklace has 5 ("Necklace"). Mundane items and a few magic ones (the anti-undead sword, Plate Mail +1, Leather Armor +1, Ring of Protection +1, the Efreeti Bottle, most two-spell clerical scrolls) have 0. |
 | 54 | Cursed (1). |
 | 60 | Charges or uses: wand charges, potion doses, the necklace's missiles. |
 | 61 | Spell or power. 1-56 is a spell from the table above. Higher numbers are powers that only items have (see the tables). |
@@ -274,8 +275,17 @@ records the decisions.
 - The Javelin of Lightning, wands, potions, rings, bracers, scrolls and the
   other worn items are still unsupported (#262 to #265).
 - Fixed treasure lists show magic items under their original names ("Long
-  Sword +2 Flame Tongue"). Identification, which hides parts of a name until
-  the item is identified, is #262.
+  Sword +2 Flame Tongue").
+- **Identification** (#262,
+  [MAGIC-2](SRD-DECISIONS.md#magic-2-2026-10-18-identifying-magic-items)): a
+  found item's name leaves out the words byte 53 hides, everywhere it is
+  shown, including the rules' labels and the character sheet. The campaign
+  hands the rules such an item's key with `:unidentified` added, so the rules
+  name it without its enchantment and leave out its sheet notes; its bonus,
+  power and curse still work. A shop's ID, in the inventory while shopping,
+  reveals any item's name for 200 gp from the party purse, even an item with
+  nothing hidden, as in the original. Attuning to an item also reveals its
+  name.
 
 ## Open questions
 

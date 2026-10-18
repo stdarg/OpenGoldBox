@@ -1236,3 +1236,26 @@ The user chose how the original's enchanted weapons, armor and shields
   rolls, and a character wielding it cannot put it down until Remove Curse is
   cast on them. Put down, it is lost: Remove Curse cast in camp takes it away
   at once, and cast in a fight, when the fight ends (the user, 2026-10-18).
+
+## MAGIC-2 (2026-10-18): identifying magic items
+
+The user chose how found magic items are identified (issue
+[#262](https://github.com/stdarg/OpenGold/issues/262),
+[MAGIC_ITEMS.md](MAGIC_ITEMS.md#in-opengoldbox)):
+
+- **Hidden names as the original has them.** Until it is identified, an item
+  shows only the name words its record does not hide ("Long Sword", "Chain
+  Mail", "Potion"). Its bonus and powers work regardless, and its numbers on
+  the character sheet already count them.
+- **The shop's ID**, 200 gp per item, as in the original. Any item can be
+  submitted; one with nothing hidden still costs the fee.
+- **The SRD's Identify spell** reveals one item's name. As CLASS-8 says, it
+  needs no pearl.
+- **No Short Rest study.** The SRD's way of learning an item over a Short Rest
+  is left out.
+- **Detect Magic** can be cast in camp or at any time outside combat. For ten
+  minutes of game time, item lists mark each magic item with "* ".
+- **Flame Tongue unidentified.** Its wielder can attune to it and light it
+  before it is identified; attuning to it reveals its name.
+- **Cursed items** give no warning before they are equipped. Once one is, the
+  refusal to unequip it says that it is cursed.

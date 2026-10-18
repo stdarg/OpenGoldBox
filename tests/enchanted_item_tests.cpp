@@ -248,9 +248,18 @@ void attunement()
 {
     CampaignParty party(module());
     const auto id = party.add_pc(fighter());
-    check(party.award_loot({}, {original(36, 2, {241, 163, 36}, {0, 22, 0})}, "test:flame"),
-          "Collect Flame Tongue");
+    // Found with its "+2" and "Flame Tongue" hidden, as in the original.
+    auto flame = original(36, 2, {241, 163, 36}, {0, 22, 0});
+    flame.stored.hidden_name_words = 6;
+    flame.decoded_name = "Long Sword +2 Flame Tongue";
+    flame.unidentified_name = "Long Sword";
+    check(party.award_loot({}, {flame}, "test:flame"), "Collect Flame Tongue");
     const auto sword = party.member(id).character.inventory().items().back().id;
+    const auto name = [&]
+    {
+        return party.member(id).character.inventory().find(sword)->get().name;
+    };
+    check(name() == "Long Sword", "Flame Tongue is found as a Long Sword");
     party.equip(id, sword);
     const auto lit = [&](const CampaignParty &p)
     {
@@ -263,6 +272,7 @@ void attunement()
     party.finish_short_rest(*rested->spending);
     check(party.member(id).attuned == std::vector{sword} && lit(party),
           "The rest attunes the fighter to the equipped Flame Tongue");
+    check(name() == "Long Sword +2 Flame Tongue", "Attuning to it reveals its name");
 
     CampaignParty restored(module());
     const auto rules = module();
@@ -324,6 +334,97 @@ void campaign()
               restored.profile(id).melee_attack_bonus == plain + 2,
           "A save keeps the item and its bonus");
 }
+// The original hides some of a found item's name words until it is identified
+// (#262). The rules then name it without its enchantment, which still counts.
+void identification()
+{
+    check(parse_item_key("longsword+2:unidentified").unidentified &&
+              parse_item_key("longsword+2:flame_tongue:attuned:unidentified").attuned &&
+              parse_item_key("longsword:unidentified").base == "longsword:unidentified" &&
+              parse_item_key("longsword+2:unidentified:attuned").base ==
+                  "longsword+2:unidentified:attuned",
+          "Unidentified is the last flag of an enchanted key");
+
+    std::vector<std::string> words(256);
+    words[36] = "Long Sword";
+    words[163] = "+2";
+    words[241] = "Flame Tongue";
+    auto record = original(36, 2, {241, 163, 36}).stored;
+    check(por::item_name(record, words) == "Long Sword +2 Flame Tongue" &&
+              por::item_name(record, words, 6) == "Long Sword" &&
+              por::item_name(record, words, 4) == "Long Sword +2",
+          "Hidden name words are left out");
+
+    auto generic = original(36, 2, {0, 163, 36});
+    generic.bonuses.weapon_to_hit = 2;
+    generic.stored.hidden_name_words = 6;
+    check(!generic.identified() && generic.label().find("+2") == std::string::npos,
+          "Unidentified, a sword is named without its bonus");
+    generic.identify();
+    check(generic.identified() && generic.label().ends_with(" +2") && !generic.stored.raw[53],
+          "Identified, it has its bonus");
+    auto words_only = original(36, 0, {0, 0, 36});
+    words_only.stored.hidden_name_words = 6;
+    check(words_only.identified(), "A mask over empty words hides nothing");
+
+}
+
+// In the party an unidentified item keeps its name hidden, also in a save,
+// until the shop's ID reveals it for 200 gp.
+void shop_identification()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    const auto plain = party.profile(id).melee_attack_bonus;
+    auto hidden = original(36, 2, {0, 163, 36});
+    hidden.bonuses.weapon_to_hit = 2;
+    hidden.stored.hidden_name_words = 6;
+    check(party.award_loot({}, {hidden}, "test:hidden"), "Collect an unidentified Long Sword +2");
+    const auto sword = party.member(id).character.inventory().items().back().id;
+    party.equip(id, sword);
+    const auto name = [&](const CampaignParty &p)
+    {
+        return p.member(id).character.inventory().find(sword)->get().name;
+    };
+    const auto told = [&](const CampaignParty &p)
+    {
+        const auto profile = p.profile(id);
+        bool labelled = false;
+        for (const auto &position : profile.equipment_positions)
+        {
+            labelled = labelled || position.source.find("+2") != std::string::npos;
+        }
+        return labelled || profile.item_modifiers.find("Its magic adds +2") != std::string::npos;
+    };
+    check(name(party).find("+2") == std::string::npos && !told(party) &&
+              party.profile(id).melee_attack_bonus == plain + 2,
+          "Unidentified, its bonus counts but is not shown");
+
+    CampaignParty restored(module());
+    const auto rules = module();
+    restored.restore(decode_campaign(encode_campaign(party, nullptr, "hidden"),
+                                     *srd5::character_rules(), *rules, "hidden", nullptr)
+                         .party);
+    check(name(restored) == name(party) && !told(restored), "A save keeps it unidentified");
+
+    Purse purse{};
+    coins(purse, Coin::gold) = 300;
+    restored.set_wealth(purse);
+    check(restored.identify_at_shop(id, sword) && name(restored).ends_with(" +2") &&
+              told(restored) && coins(restored.state().wealth, Coin::gold) == 100,
+          "The shop's ID reveals the bonus for 200 gp");
+    test::rejects(
+        [&]
+        {
+            (void)restored.identify_at_shop(id, sword);
+        },
+        "ID needs 200 gp");
+    coins(purse, Coin::gold) = 200;
+    restored.set_wealth(purse);
+    check(!restored.identify_at_shop(id, sword) &&
+              coins(restored.state().wealth, Coin::gold) == 0,
+          "An item with nothing hidden still costs the fee, as in the original");
+}
 } // namespace
 
 int main()
@@ -338,6 +439,8 @@ int main()
         flame_tongue();
         attunement();
         cursed_sword();
+        identification();
+        shop_identification();
         std::cout << "Enchanted item tests passed\n";
         return 0;
     }

@@ -36,6 +36,20 @@ std::uint64_t Inventory::add(NewItem item)
     return next_id_++;
 }
 
+void Inventory::rename(std::uint64_t id, std::string name)
+{
+    const auto it = std::find_if(items_.begin(), items_.end(),
+                                 [&](const auto &item)
+                                 {
+                                     return item.id == id;
+                                 });
+    if (it == items_.end() || name.find_first_not_of(" \t\r\n") == std::string::npos)
+    {
+        throw std::runtime_error("Unknown item or empty name");
+    }
+    it->name = std::move(name);
+}
+
 void Inventory::remove(std::uint64_t id, std::uint32_t quantity)
 {
     const auto it = std::find_if(items_.begin(), items_.end(),
