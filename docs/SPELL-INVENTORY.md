@@ -19,7 +19,9 @@ removed 33 spells that need a DM to adjudicate (see
 Rules 0.6.64 implemented Inflict Wounds. On 2026-10-04, decision
 [DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-cannot-use) removed 17 more
 spells that need a DM or have nothing to act on in this game, leaving **89 spells:
-twelve partial, one implemented and 76 missing**.
+twelve partial, one implemented and 76 missing**. GUIDE-1 then restored
+Guidance. As the tables below stood on 2026-10-18, **87 of the 90 spells are
+implemented**, Chill Touch is partial, and Detect Magic and Identify are missing.
 
 ## Scope and counting
 

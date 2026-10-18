@@ -74,9 +74,9 @@ Add an entry whenever a new departure is decided.
 ## Advancement and training
 
 All decided 2026-10-13 and recorded in
-[TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13). The halls' rules
-are implemented; their screen is not yet
-([#9](https://github.com/stdarg/OpenGold/issues/9)).
+[TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13). The halls are
+in the game: answering YES at a hall lists its services in the dialogue
+([At the hall](TRAINING-HALL.md#at-the-hall)).
 
 - **Levels anywhere.** The original raised levels only at a training hall, for
   1,000 gp. OpenGoldBox raises them from the roster's Advance button anywhere,

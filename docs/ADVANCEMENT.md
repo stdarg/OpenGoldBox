@@ -1,16 +1,19 @@
 # Manual advancement
 
-When a living Fighter, Cleric, Wizard, Rogue, Paladin or Ranger has enough XP, a small **↑** button appears
+When a living character of any class has enough XP, a small **↑** button appears
 beside the character's name in the party roster and idle exploration party list.
 XP alone never changes a level. Click the arrow to preview the next level's HP,
-select supported spells, and choose a feat or ability points at level 4.
+select spells and other choices, and choose a feat or ability points when the
+class gains one.
 **Confirm** applies one level; **Cancel** and closing the dialog change nothing.
 If another level is available, the arrow remains. Advancement is blocked during
 combat and unfinished exploration events.
 
-This increment supports single-class levels 2–4, with thresholds of 300, 900 and
-2,700 total XP. HP uses the fixed average after first level, includes retroactive
-Constitution changes and preserves the existing HP deficit. Each new level adds
+Single-class levels 2–15 are supported, with the SRD's XP thresholds (300 for
+level 2, 900, 2,700, 6,500 and on to 165,000 for level 15). Level 15 is the
+game's cap for every class
+([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). HP uses the
+fixed average after first level, includes retroactive Constitution changes and preserves the existing HP deficit. Each new level adds
 its HP using the previous Constitution modifier (minimum one), then applies any
 new modifier increase once per attained level. Earlier minimum-one gains are
 retained. For example, a Human Wizard starting with Constitution 3 has 2, 3 and
@@ -21,42 +24,32 @@ does not become conscious merely by leveling. No XP is deducted.
 
 ## Available choices
 
-- **Ability points:** at level 4, add two points to one ability or one point to
+- **Ability points:** at levels 4, 8 and 12 (also 6 and 14 for a Fighter and 10
+  for a Rogue), add two points to one ability or one point to
   two abilities, with a maximum score of 20. Scores, modifiers, saves and derived
   combat values are rebuilt together.
   The modifier dialog attributes these points to the level at which Ability
   Score Improvement was acquired, separately from the original background bonus.
-- **Defense:** level-4 Fighter choice; +1 AC while wearing armor.
-- **Savage Attacker:** level-4 choice for a character who does not already have
+- **Defense:** Fighter choice at those levels; +1 AC while wearing armor.
+- **Savage Attacker:** choice at those levels for a character who does not already have
   it from Soldier. Once per turn on a weapon hit, choose whether to roll damage
   twice, then keep either result. Soldier grants the same decisions, including
   opportunity attacks. See [Savage Attacker](SAVAGE-ATTACKER.md).
-- **Cleric:** prepared spells on a second page, earlier ones locked; Blindness
-  from level 3. See [Cleric preparation](CLERIC-PREPARATION.md).
-- **Wizard:** Magic Missile, plus Scorching Ray and Blindness from level 3. Fire Bolt remains
-  available without spending a slot. At least one leveled spell must be selected.
+- **Checkbox pages:** a choice of several picks (Skilled, Metamagic, Eldritch
+  Invocations) has its own page after the first.
+- **Replace:** a class that may swap a cantrip, spell, invocation or Metamagic
+  option on gaining a level does so on the Replace page; see
+  [level swaps](LEVEL-SWAPS.md).
+- **Spells:** the last page. Prepared casters see their prepared spells, earlier
+  ones locked (see [Cleric preparation](CLERIC-PREPARATION.md)); the Wizard's
+  spellbook gains two spells per level (see [Wizard](WIZARD.md)). A spell the
+  game cannot cast yet is disabled.
 
-The spell list is a curated subset, not the complete class preparation or
-spellbook system. Unavailable examples (Bless, Shield and Magic
-Initiate) are disabled and explain their missing mechanics in a tooltip.
-
-Level-one slots are 2/3/4/4 at character levels 1/2/3/4. Level-two slots are 2 at
-level 3 and 3 at level 4. **Slot level** in combat switches between level-one and
-level-two casts for Cure Wounds, Healing Word and Magic Missile. Scorching Ray
-always spends a level-two slot. Blindness also always uses a level-two slot and
-implements only the blindness option of Blindness/Deafness; see
-[status effects](STATUS-EFFECTS.md). Healing Word uses the bonus action and heals
-2d4 plus the casting modifier; its level-two cast heals 4d4. Cure Wounds uses
-2d8/4d8. Magic Missile fires three/four darts. Scorching Ray makes three separate
-ranged spell attacks for 2d6 each. Only one spell slot may be spent per turn.
-
-Magic Missile's darts and Scorching Ray's rays are aimed one click at a time,
-at one foe or several ([SPLIT-1](SRD-DECISIONS.md#split-1-2026-10-13-aiming-darts-and-rays)). Channel Divinity, subclasses other than the Fighter's Champion,
-concentration spells and broader spells/feats remain outside this increment;
-the [README's current status](../README.md#current-status) lists what each class
-has today.
-Progression is planned through level 15, the campaign's cap, and multiclassing
-is deferred ([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)). The dialog states the class/subclass limitation.
+Each class takes the SRD's one subclass for it at level 3. Slots by level and
+casting from higher slots are in [spell slots](SPELL-SLOTS.md); each class's
+features by level are on its page, linked from the
+[README's current status](../README.md#current-status). Multiclassing is deferred
+([SCOPE-1](SRD-DECISIONS.md#scope-1-2026-09-30-level-cap-deferrals-and-rare-situations)).
 
 Rules use the [official SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf),
 including its current Healing Word and Savage Attacker mechanics. Existing pack
@@ -75,7 +68,7 @@ level-one `background:soldier` grant. A level-four selection records
 Savage Attacker. Ability Score Improvement records each chosen ability and amount.
 A source can only spend its entitlement once; nonrepeatable feats cannot be
 acquired twice. Defense requires the recorded Fighting Style feature. ASI is
-repeatable under the SRD, but the current level cap provides only one entitlement.
+repeatable under the SRD, with one entitlement per level that grants it.
 
 Advancement adds only the newly acquired Hit Die, preserving previous dice
 expenditure in the rules continuation; see [rest resources](REST-RESOURCES.md).
@@ -114,7 +107,7 @@ saves use a separate profile under `user-data/level-up-review-profile`.
 Both game and demo advancement checks verify separate background/feat lines in
 the existing modifier dialog and identical text after campaign reconstruction.
 
-Native advancement tests cover all three classes, transactional rejection,
+Native advancement tests cover every class, transactional rejection,
 Constitution HP history (including low scores and odd/even modifier boundaries),
 Defense AC, Savage Attacker damage, spell action
 budgets, second-level resources and campaign/combat save reconstruction.

@@ -17,8 +17,9 @@ system. They are square 1254x1254 PNGs in `art/portraits/`, described in
 
 ## Player portrait representation audit (2026-10-08)
 
-The player catalog has 324 portraits. This audit covers the 288 portraits other
-than Dragonborn: 96 each with Female, Male, and Nonbinary catalog metadata.
+The player catalog had 324 portraits when this audit was made; it now has 972,
+after a second set (2026-10-12) and an action set (2026-10-13), which the audit
+does not cover. It covers the 288 first-set portraits other than Dragonborn: 96 each with Female, Male, and Nonbinary catalog metadata.
 The figures describe **intended real-world ancestry inspiration**, based on the
 recorded generation briefs and a visual review of contact sheets. They do not
 assign an actual ethnicity to a fictional character. The percentages in each
