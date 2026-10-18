@@ -1,22 +1,38 @@
 {
-  "description": "A disciplined goblinoid soldier with a sturdier build and more martial bearing than a goblin. Source inventory: Long sword. Source wealth: 18 cp, 7 gp.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:6 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A human-height hobgoblin with broad shoulders, orange-brown skin, a flat face, sharp teeth, pointed ears, yellow eyes, and dark gray hair tied back. It wears scale mail and can fight with a long sword or short bow.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Long sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 36,
       "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_4159138526",
+      "kind": "gear",
+      "name": "scalemail",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_4182722453",
+      "kind": "weapon",
+      "name": "short bow",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "ranged"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "HOBGOBLIN",
   "source": {
@@ -36,6 +52,15 @@
       "shield_id": "",
       "weapon_id": "item_000",
       "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon1cha_dax_6/added_4182722453__ranged/action.png",
+      "id": "added_4182722453__ranged",
+      "label": "short bow",
+      "ready": "art/mon1cha_dax_6/added_4182722453__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_4182722453",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {
@@ -46,5 +71,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:6 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

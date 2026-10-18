@@ -1,9 +1,5 @@
 {
-  "description": "A kobold commander with a stronger, more deliberate stance than the rank-and-file cave fighters. Source inventory: Short bow, Arrows, Short sword, Shield, Studded armor. Readied: Arrows, Shield, Studded armor. Source wealth: 32 cp, 2 sp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:1 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A kobold leader with more ornate kit than its followers. Its shield bears a clan mark; the short sword and short bow each have their own combat setup over studded armor.",
   "equipment": [
     {
       "id": "item_000",
@@ -16,20 +12,10 @@
       "weapon_role": "ranged"
     },
     {
-      "id": "item_001",
-      "kind": "gear",
-      "name": "Arrows",
-      "readied": true,
-      "source_hands": 0,
-      "source_range": 0,
-      "source_type": 73,
-      "weapon_role": ""
-    },
-    {
       "id": "item_002",
       "kind": "weapon",
       "name": "Short sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 37,
@@ -56,7 +42,7 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "KOBOLD LEADER",
   "preview_fallback_variant": "",
@@ -97,5 +83,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 2
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:1 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

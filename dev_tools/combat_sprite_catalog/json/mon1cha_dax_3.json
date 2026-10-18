@@ -1,9 +1,5 @@
 {
   "description": "A goblin leader with a confident stance and clearer rank distinction than the ordinary guards. Source inventory: Arrows, Long bow, Short sword, Shield, Scale armor. Readied: Arrows, Scale armor. Source wealth: 24 sp.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:3 and matching MONnITM inventory",
-    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
-  ],
   "equipment": [
     {
       "id": "item_000",
@@ -29,7 +25,7 @@
       "id": "item_002",
       "kind": "weapon",
       "name": "Short sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 37,
@@ -39,7 +35,7 @@
       "id": "item_003",
       "kind": "shield",
       "name": "Shield",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 59,
@@ -56,7 +52,7 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "GOBLIN LEADER",
   "preview_fallback_variant": "",
@@ -97,5 +93,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 24
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:3 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
+  ]
 }

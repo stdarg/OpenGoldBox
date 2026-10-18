@@ -1,29 +1,15 @@
 {
-  "description": "A hobgoblin leader directing organized fighters, with a more commanding posture than its troops. Source inventory: Long sword, Arrows, Long bow. Readied: Arrows. Source wealth: 18 cp, 7 gp.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:7 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A broad-shouldered hobgoblin leader with orange-brown skin, a flat face, pointed ears, yellow eyes, and dark hair tied back. Its golden scale mail and clan-marked shield identify its rank; it can switch between long sword and long bow.",
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Long sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 36,
       "weapon_role": "one_hand"
-    },
-    {
-      "id": "item_001",
-      "kind": "gear",
-      "name": "Arrows",
-      "readied": true,
-      "source_hands": 0,
-      "source_range": 0,
-      "source_type": 73,
-      "weapon_role": ""
     },
     {
       "id": "item_002",
@@ -34,9 +20,29 @@
       "source_range": 22,
       "source_type": 43,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_4050213316",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_4113996152",
+      "kind": "gear",
+      "name": "scalemail",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "HOBGOBLIN LDR",
   "preview_fallback_variant": "",
@@ -51,11 +57,11 @@
   },
   "variants": [
     {
-      "action": "art/mon1cha_dax_7/item_000__one_hand/action.png",
-      "id": "item_000__one_hand",
-      "label": "Long sword",
-      "ready": "art/mon1cha_dax_7/item_000__one_hand/ready.png",
-      "shield_id": "",
+      "action": "art/mon1cha_dax_7/item_000__added_4050213316/action.png",
+      "id": "item_000__added_4050213316",
+      "label": "Long sword + Shield",
+      "ready": "art/mon1cha_dax_7/item_000__added_4050213316/ready.png",
+      "shield_id": "added_4050213316",
       "weapon_id": "item_000",
       "weapon_role": "one_hand"
     },
@@ -77,5 +83,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:7 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

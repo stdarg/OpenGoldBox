@@ -1,9 +1,5 @@
 {
-  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Ring Of Protection +3, Two-handed sword +2, Plate armor +2. Source wealth: 5 pp.",
-  "description_sources": [
-    "Original game MON3CHA.DAX:85 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "An experienced eighth-level fighter in enchanted plate armor, wearing a ring of protection and carrying a two-handed sword +2. A healing potion remains stowed with the kit.",
   "equipment": [
     {
       "id": "item_000",
@@ -34,9 +30,19 @@
       "source_range": 0,
       "source_type": 58,
       "weapon_role": ""
+    },
+    {
+      "id": "added_65498918654",
+      "kind": "gear",
+      "name": "potion of healing",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "8TH LVL FIGHTER",
   "preview_fallback_variant": "",
@@ -68,5 +74,9 @@
     "jewelry": 0,
     "platinum": 5,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON3CHA.DAX:85 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

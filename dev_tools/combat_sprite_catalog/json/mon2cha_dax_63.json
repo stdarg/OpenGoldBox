@@ -1,30 +1,49 @@
 {
-  "description": "A hulking, shaggy goblinoid whose long arms and imposing outline should remain clear in the combat icon. The original template records no carried items. Source wealth: 24 cp, 18 sp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:63 and matching MONnITM inventory",
-    "https://www.dndbeyond.com/monsters/16817-bugbear (general creature appearance only)"
+  "description": "A hulking, shaggy goblinoid whose long arms and imposing outline should remain clear in the combat icon. Current catalog equipment: leather armor, battle axe. Source wealth: 24 cp, 18 sp.",
+  "equipment": [
+    {
+      "id": "added_13161527634",
+      "kind": "gear",
+      "name": "leather armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_13171686591",
+      "kind": "weapon",
+      "name": "battle axe",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
+    }
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "BUGBEAR",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC2.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 63,
     "creature_archive": "MON2CHA.DAX",
     "creature_record": 63,
-    "key": "MON2CHA.DAX:63"
+    "key": "MON2CHA.DAX:63",
+    "linked_creature_keys": []
   },
   "variants": [
     {
-      "action": "art/mon2cha_dax_63/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon2cha_dax_63/default/ready.png",
+      "action": "art/mon2cha_dax_63/added_13171686591__two_hand/action.png",
+      "id": "added_13171686591__two_hand",
+      "label": "battle axe",
+      "ready": "art/mon2cha_dax_63/added_13171686591__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_13171686591",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
@@ -35,5 +54,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 18
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:63 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/monsters/16817-bugbear (general creature appearance only)"
+  ]
 }

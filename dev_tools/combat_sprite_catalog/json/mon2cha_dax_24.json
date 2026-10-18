@@ -1,9 +1,5 @@
 {
-  "description": "A magic-user whose casting pose and recorded magical equipment should read clearly at combat scale. Source inventory: Ring Of Protection +2. Source wealth: 20 cp, 15 sp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:24 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A magic-user whose casting pose and recorded magical equipment should read clearly at combat scale. Source inventory: Ring Of Protection +2. Source wealth: 20 cp, 15 sp. Catalog additions: Staff.",
   "equipment": [
     {
       "id": "item_000",
@@ -14,28 +10,40 @@
       "source_range": 0,
       "source_type": 93,
       "weapon_role": ""
+    },
+    {
+      "id": "added_1740375747",
+      "kind": "weapon",
+      "name": "Staff",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "LEVEL 6 MU",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "CPIC3.DAX",
-    "art_basis": "Same ID, different bank (candidate)",
-    "art_record": 24,
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 14,
     "creature_archive": "MON2CHA.DAX",
     "creature_record": 24,
-    "key": "MON2CHA.DAX:24"
+    "key": "MON2CHA.DAX:24",
+    "linked_creature_keys": []
   },
   "variants": [
     {
-      "action": "art/mon2cha_dax_24/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon2cha_dax_24/default/ready.png",
+      "action": "art/mon2cha_dax_24/added_1740375747__two_hand/action.png",
+      "id": "added_1740375747__two_hand",
+      "label": "Staff",
+      "ready": "art/mon2cha_dax_24/added_1740375747__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_1740375747",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
@@ -46,5 +54,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 15
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:24 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

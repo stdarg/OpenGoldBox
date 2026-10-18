@@ -1,15 +1,11 @@
 {
   "description": "A hobgoblin leader directing organized fighters, with a more commanding posture than its troops. Source inventory: Long sword, Arrows, Long bow. Readied: Arrows. Source wealth: 18 cp, 7 gp.",
-  "description_sources": [
-    "Original game MON4CHA.DAX:7 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Long sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 36,
@@ -34,6 +30,16 @@
       "source_range": 22,
       "source_type": 43,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_14290088844",
+      "kind": "gear",
+      "name": "leather armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
     }
   ],
   "flag_for_regeneration": false,
@@ -75,5 +81,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON4CHA.DAX:7 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

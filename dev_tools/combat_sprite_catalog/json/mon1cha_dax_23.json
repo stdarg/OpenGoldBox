@@ -1,9 +1,5 @@
 {
-  "description": "A dangerous humanoid undead figure; use a composed, predatory stance rather than a mindless shuffle. Source inventory: Short bow. Source wealth: no coins, gems, or jewelry recorded.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:23 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A vampire in black with blue highlights on its cape and trousers. Keep the pale face, fangs, and dramatic cape visible while it aims and fires the cataloged short bow.",
   "equipment": [
     {
       "id": "item_000",
@@ -16,7 +12,7 @@
       "weapon_role": "ranged"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "VAMPIRE",
   "preview_fallback_variant": "",
@@ -48,5 +44,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:23 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

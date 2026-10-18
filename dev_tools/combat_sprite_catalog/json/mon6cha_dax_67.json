@@ -1,32 +1,56 @@
 {
-  "description": "A humanoid torso joined to a horse body; show both halves clearly at combat scale. The original template records no carried items. Source wealth: 6 gp, 2 gems.",
-  "description_sources": [
-    "Original game MON6CHA.DAX:67 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  "description": "A humanoid torso joined to a horse body; show both halves clearly at combat scale. Current catalog equipment: long bow, halberd. Source wealth: 6 gp, 2 gems.",
+  "equipment": [
+    {
+      "id": "added_14601162522",
+      "kind": "weapon",
+      "name": "long bow",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "added_14614854085",
+      "kind": "weapon",
+      "name": "halberd",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
+    }
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "CENTAUR",
-  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC6.DAX",
     "art_basis": "Same ID, same bank (candidate)",
     "art_record": 67,
     "creature_archive": "MON6CHA.DAX",
     "creature_record": 67,
-    "key": "MON6CHA.DAX:67",
-    "linked_creature_keys": []
+    "key": "MON6CHA.DAX:67"
   },
   "variants": [
     {
-      "action": "art/mon6cha_dax_67/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon6cha_dax_67/default/ready.png",
+      "action": "art/mon6cha_dax_67/added_14601162522__ranged/action.png",
+      "id": "added_14601162522__ranged",
+      "label": "long bow",
+      "ready": "art/mon6cha_dax_67/added_14601162522__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_14601162522",
+      "weapon_role": "ranged"
+    },
+    {
+      "action": "art/mon6cha_dax_67/added_14614854085__two_hand/action.png",
+      "id": "added_14614854085__two_hand",
+      "label": "halberd",
+      "ready": "art/mon6cha_dax_67/added_14614854085__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_14614854085",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
@@ -37,5 +61,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON6CHA.DAX:67 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

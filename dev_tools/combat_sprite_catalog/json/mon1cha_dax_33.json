@@ -1,15 +1,11 @@
 {
   "description": "A half-orc cleric who leads the cultists and slaves at the Temple of Bane near the wealthy district. Source inventory: Mace +1, Shield, Chain armor. Readied: Shield, Chain armor. Source wealth: no coins, gems, or jewelry recorded.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:33 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 11"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Mace +1",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 23,
@@ -36,16 +32,18 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "MACE",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC1.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 33,
     "creature_archive": "MON1CHA.DAX",
     "creature_record": 33,
-    "key": "MON1CHA.DAX:33"
+    "key": "MON1CHA.DAX:33",
+    "linked_creature_keys": []
   },
   "variants": [
     {
@@ -66,5 +64,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:33 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 11"
+  ]
 }

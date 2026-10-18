@@ -1,43 +1,70 @@
 {
-  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Source inventory: Arrows, Short bow. Source wealth: 12 ep.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:44 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Source inventory: Arrows, Short bow. Source wealth: 12 ep. Catalog additions: short sword, leather armor, shield.",
   "equipment": [
-    {
-      "id": "item_000",
-      "kind": "gear",
-      "name": "Arrows",
-      "readied": true,
-      "source_hands": 0,
-      "source_range": 0,
-      "source_type": 73,
-      "weapon_role": ""
-    },
     {
       "id": "item_001",
       "kind": "weapon",
       "name": "Short bow",
-      "readied": true,
+      "readied": false,
       "source_hands": 2,
       "source_range": 16,
       "source_type": 44,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_12402564125",
+      "kind": "weapon",
+      "name": "short sword",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_12421537762",
+      "kind": "gear",
+      "name": "leather armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_12435671922",
+      "kind": "shield",
+      "name": "shield",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "ORC",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC1.DAX",
-    "art_basis": "Same name alias (weak candidate)",
-    "art_record": 4,
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 5,
     "creature_archive": "MON1CHA.DAX",
     "creature_record": 44,
-    "key": "MON1CHA.DAX:44"
+    "key": "MON1CHA.DAX:44",
+    "linked_creature_keys": []
   },
   "variants": [
+    {
+      "action": "art/mon1cha_dax_44/added_12402564125__added_12435671922/action.png",
+      "id": "added_12402564125__added_12435671922",
+      "label": "short sword + shield",
+      "ready": "art/mon1cha_dax_44/added_12402564125__added_12435671922/ready.png",
+      "shield_id": "added_12435671922",
+      "weapon_id": "added_12402564125",
+      "weapon_role": "one_hand"
+    },
     {
       "action": "art/mon1cha_dax_44/item_001__ranged/action.png",
       "id": "item_001__ranged",
@@ -56,5 +83,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:44 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

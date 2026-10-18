@@ -1,15 +1,11 @@
 {
   "description": "A junior religious servant with a holy symbol and equipment suited to temple duty. Source inventory: Silver Holy Symbol Of Sune, Holy Water vial, Shield, Mace, Chain armor. Readied: Shield, Mace, Chain armor. Source wealth: 4 sp.",
-  "description_sources": [
-    "Original game MON3CHA.DAX:108 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
       "name": "Silver Holy Symbol Of Sune",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 71,
@@ -56,7 +52,7 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "ACOLYTE",
   "preview_fallback_variant": "",
@@ -88,5 +84,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 4
-  }
+  },
+  "description_sources": [
+    "Original game MON3CHA.DAX:108 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

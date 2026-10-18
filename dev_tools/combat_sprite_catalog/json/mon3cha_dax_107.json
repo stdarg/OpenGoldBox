@@ -1,15 +1,11 @@
 {
   "description": "A cleric of Tyr sent to help cleanse the Temple of Bane; he remains to rebuild it afterward. Source inventory: Wooden Holy Symbol, Mace, Chain armor. Readied: Chain armor. Source wealth: 20 cp.",
-  "description_sources": [
-    "Original game MON3CHA.DAX:107 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 11"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "gear",
       "name": "Wooden Holy Symbol",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 71,
@@ -19,7 +15,7 @@
       "id": "item_001",
       "kind": "weapon",
       "name": "Mace",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 23,
@@ -36,16 +32,18 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "DIRTEN",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "MON3CHA.DAX",
     "art_basis": "MON character components (candidate)",
     "art_record": 107,
     "creature_archive": "MON3CHA.DAX",
     "creature_record": 107,
-    "key": "MON3CHA.DAX:107"
+    "key": "MON3CHA.DAX:107",
+    "linked_creature_keys": []
   },
   "variants": [
     {
@@ -66,5 +64,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON3CHA.DAX:107 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 11"
+  ]
 }

@@ -1,5 +1,5 @@
 {
-  "description": "A cleric of Tyr sent to help cleanse the Temple of Bane; he remains to rebuild it afterward. Source inventory: Wooden Holy Symbol, Mace, Chain armor. Readied: Chain armor. Source wealth: 20 cp.",
+  "description": "Dirten is an experienced 5th level human Cleric, with a mace, chain armor and wearing a holy symbol of his god, Tyr.",
   "description_sources": [
     "Original game MON1CHA.DAX:107 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 11"
@@ -9,7 +9,7 @@
       "id": "item_000",
       "kind": "gear",
       "name": "Wooden Holy Symbol",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 71,
@@ -19,7 +19,7 @@
       "id": "item_001",
       "kind": "weapon",
       "name": "Mace",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 23,

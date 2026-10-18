@@ -1,11 +1,28 @@
 {
-  "description": "The troubled man found in a corner of Mendor’s Library; the Cluebook advises speaking with him. The original template records no carried items. Source wealth: 2 sp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:25 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 8"
+  "description": "The troubled man found in a corner of Mendor’s Library; the Cluebook advises speaking with him. Current catalog equipment: Great sword, scale armor. Source wealth: 2 sp.",
+  "equipment": [
+    {
+      "id": "added_1868544393",
+      "kind": "weapon",
+      "name": "Great sword",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "added_1881895503",
+      "kind": "gear",
+      "name": "scale armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "MAD MAN",
   "preview_fallback_variant": "",
@@ -20,13 +37,13 @@
   },
   "variants": [
     {
-      "action": "art/mon2cha_dax_25/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon2cha_dax_25/default/ready.png",
+      "action": "art/mon2cha_dax_25/added_1868544393__two_hand/action.png",
+      "id": "added_1868544393__two_hand",
+      "label": "Great sword",
+      "ready": "art/mon2cha_dax_25/added_1868544393__two_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_1868544393",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
@@ -37,5 +54,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 2
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:25 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 8"
+  ]
 }

@@ -1,30 +1,78 @@
 {
-  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. The original template records no carried items. Source wealth: 24 sp.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:4 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Current catalog equipment: longsword, shield, short bow, leather armor. Source wealth: 24 sp.",
+  "equipment": [
+    {
+      "id": "added_50856018",
+      "kind": "weapon",
+      "name": "longsword",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_88447737",
+      "kind": "shield",
+      "name": "shield",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_115155972",
+      "kind": "weapon",
+      "name": "short bow",
+      "readied": false,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "added_193807083",
+      "kind": "gear",
+      "name": "leather armor",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "ORC",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC1.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 4,
     "creature_archive": "MON1CHA.DAX",
     "creature_record": 4,
-    "key": "MON1CHA.DAX:4"
+    "key": "MON1CHA.DAX:4",
+    "linked_creature_keys": []
   },
   "variants": [
     {
-      "action": "art/mon1cha_dax_4/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon1cha_dax_4/default/ready.png",
+      "action": "art/mon1cha_dax_4/added_50856018__added_88447737/action.png",
+      "id": "added_50856018__added_88447737",
+      "label": "longsword + shield",
+      "ready": "art/mon1cha_dax_4/added_50856018__added_88447737/ready.png",
+      "shield_id": "added_88447737",
+      "weapon_id": "added_50856018",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon1cha_dax_4/added_115155972__ranged/action.png",
+      "id": "added_115155972__ranged",
+      "label": "short bow",
+      "ready": "art/mon1cha_dax_4/added_115155972__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_115155972",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {
@@ -35,5 +83,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 24
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:4 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

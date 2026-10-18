@@ -1,11 +1,18 @@
 {
-  "description": "A large, heavy-limbed brute whose reach and size dominate its combat silhouette. The original template records no carried items. Source wealth: 5 gp.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:8 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  "description": "An enormous, thick-limbed ogre with a crude club. Keep its chest partly visible as it raises the club to strike, then show the heavy blow near the end of its downward arc.",
+  "equipment": [
+    {
+      "id": "added_4277717173",
+      "kind": "weapon",
+      "name": "club",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    }
   ],
-  "equipment": [],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "OGRE",
   "source": {
@@ -18,13 +25,13 @@
   },
   "variants": [
     {
-      "action": "art/mon1cha_dax_8/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon1cha_dax_8/default/ready.png",
+      "action": "art/mon1cha_dax_8/added_4277717173__one_hand/action.png",
+      "id": "added_4277717173__one_hand",
+      "label": "club",
+      "ready": "art/mon1cha_dax_8/added_4277717173__one_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_4277717173",
+      "weapon_role": "one_hand"
     }
   ],
   "wealth": {
@@ -35,5 +42,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:8 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

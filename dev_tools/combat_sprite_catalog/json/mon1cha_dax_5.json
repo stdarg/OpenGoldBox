@@ -1,15 +1,11 @@
 {
   "description": "An orc commander whose bearing and equipment distinguish this template from common orcs. Source inventory: Battle axe, Chain armor, Arrows, Long bow. Readied: Chain armor, Arrows. Source wealth: 4 sp, 20 ep.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:5 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Battle axe",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 1,
@@ -46,16 +42,18 @@
       "weapon_role": "ranged"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "ORC LEADER",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC1.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 5,
     "creature_archive": "MON1CHA.DAX",
     "creature_record": 5,
-    "key": "MON1CHA.DAX:5"
+    "key": "MON1CHA.DAX:5",
+    "linked_creature_keys": []
   },
   "variants": [
     {
@@ -85,5 +83,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 4
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:5 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

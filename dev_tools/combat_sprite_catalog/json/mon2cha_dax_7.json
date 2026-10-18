@@ -1,15 +1,11 @@
 {
   "description": "A hobgoblin leader directing organized fighters, with a more commanding posture than its troops. Source inventory: Long sword, Arrows, Long bow. Readied: Arrows. Source wealth: 18 cp, 7 gp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:7 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Long sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 36,
@@ -29,23 +25,25 @@
       "id": "item_002",
       "kind": "weapon",
       "name": "Long bow",
-      "readied": false,
+      "readied": true,
       "source_hands": 2,
       "source_range": 22,
       "source_type": 43,
       "weapon_role": "ranged"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "HOBGOBLIN LDR",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC2.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 7,
     "creature_archive": "MON2CHA.DAX",
     "creature_record": 7,
-    "key": "MON2CHA.DAX:7"
+    "key": "MON2CHA.DAX:7",
+    "linked_creature_keys": []
   },
   "variants": [
     {
@@ -75,5 +73,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:7 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

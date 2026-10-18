@@ -1,9 +1,5 @@
 {
-  "description": "A larger ogre commander encountered among the troops at the Cadorna Textile House. Source inventory: Arrows, Long bow. Source wealth: 7 gp.",
-  "description_sources": [
-    "Original game MON1CHA.DAX:9 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 10"
-  ],
+  "description": "An imposing ogre leader wearing a blue helmet and carrying a crude halberd or long bow. The halberd is held high and aimed forward in ready, then follows through near the end of a forceful strike.",
   "equipment": [
     {
       "id": "item_000",
@@ -24,20 +20,28 @@
       "source_range": 22,
       "source_type": 43,
       "weapon_role": "ranged"
+    },
+    {
+      "id": "added_4389207748",
+      "kind": "weapon",
+      "name": "Halberd",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "OGRE LEADER",
-  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC1.DAX",
     "art_basis": "Same ID, same bank (candidate)",
     "art_record": 9,
     "creature_archive": "MON1CHA.DAX",
     "creature_record": 9,
-    "key": "MON1CHA.DAX:9",
-    "linked_creature_keys": []
+    "key": "MON1CHA.DAX:9"
   },
   "variants": [
     {
@@ -48,6 +52,15 @@
       "shield_id": "",
       "weapon_id": "item_001",
       "weapon_role": "ranged"
+    },
+    {
+      "action": "art/mon1cha_dax_9/added_4389207748__two_hand/action.png",
+      "id": "added_4389207748__two_hand",
+      "label": "Halberd",
+      "ready": "art/mon1cha_dax_9/added_4389207748__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_4389207748",
+      "weapon_role": "two_hand"
     }
   ],
   "wealth": {
@@ -58,5 +71,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  }
+  },
+  "description_sources": [
+    "Original game MON1CHA.DAX:9 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 10"
+  ]
 }

@@ -1,19 +1,15 @@
 {
-  "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:55 and matching MONnITM inventory",
-    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
-  ],
+  "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp. Catalog additions: Club.",
   "equipment": [
     {
       "id": "item_000",
-      "kind": "gear",
+      "kind": "weapon",
       "name": "Boulder",
       "readied": false,
       "source_hands": 2,
       "source_range": 10,
       "source_type": 87,
-      "weapon_role": ""
+      "weapon_role": "ranged"
     },
     {
       "id": "item_001",
@@ -24,28 +20,49 @@
       "source_range": 10,
       "source_type": 87,
       "weapon_role": ""
+    },
+    {
+      "id": "added_2059869076",
+      "kind": "weapon",
+      "name": "Club",
+      "readied": true,
+      "source_hands": -1,
+      "source_range": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "HILL GIANT",
+  "preview_fallback_variant": "",
   "source": {
     "art_archive": "CPIC2.DAX",
-    "art_basis": "Same ID, same bank (candidate)",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
     "art_record": 55,
     "creature_archive": "MON2CHA.DAX",
     "creature_record": 55,
-    "key": "MON2CHA.DAX:55"
+    "key": "MON2CHA.DAX:55",
+    "linked_creature_keys": []
   },
   "variants": [
     {
-      "action": "art/mon2cha_dax_55/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon2cha_dax_55/default/ready.png",
+      "action": "art/mon2cha_dax_55/added_2059869076__one_hand/action.png",
+      "id": "added_2059869076__one_hand",
+      "label": "Club",
+      "ready": "art/mon2cha_dax_55/added_2059869076__one_hand/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "added_2059869076",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon2cha_dax_55/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Boulder",
+      "ready": "art/mon2cha_dax_55/item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {
@@ -56,5 +73,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 4
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:55 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ]
 }

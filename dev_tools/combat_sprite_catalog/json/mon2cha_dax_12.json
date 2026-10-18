@@ -1,15 +1,11 @@
 {
   "description": "A goblin leader with a confident stance and clearer rank distinction than the ordinary guards. Source inventory: Short sword, Shield, Leather armor +1. Readied: Shield, Leather armor +1. Source wealth: 24 sp.",
-  "description_sources": [
-    "Original game MON2CHA.DAX:12 and matching MONnITM inventory",
-    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
-  ],
   "equipment": [
     {
       "id": "item_000",
       "kind": "weapon",
       "name": "Short sword",
-      "readied": false,
+      "readied": true,
       "source_hands": 1,
       "source_range": 0,
       "source_type": 37,
@@ -36,16 +32,18 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": false,
+  "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
   "name": "GOBLIN LEADER",
+  "preview_fallback_variant": "",
   "source": {
-    "art_archive": "CPIC3.DAX",
-    "art_basis": "Same ID, different bank (candidate)",
-    "art_record": 12,
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "ECL LOAD MONSTER icon (1 script candidate)",
+    "art_record": 3,
     "creature_archive": "MON2CHA.DAX",
     "creature_record": 12,
-    "key": "MON2CHA.DAX:12"
+    "key": "MON2CHA.DAX:12",
+    "linked_creature_keys": []
   },
   "variants": [
     {
@@ -66,5 +64,9 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 24
-  }
+  },
+  "description_sources": [
+    "Original game MON2CHA.DAX:12 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
+  ]
 }
