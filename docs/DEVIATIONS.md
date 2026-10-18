@@ -43,6 +43,10 @@ Add an entry whenever a new departure is decided.
   becomes the SRD's Flame Tongue with its +2 kept: a Bonus Action lights the
   blade for an extra 2d6 Fire damage, and it needs attunement.
   [MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor).
+- **Cursed items** (2026-10-18). In the original, Remove Curse let a character
+  put down a cursed object. OpenGoldBox has no way to drop items, so Remove
+  Curse ends the item's curse for good: the Broad Sword -2 stays a -2 weapon
+  that can be unequipped. [MAGIC_ITEMS.md](MAGIC_ITEMS.md#in-opengoldbox).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.
