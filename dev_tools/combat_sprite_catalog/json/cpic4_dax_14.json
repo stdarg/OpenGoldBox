@@ -1,5 +1,8 @@
 {
   "description": "Shared spellcaster artwork used by named NPCs and generic magic users. Identical originals: CPIC2.DAX:14, CPIC3.DAX:14, CPIC5.DAX:14, CPIC6.DAX:14, CPIC7.DAX:14. Known users of this art: 5TH LVL MU, AL-HYAM DAZID, ENVOY, GENHEERIS, LEVEL 3 MU, LEVEL 6 MU, SHAMAN, YARASH. No direct script reference found for this archive copy.",
+  "description_sources": [
+    "Decoded ECL art links and original CPIC ready/action records"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -43,5 +46,6 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {}
 }

@@ -1,0 +1,52 @@
+{
+  "description": "A dangerous humanoid undead figure; use a composed, predatory stance rather than a mindless shuffle. Source inventory: Short bow. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON1CHA.DAX:23 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Short bow",
+      "readied": false,
+      "source_hands": 2,
+      "source_range": 16,
+      "source_type": 44,
+      "weapon_role": "ranged"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "VAMPIRE",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, different bank (candidate)",
+    "art_record": 23,
+    "creature_archive": "MON1CHA.DAX",
+    "creature_record": 23,
+    "key": "MON1CHA.DAX:23",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon1cha_dax_23/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Short bow",
+      "ready": "art/mon1cha_dax_23/item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

@@ -1,5 +1,9 @@
 {
-  "description": "GNOLL. Gear: none recorded.",
+  "description": "A hyena-headed humanoid raider with a hunched, alert outline and a powerful bite. The original template records no carried items. Source wealth: 12 ep, 8 gp.",
+  "description_sources": [
+    "Original game MON2CHA.DAX:73 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -22,5 +26,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 12,
+    "gems": 0,
+    "gold": 8,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

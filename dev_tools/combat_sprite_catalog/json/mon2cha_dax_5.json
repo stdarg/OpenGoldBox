@@ -1,5 +1,9 @@
 {
-  "description": "ORC LEADER. Gear: Battle axe, Chain armor, Arrows, Long bow.",
+  "description": "An orc commander whose bearing and equipment distinguish this template from common orcs. Source inventory: Battle axe, Chain armor, Arrows, Long bow. Readied: Chain armor, Arrows. Source wealth: 4 sp, 20 ep.",
+  "description_sources": [
+    "Original game MON2CHA.DAX:5 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -72,5 +76,14 @@
       "weapon_id": "item_003",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 20,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 4
+  }
 }

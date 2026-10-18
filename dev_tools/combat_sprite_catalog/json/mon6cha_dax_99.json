@@ -1,5 +1,9 @@
 {
-  "description": "BUCCANEER. Gear: none recorded.",
+  "description": "A rough coastal raider associated with the Buccaneers Base; keep the stance ready for close combat. The original template records no carried items. Source wealth: 5 cp.",
+  "description_sources": [
+    "Original game MON6CHA.DAX:99 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 21"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -24,5 +28,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 5,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

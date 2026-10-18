@@ -1,5 +1,9 @@
 {
-  "description": "CAPTAIN. Gear: Shield +2, Long sword +4, Plate armor +3, Quarrel, Light crossbow.",
+  "description": "A senior officer with an unmistakably commanding stance and a heavily enchanted martial loadout. Source inventory: Shield +2, Long sword +4, Plate armor +3, Quarrel, Light crossbow. Readied: Shield +2, Long sword +4, Plate armor +3, Quarrel. Source wealth: 18 gp, 6 pp.",
+  "description_sources": [
+    "Original game MON6CHA.DAX:102 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -84,5 +88,14 @@
       "weapon_id": "item_004",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 18,
+    "jewelry": 0,
+    "platinum": 6,
+    "silver": 0
+  }
 }

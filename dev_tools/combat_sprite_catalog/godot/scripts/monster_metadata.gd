@@ -60,6 +60,13 @@ static func _gear_summary(equipment: Array) -> String:
     return ", ".join(parts) if not parts.is_empty() else "none"
 
 
+static func _wealth_values(value: Dictionary) -> Dictionary:
+    var result := {}
+    for coin in ["copper", "silver", "electrum", "gold", "platinum", "gems", "jewelry"]:
+        if value.has(coin): result[coin] = int(value[coin])
+    return result
+
+
 static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
     var equipment: Array = []
     for index in range(row.equipment.size()):
@@ -88,6 +95,7 @@ static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
             "linked_creature_keys": row.get("linked_keys", []),
         },
         "description": str(row.get("art_description", "")),
+        "wealth": _wealth_values(row.get("wealth", {})),
         "flag_for_regeneration": false,
         "preview_fallback_variant": "",
         "equipment": equipment,
@@ -218,6 +226,10 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
     if parsed.name.is_empty(): parsed.name = str(row.name)
     if row.has("linked_name") and parsed.equipment.is_empty() and not row.equipment.is_empty():
         parsed.equipment = new_record(row, art).equipment
+    # Original wealth is authoritative; copied monsters retain their independent
+    # snapshot because they have no MON character record to reload.
+    parsed["wealth"] = _wealth_values(parsed.get("wealth", {}) if str(row.key).begins_with("CUSTOM:") \
+            else row.get("wealth", {}))
     if not str(row.key).begins_with("CUSTOM:"):
         parsed["source"] = new_record(row, art).source
     parsed["description"] = str(parsed.get("description", ""))
@@ -251,7 +263,8 @@ static func list_custom_rows(root: String = "") -> Array:
         result.append({"key":key,"name":str(parsed.get("name", "Unnamed copy")),
             "archive":str(source.get("creature_archive", "")),
             "record":int(source.get("creature_record", -1)),"npc":false,
-            "equipment":[],"art_basis":str(source.get("art_basis", "Copied monster art")),
+            "equipment":[],"wealth":_wealth_values(parsed.get("wealth", {})),
+            "art_basis":str(source.get("art_basis", "Copied monster art")),
             "origin_key":str(source.get("origin_key", "")),"native_index":-1})
     result.sort_custom(func(a: Dictionary, b: Dictionary): return str(a.name) < str(b.name))
     return result

@@ -1,0 +1,41 @@
+{
+  "description": "A crouched undead predator with grasping hands and a low, hungry stance. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON8CHA.DAX:72 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "GHOUL",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC4.DAX",
+    "art_basis": "Same ID, different bank (candidate)",
+    "art_record": 72,
+    "creature_archive": "MON8CHA.DAX",
+    "creature_record": 72,
+    "key": "MON8CHA.DAX:72",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon8cha_dax_72/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon8cha_dax_72/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

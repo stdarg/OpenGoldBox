@@ -1,5 +1,9 @@
 {
-  "description": "KOBOLD LEADER. Gear: Short bow, Arrows, Short sword, Shield, Studded armor.",
+  "description": "A kobold commander with a stronger, more deliberate stance than the rank-and-file cave fighters. Source inventory: Short bow, Arrows, Short sword, Shield, Studded armor. Readied: Arrows, Shield, Studded armor. Source wealth: 32 cp, 2 sp.",
+  "description_sources": [
+    "Original game MON8CHA.DAX:1 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -82,5 +86,14 @@
       "weapon_id": "item_000",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 32,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 2
+  }
 }

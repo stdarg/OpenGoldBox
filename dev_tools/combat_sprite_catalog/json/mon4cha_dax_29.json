@@ -1,5 +1,9 @@
 {
-  "description": "JUJU ZOMBIE. Gear: Short bow.",
+  "description": "A juju zombie with a more alert, controlled stance than a shambling ordinary zombie. Source inventory: Short bow. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON4CHA.DAX:29 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -35,5 +39,14 @@
       "weapon_id": "item_000",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

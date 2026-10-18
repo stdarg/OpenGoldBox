@@ -1,5 +1,9 @@
 {
-  "description": "DRYTHH. Gear: none recorded.",
+  "description": "A named combatant in the original monster archive; preserve its distinct identity and source art. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON8CHA.DAX:95 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [],
   "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
@@ -24,5 +28,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

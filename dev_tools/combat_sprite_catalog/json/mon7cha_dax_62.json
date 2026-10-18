@@ -1,0 +1,41 @@
+{
+  "description": "A bull-headed humanoid with horns, a heavy torso, and a forceful charging posture. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON7CHA.DAX:62 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "MINOTAUR",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC7.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 62,
+    "creature_archive": "MON7CHA.DAX",
+    "creature_record": 62,
+    "key": "MON7CHA.DAX:62",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon7cha_dax_62/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon7cha_dax_62/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

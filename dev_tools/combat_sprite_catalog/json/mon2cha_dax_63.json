@@ -1,5 +1,9 @@
 {
-  "description": "BUGBEAR. Gear: none recorded.",
+  "description": "A hulking, shaggy goblinoid whose long arms and imposing outline should remain clear in the combat icon. The original template records no carried items. Source wealth: 24 cp, 18 sp.",
+  "description_sources": [
+    "Original game MON2CHA.DAX:63 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/monsters/16817-bugbear (general creature appearance only)"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -22,5 +26,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 24,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 18
+  }
 }

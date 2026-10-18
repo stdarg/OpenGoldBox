@@ -1,5 +1,9 @@
 {
-  "description": "AL-HYAM DAZID. Gear: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3.",
+  "description": "A named magic-user protected by enchanted bracers and a ring against fire. Source inventory: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3. Source wealth: 15 gp.",
+  "description_sources": [
+    "Original game MON6CHA.DAX:86 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -55,5 +59,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 15,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

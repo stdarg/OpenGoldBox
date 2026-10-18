@@ -1,5 +1,9 @@
 {
-  "description": "HOBGOBLIN LDR. Gear: Long sword, Arrows, Long bow.",
+  "description": "A hobgoblin leader directing organized fighters, with a more commanding posture than its troops. Source inventory: Long sword, Arrows, Long bow. Readied: Arrows. Source wealth: 18 cp, 7 gp.",
+  "description_sources": [
+    "Original game MON4CHA.DAX:7 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -62,5 +66,14 @@
       "weapon_id": "item_002",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 18,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 7,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

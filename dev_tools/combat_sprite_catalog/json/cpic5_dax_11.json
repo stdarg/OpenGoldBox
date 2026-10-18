@@ -1,5 +1,8 @@
 {
   "description": "Shared combat icon used by 4TH LVL FIGHTER, 6TH LVL FIGHTER, 6TH LVL FIGHTER, 8TH LVL FIGHTER, TYRANITHRAXUS. Gear depends on the creature; see its named record.",
+  "description_sources": [
+    "Decoded ECL art links and original CPIC ready/action records"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -29,5 +32,6 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {}
 }
