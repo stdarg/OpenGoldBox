@@ -2,6 +2,9 @@ POSE TO GENERATE: ACTION only.
 Apply the ACTION rule for the selected weapon from the specification above.
 For melee, near the END of the swing or thrust, not a windup. For projectile
 weapons, just AFTER release, with no projectile remaining loaded. Keep any shield.
+Preserve the ready figure's head, torso and limb sizes. Do not shrink the
+character to fit the attack; if it needs more room, the pair needs a smaller
+COMMON scale established from this wider pose.
 Reference 1: approved original pose guide, for facing and action-pose mechanics.
 Reference 2: the visually approved NEW ready sprite for THIS weapon set.
 Keep its identity, colors, clothes, equipment, handedness, camera, scale and foot

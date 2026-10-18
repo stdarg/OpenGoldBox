@@ -111,10 +111,14 @@ equipment list requires a fresh packet and review before acceptance.
 4. Generate **action** with the complete action prompt, attaching the guide and
    this set's approved new ready sprite. Inspect for a late strike/just-released
    projectile and the same identity, facing, gear and ground alignment.
-5. Export to `ready.png` and `action.png` in the staging directory. Use
-   nearest-neighbor sampling if reducing larger working images; preserve alpha.
-   Use the same canvas/scale transform for the pair and related weapon sets.
-   Do not independently crop/fit each pose to its visible bounds.
+5. Before export, compare the full silhouettes and the body landmarks in both
+   working images. Set the common scale from whichever pose occupies more space,
+   then place both poses on the same canvas with transparent margins. Keep the
+   head and torso the same apparent size and align the feet to the same baseline.
+   If one generated figure is intrinsically smaller, regenerate that frame; a
+   shared export transform cannot fix mismatched character proportions. Export
+   `ready.png` and `action.png` with nearest-neighbor sampling and preserved
+   alpha. Never crop or fit the two poses independently to their visible bounds.
 6. Save any added attack-specific prompt text in the prompt files. Inspect the
    final 128 x 128 exports, not only the larger working images. Reject defects
    and regenerate the failing frame. Regenerating ready also requires rechecking

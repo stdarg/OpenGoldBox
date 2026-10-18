@@ -53,6 +53,15 @@ and foot baseline when generating action. For another weapon set, also reference
 this monster's first approved NEW ready sprite to retain identity. Reference
 images must be supplied with the request, not merely named in its text.
 
+SHARED FRAME BUDGET: Plan BOTH poses before drawing either one. Identify the
+pose with the widest or tallest full-body-and-weapon silhouette, reserve a
+transparent margin around that larger pose, and use its camera distance for
+both images. The character's head, torso, limbs and equipment keep the same
+apparent pixel scale in ready and action. Do not shrink the whole action figure
+to fit a wider attack, and do not enlarge the ready figure to fill spare space.
+Change the pose within the shared canvas; if the attack cannot fit at the
+chosen body scale, remake the pair at a smaller common scale.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep body and equipment entirely inside the frame with
