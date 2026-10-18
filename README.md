@@ -13,14 +13,14 @@ original game data and assets while adding a cleaner UI, improved rendering,
 and modern quality-of-life features.
 
 The current implementation targets **Pool of Radiance**. The game plays New
-Phlan and the Slums; the full campaign is not yet playable. The engine uses
-C++20 with Godot 4.x presentation and a shared GDExtension. Combat uses a bounded,
-replaceable **SRD 5.2.1** rules module. Original game files must come from your
+Phlan, the Slums and Kuto's Well; the full campaign is not yet playable. The
+engine uses C++20 with Godot 4.x presentation and a shared GDExtension. Combat
+uses a bounded, replaceable **SRD 5.2.1** rules module. Original game files must come from your
 own installation and are decoded at runtime; they are not bundled.
 
 ## Current status
 
-As of 2026-10-02. Each linked document holds the detail and its own evidence;
+As of 2026-10-18. Each linked document holds the detail and its own evidence;
 this section only summarizes.
 
 ### Play the game
@@ -30,13 +30,12 @@ character creation and needs your Pool of Radiance installation (the game asks
 for the folder on first run, or set `OPENGOLD_GAME_DIR`).
 
 - Windows (PowerShell): `.\build-opengoldbox.cmd`, then `.\win-package\opengoldbox.exe`.
-- macOS (bash): `cmake --preset macos-universal`, `cmake --build --preset macos-universal`,
-  then `open mac-package/OpenGoldBox.app`.
+- macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
+  builds the game and re-exports the app without running tests.
 
-On 2026-10-02 (commit f43127d, macOS) the two macOS build commands above
-succeeded, and with original files `ctest --preset default` passed 53 checks and
-`ctest --preset macos-universal` passed 84. The Windows commands were not run for
-this summary.
+The last full test run was on 2026-10-16 (commit 5b5c199b, macOS, with original
+files): all 226 native and Godot checks passed. The Windows commands were not
+run for this summary.
 
 See [building the game and each demo](docs/BUILD.md). The scenes under
 [`demos/`](demos/README.md) are frozen references, described under
@@ -44,65 +43,93 @@ See [building the game and each demo](docs/BUILD.md). The scenes under
 
 ### What you can do
 
-- **Party:** create level-one characters (nine species, twelve classes, four
-  backgrounds) or choose from a 48-character pool; up to six PCs and two NPCs.
-  See [character creation](docs/CHARACTER-CREATION.md) and [party](docs/PARTY.md).
+- **Party:** create level-one characters (nine species with their lineage and
+  ancestry choices, twelve classes, four backgrounds) with 972 portraits to
+  choose from, or pick from a 48-character pool; up to six PCs and two NPCs.
+  Every new character brings 3d6 × 10 gp, and the party shares one purse. See
+  [character creation](docs/CHARACTER-CREATION.md) and [party](docs/PARTY.md).
 - **New Phlan:** Rolf's tour, then the civilized town with its original
-  dialogue, shops, inn rest, temple healing and street camping. Every armor the
-  shops sell converts to SRD equipment; stock that cannot be equipped is marked
-  before purchase. See [New Phlan](docs/PHLAN.md) and [recovery](docs/RECOVERY.md).
-- **Slums:** leave by the west gate and meet the original roaming and scripted
-  encounters. Monsters are SRD stat blocks, and encounters are sized to an XP
-  budget set by `encounter_challenge`. Fights use the original battlefield
-  geometry and award original loot and XP; locked doors can be bashed or
-  picked, and camping can be interrupted. See [the expedition](docs/EXPEDITION.md).
+  dialogue, shops, inn rest, temple healing, street camping and four training
+  halls. Every armor the shops sell converts to SRD equipment; stock that cannot
+  be equipped is marked before purchase. See [New Phlan](docs/PHLAN.md),
+  [recovery](docs/RECOVERY.md) and [training halls](docs/TRAINING-HALL.md).
+- **Slums and Kuto's Well:** leave by the west gate and meet the original
+  roaming and scripted encounters, then go on into Kuto's Well, its catacombs'
+  arrow volleys and Norris the Gray's band. Monsters are SRD stat blocks, and
+  encounters are sized to an XP budget set by `encounter_challenge`. Fights use
+  the original battlefield geometry and award original loot and XP; locked
+  doors can be bashed or picked, and camping can be interrupted. See
+  [the expedition](docs/EXPEDITION.md).
+- **Combat:** the original's placement, monster morale, parley through a party
+  leader, Quick combat, and fleeing off the battlefield's edge (or with the
+  **Flee** button). Trolls get back up unless fire or acid finishes them;
+  Torches, Acid, Alchemist's Fire and Oil can be used in a fight. See
+  [rules](docs/RULES.md).
 - **Quest:** Ohlo's potion delivery can be completed from acceptance to reward.
   See [quests](docs/QUESTS.md).
-- **Advancement:** manual level-up to level 4 for Fighters, Clerics, Wizards,
-  Rogues, Paladins and Rangers. See [advancement](docs/ADVANCEMENT.md).
-- **Saves:** named campaign slots from the party roster and idle exploration in
-  New Phlan or the Slums; not during combat or an unfinished event. Older
-  pre-release saves are refused. See [saves](docs/SAVES.md).
+- **Advancement:** every class levels up to 15 from the roster's Advance
+  button, with its SRD subclass. Training halls sell experience sessions and
+  skill lessons. See [advancement](docs/ADVANCEMENT.md),
+  [levels 5–10](docs/LEVELS-5-10.md) and [training halls](docs/TRAINING-HALL.md).
+- **Magic items:** enchanted weapons, ammunition, armor and shields keep their
+  bonus; the Flame Tongue needs attunement and lights for 2d6 Fire; the cursed
+  Broad Sword binds its wielder until Remove Curse. See
+  [magic items](docs/MAGIC_ITEMS.md#in-opengoldbox).
+- **Saves:** named campaign slots from the party roster and idle exploration;
+  not during combat or an unfinished event. Older pre-release saves are
+  refused. See [saves](docs/SAVES.md).
 - Fog of war on the overhead map, timed status effects and saving throws, and
   English or Spanish text.
 
-| Class | Levels | Class features in play |
+| Class | Subclass | Detail |
 | --- | --- | --- |
-| Fighter | 1–4 | Fighting Style, Second Wind, Weapon Mastery, Action Surge, Tactical Mind, Champion, Ability Score Improvement or feat |
-| Cleric | 1–4 | Resistance, Sacred Flame, Spare the Dying; prepared Bane, Bless, Command, Cure Wounds, Guiding Bolt, Healing Word, Hold Person, Inflict Wounds, Prayer of Healing, Sanctuary, Silence, Spiritual Weapon, Warding Bond, Protection from Poison, Protection from Evil and Good, Shield of Faith and Blindness; Divine Order; Channel Divinity (Divine Spark, Turn Undead); Life Domain (Disciple of Life, Preserve Life, Aid, Lesser Restoration); Ability Score Improvement or feat; see [Cleric](docs/CLERIC.md) |
-| Wizard | 1–4 | Five cantrips; spellbook and preparation (Magic Missile, Fog Cloud, Longstrider, Protection from Evil and Good, Scorching Ray, Blindness, Hold Person, Burning Hands, Thunderwave, Shatter, Mage Armor, False Life, Expeditious Retreat, Ray of Sickness, Ice Knife, Chromatic Orb so far; Acid Splash cantrip); Arcane Recovery; Scholar; Evoker (Potent Cantrip, Sculpt Spells); Ability Score Improvement or feat; see [Wizard](docs/WIZARD.md) |
-| Rogue | 1–4 | Expertise, Sneak Attack, Weapon Mastery, Cunning Action (Dash, Disengage), Steady Aim, Ability Score Improvement or feat. No Hide or subclass |
-| Paladin | 1–4 | Spellcasting (Charisma; Bless, Command, Cure Wounds, Divine Favor, Divine Smite, Heroism, Protection from Evil and Good, Searing Smite, Shield of Faith so far), Lay On Hands (in combat and camp), Paladin's Smite, Weapon Mastery, Fighting Style or Blessed Warrior, Channel Divinity with Sacred Weapon (Oath of Devotion), Ability Score Improvement or feat. Other features in progress; see [Paladin](docs/PALADIN.md) |
-| Ranger | 1–4 | Spellcasting (Wisdom; Cure Wounds, Ensnaring Strike, Entangle, Fog Cloud, Goodberry, Hunter's Mark, Longstrider), Favored Enemy, Weapon Mastery, Fighting Style or Druidic Warrior, the Hunter (Hunter's Lore, Colossus Slayer or Horde Breaker), Ability Score Improvement or feat. Other features in progress; see [Ranger](docs/RANGER.md) |
-| Sorcerer, Warlock | 1 | Starting cantrips |
-| Barbarian, Bard, Druid, Monk | 1 | Weapon attacks; Unarmored Defense (Barbarian, Monk); Weapon Mastery (Barbarian) |
+| Barbarian | Path of the Berserker | [Barbarian](docs/BARBARIAN.md) |
+| Bard | College of Lore | [Bard](docs/BARD.md) |
+| Cleric | Life Domain | [Cleric](docs/CLERIC.md) |
+| Druid | Circle of the Land | [Druid](docs/DRUID.md) |
+| Fighter | Champion | [Fighter](docs/FIGHTER.md) |
+| Monk | Warrior of the Open Hand | [Monk](docs/MONK.md) |
+| Paladin | Oath of Devotion | [Paladin](docs/PALADIN.md) |
+| Ranger | Hunter | [Ranger](docs/RANGER.md) |
+| Rogue | Thief | [Rogue](docs/ROGUE.md) |
+| Sorcerer | Draconic Sorcery | [Sorcerer](docs/SORCERER.md) |
+| Warlock | Fiend Patron | [Warlock](docs/WARLOCK.md) |
+| Wizard | Evoker | [Wizard](docs/WIZARD.md) |
 
-Every class fights with weapons. Per-feature status is in the
-[SRD coverage ledger](docs/SRD-COVERAGE.md) and the [spell inventory](docs/SPELL-INVENTORY.md).
+All twelve classes reach level 15, the game's cap. Spells and features a CRPG
+cannot resolve are cut, as [SRD-DECISIONS](docs/SRD-DECISIONS.md) records; a
+few wait on other systems (Teleport on travel beyond New Phlan, Use Magic
+Device on magic items). Per-feature status is in the
+[SRD coverage ledger](docs/SRD-COVERAGE.md), and every deliberate departure from
+the original is in [DEVIATIONS](docs/DEVIATIONS.md).
 
 ### Limits
 
-- Only New Phlan's civilized area and the Slums. Other districts and boat
-  destinations are not reachable, and other Slums quests and hostile branches
-  report a diagnostic and roll back.
-- Most SRD spells and many class features are missing; see the ledger above.
-- Magic items keep their original record but have no effect. Items cannot be sold.
-- No saving during combat, no retreat once combat starts, no full campaign.
+- Only New Phlan's civilized area, the Slums and Kuto's Well. Other districts
+  and boat destinations are not reachable. Some Slums quests and hostile
+  branches report a diagnostic and roll back, and finds that need the original
+  Search mode are not supported.
+- Wands, potions, rings, bracers, scrolls and other worn or charged magic items
+  have no effect yet, and items are not identified. Items cannot be sold or
+  dropped.
+- No multiclassing, no saving during combat, no importing original saves, no
+  full campaign.
 
 ### Next work
 
 The first-adventure milestone [#11](https://github.com/stdarg/OpenGold/issues/11)
-is complete, with [#13](https://github.com/stdarg/OpenGold/issues/13),
-[#14](https://github.com/stdarg/OpenGold/issues/14) and
-[#15](https://github.com/stdarg/OpenGold/issues/15). Candidates for the next
-milestone are broader original-script coverage beyond the town and the Slums
-encounters ([#4](https://github.com/stdarg/OpenGold/issues/4)) and advanced combat
-interactions ([#5](https://github.com/stdarg/OpenGold/issues/5)). The first
-expedition loop with saves ([#1](https://github.com/stdarg/OpenGold/issues/1)) is
-done; reward and training mappings stay with
-[#9](https://github.com/stdarg/OpenGold/issues/9) and broader persistence with
-[#10](https://github.com/stdarg/OpenGold/issues/10). Class and spell work is
-indexed in [#186](https://github.com/stdarg/OpenGold/issues/186).
+is complete. Current work is magic items
+([#234](https://github.com/stdarg/OpenGold/issues/234): identification
+[#262](https://github.com/stdarg/OpenGold/issues/262), charged items
+[#263](https://github.com/stdarg/OpenGold/issues/263), worn items
+[#264](https://github.com/stdarg/OpenGold/issues/264) and scrolls
+[#265](https://github.com/stdarg/OpenGold/issues/265)). Candidates for the next
+milestone are broader original-script coverage beyond the town, the Slums and
+Kuto's Well ([#4](https://github.com/stdarg/OpenGold/issues/4)) and advanced
+combat interactions ([#5](https://github.com/stdarg/OpenGold/issues/5)). Reward
+mappings stay with [#9](https://github.com/stdarg/OpenGold/issues/9) and broader
+persistence with [#10](https://github.com/stdarg/OpenGold/issues/10). Class and
+spell work is indexed in [#186](https://github.com/stdarg/OpenGold/issues/186).
 
 ## Reference demos
 
@@ -167,7 +194,7 @@ Starting-class prerequisite checks are an OpenGoldBox house rule. A scrollable
 **Desired Class(es)** checklist records future goals and shows unmet ability
 requirements; acquiring additional classes is not implemented.
 
-Choose from 72 complete portraits with optional gender, class, and in-game race
+Choose from 972 complete portraits with optional gender, class, and in-game race
 filters. Portrait controls stay available throughout creation and sheet review;
 selected artwork carries into the party and campaign saves. Customize ready/action combat sprites with separate head/body parts
 and twelve region colors. The shared character sheet includes inventory, live
@@ -186,7 +213,7 @@ Finish a character and **Add to party**, or open **Character Pool** to choose
 from 48 level-one characters (four per class), each with a unique first name
 and surname, selected portraits and matching sprite palettes. The roster supports
 six PCs and two NPCs, reserve/rejoin, and an authored preview guard. New PCs
-receive 250 gp.
+bring 3d6 × 10 gp to the party's purse.
 
 **Explore New Phlan** shares the party with Rolf's tour and town scripts. Inspect
 members from the town roster, buy equipment for the selected member, and equip
@@ -334,12 +361,33 @@ available and fall back to provisional
 matching-ID guesses; search allows manual assignment beyond those suggestions.
 Save names before closing.
 
+## Developer tools
+
+Standalone Godot tools under [`dev_tools/`](dev_tools) read your installed DAX
+files and are not linked into the game. Each `run.sh` builds its native
+extension and imports its project on first run.
+
+- [Combat sprite catalog](dev_tools/combat_sprite_catalog/README.md): every
+  monster and NPC record with its combat art, weapon sets and record editing.
+- [Tile art viewer and map browser](dev_tools/tile_art_viewer/README.md): the
+  original first-person wall art and exploration maps.
+- [Replacement art creator](dev_tools/replacement_art_creator/README.md):
+  briefs, imports and previews for new wall art; see
+  [the workflow](docs/REPLACEMENT-ART-CREATOR.md).
+
+`opengold_magic_items GAME_DIR` lists every magic item the original can give the
+party; see [magic items](docs/MAGIC_ITEMS.md).
+
 ## Build setup
 
 OpenGoldBox uses CMake to build a portable C++20 native core. The game's Godot
 project is `src/OpenGoldBox/godot/`; the reference demos' project is `demos/godot/`.
 This section covers the native core and the demos; the game's build is under
 [Play the game](#play-the-game).
+
+C++ follows [the coding style](docs/CODING_STYLE.md), kept by clang-format and
+clang-tidy. Enable the pre-commit hook once per checkout with
+`git config core.hooksPath tools/git-hooks`.
 
 Install the prerequisites listed in [docs/INSTALL.md](docs/INSTALL.md), then
 configure and build from the repository root:
