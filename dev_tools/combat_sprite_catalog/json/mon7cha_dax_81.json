@@ -1,5 +1,9 @@
 {
-  "description": "YARASH. Gear: Potion of Speed, Wand of Paralyzation, Potion of Healing, Bracers AC 4.",
+  "description": "The evil sorcerer on Sorcerer’s Island whose experiments created mutant lizard men. Source inventory: Potion of Speed, Wand of Paralyzation, Potion of Healing, Bracers AC 4. Readied: Wand of Paralyzation, Bracers AC 4. Source wealth: 8 pp.",
+  "description_sources": [
+    "Original game MON7CHA.DAX:81 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 19"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -65,5 +69,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 8,
+    "silver": 0
+  }
 }

@@ -1,0 +1,41 @@
+{
+  "description": "A heavy-bodied reptilian monster whose dangerous gaze is its defining threat. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON5CHA.DAX:26 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/br-2024/creature-stat-blocks (general creature appearance only)"
+  ],
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "BASILISK",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC2.DAX",
+    "art_basis": "Same ID, different bank (candidate)",
+    "art_record": 26,
+    "creature_archive": "MON5CHA.DAX",
+    "creature_record": 26,
+    "key": "MON5CHA.DAX:26",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon5cha_dax_26/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon5cha_dax_26/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

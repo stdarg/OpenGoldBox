@@ -1,5 +1,9 @@
 {
-  "description": "EFREETI combat icon. Original gear: none recorded.",
+  "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. This is the script-linked icon for MON8CHA.DAX:124. The original template records no carried items. Source wealth: 6 gp.",
+  "description_sources": [
+    "Decoded ECL link to MON8CHA.DAX:124",
+    "Original game inventory and wealth of linked creature"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -25,5 +29,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 6,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

@@ -1,5 +1,9 @@
 {
-  "description": "MUTANT LIZ-MAN . Gear: none recorded.",
+  "description": "One of Yarash’s altered lizard men; retain a reptilian outline while making the mutation visible. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON7CHA.DAX:58 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 19"
+  ],
   "equipment": [],
   "flag_for_regeneration": true,
   "format": "opengold-monster-art-v1",
@@ -24,5 +28,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

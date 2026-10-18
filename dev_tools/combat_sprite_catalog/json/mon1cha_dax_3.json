@@ -1,0 +1,101 @@
+{
+  "description": "A goblin leader with a confident stance and clearer rank distinction than the ordinary guards. Source inventory: Arrows, Long bow, Short sword, Shield, Scale armor. Readied: Arrows, Scale armor. Source wealth: 24 sp.",
+  "description_sources": [
+    "Original game MON1CHA.DAX:3 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
+  ],
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 73,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Long bow",
+      "readied": false,
+      "source_hands": 2,
+      "source_range": 22,
+      "source_type": 43,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Short sword",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 37,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_003",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_004",
+      "kind": "gear",
+      "name": "Scale armor",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 54,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "GOBLIN LEADER",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC1.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 3,
+    "creature_archive": "MON1CHA.DAX",
+    "creature_record": 3,
+    "key": "MON1CHA.DAX:3",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon1cha_dax_3/item_002__item_003/action.png",
+      "id": "item_002__item_003",
+      "label": "Short sword + Shield",
+      "ready": "art/mon1cha_dax_3/item_002__item_003/ready.png",
+      "shield_id": "item_003",
+      "weapon_id": "item_002",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon1cha_dax_3/item_001__ranged/action.png",
+      "id": "item_001__ranged",
+      "label": "Long bow",
+      "ready": "art/mon1cha_dax_3/item_001__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001",
+      "weapon_role": "ranged"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 24
+  }
+}

@@ -134,6 +134,7 @@ func _apply_script_bindings(evidence) -> void:
         row["linked_keys"] = keys
         if keys.size() == 1:
             row.equipment = rows[native_index_by_key[keys[0]]].equipment.duplicate(true)
+            row.wealth = rows[native_index_by_key[keys[0]]].wealth.duplicate(true)
 
 func _apply_shared_art_identities() -> void:
     for group in catalog.identical_art_groups():
@@ -643,6 +644,7 @@ func _metadata_check() -> void:
         var source_record: Dictionary = MonsterMetadata.new_record(rows[index], catalog.monster_art(index))
         if rows[index].key == "MON6CHA.DAX:102":
             captain_found = true
+            assert(source_record.wealth.gold == 18 and source_record.wealth.platinum == 6)
             assert(source_record.variants.size() == 2)
             assert(source_record.variants[0].weapon_role == "one_hand")
             assert(not source_record.variants[0].shield_id.is_empty())
@@ -835,6 +837,7 @@ func _metadata_check() -> void:
     var reloaded: Dictionary = MonsterMetadata.load_record(rows[selected], _art_for(selected), metadata_root)
     assert(reloaded.error.is_empty() and reloaded.data.name == "Copied test monster")
     assert(reloaded.data.source.origin_key == first.key and reloaded.data.equipment.size() == 5)
+    assert(reloaded.data.wealth == first.wealth)
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
     print("Monster metadata checks passed: JSON save/load, rename/copy with PNGs, gear-edit preview retention, weapon sets, original fallback")
@@ -903,6 +906,8 @@ func _catalog_check() -> void:
             assert(not str(item.label).begins_with("Item type "))
         var metadata: Dictionary = MonsterMetadata.load_record(row, _art_for(index), metadata_root)
         assert(metadata.error.is_empty())
+        assert(metadata.data.wealth == row.get("wealth", {}))
+        assert(str(metadata.data.description).length() >= 80)
         for item in metadata.data.equipment:
             assert(not str(item.name).begins_with("Item type "))
         assert(not str(metadata.data.description).contains("Item type "))

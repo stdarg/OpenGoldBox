@@ -1,5 +1,8 @@
 {
   "description": "Orc combat artwork, identical to the orc pairs in other archives. Identical originals: CPIC1.DAX:4, CPIC2.DAX:4, CPIC4.DAX:4. Known users of this art: ORC. No direct script reference found for this archive copy.",
+  "description_sources": [
+    "Decoded ECL art links and original CPIC ready/action records"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -35,5 +38,6 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {}
 }

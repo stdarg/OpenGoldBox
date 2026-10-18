@@ -38,6 +38,18 @@ the monster name, original creature and art source files/records, description,
 regeneration flag, equipment, and image variants. Unsaved edits remain available
 while switching between records during the current session.
 
+Every built-in monster/NPC template and extra combat-icon row has a saved JSON
+record. Descriptions include the original inventory and wealth where a creature
+record exists. `wealth` preserves the seven original character fields in order:
+`copper`, `silver`, `electrum`, `gold`, `platinum`, `gems`, and `jewelry`.
+These are amounts on the creature template, not treasure awarded by an encounter
+script. A shared combat icon has no single inventory or wealth; inspect its
+linked creature records instead. `description_sources` distinguishes original
+record evidence, Cluebook PDF pages, and general appearance references. The
+Cluebook and modern creature references inform descriptions only; they do not
+add items or change combat rules. Copied monsters retain their source wealth
+snapshot in their independent metadata.
+
 The viewer selects original combat icons from decoded ECL `LOAD MONSTER`
 instructions: the creature ID and icon ID are separate operands. If a creature
 has several script-linked icons, the viewer uses the most referenced candidate,
@@ -134,7 +146,9 @@ OPENGOLD_GAME_DIR=/path/to/POOLRAD godot --headless \
 It checks the complete displayed catalog, both monster poses, the unused and
 name filters, and character ready/action previews across every weapon with shield.
 It also checks the in-pane Head and Body buttons, color swatches, Large size,
-and that the character pane has no scrolling selection panel.
+and that the character pane has no scrolling selection panel. For every built-in
+monster and combat-icon row, it also checks that saved descriptions have at
+least 80 characters and saved wealth matches the decoded creature record.
 
 Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
 draft retention, paired one-handed setups, separate ranged and two-handed setups,

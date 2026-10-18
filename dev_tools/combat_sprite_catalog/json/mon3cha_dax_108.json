@@ -1,0 +1,92 @@
+{
+  "description": "A junior religious servant with a holy symbol and equipment suited to temple duty. Source inventory: Silver Holy Symbol Of Sune, Holy Water vial, Shield, Mace, Chain armor. Readied: Shield, Mace, Chain armor. Source wealth: 4 sp.",
+  "description_sources": [
+    "Original game MON3CHA.DAX:108 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Silver Holy Symbol Of Sune",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 71,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Holy Water vial",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 4,
+      "source_type": 85,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "weapon",
+      "name": "Mace",
+      "readied": true,
+      "source_hands": 1,
+      "source_range": 0,
+      "source_type": 23,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_004",
+      "kind": "gear",
+      "name": "Chain armor",
+      "readied": true,
+      "source_hands": 0,
+      "source_range": 0,
+      "source_type": 55,
+      "weapon_role": ""
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "ACOLYTE",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "MON3CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 108,
+    "creature_archive": "MON3CHA.DAX",
+    "creature_record": 108,
+    "key": "MON3CHA.DAX:108",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon3cha_dax_108/item_003__item_002/action.png",
+      "id": "item_003__item_002",
+      "label": "Mace + Shield",
+      "ready": "art/mon3cha_dax_108/item_003__item_002/ready.png",
+      "shield_id": "item_002",
+      "weapon_id": "item_003",
+      "weapon_role": "one_hand"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 4
+  }
+}

@@ -1,5 +1,9 @@
 {
-  "description": "ENVOY. Gear: Two-handed sword +2, Plate armor.",
+  "description": "An armed envoy serving the castle’s hostile leadership; its armor and blade distinguish this combatant. Source inventory: Two-handed sword +2, Plate armor. Source wealth: 5 gp.",
+  "description_sources": [
+    "Original game MON5CHA.DAX:87 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -45,5 +49,14 @@
       "weapon_id": "item_000",
       "weapon_role": "two_hand"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 5,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

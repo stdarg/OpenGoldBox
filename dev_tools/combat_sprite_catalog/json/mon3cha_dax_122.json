@@ -1,0 +1,71 @@
+{
+  "description": "A magic-user prepared to cast spells, with small backup weapons in the original inventory. Source inventory: Dart, Dagger. Source wealth: 20 cp.",
+  "description_sources": [
+    "Original game MON3CHA.DAX:122 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Dart",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 6,
+      "source_type": 9,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Dagger",
+      "readied": false,
+      "source_hands": 1,
+      "source_range": 1,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "EVOKER",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "MON3CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 122,
+    "creature_archive": "MON3CHA.DAX",
+    "creature_record": 122,
+    "key": "MON3CHA.DAX:122",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon3cha_dax_122/item_001__one_hand/action.png",
+      "id": "item_001__one_hand",
+      "label": "Dagger",
+      "ready": "art/mon3cha_dax_122/item_001__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001",
+      "weapon_role": "one_hand"
+    },
+    {
+      "action": "art/mon3cha_dax_122/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Dart",
+      "ready": "art/mon3cha_dax_122/item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
+    }
+  ],
+  "wealth": {
+    "copper": 20,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

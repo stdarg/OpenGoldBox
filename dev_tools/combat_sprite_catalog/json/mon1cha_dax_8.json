@@ -1,5 +1,9 @@
 {
-  "description": "OGRE. Gear: none recorded.",
+  "description": "A large, heavy-limbed brute whose reach and size dominate its combat silhouette. The original template records no carried items. Source wealth: 5 gp.",
+  "description_sources": [
+    "Original game MON1CHA.DAX:8 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -22,5 +26,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 5,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

@@ -247,6 +247,14 @@ Array SpriteCatalog::creatures() const
         row["archive"] = gs(id.archive());
         row["record"] = id.record;
         row["npc"] = creature.stored.npc_flag != 0;
+        Dictionary wealth;
+        constexpr std::array wealth_names{"copper", "silver", "electrum", "gold",
+                                          "platinum", "gems", "jewelry"};
+        for (std::size_t i = 0; i < wealth_names.size(); ++i)
+        {
+            wealth[wealth_names[i]] = creature.stored.wealth[i];
+        }
+        row["wealth"] = wealth;
         Array equipment;
         for (const auto &item : creature.equipment)
         {

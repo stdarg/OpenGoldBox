@@ -1,0 +1,41 @@
+{
+  "description": "A winged beast combining an eagle-like forebody with a horse-like hindbody. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON8CHA.DAX:113 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "HIPPOGRIFF",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "CPIC8.DAX",
+    "art_basis": "Same ID, same bank (candidate)",
+    "art_record": 113,
+    "creature_archive": "MON8CHA.DAX",
+    "creature_record": 113,
+    "key": "MON8CHA.DAX:113",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon8cha_dax_113/default/action.png",
+      "id": "default",
+      "label": "Default (no selectable weapon setup)",
+      "ready": "art/mon8cha_dax_113/default/ready.png",
+      "shield_id": "",
+      "weapon_id": "",
+      "weapon_role": "default"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

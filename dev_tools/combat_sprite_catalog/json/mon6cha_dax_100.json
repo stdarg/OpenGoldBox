@@ -1,5 +1,9 @@
 {
-  "description": "3RD LVL FIGHTER. Gear: Long sword, Plate armor, Quarrel, Heavy crossbow.",
+  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Long sword, Plate armor, Quarrel, Heavy crossbow. Readied: Long sword, Plate armor, Quarrel. Source wealth: 5 sp.",
+  "description_sources": [
+    "Original game MON6CHA.DAX:100 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -74,5 +78,14 @@
       "weapon_id": "item_003",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 5
+  }
 }

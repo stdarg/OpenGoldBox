@@ -1,5 +1,9 @@
 {
-  "description": "GOBLIN LEADER. Gear: Arrows, Long bow, Short sword, Shield, Scale armor.",
+  "description": "A goblin leader with a confident stance and clearer rank distinction than the ordinary guards. Source inventory: Arrows, Long bow, Short sword, Shield, Scale armor. Readied: Arrows, Scale armor. Source wealth: 24 sp.",
+  "description_sources": [
+    "Original game MON2CHA.DAX:3 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/basic-rules-2014/monster-stat-blocks-g (general creature appearance only)"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -82,5 +86,14 @@
       "weapon_id": "item_001",
       "weapon_role": "ranged"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 24
+  }
 }

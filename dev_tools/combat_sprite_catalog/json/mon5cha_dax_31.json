@@ -1,5 +1,9 @@
 {
-  "description": "TROLL. Gear: none recorded.",
+  "description": "A tall, long-armed troll with a gaunt outline; the original creature data records regeneration. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON5CHA.DAX:31 and matching MONnITM inventory",
+    "https://www.dndbeyond.com/sources/dnd/br-2024/creature-stat-blocks (general creature appearance only)"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -22,5 +26,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

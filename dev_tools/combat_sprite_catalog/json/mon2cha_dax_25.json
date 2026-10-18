@@ -1,5 +1,9 @@
 {
-  "description": "MAD MAN. Gear: none recorded.",
+  "description": "The troubled man found in a corner of Mendor’s Library; the Cluebook advises speaking with him. The original template records no carried items. Source wealth: 2 sp.",
+  "description_sources": [
+    "Original game MON2CHA.DAX:25 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 8"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -24,5 +28,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 2
+  }
 }

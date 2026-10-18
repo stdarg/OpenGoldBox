@@ -1,0 +1,52 @@
+{
+  "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Lucern hammer +1. Source wealth: 3 gp.",
+  "description_sources": [
+    "Original game MON7CHA.DAX:76 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Lucern hammer +1",
+      "readied": true,
+      "source_hands": 2,
+      "source_range": 0,
+      "source_type": 19,
+      "weapon_role": "two_hand"
+    }
+  ],
+  "flag_for_regeneration": false,
+  "format": "opengold-monster-art-v1",
+  "name": "7TH LVL DW FIGH",
+  "preview_fallback_variant": "",
+  "source": {
+    "art_archive": "MON7CHA.DAX",
+    "art_basis": "MON character components (candidate)",
+    "art_record": 76,
+    "creature_archive": "MON7CHA.DAX",
+    "creature_record": 76,
+    "key": "MON7CHA.DAX:76",
+    "linked_creature_keys": []
+  },
+  "variants": [
+    {
+      "action": "art/mon7cha_dax_76/item_000__two_hand/action.png",
+      "id": "item_000__two_hand",
+      "label": "Lucern hammer +1",
+      "ready": "art/mon7cha_dax_76/item_000__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000",
+      "weapon_role": "two_hand"
+    }
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 3,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
+}

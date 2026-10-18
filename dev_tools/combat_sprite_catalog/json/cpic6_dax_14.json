@@ -1,5 +1,9 @@
 {
-  "description": "AL-HYAM DAZID combat icon. Original gear: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3.",
+  "description": "A named magic-user protected by enchanted bracers and a ring against fire. This is the script-linked icon for MON6CHA.DAX:86. Source inventory: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3. Source wealth: 15 gp.",
+  "description_sources": [
+    "Decoded ECL link to MON6CHA.DAX:86",
+    "Original game inventory and wealth of linked creature"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -57,5 +61,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 15,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

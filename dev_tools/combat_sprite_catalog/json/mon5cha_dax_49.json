@@ -1,5 +1,9 @@
 {
-  "description": "MEDUSA. Gear: none recorded.",
+  "description": "The medusa kept near Tyranthraxus’s lair; its snake-haired head and petrifying gaze define the threat. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description_sources": [
+    "Original game MON5CHA.DAX:49 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 28"
+  ],
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
@@ -22,5 +26,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 0,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }

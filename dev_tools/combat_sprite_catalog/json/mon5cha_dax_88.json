@@ -1,5 +1,9 @@
 {
-  "description": "GENHEERIS. Gear: Wand of Lightning.",
+  "description": "A named spellcaster whose original inventory includes a Wand of Lightning. Source inventory: Wand of Lightning. Source wealth: 15 gp.",
+  "description_sources": [
+    "Original game MON5CHA.DAX:88 and matching MONnITM inventory",
+    "Visual art direction inferred from original creature identity; no additional game inventory assumed"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -35,5 +39,14 @@
       "weapon_id": "",
       "weapon_role": "default"
     }
-  ]
+  ],
+  "wealth": {
+    "copper": 0,
+    "electrum": 0,
+    "gems": 0,
+    "gold": 15,
+    "jewelry": 0,
+    "platinum": 0,
+    "silver": 0
+  }
 }
