@@ -4,6 +4,8 @@
 #include "opengold/item_key.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
+#include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -50,6 +52,31 @@ Character fighter()
     {
         r = {{6, 5, 4, 1}, 3};
     }
+    return Character(*srd5::character_rules(), d, {});
+}
+
+// A Bard with Identify and Detect Magic prepared and two level-one slots.
+Character bard()
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "bard";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Bard";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+    {
+        r = {{6, 5, 4, 1}, 3};
+    }
+    d.training = {{"class:bard", {"performance", "persuasion", "insight"}}};
+    d.cantrips = {"vicious_mockery", "starry_wisp"};
+    d.spells = SpellChoices{
+        {},
+        std::vector<std::string>{"identify", "detect_magic", "healing_word", "dissonant_whispers"},
+        {},
+        {}};
     return Character(*srd5::character_rules(), d, {});
 }
 
@@ -425,6 +452,85 @@ void shop_identification()
               coins(restored.state().wealth, Coin::gold) == 0,
           "An item with nothing hidden still costs the fee, as in the original");
 }
+// Detect Magic, cast outside combat, marks magic items for ten minutes; then
+// Identify, cast on an item, reveals its name (#262).
+void identification_spells()
+{
+    CampaignParty party(module());
+    const auto fighter_id = party.add_pc(fighter());
+    const auto bard_id = party.add_pc(bard());
+    auto hidden = original(36, 2, {0, 163, 36});
+    hidden.bonuses.weapon_to_hit = 2;
+    hidden.stored.hidden_name_words = 6;
+    check(party.award_loot({}, {hidden, original(37, 0, {0, 0, 37})}, "test:spells"),
+          "Collect a hidden Long Sword +2 and a short sword");
+    const auto holder = [&](const por::Equipment &item)
+    {
+        for (const auto id : {fighter_id, bard_id})
+        {
+            for (const auto &carried : party.member(id).character.inventory().items())
+            {
+                const auto &source = party.member(id).item_sources.at(carried.id);
+                if (source.stored.magic_bonus == item.stored.magic_bonus &&
+                    source.stored.type == item.stored.type)
+                {
+                    return std::pair{id, carried.id};
+                }
+            }
+        }
+        throw std::runtime_error("Loot not found");
+    };
+    const auto [sword_holder, sword] = holder(hidden);
+    const auto [plain_holder, plain] = holder(original(37, 0, {0, 0, 37}));
+
+    const auto camp = party.camp_actions(bard_id);
+    check(std::none_of(camp.begin(), camp.end(),
+                       [](const auto &action)
+                       {
+                           return action.id.starts_with("identify");
+                       }) &&
+              std::any_of(camp.begin(), camp.end(),
+                          [](const auto &action)
+                          {
+                              return action.id == "detect_magic" && action.whole_party;
+                          }),
+          "Cast / Use offers Detect Magic for the party, but not Identify");
+    test::rejects(
+        [&]
+        {
+            party.use_camp_action(bard_id, sword_holder, "identify");
+        },
+        "Identify needs an item");
+
+    check(!party.detecting_magic(), "No Detect Magic yet");
+    party.use_camp_action(bard_id, bard_id, "detect_magic");
+    check(party.detecting_magic() && party.magical(sword_holder, sword) &&
+              !party.magical(plain_holder, plain),
+          "Detect Magic senses the magic sword, not the plain one");
+    CampaignParty restored(module());
+    const auto rules = module();
+    restored.restore(decode_campaign(encode_campaign(party, nullptr, "detect"),
+                                     *srd5::character_rules(), *rules, "detect", nullptr)
+                         .party);
+    check(restored.detecting_magic(), "A save keeps Detect Magic");
+    party.advance_time(std::chrono::minutes{9});
+    check(party.detecting_magic(), "Detect Magic lasts ten minutes");
+    party.advance_time(std::chrono::minutes{1});
+    check(!party.detecting_magic(), "Then it ends");
+
+    check(party.identifier() == bard_id, "The Bard can cast Identify");
+    check(party.cast_identify(bard_id, sword_holder, sword) &&
+              party.member(sword_holder).character.inventory().find(sword)->get().name.ends_with(
+                  " +2"),
+          "Identify reveals the sword's bonus");
+    check(!party.identifier(), "Both level-one slots are spent");
+    test::rejects(
+        [&]
+        {
+            (void)party.cast_identify(bard_id, plain_holder, plain);
+        },
+        "Identify needs a slot");
+}
 } // namespace
 
 int main()
@@ -441,6 +547,7 @@ int main()
         cursed_sword();
         identification();
         shop_identification();
+        identification_spells();
         std::cout << "Enchanted item tests passed\n";
         return 0;
     }

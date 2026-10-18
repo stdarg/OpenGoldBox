@@ -1479,5 +1479,9 @@
   "Animal Shapes: Tiger",
   "Not enough gold",
   "Select an item first.",
-  "Select an existing item."
+  "Select an existing item.",
+  "Identify is cast on an item from the inventory",
+  "Identify is for active members",
+  "Identify",
+  "Detect Magic"
 ]

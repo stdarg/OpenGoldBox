@@ -308,6 +308,20 @@ metadata/layout_middle_delta = Rect2(-25.0666009, 0, 12.5333003, 0)
 text = "Camp [C]"
 tooltip_text = "Run the area's pre-camp check and attempt an eight-hour long rest."
 
+[node name="Cast" type="Button" parent="."]
+anchor_left = 0.8825
+anchor_right = 0.921666565
+anchor_top = 1
+anchor_bottom = 1
+offset_left = -228.4
+offset_right = -164.266553
+offset_top = -276
+offset_bottom = -242
+metadata/layout_reference = Rect2(1466, 804, 139.333252, 34)
+metadata/layout_middle_delta = Rect2(-37.6, 0, 12.533301, 0)
+text = "Cast"
+tooltip_text = "Cast a spell or use a feature outside combat."
+
 [node name="Inventory" type="Button" parent="."]
 anchor_left = 0.96083313
 anchor_right = 1
@@ -366,6 +380,77 @@ offset_top = -54
 offset_bottom = -18
 metadata/layout_reference = Rect2(20, 866, 180, 36)
 text = "Close inventory"
+
+[node name="CastPanel" type="Panel" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -400
+offset_right = 400
+offset_top = -200
+offset_bottom = 200
+metadata/layout_reference = Rect2(560, 340, 800, 400)
+theme_type_variation = &"PanelInventory"
+visible = false
+z_index = 2
+mouse_filter = 0
+
+[node name="Header" type="Label" parent="CastPanel"]
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 18
+offset_bottom = 62
+metadata/layout_reference = Rect2(20, 18, 760, 44)
+theme_type_variation = &"LabelText20"
+
+[node name="Action" type="OptionButton" parent="CastPanel"]
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 80
+offset_bottom = 120
+metadata/layout_reference = Rect2(20, 80, 760, 40)
+
+[node name="Target" type="OptionButton" parent="CastPanel"]
+anchor_right = 1
+offset_left = 20
+offset_right = -20
+offset_top = 136
+offset_bottom = 176
+metadata/layout_reference = Rect2(20, 136, 760, 40)
+
+[node name="Status" type="Label" parent="CastPanel"]
+anchor_right = 1
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = -20
+offset_top = -200
+offset_bottom = -70
+metadata/layout_reference = Rect2(20, 200, 760, 130)
+autowrap_mode = 2
+
+[node name="Close" type="Button" parent="CastPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 20
+offset_right = 200
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(20, 346, 180, 36)
+text = "Close"
+
+[node name="Use" type="Button" parent="CastPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 220
+offset_right = 370
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(220, 346, 150, 36)
+text = "Cast"
 
 [node name="Footstep" type="AudioStreamPlayer" parent="."]
 volume_db = -12.0
@@ -440,6 +525,16 @@ offset_top = -54
 offset_bottom = -18
 metadata/layout_reference = Rect2(560, 866, 200, 36)
 text = "ID (200 gp)"
+
+[node name="CastIdentify" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 780
+offset_right = 980
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(780, 866, 200, 36)
+text = "Cast Identify"
 
 [node name="MemberSheet" type="Window" parent="."]
 size = Vector2i(1800, 960)

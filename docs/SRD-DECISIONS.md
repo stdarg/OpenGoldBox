@@ -1250,7 +1250,12 @@ The user chose how found magic items are identified (issue
 - **The shop's ID**, 200 gp per item, as in the original. Any item can be
   submitted; one with nothing hidden still costs the fee.
 - **The SRD's Identify spell** reveals one item's name. As CLASS-8 says, it
-  needs no pearl.
+  needs no pearl. When any member can cast it, the inventory offers it on the
+  selected item (the user, 2026-10-18), on every item, so the offer does not
+  give away which items are magic.
+- **A Cast menu** on the exploration screen casts spells and uses features
+  outside combat, the same ones Camp's Cast / Use offers (the user,
+  2026-10-18).
 - **No Short Rest study.** The SRD's way of learning an item over a Short Rest
   is left out.
 - **Detect Magic** can be cast in camp or at any time outside combat. For ten

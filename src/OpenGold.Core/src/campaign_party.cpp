@@ -3,6 +3,7 @@
 #include "opengold/dice.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/item_key.h"
+#include "opengold/magic_item_catalog.h"
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -1634,12 +1635,82 @@ std::vector<rules::CampAction> CampaignParty::camp_actions(MemberId id) const
     {
         return {};
     }
-    return rules_->camp_actions(m.character.sheet(), m.vitals);
+    auto actions = rules_->camp_actions(m.character.sheet(), m.vitals);
+    std::erase_if(actions,
+                  [](const auto &action)
+                  {
+                      return action.id.starts_with("identify");
+                  });
+    return actions;
+}
+
+std::optional<MemberId> CampaignParty::identifier() const
+{
+    for (const auto id : state_.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto &m = member(id);
+        const auto actions = rules_->camp_actions(m.character.sheet(), m.vitals);
+        if (std::any_of(actions.begin(), actions.end(),
+                        [](const auto &action)
+                        {
+                            return action.id.starts_with("identify");
+                        }))
+        {
+            return id;
+        }
+    }
+    return std::nullopt;
+}
+
+bool CampaignParty::cast_identify(MemberId caster_id, MemberId holder_id, std::uint64_t item)
+{
+    editable();
+    for (const auto id : {caster_id, holder_id})
+    {
+        if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        {
+            throw std::runtime_error("Identify is for active members");
+        }
+    }
+    auto next = state_;
+    auto &caster = member_in(next, caster_id);
+    // The lowest slot first, as the rules offer them.
+    const auto actions = rules_->camp_actions(caster.character.sheet(), caster.vitals);
+    const auto spell = std::find_if(actions.begin(), actions.end(),
+                                    [](const auto &action)
+                                    {
+                                        return action.id.starts_with("identify");
+                                    });
+    if (spell == actions.end())
+    {
+        throw std::runtime_error("That spell or feature cannot be used now");
+    }
+    auto &holder = member_in(next, holder_id);
+    rules_->use_camp_action(caster.character.sheet(), caster.vitals, holder.character.sheet(),
+                            holder.vitals, spell->id, next.random_state);
+    const bool revealed = identify_item(holder, item);
+    state_ = std::move(next);
+    return revealed;
+}
+
+bool CampaignParty::magical(MemberId id, std::uint64_t item) const
+{
+    const auto &sources = member(id).item_sources;
+    const auto source = sources.find(item);
+    return source != sources.end() && por::is_magic(source->second.stored);
 }
 
 void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_view action)
 {
     editable();
+    if (action.starts_with("identify"))
+    {
+        throw std::runtime_error("Identify is cast on an item from the inventory");
+    }
     for (const auto id : {user, target})
     {
         if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
@@ -1679,6 +1750,11 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         }
         rules_->use_party_camp_action(caster.character.sheet(), caster.vitals, party, action,
                                       next.random_state);
+        if (action.starts_with("detect_magic"))
+        {
+            constexpr std::uint64_t detect_magic_minutes = 10;
+            next.detect_magic_until = next.time_minutes + detect_magic_minutes;
+        }
     }
     else
     {

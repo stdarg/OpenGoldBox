@@ -41,7 +41,7 @@ void cleric_creation_checks()
     check(options.may_prepare && options.prepared_count == 4 &&
               option_ids(options.preparation) ==
                   std::vector<std::string>{"bane", "bless", "command", "cure_wounds",
-                                           "guiding_bolt", "healing_word", "inflict_wounds",
+                                           "detect_magic", "guiding_bolt", "healing_word", "inflict_wounds",
                                            "protection_from_evil_and_good", "sanctuary",
                                            "shield_of_faith"},
           "Creation prepares from the Cleric list up to level-one slots");

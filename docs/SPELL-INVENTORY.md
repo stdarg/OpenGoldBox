@@ -20,8 +20,9 @@ Rules 0.6.64 implemented Inflict Wounds. On 2026-10-04, decision
 [DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-cannot-use) removed 17 more
 spells that need a DM or have nothing to act on in this game, leaving **89 spells:
 twelve partial, one implemented and 76 missing**. GUIDE-1 then restored
-Guidance. As the tables below stood on 2026-10-18, **87 of the 90 spells are
-implemented**, Chill Touch is partial, and Detect Magic and Identify are missing.
+Guidance. As the tables below stood on 2026-10-18, **89 of the 90 spells are
+implemented** and Chill Touch is partial; Detect Magic and Identify came with
+[#262](https://github.com/stdarg/OpenGold/issues/262).
 
 ## Scope and counting
 
@@ -217,7 +218,7 @@ are evidence of partial behavior, not certification of the full spell.
 | [Color Spray](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=116) (p. 116) | B, S, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35), [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
 | [Command](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=116) (p. 116) | B, C, P | MI, Draconic, Fiend | [#35](https://github.com/stdarg/OpenGold/issues/35) | Implemented for Clerics and Paladins, without Drop; [Paladin](PALADIN.md#buffs-and-concentration) |
 | [Cure Wounds](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=121) (p. 121) | B, C, D, P, R | MI, Life | — | Implemented through level 4; [Healing spells](HEALING-SPELLS.md) |
-| [Detect Magic](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=123) (p. 123) | B, C, D, P, R, S, K, W | MI, Tome, HighFixed | [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
+| [Detect Magic](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=123) (p. 123) | B, C, D, P, R, S, K, W | MI, Tome, HighFixed | [#38](https://github.com/stdarg/OpenGold/issues/38), [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented outside combat, from the Cast menu or Camp; a High Elf casts it from level 3. [MAGIC_ITEMS](MAGIC_ITEMS.md#in-opengoldbox) |
 | [Dissonant Whispers](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=124) (p. 124) | B | — | — | Implemented for Bards; [Bard](BARD.md#spellcasting-jack-of-all-trades-and-the-college-of-lore) |
 | [Divine Favor](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=125) (p. 125) | P | — | — | Implemented for Paladins; [Paladin](PALADIN.md#buffs-and-concentration) |
 | [Divine Smite](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=125) (p. 125) | P | Smite | — | Implemented for Paladins; [Paladin](PALADIN.md#smites) |
@@ -237,7 +238,7 @@ are evidence of partial behavior, not certification of the full spell.
 | [Hideous Laughter](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=140) (p. 140) | B, K, W | MI | [#35](https://github.com/stdarg/OpenGold/issues/35), [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Wizards; [Wizard](WIZARD.md#sleep-hideous-laughter-and-color-spray) |
 | [Hunter’s Mark](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | R | Favored | [#38](https://github.com/stdarg/OpenGold/issues/38) | Implemented for Rangers; [Ranger](RANGER.md#favored-enemy-and-hunters-mark) |
 | [Ice Knife](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=141) (p. 141) | D, S, W | MI | [#43](https://github.com/stdarg/OpenGold/issues/43) | Implemented for Wizards; [Wizard](WIZARD.md#ray-of-sickness-ice-knife-chromatic-orb-and-acid-splash) |
-| [Identify](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=142) (p. 142) | B, W | MI, Tome | [#174](https://github.com/stdarg/OpenGold/issues/174) | Missing; queue [#165](https://github.com/stdarg/OpenGold/issues/165) |
+| [Identify](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=142) (p. 142) | B, W | MI, Tome | [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented outside combat, cast on an item from the inventory. [MAGIC_ITEMS](MAGIC_ITEMS.md#in-opengoldbox) |
 | [Inflict Wounds](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=143) (p. 143) | C | MI | — | Implemented; [Inflict Wounds](INFLICT-WOUNDS.md) |
 | [Longstrider](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | B, D, R, W | MI, Wood | [#174](https://github.com/stdarg/OpenGold/issues/174) | Implemented for Rangers and Wizards; [Ranger](RANGER.md#longstrider) |
 | [Mage Armor](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf#page=145) (p. 145) | S, W | MI, Shadows | — | Implemented for Wizards; [Wizard](WIZARD.md#mage-armor-false-life-and-expeditious-retreat) |

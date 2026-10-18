@@ -286,6 +286,14 @@ records the decisions.
   reveals any item's name for 200 gp from the party purse, even an item with
   nothing hidden, as in the original. Attuning to an item also reveals its
   name.
+- **Identify and Detect Magic** are cast outside combat. When a member can
+  cast Identify, the inventory offers "Cast Identify" on the selected item,
+  any item, so the offer does not tell magic items from plain ones. Detect
+  Magic is cast from the exploration screen's Cast menu (or Camp's Cast /
+  Use); for ten minutes of game time the inventory marks each magic item
+  (an enchantment, a curse, charges or a spell) with "* ". The Cast menu
+  offers the selected member's spells and features that Camp's Cast / Use
+  offers.
 
 ## Open questions
 

@@ -143,6 +143,8 @@ class RolfTourView : public godot::Control
     bool rest_check_{}, mastery_rest_check_{};
     bool town_check_{}, embedded_party_{};
     unsigned shop_check_stage_{};
+    std::optional<opengold::PartyState> identify_check_retained_;
+    std::uint64_t identify_check_sword_{};
     unsigned recovery_stage_{};
     bool save_cancel_checked_{}, save_cancel_pending_{};
     bool slums_labels_checked_{};
@@ -176,6 +178,15 @@ class RolfTourView : public godot::Control
     void rest_heal();
     void rest_recover();
     void rest_use();
+    std::optional<godot::String> use_outside_combat(opengold::MemberId user,
+                                                    opengold::MemberId patient,
+                                                    const godot::String &id,
+                                                    const godot::String &action_text,
+                                                    const godot::String &target_text);
+    void cast_menu();
+    void refresh_cast();
+    void cast_action_selected(std::int64_t index);
+    void cast_use();
     bool refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos, bool spending);
     void refresh_rest_spells();
     void rest_spell_toggled(bool selected, godot::String group, godot::String option);
@@ -206,6 +217,8 @@ class RolfTourView : public godot::Control
     void inventory_selected(std::int64_t index);
     void equip_item(bool equip);
     void identify_item();
+    void cast_identify();
+    void check_identification_spells();
     void party_selected(std::int64_t index);
     void level_up_requested(int slot);
     void close_sheet();

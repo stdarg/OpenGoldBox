@@ -2903,7 +2903,25 @@ inline constexpr std::array spell_table{
              .level = 5,
              .pattern = SpellPattern::camp,
              .target = SpellTarget::dead_ally,
-             .range = 5}};
+             .range = 5},
+    // SRD 5.2.1 p. 142: touch an object to learn its magic (#262). A camp
+    // spell; the campaign reveals the item's name.
+    SpellDef{.id = "identify",
+             .label = "Identify",
+             .level = 1,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::ally,
+             .range = 5},
+    // SRD 5.2.1 p. 123: for 10 minutes the caster senses magic within 30 feet.
+    // Cast outside combat for the party, whose item lists mark magic items
+    // (#262).
+    SpellDef{.id = "detect_magic",
+             .label = "Detect Magic",
+             .level = 1,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::self,
+             .range = 30,
+             .instances = 8}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in

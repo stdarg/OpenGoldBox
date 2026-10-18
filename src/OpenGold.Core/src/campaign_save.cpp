@@ -382,7 +382,7 @@ template <bool Reading> struct SaveCodec
     void field(Visited<PartyState> v)
     {
         fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.wealth,
-               v.time_minutes, v.random_state.value, v.claimed_rewards);
+               v.time_minutes, v.detect_magic_until, v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if constexpr (!reading)
         {

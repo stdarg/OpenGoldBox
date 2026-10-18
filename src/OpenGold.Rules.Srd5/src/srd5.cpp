@@ -601,6 +601,17 @@ struct SpellAccessRow
 };
 
 constexpr std::array class_spell_access{
+    // Identify and Detect Magic, cast outside combat (#262).
+    SpellAccessRow{CharacterClass::bard, "identify", 1},
+    SpellAccessRow{CharacterClass::wizard, "identify", 1},
+    SpellAccessRow{CharacterClass::bard, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::cleric, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::druid, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::paladin, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::ranger, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::warlock, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::wizard, "detect_magic", 1},
     SpellAccessRow{CharacterClass::cleric, "cure_wounds", 1},
     SpellAccessRow{CharacterClass::cleric, "healing_word", 1},
     SpellAccessRow{CharacterClass::cleric, "blindness", 3},
@@ -27786,6 +27797,13 @@ class Module final : public RulesModule
             target_state = vitals(healed);
             return;
         }
+        // Identify spends its slot; the campaign reveals the item it touches.
+        if (const auto *identify = detail::find_spell(action); identify && identify->id == "identify")
+        {
+            pay_for_spell(caster, action, *identify);
+            user_state = vitals(caster);
+            return;
+        }
         // Remove Curse ends the member's curses; the campaign frees it from
         // its cursed items.
         if (const auto *uncurse = detail::find_spell(action);
@@ -27981,6 +27999,14 @@ class Module final : public RulesModule
                                         detail::EffectKind::circle_ward, type);
             caster.effects.active.back().remaining_ms =
                 static_cast<unsigned>(3600000 * (slot_level_of(action, circle) - 2));
+            user_state = vitals(caster);
+            return;
+        }
+        // Detect Magic spends its slot; the campaign marks magic items for its
+        // ten minutes.
+        if (const auto *detect = detail::find_spell(action); detect && detect->id == "detect_magic")
+        {
+            pay_for_spell(caster, action, *detect);
             user_state = vitals(caster);
             return;
         }

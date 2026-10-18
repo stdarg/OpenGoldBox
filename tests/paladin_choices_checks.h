@@ -173,7 +173,8 @@ void paladin_choices_checks()
     check(options.may_prepare && options.prepared_count == 2 &&
               option_ids(options.preparation) ==
                   std::vector<std::string>{
-                      "bless", "command", "cure_wounds", "divine_favor", "divine_smite", "heroism",
+                      "bless", "command", "cure_wounds", "detect_magic", "divine_favor",
+                      "divine_smite", "heroism",
                       "protection_from_evil_and_good", "searing_smite", "shield_of_faith"},
           "Creation prepares from the implemented Paladin list");
     check(rules->character_profile(paladin.sheet(), {}).data.starts_with("PC43 1 0 1 cure_wounds "),
