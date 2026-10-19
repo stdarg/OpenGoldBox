@@ -1,0 +1,31 @@
+{
+  "action_sha256": "413b96b670e0f020e6cf7005ed518b733e41173dccae9e482679413c51e14060",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_40/item_002__item_003/action.png",
+    "ready": "art/mon3cha_dax_40/item_002__item_003/ready.png"
+  },
+  "metadata_sha256": "cf0ca40a41d1084d971673a6bcc3d57f570c05dfc112521daa4b7070ddf58f0a",
+  "notes": "Early full-strike draft and full rear-guard retry moved stance, rejected. Final raised forward guard derived as small blade-angle edit from new action. 128px frames reviewed alternating in catalog: same boots, blue sash, leather armor, shield, body scale and fixed base.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "df2ed4b70f008c405ad0d8bf0506084ff55a6b0f2e670ec1809424410befb8f3",
+  "reviewed_at": "2026-10-19T04:55:57.555162+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:40",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_003",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
