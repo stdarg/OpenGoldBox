@@ -297,6 +297,8 @@ std::string_view repeated_save_spell(EffectKind kind)
         return "blindness";
     case EffectKind::hold_person:
         return "hold_person";
+    case EffectKind::paralysis_ray:
+        return "wand_of_paralysis";
     case EffectKind::drowsy:
         return "sleep";
     case EffectKind::laughing:
@@ -469,7 +471,8 @@ void consume_attack_masteries(EffectState &attacker, EffectState &target, Effect
 // Movement keeps off.
 bool paralyzed(const EffectState &effects) noexcept
 {
-    return has_effect(effects, EffectKind::hold_person) &&
+    return (has_effect(effects, EffectKind::hold_person) ||
+            has_effect(effects, EffectKind::paralysis_ray)) &&
            !has_effect(effects, EffectKind::free_moving);
 }
 
@@ -512,7 +515,7 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSour
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
          kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
          kind != EffectKind::knocked_out && kind != EffectKind::confused &&
-         kind != EffectKind::time_slowed) ||
+         kind != EffectKind::time_slowed && kind != EffectKind::paralysis_ray) ||
         !can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
         !save.first_save_ms || save.first_save_ms > round_ms)
     {
@@ -784,6 +787,8 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::violet:
     case EffectKind::word_stunned:
         return 60000; // 1 minute
+    case EffectKind::giant_strength:
+        return 3600000; // 1 hour
     case EffectKind::mazed:
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::mind_blank:
@@ -995,6 +1000,7 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                 bool removed = !e.remaining_ms;
                 if (!removed &&
                     (e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
+                     e.kind == EffectKind::paralysis_ray ||
                      e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
                      e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
                      e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused ||
@@ -1203,7 +1209,8 @@ EffectState read_effects(std::istream &in)
         }
         if (!in ||
             (!timed && !turn_save && kind != EffectKind::blindness &&
-             kind != EffectKind::hold_person && kind != EffectKind::drowsy &&
+             kind != EffectKind::hold_person && kind != EffectKind::paralysis_ray &&
+             kind != EffectKind::drowsy &&
              kind != EffectKind::laughing && kind != EffectKind::enfeebled &&
              kind != EffectKind::frightened && kind != EffectKind::knocked_out &&
              kind != EffectKind::confused && kind != EffectKind::time_slowed) ||

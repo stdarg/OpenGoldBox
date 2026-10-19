@@ -219,7 +219,11 @@ enum class Rider : unsigned
     natures_sanctuary,
     animal_shapes,
     slow,
-    tsunami
+    tsunami,
+    // The original's charged items (MAGIC-3).
+    paralysis_ray,
+    giant_strength,
+    disappearance
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2939,7 +2943,50 @@ inline constexpr std::array spell_table{
              .target = SpellTarget::wounded_ally,
              .range = 5,
              .bonus_action = true,
-             .dice = {4, 4, 4}}};
+             .dice = {4, 4, 4}},
+    // SRD 5.2.1: the Potion of Speed's Haste lasts a minute without
+    // Concentration.
+    SpellDef{.id = "potion_of_speed",
+             .label = "Potion of Speed",
+             .level = 1,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::ally,
+             .range = 5,
+             .bonus_action = true,
+             .requires_effect_capacity = true,
+             .rider = Rider::haste},
+    // A Potion of Giant Strength: Strength 21 for an hour (MAGIC-3).
+    SpellDef{.id = "potion_of_giant_strength",
+             .label = "Potion of Giant Strength",
+             .level = 1,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::ally,
+             .range = 5,
+             .bonus_action = true,
+             .requires_effect_capacity = true,
+             .rider = Rider::giant_strength},
+    // Dust of Disappearance: the Utilize action throws it, and the user and
+    // allies within 10 feet turn Invisible (MAGIC-3).
+    SpellDef{.id = "dust_of_disappearance",
+             .label = "Dust of Disappearance",
+             .level = 1,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::self,
+             .range = 10,
+             .rider = Rider::disappearance},
+    // The Wand of Paralysis: a ray at a creature within 60 feet, a
+    // Constitution save or Paralyzed for up to a minute, saving again at the
+    // end of each of its turns (MAGIC-3).
+    SpellDef{.id = "wand_of_paralysis",
+             .label = "Wand of Paralysis",
+             .level = 1,
+             .pattern = SpellPattern::save_condition,
+             .target = SpellTarget::enemy,
+             .range = 60,
+             .requires_sight = true,
+             .requires_effect_capacity = true,
+             .save = Ability::constitution,
+             .rider = Rider::paralysis_ray}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in

@@ -5,10 +5,12 @@
 #include "test_support.h"
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -172,7 +174,8 @@ bool logged(const CombatSession &c, std::string_view text)
 // with inventory ID 7, 8, ...) and holds `equipped`, with `hp` Hit Points.
 std::unique_ptr<CombatSession> fighter_turn(const RulesModule &rules,
                                             std::vector<std::pair<std::string, unsigned>> carried,
-                                            std::vector<std::string> equipped, int hp)
+                                            std::vector<std::string> equipped, int hp,
+                                            Cell foe = {6, 1})
 {
     const auto hero = fighter();
     Participant p{1, "campaign-character", "Fighter", Side::party, {1, 1},
@@ -184,7 +187,7 @@ std::unique_ptr<CombatSession> fighter_turn(const RulesModule &rules,
         p.inventory.push_back({id++, definition, quantity});
     }
     auto c = rules.create({{12, 6, std::vector<Terrain>(72)},
-                           {p, {2, "vanguard", "Foe", Side::opposition, {6, 1}}}},
+                           {p, {2, "vanguard", "Foe", Side::opposition, foe}}},
                           5);
     test::keep_initiative(*c);
     for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
@@ -247,6 +250,51 @@ void wands()
     check(hit_points(*c, 2) < 28 && uses_left(*c, 7) == 2, "The darts strike and spend a charge");
     check(!offered(*c, "magic_missile_item"), "It took the Action");
 }
+// The bonus of the fighter's first logged attack roll.
+std::optional<int> attack_bonus(const CombatSession &c)
+{
+    for (const auto &line : c.snapshot().log())
+    {
+        if (line.starts_with("Fighter -> Foe: d20 "))
+        {
+            return std::stoi(line.substr(line.find(" + ") + 3));
+        }
+    }
+    return std::nullopt;
+}
+
+// Potions of Speed and Giant Strength, Dust of Disappearance and the Wand of
+// Paralysis.
+void other_effects()
+{
+    const auto rules = module();
+    auto speed = fighter_turn(*rules, {{"potion_of_speed", 1}}, {}, 12);
+    check(submit(*speed, "potion_of_speed_item", 1) && logged(*speed, "gains Haste") &&
+              uses_left(*speed, 7) == 0,
+          "A Potion of Speed hastes its drinker");
+
+    auto plain = fighter_turn(*rules, {}, {"longsword"}, 12, {2, 1});
+    check(submit(*plain, "melee", 2), "Attack without the potion");
+    auto strong = fighter_turn(*rules, {{"potion_of_giant_strength", 1}}, {"longsword"}, 12, {2, 1});
+    check(submit(*strong, "potion_of_giant_strength_item", 1) &&
+              logged(*strong, "Strength becomes 21") && submit(*strong, "melee", 2),
+          "Drink a Potion of Giant Strength, then attack");
+    check(attack_bonus(*plain) && attack_bonus(*strong) && *attack_bonus(*strong) > *attack_bonus(*plain),
+          "Strength 21 raises the attack roll");
+    check(rules->restore(strong->save())->save() == strong->save(),
+          "A checkpoint keeps the giant's Strength");
+
+    auto dust = fighter_turn(*rules, {{"dust_of_disappearance", 1}}, {}, 12);
+    check(submit(*dust, "dust_of_disappearance_item", 1) && logged(*dust, "turns Invisible") &&
+              uses_left(*dust, 7) == 0 && !offered(*dust, "dash"),
+          "Dust of Disappearance turns its user Invisible with the Utilize action");
+
+    auto wand = fighter_turn(*rules, {{"wand:paralysis", 23}}, {"wand:paralysis"}, 12);
+    check(submit(*wand, "wand_of_paralysis_item", 2) && logged(*wand, "uses the Wand of Paralysis") &&
+              logged(*wand, "DC 15") && uses_left(*wand, 7) == 22,
+          "The Wand of Paralysis calls for a DC 15 Constitution save");
+}
+
 // Aims an area item's effect at `center` and sets it off.
 bool aim_and_cast(CombatSession &c, std::string_view verb, Cell center)
 {
@@ -311,6 +359,30 @@ void after_combat()
     check(!party.member(id).character.inventory().find(potion) &&
               !party.member(id).item_sources.contains(potion),
           "The empty potion is gone");
+
+    // Giant Strength lasts its hour past the fight.
+    check(party.award_loot({}, {original(84, 1, 82)}, "test:strength"), "Collect the potion");
+    auto again = party.participants();
+    again.front().cell = {1, 1};
+    again.push_back({2, "vanguard", "Foe", Side::opposition, {6, 1}});
+    party.begin_combat();
+    auto fight = rules->create({{12, 6, std::vector<Terrain>(72)},
+                                again,
+                                party.state().next_combat_scope,
+                                100,
+                                coins(party.state().wealth, Coin::gold)},
+                               5);
+    test::keep_initiative(*fight);
+    for (unsigned turns = 0; fight->snapshot().actor != id && turns < 4; ++turns)
+    {
+        check(submit(*fight, "end"), "Reach the fighter's turn");
+    }
+    check(submit(*fight, "potion_of_giant_strength_item", id), "Drink Giant Strength");
+    party.apply_combat(fight->snapshot());
+    party.end_combat();
+    const auto strong = party.profile(id).melee_attack_bonus;
+    party.advance_time(std::chrono::minutes{61});
+    check(party.profile(id).melee_attack_bonus <= strong, "An hour later it has worn off");
 }
 } // namespace
 
@@ -323,6 +395,7 @@ int main()
         potions();
         wands();
         areas();
+        other_effects();
         after_combat();
         std::cout << "Charged item tests passed\n";
         return 0;

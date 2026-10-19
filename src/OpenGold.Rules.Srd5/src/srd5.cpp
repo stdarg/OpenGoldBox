@@ -2018,6 +2018,29 @@ int channel_capacity(const Definition &d)
     return d.channel_divinity + d.rages + d.wild_shapes;
 }
 
+// A Potion of Giant Strength (MAGIC-3): Strength 21, a +5 modifier, when that
+// is better. A Strength-based melee attack and its damage, Strength saves and
+// Athletics follow it.
+Definition strengthened(Definition d)
+{
+    constexpr int giant = 5;
+    const int gain = giant - d.strength;
+    if (gain <= 0)
+    {
+        return d;
+    }
+    if (d.melee_ability == d.strength)
+    {
+        d.melee_bonus += gain;
+        d.melee.bonus += gain;
+        d.melee_ability = giant;
+    }
+    d.saves[static_cast<std::size_t>(Ability::strength)] += gain;
+    d.athletics += gain;
+    d.strength = giant;
+    return d;
+}
+
 // Wild Shape: the Beast's AC, Speed, size, Strength, Dexterity, physical saves
 // and attack replace the Druid's; Hit Points, mental scores, proficiencies
 // and features stay. Equipment merges into the form, and no spells are cast.
@@ -2465,7 +2488,7 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
     }
     if (condition == "paralyzed")
     {
-        return kind == detail::EffectKind::hold_person;
+        return kind == detail::EffectKind::hold_person || kind == detail::EffectKind::paralysis_ray;
     }
     return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
            kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened;
@@ -2489,7 +2512,7 @@ bool has_condition(const Actor &a, std::string_view condition)
 // that give each. Deafened is not modeled (DEAF-1).
 constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 2>>, 5>
     restorable_conditions{
-        {{"Paralyzed", {detail::EffectKind::hold_person, detail::EffectKind::hold_person}},
+        {{"Paralyzed", {detail::EffectKind::hold_person, detail::EffectKind::paralysis_ray}},
          {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned}},
          {"Blinded", {detail::EffectKind::blindness, detail::EffectKind::dazzled}},
          {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured}},
@@ -7235,6 +7258,8 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::true_seeing, "True Seeing"},
               std::pair{detail::EffectKind::regenerating, "Regenerate"},
               std::pair{detail::EffectKind::hasted, "Haste"},
+              std::pair{detail::EffectKind::paralysis_ray, "Paralyzed (Wand of Paralysis)"},
+              std::pair{detail::EffectKind::giant_strength, "Giant Strength"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
@@ -8269,6 +8294,38 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {"{name} is Paralyzed.", {{"name", target.source.name}}});
         end_incapacitated_effects(target);
         return;
+    case detail::Rider::paralysis_ray:
+        detail::apply_repeating_condition(
+            target.effects, detail::EffectKind::paralysis_ray, effect_source(a), a.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
+        log(target.source.name + " is Paralyzed.",
+            {"{name} is Paralyzed.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
+        return;
+    case detail::Rider::giant_strength:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::giant_strength, 0);
+        refresh_form(target);
+        log(target.source.name + "'s Strength becomes 21.",
+            {"{name}'s Strength becomes 21.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::disappearance:
+        // The user and each ally within 10 feet turn Invisible; attacking or
+        // casting a spell ends it, as Invisibility does.
+        for (auto &ally : actors_)
+        {
+            if (ally.source.side == a.source.side && !ally.life.dead &&
+                distance(a.source.cell, ally.source.cell) <= 10 &&
+                detail::can_apply(ally.effects) &&
+                !detail::has_effect(ally.effects, detail::EffectKind::invisible))
+            {
+                detail::apply_spell_benefit(ally.effects, effect_source(a), a.source.name,
+                                            detail::EffectKind::invisible, 0);
+                log(ally.source.name + " turns Invisible.",
+                    {"{name} turns Invisible.", {{"name", ally.source.name}}});
+            }
+        }
+        return;
     case detail::Rider::guiding_bolt:
     {
         // Until the end of the caster's next turn.
@@ -9257,6 +9314,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         if ((spell.rider == detail::Rider::blur &&
              detail::has_effect(other.effects, detail::EffectKind::blur)) ||
+            (spell.rider == detail::Rider::giant_strength &&
+             detail::has_effect(other.effects, detail::EffectKind::giant_strength)) ||
+            (spell.rider == detail::Rider::haste &&
+             detail::has_effect(other.effects, detail::EffectKind::hasted)) ||
             (spell.rider == detail::Rider::invisibility &&
              detail::has_effect(other.effects, detail::EffectKind::invisible)) ||
             (spell.rider == detail::Rider::see_invisibility &&
@@ -12855,6 +12916,10 @@ void Session::refresh_form(Actor &a)
     {
         a.form =
             shaped(a.definition, detail::beast_forms.at(static_cast<std::size_t>(shape->dc - 1)));
+    }
+    if (detail::has_effect(a.effects, detail::EffectKind::giant_strength))
+    {
+        a.form = strengthened(a.form ? *a.form : a.definition);
     }
 }
 

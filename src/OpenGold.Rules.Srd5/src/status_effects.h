@@ -474,9 +474,14 @@ enum class EffectKind : unsigned
     protectors_used = 191,
     // Tsunami: the creature has swum this turn, against the wave.
     swum = 192,
+    // The Wand of Paralysis (MAGIC-3): Paralyzed for up to a minute, a
+    // Constitution save at the end of each of its turns.
+    paralysis_ray = 193,
+    // A Potion of Giant Strength (MAGIC-3): Strength 21 for an hour.
+    giant_strength = 194,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = swum
+    last = giant_strength
 };
 
 // Magic Circle's creature types, by `dc`.
