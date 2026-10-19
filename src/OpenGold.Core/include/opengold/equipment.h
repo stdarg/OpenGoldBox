@@ -31,7 +31,14 @@ struct Equipment
     EquipmentBonuses bonuses;
     // Full name decoded from START.EXE when the item type has no generic label.
     std::string decoded_name;
+    // The name decoded_name shows until the item is identified, without the
+    // words its record hides (#262).
+    std::string unidentified_name;
+    // Whether every name word is known: the shop's ID or Identify reveals them.
+    [[nodiscard]] bool identified() const noexcept;
+    // The name as the party knows it.
     [[nodiscard]] std::string label() const;
+    void identify() noexcept;
 };
 } // namespace opengold::por
 #endif

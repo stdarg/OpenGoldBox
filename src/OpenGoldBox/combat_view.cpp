@@ -2604,7 +2604,8 @@ void CombatView::refresh()
     if (player && throwing != s.combatants.end())
     {
         for (const std::string_view verb :
-             {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot", "doff_shield"})
+             {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot",
+              "javelin_lightning", "doff_shield"})
         {
             const auto command = std::find_if(offered.begin(), offered.end(),
                                               [&](const auto &c)
@@ -2630,6 +2631,17 @@ void CombatView::refresh()
             }
             items->add_item(label, static_cast<int>(item_verbs_.size()));
             item_verbs_.emplace_back(verb);
+        }
+        // Potions, wands, the necklace and dust (MAGIC-3), by the item's name.
+        for (const auto &command : offered)
+        {
+            if (command.actor == throwing->id && command.verb.ends_with("_item") &&
+                std::find(item_verbs_.begin(), item_verbs_.end(), command.verb) ==
+                    item_verbs_.end())
+            {
+                items->add_item(i18n::text(command.label), static_cast<int>(item_verbs_.size()));
+                item_verbs_.push_back(command.verb);
+            }
         }
     }
     const auto chosen = std::find(item_verbs_.begin(), item_verbs_.end(), item_verb_);

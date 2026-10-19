@@ -43,6 +43,18 @@ Add an entry whenever a new departure is decided.
   becomes the SRD's Flame Tongue with its +2 kept: a Bonus Action lights the
   blade for an extra 2d6 Fire damage, and it needs attunement.
   [MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor).
+- **Charged items** (2026-10-19). The original's wands, potions and other
+  charged items keep their charges but work as their SRD 5.2.1 counterparts:
+  Potion Extra Healing's three small doses are three Potions of Greater
+  Healing, the Necklace of Missiles' missiles are 8d6 Fireballs, the Javelin of
+  Lightning's bolt returns after a Long Rest instead of being spent, and the
+  Manual of Bodily Health gives +2 Constitution.
+  [MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items).
+- **Identifying by attunement and Identify** (2026-10-18). In the original only
+  a shop's ID revealed a magic item's name. OpenGoldBox keeps it and adds the
+  SRD's Identify spell; attuning to an item, such as Flame Tongue, also reveals
+  its name.
+  [MAGIC-2](SRD-DECISIONS.md#magic-2-2026-10-18-identifying-magic-items).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.

@@ -123,6 +123,8 @@ struct PartyState
     Purse wealth{};     // All the party's money; no member carries coins of their own.
     bool quick_magic{}; // Members on Quick may cast spells.
     std::uint64_t time_minutes{};
+    // The minute Detect Magic ends; until then item lists mark magic items.
+    std::uint64_t detect_magic_until{};
     RandomState random_state{42};
     std::vector<std::string> claimed_rewards;
     unsigned subminute_milliseconds{};
@@ -203,6 +205,15 @@ class CampaignParty
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     // The party's gold pays; the item goes to the member.
     void purchase(MemberId id, const por::Equipment &item);
+    // Reads a Manual of Bodily Health the member carries (MAGIC-3):
+    // Constitution and its maximum rise by 2, Hit Points with the new maximum,
+    // and the book's magic is spent.
+    void read_manual(MemberId id, std::uint64_t item);
+    // Drinks one of a potion stack the member carries, outside combat (MAGIC-3).
+    void drink_potion(MemberId id, std::uint64_t item);
+    // The shop's ID: for 200 gp from the party purse, any item's hidden name
+    // words are revealed, as in the original. False when there were none.
+    bool identify_at_shop(MemberId id, std::uint64_t item);
     void set_wealth(Purse wealth);
     // Money a joining character brings; throws if the party purse cannot hold it.
     void add_coins(Coin coin, std::uint32_t count);
@@ -262,6 +273,20 @@ class CampaignParty
     [[nodiscard]] std::vector<rules::CampAction> camp_actions(MemberId id) const;
     // Atomic: on failure nothing changes.
     void use_camp_action(MemberId user, MemberId target, std::string_view action);
+    // The first active member who can cast Identify now, if any. Identify is
+    // cast on an item, so camp_actions() leaves it out.
+    [[nodiscard]] std::optional<MemberId> identifier() const;
+    // Identify, cast by `caster` on an item `holder` carries. False when the
+    // item hid nothing; the spell slot is spent either way.
+    bool cast_identify(MemberId caster, MemberId holder, std::uint64_t item);
+    // Whether Detect Magic is in effect: item lists mark magic items.
+    [[nodiscard]] bool detecting_magic() const noexcept
+    {
+        return state_.time_minutes < state_.detect_magic_until;
+    }
+    // Whether Detect Magic would sense the member's item: an enchantment, a
+    // curse, charges or a spell.
+    [[nodiscard]] bool magical(MemberId id, std::uint64_t item) const;
     // Eligible active members, in party order, try once each until one meets
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);
@@ -364,5 +389,11 @@ class CampaignParty
 };
 
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
+// How many an original item counts for in an inventory: a stack's items, or a
+// charged item's charges or doses (MAGIC-3), otherwise one.
+[[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
+// Reveals the item's hidden name words, so it takes its full name. False when
+// nothing was hidden.
+bool identify_item(PartyMember &member, std::uint64_t item);
 } // namespace opengold
 #endif

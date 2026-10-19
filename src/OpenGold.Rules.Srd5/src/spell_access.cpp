@@ -285,6 +285,10 @@ constexpr std::array spells{
           bard_list | sorcerer_list | warlock_list | wizard_list},
     Spell{"dispel_magic", "Dispel Magic", 3, 0,
           bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
+              warlock_list | wizard_list},
+    Spell{"identify", "Identify", 1, 0, bard_list | wizard_list},
+    Spell{"detect_magic", "Detect Magic", 1, 0,
+          bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
               warlock_list | wizard_list}};
 
 // A class that prepares spells from its whole class list instead of a
@@ -1932,6 +1936,14 @@ std::vector<InitiateSpells> lineage_spells(std::span<const FeatureGrant> grants,
                                   {}});
             }
         }
+    }
+    // A High Elf casts Detect Magic from level 3.
+    if (chose("lineage:high_elf") && level >= 3)
+    {
+        result.push_back({"species:elf",
+                          ability_of("elf", Ability::intelligence),
+                          {"detect_magic"},
+                          "detect_magic"});
     }
     if (chose("lineage:wood_elf") && level >= 3)
     {

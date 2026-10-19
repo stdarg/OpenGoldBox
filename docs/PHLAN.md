@@ -185,15 +185,18 @@ an affordable item from each of the four shop types. Restricted routes and
 unsupported branches are reported, not counted as successful execution.
 
 The Godot check completes the tour, uses movement/button callbacks to reach
-the arms shop, purchases a shield, opens inventory and leaves the shop:
+the arms shop, purchases a shield, opens inventory, has the shop identify it,
+makes the member a Bard who casts Detect Magic from the Cast menu and Identify
+from the inventory, and leaves the shop:
 
 ```cmd
 demos\review-rolf.cmd --headless -- --town-check
 demos\review-rolf.cmd -- --town-check --capture
 ```
 
-Captures are written under ignored `user-data/phlan-shop.png` and
-`user-data/phlan-inventory.png`. Tested at 960 x 720 and 1280 x 900.
+Captures are written under ignored `user-data/phlan-shop.png`,
+`user-data/phlan-inventory.png`, `phlan-cast.png`, `phlan-cast-done.png`,
+`phlan-detect.png` and `phlan-identify.png`. Tested at 960 x 720 and 1280 x 900.
 
 Unimplemented branches include town combat/duels and their party-strength
 queries, training, temple spells beyond Cure Wounds, short rests and general

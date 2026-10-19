@@ -710,7 +710,9 @@ void installed()
                     "Every installed creature item has an identified name");
             if (item.stored.type == 71)
             {
-                shared_type_names.insert(item.label());
+                auto identified = item;
+                identified.identify();
+                shared_type_names.insert(identified.label());
             }
         }
     }
@@ -718,6 +720,18 @@ void installed()
                 shared_type_names.contains("Javelin of Lightning") &&
                 shared_type_names.contains("Wooden Holy Symbol"),
             "Items sharing type 71 retain their individual names");
+    for (const auto &[id, creature] : c.all())
+    {
+        for (const auto &item : creature.equipment)
+        {
+            if (item.label() == "Potion")
+            {
+                shared_type_names.insert("unidentified potion");
+            }
+        }
+    }
+    require(shared_type_names.contains("unidentified potion"),
+            "Until identified, a potion is only a Potion, as in the original");
     const auto &troll = c.find({2, 31})->get();
     require(troll.stored.name == "TROLL" && troll.stored.max_hit_points == 36 &&
                 troll.stored.base_armor_class == 4 && troll.stored.base_thac0 == 13,

@@ -388,6 +388,82 @@ bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> 
     return visible;
 }
 
+// Uses a spell or feature outside combat, from the Camp dialog or the Cast
+// menu, and returns the line reporting it. Word of Recall's trip and
+// Reincarnate's species pages leave both dialogs, and return nothing.
+std::optional<String> RolfTourView::use_outside_combat(opengold::MemberId user,
+                                                       opengold::MemberId patient, const String &id,
+                                                       const String &action_text,
+                                                       const String &target_text)
+{
+    // HP restored across the party, so a whole-party spell reports its total.
+    const auto party_hp = [&]
+    {
+        int total = 0;
+        for (const auto member : campaign_->state().slots)
+        {
+            if (member)
+            {
+                total += campaign_->member(member).vitals.hit_points;
+            }
+        }
+        return total;
+    };
+    const auto leave_dialogs = [&]
+    {
+        presentation::required_node<Window>(*this, "RestDialog").hide();
+        presentation::required_node<Control>(*this, "CastPanel").hide();
+        rest_result_ = String();
+    };
+    // Word of Recall prepares the sanctuary or takes the party to it; the
+    // camp ends with the trip.
+    if (id == String("word_of_recall") && session_)
+    {
+        session_->recall(user);
+        leave_dialogs();
+        refresh();
+        return std::nullopt;
+    }
+    // Reincarnate forms a new body: its species' pages come first, and the
+    // camp closes for them.
+    if (id.begins_with("reincarnate"))
+    {
+        const auto &body = campaign_->member(patient);
+        if (!body.vitals.dead || patient == user)
+        {
+            throw std::runtime_error("Reincarnate needs a Humanoid dead up to ten days");
+        }
+        if (campaign_->rule_module().camp_action_gold(body.character.sheet(), body.vitals,
+                                                      id.utf8().get_data()) >
+            opengold::coins(campaign_->state().wealth, opengold::Coin::gold))
+        {
+            throw std::runtime_error("The party purse cannot pay the offering");
+        }
+        leave_dialogs();
+        emit_signal("reincarnation_requested", static_cast<int64_t>(user),
+                    static_cast<int64_t>(patient), id);
+        return std::nullopt;
+    }
+    // Simulacrum makes a copy of the chosen member, which joins the party.
+    if (id.begins_with("simulacrum") && id != String("simulacrum_repair"))
+    {
+        const auto original = String::utf8(campaign_->member(patient).character.sheet().name.c_str());
+        const auto name = i18n::formatted(N_("{name}'s simulacrum"), {{"name", original}});
+        campaign_->create_simulacrum(user, patient, id.utf8().get_data(), name);
+        return i18n::format(N_("{name} joins the party."), {{"name", String::utf8(name.c_str())}});
+    }
+    const int before = party_hp();
+    campaign_->use_camp_action(user, patient, id.utf8().get_data());
+    if (id.begins_with("detect_magic"))
+    {
+        return action_text + String("   ") + rest_text(N_("Magic items are marked * for ten minutes."));
+    }
+    return action_text + (target_text.is_empty() ? String() : ": " + target_text) + String("   ") +
+           (id == "lay_on_hands_cure"
+                ? rest_text(N_("No longer Poisoned."))
+                : rest_text(N_("HP restored:")) + " " + String::num_int64(party_hp() - before));
+}
+
 void RolfTourView::rest_use()
 {
     try
@@ -406,71 +482,14 @@ void RolfTourView::rest_use()
         const String id = action->get_selected_metadata();
         const auto patient =
             static_cast<unsigned>(static_cast<int64_t>(target->get_selected_metadata()));
-        // HP restored across the party, so a whole-party spell reports its total.
-        const auto party_hp = [&]
+        const auto result = use_outside_combat(
+            rest_member_, patient, id, action->get_item_text(action->get_selected()),
+            target->is_visible() ? target->get_item_text(target->get_selected()) : String());
+        if (!result)
         {
-            int total = 0;
-            for (const auto member : campaign_->state().slots)
-            {
-                if (member)
-                {
-                    total += campaign_->member(member).vitals.hit_points;
-                }
-            }
-            return total;
-        };
-        // Word of Recall prepares the sanctuary or takes the party to it; the
-        // camp ends with the trip.
-        if (id == String("word_of_recall") && session_)
-        {
-            session_->recall(rest_member_);
-            presentation::required_node<Window>(*this, "RestDialog").hide();
-            rest_result_ = String();
-            refresh();
             return;
         }
-        // Reincarnate forms a new body: its species' pages come first, and the
-        // camp closes for them.
-        if (id.begins_with("reincarnate"))
-        {
-            const auto &body = campaign_->member(patient);
-            if (!body.vitals.dead || patient == rest_member_)
-            {
-                throw std::runtime_error("Reincarnate needs a Humanoid dead up to ten days");
-            }
-            if (campaign_->rule_module().camp_action_gold(body.character.sheet(), body.vitals,
-                                                          id.utf8().get_data()) >
-                opengold::coins(campaign_->state().wealth, opengold::Coin::gold))
-            {
-                throw std::runtime_error("The party purse cannot pay the offering");
-            }
-            presentation::required_node<Window>(*this, "RestDialog").hide();
-            rest_result_ = String();
-            emit_signal("reincarnation_requested", static_cast<int64_t>(rest_member_),
-                        static_cast<int64_t>(patient), id);
-            return;
-        }
-        // Simulacrum makes a copy of the chosen member, which joins the party.
-        if (id.begins_with("simulacrum") && id != String("simulacrum_repair"))
-        {
-            const auto original =
-                String::utf8(campaign_->member(patient).character.sheet().name.c_str());
-            const auto name = i18n::formatted(N_("{name}'s simulacrum"), {{"name", original}});
-            campaign_->create_simulacrum(rest_member_, patient, id.utf8().get_data(), name);
-            rest_result_ =
-                i18n::format(N_("{name} joins the party."), {{"name", String::utf8(name.c_str())}});
-            refresh_rest();
-            return;
-        }
-        const int before = party_hp();
-        const bool party = !target->is_visible();
-        campaign_->use_camp_action(rest_member_, patient, id.utf8().get_data());
-        rest_result_ =
-            action->get_item_text(action->get_selected()) +
-            (party ? String() : ": " + target->get_item_text(target->get_selected())) + "   " +
-            (id == "lay_on_hands_cure"
-                 ? rest_text(N_("No longer Poisoned."))
-                 : rest_text(N_("HP restored:")) + " " + String::num_int64(party_hp() - before));
+        rest_result_ = *result;
         refresh_rest();
     }
     catch (const std::exception &e)

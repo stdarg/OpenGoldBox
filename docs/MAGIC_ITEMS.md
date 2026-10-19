@@ -50,6 +50,7 @@ Item records are 63 bytes ([creature-catalog.md](creature-catalog.md)).
 | 46 | Item type: an `ITEMS` template index (weapon 1-47, armor 50-58, shield 59, magic-user scroll 61, cleric scroll 62, bracers 77, wands 78-79, ring of protection 93, and others). |
 | 47-49 | Name components. |
 | 50 | Magic bonus: the +N of weapons, armor, shields and rings. On bracers it is the AC improvement (bracers +6 are "AC 4"). On wands, potions and other items it is not an enchantment. |
+| 53 | Name words hidden until the item is identified: bit 4 hides byte 47's word, bit 2 byte 48's, bit 1 byte 49's. Most weapons, shields, rings, potions, wands and scrolls have 6 (only the base word shows: "Long Sword"); body armor has 4 (its "+N" is hidden); the Cursed Necklace has 5 ("Necklace"). Mundane items and a few magic ones (the anti-undead sword, Plate Mail +1, Leather Armor +1, Ring of Protection +1, the Efreeti Bottle, most two-spell clerical scrolls) have 0. |
 | 54 | Cursed (1). |
 | 60 | Charges or uses: wand charges, potion doses, the necklace's missiles. |
 | 61 | Spell or power. 1-56 is a spell from the table above. Higher numbers are powers that only items have (see the tables). |
@@ -271,11 +272,53 @@ records the decisions.
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
   vs Undead" and 255 Cursed (byte 54). The bit-0x80 effects in byte 62 on the
   Long Swords +2 and +3 are not decoded, so those swords have only their +N.
-- The Javelin of Lightning, wands, potions, rings, bracers, scrolls and the
-  other worn items are still unsupported (#262 to #265).
+- **Wands, potions and other charged items** (#263,
+  [MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items))
+  do what their SRD counterparts do and keep the original's charges, which
+  never recharge. Each converts by its spell or item power (byte 61): wands to
+  a plain wand with a power (`wand:magic_missiles`, `wand:lightning_bolts`,
+  `wand:paralysis`), the Javelin of Lightning to `javelin:lightning`, and the
+  rest to items of their own. The inventory's quantity counts what is left
+  ("23 charges", "6 missiles", or potions; Potion Extra Healing's three doses
+  are three Potions of Greater Healing).
+  - In a fight, from the Items menu: a potion is drunk, or given to a creature
+    within 5 feet, as a Bonus Action; a held wand casts its spell with the
+    Magic action at DC 15; a missile of the Necklace of Missiles explodes as an
+    8d6 Fireball at DC 15; Dust of Disappearance, thrown with the Utilize
+    action, turns its user and allies within 10 feet Invisible; the Javelin of
+    Lightning's bolt (4d6 in a line, DC 13, then 4d6 more on its hit) works once
+    until a Long Rest. Potions, missiles and dust are not spells, so
+    Counterspell cannot stop them and a raging creature can use them.
+  - A Thief's Fast Hands uses a wand, the necklace or dust as a Bonus Action.
+  - Outside combat, the inventory's Use drinks a healing potion or a Potion of
+    Giant Strength (whose hour carries into the next fight) and reads the
+    Manual of Bodily Health: Constitution and its maximum rise by 2, and the Hit
+    Point maximum follows as though the new modifier had counted from level 1.
+  - Quick characters use their items, whether or not Quick magic is on.
+  - An item with no charge or dose left is gone. Nothing needs attunement. The
+    Efreeti Bottle stays the original's scripted quest item.
+- Rings, bracers, scrolls and the other worn items are still unsupported (#264
+  and #265).
 - Fixed treasure lists show magic items under their original names ("Long
-  Sword +2 Flame Tongue"). Identification, which hides parts of a name until
-  the item is identified, is #262.
+  Sword +2 Flame Tongue").
+- **Identification** (#262,
+  [MAGIC-2](SRD-DECISIONS.md#magic-2-2026-10-18-identifying-magic-items)): a
+  found item's name leaves out the words byte 53 hides, everywhere it is
+  shown, including the rules' labels and the character sheet. The campaign
+  hands the rules such an item's key with `:unidentified` added, so the rules
+  name it without its enchantment and leave out its sheet notes; its bonus,
+  power and curse still work. A shop's ID, in the inventory while shopping,
+  reveals any item's name for 200 gp from the party purse, even an item with
+  nothing hidden, as in the original. Attuning to an item also reveals its
+  name.
+- **Identify and Detect Magic** are cast outside combat. When a member can
+  cast Identify, the inventory offers "Cast Identify" on the selected item,
+  any item, so the offer does not tell magic items from plain ones. Detect
+  Magic is cast from the exploration screen's Cast menu (or Camp's Cast /
+  Use); for ten minutes of game time the inventory marks each magic item
+  (an enchantment, a curse, charges or a spell) with "* ". The Cast menu
+  offers the selected member's spells and features that Camp's Cast / Use
+  offers.
 
 ## Open questions
 

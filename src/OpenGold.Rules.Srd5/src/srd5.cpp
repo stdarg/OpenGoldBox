@@ -17,6 +17,7 @@
 #include "weapons.h"
 #include "thrown_gear.h"
 #include "armor.h"
+#include "magic_items.h"
 #include "opengold/item_key.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -72,8 +73,11 @@ std::string weapon_label(std::string_view key)
     {
         return std::string(key);
     }
-    if (const int bonus = rules::parse_item_key(key).bonus)
+    // An unidentified item is named without its enchantment (#262).
+    if (const auto enchantment = rules::parse_item_key(key);
+        enchantment.bonus && !enchantment.unidentified)
     {
+        const int bonus = enchantment.bonus;
         label += (bonus > 0 ? " +" : " -") + std::to_string(std::abs(bonus));
     }
     return label;
@@ -95,11 +99,16 @@ std::string english(const Message &message)
     return text;
 }
 
-// What an enchanted item's magic adds (MAGIC-1).
+// What an enchanted item's magic adds (MAGIC-1); nothing until it is
+// identified, though its numbers already count.
 std::vector<Message> enchantment_messages(std::string_view key)
 {
     const auto enchantment = rules::parse_item_key(key);
     std::vector<Message> messages;
+    if (enchantment.unidentified)
+    {
+        return messages;
+    }
     const auto bonus = (enchantment.bonus > 0 ? "+" : "") + std::to_string(enchantment.bonus);
     const auto *item = detail::weapon(key);
     if (enchantment.bonus && item)
@@ -536,8 +545,24 @@ bool is_smite(std::string_view verb)
            spell == "shining_smite" || spell == "ensnaring_strike";
 }
 
+bool usable_outside_combat(std::string_view item) noexcept
+{
+    return item == "manual_of_bodily_health" || item == "potion_of_healing" ||
+           item == "potion_of_greater_healing" || item == "potion_of_giant_strength";
+}
+
+std::string_view charge_noun(std::string_view item) noexcept
+{
+    const auto *magic = detail::magic_item(item);
+    return magic ? magic->noun : std::string_view{};
+}
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
+    if (const auto *magic = detail::magic_item(item))
+    {
+        return std::string(magic->note);
+    }
     std::string text;
     if (trained(detail::class_of(sheet), sheet.grants, item))
     {
@@ -578,7 +603,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 63;
+constexpr unsigned checkpoint_format = 64;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -593,6 +618,17 @@ struct SpellAccessRow
 };
 
 constexpr std::array class_spell_access{
+    // Identify and Detect Magic, cast outside combat (#262).
+    SpellAccessRow{CharacterClass::bard, "identify", 1},
+    SpellAccessRow{CharacterClass::wizard, "identify", 1},
+    SpellAccessRow{CharacterClass::bard, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::cleric, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::druid, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::paladin, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::ranger, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::sorcerer, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::warlock, "detect_magic", 1},
+    SpellAccessRow{CharacterClass::wizard, "detect_magic", 1},
     SpellAccessRow{CharacterClass::cleric, "cure_wounds", 1},
     SpellAccessRow{CharacterClass::cleric, "healing_word", 1},
     SpellAccessRow{CharacterClass::cleric, "blindness", 3},
@@ -1493,6 +1529,8 @@ struct Definition
     bool brave{}; // Halfling: Advantage on saves to avoid or end Frightened
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
+    bool fast_hands{}; // Thief: a magic item used as a Bonus Action (MAGIC-3)
+    bool use_magic_device{}; // Thief 13: a 6 on 1d6 keeps a spent charge
     // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
     // Wholeness of Body's uses per Long Rest.
     int martial_die{6}, wholeness{}, wisdom{};
@@ -1697,8 +1735,13 @@ struct Actor
     // Thrown gear (Acid, Alchemist's Fire, Oil, by ThrownGearEffect) still carried:
     // counted from the inventory when combat begins and spent by each throw.
     std::array<unsigned, 3> thrown_gear_left{};
+    // Charged items (MAGIC-3) by inventory ID: the charges, missiles or potions
+    // left, counted from the inventory when combat begins and spent by each use.
+    std::vector<std::pair<std::uint64_t, unsigned>> item_uses;
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     bool flame_lit{};        // Its Flame Tongue's blade is lit (a Bonus Action lights it)
+    bool lightning_throw{};  // Its Javelin of Lightning's bolt flies, within one command
+    bool keeps_charge{};     // Use Magic Device saved this use's charge, within one command
     bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
@@ -1985,6 +2028,29 @@ int channel_capacity(const Definition &d)
     return d.channel_divinity + d.rages + d.wild_shapes;
 }
 
+// A Potion of Giant Strength (MAGIC-3): Strength 21, a +5 modifier, when that
+// is better. A Strength-based melee attack and its damage, Strength saves and
+// Athletics follow it.
+Definition strengthened(Definition d)
+{
+    constexpr int giant = 5;
+    const int gain = giant - d.strength;
+    if (gain <= 0)
+    {
+        return d;
+    }
+    if (d.melee_ability == d.strength)
+    {
+        d.melee_bonus += gain;
+        d.melee.bonus += gain;
+        d.melee_ability = giant;
+    }
+    d.saves[static_cast<std::size_t>(Ability::strength)] += gain;
+    d.athletics += gain;
+    d.strength = giant;
+    return d;
+}
+
 // Wild Shape: the Beast's AC, Speed, size, Strength, Dexterity, physical saves
 // and attack replace the Druid's; Hit Points, mental scores, proficiencies
 // and features stay. Equipment merges into the form, and no spells are cast.
@@ -2184,10 +2250,92 @@ bool arcanum_spent(const Actor &a, unsigned level)
                        });
 }
 
+// The charged item `a` can use for `spell` now (MAGIC-3): one with uses left,
+// and a wand only while one of its kind is held. Null when there is none.
+const detail::MagicItem *usable_item(const Actor &a, const detail::SpellDef &spell)
+{
+    for (const auto &carried : a.source.inventory)
+    {
+        const auto *item = detail::magic_item(carried.definition);
+        if (!item || item->spell != spell.id)
+        {
+            continue;
+        }
+        const bool held = std::any_of(a.definition.equipment_keys.begin(),
+                                      a.definition.equipment_keys.end(),
+                                      [&](const auto &key)
+                                      {
+                                          return detail::magic_item(key) == item;
+                                      });
+        const auto uses = std::find_if(a.item_uses.begin(), a.item_uses.end(),
+                                       [&](const auto &entry)
+                                       {
+                                           return entry.first == carried.inventory_id;
+                                       });
+        if ((held || item->use != detail::ItemUse::wand) && uses != a.item_uses.end() &&
+            uses->second)
+        {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+// Spends a use of the first carried item of `kind` with uses left.
+void spend_item_use(Actor &a, const detail::MagicItem &kind)
+{
+    for (const auto &carried : a.source.inventory)
+    {
+        if (detail::magic_item(carried.definition) != &kind)
+        {
+            continue;
+        }
+        for (auto &[id, left] : a.item_uses)
+        {
+            if (id == carried.inventory_id && left)
+            {
+                --left;
+                return;
+            }
+        }
+    }
+    throw std::runtime_error("No use of the item is left");
+}
+
+// Whether a verb uses a carried item, and the use is not the casting of a
+// spell: a potion, a missile or dust. A wand casts its spell.
+bool item_effect(std::string_view verb)
+{
+    if (!detail::item_verb(verb))
+    {
+        return false;
+    }
+    const auto id = detail::without_cast_suffix(verb);
+    return std::none_of(detail::magic_items.begin(), detail::magic_items.end(),
+                        [&](const auto &item)
+                        {
+                            return item.spell == id && item.use == detail::ItemUse::wand;
+                        });
+}
+
 // Pays for a leveled spell: with Magic Initiate's free cast, or from a slot of
 // the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
+    // A carried item's spell spends a charge or use of the item (MAGIC-3).
+    if (detail::item_verb(verb))
+    {
+        const auto *item = usable_item(a, spell);
+        if (!item)
+        {
+            throw std::runtime_error("No use of the item is left");
+        }
+        if (!std::exchange(a.keeps_charge, false))
+        {
+            spend_item_use(a, *item);
+        }
+        return;
+    }
     if (verb.ends_with(detail::initiate_suffix))
     {
         a.initiate_casts &= ~initiate_bit(a.definition, spell.id);
@@ -2353,7 +2501,7 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
     }
     if (condition == "paralyzed")
     {
-        return kind == detail::EffectKind::hold_person;
+        return kind == detail::EffectKind::hold_person || kind == detail::EffectKind::paralysis_ray;
     }
     return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
            kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened;
@@ -2377,7 +2525,7 @@ bool has_condition(const Actor &a, std::string_view condition)
 // that give each. Deafened is not modeled (DEAF-1).
 constexpr std::array<std::pair<std::string_view, std::array<detail::EffectKind, 2>>, 5>
     restorable_conditions{
-        {{"Paralyzed", {detail::EffectKind::hold_person, detail::EffectKind::hold_person}},
+        {{"Paralyzed", {detail::EffectKind::hold_person, detail::EffectKind::paralysis_ray}},
          {"Stunned", {detail::EffectKind::stunned, detail::EffectKind::stunned}},
          {"Blinded", {detail::EffectKind::blindness, detail::EffectKind::dazzled}},
          {"Frightened", {detail::EffectKind::frightened, detail::EffectKind::abjured}},
@@ -2603,14 +2751,31 @@ struct PendingCheck
 };
 
 // `draconic`: a Draconic Sorcerer gains its level in Hit Points from level 3.
+// The Manual of Bodily Health (MAGIC-3): each one read adds this grant, from
+// this source, and 2 to Constitution and its maximum.
+constexpr std::string_view bodily_health = "boon:bodily_health";
+constexpr std::string_view manual_source = "item:manual_of_bodily_health";
+
+// The grants a class, species, background or feat gives, without a Manual's.
+std::vector<FeatureGrant> without_manuals(std::vector<FeatureGrant> grants)
+{
+    std::erase_if(grants,
+                  [](const auto &g)
+                  {
+                      return g.id == bodily_health;
+                  });
+    return grants;
+}
+
 int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<const int> modifiers,
                        bool draconic)
 {
     if (modifiers.empty() || modifiers.size() > detail::level_cap(klass) ||
         std::any_of(modifiers.begin(), modifiers.end(),
+                    // A Manual of Bodily Health can raise Constitution to 30.
                     [](int n)
                     {
-                        return n < -4 || n > 5;
+                        return n < -4 || n > 10;
                     }))
     {
         throw std::runtime_error("Invalid HP advancement history");
@@ -2718,8 +2883,6 @@ character_definition(std::string_view bytes,
                     : (klass == CharacterClass::wizard || klass == CharacterClass::sorcerer) ? 6
                                                                                              : 8;
     Definition d;
-    d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
-                              klass == CharacterClass::sorcerer);
     d.hit_die = die;
     d.constitution = con;
     d.dwarf = race == "Dwarf";
@@ -2938,6 +3101,18 @@ character_definition(std::string_view bytes,
     std::string background;
     in >> std::quoted(background);
     const auto grants = detail::read_grants(in);
+    d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
+                              klass == CharacterClass::sorcerer);
+    d.fast_hands = std::any_of(grants.begin(), grants.end(),
+                               [](const auto &g)
+                               {
+                                   return g.id == "feature:fast_hands";
+                               });
+    d.use_magic_device = std::any_of(grants.begin(), grants.end(),
+                                     [](const auto &g)
+                                     {
+                                         return g.id == "feature:use_magic_device";
+                                     });
     // A species' creation choices: size, a Wood Elf's speed and a Tiefling's
     // or Dragonborn's resistance.
     const auto chose = [&](std::string_view id)
@@ -3314,7 +3489,8 @@ character_definition(std::string_view bytes,
     {
         throw std::runtime_error("Character casting access disagrees with spell grants");
     }
-    const auto features_only = detail::without_spell_grants(detail::without_training(grants));
+    const auto features_only =
+        without_manuals(detail::without_spell_grants(detail::without_training(grants)));
     const auto effects =
         detail::validate_grants(features_only, klass, detail::race_id(race), background, level);
     if (effects.feats != features)
@@ -3728,7 +3904,7 @@ const CunningOption &cunning_option(CunningStrike kind)
 bool attack_action(std::string_view verb)
 {
     return verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot" ||
-           verb.starts_with("throw");
+           verb.starts_with("throw") || verb == "javelin_lightning";
 }
 
 bool turns_to_attack(std::string_view verb)
@@ -3736,7 +3912,8 @@ bool turns_to_attack(std::string_view verb)
     // A caster turns toward a foe, not toward an ally being healed, so every
     // spell except the ally-targeted ones counts alongside weapon attacks.
     if (verb.starts_with("light_") || verb.starts_with("nick_") || verb.starts_with("throw") ||
-        verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot")
+        verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot" ||
+        verb == "javelin_lightning")
     {
         return true;
     }
@@ -3972,6 +4149,10 @@ class Session final : public CombatSession
                     if (const auto *gear = detail::thrown_gear(item.definition))
                     {
                         a.thrown_gear_left[static_cast<std::size_t>(gear->effect)] += item.quantity;
+                    }
+                    if (detail::magic_item(item.definition))
+                    {
+                        a.item_uses.emplace_back(item.inventory_id, item.quantity);
                     }
                 }
             }
@@ -4390,6 +4571,7 @@ class Session final : public CombatSession
         int hp{}, max_hp{}, armor_class{};
         VitalState vitals;
         std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+        std::vector<std::pair<std::uint64_t, unsigned>> item_uses;
         bool surrendered{};
     };
 
@@ -4952,6 +5134,11 @@ class Session final : public CombatSession
                                                  unsigned slot_level,
                                                  const std::vector<Cell> &cells) const;
     void cast_area();
+    // Logs that `a` uses the carried item a spell comes from (MAGIC-3), and rolls
+    // Use Magic Device's d6 for a charge.
+    void log_item_use(Actor &a, const detail::SpellDef &spell);
+    // Throws the Javelin of Lightning `token` at `target` as a bolt (MAGIC-3).
+    void lightning_javelin(Actor &a, Actor &target, unsigned token);
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
@@ -5068,6 +5255,9 @@ class Session final : public CombatSession
     // Metamagic spent on the spell now resolving, and Heightened Spell's target.
     std::vector<ReadyMetamagic> casting_metamagic_;
     EntityId heightened_target_{};
+    // The creature using an item's spell (MAGIC-3), whose save DC is then the
+    // item's 15; 0 otherwise.
+    EntityId item_caster_{};
     // Overchannel: the spell its Wizard is casting deals its maximum damage,
     // and the Wizard then takes this many d12 of Necrotic damage.
     bool overchanneling_{};
@@ -5079,6 +5269,11 @@ class Session final : public CombatSession
     // a class feature names no spell and uses the class's.
     [[nodiscard]] int spell_dc(const Actor &caster, std::string_view spell = {}) const
     {
+        constexpr int item_dc = 15;
+        if (item_caster_ && caster.source.id == item_caster_)
+        {
+            return item_dc;
+        }
         return 8 + casting_bonus(def(caster), spell) +
                (detail::has_effect(caster.effects, detail::EffectKind::innate_sorcery) ? 1 : 0);
     }
@@ -6075,6 +6270,7 @@ void Session::remove_fled()
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
             }
         }
+        gone.item_uses = a.item_uses;
         // `a` is erased next, so its participant moves rather than copies.
         gone.source = std::move(a.source);
         fled_.push_back(std::move(gone));
@@ -6696,6 +6892,7 @@ Snapshot Session::snapshot() const
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
             }
         }
+        view.item_uses_left = a.item_uses;
         view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
         if (physical_inventory_)
@@ -7106,6 +7303,8 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::true_seeing, "True Seeing"},
               std::pair{detail::EffectKind::regenerating, "Regenerate"},
               std::pair{detail::EffectKind::hasted, "Haste"},
+              std::pair{detail::EffectKind::paralysis_ray, "Paralyzed (Wand of Paralysis)"},
+              std::pair{detail::EffectKind::giant_strength, "Giant Strength"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
@@ -7284,6 +7483,7 @@ Snapshot Session::snapshot() const
         view.status_messages = {{view.status, {}}};
         view.persistent = gone.vitals;
         view.thrown_gear_left = gone.thrown_gear_left;
+        view.item_uses_left = gone.item_uses;
         view.fled = !gone.surrendered;
         view.surrendered = gone.surrendered;
         s.combatants.push_back(std::move(view));
@@ -8139,6 +8339,38 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             {"{name} is Paralyzed.", {{"name", target.source.name}}});
         end_incapacitated_effects(target);
         return;
+    case detail::Rider::paralysis_ray:
+        detail::apply_repeating_condition(
+            target.effects, detail::EffectKind::paralysis_ray, effect_source(a), a.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
+        log(target.source.name + " is Paralyzed.",
+            {"{name} is Paralyzed.", {{"name", target.source.name}}});
+        end_incapacitated_effects(target);
+        return;
+    case detail::Rider::giant_strength:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::giant_strength, 0);
+        refresh_form(target);
+        log(target.source.name + "'s Strength becomes 21.",
+            {"{name}'s Strength becomes 21.", {{"name", target.source.name}}});
+        return;
+    case detail::Rider::disappearance:
+        // The user and each ally within 10 feet turn Invisible; attacking or
+        // casting a spell ends it, as Invisibility does.
+        for (auto &ally : actors_)
+        {
+            if (ally.source.side == a.source.side && !ally.life.dead &&
+                distance(a.source.cell, ally.source.cell) <= 10 &&
+                detail::can_apply(ally.effects) &&
+                !detail::has_effect(ally.effects, detail::EffectKind::invisible))
+            {
+                detail::apply_spell_benefit(ally.effects, effect_source(a), a.source.name,
+                                            detail::EffectKind::invisible, 0);
+                log(ally.source.name + " turns Invisible.",
+                    {"{name} turns Invisible.", {{"name", ally.source.name}}});
+            }
+        }
+        return;
     case detail::Rider::guiding_bolt:
     {
         // Until the end of the caster's next turn.
@@ -8480,11 +8712,24 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const auto target_id = targets.front();
     const auto &d = def(a);
     const unsigned steps = upcast_steps(verb, spell);
+    // A potion, missile or dust is not a spell: nothing counters it (MAGIC-3).
+    const bool from_item = detail::item_verb(verb);
+    if (from_item)
+    {
+        log_item_use(a, spell);
+    }
     // Counterspell: a stopped spell keeps its slot.
-    if (countered(a) || slowed_spell_fails(a, verb, spell))
+    if (!item_effect(verb) && (countered(a) || slowed_spell_fails(a, verb, spell)))
     {
         return;
     }
+    // A wand's spell has the item's save DC.
+    item_caster_ = from_item ? a.source.id : 0;
+    const struct ItemCasterReset
+    {
+        EntityId &caster;
+        ~ItemCasterReset() { caster = 0; }
+    } item_caster_reset{item_caster_};
     take_metamagic(a, spell);
     take_overchannel(a, spell, verb);
     if (casting_with(Metamagic::heightened))
@@ -8585,8 +8830,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         }
         for (const auto id : targets)
         {
-            heal(actor(id),
-                 healing_roll(actor(id), rolled) + disciple_of_life(a, slot_level_of(verb, spell)));
+            // Disciple of Life favors the Cleric's own spells, not potions.
+            heal(actor(id), healing_roll(actor(id), rolled) +
+                                (from_item ? 0 : disciple_of_life(a, slot_level_of(verb, spell))));
             if (spell.id == "heal")
             {
                 std::erase_if(actor(id).effects.active,
@@ -8598,7 +8844,10 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                               });
             }
         }
-        blessed_healer(a, spell, verb, targets);
+        if (!from_item)
+        {
+            blessed_healer(a, spell, verb, targets);
+        }
         return;
     }
     case detail::SpellPattern::spell_attack:
@@ -8966,13 +9215,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
 {
     // The Bonus Action pass runs before the loop that skips corpses, so filter
     // them here too; the Action pass has already done it and is unaffected.
-    // A raging creature cannot cast spells, nor anyone in an Antimagic Field.
-    // Befuddlement stops the creature's spells.
-    if (other.life.dead || rage_of(a) || sealed_off(a) ||
-        detail::has_effect(a.effects, detail::EffectKind::befuddled))
+    // A raging creature cannot cast spells, nor anyone in an Antimagic Field,
+    // where no magic item works either. Befuddlement stops the creature's
+    // spells.
+    if (other.life.dead || sealed_off(a))
     {
         return;
     }
+    const bool spells_blocked =
+        rage_of(a) || detail::has_effect(a.effects, detail::EffectKind::befuddled);
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
     {
@@ -8987,22 +9238,32 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         // Divine Intervention (Cleric 10): any Cleric spell of level 5 or lower,
         // prepared or not, cast as a Magic action without a slot.
-        const bool intervene = !bonus_pass && d.divine_intervention && a.arcane > 0 &&
-                               spell.level && spell.level <= 5 &&
+        const bool intervene = !spells_blocked && !bonus_pass && d.divine_intervention &&
+                               a.arcane > 0 && spell.level && spell.level <= 5 &&
                                detail::on_class_list(CharacterClass::cleric, spell.id);
         // Mystic Arcanum (Warlock 11, 13, 15): its spell once per Long Rest,
         // as a Magic action without a slot.
-        const bool arcanum =
-            !bonus_pass && d.arcanum.contains(spell.id) && !arcanum_spent(a, spell.level);
-        const bool known = detail::knows_spell(d.spells, spell.id);
-        if (!known && !intervene && !arcanum)
+        const bool arcanum = !spells_blocked && !bonus_pass && d.arcanum.contains(spell.id) &&
+                             !arcanum_spent(a, spell.level);
+        const bool known = !spells_blocked && detail::knows_spell(d.spells, spell.id);
+        // A carried item's spell or effect (MAGIC-3): a potion with the Bonus
+        // Action; a wand, missile or dust with the Action. A raging creature can
+        // still drink or throw, but casts nothing from a wand.
+        // Fast Hands takes the Magic or Utilize action to use one as a Bonus
+        // Action, too.
+        const auto *item = usable_item(a, spell);
+        const bool drink = item && item->use == detail::ItemUse::drink;
+        const bool item_ready =
+            item && (drink ? bonus_pass : !bonus_pass || d.fast_hands) &&
+            !(spells_blocked && item->use == detail::ItemUse::wand);
+        if (!known && !intervene && !arcanum && !item_ready)
         {
             continue;
         }
         // Quickened Spell offers an Action spell in the Bonus Action pass.
         const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
         const bool usual = known && as_bonus == bonus_pass;
-        if (!usual && !intervene && !arcanum)
+        if (!usual && !intervene && !arcanum && !item_ready)
         {
             continue;
         }
@@ -9102,6 +9363,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         if ((spell.rider == detail::Rider::blur &&
              detail::has_effect(other.effects, detail::EffectKind::blur)) ||
+            (spell.rider == detail::Rider::giant_strength &&
+             detail::has_effect(other.effects, detail::EffectKind::giant_strength)) ||
+            (spell.rider == detail::Rider::haste &&
+             detail::has_effect(other.effects, detail::EffectKind::hasted)) ||
             (spell.rider == detail::Rider::invisibility &&
              detail::has_effect(other.effects, detail::EffectKind::invisible)) ||
             (spell.rider == detail::Rider::see_invisibility &&
@@ -9126,7 +9391,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             continue;
         }
-        if (usual ? (as_bonus ? !a.bonus : !a.actions.available(true)) : !a.actions.available(true))
+        const bool casting_ready =
+            (usual || intervene || arcanum) &&
+            (usual ? (as_bonus ? a.bonus : a.actions.available(true)) : a.actions.available(true));
+        // Dust is thrown with the Utilize action; a wand or missile takes the Magic
+        // action.
+        const bool item_offered =
+            item_ready && (bonus_pass ? a.bonus
+                                      : a.actions.available(item->use != detail::ItemUse::dust));
+        if (!casting_ready && !item_offered)
         {
             continue;
         }
@@ -9142,6 +9415,17 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
+        if (item_offered)
+        {
+            const bool fast = bonus_pass && !drink;
+            offer(std::string(spell.id) +
+                      std::string(fast ? detail::item_bonus_suffix : detail::item_suffix),
+                  std::string(item->label) + (fast ? " (Fast Hands)" : ""));
+        }
+        if (!casting_ready)
+        {
+            continue;
+        }
         // A leveled spell from each slot level cast_levels() offers, one slot
         // a turn, or with Magic Initiate's free cast, which spends no slot.
         const auto offer_leveled = [&](const std::string &verb, const std::string &label)
@@ -11151,6 +11435,15 @@ std::vector<Command> Session::offered_commands() const
                     {
                         add(id, "throw", "Throw", other.source.id);
                         commands.back().item = item.id;
+                        // The Javelin of Lightning's bolt, once until a Long
+                        // Rest (MAGIC-3).
+                        if (rules::parse_item_key(item.definition).power ==
+                                rules::ItemPower::lightning &&
+                            !detail::has_effect(a.effects, detail::EffectKind::javelin_spent))
+                        {
+                            add(id, "javelin_lightning", "Javelin of Lightning", other.source.id);
+                            commands.back().item = item.id;
+                        }
                     }
                 }
             }
@@ -12683,6 +12976,10 @@ void Session::refresh_form(Actor &a)
     {
         a.form =
             shaped(a.definition, detail::beast_forms.at(static_cast<std::size_t>(shape->dc - 1)));
+    }
+    if (detail::has_effect(a.effects, detail::EffectKind::giant_strength))
+    {
+        a.form = strengthened(a.form ? *a.form : a.definition);
     }
 }
 
@@ -15283,6 +15580,76 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
     return route;
 }
 
+// Whether `cell` lies in a 5-foot-wide Line from `from` to `to`, between them.
+bool in_line(Cell from, Cell to, Cell cell)
+{
+    const double dx = to.x - from.x, dy = to.y - from.y;
+    const double length = dx * dx + dy * dy;
+    const double cx = cell.x - from.x, cy = cell.y - from.y;
+    const double along = length ? (cx * dx + cy * dy) / length : 0;
+    if (along <= 0 || along >= 1)
+    {
+        return false;
+    }
+    const double off_x = cx - along * dx, off_y = cy - along * dy;
+    return off_x * off_x + off_y * off_y <= 0.25;
+}
+
+// SRD 5.2.1 Javelin of Lightning (MAGIC-3): the throw becomes a bolt in a Line
+// to the target. Each other creature in it makes a DC 13 Dexterity save, 4d6
+// Lightning damage on a failure and half on a success; then the javelin's
+// attack deals 4d6 more Lightning damage on a hit. Once until a Long Rest.
+void Session::lightning_javelin(Actor &a, Actor &target, unsigned token)
+{
+    constexpr int javelin_dc = 13;
+    // Effects that last past the fight carry scope 1, as camp effects do.
+    detail::apply_spell_benefit(a.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                a.source.name, detail::EffectKind::javelin_spent, 0);
+    log(a.source.name + "'s javelin becomes a bolt of lightning.",
+        {"{name}'s javelin becomes a bolt of lightning.", {{"name", a.source.name}}});
+    const int rolled = dice({4, 6, 0});
+    for (auto &other : actors_)
+    {
+        if (other.life.dead || absent(other) || other.source.id == a.source.id ||
+            other.source.id == target.source.id ||
+            !in_line(a.source.cell, target.source.cell, other.source.cell))
+        {
+            continue;
+        }
+        const bool saved =
+            saving_throw_succeeds(other, detail::Ability::dexterity, javelin_dc);
+        const int amount =
+            resolved_damage(other, detail::DamageType::lightning,
+                            evaded(other, detail::Ability::dexterity, true, saved, rolled));
+        log(other.source.name + " takes " + std::to_string(amount) + " Lightning damage.",
+            {"{name} takes {damage} {type} damage.",
+             {{"name", other.source.name},
+              {"damage", std::to_string(amount)},
+              {"type", "Lightning", true}}});
+        damage(other, amount);
+    }
+    a.lightning_throw = true;
+    throw_weapon(a, target, token);
+    a.lightning_throw = false;
+}
+
+void Session::log_item_use(Actor &a, const detail::SpellDef &spell)
+{
+    if (const auto *item = usable_item(a, spell))
+    {
+        const auto label = std::string(item->label);
+        log(a.source.name + " uses the " + label + ".",
+            {"{name} uses the {item}.", {{"name", a.source.name}, {"item", label, true}}});
+        // Use Magic Device (Thief 13): a 6 on 1d6 keeps a spent charge.
+        if (def(a).use_magic_device && item->noun == "charges" && roll(6) == 6)
+        {
+            a.keeps_charge = true;
+            log("Use Magic Device: the charge is not spent.",
+                {"Use Magic Device: the charge is not spent.", {}});
+        }
+    }
+}
+
 void Session::cast_area()
 {
     const auto aimed = std::move(*area_);
@@ -15412,7 +15779,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     const bool quickened = !spell.bonus_action && readies(a, Metamagic::quickened, spell);
     take_metamagic(a, spell);
     take_overchannel(a, spell, aimed.verb);
-    if (spell.bonus_action || quickened)
+    if (spell.bonus_action || quickened || aimed.verb.ends_with(detail::item_bonus_suffix))
     {
         a.bonus = false;
     }
@@ -15425,11 +15792,23 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     // Dragon's Breath are not castings.
     const bool again = aimed.verb == "sunbeam_line" || aimed.verb == "telekinesis_again" ||
                        aimed.verb == "call_lightning_again";
-    if (!again && spell.id != "dragons_breath_exhale" &&
+    const bool from_item = detail::item_verb(aimed.verb);
+    if (from_item)
+    {
+        log_item_use(a, spell);
+    }
+    if (!again && spell.id != "dragons_breath_exhale" && !item_effect(aimed.verb) &&
         (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
     {
         return;
     }
+    // A wand's spell and a missile's Fireball have the item's save DC (MAGIC-3).
+    item_caster_ = from_item ? a.source.id : 0;
+    const struct ItemCasterReset
+    {
+        EntityId &caster;
+        ~ItemCasterReset() { caster = 0; }
+    } item_caster_reset{item_caster_};
     if (spell.level && !again)
     {
         pay_for_spell(a, aimed.verb, spell);
@@ -16675,7 +17054,9 @@ void Session::cast_on_selection()
 void Session::cast_selected(Actor &a, const PendingSelection &selection)
 {
     const auto &spell = *detail::find_spell(selection.verb);
-    const bool quickened = readies(a, Metamagic::quickened, spell);
+    // Fast Hands uses an item as a Bonus Action, as Quickened Spell casts one.
+    const bool quickened = readies(a, Metamagic::quickened, spell) ||
+                           selection.verb.ends_with(detail::item_bonus_suffix);
     if (splits_among_targets(spell) || spell.pattern == detail::SpellPattern::heal ||
         spell.id == "chain_lightning")
     {
@@ -18677,6 +19058,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log(target.source.name + " takes " + std::to_string(extra) +
                 " Radiant damage from Divine Favor.",
             {"{name} takes {damage} Radiant damage from Divine Favor.",
+             {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
+        damage(target, extra, false);
+    }
+    // The Javelin of Lightning's bolt: its hit deals 4d6 more Lightning damage.
+    if (hit && !spell && ranged && a.lightning_throw && !target.life.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::lightning,
+                                          dice({4, 6, 0}, critical_hit(a, target, natural)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+                " Lightning damage from the Javelin of Lightning.",
+            {"{name} takes {damage} Lightning damage from the Javelin of Lightning.",
              {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
         damage(target, extra, false);
     }
@@ -23353,7 +23745,8 @@ void Session::dispatch(const Command &command)
     }
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
              bonus_spell && !command.verb.ends_with(detail::intervention_suffix) &&
-             (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell)))
+             (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell) ||
+              command.verb.ends_with(detail::item_bonus_suffix)))
     {
         // A Bonus Action spell spends no Action, so it resolves outside the
         // Action block below.
@@ -23455,6 +23848,10 @@ void Session::dispatch(const Command &command)
         else if (const auto *spell = detail::find_spell(command.verb))
         {
             resolve_spell(*spell, command.verb, a, command.target);
+        }
+        else if (command.verb == "javelin_lightning")
+        {
+            lightning_javelin(a, actor(command.target), command.item);
         }
         else if (command.verb == "throw")
         {
@@ -23582,7 +23979,11 @@ std::string Session::save() const
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
             << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
-            << a.curse_lifted << ' ';
+            << a.curse_lifted << ' ' << a.item_uses.size() << ' ';
+        for (const auto &[id, left] : a.item_uses)
+        {
+            out << id << ' ' << left << ' ';
+        }
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -23769,6 +24170,11 @@ std::string Session::save() const
         {
             out << ' ' << std::quoted(gear) << ' ' << left;
         }
+        out << ' ' << gone.item_uses.size();
+        for (const auto &[id, left] : gone.item_uses)
+        {
+            out << ' ' << id << ' ' << left;
+        }
         out << '\n';
     }
     return out.str();
@@ -23826,6 +24232,19 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
         actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted;
+    std::size_t item_count{};
+    input >> item_count;
+    // The inventory comes later in the checkpoint; 64 items is more than any
+    // creature carries.
+    if (!input || item_count > 64)
+    {
+        throw std::runtime_error("Invalid checkpoint item uses");
+    }
+    actor.item_uses.resize(item_count);
+    for (auto &[id, left] : actor.item_uses)
+    {
+        input >> id >> left;
+    }
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
     {
         throw std::runtime_error("Invalid checkpoint morale");
@@ -25101,6 +25520,17 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         {
             input >> std::quoted(gear) >> left;
         }
+        std::size_t item_count{};
+        input >> item_count;
+        if (!input || item_count > 64)
+        {
+            throw std::runtime_error("Invalid checkpoint flight");
+        }
+        gone.item_uses.resize(item_count);
+        for (auto &[id, left] : gone.item_uses)
+        {
+            input >> id >> left;
+        }
         session->fled_.push_back(std::move(gone));
     }
     if (session->actors_.size() + session->fled_.size() < 2)
@@ -25348,6 +25778,11 @@ class Module final : public RulesModule
 
     void train_at_hall(CharacterSheet &sheet, std::string_view grant) const override
     {
+        if (grant == bodily_health)
+        {
+            read_manual(sheet);
+            return;
+        }
         const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         // After the last skill or Expertise grant, so a save's replay, which
@@ -25365,6 +25800,37 @@ class Module final : public RulesModule
         candidate.training = detail::training_profile(candidate.grants, klass, candidate.race,
                                                       detail::background_id(candidate.background),
                                                       candidate.level, candidate.scores);
+        (void)character_profile(candidate, {});
+        sheet = std::move(candidate);
+    }
+
+    // The Manual of Bodily Health (MAGIC-3): Constitution and its maximum rise
+    // by 2. The Hit Point maximum follows the new modifier as though the
+    // character had it from level 1, as the SRD's Constitution does.
+    void read_manual(CharacterSheet &sheet) const
+    {
+        auto candidate = sheet;
+        const auto level = static_cast<unsigned>(sheet.level);
+        candidate.grants.push_back(
+            FeatureGrant{std::string(bodily_health), std::string(manual_source), level, {}});
+        AbilityAdjustment manual{std::string(manual_source), "Manual of Bodily Health", level};
+        manual.bonuses[Ability::constitution] = 2;
+        manual.label_message = {"Manual of Bodily Health", {}};
+        candidate.ability_adjustments.push_back(std::move(manual));
+        candidate.bonuses[Ability::constitution] += 2;
+        candidate.scores[Ability::constitution] += 2;
+        candidate.modifiers[Ability::constitution] =
+            ability_modifier(candidate.scores[Ability::constitution]);
+        ++candidate.saving_throws[Ability::constitution];
+        // A score 2 higher is a modifier 1 higher at every level.
+        for (auto &modifier : candidate.hit_point_modifiers)
+        {
+            ++modifier;
+        }
+        const auto klass = detail::class_of(candidate);
+        candidate.hit_points = maximum_hit_points(
+            klass, candidate.hit_die, candidate.race == "Dwarf", candidate.hit_point_modifiers,
+            klass == CharacterClass::sorcerer);
         (void)character_profile(candidate, {});
         sheet = std::move(candidate);
     }
@@ -26001,7 +26467,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && result.level == 13)
         {
             result.description =
-                "Thief: Use Magic Device, which waits for magic items.\nSneak Attack 7d6; Proficiency Bonus +5.";
+                "Thief: Use Magic Device, a 6 on 1d6 to keep a spent charge.\nSneak Attack 7d6; Proficiency Bonus +5.";
         }
         if (klass == CharacterClass::rogue && result.level == 14)
         {
@@ -26093,7 +26559,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
         {
             result.description =
-                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
+                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands uses a wand, potion or other magic item as a Bonus Action. Hide remains unavailable.";
         }
         if (klass == CharacterClass::paladin && result.level <= 4)
         {
@@ -27108,6 +27574,7 @@ class Module final : public RulesModule
                       [](const auto &e)
                       {
                           return e.kind == detail::EffectKind::prayer_of_healing ||
+                                 e.kind == detail::EffectKind::javelin_spent ||
                                  e.kind == detail::EffectKind::relentless_used ||
                                  e.kind == detail::EffectKind::protectors_used ||
                                  e.kind == detail::EffectKind::overchanneled ||
@@ -27778,6 +28245,13 @@ class Module final : public RulesModule
             target_state = vitals(healed);
             return;
         }
+        // Identify spends its slot; the campaign reveals the item it touches.
+        if (const auto *identify = detail::find_spell(action); identify && identify->id == "identify")
+        {
+            pay_for_spell(caster, action, *identify);
+            user_state = vitals(caster);
+            return;
+        }
         // Remove Curse ends the member's curses; the campaign frees it from
         // its cursed items.
         if (const auto *uncurse = detail::find_spell(action);
@@ -27882,6 +28356,54 @@ class Module final : public RulesModule
         random_state.value = rng;
     }
 
+    void drink_potion(const CharacterSheet &sheet, VitalState &state, std::string_view item,
+                      RandomState &random_state) const override
+    {
+        const auto *potion = detail::magic_item(item);
+        if (!potion || potion->use != detail::ItemUse::drink)
+        {
+            throw std::runtime_error("Only a potion is drunk");
+        }
+        auto drinker = camp_actor(sheet, state);
+        if (drinker.life.dead)
+        {
+            throw std::runtime_error("The dead cannot drink");
+        }
+        const auto &spell = *detail::find_spell(potion->spell);
+        if (spell.pattern == detail::SpellPattern::heal)
+        {
+            const int maximum = max_hp(drinker);
+            if (drinker.life.hp >= maximum)
+            {
+                throw std::runtime_error("Healing requires a wounded living member");
+            }
+            auto rng = random_state.value;
+            int amount = spell.dice.bonus;
+            for (int n = 0; n < spell.dice.count; ++n)
+            {
+                amount += roll_die(rng, spell.dice.sides);
+            }
+            (void)detail::heal_life(drinker.life, amount, maximum,
+                                    !detail::healing_blocked(drinker.effects));
+            random_state.value = rng;
+        }
+        else if (spell.rider == detail::Rider::giant_strength)
+        {
+            if (detail::has_effect(drinker.effects, detail::EffectKind::giant_strength))
+            {
+                throw std::runtime_error("Its Strength is already a giant's");
+            }
+            // Effects that last past a fight carry scope 1, as camp effects do.
+            detail::apply_spell_benefit(drinker.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        sheet.name, detail::EffectKind::giant_strength, 0);
+        }
+        else
+        {
+            throw std::runtime_error("That potion works only in combat");
+        }
+        state = vitals(drinker);
+    }
+
     bool can_cast_exploration_spell(const CharacterSheet &sheet, const VitalState &state,
                                     std::string_view id) const override
     {
@@ -27973,6 +28495,14 @@ class Module final : public RulesModule
                                         detail::EffectKind::circle_ward, type);
             caster.effects.active.back().remaining_ms =
                 static_cast<unsigned>(3600000 * (slot_level_of(action, circle) - 2));
+            user_state = vitals(caster);
+            return;
+        }
+        // Detect Magic spends its slot; the campaign marks magic items for its
+        // ten minutes.
+        if (const auto *detect = detail::find_spell(action); detect && detect->id == "detect_magic")
+        {
+            pay_for_spell(caster, action, *detect);
             user_state = vitals(caster);
             return;
         }
@@ -28394,7 +28924,7 @@ class Module final : public RulesModule
                                        detail::background_id(sheet.background), sheet.level,
                                        sheet.scores);
         const auto features_only =
-            detail::without_spell_grants(detail::without_training(sheet.grants));
+            without_manuals(detail::without_spell_grants(detail::without_training(sheet.grants)));
         const auto access = spell_access(sheet);
         const auto effects =
             detail::validate_grants(features_only, klass, detail::race_id(sheet.race),
@@ -28415,22 +28945,41 @@ class Module final : public RulesModule
             }
         }
         std::sort(asi_levels.begin(), asi_levels.end());
-        if (sheet.ability_adjustments.size() != 1 + asi_levels.size())
+        // A Manual of Bodily Health read (MAGIC-3) adds its own adjustment.
+        const auto manuals = static_cast<std::size_t>(
+            std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.id == bodily_health;
+                          }));
+        if (sheet.ability_adjustments.size() != 1 + asi_levels.size() + manuals)
         {
             throw std::runtime_error("Ability sources disagree with acquired grants");
         }
         AbilityArray<int> raised{};
-        for (std::size_t i = 0; i < asi_levels.size(); ++i)
+        AbilityArray<int> read{};
+        std::size_t next_asi = 0;
+        for (std::size_t i = 1; i < sheet.ability_adjustments.size(); ++i)
         {
-            const auto &adjustment = sheet.ability_adjustments[i + 1];
-            if (adjustment.source_id != "feat:ability_score_improvement" ||
-                adjustment.level != asi_levels[i])
+            const auto &adjustment = sheet.ability_adjustments[i];
+            auto &sum = adjustment.source_id == manual_source ? read : raised;
+            if (adjustment.source_id == manual_source)
+            {
+                AbilityArray<int> manual{};
+                manual[Ability::constitution] = 2;
+                if (adjustment.bonuses != manual)
+                {
+                    throw std::runtime_error("Ability sources disagree with acquired choices");
+                }
+            }
+            else if (adjustment.source_id != "feat:ability_score_improvement" ||
+                     next_asi >= asi_levels.size() || adjustment.level != asi_levels[next_asi++])
             {
                 throw std::runtime_error("Ability sources disagree with acquired choices");
             }
             for (const auto ability : all_abilities)
             {
-                raised[ability] += adjustment.bonuses[ability];
+                sum[ability] += adjustment.bonuses[ability];
             }
         }
         if (raised != effects.abilities)
@@ -28439,8 +28988,8 @@ class Module final : public RulesModule
         }
         for (const auto ability : all_abilities)
         {
-            const auto bonuses =
-                sheet.ability_adjustments.front().bonuses[ability] + effects.abilities[ability];
+            const auto bonuses = sheet.ability_adjustments.front().bonuses[ability] +
+                                 effects.abilities[ability] + read[ability];
             if (sheet.bonuses[ability] != bonuses ||
                 sheet.scores[ability] != sheet.base[ability] + bonuses)
             {
@@ -29082,7 +29631,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.242", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.243", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

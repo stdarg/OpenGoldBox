@@ -301,21 +301,41 @@ AbilityModifiers ability_modifiers(const CharacterRecord &c)
     return result;
 }
 
+bool Equipment::identified() const noexcept
+{
+    for (std::size_t n = 0; n < stored.name_components.size(); ++n)
+    {
+        if (stored.name_components[n] && (stored.hidden_name_words & (4 >> n)))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Equipment::identify() noexcept
+{
+    stored.hidden_name_words = 0;
+    stored.raw[53] = 0;
+}
+
 std::string Equipment::label() const
 {
     if (!stored.stored_name.empty())
     {
         return stored.stored_name;
     }
-    if (!decoded_name.empty())
+    const bool known = identified();
+    if (!decoded_name.empty() && (known || !unidentified_name.empty()))
     {
-        return decoded_name;
+        return known ? decoded_name : unidentified_name;
     }
     const auto type_name = item_type_name(stored.type);
     std::string name =
         type_name.empty() ? "Item type " + std::to_string(stored.type) : std::string(type_name);
-    // Do not label charges on wands, scrolls, or potions as +N enchantments.
-    if ((bonuses.weapon_to_hit || bonuses.ac_adjustment) && stored.magic_bonus != 0)
+    // Do not label charges on wands, scrolls, or potions as +N enchantments,
+    // nor an enchantment not yet identified.
+    if ((bonuses.weapon_to_hit || bonuses.ac_adjustment) && stored.magic_bonus != 0 && known)
     {
         name += (stored.magic_bonus > 0 ? " +" : " ") + std::to_string(stored.magic_bonus);
     }
@@ -434,6 +454,8 @@ CreatureCatalog CreatureCatalog::load(const std::filesystem::path &directory)
                             equipment.stored.stored_name.empty())
                         {
                             equipment.decoded_name = item_name(equipment.stored, item_words);
+                            equipment.unidentified_name = item_name(
+                                equipment.stored, item_words, equipment.stored.hidden_name_words);
                         }
                         creature.equipment.push_back(std::move(equipment));
                     }

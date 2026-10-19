@@ -129,6 +129,7 @@ constexpr std::size_t attunement_limit = 3;
 // SRD 5.2.1 attunes a creature to a magic item over a Short Rest spent with it.
 // Here a finished Short or Long Rest attunes each member to the equipped items
 // that need it, up to three; attunement to an item no longer carried ends.
+// Attuning to an item teaches its use, so it reveals the item's name (#262).
 void attune_equipped(PartyMember &member)
 {
     const auto &inventory = member.character.inventory();
@@ -147,6 +148,10 @@ void attune_equipped(PartyMember &member)
         {
             member.attuned.push_back(id);
         }
+    }
+    for (const auto id : member.attuned)
+    {
+        (void)identify_item(member, id);
     }
 }
 } // namespace

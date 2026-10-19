@@ -13,6 +13,12 @@ namespace opengold::srd5
 [[nodiscard]] std::unique_ptr<rules::CharacterRules> character_rules();
 // Pure SRD arithmetic, also used by the deterministic combat resolver.
 [[nodiscard]] std::string equipment_note(const rules::CharacterSheet &sheet, std::string_view item);
+// What one charged item's quantity counts ("charges", "missiles"); empty when the
+// quantity counts items (MAGIC-3).
+[[nodiscard]] std::string_view charge_noun(std::string_view item) noexcept;
+// Whether the inventory's Use works for the item outside combat: the Manual of
+// Bodily Health, or a healing or Giant Strength potion (MAGIC-3).
+[[nodiscard]] bool usable_outside_combat(std::string_view item) noexcept;
 [[nodiscard]] int ability_modifier(int score) noexcept;
 // Ordinary saving throws: 1 means every roll saves; 21 means no d20 roll saves.
 [[nodiscard]] int minimum_save_roll(int difficulty_class, int bonus) noexcept;

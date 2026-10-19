@@ -3,6 +3,7 @@
 #include "opengold/dice.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/item_key.h"
+#include "opengold/magic_item_catalog.h"
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -50,6 +51,31 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Trims a charged item (MAGIC-3) to the charges, missiles or potions a fight left
+// it; one with none left is gone, as in the original.
+void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
+{
+    const auto item = member.character.inventory().find(id);
+    if (!item || left > item->get().quantity)
+    {
+        throw std::runtime_error("Combat reported more item uses than were carried");
+    }
+    const auto used = item->get().quantity - left;
+    if (!used)
+    {
+        return;
+    }
+    auto inventory = member.character.inventory();
+    inventory.remove(id, used);
+    if (!left)
+    {
+        std::erase(member.equipped, id);
+        std::erase(member.attuned, id);
+        member.item_sources.erase(id);
+    }
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Remove Curse lets a member put down its cursed items, which are then lost:
 // the original's Remove Curse let a character drop a cursed object (MAGIC-1).
 void put_down_cursed_items(PartyMember &member)
@@ -71,12 +97,23 @@ void put_down_cursed_items(PartyMember &member)
     member.character.replace_inventory(std::move(inventory));
 }
 
-// The key the rules see for an item: one its holder is attuned to says so.
+// The key the rules see for an item: it says so when its holder is attuned to
+// it, or when its enchantment is not yet identified.
 std::string rules_definition(const PartyMember &member, const InventoryItem &item)
 {
-    const bool attuned =
-        std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end();
-    return attuned ? item.definition_id + ":attuned" : item.definition_id;
+    auto definition = item.definition_id;
+    if (std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end())
+    {
+        definition += ":attuned";
+    }
+    const auto enchantment = rules::parse_item_key(item.definition_id);
+    const auto source = member.item_sources.find(item.id);
+    if ((enchantment.bonus || enchantment.power != rules::ItemPower::none) &&
+        source != member.item_sources.end() && !source->second.identified())
+    {
+        definition += ":unidentified";
+    }
+    return definition;
 }
 
 // The definitions of a member's equipped items, which the rules read as gear.
@@ -226,6 +263,52 @@ rules::ItemPower item_power(const por::ItemRecord &raw)
     return rules::ItemPower::none;
 }
 
+// The original's charged and single-use items, known by their spell or item
+// power (byte 61), become their SRD counterparts (MAGIC-3); empty for any other
+// record. Byte 62's bit 0x80 marks an effect applied when readied, not a use.
+std::string_view charged_conversion(const por::ItemRecord &raw)
+{
+    constexpr std::uint8_t cure_light_wounds = 3, lightning_bolt = 51, speed = 80,
+                           giant_strength = 82, javelin_lightning = 83, paralysis = 84,
+                           healing = 85, disappearance = 86, missiles = 87, magic_missiles = 88,
+                           bodily_health = 90;
+    constexpr std::uint8_t wand_type = 78;
+    const auto [charges, power, flags] = raw.effect_codes;
+    if (!charges || (flags & 0x80))
+    {
+        return {};
+    }
+    switch (power)
+    {
+    case magic_missiles:
+        return "wand:magic_missiles";
+    case lightning_bolt:
+        return raw.type == wand_type ? "wand:lightning_bolts" : "";
+    case paralysis:
+        return "wand:paralysis";
+    case healing:
+        return "potion_of_healing";
+    // Potion Extra Healing's doses are Potions of Greater Healing; a scroll
+    // naming the spell is a scroll.
+    case cure_light_wounds:
+        return raw.type == 61 || raw.type == 62 ? "" : "potion_of_greater_healing";
+    case speed:
+        return "potion_of_speed";
+    case giant_strength:
+        return "potion_of_giant_strength";
+    case disappearance:
+        return "dust_of_disappearance";
+    case missiles:
+        return "necklace_of_missiles";
+    case javelin_lightning:
+        return "javelin:lightning";
+    case bodily_health:
+        return "manual_of_bodily_health";
+    default:
+        return {};
+    }
+}
+
 bool has_effects(const por::ItemRecord &raw)
 {
     return std::any_of(raw.effect_codes.begin(), raw.effect_codes.end(),
@@ -236,10 +319,41 @@ bool has_effects(const por::ItemRecord &raw)
 }
 } // namespace
 
+unsigned carried_quantity(const por::Equipment &item)
+{
+    // A stack counts its items; a single charged item, its charges or doses.
+    const unsigned stack = item.stored.stack_size;
+    return stack > 1                                   ? stack
+           : charged_conversion(item.stored).empty() ? 1u
+                                                     : item.stored.effect_codes[0];
+}
+
+bool identify_item(PartyMember &member, std::uint64_t item)
+{
+    if (!member.character.inventory().find(item))
+    {
+        throw std::runtime_error("Unknown item");
+    }
+    const auto source = member.item_sources.find(item);
+    if (source == member.item_sources.end() || source->second.identified())
+    {
+        return false;
+    }
+    source->second.identify();
+    auto inventory = member.character.inventory();
+    inventory.rename(item, source->second.label());
+    member.character.replace_inventory(std::move(inventory));
+    return true;
+}
+
 std::string equipment_conversion(const por::Equipment &item)
 {
     const auto &raw = item.stored;
     const auto unsupported = "por:unsupported:" + std::to_string(raw.type);
+    if (const auto charged = charged_conversion(raw); !charged.empty())
+    {
+        return std::string(charged);
+    }
     if (const auto base = enchantable_conversion(raw.type); !base.empty())
     {
         const auto power = item_power(raw);
@@ -910,12 +1024,69 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     const auto key =
         inventory.add({.definition_id = equipment_conversion(item),
                        .name = item.label(),
-                       .quantity = std::max(1u, static_cast<unsigned>(item.stored.stack_size)),
+                       .quantity = carried_quantity(item),
                        .original_type = item.stored.type});
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
     m.item_sources = std::move(sources);
     coins(state_.wealth, Coin::gold) -= item.stored.value;
+}
+
+void CampaignParty::read_manual(MemberId id, std::uint64_t item)
+{
+    editable();
+    outside_combat();
+    auto reader = member(id);
+    const auto book = reader.character.inventory().find(item);
+    if (!book || book->get().definition_id != "manual_of_bodily_health")
+    {
+        throw std::runtime_error("That is not a Manual of Bodily Health");
+    }
+    if (reader.vitals.dead)
+    {
+        throw std::runtime_error("The dead cannot read");
+    }
+    const int before = reader.character.sheet().hit_points;
+    // Recorded with the hall training, so a save rebuilds it at its level.
+    reader.character.train_at_hall(*rules_, "boon:bodily_health");
+    reader.vitals.hit_points += reader.character.sheet().hit_points - before;
+    reader.character.remove_item(item);
+    reader.item_sources.erase(item);
+    std::erase(reader.equipped, item);
+    edit(id) = std::move(reader);
+}
+
+void CampaignParty::drink_potion(MemberId id, std::uint64_t item)
+{
+    editable();
+    outside_combat();
+    auto next = state_;
+    auto &drinker = member_in(next, id);
+    const auto potion = drinker.character.inventory().find(item);
+    if (!potion)
+    {
+        throw std::runtime_error("Unknown item");
+    }
+    const auto left = potion->get().quantity - 1;
+    rules_->drink_potion(drinker.character.sheet(), drinker.vitals, potion->get().definition_id,
+                         next.random_state);
+    keep_item_uses(drinker, item, left);
+    state_ = std::move(next);
+}
+
+bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)
+{
+    constexpr unsigned identify_fee = 200;
+    editable();
+    if (coins(state_.wealth, Coin::gold) < identify_fee)
+    {
+        throw std::runtime_error("Not enough gold");
+    }
+    auto holder = member(id);
+    const bool revealed = identify_item(holder, item);
+    edit(id) = std::move(holder);
+    coins(state_.wealth, Coin::gold) -= identify_fee;
+    return revealed;
 }
 
 void CampaignParty::set_wealth(Purse wealth)
@@ -992,7 +1163,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         const auto id = m.character.add_item(
             {.definition_id = equipment_conversion(item),
              .name = item.label(),
-             .quantity = std::max(1u, static_cast<unsigned>(item.stored.stack_size)),
+             .quantity = carried_quantity(item),
              .original_type = item.stored.type});
         m.item_sources.emplace(id, item);
     }
@@ -1114,8 +1285,14 @@ TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall ha
     {
         return TrainingDenial::not_active;
     }
-    if (!trained.empty() &&
-        trained.back().level == static_cast<unsigned>(m.character.sheet().level))
+    // A Manual of Bodily Health is recorded with the hall training, but is none.
+    const auto last_trained = std::find_if(trained.rbegin(), trained.rend(),
+                                           [](const auto &entry)
+                                           {
+                                               return !entry.grant.starts_with("boon:");
+                                           });
+    if (last_trained != trained.rend() &&
+        last_trained->level == static_cast<unsigned>(m.character.sheet().level))
     {
         return TrainingDenial::already_trained;
     }
@@ -1590,12 +1767,82 @@ std::vector<rules::CampAction> CampaignParty::camp_actions(MemberId id) const
     {
         return {};
     }
-    return rules_->camp_actions(m.character.sheet(), m.vitals);
+    auto actions = rules_->camp_actions(m.character.sheet(), m.vitals);
+    std::erase_if(actions,
+                  [](const auto &action)
+                  {
+                      return action.id.starts_with("identify");
+                  });
+    return actions;
+}
+
+std::optional<MemberId> CampaignParty::identifier() const
+{
+    for (const auto id : state_.slots)
+    {
+        if (!id)
+        {
+            continue;
+        }
+        const auto &m = member(id);
+        const auto actions = rules_->camp_actions(m.character.sheet(), m.vitals);
+        if (std::any_of(actions.begin(), actions.end(),
+                        [](const auto &action)
+                        {
+                            return action.id.starts_with("identify");
+                        }))
+        {
+            return id;
+        }
+    }
+    return std::nullopt;
+}
+
+bool CampaignParty::cast_identify(MemberId caster_id, MemberId holder_id, std::uint64_t item)
+{
+    editable();
+    for (const auto id : {caster_id, holder_id})
+    {
+        if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        {
+            throw std::runtime_error("Identify is for active members");
+        }
+    }
+    auto next = state_;
+    auto &caster = member_in(next, caster_id);
+    // The lowest slot first, as the rules offer them.
+    const auto actions = rules_->camp_actions(caster.character.sheet(), caster.vitals);
+    const auto spell = std::find_if(actions.begin(), actions.end(),
+                                    [](const auto &action)
+                                    {
+                                        return action.id.starts_with("identify");
+                                    });
+    if (spell == actions.end())
+    {
+        throw std::runtime_error("That spell or feature cannot be used now");
+    }
+    auto &holder = member_in(next, holder_id);
+    rules_->use_camp_action(caster.character.sheet(), caster.vitals, holder.character.sheet(),
+                            holder.vitals, spell->id, next.random_state);
+    const bool revealed = identify_item(holder, item);
+    state_ = std::move(next);
+    return revealed;
+}
+
+bool CampaignParty::magical(MemberId id, std::uint64_t item) const
+{
+    const auto &sources = member(id).item_sources;
+    const auto source = sources.find(item);
+    return source != sources.end() && por::is_magic(source->second.stored);
 }
 
 void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_view action)
 {
     editable();
+    if (action.starts_with("identify"))
+    {
+        throw std::runtime_error("Identify is cast on an item from the inventory");
+    }
     for (const auto id : {user, target})
     {
         if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
@@ -1635,6 +1882,11 @@ void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_
         }
         rules_->use_party_camp_action(caster.character.sheet(), caster.vitals, party, action,
                                       next.random_state);
+        if (action.starts_with("detect_magic"))
+        {
+            constexpr std::uint64_t detect_magic_minutes = 10;
+            next.detect_magic_until = next.time_minutes + detect_magic_minutes;
+        }
     }
     else
     {
@@ -2062,12 +2314,17 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
             }
             vitals.emplace_back(actor.id, actor.persistent);
-            if (!actor.thrown_gear_left.empty() || actor.curse_lifted)
+            if (!actor.thrown_gear_left.empty() || actor.curse_lifted ||
+                !actor.item_uses_left.empty())
             {
                 auto member = *it;
                 for (const auto &[definition, left] : actor.thrown_gear_left)
                 {
                     keep_thrown_gear(member, definition, left);
+                }
+                for (const auto &[item, left] : actor.item_uses_left)
+                {
+                    keep_item_uses(member, item, left);
                 }
                 if (actor.curse_lifted)
                 {

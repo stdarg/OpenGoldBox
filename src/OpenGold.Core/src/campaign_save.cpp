@@ -17,7 +17,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 33;
+constexpr unsigned campaign_format = 34;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -324,7 +324,7 @@ template <bool Reading> struct SaveCodec
     void field(Visited<por::ItemRecord> v)
     {
         fields(v.raw, v.stored_name, v.type, v.name_components, v.magic_bonus, v.save_bonus,
-               v.readied_raw, v.revealed_components, v.cursed_raw, v.weight, v.value, v.stack_size,
+               v.readied_raw, v.hidden_name_words, v.cursed_raw, v.weight, v.value, v.stack_size,
                v.effect_codes);
     }
 
@@ -342,7 +342,7 @@ template <bool Reading> struct SaveCodec
 
     void field(Visited<por::Equipment> v)
     {
-        fields(v.index, v.stored, v.base, v.bonuses);
+        fields(v.index, v.stored, v.base, v.bonuses, v.decoded_name, v.unidentified_name);
     }
 
     void field(Visited<RestTicket> v)
@@ -382,7 +382,7 @@ template <bool Reading> struct SaveCodec
     void field(Visited<PartyState> v)
     {
         fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.wealth,
-               v.time_minutes, v.random_state.value, v.claimed_rewards);
+               v.time_minutes, v.detect_magic_until, v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if constexpr (!reading)
         {

@@ -125,6 +125,15 @@ String text(std::string_view source)
         return format(N_("{spell} (Divine Intervention)"),
                       {{"spell", text(source.substr(0, source.size() - intervention.size()))}});
     }
+    // "Wand of Magic Missiles (Fast Hands)", an item a Thief uses as a Bonus
+    // Action, likewise.
+    constexpr std::string_view fast_hands = " (Fast Hands)";
+    if (translated == gs(source) && source.size() > fast_hands.size() &&
+        source.ends_with(fast_hands))
+    {
+        return format(N_("{item} (Fast Hands)"),
+                      {{"item", text(source.substr(0, source.size() - fast_hands.size()))}});
+    }
     // "Eyebite (Mystic Arcanum)", a Warlock's once-a-day spell, is
     // translated in two parts too.
     constexpr std::string_view arcanum = " (Mystic Arcanum)";

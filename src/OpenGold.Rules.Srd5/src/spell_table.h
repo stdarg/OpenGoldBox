@@ -219,7 +219,11 @@ enum class Rider : unsigned
     natures_sanctuary,
     animal_shapes,
     slow,
-    tsunami
+    tsunami,
+    // The original's charged items (MAGIC-3).
+    paralysis_ray,
+    giant_strength,
+    disappearance
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2903,7 +2907,86 @@ inline constexpr std::array spell_table{
              .level = 5,
              .pattern = SpellPattern::camp,
              .target = SpellTarget::dead_ally,
-             .range = 5}};
+             .range = 5},
+    // SRD 5.2.1 p. 142: touch an object to learn its magic (#262). A camp
+    // spell; the campaign reveals the item's name.
+    SpellDef{.id = "identify",
+             .label = "Identify",
+             .level = 1,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::ally,
+             .range = 5},
+    // SRD 5.2.1 p. 123: for 10 minutes the caster senses magic within 30 feet.
+    // Cast outside combat for the party, whose item lists mark magic items
+    // (#262).
+    SpellDef{.id = "detect_magic",
+             .label = "Detect Magic",
+             .level = 1,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::self,
+             .range = 30,
+             .instances = 8},
+    // Potions (MAGIC-3), drunk or given to a creature within 5 feet as a Bonus
+    // Action (SRD 5.2.1 p. 204): not spells, and never on a class list.
+    SpellDef{.id = "potion_of_healing",
+             .label = "Potion of Healing",
+             .level = 1,
+             .pattern = SpellPattern::heal,
+             .target = SpellTarget::wounded_ally,
+             .range = 5,
+             .bonus_action = true,
+             .dice = {2, 4, 2}},
+    SpellDef{.id = "potion_of_greater_healing",
+             .label = "Potion of Greater Healing",
+             .level = 1,
+             .pattern = SpellPattern::heal,
+             .target = SpellTarget::wounded_ally,
+             .range = 5,
+             .bonus_action = true,
+             .dice = {4, 4, 4}},
+    // SRD 5.2.1: the Potion of Speed's Haste lasts a minute without
+    // Concentration.
+    SpellDef{.id = "potion_of_speed",
+             .label = "Potion of Speed",
+             .level = 1,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::ally,
+             .range = 5,
+             .bonus_action = true,
+             .requires_effect_capacity = true,
+             .rider = Rider::haste},
+    // A Potion of Giant Strength: Strength 21 for an hour (MAGIC-3).
+    SpellDef{.id = "potion_of_giant_strength",
+             .label = "Potion of Giant Strength",
+             .level = 1,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::ally,
+             .range = 5,
+             .bonus_action = true,
+             .requires_effect_capacity = true,
+             .rider = Rider::giant_strength},
+    // Dust of Disappearance: the Utilize action throws it, and the user and
+    // allies within 10 feet turn Invisible (MAGIC-3).
+    SpellDef{.id = "dust_of_disappearance",
+             .label = "Dust of Disappearance",
+             .level = 1,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::self,
+             .range = 10,
+             .rider = Rider::disappearance},
+    // The Wand of Paralysis: a ray at a creature within 60 feet, a
+    // Constitution save or Paralyzed for up to a minute, saving again at the
+    // end of each of its turns (MAGIC-3).
+    SpellDef{.id = "wand_of_paralysis",
+             .label = "Wand of Paralysis",
+             .level = 1,
+             .pattern = SpellPattern::save_condition,
+             .target = SpellTarget::enemy,
+             .range = 60,
+             .requires_sight = true,
+             .requires_effect_capacity = true,
+             .save = Ability::constitution,
+             .rider = Rider::paralysis_ray}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in
@@ -2916,6 +2999,17 @@ inline constexpr std::string_view arcanum_suffix = "_arcanum";
 // Natural Recovery (Land Druid 6): a Circle spell cast once per Long Rest
 // without a slot.
 inline constexpr std::string_view natural_suffix = "_natural";
+// A carried item's spell or effect (MAGIC-3): a charge or use of the item, not
+// a slot.
+inline constexpr std::string_view item_suffix = "_item";
+// The same, used as a Bonus Action with a Thief's Fast Hands.
+inline constexpr std::string_view item_bonus_suffix = "_item_bonus";
+
+// Whether a verb uses a carried item, with the Action or a Bonus Action.
+inline constexpr bool item_verb(std::string_view verb)
+{
+    return verb.ends_with(item_suffix) || verb.ends_with(item_bonus_suffix);
+}
 
 // The slot level a "_N" verb names, or 0.
 inline constexpr unsigned cast_slot_level(std::string_view verb)
@@ -2951,6 +3045,14 @@ inline constexpr std::string_view without_cast_suffix(std::string_view verb)
     else if (verb.ends_with(natural_suffix))
     {
         verb.remove_suffix(natural_suffix.size());
+    }
+    else if (verb.ends_with(item_suffix))
+    {
+        verb.remove_suffix(item_suffix.size());
+    }
+    else if (verb.ends_with(item_bonus_suffix))
+    {
+        verb.remove_suffix(item_bonus_suffix.size());
     }
     return verb;
 }

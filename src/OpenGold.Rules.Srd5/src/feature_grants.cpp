@@ -246,7 +246,7 @@ std::vector<rules::FeatureGrant> higher_level_features(CharacterClass klass, uns
         {
             add("feature:improved_cunning_strike", "class:rogue");
         }
-        // Use Magic Device waits for magic items (#234), as Fast Hands does.
+        // Use Magic Device keeps a spent wand charge on a 6 (MAGIC-3).
         if (level == 13)
         {
             add("feature:use_magic_device", "subclass:rogue:thief");

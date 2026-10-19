@@ -94,7 +94,10 @@ struct ItemRecord
     std::uint8_t type{};
     std::array<std::uint8_t, 3> name_components{};
     int magic_bonus{}, save_bonus{};
-    std::uint8_t readied_raw{}, revealed_components{}, cursed_raw{};
+    std::uint8_t readied_raw{}, cursed_raw{};
+    // Name words still hidden until the item is identified: bit 4 hides the
+    // byte-47 word, bit 2 byte 48's and bit 1 byte 49's.
+    std::uint8_t hidden_name_words{};
     std::uint16_t weight{}, value{};
     std::uint8_t stack_size{};
     std::array<std::uint8_t, 3> effect_codes{};
@@ -139,8 +142,10 @@ decode_item_templates(std::span<const std::uint8_t> bytes);
 decode_item_words(std::span<const std::uint8_t> image);
 [[nodiscard]] std::optional<std::vector<std::string>>
 decode_spell_names(std::span<const std::uint8_t> image);
-// The identified name: the components' words, last component first ("Ring Of Protection +1").
-[[nodiscard]] std::string item_name(const ItemRecord &item, std::span<const std::string> words);
+// The name shown: the components' words, last component first ("Ring Of Protection +1"),
+// leaving out the ones `hidden` masks as the record's hidden_name_words does ("Ring").
+[[nodiscard]] std::string item_name(const ItemRecord &item, std::span<const std::string> words,
+                                    std::uint8_t hidden = 0);
 
 } // namespace opengold::por
 #endif

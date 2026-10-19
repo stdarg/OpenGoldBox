@@ -195,8 +195,10 @@ Rules 0.6.111 records the Thief, the SRD's only Rogue subclass, at Rogue level
 three: `subclass:thief` with `feature:fast_hands`, granted on advancement and
 required by grant validation. Second-Story Work is cut, as
 [SRD-DECISIONS](SRD-DECISIONS.md) records (0.6.110 had briefly granted it).
-Fast Hands has no use yet: its lock picking only matters in combat, where there
-are no locks, and its Use an Object waits for magic items (a wand or similar
-used as a Bonus Action is its future use). The level-up note says so.
+Fast Hands' lock picking has no use, since fights have no locks, but its Use
+an Object takes the Magic or Utilize action to use a magic item as a Bonus
+Action: a wand, the Necklace of Missiles or Dust of Disappearance
+([MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items)).
+The level-up note says so.
 Verification: the Rogue progression checks in `opengold_training_tests`
 (rogue_attack_checks.h) find both grants from level three only.

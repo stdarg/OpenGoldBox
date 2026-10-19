@@ -392,7 +392,7 @@ void random_treasure_tables()
     const auto sword = por::random_treasure_items(1, scripted({10, 36, 15})).at(0);
     check(sword.type == 36 && sword.magic_bonus == 2 && sword.name_components[1] == 0xA3 &&
               sword.name_components[2] == 36 && sword.weight == 60 && sword.value == 4000 &&
-              sword.revealed_components == 6,
+              sword.hidden_name_words == 6,
           "A generated +2 long sword has the original name, weight and value");
     // d100 95, d15 5 is a potion; d8 6 selects the first preset record.
     const auto potion = por::random_treasure_items(1, scripted({95, 5, 6})).at(0);

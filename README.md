@@ -159,7 +159,8 @@ Run the original welcome through Rolf's farewell in a C++/Godot scene, with his
 encounter sprite, the original Phlan wall and door artwork, and a synchronized party map.
 After the farewell, explore New Phlan and its buildings with a single fighter
 carrying 9,999 gold. Enter shops, answer the original dialogue, and buy items.
-See [New Phlan exploration](docs/PHLAN.md) for controls and current script limits.
+See [New Phlan exploration](docs/PHLAN.md) for controls and current script limits,
+and [keyboard shortcuts](docs/KEYBOARD.md) for every key.
 From PowerShell:
 
 ```powershell

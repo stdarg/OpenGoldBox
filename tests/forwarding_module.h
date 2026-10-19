@@ -256,6 +256,12 @@ class ForwardingModule : public rules::RulesModule
         return rules_->camp_actions(sheet, state);
     }
 
+    void drink_potion(const rules::CharacterSheet &sheet, rules::VitalState &state,
+                      std::string_view item, RandomState &random_state) const override
+    {
+        rules_->drink_potion(sheet, state, item, random_state);
+    }
+
     void use_camp_action(const rules::CharacterSheet &user, rules::VitalState &user_state,
                          const rules::CharacterSheet &target, rules::VitalState &target_state,
                          std::string_view action, RandomState &random_state) const override

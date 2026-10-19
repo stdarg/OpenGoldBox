@@ -53,6 +53,8 @@ class Inventory
     // References from items()/find() must be reacquired after mutation.
     std::uint64_t add(NewItem item);
     void remove(std::uint64_t id, std::uint32_t quantity = 1);
+    // An item that becomes known under a new name, such as an identified sword.
+    void rename(std::uint64_t id, std::string name);
 
   private:
     template <bool Reading> friend struct opengold::SaveCodec;
