@@ -545,6 +545,12 @@ bool is_smite(std::string_view verb)
            spell == "shining_smite" || spell == "ensnaring_strike";
 }
 
+bool usable_outside_combat(std::string_view item) noexcept
+{
+    return item == "manual_of_bodily_health" || item == "potion_of_healing" ||
+           item == "potion_of_greater_healing" || item == "potion_of_giant_strength";
+}
+
 std::string_view charge_noun(std::string_view item) noexcept
 {
     const auto *magic = detail::magic_item(item);
@@ -2738,14 +2744,31 @@ struct PendingCheck
 };
 
 // `draconic`: a Draconic Sorcerer gains its level in Hit Points from level 3.
+// The Manual of Bodily Health (MAGIC-3): each one read adds this grant, from
+// this source, and 2 to Constitution and its maximum.
+constexpr std::string_view bodily_health = "boon:bodily_health";
+constexpr std::string_view manual_source = "item:manual_of_bodily_health";
+
+// The grants a class, species, background or feat gives, without a Manual's.
+std::vector<FeatureGrant> without_manuals(std::vector<FeatureGrant> grants)
+{
+    std::erase_if(grants,
+                  [](const auto &g)
+                  {
+                      return g.id == bodily_health;
+                  });
+    return grants;
+}
+
 int maximum_hit_points(CharacterClass klass, int die, bool dwarf, std::span<const int> modifiers,
                        bool draconic)
 {
     if (modifiers.empty() || modifiers.size() > detail::level_cap(klass) ||
         std::any_of(modifiers.begin(), modifiers.end(),
+                    // A Manual of Bodily Health can raise Constitution to 30.
                     [](int n)
                     {
-                        return n < -4 || n > 5;
+                        return n < -4 || n > 10;
                     }))
     {
         throw std::runtime_error("Invalid HP advancement history");
@@ -2853,8 +2876,6 @@ character_definition(std::string_view bytes,
                     : (klass == CharacterClass::wizard || klass == CharacterClass::sorcerer) ? 6
                                                                                              : 8;
     Definition d;
-    d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
-                              klass == CharacterClass::sorcerer);
     d.hit_die = die;
     d.constitution = con;
     d.dwarf = race == "Dwarf";
@@ -3073,6 +3094,8 @@ character_definition(std::string_view bytes,
     std::string background;
     in >> std::quoted(background);
     const auto grants = detail::read_grants(in);
+    d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
+                              klass == CharacterClass::sorcerer);
     // A species' creation choices: size, a Wood Elf's speed and a Tiefling's
     // or Dragonborn's resistance.
     const auto chose = [&](std::string_view id)
@@ -3449,7 +3472,8 @@ character_definition(std::string_view bytes,
     {
         throw std::runtime_error("Character casting access disagrees with spell grants");
     }
-    const auto features_only = detail::without_spell_grants(detail::without_training(grants));
+    const auto features_only =
+        without_manuals(detail::without_spell_grants(detail::without_training(grants)));
     const auto effects =
         detail::validate_grants(features_only, klass, detail::race_id(race), background, level);
     if (effects.feats != features)
@@ -25640,6 +25664,11 @@ class Module final : public RulesModule
 
     void train_at_hall(CharacterSheet &sheet, std::string_view grant) const override
     {
+        if (grant == bodily_health)
+        {
+            read_manual(sheet);
+            return;
+        }
         const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         // After the last skill or Expertise grant, so a save's replay, which
@@ -25657,6 +25686,37 @@ class Module final : public RulesModule
         candidate.training = detail::training_profile(candidate.grants, klass, candidate.race,
                                                       detail::background_id(candidate.background),
                                                       candidate.level, candidate.scores);
+        (void)character_profile(candidate, {});
+        sheet = std::move(candidate);
+    }
+
+    // The Manual of Bodily Health (MAGIC-3): Constitution and its maximum rise
+    // by 2. The Hit Point maximum follows the new modifier as though the
+    // character had it from level 1, as the SRD's Constitution does.
+    void read_manual(CharacterSheet &sheet) const
+    {
+        auto candidate = sheet;
+        const auto level = static_cast<unsigned>(sheet.level);
+        candidate.grants.push_back(
+            FeatureGrant{std::string(bodily_health), std::string(manual_source), level, {}});
+        AbilityAdjustment manual{std::string(manual_source), "Manual of Bodily Health", level};
+        manual.bonuses[Ability::constitution] = 2;
+        manual.label_message = {"Manual of Bodily Health", {}};
+        candidate.ability_adjustments.push_back(std::move(manual));
+        candidate.bonuses[Ability::constitution] += 2;
+        candidate.scores[Ability::constitution] += 2;
+        candidate.modifiers[Ability::constitution] =
+            ability_modifier(candidate.scores[Ability::constitution]);
+        ++candidate.saving_throws[Ability::constitution];
+        // A score 2 higher is a modifier 1 higher at every level.
+        for (auto &modifier : candidate.hit_point_modifiers)
+        {
+            ++modifier;
+        }
+        const auto klass = detail::class_of(candidate);
+        candidate.hit_points = maximum_hit_points(
+            klass, candidate.hit_die, candidate.race == "Dwarf", candidate.hit_point_modifiers,
+            klass == CharacterClass::sorcerer);
         (void)character_profile(candidate, {});
         sheet = std::move(candidate);
     }
@@ -28181,6 +28241,54 @@ class Module final : public RulesModule
         random_state.value = rng;
     }
 
+    void drink_potion(const CharacterSheet &sheet, VitalState &state, std::string_view item,
+                      RandomState &random_state) const override
+    {
+        const auto *potion = detail::magic_item(item);
+        if (!potion || potion->use != detail::ItemUse::drink)
+        {
+            throw std::runtime_error("Only a potion is drunk");
+        }
+        auto drinker = camp_actor(sheet, state);
+        if (drinker.life.dead)
+        {
+            throw std::runtime_error("The dead cannot drink");
+        }
+        const auto &spell = *detail::find_spell(potion->spell);
+        if (spell.pattern == detail::SpellPattern::heal)
+        {
+            const int maximum = max_hp(drinker);
+            if (drinker.life.hp >= maximum)
+            {
+                throw std::runtime_error("Healing requires a wounded living member");
+            }
+            auto rng = random_state.value;
+            int amount = spell.dice.bonus;
+            for (int n = 0; n < spell.dice.count; ++n)
+            {
+                amount += roll_die(rng, spell.dice.sides);
+            }
+            (void)detail::heal_life(drinker.life, amount, maximum,
+                                    !detail::healing_blocked(drinker.effects));
+            random_state.value = rng;
+        }
+        else if (spell.rider == detail::Rider::giant_strength)
+        {
+            if (detail::has_effect(drinker.effects, detail::EffectKind::giant_strength))
+            {
+                throw std::runtime_error("Its Strength is already a giant's");
+            }
+            // Effects that last past a fight carry scope 1, as camp effects do.
+            detail::apply_spell_benefit(drinker.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                        sheet.name, detail::EffectKind::giant_strength, 0);
+        }
+        else
+        {
+            throw std::runtime_error("That potion works only in combat");
+        }
+        state = vitals(drinker);
+    }
+
     bool can_cast_exploration_spell(const CharacterSheet &sheet, const VitalState &state,
                                     std::string_view id) const override
     {
@@ -28701,7 +28809,7 @@ class Module final : public RulesModule
                                        detail::background_id(sheet.background), sheet.level,
                                        sheet.scores);
         const auto features_only =
-            detail::without_spell_grants(detail::without_training(sheet.grants));
+            without_manuals(detail::without_spell_grants(detail::without_training(sheet.grants)));
         const auto access = spell_access(sheet);
         const auto effects =
             detail::validate_grants(features_only, klass, detail::race_id(sheet.race),
@@ -28722,22 +28830,41 @@ class Module final : public RulesModule
             }
         }
         std::sort(asi_levels.begin(), asi_levels.end());
-        if (sheet.ability_adjustments.size() != 1 + asi_levels.size())
+        // A Manual of Bodily Health read (MAGIC-3) adds its own adjustment.
+        const auto manuals = static_cast<std::size_t>(
+            std::count_if(sheet.grants.begin(), sheet.grants.end(),
+                          [](const auto &g)
+                          {
+                              return g.id == bodily_health;
+                          }));
+        if (sheet.ability_adjustments.size() != 1 + asi_levels.size() + manuals)
         {
             throw std::runtime_error("Ability sources disagree with acquired grants");
         }
         AbilityArray<int> raised{};
-        for (std::size_t i = 0; i < asi_levels.size(); ++i)
+        AbilityArray<int> read{};
+        std::size_t next_asi = 0;
+        for (std::size_t i = 1; i < sheet.ability_adjustments.size(); ++i)
         {
-            const auto &adjustment = sheet.ability_adjustments[i + 1];
-            if (adjustment.source_id != "feat:ability_score_improvement" ||
-                adjustment.level != asi_levels[i])
+            const auto &adjustment = sheet.ability_adjustments[i];
+            auto &sum = adjustment.source_id == manual_source ? read : raised;
+            if (adjustment.source_id == manual_source)
+            {
+                AbilityArray<int> manual{};
+                manual[Ability::constitution] = 2;
+                if (adjustment.bonuses != manual)
+                {
+                    throw std::runtime_error("Ability sources disagree with acquired choices");
+                }
+            }
+            else if (adjustment.source_id != "feat:ability_score_improvement" ||
+                     next_asi >= asi_levels.size() || adjustment.level != asi_levels[next_asi++])
             {
                 throw std::runtime_error("Ability sources disagree with acquired choices");
             }
             for (const auto ability : all_abilities)
             {
-                raised[ability] += adjustment.bonuses[ability];
+                sum[ability] += adjustment.bonuses[ability];
             }
         }
         if (raised != effects.abilities)
@@ -28746,8 +28873,8 @@ class Module final : public RulesModule
         }
         for (const auto ability : all_abilities)
         {
-            const auto bonuses =
-                sheet.ability_adjustments.front().bonuses[ability] + effects.abilities[ability];
+            const auto bonuses = sheet.ability_adjustments.front().bonuses[ability] +
+                                 effects.abilities[ability] + read[ability];
             if (sheet.bonuses[ability] != bonuses ||
                 sheet.scores[ability] != sheet.base[ability] + bonuses)
             {

@@ -155,6 +155,8 @@ void RolfTourView::prepare_view()
         .connect("pressed", presentation::guarded(this, &RolfTourView::identify_item));
     required_node<Button>(*this, "InventoryPanel/CastIdentify")
         .connect("pressed", presentation::guarded(this, &RolfTourView::cast_identify));
+    required_node<Button>(*this, "InventoryPanel/UseItem")
+        .connect("pressed", presentation::guarded(this, &RolfTourView::use_inventory_item));
     required_node<Button>(*this, "Cast")
         .connect("pressed", presentation::guarded(this, &RolfTourView::cast_menu));
     required_node<Button>(*this, "CastPanel/Close")
@@ -417,6 +419,7 @@ void RolfTourView::refresh_inventory()
     auto &spell = required_node<Button>(*this, "InventoryPanel/CastIdentify");
     spell.set_visible(campaign_->identifier().has_value());
     spell.set_disabled(!items->get_item_count());
+    required_node<Button>(*this, "InventoryPanel/UseItem").hide();
     required_node<Label>(*this, "InventoryPanel/Status")
         .set_text(i18n::text(N_("Inventory is empty. Visit a shop to buy equipment.")));
     if (items->get_item_count())
@@ -437,6 +440,9 @@ void RolfTourView::inventory_selected(std::int64_t index)
     {
         return;
     }
+    // The Manual and some potions are used outside combat (MAGIC-3).
+    required_node<Button>(*this, "InventoryPanel/UseItem")
+        .set_visible(opengold::srd5::usable_outside_combat(items[index].definition_id));
     try
     {
         required_node<Label>(*this, "InventoryPanel/Status")
@@ -577,8 +583,18 @@ void RolfTourView::check_identification_spells()
                                                .name = sword.label(),
                                                .quantity = 1,
                                                .original_type = 36});
+        opengold::por::Equipment book;
+        book.stored.type = 70;
+        book.stored.magic_bonus = 12;
+        book.stored.effect_codes = {1, 90, 0};
+        book.stored.stack_size = 1;
+        const auto manual = inventory.add({.definition_id = opengold::equipment_conversion(book),
+                                           .name = "Manual of Bodily Health",
+                                           .quantity = 1,
+                                           .original_type = 70});
         caster.character.replace_inventory(std::move(inventory));
         caster.item_sources.emplace(identify_check_sword_, sword);
+        caster.item_sources.emplace(manual, book);
         caster.equipped.clear();
         caster.vitals = {caster.character.sheet().hit_points, false, {}};
         campaign_->restore(std::move(fixture));
@@ -646,6 +662,29 @@ void RolfTourView::check_identification_spells()
         return;
     }
     capture_frame("phlan-identify");
+    // The inventory's Use reads the Manual of Bodily Health (MAGIC-3).
+    const auto carried = campaign_->member(campaign_->selected()).character.inventory().items();
+    const auto book = std::find_if(carried.begin(), carried.end(),
+                                   [](const auto &item)
+                                   {
+                                       return item.definition_id == "manual_of_bodily_health";
+                                   });
+    const int constitution =
+        campaign_->member(campaign_->selected()).character.sheet().scores[opengold::rules::Ability::constitution];
+    items.select(static_cast<int>(book - carried.begin()));
+    inventory_selected(book - carried.begin());
+    auto &use = required_node<Button>(*this, "InventoryPanel/UseItem");
+    if (!use.is_visible())
+    {
+        throw std::runtime_error("The inventory must offer Use for the Manual");
+    }
+    use.emit_signal("pressed");
+    if (campaign_->member(campaign_->selected()).character.sheet().scores[opengold::rules::Ability::constitution] !=
+            constitution + 2 ||
+        !required_node<Label>(*this, "InventoryPanel/Status").get_text().contains("Constitution"))
+    {
+        throw std::runtime_error("Using the Manual must raise Constitution by 2");
+    }
     campaign_->restore(std::move(*identify_check_retained_));
     identify_check_retained_.reset();
     refresh();
@@ -653,6 +692,48 @@ void RolfTourView::check_identification_spells()
     required_node<Button>(*this, "InventoryPanel/Close").emit_signal("pressed");
     required_node<Button>(*this, "LeaveShop").emit_signal("pressed");
     shop_check_stage_ = 3;
+}
+
+void RolfTourView::use_inventory_item()
+{
+    try
+    {
+        const auto selection =
+            required_node<ItemList>(*this, "InventoryPanel/Items").get_selected_items();
+        if (selection.is_empty())
+        {
+            throw std::runtime_error("Select an item first.");
+        }
+        const auto id = campaign_->selected();
+        const auto items = campaign_->member(id).character.inventory().items();
+        if (selection[0] < 0 || static_cast<std::size_t>(selection[0]) >= items.size())
+        {
+            throw std::runtime_error("Select an existing item.");
+        }
+        const auto item = items[selection[0]];
+        const auto name = String::utf8(campaign_->member(id).character.sheet().name.c_str());
+        String result;
+        if (item.definition_id == "manual_of_bodily_health")
+        {
+            campaign_->read_manual(id, item.id);
+            result = i18n::format(
+                N_("{name} reads the Manual of Bodily Health: Constitution rises by 2."),
+                {{"name", name}});
+        }
+        else
+        {
+            campaign_->drink_potion(id, item.id);
+            result = i18n::format(N_("{name} drinks the {item}."),
+                                  {{"name", name}, {"item", i18n::text(item.name)}});
+        }
+        refresh_inventory();
+        refresh();
+        required_node<Label>(*this, "InventoryPanel/Status").set_text(result);
+    }
+    catch (const std::exception &e)
+    {
+        required_node<Label>(*this, "InventoryPanel/Status").set_text(i18n::text(e.what()));
+    }
 }
 
 void RolfTourView::cast_identify()

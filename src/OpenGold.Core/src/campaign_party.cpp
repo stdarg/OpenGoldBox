@@ -1032,6 +1032,48 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     coins(state_.wealth, Coin::gold) -= item.stored.value;
 }
 
+void CampaignParty::read_manual(MemberId id, std::uint64_t item)
+{
+    editable();
+    outside_combat();
+    auto reader = member(id);
+    const auto book = reader.character.inventory().find(item);
+    if (!book || book->get().definition_id != "manual_of_bodily_health")
+    {
+        throw std::runtime_error("That is not a Manual of Bodily Health");
+    }
+    if (reader.vitals.dead)
+    {
+        throw std::runtime_error("The dead cannot read");
+    }
+    const int before = reader.character.sheet().hit_points;
+    // Recorded with the hall training, so a save rebuilds it at its level.
+    reader.character.train_at_hall(*rules_, "boon:bodily_health");
+    reader.vitals.hit_points += reader.character.sheet().hit_points - before;
+    reader.character.remove_item(item);
+    reader.item_sources.erase(item);
+    std::erase(reader.equipped, item);
+    edit(id) = std::move(reader);
+}
+
+void CampaignParty::drink_potion(MemberId id, std::uint64_t item)
+{
+    editable();
+    outside_combat();
+    auto next = state_;
+    auto &drinker = member_in(next, id);
+    const auto potion = drinker.character.inventory().find(item);
+    if (!potion)
+    {
+        throw std::runtime_error("Unknown item");
+    }
+    const auto left = potion->get().quantity - 1;
+    rules_->drink_potion(drinker.character.sheet(), drinker.vitals, potion->get().definition_id,
+                         next.random_state);
+    keep_item_uses(drinker, item, left);
+    state_ = std::move(next);
+}
+
 bool CampaignParty::identify_at_shop(MemberId id, std::uint64_t item)
 {
     constexpr unsigned identify_fee = 200;
@@ -1243,8 +1285,14 @@ TrainingDenial CampaignParty::skill_training_denial(MemberId id, TrainingHall ha
     {
         return TrainingDenial::not_active;
     }
-    if (!trained.empty() &&
-        trained.back().level == static_cast<unsigned>(m.character.sheet().level))
+    // A Manual of Bodily Health is recorded with the hall training, but is none.
+    const auto last_trained = std::find_if(trained.rbegin(), trained.rend(),
+                                           [](const auto &entry)
+                                           {
+                                               return !entry.grant.starts_with("boon:");
+                                           });
+    if (last_trained != trained.rend() &&
+        last_trained->level == static_cast<unsigned>(m.character.sheet().level))
     {
         return TrainingDenial::already_trained;
     }

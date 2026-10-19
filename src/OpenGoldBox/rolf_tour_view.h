@@ -218,6 +218,7 @@ class RolfTourView : public godot::Control
     void equip_item(bool equip);
     void identify_item();
     void cast_identify();
+    void use_inventory_item();
     void check_identification_spells();
     void party_selected(std::int64_t index);
     void level_up_requested(int slot);

@@ -329,6 +329,80 @@ void areas()
               logged(*wand, "uses the Wand of Lightning Bolts") && uses_left(*wand, 7) == 2,
           "The wand casts Lightning Bolt and spends a charge");
 }
+// The Manual of Bodily Health raises Constitution by 2, and Hit Points as
+// though the new modifier had counted from level 1.
+void manual()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    party.award_experience(900, "test:xp");
+    for (unsigned n = 1; n < 3; ++n)
+    {
+        party.advance(id, party.default_advancement(id));
+    }
+    check(party.award_loot({}, {original(70, 1, 90)}, "test:manual"), "Collect the Manual");
+    const auto book = party.member(id).character.inventory().items().back().id;
+    const auto before = party.member(id).character.sheet();
+    const int hp = party.member(id).vitals.hit_points;
+    party.read_manual(id, book);
+    const auto &after = party.member(id).character.sheet();
+    check(after.scores[Ability::constitution] == before.scores[Ability::constitution] + 2 &&
+              after.saving_throws[Ability::constitution] ==
+                  before.saving_throws[Ability::constitution] + 1,
+          "Constitution rises by 2");
+    check(after.hit_points == before.hit_points + 3 &&
+              party.member(id).vitals.hit_points == hp + 3,
+          "A level-3 character gains 3 Hit Points, current and maximum");
+    check(!party.member(id).character.inventory().find(book), "The Manual's magic is spent");
+
+    CampaignParty restored(module());
+    const auto rules = module();
+    restored.restore(decode_campaign(encode_campaign(party, nullptr, "manual"),
+                                     *srd5::character_rules(), *rules, "manual", nullptr)
+                         .party);
+    check(restored.member(id).character.sheet().hit_points == after.hit_points &&
+              restored.member(id).character.sheet().scores == after.scores,
+          "A save rebuilds the Manual's Constitution");
+    party.award_experience(1800, "test:xp2");
+    party.advance(id, party.default_advancement(id));
+    check(party.member(id).character.sheet().level == 4, "The reader still advances");
+}
+
+// Outside combat a healing potion restores Hit Points to a wounded drinker; a
+// Potion of Speed waits for a fight.
+void drinking_outside_combat()
+{
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter());
+    check(party.award_loot({}, {original(70, 3, 3), original(71, 1, 80)}, "test:drinks"),
+          "Collect potions");
+    const auto items = party.member(id).character.inventory().items();
+    const auto greater = items[items.size() - 2].id, speed = items.back().id;
+    test::rejects(
+        [&]
+        {
+            party.drink_potion(id, greater);
+        },
+        "Unhurt, there is nothing to heal");
+    auto wounded = party.checkpoint();
+    wounded.roster.front().vitals.hit_points = 2;
+    party.restore(std::move(wounded));
+    party.drink_potion(id, greater);
+    check(party.member(id).vitals.hit_points >= 10 &&
+              party.member(id).character.inventory().find(greater)->get().quantity == 2,
+          "A Potion of Greater Healing restores 4d4 + 4 and two are left");
+    test::rejects(
+        [&]
+        {
+            party.drink_potion(id, speed);
+        },
+        "A Potion of Speed works only in combat");
+    check(srd5::usable_outside_combat("potion_of_healing") &&
+              srd5::usable_outside_combat("manual_of_bodily_health") &&
+              !srd5::usable_outside_combat("potion_of_speed"),
+          "The inventory's Use offers what works outside combat");
+}
+
 // After a fight the party carries what is left; the last potion is gone.
 void after_combat()
 {
@@ -396,6 +470,8 @@ int main()
         wands();
         areas();
         other_effects();
+        manual();
+        drinking_outside_combat();
         after_combat();
         std::cout << "Charged item tests passed\n";
         return 0;

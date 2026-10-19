@@ -869,6 +869,12 @@ class RulesModule
     virtual void use_camp_action(const CharacterSheet &user, VitalState &user_state,
                                  const CharacterSheet &target, VitalState &target_state,
                                  std::string_view action, RandomState &random_state) const = 0;
+    // Drinks a potion the member carries, outside combat (MAGIC-3): a healing
+    // potion restores its Hit Points and a Potion of Giant Strength starts its
+    // hour. Throws for a potion that works only in combat, or that would do
+    // nothing.
+    virtual void drink_potion(const CharacterSheet &, VitalState &, std::string_view item,
+                              RandomState &random_state) const = 0;
     // Uses a whole_party camp action on the members it chooses among `party`,
     // which may include the user's own state.
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,

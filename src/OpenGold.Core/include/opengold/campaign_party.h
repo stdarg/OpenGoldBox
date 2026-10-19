@@ -205,6 +205,12 @@ class CampaignParty
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     // The party's gold pays; the item goes to the member.
     void purchase(MemberId id, const por::Equipment &item);
+    // Reads a Manual of Bodily Health the member carries (MAGIC-3):
+    // Constitution and its maximum rise by 2, Hit Points with the new maximum,
+    // and the book's magic is spent.
+    void read_manual(MemberId id, std::uint64_t item);
+    // Drinks one of a potion stack the member carries, outside combat (MAGIC-3).
+    void drink_potion(MemberId id, std::uint64_t item);
     // The shop's ID: for 200 gp from the party purse, any item's hidden name
     // words are revealed, as in the original. False when there were none.
     bool identify_at_shop(MemberId id, std::uint64_t item);

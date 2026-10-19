@@ -536,6 +536,16 @@ offset_bottom = -18
 metadata/layout_reference = Rect2(780, 866, 200, 36)
 text = "Cast Identify"
 
+[node name="UseItem" type="Button" parent="InventoryPanel"]
+anchor_top = 1
+anchor_bottom = 1
+offset_left = 1000
+offset_right = 1150
+offset_top = -54
+offset_bottom = -18
+metadata/layout_reference = Rect2(1000, 866, 150, 36)
+text = "Use"
+
 [node name="MemberSheet" type="Window" parent="."]
 size = Vector2i(1800, 960)
 metadata/layout_reference_size = Vector2i(1800, 960)
