@@ -1,0 +1,30 @@
+{
+  "action_sha256": "3eb05e0e1ecc47138db3c5704e012ea78bd10a1ca6b72ca33a27fa870efd3e48",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon1cha_dax_4/added_50856018__added_88447737/action.png",
+    "ready": "art/mon1cha_dax_4/added_50856018__added_88447737/ready.png"
+  },
+  "metadata_sha256": "14319ed2999cb4dd9363095c2be603d19a796c178bf11973294f9b2b1cd3c9bd",
+  "notes": "Restarted pair after scale feedback. Same canvas transform applied to both source images; the more expansive action determined shared transparent margin. Head, torso and limbs visually matched at combat size and during catalog alternation.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "dc2c73324533b39c024136f9422fe8712050f9339f293b995c05250118fe058c",
+  "reviewed_at": "2026-10-18T23:39:24.919653+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON1CHA.DAX:4",
+  "specification": "bipedal-v1",
+  "variant_id": "added_50856018__added_88447737",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+}

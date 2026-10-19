@@ -1,0 +1,30 @@
+{
+  "action_sha256": "6dda931bfee0d91082ef554d9d7ee1ec485a9016ad86af64e3450fffa8184c9c",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon1cha_dax_75/item_002__item_000/action.png",
+    "ready": "art/mon1cha_dax_75/item_002__item_000/ready.png"
+  },
+  "metadata_sha256": "fed5f6253eee842e2c92c11951c2a0295ac051e47373454d8d06332a158107f5",
+  "notes": "Reviewed both 128 px exports alternating in catalog; same full-canvas transform, character head/torso/legs and baseline across ready/action. Compared each bow to its accepted melee set for identity and scale.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "a77881bfc1a76533a24c04138b8aaca806de4881a0ff8c686b8b461cbce70641",
+  "reviewed_at": "2026-10-19T00:00:52.959171+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON1CHA.DAX:75",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_000",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+}

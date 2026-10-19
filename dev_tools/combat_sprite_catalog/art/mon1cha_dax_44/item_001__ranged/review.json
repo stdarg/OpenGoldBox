@@ -1,0 +1,30 @@
+{
+  "action_sha256": "a8b5fdf6de301488f7ac0d948cbd7c60e9dfaaf60af7f8ca0bf7c8baa29cc906",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon1cha_dax_44/item_001__ranged/action.png",
+    "ready": "art/mon1cha_dax_44/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "ac5cac0f02ff0429ca64a41fb2329bc44d5fe1cad8e894af36bfd29e7997e68a",
+  "notes": "Reviewed both 128 px exports alternating in catalog, with same full-canvas transform and matching body proportions. Compared alternate weapon-set identity and scale where present. Larger action extents set shared transparent margin.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "66640183fde5c08f591dd364f1c9b3d6cdb17c6adc9308b783a25669d9069ab7",
+  "reviewed_at": "2026-10-18T23:53:34.331447+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON1CHA.DAX:44",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+}
