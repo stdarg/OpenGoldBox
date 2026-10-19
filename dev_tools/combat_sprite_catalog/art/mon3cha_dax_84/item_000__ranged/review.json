@@ -1,0 +1,31 @@
+{
+  "action_sha256": "e5ca802312140473ab0840f0f1da44bd46f60032286369d251c277ec4636c6eb",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_84/item_000__ranged/action.png",
+    "ready": "art/mon3cha_dax_84/item_000__ranged/ready.png"
+  },
+  "metadata_sha256": "718d97800e4f14190911c193d8d17dc350b573258a273a87a9975afdc92939b3",
+  "notes": "Rejected first javelin release because both arms changed and throwing side was unclear. Final action removes the thrown javelin and opens only its former holding hand, with other arm, torso and feet fixed. Reviewed alternating in catalog.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "ef17cfa10963d52996497b92739e78eb2b6186fb5f87fd8dfedabc2b4607a948",
+  "reviewed_at": "2026-10-19T05:37:01.213604+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:84",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
