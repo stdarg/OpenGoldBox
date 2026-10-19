@@ -1,15 +1,15 @@
 {
-  "action_sha256": "0150e7ef42ea28d896524bf617eecc4fbcab1a562b5f9e144fbbde618fdc9c91",
+  "action_sha256": "44010d545dffaf541693126d237ecc32df37d162930131150c9b60f4588b47de",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_7/item_002__ranged/action.png",
     "ready": "art/mon1cha_dax_7/item_002__ranged/ready.png"
   },
   "metadata_sha256": "6a25569484b08f6915e810f8684e4fa18ea05366834da2a192ed18f5ed5dcd52",
-  "notes": "Reviewed both 128 px exports alternating in catalog; same full-canvas transform, character head/torso/legs and baseline across ready/action. Compared each bow to its accepted melee set for identity and scale.",
+  "notes": "New approved sword sprite was identity reference; original art was never a generation input. Bow ready carries a nocked arrow; action has released it. Feet, body scale, palette, armor and tabard remain registered at combat size in catalog alternation. No shield in ranged set.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "eeb00407b5e5ad32e1dab7ff545a56c174537efcf237daf872ee3830e515af91",
-  "reviewed_at": "2026-10-19T00:00:52.241756+00:00",
+  "ready_sha256": "df0627073de7b93baa6de4744b7f763acf726488fc0373218eaea210a4fad818",
+  "reviewed_at": "2026-10-19T05:08:49.477063+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:7",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }
