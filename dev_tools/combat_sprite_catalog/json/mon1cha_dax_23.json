@@ -12,7 +12,7 @@
       "weapon_role": "ranged"
     }
   ],
-  "flag_for_regeneration": true,
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "VAMPIRE",
   "preview_fallback_variant": "",

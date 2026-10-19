@@ -1,0 +1,31 @@
+{
+  "action_sha256": "ad0a0f6dcca544885519003ebd05e08e18f8e399606b79f9e9a03010ab5fe501",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_83/item_002__added_65322016084/action.png",
+    "ready": "art/mon3cha_dax_83/item_002__added_65322016084/ready.png"
+  },
+  "metadata_sha256": "9ca328a1889ec9d257ed0fa0131d4864355b2665496d46705686bc2beb560673",
+  "notes": "Rejected first raised-ready/action combination because action body shifted. Final raised mace ready was edited from new late-strike image to retain boot x/y and scale. Banded armor, shield +2, mace +2 and potion remain visible. Both 128px frames viewed alternating in catalog. Approved pose guide/new art only.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "0fbb02e92817a1bc7caf4d2214c6d9a40510bfd8f5e53ae3f07e9bd42ed062c6",
+  "reviewed_at": "2026-10-19T04:06:26.536452+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:83",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__added_65322016084",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}

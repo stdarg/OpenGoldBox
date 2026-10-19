@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7c234871435fa60b66716e066614b807371557ca5d3b6824cb19c74443fb4b61",
+  "action_sha256": "32cbb7d06ddfa3dbe7945981a32bd7210e3ccaa9d846b1e2c900b9b1bc266980",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_23/item_000__ranged/action.png",
     "ready": "art/mon1cha_dax_23/item_000__ranged/ready.png"
   },
   "metadata_sha256": "8dea8d4f1d124947d8533cc18fea66f1256905d4ae76e94039f1773df319b951",
-  "notes": "Restarted pair after scale feedback. Original full canvases exported with identical 128x128 transform, no per-pose crop or fit. Compared head, torso, limbs, ground baseline and equipment at combat size, side by side and alternating in catalog.",
+  "notes": "Vampire short-bow pair derived from approved pose guide and new vampire ready art. Arrow visibly nocked in ready and gone after release; bowstring recoils while cape, torso and boots stay registered. Both 128px frames viewed alternating in catalog.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "117a22b4f548064728e82320a8d30928629b0c62845705d32b09e4199962c3f6",
-  "reviewed_at": "2026-10-18T23:31:47.545477+00:00",
+  "ready_sha256": "8f972585a3d5968fea25185434506aa035d1dca82982ef980dad00f8c6c0d0f2",
+  "reviewed_at": "2026-10-19T04:03:18.522650+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:23",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }
