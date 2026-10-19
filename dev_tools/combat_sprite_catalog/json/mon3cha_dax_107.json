@@ -1,5 +1,9 @@
 {
   "description": "A cleric of Tyr sent to help cleanse the Temple of Bane; he remains to rebuild it afterward. Source inventory: Wooden Holy Symbol, Mace, Chain armor. Readied: Chain armor. Source wealth: 20 cp.",
+  "description_sources": [
+    "Original game MON3CHA.DAX:107 and matching MONnITM inventory",
+    "GameDocs/Cluebook.pdf, PDF page 11"
+  ],
   "equipment": [
     {
       "id": "item_000",
@@ -32,7 +36,7 @@
       "weapon_role": ""
     }
   ],
-  "flag_for_regeneration": true,
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "DIRTEN",
   "preview_fallback_variant": "",
@@ -64,9 +68,5 @@
     "jewelry": 0,
     "platinum": 0,
     "silver": 0
-  },
-  "description_sources": [
-    "Original game MON3CHA.DAX:107 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 11"
-  ]
+  }
 }

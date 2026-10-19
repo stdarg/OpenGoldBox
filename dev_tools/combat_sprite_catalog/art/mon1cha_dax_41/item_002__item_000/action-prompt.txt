@@ -62,12 +62,26 @@ to fit a wider attack, and do not enlarge the ready figure to fill spare space.
 Change the pose within the shared canvas; if the attack cannot fit at the
 chosen body scale, remake the pair at a smaller common scale.
 
+FIXED ANIMATION REGISTRATION: These are successive frames of ONE character,
+not separately composed illustrations. Establish the ready figure's planted
+feet and ground contact at fixed x AND y pixel coordinates on the 128 x 128
+canvas. Make the action from the ready image at the SAME canvas origin: retain
+the planted feet at those exact coordinates and keep the hips and torso largely
+registered. Move only the limbs, weapon, clothing and modest upper-body lean
+needed to show the attack. Do not translate, recenter, crop, independently
+scale, or rotate the entire figure between frames. A matching foot baseline
+alone is insufficient if the character slides horizontally. For a stationary
+attack, do not invent a step or a new stance. Plan transparent space for the
+weapon's widest action sweep before making ready; if that cannot fit, remake
+BOTH frames at a smaller common scale while retaining a single shared foot
+anchor. Overlay the frames and play them at combat size to reject any jump.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep body and equipment entirely inside the frame with
 transparent margin. Final assets are 128 x 128 PNGs with alpha. Larger working
 images are allowed; export with nearest-neighbor sampling and preserve alpha.
-Keep camera, character scale and grounded foot baseline consistent across poses
+Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
 
@@ -122,9 +136,13 @@ Preserve the ready figure's head, torso and limb sizes. Do not shrink the
 character to fit the attack; if it needs more room, the pair needs a smaller
 COMMON scale established from this wider pose.
 Reference 1: approved original pose guide, for facing and action-pose mechanics.
-Reference 2: the visually approved NEW ready sprite for THIS weapon set.
-Keep its identity, colors, clothes, equipment, handedness, camera, scale and foot
-baseline. Change the pose; do not turn the character's back toward the viewer.
+Reference 2: the visually approved NEW ready sprite for THIS weapon set. Edit
+that ready image as the base frame; do not compose the action independently.
+Keep its identity, colors, clothes, equipment, handedness, camera, scale and
+planted feet at exactly the same x/y pixels. Keep the body largely registered;
+move the weapon arm and weapon, with only modest upper-body follow-through.
+Never shift, recenter or rotate the entire character to fit the attack. Change
+the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-ANIMATION SIZE MATCH: Frame two must keep the attached ready frame's head diameter, torso height, limb length and foot baseline in pixels. Move the weapon and body through the action without zooming the full character out. The more expansive pose defines shared canvas space. If the movement would clip, remake the pair at a smaller common scale.
-Clean transparent background: no isolated dark dust pixels around the fighter. Preserve exact body scale from attached ready frame.
+
+Final action direction: from approved ready image, keep lower body and boots at identical x/y; change only sword arm to late forward strike. First shifted-body candidate rejected.

@@ -1,0 +1,31 @@
+{
+  "action_sha256": "ed34e93c5238b65707c9e820afb1050b3c8497da585a9783d36509b01f9bb4d1",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_4/added_13642017509__added_13649870159/action.png",
+    "ready": "art/mon4cha_dax_4/added_13642017509__added_13649870159/ready.png"
+  },
+  "metadata_sha256": "17324bccfbf36bd92d11ccabf36c097665903f7939fcc7aac09b862e8f3eff9b",
+  "notes": "Exact new independently generated art reused from accepted MON1CHA.DAX:4 longsword + shield for identical creature identity, armor and weapon setup. Both frames checked at 128 px and alternating in this source record in the catalog; fixed boots, correct attack and equipment.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "8db89d72da15685b6f8dc2d6acca831f3c91fffd4cfd9c76b3b02bb38513b03a",
+  "reviewed_at": "2026-10-19T01:36:22.923708+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:4",
+  "specification": "bipedal-v1",
+  "variant_id": "added_13642017509__added_13649870159",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
