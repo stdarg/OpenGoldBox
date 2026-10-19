@@ -1,0 +1,31 @@
+{
+  "action_sha256": "401706aa8d133c88b420d322a03a75f2bb50cb86206e13f89a14217d65008b83",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_89/item_000__one_hand/action.png",
+    "ready": "art/mon2cha_dax_89/item_000__one_hand/ready.png"
+  },
+  "metadata_sha256": "6f1d4ff1ea18e4eb2908ff6d1e15062937c1755727b3170d43a57fa5821866b3",
+  "notes": "Dagger alternate derived from newly created burgundy wizard wand-ready art. Rejected first dagger pair because stance widened between weapon sets. Final edit keeps planted boots, body size and robe registered across this pair and close to wand set; compact forward stab changes the weapon forearm only. Inspected both 128px frames and alternating in catalog.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "528c0ef895a4cf73f08de69b123f4fd13b2aa05a19c18583c3712be1819490c7",
+  "reviewed_at": "2026-10-19T03:27:42.952310+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:89",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}

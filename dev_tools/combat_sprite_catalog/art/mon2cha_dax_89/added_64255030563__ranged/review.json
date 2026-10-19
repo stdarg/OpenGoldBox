@@ -1,0 +1,31 @@
+{
+  "action_sha256": "dc1a52ecbd92fb3e66544b7853c81f75cdbae7c1e36e2904d33b6f28843b4b8d",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_89/added_64255030563__ranged/action.png",
+    "ready": "art/mon2cha_dax_89/added_64255030563__ranged/ready.png"
+  },
+  "metadata_sha256": "6f1d4ff1ea18e4eb2908ff6d1e15062937c1755727b3170d43a57fa5821866b3",
+  "notes": "New burgundy fifth-level magic-user made using approved original pose guide; action edited from ready. Wand lowers slightly and spark appears just after Magic Missiles discharge. Boots and robe hem stay fixed. Inspected both 128px frames and alternating in catalog.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "29b8cd25c16ecf6bf09d7e2ddb5508daca8002881383a2c0aa45fd59a47e75ea",
+  "reviewed_at": "2026-10-19T03:27:42.953123+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:89",
+  "specification": "bipedal-v1",
+  "variant_id": "added_64255030563__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
