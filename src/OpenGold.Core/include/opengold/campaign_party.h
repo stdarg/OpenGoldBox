@@ -383,6 +383,9 @@ class CampaignParty
 };
 
 [[nodiscard]] std::string equipment_conversion(const por::Equipment &item);
+// How many an original item counts for in an inventory: a stack's items, or a
+// charged item's charges or doses (MAGIC-3), otherwise one.
+[[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
 // Reveals the item's hidden name words, so it takes its full name. False when
 // nothing was hidden.
 bool identify_item(PartyMember &member, std::uint64_t item);

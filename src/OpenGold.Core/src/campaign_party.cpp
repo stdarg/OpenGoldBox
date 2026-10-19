@@ -238,6 +238,52 @@ rules::ItemPower item_power(const por::ItemRecord &raw)
     return rules::ItemPower::none;
 }
 
+// The original's charged and single-use items, known by their spell or item
+// power (byte 61), become their SRD counterparts (MAGIC-3); empty for any other
+// record. Byte 62's bit 0x80 marks an effect applied when readied, not a use.
+std::string_view charged_conversion(const por::ItemRecord &raw)
+{
+    constexpr std::uint8_t cure_light_wounds = 3, lightning_bolt = 51, speed = 80,
+                           giant_strength = 82, javelin_lightning = 83, paralysis = 84,
+                           healing = 85, disappearance = 86, missiles = 87, magic_missiles = 88,
+                           bodily_health = 90;
+    constexpr std::uint8_t wand_type = 78;
+    const auto [charges, power, flags] = raw.effect_codes;
+    if (!charges || (flags & 0x80))
+    {
+        return {};
+    }
+    switch (power)
+    {
+    case magic_missiles:
+        return "wand:magic_missiles";
+    case lightning_bolt:
+        return raw.type == wand_type ? "wand:lightning_bolts" : "";
+    case paralysis:
+        return "wand:paralysis";
+    case healing:
+        return "potion_of_healing";
+    // Potion Extra Healing's doses are Potions of Greater Healing; a scroll
+    // naming the spell is a scroll.
+    case cure_light_wounds:
+        return raw.type == 61 || raw.type == 62 ? "" : "potion_of_greater_healing";
+    case speed:
+        return "potion_of_speed";
+    case giant_strength:
+        return "potion_of_giant_strength";
+    case disappearance:
+        return "dust_of_disappearance";
+    case missiles:
+        return "necklace_of_fireballs";
+    case javelin_lightning:
+        return "javelin:lightning";
+    case bodily_health:
+        return "manual_of_bodily_health";
+    default:
+        return {};
+    }
+}
+
 bool has_effects(const por::ItemRecord &raw)
 {
     return std::any_of(raw.effect_codes.begin(), raw.effect_codes.end(),
@@ -247,6 +293,15 @@ bool has_effects(const por::ItemRecord &raw)
                        });
 }
 } // namespace
+
+unsigned carried_quantity(const por::Equipment &item)
+{
+    // A stack counts its items; a single charged item, its charges or doses.
+    const unsigned stack = item.stored.stack_size;
+    return stack > 1                                   ? stack
+           : charged_conversion(item.stored).empty() ? 1u
+                                                     : item.stored.effect_codes[0];
+}
 
 bool identify_item(PartyMember &member, std::uint64_t item)
 {
@@ -270,6 +325,10 @@ std::string equipment_conversion(const por::Equipment &item)
 {
     const auto &raw = item.stored;
     const auto unsupported = "por:unsupported:" + std::to_string(raw.type);
+    if (const auto charged = charged_conversion(raw); !charged.empty())
+    {
+        return std::string(charged);
+    }
     if (const auto base = enchantable_conversion(raw.type); !base.empty())
     {
         const auto power = item_power(raw);
@@ -940,7 +999,7 @@ void CampaignParty::purchase(MemberId id, const por::Equipment &item)
     const auto key =
         inventory.add({.definition_id = equipment_conversion(item),
                        .name = item.label(),
-                       .quantity = std::max(1u, static_cast<unsigned>(item.stored.stack_size)),
+                       .quantity = carried_quantity(item),
                        .original_type = item.stored.type});
     sources.emplace(key, item);
     m.character.replace_inventory(std::move(inventory));
@@ -1037,7 +1096,7 @@ bool CampaignParty::award_loot(const std::array<unsigned, 7> &wealth,
         const auto id = m.character.add_item(
             {.definition_id = equipment_conversion(item),
              .name = item.label(),
-             .quantity = std::max(1u, static_cast<unsigned>(item.stored.stack_size)),
+             .quantity = carried_quantity(item),
              .original_type = item.stored.type});
         m.item_sources.emplace(id, item);
     }

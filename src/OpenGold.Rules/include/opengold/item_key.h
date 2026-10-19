@@ -11,7 +11,8 @@ namespace opengold::rules
 {
 // An item definition key is a catalog key ("longsword"), optionally followed by
 // the original's enchantment ("longsword+2") and one special power
-// ("longsword+2:flame_tongue", "greatsword+1:undead", "longsword-2:cursed").
+// ("longsword+2:flame_tongue", "greatsword+1:undead", "longsword-2:cursed",
+// "javelin:lightning", "wand:magic_missiles").
 // The enchantment lives in the key so that saves, combat checkpoints and every
 // rules call that takes item keys carry it without a separate channel. The
 // campaign adds ":attuned" when it hands the rules an item whose wielder is
@@ -23,7 +24,12 @@ enum class ItemPower : std::uint8_t
     none,
     flame_tongue, // SRD Flame Tongue: a Bonus Action lights it for 2d6 Fire.
     bane_undead,  // The original's "+3 vs Undead": 2 more against Undead.
-    cursed        // Cannot be put down until Remove Curse (MAGIC-1).
+    cursed,       // Cannot be put down until Remove Curse (MAGIC-1).
+    lightning,    // SRD Javelin of Lightning: once a day its throw is a bolt (MAGIC-3).
+    // The original's charged wands (MAGIC-3): a held wand that casts its spell.
+    magic_missiles,
+    lightning_bolts,
+    paralysis
 };
 
 struct ItemKey
@@ -43,8 +49,9 @@ struct ItemKey
 
 namespace detail
 {
-inline constexpr std::array<std::string_view, 4> item_power_names{"", "flame_tongue", "undead",
-                                                                  "cursed"};
+inline constexpr std::array<std::string_view, 8> item_power_names{
+    "", "flame_tongue", "undead", "cursed", "lightning", "magic_missiles", "lightning_bolts",
+    "paralysis"};
 } // namespace detail
 
 // A key without a recognized enchantment, such as "por:unsupported:36", is all base.

@@ -17,6 +17,7 @@
 #include "weapons.h"
 #include "thrown_gear.h"
 #include "armor.h"
+#include "magic_items.h"
 #include "opengold/item_key.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -544,8 +545,18 @@ bool is_smite(std::string_view verb)
            spell == "shining_smite" || spell == "ensnaring_strike";
 }
 
+std::string_view charge_noun(std::string_view item) noexcept
+{
+    const auto *magic = detail::magic_item(item);
+    return magic ? magic->noun : std::string_view{};
+}
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
+    if (const auto *magic = detail::magic_item(item))
+    {
+        return std::string(magic->note);
+    }
     std::string text;
     if (trained(detail::class_of(sheet), sheet.grants, item))
     {

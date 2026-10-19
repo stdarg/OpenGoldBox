@@ -1,4 +1,5 @@
 #include "godot_text.h"
+#include "inventory_label.h"
 #include <godot_cpp/classes/option_button.hpp>
 #include <chrono>
 #include <godot_cpp/classes/check_box.hpp>
@@ -450,8 +451,7 @@ void CharacterCreationView::refresh_party()
                     i18n::text(profile.equipment_positions.at(found - m.equipped.begin()).source) +
                     " / ";
             }
-            items->add_item(prefix + i18n::text(item.name) + " x" +
-                            gs(std::to_string(item.quantity)));
+            items->add_item(prefix + inventory_label(item));
         }
         required_node<TextureRect>(*this, "PartyPanel/Portrait")
             .set_texture(

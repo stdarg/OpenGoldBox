@@ -131,10 +131,10 @@ void conversion()
               equipment_conversion(original(73, 1)) == "arrow+1" &&
               equipment_conversion(original(47, 2, {163, 200, 47})) == "sling+2",
           "Armor, shields, ammunition and the Sling of Seeking");
-    check(equipment_conversion(original(21, 1, {157, 167, 21}, {1, 83, 0})) == "por:unsupported:21",
+    check(equipment_conversion(original(21, 1, {157, 167, 21}, {1, 83, 0})) == "javelin:lightning",
           "The Javelin of Lightning's charge is not an enchantment");
-    check(equipment_conversion(original(79, 0, {}, {20, 88, 0})) == "por:unsupported:79",
-          "A charged wand stays unsupported");
+    check(equipment_conversion(original(79, 0, {}, {20, 88, 0})) == "wand:magic_missiles",
+          "A charged wand is its own item, not an enchanted one (#263)");
 }
 
 void profile()

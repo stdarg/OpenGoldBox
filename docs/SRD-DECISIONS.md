@@ -1264,3 +1264,42 @@ The user chose how found magic items are identified (issue
   before it is identified; attuning to it reveals its name.
 - **Cursed items** give no warning before they are equipped. Once one is, the
   refusal to unequip it says that it is cursed.
+
+## MAGIC-3 (2026-10-19): wands, potions and other charged items
+
+The user chose how the original's charged and single-use items work (issue
+[#263](https://github.com/stdarg/OpenGold/issues/263),
+[MAGIC_ITEMS.md](MAGIC_ITEMS.md#wands)):
+
+- **SRD 5.2.1 effects, the original's charges.** Each item does what its SRD
+  counterpart does, but keeps the charges or uses its record holds (a Wand of
+  Magic Missiles has 20 to 67), and nothing recharges.
+  - Wand of Magic Missiles: Magic Missile for each charge.
+  - Wand of Lightning and Wand of Lightning Bolt: the SRD's Wand of Lightning
+    Bolts, 8d6 Lightning in a line, Dexterity save DC 15 for half.
+  - Wand of Paralyzation: the SRD's Wand of Paralysis, a Constitution save DC
+    15 or Paralyzed for up to a minute, saving again at the end of each turn.
+  - Potion of Healing: 2d4 + 2.
+  - Potion Extra Healing: its three doses are three Potions of Greater Healing,
+    4d4 + 4 each.
+  - Potion of Speed: Haste for a minute, without Concentration.
+  - Potion of Giant Strength: Strength 21 for an hour.
+  - Dust of Disappearance: the party is Invisible for 2d4 minutes.
+- **Necklace of Fireballs.** The original's Necklace of Missiles, whose
+  missiles are fireballs, takes the SRD's name and keeps its six beads.
+- **Javelin of Lightning** works as the SRD's: once a day its throw becomes a
+  bolt of lightning, and the javelin is kept.
+- **Empty items are gone.** A wand or potion disappears when its last charge or
+  dose is used, as in the original.
+- **Manual of Bodily Health**: +2 Constitution and +2 to its maximum, with Hit
+  Points adjusted to match. It is read in camp from the inventory, without the
+  SRD's 48 hours of study, and its magic is then spent.
+- **Efreeti Bottle** stays the original's scripted quest item.
+- **Using items.** Potions are drunk from the inventory, without equipping
+  them, as a Bonus Action. A wand must be equipped, and using it takes the
+  Magic action. A Thief's Fast Hands uses either as a Bonus Action.
+- **Quick combat** follows the original: members on Quick always use their
+  equipped magic items, whether or not Quick magic is on, when the item makes
+  sense (an attack needs a target in range, healing needs a wounded ally, and
+  an area effect is skipped when it could catch an ally). The full
+  specification of the AI is [#266](https://github.com/stdarg/OpenGold/issues/266).

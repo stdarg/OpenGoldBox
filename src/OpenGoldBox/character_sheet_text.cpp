@@ -1,6 +1,7 @@
 #include "sheet_format.h"
 #include "godot_text.h"
 #include "character_sheet_text.h"
+#include "inventory_label.h"
 #include "character_text.h"
 #include "hp_presentation.h"
 #include "training_control.h"
@@ -162,8 +163,7 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     }
     for (const auto &item : character.inventory().items())
     {
-        text +=
-            "\n" + rich_text_literal(i18n::utf8(item.name)) + " x" + std::to_string(item.quantity);
+        text += "\n" + rich_text_literal(inventory_label(item).utf8().get_data());
         if (member)
         {
             const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);

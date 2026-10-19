@@ -5,6 +5,7 @@
 #include "localization.h"
 #include "game_resources.h"
 #include "rolf_tour_view.h"
+#include "inventory_label.h"
 #include "opengold/campaign_party.h"
 #include "opengold/npc_portraits.h"
 #include "vital_fixtures.h"
@@ -400,8 +401,7 @@ void RolfTourView::refresh_inventory()
             (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
                  ? i18n::text("Equipped / ")
                  : String()) +
-            i18n::format("{item} x{quantity}",
-                         {{"item", i18n::text(item.name)}, {"quantity", item.quantity}}));
+            inventory_label(item));
     }
     if (items->get_item_count())
     {
