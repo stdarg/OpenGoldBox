@@ -1,0 +1,28 @@
+{
+  "format": "opengold-sprite-review-v1",
+  "specification": "natural-in-place-v1",
+  "source_key": "MON6CHA.DAX:67",
+  "variant_id": "added_14614854085__two_hand",
+  "install_paths": {
+    "action": "art/mon6cha_dax_67/added_14614854085__two_hand/action.png",
+    "ready": "art/mon6cha_dax_67/added_14614854085__two_hand/ready.png"
+  },
+  "metadata_sha256": "baf75b871fbcccde2f2464445a572deba432e1723ec4e5510ec0757b8013bd91",
+  "ready_sha256": "2c8448de22c29793189dc1a3d29e04f8f615a7f13f862ad7297df6faeba52c95",
+  "action_sha256": "8b9028ef2230570f2c7a82bdf7c5ff4dc36038d21ab48e2f39476e3e4fa555c9",
+  "reviewer": "Codex visual review",
+  "reviewed_at": "2026-10-19T05:55:28.924288+00:00",
+  "notes": "Same centaur identity and four hoof anchors as bow set. Raised two-hand halberd guard advances to a late forward strike; horse body remains stationary. Rejected two earlier action drafts for whole-horse translation; this accepted local edit preserves hoof contact regions. Reviewed side by side and alternating in catalog.",
+  "visual_checks": {
+    "four_planted_hooves_same_xy": true,
+    "horse_body_camera_and_scale_registered": true,
+    "localized_upper_body_attack_motion": true,
+    "ready_pose_and_late_action_pose": true,
+    "complete_silhouette_transparent_no_clipping": true,
+    "pixel_art_readable_at_combat_size": true,
+    "correct_equipment_and_grip": true,
+    "same_source_identity_across_sets": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_side_by_side_and_alternating_in_catalog": true
+  }
+}
