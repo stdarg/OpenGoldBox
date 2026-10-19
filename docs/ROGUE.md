@@ -19,7 +19,7 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
 | 10 | A feat or ability points |
 | 11 | Improved Cunning Strike; Sneak Attack 6d6 |
 | 12 | A feat or ability points |
-| 13 | Thief: Use Magic Device (waits for magic items); Sneak Attack 7d6; Proficiency Bonus +5 |
+| 13 | Thief: Use Magic Device (keeps a wand charge on a 6); Sneak Attack 7d6; Proficiency Bonus +5 |
 | 14 | Devious Strikes |
 | 15 | Slippery Mind; Sneak Attack 8d6 |
 
@@ -49,9 +49,9 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   the dice can pay for, such as "Melee attack (Trip, Withdraw)"
   ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Withdraw's
   move comes after the other effect.
-- **Use Magic Device:** granted, with nothing to act on yet: no item needs
-  attunement and no Spell Scroll is used (MAGIC-3, #265); the 1d6 to keep a
-  charge is not built ([#234](https://github.com/stdarg/OpenGold/issues/234)).
+- **Use Magic Device:** a 6 on 1d6 keeps a wand's spent charge (MAGIC-3). No
+  item needs attunement, and Spell Scrolls wait for
+  [#265](https://github.com/stdarg/OpenGold/issues/265).
 - **Fast Hands:** uses a wand, the Necklace of Missiles or Dust of
   Disappearance as a Bonus Action
   ([MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items)).

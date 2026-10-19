@@ -1530,6 +1530,7 @@ struct Definition
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
     bool fast_hands{}; // Thief: a magic item used as a Bonus Action (MAGIC-3)
+    bool use_magic_device{}; // Thief 13: a 6 on 1d6 keeps a spent charge
     // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
     // Wholeness of Body's uses per Long Rest.
     int martial_die{6}, wholeness{}, wisdom{};
@@ -1740,6 +1741,7 @@ struct Actor
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     bool flame_lit{};        // Its Flame Tongue's blade is lit (a Bonus Action lights it)
     bool lightning_throw{};  // Its Javelin of Lightning's bolt flies, within one command
+    bool keeps_charge{};     // Use Magic Device saved this use's charge, within one command
     bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
@@ -2328,7 +2330,10 @@ void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spel
         {
             throw std::runtime_error("No use of the item is left");
         }
-        spend_item_use(a, *item);
+        if (!std::exchange(a.keeps_charge, false))
+        {
+            spend_item_use(a, *item);
+        }
         return;
     }
     if (verb.ends_with(detail::initiate_suffix))
@@ -3103,6 +3108,11 @@ character_definition(std::string_view bytes,
                                {
                                    return g.id == "feature:fast_hands";
                                });
+    d.use_magic_device = std::any_of(grants.begin(), grants.end(),
+                                     [](const auto &g)
+                                     {
+                                         return g.id == "feature:use_magic_device";
+                                     });
     // A species' creation choices: size, a Wood Elf's speed and a Tiefling's
     // or Dragonborn's resistance.
     const auto chose = [&](std::string_view id)
@@ -5124,8 +5134,9 @@ class Session final : public CombatSession
                                                  unsigned slot_level,
                                                  const std::vector<Cell> &cells) const;
     void cast_area();
-    // Logs that `a` uses the carried item a spell comes from (MAGIC-3).
-    void log_item_use(const Actor &a, const detail::SpellDef &spell);
+    // Logs that `a` uses the carried item a spell comes from (MAGIC-3), and rolls
+    // Use Magic Device's d6 for a charge.
+    void log_item_use(Actor &a, const detail::SpellDef &spell);
     // Throws the Javelin of Lightning `token` at `target` as a bolt (MAGIC-3).
     void lightning_javelin(Actor &a, Actor &target, unsigned token);
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
@@ -15622,13 +15633,20 @@ void Session::lightning_javelin(Actor &a, Actor &target, unsigned token)
     a.lightning_throw = false;
 }
 
-void Session::log_item_use(const Actor &a, const detail::SpellDef &spell)
+void Session::log_item_use(Actor &a, const detail::SpellDef &spell)
 {
     if (const auto *item = usable_item(a, spell))
     {
         const auto label = std::string(item->label);
         log(a.source.name + " uses the " + label + ".",
             {"{name} uses the {item}.", {{"name", a.source.name}, {"item", label, true}}});
+        // Use Magic Device (Thief 13): a 6 on 1d6 keeps a spent charge.
+        if (def(a).use_magic_device && item->noun == "charges" && roll(6) == 6)
+        {
+            a.keeps_charge = true;
+            log("Use Magic Device: the charge is not spent.",
+                {"Use Magic Device: the charge is not spent.", {}});
+        }
     }
 }
 
@@ -26449,7 +26467,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && result.level == 13)
         {
             result.description =
-                "Thief: Use Magic Device, which waits for magic items.\nSneak Attack 7d6; Proficiency Bonus +5.";
+                "Thief: Use Magic Device, a 6 on 1d6 to keep a spent charge.\nSneak Attack 7d6; Proficiency Bonus +5.";
         }
         if (klass == CharacterClass::rogue && result.level == 14)
         {

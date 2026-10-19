@@ -324,8 +324,8 @@ void javelin()
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spent bolt");
 }
 
-// A level-3 Thief, whose Fast Hands uses a magic item as a Bonus Action.
-Character thief()
+// A Thief of the given level; Fast Hands from level 3, Use Magic Device from 13.
+Character thief(int level = 3)
 {
     CharacterDraft d;
     d.race = "human";
@@ -344,7 +344,7 @@ Character thief()
     Character hero(*srd5::character_rules(), d, {});
     const auto rules = module();
     VitalState life{hero.sheet().hit_points, false, {}};
-    while (hero.sheet().level < 3)
+    while (hero.sheet().level < level)
     {
         check(hero.advance(*rules, life), "The Rogue advances");
     }
@@ -380,6 +380,34 @@ void fast_hands()
     auto fighter_fight = fighter_turn(*rules, {{"wand:magic_missiles", 5}}, {"wand:magic_missiles"}, 12);
     check(!offered(*fighter_fight, "magic_missile_item_bonus"),
           "Without Fast Hands a wand takes the Action");
+}
+
+// Use Magic Device (Thief 13): a 6 on 1d6 keeps a wand's spent charge.
+void use_magic_device()
+{
+    const auto rules = module();
+    const auto profile =
+        rules->character_profile(thief(13).sheet(), std::vector<std::string>{"wand:paralysis"}).data;
+    bool kept = false, spent = false;
+    for (std::uint64_t seed = 1; seed < 80 && !(kept && spent); ++seed)
+    {
+        Participant p{1, "campaign-character", "Thief", Side::party, {1, 1}, profile};
+        p.inventory.push_back({7, "wand:paralysis", 23});
+        auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+                                {p, {2, "vanguard", "Foe", Side::opposition, {6, 1}}}},
+                               seed);
+        test::keep_initiative(*c);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
+            check(submit(*c, "end"), "End the foe's turn");
+        }
+        check(submit(*c, "wand_of_paralysis_item", 2), "Use the wand");
+        const bool saved_charge = logged(*c, "Use Magic Device: the charge is not spent.");
+        check(uses_left(*c, 7) == (saved_charge ? 23u : 22u), "A charge is spent unless kept");
+        kept = kept || saved_charge;
+        spent = spent || !saved_charge;
+    }
+    check(kept && spent, "Use Magic Device sometimes keeps the charge");
 }
 
 // A Quick character uses its items, even with Quick magic off (MAGIC-3).
@@ -615,6 +643,7 @@ int main()
         javelin();
         fast_hands();
         quick_items();
+        use_magic_device();
         manual();
         drinking_outside_combat();
         after_combat();
