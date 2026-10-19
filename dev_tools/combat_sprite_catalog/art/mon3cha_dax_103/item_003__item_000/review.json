@@ -1,0 +1,31 @@
+{
+  "action_sha256": "e38f633a0fcb5d9174c6555f5a24f9eeea9541ab10e1cdd3ff1c2aa2f95a6101",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_103/item_003__item_000/action.png",
+    "ready": "art/mon3cha_dax_103/item_003__item_000/ready.png"
+  },
+  "metadata_sha256": "5bec93aa893be84564a25f953c0c434ef5f0747c59a575e94a31dcb8451bdf86",
+  "notes": "Banded-armored warrior with one-handed battle axe and shield. Ready axe raised; action near end of forward chop. Both boots and scale remain fixed in catalog alternation; no bow in this set.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "6bf479587c15ca8eab08bf396da7db5071a93b7b1a9d59cc7c0ffde9c5a3fd96",
+  "reviewed_at": "2026-10-19T05:19:49.240719+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:103",
+  "specification": "bipedal-v1",
+  "variant_id": "item_003__item_000",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}

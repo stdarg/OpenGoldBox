@@ -1,0 +1,31 @@
+{
+  "action_sha256": "33bf3fd7e8cff7af58366c2e5532cd4ea5e377765cf3a632e0fc66f0558e34b3",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_103/item_001__ranged/action.png",
+    "ready": "art/mon3cha_dax_103/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "5bec93aa893be84564a25f953c0c434ef5f0747c59a575e94a31dcb8451bdf86",
+  "notes": "Same warrior identity and banded armor, with nocked longbow then arrow released. No shield in ranged set. Exact boot positions and scale reviewed in alternating catalog.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d1e498ad5b889c2314f8cdc4b60c6a7550a89841c8780f28be1a3ec10c86d0f0",
+  "reviewed_at": "2026-10-19T05:19:49.241801+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:103",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
