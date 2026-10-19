@@ -789,6 +789,8 @@ unsigned benefit_duration_ms(EffectKind kind)
         return 60000; // 1 minute
     case EffectKind::giant_strength:
         return 3600000; // 1 hour
+    case EffectKind::javelin_spent:
+        return 86400000; // until the next dawn; a Long Rest ends it sooner
     case EffectKind::mazed:
         return 600000; // Concentration, up to 10 minutes
     case EffectKind::mind_blank:

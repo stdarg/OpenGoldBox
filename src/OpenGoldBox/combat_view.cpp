@@ -2604,7 +2604,8 @@ void CombatView::refresh()
     if (player && throwing != s.combatants.end())
     {
         for (const std::string_view verb :
-             {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot", "doff_shield"})
+             {"torch", "throw_oil", "throw_alchemists_fire", "throw_acid", "shoot",
+              "javelin_lightning", "doff_shield"})
         {
             const auto command = std::find_if(offered.begin(), offered.end(),
                                               [&](const auto &c)

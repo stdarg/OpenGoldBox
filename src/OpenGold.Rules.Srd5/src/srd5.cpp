@@ -1738,6 +1738,7 @@ struct Actor
     std::vector<std::pair<std::uint64_t, unsigned>> item_uses;
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     bool flame_lit{};        // Its Flame Tongue's blade is lit (a Bonus Action lights it)
+    bool lightning_throw{};  // Its Javelin of Lightning's bolt flies, within one command
     bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
@@ -3887,7 +3888,7 @@ const CunningOption &cunning_option(CunningStrike kind)
 bool attack_action(std::string_view verb)
 {
     return verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot" ||
-           verb.starts_with("throw");
+           verb.starts_with("throw") || verb == "javelin_lightning";
 }
 
 bool turns_to_attack(std::string_view verb)
@@ -3895,7 +3896,8 @@ bool turns_to_attack(std::string_view verb)
     // A caster turns toward a foe, not toward an ally being healed, so every
     // spell except the ally-targeted ones counts alongside weapon attacks.
     if (verb.starts_with("light_") || verb.starts_with("nick_") || verb.starts_with("throw") ||
-        verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot")
+        verb == "melee" || verb == "ranged" || verb == "torch" || verb == "shoot" ||
+        verb == "javelin_lightning")
     {
         return true;
     }
@@ -5118,6 +5120,8 @@ class Session final : public CombatSession
     void cast_area();
     // Logs that `a` uses the carried item a spell comes from (MAGIC-3).
     void log_item_use(const Actor &a, const detail::SpellDef &spell);
+    // Throws the Javelin of Lightning `token` at `target` as a bolt (MAGIC-3).
+    void lightning_javelin(Actor &a, Actor &target, unsigned token);
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
@@ -11408,6 +11412,15 @@ std::vector<Command> Session::offered_commands() const
                     {
                         add(id, "throw", "Throw", other.source.id);
                         commands.back().item = item.id;
+                        // The Javelin of Lightning's bolt, once until a Long
+                        // Rest (MAGIC-3).
+                        if (rules::parse_item_key(item.definition).power ==
+                                rules::ItemPower::lightning &&
+                            !detail::has_effect(a.effects, detail::EffectKind::javelin_spent))
+                        {
+                            add(id, "javelin_lightning", "Javelin of Lightning", other.source.id);
+                            commands.back().item = item.id;
+                        }
                     }
                 }
             }
@@ -15544,6 +15557,59 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
     return route;
 }
 
+// Whether `cell` lies in a 5-foot-wide Line from `from` to `to`, between them.
+bool in_line(Cell from, Cell to, Cell cell)
+{
+    const double dx = to.x - from.x, dy = to.y - from.y;
+    const double length = dx * dx + dy * dy;
+    const double cx = cell.x - from.x, cy = cell.y - from.y;
+    const double along = length ? (cx * dx + cy * dy) / length : 0;
+    if (along <= 0 || along >= 1)
+    {
+        return false;
+    }
+    const double off_x = cx - along * dx, off_y = cy - along * dy;
+    return off_x * off_x + off_y * off_y <= 0.25;
+}
+
+// SRD 5.2.1 Javelin of Lightning (MAGIC-3): the throw becomes a bolt in a Line
+// to the target. Each other creature in it makes a DC 13 Dexterity save, 4d6
+// Lightning damage on a failure and half on a success; then the javelin's
+// attack deals 4d6 more Lightning damage on a hit. Once until a Long Rest.
+void Session::lightning_javelin(Actor &a, Actor &target, unsigned token)
+{
+    constexpr int javelin_dc = 13;
+    // Effects that last past the fight carry scope 1, as camp effects do.
+    detail::apply_spell_benefit(a.effects, detail::EffectSource{.scope = 1, .actor = 1},
+                                a.source.name, detail::EffectKind::javelin_spent, 0);
+    log(a.source.name + "'s javelin becomes a bolt of lightning.",
+        {"{name}'s javelin becomes a bolt of lightning.", {{"name", a.source.name}}});
+    const int rolled = dice({4, 6, 0});
+    for (auto &other : actors_)
+    {
+        if (other.life.dead || absent(other) || other.source.id == a.source.id ||
+            other.source.id == target.source.id ||
+            !in_line(a.source.cell, target.source.cell, other.source.cell))
+        {
+            continue;
+        }
+        const bool saved =
+            saving_throw_succeeds(other, detail::Ability::dexterity, javelin_dc);
+        const int amount =
+            resolved_damage(other, detail::DamageType::lightning,
+                            evaded(other, detail::Ability::dexterity, true, saved, rolled));
+        log(other.source.name + " takes " + std::to_string(amount) + " Lightning damage.",
+            {"{name} takes {damage} {type} damage.",
+             {{"name", other.source.name},
+              {"damage", std::to_string(amount)},
+              {"type", "Lightning", true}}});
+        damage(other, amount);
+    }
+    a.lightning_throw = true;
+    throw_weapon(a, target, token);
+    a.lightning_throw = false;
+}
+
 void Session::log_item_use(const Actor &a, const detail::SpellDef &spell)
 {
     if (const auto *item = usable_item(a, spell))
@@ -18960,6 +19026,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
         log(target.source.name + " takes " + std::to_string(extra) +
                 " Radiant damage from Divine Favor.",
             {"{name} takes {damage} Radiant damage from Divine Favor.",
+             {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
+        damage(target, extra, false);
+    }
+    // The Javelin of Lightning's bolt: its hit deals 4d6 more Lightning damage.
+    if (hit && !spell && ranged && a.lightning_throw && !target.life.dead)
+    {
+        const int extra = resolved_damage(target, detail::DamageType::lightning,
+                                          dice({4, 6, 0}, critical_hit(a, target, natural)));
+        log(target.source.name + " takes " + std::to_string(extra) +
+                " Lightning damage from the Javelin of Lightning.",
+            {"{name} takes {damage} Lightning damage from the Javelin of Lightning.",
              {{"name", target.source.name}, {"damage", std::to_string(extra)}}});
         damage(target, extra, false);
     }
@@ -23739,6 +23816,10 @@ void Session::dispatch(const Command &command)
         {
             resolve_spell(*spell, command.verb, a, command.target);
         }
+        else if (command.verb == "javelin_lightning")
+        {
+            lightning_javelin(a, actor(command.target), command.item);
+        }
         else if (command.verb == "throw")
         {
             const auto *w = detail::weapon(items_.at(command.item - 1).definition);
@@ -27460,6 +27541,7 @@ class Module final : public RulesModule
                       [](const auto &e)
                       {
                           return e.kind == detail::EffectKind::prayer_of_healing ||
+                                 e.kind == detail::EffectKind::javelin_spent ||
                                  e.kind == detail::EffectKind::relentless_used ||
                                  e.kind == detail::EffectKind::protectors_used ||
                                  e.kind == detail::EffectKind::overchanneled ||

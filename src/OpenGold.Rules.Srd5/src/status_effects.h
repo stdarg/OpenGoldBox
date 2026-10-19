@@ -479,9 +479,11 @@ enum class EffectKind : unsigned
     paralysis_ray = 193,
     // A Potion of Giant Strength (MAGIC-3): Strength 21 for an hour.
     giant_strength = 194,
+    // The Javelin of Lightning's bolt is spent until a Long Rest (MAGIC-3).
+    javelin_spent = 195,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = giant_strength
+    last = javelin_spent
 };
 
 // Magic Circle's creature types, by `dc`.

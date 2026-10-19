@@ -295,6 +295,34 @@ void other_effects()
           "The Wand of Paralysis calls for a DC 15 Constitution save");
 }
 
+// The Javelin of Lightning's bolt strikes each creature in its line, then the
+// javelin's throw; once until a Long Rest.
+void javelin()
+{
+    const auto rules = module();
+    const auto hero = fighter();
+    Participant p{1, "campaign-character", "Fighter", Side::party, {1, 1},
+                  rules->character_profile(hero.sheet(), {}).data};
+    p.inventory.push_back({7, "javelin:lightning", 1});
+    auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+                            {p,
+                             {2, "vanguard", "Foe", Side::opposition, {6, 1}},
+                             {3, "vanguard", "Between", Side::opposition, {3, 1}}}},
+                           5);
+    test::keep_initiative(*c);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 6; ++turns)
+    {
+        check(submit(*c, "end"), "End the foes' turns");
+    }
+    check(submit(*c, "javelin_lightning", 2) &&
+              logged(*c, "javelin becomes a bolt of lightning") &&
+              (logged(*c, "Between takes") || logged(*c, "Between: Dexterity")),
+          "The bolt strikes the creature in its line");
+    check(logged(*c, "Fighter -> Foe"), "Then the javelin is thrown at its target");
+    const auto saved = c->save();
+    check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spent bolt");
+}
+
 // Aims an area item's effect at `center` and sets it off.
 bool aim_and_cast(CombatSession &c, std::string_view verb, Cell center)
 {
@@ -470,6 +498,7 @@ int main()
         wands();
         areas();
         other_effects();
+        javelin();
         manual();
         drinking_outside_combat();
         after_combat();
