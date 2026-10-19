@@ -1,0 +1,31 @@
+{
+  "action_sha256": "7705353bf13690345b64acfe676862559f97ac2a10cb0cb53aac007809f95fc1",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_8/default/action.png",
+    "ready": "art/mon2cha_dax_8/default/ready.png"
+  },
+  "metadata_sha256": "e2f380bc04f4b2b1e4924ac5345b95227e6a1e6e34f446a9f701b646c63d359f",
+  "notes": "Both frames reviewed at 128 px and alternating in Godot catalog. Unarmed Ogre: both bare feet, legs and loincloth stay planted while raised fist makes a compact punch; no club or other gear recorded. User authorized natural in-place unarmed attack; weapon checklist interpreted as raised empty fist.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d571f4885811973a91c7299b1f4984a5a8cc08b4bdd150e548453e6e3efcc039",
+  "reviewed_at": "2026-10-19T03:04:13.333991+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:8",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
