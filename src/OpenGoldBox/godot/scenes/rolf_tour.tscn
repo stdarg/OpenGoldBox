@@ -233,7 +233,7 @@ offset_top = -36
 offset_bottom = -10
 metadata/layout_reference = Rect2(24, 1044, 1872, 26)
 theme_type_variation = &"LabelMutedText14"
-text = "Arrow keys: move / turn   •   L: look   •   Original New Phlan scripts and shop stock"
+text = "Arrow keys: move / turn   •   L: look   •   M: cast   •   Original New Phlan scripts and shop stock"
 
 [node name="Choices" type="ItemList" parent="."]
 anchor_right = 0.8825
@@ -319,7 +319,7 @@ offset_top = -276
 offset_bottom = -242
 metadata/layout_reference = Rect2(1466, 804, 139.333252, 34)
 metadata/layout_middle_delta = Rect2(-37.6, 0, 12.533301, 0)
-text = "Cast"
+text = "Cast [M]"
 tooltip_text = "Cast a spell or use a feature outside combat."
 
 [node name="Inventory" type="Button" parent="."]

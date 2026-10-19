@@ -1004,6 +1004,13 @@ void RolfTourView::respond_to_input(const Ref<InputEvent> &event)
     case Key::KEY_C:
         camp();
         break;
+    case Key::KEY_M:
+        // M for the original's Magic menu; unavailable while the Cast button is.
+        if (!required_node<Button>(*this, "Cast").is_disabled())
+        {
+            cast_menu();
+        }
+        break;
     default:
         return;
     }
@@ -1774,6 +1781,18 @@ void RolfTourView::check_town()
         {
             throw std::runtime_error("Town character sheet did not close");
         }
+        // M opens the Cast menu while exploring; a Fighter has nothing to cast.
+        Ref<InputEventKey> magic;
+        magic.instantiate();
+        magic->set_keycode(Key::KEY_M);
+        magic->set_pressed(true);
+        respond_to_input(magic);
+        if (!required_node<Control>(*this, "CastPanel").is_visible() ||
+            !required_node<Label>(*this, "CastPanel/Status").get_text().contains("Nothing to cast"))
+        {
+            throw std::runtime_error("M must open the Cast menu");
+        }
+        required_node<Button>(*this, "CastPanel/Close").emit_signal("pressed");
         UtilityFunctions::print(
             "Godot town integration passed: tour, doors, shop purchase, inventory and return to exploration.");
         if (!embedded_party_)
