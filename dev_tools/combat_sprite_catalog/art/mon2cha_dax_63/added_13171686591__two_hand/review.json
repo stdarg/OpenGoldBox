@@ -1,0 +1,31 @@
+{
+  "action_sha256": "3b99dabf82b3a96de672c0cdac0ec4b51d26d62b1ddc9c339deedff762ae4efe",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_63/added_13171686591__two_hand/action.png",
+    "ready": "art/mon2cha_dax_63/added_13171686591__two_hand/ready.png"
+  },
+  "metadata_sha256": "04e5eef538002611f65e85a95d40d5bf2d5161cb34bda425de62fd3e43c262ce",
+  "notes": "Bugbear ready and action reviewed at combat size in catalog; planted feet and body scale remain registered; raised axe changes to a modest late downward strike. Earlier larger-swing drafts were rejected for stance movement.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "44b8c2000153cd653dcc579b6a92ed6a3a5ae5dbccc44f2f6710ab6ab6eac098",
+  "reviewed_at": "2026-10-19T04:11:36.223068+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:63",
+  "specification": "bipedal-v1",
+  "variant_id": "added_13171686591__two_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
