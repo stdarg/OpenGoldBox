@@ -1,0 +1,31 @@
+{
+  "action_sha256": "3e91819d4f6520cc1b535e1254e6cb67ac38b1b1977c15f30626d153ef816db8",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_55/item_000__ranged/action.png",
+    "ready": "art/mon2cha_dax_55/item_000__ranged/ready.png"
+  },
+  "metadata_sha256": "869e1a04191a4f50093aa9739c3c792ac9141b1eb9a21ffab682d267a56cdb82",
+  "notes": "First throw draft switched arms and was rejected. Final pair reviewed alternating at 128px in catalog: boulder in throwing hand in ready and gone after release, same arm follows through, sandals, torso, scale and ground remain registered. Compared identity with club set.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d0009b536edcd5ceaa806dcc315973869cafd294ac85be8dfe085cf935a86eff",
+  "reviewed_at": "2026-10-19T04:35:55.419097+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:55",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
