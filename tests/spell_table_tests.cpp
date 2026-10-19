@@ -552,8 +552,11 @@ void behaviour()
             row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
             row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
             row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals ||
-            // Potions are items, never on a class list (MAGIC-3).
-            std::string_view(row.id).starts_with("potion_"))
+            // Potions, dust and the paralysis ray are items' effects, never on
+            // a class list (MAGIC-3).
+            std::string_view(row.id).starts_with("potion_") ||
+            row.id == std::string_view("dust_of_disappearance") ||
+            row.id == std::string_view("wand_of_paralysis"))
         {
             continue;
         }
