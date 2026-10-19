@@ -1,0 +1,31 @@
+{
+  "action_sha256": "409a3474dd9204e789083f4432392f09d06458459609929e2407af37620156c4",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_1/item_002__item_003/action.png",
+    "ready": "art/mon2cha_dax_1/item_002__item_003/ready.png"
+  },
+  "metadata_sha256": "bc57ac9a5375b2d30387bc9ac3228a6a189b70c52fd27c491b8e4974967925a1",
+  "notes": "128px ready/action inspected alternating in catalog. Clawed feet and tail remain fixed; shield and studded armor retained; short sword moves from raised guard to a short forward late strike. New art and approved guide only.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "f1034b7eb2344d43c5eb094d904138c23eb32a6d1006cd16c5b2243f1c945be8",
+  "reviewed_at": "2026-10-19T04:39:35.883729+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:1",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_003",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
