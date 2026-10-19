@@ -63,18 +63,15 @@ work") require constant clarification.
 
 **Do not assume your code works, verify it through tests.**
 
-Always run all tests after completing task. Then, commit your work and push to
-origin.
+While working on a task, after each change run only the tests that are directly related to the change; we do not have the time to run every test after every single change.
 
-After a change, run only the tests that are directly related to the change, we do not have the time to run every test after every single change.
+Always run the full test suite when you complete a task I ask of you, and before pushing the work to main. Then commit your work and push to origin. Save the date when all tests are run for future reference.
 
-After every 5 changes in a session, run all tests. If all tests have not been run in a day, run them. Save the date when all tests are run for future reference.
-
-Documentation-only changes need no tests and do not count toward the 5 changes.
+Documentation-only changes need no tests.
 
 ## 6. Do your work in git worktrees
 
-Before committing and pushing to origin/main, ensure all tests pass. Always
+Before pushing to origin/main, run the full test suite and ensure all tests pass. Always
 commit your work when done and push to origin/main.
 
 ## 7. Write readable code
