@@ -1,0 +1,31 @@
+{
+  "action_sha256": "8e0f17c1af8d6668a7fd71c480d206d60f09de459af2e70f201b91bba28dcdcf",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_53/item_003__one_hand/action.png",
+    "ready": "art/mon3cha_dax_53/item_003__one_hand/ready.png"
+  },
+  "metadata_sha256": "ee37d2e26beba97df461651aa7d511f0f89f20ea04c78f2161a022b3dfa2e702",
+  "notes": "Initial full swing shifted whole character and was rejected. Final pair was generated as small guard-angle edit of new strike frame. 128px frames inspected alternating in catalog: same boots, legs, chain armor, quiver, scale and screen-right facing; sword changes angle locally.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "ff16eaa3b5fde4ffff5d8d75c1566a1571df181e3a7739c7d9ac80acd499ef64",
+  "reviewed_at": "2026-10-19T04:47:18.021413+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:53",
+  "specification": "bipedal-v1",
+  "variant_id": "item_003__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
