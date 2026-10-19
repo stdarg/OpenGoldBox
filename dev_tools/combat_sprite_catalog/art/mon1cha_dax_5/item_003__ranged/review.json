@@ -1,15 +1,15 @@
 {
-  "action_sha256": "e8aad694561a89c1e84fed42b7c8af345d60fcc02b9efa048f1f0b48ac91e931",
+  "action_sha256": "27bbe84fd4394eb20d81c0299b37ec124eed44a5841473543d1e8d0d136d3130",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_5/item_003__ranged/action.png",
     "ready": "art/mon1cha_dax_5/item_003__ranged/ready.png"
   },
   "metadata_sha256": "72b53e9550245db842e8bc66004fdac7651116d40bf03f93159458e9880ac135",
-  "notes": "Reviewed both 128 px exports alternating in catalog; same full-canvas transform, character head/torso/legs and baseline across ready/action. Compared each bow to its accepted melee set for identity and scale.",
+  "notes": "Generated from accepted Orc Leader identity. Both 128 px frames and alternating catalog playback reviewed; planted boots remain at the same x/y, long bow and chain armor retain scale, arrow disappears after release.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b966f61080e0056312e606fb1f404c23d2bd0516c70be89a6de37f6192c205e9",
-  "reviewed_at": "2026-10-19T00:00:50.800101+00:00",
+  "ready_sha256": "8392ba797238dd46ac3d749681e244b8158316284eed7df7db87fa7cc49c9cfd",
+  "reviewed_at": "2026-10-19T01:28:44.989918+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:5",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }

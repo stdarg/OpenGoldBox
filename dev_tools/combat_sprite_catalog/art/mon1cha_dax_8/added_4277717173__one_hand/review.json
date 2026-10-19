@@ -1,0 +1,31 @@
+{
+  "action_sha256": "446953fb541c7c2cd387e6438e87d49be9af1274e2efe462e1cf71a16138abbf",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon1cha_dax_8/added_4277717173__one_hand/action.png",
+    "ready": "art/mon1cha_dax_8/added_4277717173__one_hand/ready.png"
+  },
+  "metadata_sha256": "aff0c0bf591a3199f45fefb26cb8bd200d8dc373691237f3caaac84fd33a0648",
+  "notes": "Fresh generated ready and ready-derived action. Rejected first action for foot shift. Both final exports share one centered 1360 px canvas transform and alpha cleanup; rechecked at 128 px and in one-second catalog alternation after export. Both feet stay planted; club length and ogre scale consistent.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "2ae03307147eef9b16783e13705d5ee9d7de17e0ae13a442d0bcb2d89f4b4cab",
+  "reviewed_at": "2026-10-19T01:19:22.162989+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON1CHA.DAX:8",
+  "specification": "bipedal-v1",
+  "variant_id": "added_4277717173__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}

@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7b7c6d4df3080c5a7f77724ff32d0b64dfcb4c2d49af0d6bd18d0b032d166fe8",
+  "action_sha256": "48eba845e93b59784e8bf13b1d7cad3bdce53ef46f45184f709ac859ce4fcf45",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_3/item_002__item_003/action.png",
     "ready": "art/mon1cha_dax_3/item_002__item_003/ready.png"
   },
   "metadata_sha256": "a2d0353a9229c0ec8bc00e4149e7bb912c512223198e80171e66d0f80828dc54",
-  "notes": "Restarted pair after scale feedback. Original full canvases exported with identical 128x128 transform, no per-pose crop or fit. Compared head, torso, limbs, ground baseline and equipment at combat size, side by side and alternating in catalog.",
+  "notes": "Fresh generated sword/shield ready, matching the new bow-set goblin identity. Two action attempts rejected for left-foot shift and sword length. Final action edited from ready. Reviewed both 128 px frames and one-second alternation in catalog-preview-v2; planted feet remain fixed. Guide used for mechanics only.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6ed376c74e6cb129a7385f8ac9373336f9683718153c60f47447a7e305e4b8c0",
-  "reviewed_at": "2026-10-18T23:31:48.869354+00:00",
+  "ready_sha256": "0232f7f65a40a994edbd06a5bcf9bd2ce942015a8200d16c0f02568443f8d12f",
+  "reviewed_at": "2026-10-19T01:03:47.461207+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:3",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }
