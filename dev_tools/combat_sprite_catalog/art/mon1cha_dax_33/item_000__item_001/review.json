@@ -1,15 +1,15 @@
 {
-  "action_sha256": "59446acc474c394172b7bb5a49262bcff6b1b20c9d9a26c2bce17c42b4c9abb1",
+  "action_sha256": "6f2bdcc692e33951400b585ac40b59d279b43555a0bcaa1ca0d9ef776ffd5ed4",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_33/item_000__item_001/action.png",
     "ready": "art/mon1cha_dax_33/item_000__item_001/ready.png"
   },
   "metadata_sha256": "0c82958ad1d51c44aede3fda0bb5aa9b5e484dc7936768f6558c253d0183a4d6",
-  "notes": "Restarted pair after scale feedback. Same canvas transform applied to both source images; the more expansive action determined shared transparent margin. Head, torso and limbs visually matched at combat size and during catalog alternation.",
+  "notes": "Both frames reviewed at 128 px and alternating in catalog; fixed boots and body with local mace swing. First action rejected because mace head overlapped shield; revised head projects past shield.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "9448735726dc8a3c79d287b3e0e318834b4ca90c36ad16c390c546b5c5f7ba18",
-  "reviewed_at": "2026-10-18T23:39:24.197540+00:00",
+  "ready_sha256": "f109c260fd9c3c359cf7b0e7e0964eac5884a2f178cc824f022e98d1d7bc225f",
+  "reviewed_at": "2026-10-19T02:37:44.007847+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:33",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }

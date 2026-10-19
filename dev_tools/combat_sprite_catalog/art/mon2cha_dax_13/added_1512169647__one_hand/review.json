@@ -1,0 +1,31 @@
+{
+  "action_sha256": "866d0e1a5c31953634959603e99b1013d33d47fff479f77218891dfa1fe601fc",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_13/added_1512169647__one_hand/action.png",
+    "ready": "art/mon2cha_dax_13/added_1512169647__one_hand/ready.png"
+  },
+  "metadata_sha256": "7ae0ea66c2885c743abbf4f0c03f44c8ba75c862e52079a5ed362e88a2e2bc47",
+  "notes": "Ready and final action inspected at 128 px and alternating in the Godot catalog. Same planted boot coordinates and scale; local scimitar-arm slash only. Rejected first action for whole-body shift and regenerated from the ready frame.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "77caed9d5e7ce39d8477f474e127f936b90ef64a52fc16b2e5dca05baf1b49f6",
+  "reviewed_at": "2026-10-19T02:25:31.108235+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:13",
+  "specification": "bipedal-v1",
+  "variant_id": "added_1512169647__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
