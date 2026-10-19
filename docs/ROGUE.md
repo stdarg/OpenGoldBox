@@ -49,8 +49,12 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   the dice can pay for, such as "Melee attack (Trip, Withdraw)"
   ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Withdraw's
   move comes after the other effect.
-- **Use Magic Device:** granted, with nothing to act on until magic items
-  arrive ([#234](https://github.com/stdarg/OpenGold/issues/234)).
+- **Use Magic Device:** granted, with nothing to act on yet: no item needs
+  attunement and no Spell Scroll is used (MAGIC-3, #265); the 1d6 to keep a
+  charge is not built ([#234](https://github.com/stdarg/OpenGold/issues/234)).
+- **Fast Hands:** uses a wand, the Necklace of Missiles or Dust of
+  Disappearance as a Bonus Action
+  ([MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items)).
 - **Devious Strikes:** **Daze**: a Constitution save, or on its next turn the
   creature does only one of moving, an action or a Bonus Action; the first it
   does takes away the others. **Knock Out**: a Constitution save, or
