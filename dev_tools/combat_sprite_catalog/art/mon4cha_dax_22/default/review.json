@@ -1,0 +1,31 @@
+{
+  "action_sha256": "57aea40bba9d2de8204d0a6d73b0d65340193382a7443214b34c7261843a4cc7",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_22/default/action.png",
+    "ready": "art/mon4cha_dax_22/default/ready.png"
+  },
+  "metadata_sha256": "792361bf0d00405b0c1a98f837532444f120eecd270e54ccbed2ad69ce9878e9",
+  "notes": "Fresh giant skeleton pair with upper-body claw sweep while pelvis and skeletal feet remain fixed. Reviewed both frames at 128 px and alternating in this catalog source record. MON4CHA reuses exact matching new art. No equipment in current saved loadout.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "bccd11b321a7a1177dc5765b3586b6e5dfee26c23d83fce8e0f8eb58f4b03cbf",
+  "reviewed_at": "2026-10-19T01:49:32.311028+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:22",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}

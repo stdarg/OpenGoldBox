@@ -1,0 +1,31 @@
+{
+  "action_sha256": "1cf4127909b62a22d259f9844b0b1871b89742234813b79b63c7fb464ccb6846",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon3cha_dax_94/item_000__ranged/action.png",
+    "ready": "art/mon3cha_dax_94/item_000__ranged/ready.png"
+  },
+  "metadata_sha256": "aa8924654ddf2f6a8623a82e903e93b65e38f2a51bac34cb271f1ef0b03747a2",
+  "notes": "Fresh level-3 magic-user pair with Wand of Magic Missiles, charged ready and spent forward wand gesture in action; no bow. Both frames checked at 128 px and alternating in this exact catalog source record. Boots and robe hem remain fixed. MON3CHA reuses matching new art.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "109f70919da1812be4ebe3b33b82c02ede61adbf79015b85db2105ddf06e7617",
+  "reviewed_at": "2026-10-19T01:53:26.147185+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON3CHA.DAX:94",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}
