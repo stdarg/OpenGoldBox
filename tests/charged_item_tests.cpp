@@ -82,7 +82,7 @@ void conversion()
               converts(original(71, 1, 80), "potion_of_speed", 1),
           "Potions convert, Extra Healing's three doses as three Potions of Greater Healing");
     check(converts(original(70, 1, 86), "dust_of_disappearance", 1) &&
-              converts(original(70, 6, 87), "necklace_of_fireballs", 6) &&
+              converts(original(70, 6, 87), "necklace_of_missiles", 6) &&
               converts(original(21, 1, 83), "javelin:lightning", 1) &&
               converts(original(70, 1, 90), "manual_of_bodily_health", 1),
           "The other charged items convert");
@@ -93,14 +93,10 @@ void conversion()
     check(equipment_conversion(worn) != "potion_of_giant_strength",
           "An effect applied when readied is not a use");
 
-    auto necklace = original(70, 6, 87);
-    necklace.decoded_name = "Necklace of Missiles";
-    check(necklace.label() == "Necklace of Fireballs",
-          "The Necklace of Missiles is named the Necklace of Fireballs");
     check(srd5::charge_noun("wand:magic_missiles") == "charges" &&
-              srd5::charge_noun("necklace_of_fireballs") == "beads" &&
+              srd5::charge_noun("necklace_of_missiles") == "missiles" &&
               srd5::charge_noun("potion_of_healing").empty(),
-          "A wand counts charges and the necklace beads; potions count themselves");
+          "A wand counts charges and the necklace missiles; potions count themselves");
 }
 
 // Loot keeps its charges in the party and in a save.
@@ -273,11 +269,11 @@ bool aim_and_cast(CombatSession &c, std::string_view verb, Cell center)
 void areas()
 {
     const auto rules = module();
-    auto necklace = fighter_turn(*rules, {{"necklace_of_fireballs", 6}}, {}, 12);
+    auto necklace = fighter_turn(*rules, {{"necklace_of_missiles", 6}}, {}, 12);
     check(aim_and_cast(*necklace, "fireball_item", {6, 1}) &&
-              logged(*necklace, "uses the Necklace of Fireballs") &&
+              logged(*necklace, "uses the Necklace of Missiles") &&
               uses_left(*necklace, 7) == 5,
-          "A bead of the necklace explodes as a Fireball");
+          "A missile of the necklace explodes as a Fireball");
     check(logged(*necklace, "DC 15"), "Its save is DC 15");
 
     auto wand = fighter_turn(*rules, {{"wand:lightning_bolts", 3}}, {"wand:lightning_bolts"}, 12);

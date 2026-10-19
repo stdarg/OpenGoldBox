@@ -1727,7 +1727,7 @@ struct Actor
     // Thrown gear (Acid, Alchemist's Fire, Oil, by ThrownGearEffect) still carried:
     // counted from the inventory when combat begins and spent by each throw.
     std::array<unsigned, 3> thrown_gear_left{};
-    // Charged items (MAGIC-3) by inventory ID: the charges, beads or potions
+    // Charged items (MAGIC-3) by inventory ID: the charges, missiles or potions
     // left, counted from the inventory when combat begins and spent by each use.
     std::vector<std::pair<std::uint64_t, unsigned>> item_uses;
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
@@ -2270,7 +2270,7 @@ void spend_item_use(Actor &a, const detail::MagicItem &kind)
 }
 
 // Whether a verb uses a carried item, and the use is not the casting of a
-// spell: a potion, a bead or dust. A wand casts its spell.
+// spell: a potion, a missile or dust. A wand casts its spell.
 bool item_effect(std::string_view verb)
 {
     if (!verb.ends_with(detail::item_suffix))
@@ -8610,7 +8610,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const auto target_id = targets.front();
     const auto &d = def(a);
     const unsigned steps = upcast_steps(verb, spell);
-    // A potion, bead or dust is not a spell: nothing counters it (MAGIC-3).
+    // A potion, missile or dust is not a spell: nothing counters it (MAGIC-3).
     const bool from_item = verb.ends_with(detail::item_suffix);
     if (from_item)
     {
@@ -9145,7 +9145,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
                              !arcanum_spent(a, spell.level);
         const bool known = !spells_blocked && detail::knows_spell(d.spells, spell.id);
         // A carried item's spell or effect (MAGIC-3): a potion with the Bonus
-        // Action; a wand, bead or dust with the Action. A raging creature can
+        // Action; a wand, missile or dust with the Action. A raging creature can
         // still drink or throw, but casts nothing from a wand.
         const auto *item = usable_item(a, spell);
         const bool item_ready = item && (item->use == detail::ItemUse::drink) == bonus_pass &&
@@ -9284,7 +9284,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         const bool casting_ready =
             (usual || intervene || arcanum) &&
             (usual ? (as_bonus ? a.bonus : a.actions.available(true)) : a.actions.available(true));
-        // Dust is thrown with the Utilize action; a wand or bead takes the Magic
+        // Dust is thrown with the Utilize action; a wand or missile takes the Magic
         // action.
         const bool item_offered =
             item_ready && (item->use == detail::ItemUse::drink
@@ -15617,7 +15617,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         return;
     }
-    // A wand's spell and a bead's Fireball have the item's save DC (MAGIC-3).
+    // A wand's spell and a missile's Fireball have the item's save DC (MAGIC-3).
     item_caster_ = from_item ? a.source.id : 0;
     const struct ItemCasterReset
     {

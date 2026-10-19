@@ -13,7 +13,7 @@ namespace opengold::srd5
 [[nodiscard]] std::unique_ptr<rules::CharacterRules> character_rules();
 // Pure SRD arithmetic, also used by the deterministic combat resolver.
 [[nodiscard]] std::string equipment_note(const rules::CharacterSheet &sheet, std::string_view item);
-// What one charged item's quantity counts ("charges", "beads"); empty when the
+// What one charged item's quantity counts ("charges", "missiles"); empty when the
 // quantity counts items (MAGIC-3).
 [[nodiscard]] std::string_view charge_noun(std::string_view item) noexcept;
 [[nodiscard]] int ability_modifier(int score) noexcept;

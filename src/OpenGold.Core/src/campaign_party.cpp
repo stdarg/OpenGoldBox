@@ -51,7 +51,7 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     member.character.replace_inventory(std::move(inventory));
 }
 
-// Trims a charged item (MAGIC-3) to the charges, beads or potions a fight left
+// Trims a charged item (MAGIC-3) to the charges, missiles or potions a fight left
 // it; one with none left is gone, as in the original.
 void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
 {
@@ -299,7 +299,7 @@ std::string_view charged_conversion(const por::ItemRecord &raw)
     case disappearance:
         return "dust_of_disappearance";
     case missiles:
-        return "necklace_of_fireballs";
+        return "necklace_of_missiles";
     case javelin_lightning:
         return "javelin:lightning";
     case bodily_health:

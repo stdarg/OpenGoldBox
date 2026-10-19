@@ -11,15 +11,15 @@ enum class ItemUse
 {
     drink,  // a potion: a Bonus Action, from the inventory
     wand,   // held: the Magic action spends a charge
-    bead,   // the Necklace of Fireballs: a Magic action throws a bead
+    missile, // the Necklace of Missiles: a Magic action throws a missile
     dust,   // the Utilize action throws it into the air
     read    // the Manual of Bodily Health, read in camp
 };
 
 // The original's charged and single-use items as their SRD 5.2.1 counterparts.
 // The Javelin of Lightning is a javelin with a power instead (item_key.h).
-// The inventory's quantity counts the charges, beads or potions left; `noun`
-// names them when one item holds several ("23 charges").
+// The inventory's quantity counts the charges, missiles or potions left; `noun`
+// names them when one item holds several ("23 charges", "6 missiles").
 struct MagicItem
 {
     std::string_view key, label;
@@ -54,9 +54,9 @@ inline constexpr std::array magic_items{
               "dust_of_disappearance", "",
               "Throw it into the air with the Utilize action: you and allies within 10 feet are "
               "Invisible for 2d4 minutes."},
-    MagicItem{"necklace_of_fireballs", "Necklace of Fireballs", ItemUse::bead, "fireball",
-              "beads",
-              "Throw a bead with the Magic action: it explodes as a Fireball (save DC 15)."},
+    MagicItem{"necklace_of_missiles", "Necklace of Missiles", ItemUse::missile, "fireball",
+              "missiles",
+              "Throw a missile with the Magic action: it explodes as a Fireball (save DC 15)."},
     MagicItem{"manual_of_bodily_health", "Manual of Bodily Health", ItemUse::read, "", "",
               "Read it in camp: Constitution and its maximum rise by 2. Its magic is then "
               "spent."}};

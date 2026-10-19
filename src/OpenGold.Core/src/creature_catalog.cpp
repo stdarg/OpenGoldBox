@@ -326,13 +326,6 @@ std::string Equipment::label() const
         return stored.stored_name;
     }
     const bool known = identified();
-    // The original's Necklace of Missiles throws fireballs; it takes the SRD's
-    // name (MAGIC-3).
-    constexpr std::uint8_t necklace_power = 87;
-    if (stored.effect_codes[1] == necklace_power && !(stored.effect_codes[2] & 0x80) && known)
-    {
-        return "Necklace of Fireballs";
-    }
     if (!decoded_name.empty() && (known || !unidentified_name.empty()))
     {
         return known ? decoded_name : unidentified_name;

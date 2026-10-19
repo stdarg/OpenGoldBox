@@ -1492,7 +1492,7 @@
   "Drink it as a Bonus Action to be Hasted for a minute, without Concentration.",
   "Drink it as a Bonus Action: your Strength becomes 21 for an hour.",
   "Throw it into the air with the Utilize action: you and allies within 10 feet are Invisible for 2d4 minutes.",
-  "Throw a bead with the Magic action: it explodes as a Fireball (save DC 15).",
+  "Throw a missile with the Magic action: it explodes as a Fireball (save DC 15).",
   "Read it in camp: Constitution and its maximum rise by 2. Its magic is then spent.",
   "Wand of Magic Missiles",
   "Wand of Lightning Bolts",
@@ -1502,6 +1502,6 @@
   "Potion of Speed",
   "Potion of Giant Strength",
   "Dust of Disappearance",
-  "Necklace of Fireballs",
+  "Necklace of Missiles",
   "Manual of Bodily Health"
 ]

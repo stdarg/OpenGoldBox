@@ -5288,8 +5288,8 @@ msgid "Nature's Ward: you cannot be Poisoned, and you resist your land's element
 msgstr "Nature's Ward: you cannot be Poisoned, and you resist your land's element: Fire (arid), Cold (polar), Lightning (temperate) or Poison (tropical).\nLand's Aid deals and heals 3d6. A fourth cantrip."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
-msgid "Necklace of Fireballs"
-msgstr "Necklace of Fireballs"
+msgid "Necklace of Missiles"
+msgstr "Necklace of Missiles"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Necrotic"
@@ -8186,8 +8186,8 @@ msgid "Throw Oil"
 msgstr "Throw Oil"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
-msgid "Throw a bead with the Magic action: it explodes as a Fireball (save DC 15)."
-msgstr "Throw a bead with the Magic action: it explodes as a Fireball (save DC 15)."
+msgid "Throw a missile with the Magic action: it explodes as a Fireball (save DC 15)."
+msgstr "Throw a missile with the Magic action: it explodes as a Fireball (save DC 15)."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Throw it into the air with the Utilize action: you and allies within 10 feet are Invisible for 2d4 minutes."
@@ -9304,19 +9304,19 @@ msgstr "{hand} — {weapon}"
 msgid "{high},{low}"
 msgstr "{high},{low}"
 
-#: src/OpenGoldBox/inventory_label.h:22
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "{item} ({count} bead)"
-msgid_plural "{item} ({count} beads)"
-msgstr[0] "{item} ({count} bead)"
-msgstr[1] "{item} ({count} beads)"
-
 #: src/OpenGoldBox/inventory_label.h:17
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} ({count} charge)"
 msgid_plural "{item} ({count} charges)"
 msgstr[0] "{item} ({count} charge)"
 msgstr[1] "{item} ({count} charges)"
+
+#: src/OpenGoldBox/inventory_label.h:22
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{item} ({count} missile)"
+msgid_plural "{item} ({count} missiles)"
+msgstr[0] "{item} ({count} missile)"
+msgstr[1] "{item} ({count} missiles)"
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:1391
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.

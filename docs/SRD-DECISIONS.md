@@ -1285,8 +1285,11 @@ The user chose how the original's charged and single-use items work (issue
   - Potion of Speed: Haste for a minute, without Concentration.
   - Potion of Giant Strength: Strength 21 for an hour.
   - Dust of Disappearance: the party is Invisible for 2d4 minutes.
-- **Necklace of Fireballs.** The original's Necklace of Missiles, whose
-  missiles are fireballs, takes the SRD's name and keeps its six beads.
+- **Necklace of Missiles** keeps its original name and its six missiles; each
+  explodes as the SRD's Fireball, 8d6 Fire damage, Dexterity save DC 15 for
+  half (the SRD's Necklace of Fireballs is the same item).
+- **No attunement.** No wand or other charged item needs attunement; anyone
+  can use them.
 - **Javelin of Lightning** works as the SRD's: once a day its throw becomes a
   bolt of lightning, and the javelin is kept.
 - **Empty items are gone.** A wand or potion disappears when its last charge or

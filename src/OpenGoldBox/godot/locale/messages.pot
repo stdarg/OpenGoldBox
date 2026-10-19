@@ -5288,7 +5288,7 @@ msgid "Nature's Ward: you cannot be Poisoned, and you resist your land's element
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
-msgid "Necklace of Fireballs"
+msgid "Necklace of Missiles"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -8186,7 +8186,7 @@ msgid "Throw Oil"
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
-msgid "Throw a bead with the Magic action: it explodes as a Fireball (save DC 15)."
+msgid "Throw a missile with the Magic action: it explodes as a Fireball (save DC 15)."
 msgstr ""
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
@@ -9304,17 +9304,17 @@ msgstr ""
 msgid "{high},{low}"
 msgstr ""
 
-#: src/OpenGoldBox/inventory_label.h:22
-#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
-msgid "{item} ({count} bead)"
-msgid_plural "{item} ({count} beads)"
-msgstr[0] ""
-msgstr[1] ""
-
 #: src/OpenGoldBox/inventory_label.h:17
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} ({count} charge)"
 msgid_plural "{item} ({count} charges)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/OpenGoldBox/inventory_label.h:22
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "{item} ({count} missile)"
+msgid_plural "{item} ({count} missiles)"
 msgstr[0] ""
 msgstr[1] ""
 
