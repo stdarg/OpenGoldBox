@@ -51,6 +51,31 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Trims a charged item (MAGIC-3) to the charges, beads or potions a fight left
+// it; one with none left is gone, as in the original.
+void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
+{
+    const auto item = member.character.inventory().find(id);
+    if (!item || left > item->get().quantity)
+    {
+        throw std::runtime_error("Combat reported more item uses than were carried");
+    }
+    const auto used = item->get().quantity - left;
+    if (!used)
+    {
+        return;
+    }
+    auto inventory = member.character.inventory();
+    inventory.remove(id, used);
+    if (!left)
+    {
+        std::erase(member.equipped, id);
+        std::erase(member.attuned, id);
+        member.item_sources.erase(id);
+    }
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Remove Curse lets a member put down its cursed items, which are then lost:
 // the original's Remove Curse let a character drop a cursed object (MAGIC-1).
 void put_down_cursed_items(PartyMember &member)
@@ -2241,12 +2266,17 @@ void CampaignParty::apply_combat(const rules::Snapshot &snapshot)
                 newly_checked.emplace_back(actor.id, actor.max_hit_points);
             }
             vitals.emplace_back(actor.id, actor.persistent);
-            if (!actor.thrown_gear_left.empty() || actor.curse_lifted)
+            if (!actor.thrown_gear_left.empty() || actor.curse_lifted ||
+                !actor.item_uses_left.empty())
             {
                 auto member = *it;
                 for (const auto &[definition, left] : actor.thrown_gear_left)
                 {
                     keep_thrown_gear(member, definition, left);
+                }
+                for (const auto &[item, left] : actor.item_uses_left)
+                {
+                    keep_item_uses(member, item, left);
                 }
                 if (actor.curse_lifted)
                 {

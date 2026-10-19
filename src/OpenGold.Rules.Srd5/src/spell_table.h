@@ -2921,7 +2921,25 @@ inline constexpr std::array spell_table{
              .pattern = SpellPattern::camp,
              .target = SpellTarget::self,
              .range = 30,
-             .instances = 8}};
+             .instances = 8},
+    // Potions (MAGIC-3), drunk or given to a creature within 5 feet as a Bonus
+    // Action (SRD 5.2.1 p. 204): not spells, and never on a class list.
+    SpellDef{.id = "potion_of_healing",
+             .label = "Potion of Healing",
+             .level = 1,
+             .pattern = SpellPattern::heal,
+             .target = SpellTarget::wounded_ally,
+             .range = 5,
+             .bonus_action = true,
+             .dice = {2, 4, 2}},
+    SpellDef{.id = "potion_of_greater_healing",
+             .label = "Potion of Greater Healing",
+             .level = 1,
+             .pattern = SpellPattern::heal,
+             .target = SpellTarget::wounded_ally,
+             .range = 5,
+             .bonus_action = true,
+             .dice = {4, 4, 4}}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in
@@ -2934,6 +2952,9 @@ inline constexpr std::string_view arcanum_suffix = "_arcanum";
 // Natural Recovery (Land Druid 6): a Circle spell cast once per Long Rest
 // without a slot.
 inline constexpr std::string_view natural_suffix = "_natural";
+// A carried item's spell or effect (MAGIC-3): a charge or use of the item, not
+// a slot.
+inline constexpr std::string_view item_suffix = "_item";
 
 // The slot level a "_N" verb names, or 0.
 inline constexpr unsigned cast_slot_level(std::string_view verb)
@@ -2969,6 +2990,10 @@ inline constexpr std::string_view without_cast_suffix(std::string_view verb)
     else if (verb.ends_with(natural_suffix))
     {
         verb.remove_suffix(natural_suffix.size());
+    }
+    else if (verb.ends_with(item_suffix))
+    {
+        verb.remove_suffix(item_suffix.size());
     }
     return verb;
 }

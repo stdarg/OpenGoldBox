@@ -597,7 +597,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 63;
+constexpr unsigned checkpoint_format = 64;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1727,6 +1727,9 @@ struct Actor
     // Thrown gear (Acid, Alchemist's Fire, Oil, by ThrownGearEffect) still carried:
     // counted from the inventory when combat begins and spent by each throw.
     std::array<unsigned, 3> thrown_gear_left{};
+    // Charged items (MAGIC-3) by inventory ID: the charges, beads or potions
+    // left, counted from the inventory when combat begins and spent by each use.
+    std::vector<std::pair<std::uint64_t, unsigned>> item_uses;
     bool burning{};          // Burning: 1d4 Fire damage at the start of each of its turns
     bool flame_lit{};        // Its Flame Tongue's blade is lit (a Bonus Action lights it)
     bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
@@ -2214,10 +2217,89 @@ bool arcanum_spent(const Actor &a, unsigned level)
                        });
 }
 
+// The charged item `a` can use for `spell` now (MAGIC-3): one with uses left,
+// and a wand only while one of its kind is held. Null when there is none.
+const detail::MagicItem *usable_item(const Actor &a, const detail::SpellDef &spell)
+{
+    for (const auto &carried : a.source.inventory)
+    {
+        const auto *item = detail::magic_item(carried.definition);
+        if (!item || item->spell != spell.id)
+        {
+            continue;
+        }
+        const bool held = std::any_of(a.definition.equipment_keys.begin(),
+                                      a.definition.equipment_keys.end(),
+                                      [&](const auto &key)
+                                      {
+                                          return detail::magic_item(key) == item;
+                                      });
+        const auto uses = std::find_if(a.item_uses.begin(), a.item_uses.end(),
+                                       [&](const auto &entry)
+                                       {
+                                           return entry.first == carried.inventory_id;
+                                       });
+        if ((held || item->use != detail::ItemUse::wand) && uses != a.item_uses.end() &&
+            uses->second)
+        {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+// Spends a use of the first carried item of `kind` with uses left.
+void spend_item_use(Actor &a, const detail::MagicItem &kind)
+{
+    for (const auto &carried : a.source.inventory)
+    {
+        if (detail::magic_item(carried.definition) != &kind)
+        {
+            continue;
+        }
+        for (auto &[id, left] : a.item_uses)
+        {
+            if (id == carried.inventory_id && left)
+            {
+                --left;
+                return;
+            }
+        }
+    }
+    throw std::runtime_error("No use of the item is left");
+}
+
+// Whether a verb uses a carried item, and the use is not the casting of a
+// spell: a potion, a bead or dust. A wand casts its spell.
+bool item_effect(std::string_view verb)
+{
+    if (!verb.ends_with(detail::item_suffix))
+    {
+        return false;
+    }
+    const auto id = detail::without_cast_suffix(verb);
+    return std::none_of(detail::magic_items.begin(), detail::magic_items.end(),
+                        [&](const auto &item)
+                        {
+                            return item.spell == id && item.use == detail::ItemUse::wand;
+                        });
+}
+
 // Pays for a leveled spell: with Magic Initiate's free cast, or from a slot of
 // the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
+    // A carried item's spell spends a charge or use of the item (MAGIC-3).
+    if (verb.ends_with(detail::item_suffix))
+    {
+        const auto *item = usable_item(a, spell);
+        if (!item)
+        {
+            throw std::runtime_error("No use of the item is left");
+        }
+        spend_item_use(a, *item);
+        return;
+    }
     if (verb.ends_with(detail::initiate_suffix))
     {
         a.initiate_casts &= ~initiate_bit(a.definition, spell.id);
@@ -4003,6 +4085,10 @@ class Session final : public CombatSession
                     {
                         a.thrown_gear_left[static_cast<std::size_t>(gear->effect)] += item.quantity;
                     }
+                    if (detail::magic_item(item.definition))
+                    {
+                        a.item_uses.emplace_back(item.inventory_id, item.quantity);
+                    }
                 }
             }
             for (const auto &a : actors_)
@@ -4420,6 +4506,7 @@ class Session final : public CombatSession
         int hp{}, max_hp{}, armor_class{};
         VitalState vitals;
         std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+        std::vector<std::pair<std::uint64_t, unsigned>> item_uses;
         bool surrendered{};
     };
 
@@ -4982,6 +5069,8 @@ class Session final : public CombatSession
                                                  unsigned slot_level,
                                                  const std::vector<Cell> &cells) const;
     void cast_area();
+    // Logs that `a` uses the carried item a spell comes from (MAGIC-3).
+    void log_item_use(const Actor &a, const detail::SpellDef &spell);
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
     void squeeze_ensnared(Actor &a);
     void escape_ensnaring(Actor &a);
@@ -5098,6 +5187,9 @@ class Session final : public CombatSession
     // Metamagic spent on the spell now resolving, and Heightened Spell's target.
     std::vector<ReadyMetamagic> casting_metamagic_;
     EntityId heightened_target_{};
+    // The creature using an item's spell (MAGIC-3), whose save DC is then the
+    // item's 15; 0 otherwise.
+    EntityId item_caster_{};
     // Overchannel: the spell its Wizard is casting deals its maximum damage,
     // and the Wizard then takes this many d12 of Necrotic damage.
     bool overchanneling_{};
@@ -5109,6 +5201,11 @@ class Session final : public CombatSession
     // a class feature names no spell and uses the class's.
     [[nodiscard]] int spell_dc(const Actor &caster, std::string_view spell = {}) const
     {
+        constexpr int item_dc = 15;
+        if (item_caster_ && caster.source.id == item_caster_)
+        {
+            return item_dc;
+        }
         return 8 + casting_bonus(def(caster), spell) +
                (detail::has_effect(caster.effects, detail::EffectKind::innate_sorcery) ? 1 : 0);
     }
@@ -6105,6 +6202,7 @@ void Session::remove_fled()
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
             }
         }
+        gone.item_uses = a.item_uses;
         // `a` is erased next, so its participant moves rather than copies.
         gone.source = std::move(a.source);
         fled_.push_back(std::move(gone));
@@ -6726,6 +6824,7 @@ Snapshot Session::snapshot() const
                     a.thrown_gear_left[static_cast<std::size_t>(gear.effect)]);
             }
         }
+        view.item_uses_left = a.item_uses;
         view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
         if (physical_inventory_)
@@ -7314,6 +7413,7 @@ Snapshot Session::snapshot() const
         view.status_messages = {{view.status, {}}};
         view.persistent = gone.vitals;
         view.thrown_gear_left = gone.thrown_gear_left;
+        view.item_uses_left = gone.item_uses;
         view.fled = !gone.surrendered;
         view.surrendered = gone.surrendered;
         s.combatants.push_back(std::move(view));
@@ -8510,11 +8610,24 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const auto target_id = targets.front();
     const auto &d = def(a);
     const unsigned steps = upcast_steps(verb, spell);
+    // A potion, bead or dust is not a spell: nothing counters it (MAGIC-3).
+    const bool from_item = verb.ends_with(detail::item_suffix);
+    if (from_item)
+    {
+        log_item_use(a, spell);
+    }
     // Counterspell: a stopped spell keeps its slot.
-    if (countered(a) || slowed_spell_fails(a, verb, spell))
+    if (!item_effect(verb) && (countered(a) || slowed_spell_fails(a, verb, spell)))
     {
         return;
     }
+    // A wand's spell has the item's save DC.
+    item_caster_ = from_item ? a.source.id : 0;
+    const struct ItemCasterReset
+    {
+        EntityId &caster;
+        ~ItemCasterReset() { caster = 0; }
+    } item_caster_reset{item_caster_};
     take_metamagic(a, spell);
     take_overchannel(a, spell, verb);
     if (casting_with(Metamagic::heightened))
@@ -8615,8 +8728,9 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         }
         for (const auto id : targets)
         {
-            heal(actor(id),
-                 healing_roll(actor(id), rolled) + disciple_of_life(a, slot_level_of(verb, spell)));
+            // Disciple of Life favors the Cleric's own spells, not potions.
+            heal(actor(id), healing_roll(actor(id), rolled) +
+                                (from_item ? 0 : disciple_of_life(a, slot_level_of(verb, spell))));
             if (spell.id == "heal")
             {
                 std::erase_if(actor(id).effects.active,
@@ -8628,7 +8742,10 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
                               });
             }
         }
-        blessed_healer(a, spell, verb, targets);
+        if (!from_item)
+        {
+            blessed_healer(a, spell, verb, targets);
+        }
         return;
     }
     case detail::SpellPattern::spell_attack:
@@ -8996,13 +9113,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
 {
     // The Bonus Action pass runs before the loop that skips corpses, so filter
     // them here too; the Action pass has already done it and is unaffected.
-    // A raging creature cannot cast spells, nor anyone in an Antimagic Field.
-    // Befuddlement stops the creature's spells.
-    if (other.life.dead || rage_of(a) || sealed_off(a) ||
-        detail::has_effect(a.effects, detail::EffectKind::befuddled))
+    // A raging creature cannot cast spells, nor anyone in an Antimagic Field,
+    // where no magic item works either. Befuddlement stops the creature's
+    // spells.
+    if (other.life.dead || sealed_off(a))
     {
         return;
     }
+    const bool spells_blocked =
+        rage_of(a) || detail::has_effect(a.effects, detail::EffectKind::befuddled);
     const auto &d = def(a);
     for (const auto &spell : detail::spell_table)
     {
@@ -9017,22 +9136,28 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         }
         // Divine Intervention (Cleric 10): any Cleric spell of level 5 or lower,
         // prepared or not, cast as a Magic action without a slot.
-        const bool intervene = !bonus_pass && d.divine_intervention && a.arcane > 0 &&
-                               spell.level && spell.level <= 5 &&
+        const bool intervene = !spells_blocked && !bonus_pass && d.divine_intervention &&
+                               a.arcane > 0 && spell.level && spell.level <= 5 &&
                                detail::on_class_list(CharacterClass::cleric, spell.id);
         // Mystic Arcanum (Warlock 11, 13, 15): its spell once per Long Rest,
         // as a Magic action without a slot.
-        const bool arcanum =
-            !bonus_pass && d.arcanum.contains(spell.id) && !arcanum_spent(a, spell.level);
-        const bool known = detail::knows_spell(d.spells, spell.id);
-        if (!known && !intervene && !arcanum)
+        const bool arcanum = !spells_blocked && !bonus_pass && d.arcanum.contains(spell.id) &&
+                             !arcanum_spent(a, spell.level);
+        const bool known = !spells_blocked && detail::knows_spell(d.spells, spell.id);
+        // A carried item's spell or effect (MAGIC-3): a potion with the Bonus
+        // Action; a wand, bead or dust with the Action. A raging creature can
+        // still drink or throw, but casts nothing from a wand.
+        const auto *item = usable_item(a, spell);
+        const bool item_ready = item && (item->use == detail::ItemUse::drink) == bonus_pass &&
+                                !(spells_blocked && item->use == detail::ItemUse::wand);
+        if (!known && !intervene && !arcanum && !item_ready)
         {
             continue;
         }
         // Quickened Spell offers an Action spell in the Bonus Action pass.
         const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
         const bool usual = known && as_bonus == bonus_pass;
-        if (!usual && !intervene && !arcanum)
+        if (!usual && !intervene && !arcanum && !item_ready)
         {
             continue;
         }
@@ -9156,7 +9281,16 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             continue;
         }
-        if (usual ? (as_bonus ? !a.bonus : !a.actions.available(true)) : !a.actions.available(true))
+        const bool casting_ready =
+            (usual || intervene || arcanum) &&
+            (usual ? (as_bonus ? a.bonus : a.actions.available(true)) : a.actions.available(true));
+        // Dust is thrown with the Utilize action; a wand or bead takes the Magic
+        // action.
+        const bool item_offered =
+            item_ready && (item->use == detail::ItemUse::drink
+                               ? a.bonus
+                               : a.actions.available(item->use != detail::ItemUse::dust));
+        if (!casting_ready && !item_offered)
         {
             continue;
         }
@@ -9172,6 +9306,14 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
         };
+        if (item_offered)
+        {
+            offer(std::string(spell.id) + std::string(detail::item_suffix), std::string(item->label));
+        }
+        if (!casting_ready)
+        {
+            continue;
+        }
         // A leveled spell from each slot level cast_levels() offers, one slot
         // a turn, or with Magic Initiate's free cast, which spends no slot.
         const auto offer_leveled = [&](const std::string &verb, const std::string &label)
@@ -15313,6 +15455,16 @@ std::vector<Cell> Session::flight_route(const Actor &from, const Actor &target, 
     return route;
 }
 
+void Session::log_item_use(const Actor &a, const detail::SpellDef &spell)
+{
+    if (const auto *item = usable_item(a, spell))
+    {
+        const auto label = std::string(item->label);
+        log(a.source.name + " uses the " + label + ".",
+            {"{name} uses the {item}.", {{"name", a.source.name}, {"item", label, true}}});
+    }
+}
+
 void Session::cast_area()
 {
     const auto aimed = std::move(*area_);
@@ -15455,11 +15607,23 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     // Dragon's Breath are not castings.
     const bool again = aimed.verb == "sunbeam_line" || aimed.verb == "telekinesis_again" ||
                        aimed.verb == "call_lightning_again";
-    if (!again && spell.id != "dragons_breath_exhale" &&
+    const bool from_item = aimed.verb.ends_with(detail::item_suffix);
+    if (from_item)
+    {
+        log_item_use(a, spell);
+    }
+    if (!again && spell.id != "dragons_breath_exhale" && !item_effect(aimed.verb) &&
         (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
     {
         return;
     }
+    // A wand's spell and a bead's Fireball have the item's save DC (MAGIC-3).
+    item_caster_ = from_item ? a.source.id : 0;
+    const struct ItemCasterReset
+    {
+        EntityId &caster;
+        ~ItemCasterReset() { caster = 0; }
+    } item_caster_reset{item_caster_};
     if (spell.level && !again)
     {
         pay_for_spell(a, aimed.verb, spell);
@@ -23612,7 +23776,11 @@ std::string Session::save() const
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
             << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
-            << a.curse_lifted << ' ';
+            << a.curse_lifted << ' ' << a.item_uses.size() << ' ';
+        for (const auto &[id, left] : a.item_uses)
+        {
+            out << id << ' ' << left << ' ';
+        }
         detail::write_concentration(out, a.concentration);
         out << '\n';
     }
@@ -23799,6 +23967,11 @@ std::string Session::save() const
         {
             out << ' ' << std::quoted(gear) << ' ' << left;
         }
+        out << ' ' << gone.item_uses.size();
+        for (const auto &[id, left] : gone.item_uses)
+        {
+            out << ' ' << id << ' ' << left;
+        }
         out << '\n';
     }
     return out.str();
@@ -23856,6 +24029,19 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
         actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted;
+    std::size_t item_count{};
+    input >> item_count;
+    // The inventory comes later in the checkpoint; 64 items is more than any
+    // creature carries.
+    if (!input || item_count > 64)
+    {
+        throw std::runtime_error("Invalid checkpoint item uses");
+    }
+    actor.item_uses.resize(item_count);
+    for (auto &[id, left] : actor.item_uses)
+    {
+        input >> id >> left;
+    }
     if (actor.source.morale > 100 || actor.source.intelligence > 30)
     {
         throw std::runtime_error("Invalid checkpoint morale");
@@ -25130,6 +25316,17 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         for (auto &[gear, left] : gone.thrown_gear_left)
         {
             input >> std::quoted(gear) >> left;
+        }
+        std::size_t item_count{};
+        input >> item_count;
+        if (!input || item_count > 64)
+        {
+            throw std::runtime_error("Invalid checkpoint flight");
+        }
+        gone.item_uses.resize(item_count);
+        for (auto &[id, left] : gone.item_uses)
+        {
+            input >> id >> left;
         }
         session->fled_.push_back(std::move(gone));
     }

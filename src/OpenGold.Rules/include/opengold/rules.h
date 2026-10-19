@@ -556,6 +556,9 @@ struct CombatantView
     // Thrown gear the combatant still carries, by item definition; the campaign
     // trims its inventory to these counts.
     std::vector<std::pair<std::string, unsigned>> thrown_gear_left;
+    // Charged items (MAGIC-3) by inventory ID: the charges, beads or potions
+    // left; the campaign trims its inventory to these counts.
+    std::vector<std::pair<std::uint64_t, unsigned>> item_uses_left;
     // Regenerates Hit Points each turn unless Acid or Fire stops it (stopped: it
     // already took Acid or Fire since its last turn); burning; covered in oil
     // (its next Fire damage deals 5 more); carries or wields a Torch.

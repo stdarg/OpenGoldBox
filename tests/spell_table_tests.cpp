@@ -232,9 +232,10 @@ void table()
               "Riders belong to attack and save-condition patterns");
         check(spell.pattern != SpellPattern::save_condition || spell.rider != Rider::none,
               "A save-condition spell applies a rider");
-        // Heal restores a fixed 70 instead.
+        // Heal restores a fixed 70 instead, and a potion its own dice (MAGIC-3).
         check(spell.pattern != SpellPattern::heal || spell.add_casting_modifier ||
-                  spell.id == std::string_view("heal"),
+                  spell.id == std::string_view("heal") ||
+                  std::string_view(spell.id).starts_with("potion_"),
               "Healing adds the caster's spellcasting modifier");
     }
     // Deliberately not an exact row count: that would make adding a spell an
@@ -550,7 +551,9 @@ void behaviour()
             row.rider == Rider::mage_armor || row.rider == Rider::shillelagh ||
             row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
             row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
-            row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals)
+            row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals ||
+            // Potions are items, never on a class list (MAGIC-3).
+            std::string_view(row.id).starts_with("potion_"))
         {
             continue;
         }
