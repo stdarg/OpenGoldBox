@@ -894,6 +894,8 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
 // (Effective C++ Item 32).
 Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered);
 Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered);
+std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
+                                   const std::vector<Command> &offered);
 } // namespace
 
 Command choose_demo_command(const CombatSession &session)
@@ -1172,6 +1174,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
         return nullptr;
     };
+    // Magic items first, as the original's Quick characters used their
+    // readied ones, whether or not Quick magic is on (MAGIC-3).
+    if (const auto item = choose_item(state, active, offered))
+    {
+        return *item;
+    }
     // Lay On Hands and Divine Spark cost no spell slot.
     if (const auto *command = heal_below_half({"lay_on_hands", "divine_spark"}))
     {
@@ -1830,6 +1838,171 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
 
 namespace
 {
+bool item_verb(std::string_view verb)
+{
+    return verb.ends_with("_item") || verb.ends_with("_item_bonus");
+}
+
+// Whether an item's area aimed at `center` might catch an ally, judged before
+// aiming and on the safe side of the area the rules will draw: the necklace's
+// Fireball within 5 squares of its center, and a lightning wand's bolt within
+// a square of its line from the user out past the center.
+bool area_risks_ally(const rules::Snapshot &state, const CombatantView &active,
+                     std::string_view verb, Cell center)
+{
+    const auto lightning = verb.starts_with("lightning_bolt");
+    return std::any_of(
+        state.combatants.begin(), state.combatants.end(),
+        [&](const auto &a)
+        {
+            if (a.side != active.side || a.dead)
+            {
+                return false;
+            }
+            if (!lightning)
+            {
+                return std::max(std::abs(a.cell.x - center.x), std::abs(a.cell.y - center.y)) <= 5;
+            }
+            if (a.id == active.id)
+            {
+                return false;
+            }
+            const double dx = center.x - active.cell.x, dy = center.y - active.cell.y;
+            const double length = std::max(1.0, dx * dx + dy * dy);
+            const double cx = a.cell.x - active.cell.x, cy = a.cell.y - active.cell.y;
+            const double along = (cx * dx + cy * dy) / length;
+            const double off_x = cx - along * dx, off_y = cy - along * dy;
+            return along > 0 && off_x * off_x + off_y * off_y <= 2.0;
+        });
+}
+
+// A magic item a Quick character uses now (MAGIC-3), as the original's did:
+// healing for a creature at half its Hit Points or lower, Speed or Giant
+// Strength once, a wand at an enemy (Paralysis at one not yet Paralyzed), and
+// an area only where no ally can be caught. Dust of Disappearance is left to
+// players: attacking ends its Invisibility.
+std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
+                                   const std::vector<Command> &offered)
+{
+    const auto unit = [&](EntityId id) -> const CombatantView *
+    {
+        const auto found = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                        [&](const auto &a)
+                                        {
+                                            return a.id == id;
+                                        });
+        return found == state.combatants.end() ? nullptr : &*found;
+    };
+    // An item's area being aimed: set off where the drawn area holds an enemy
+    // and no ally, else aimed at the next safe enemy, else given up.
+    if (const auto &aim = state.area_targeting; aim && item_verb(aim->verb))
+    {
+        const auto in_area = [&](const CombatantView &a)
+        {
+            return !a.dead &&
+                   std::find(aim->cells.begin(), aim->cells.end(), a.cell) != aim->cells.end();
+        };
+        const bool ally = std::any_of(state.combatants.begin(), state.combatants.end(),
+                                      [&](const auto &a)
+                                      {
+                                          return a.side == active.side && in_area(a);
+                                      });
+        const bool enemy =
+            std::any_of(state.combatants.begin(), state.combatants.end(),
+                        [&](const auto &a)
+                        {
+                            return a.side != active.side && a.conscious && in_area(a);
+                        });
+        for (const auto &command : offered)
+        {
+            if (enemy && !ally && command.verb == "area_cast")
+            {
+                return command;
+            }
+        }
+        for (const auto &a : state.combatants)
+        {
+            if (a.side == active.side || !a.conscious || a.cell == aim->center ||
+                area_risks_ally(state, active, aim->verb, a.cell))
+            {
+                continue;
+            }
+            for (const auto &command : offered)
+            {
+                if (command.verb == "area_move" && command.destination == a.cell)
+                {
+                    return command;
+                }
+            }
+        }
+        for (const auto &command : offered)
+        {
+            if (command.verb == "spell_cancel")
+            {
+                return command;
+            }
+        }
+        return std::nullopt;
+    }
+    for (const auto &command : offered)
+    {
+        if (!item_verb(command.verb))
+        {
+            continue;
+        }
+        const auto *target = unit(command.target);
+        const auto verb = std::string_view(command.verb);
+        if (verb.starts_with("potion_of_healing") || verb.starts_with("potion_of_greater_healing"))
+        {
+            if (target && target->hit_points * 2 <= target->max_hit_points)
+            {
+                return command;
+            }
+        }
+        else if (verb.starts_with("potion_of_speed") || verb.starts_with("potion_of_giant"))
+        {
+            if (target && target->id == active.id)
+            {
+                return command;
+            }
+        }
+        else if (verb.starts_with("wand_of_paralysis"))
+        {
+            if (target && target->side != active.side &&
+                std::none_of(target->conditions.begin(), target->conditions.end(),
+                             [](const auto &c)
+                             {
+                                 return c.source.starts_with("Paralyzed");
+                             }))
+            {
+                return command;
+            }
+        }
+        else if (verb.starts_with("magic_missile"))
+        {
+            if (target && target->side != active.side)
+            {
+                return command;
+            }
+        }
+        else if (command.aims_area)
+        {
+            const bool safe_enemy =
+                std::any_of(state.combatants.begin(), state.combatants.end(),
+                            [&](const auto &a)
+                            {
+                                return a.side != active.side && a.conscious &&
+                                       !area_risks_ally(state, active, verb, a.cell);
+                            });
+            if (safe_enemy)
+            {
+                return command;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 // The commands a Quick member with magic off chooses from: all but the active
 // creature's spells.
 std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Command> commands)
@@ -1842,10 +2015,12 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
             spells = a.spells;
         }
     }
+    // A magic item is used whether or not Quick magic is on (MAGIC-3).
     std::erase_if(commands,
                   [&](const auto &command)
                   {
-                      return std::any_of(spells.begin(), spells.end(),
+                      return !item_verb(command.verb) &&
+                             std::any_of(spells.begin(), spells.end(),
                                          [&](const auto &spell)
                                          {
                                              return command.verb == spell ||

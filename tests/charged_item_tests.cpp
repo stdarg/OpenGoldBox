@@ -1,6 +1,7 @@
 #include "combat_fixture.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
+#include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
 #include <algorithm>
@@ -381,6 +382,61 @@ void fast_hands()
           "Without Fast Hands a wand takes the Action");
 }
 
+// A Quick character uses its items, even with Quick magic off (MAGIC-3).
+void quick_items()
+{
+    const auto rules = module();
+    // A Fighter's Second Wind, which costs nothing, comes first; a Thief has none.
+    const auto rogue = thief();
+    Participant hurt_thief{1,       "campaign-character",
+                           "Thief", Side::party,
+                           {1, 1},  rules->character_profile(rogue.sheet(), {}).data};
+    hurt_thief.state = VitalState{3, false, {}};
+    hurt_thief.inventory.push_back({7, "potion_of_healing", 1});
+    auto hurt = rules->create({{12, 6, std::vector<Terrain>(72)},
+                               {hurt_thief, {2, "vanguard", "Foe", Side::opposition, {6, 1}}}},
+                              5);
+    test::keep_initiative(*hurt);
+    for (unsigned turns = 0; hurt->snapshot().actor != 1 && turns < 4; ++turns)
+    {
+        check(submit(*hurt, "end"), "End the foe's turn");
+    }
+    check(choose_quick_command(*hurt, false).verb == "potion_of_healing_item",
+          "A badly hurt Quick character drinks a Potion of Healing");
+
+    auto wand = fighter_turn(*rules, {{"wand:magic_missiles", 5}}, {"wand:magic_missiles"}, 12);
+    check(choose_quick_command(*wand, false).verb == "magic_missile_item",
+          "A Quick character uses a held wand with Quick magic off");
+
+    // The necklace's Fireball, aimed only where no ally can be caught.
+    auto necklace = fighter_turn(*rules, {{"necklace_of_missiles", 6}}, {}, 12, {9, 1});
+    bool exploded = false;
+    for (unsigned step = 0; step < 6 && !exploded; ++step)
+    {
+        check(necklace->submit(choose_quick_command(*necklace, false)), "Quick acts");
+        exploded = logged(*necklace, "uses the Necklace of Missiles");
+    }
+    check(exploded, "A Quick character throws a missile at a distant foe");
+
+    const auto hero = fighter();
+    Participant p{1,         "campaign-character",
+                  "Fighter", Side::party,
+                  {1, 1},    rules->character_profile(hero.sheet(), {}).data};
+    p.inventory.push_back({7, "necklace_of_missiles", 6});
+    auto close = rules->create({{12, 6, std::vector<Terrain>(72)},
+                                {p,
+                                 {2, "vanguard", "Foe", Side::opposition, {3, 1}},
+                                 {3, "healer", "Ally", Side::party, {3, 2}}}},
+                               5);
+    test::keep_initiative(*close);
+    for (unsigned turns = 0; close->snapshot().actor != 1 && turns < 6; ++turns)
+    {
+        check(submit(*close, "end"), "Reach the fighter");
+    }
+    check(choose_quick_command(*close, false).verb != "fireball_item",
+          "No Fireball where it would catch an ally");
+}
+
 // Aims an area item's effect at `center` and sets it off.
 bool aim_and_cast(CombatSession &c, std::string_view verb, Cell center)
 {
@@ -558,6 +614,7 @@ int main()
         other_effects();
         javelin();
         fast_hands();
+        quick_items();
         manual();
         drinking_outside_combat();
         after_combat();
