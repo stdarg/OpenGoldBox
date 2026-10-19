@@ -1,15 +1,15 @@
 {
-  "action_sha256": "a8b5fdf6de301488f7ac0d948cbd7c60e9dfaaf60af7f8ca0bf7c8baa29cc906",
+  "action_sha256": "7e174e5373d80c5c599ec4fa048fc772278726988f89c007a43ac6eab8deee53",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_44/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_44/item_001__ranged/ready.png"
   },
   "metadata_sha256": "ac5cac0f02ff0429ca64a41fb2329bc44d5fe1cad8e894af36bfd29e7997e68a",
-  "notes": "Reviewed both 128 px exports alternating in catalog, with same full-canvas transform and matching body proportions. Compared alternate weapon-set identity and scale where present. Larger action extents set shared transparent margin.",
+  "notes": "New shield/sword ready art supplied as identity reference. Both 128px bow frames reviewed alternating in catalog: nocked arrow in ready, absent in action, bow and same feet/body/armor remain registered. Scale and ground line compared with shield/sword set.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "66640183fde5c08f591dd364f1c9b3d6cdb17c6adc9308b783a25669d9069ab7",
-  "reviewed_at": "2026-10-18T23:53:34.331447+00:00",
+  "ready_sha256": "db9fa49047e47d9c9173a3837c6ecfddc735343d2f56f48b6cf0b7e214dcb563",
+  "reviewed_at": "2026-10-19T04:27:52.190058+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:44",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }

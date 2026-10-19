@@ -1,15 +1,15 @@
 {
-  "action_sha256": "a41260b76c4df3de8287fdf2ef0ea63c6c2379a1b375a7873bf20d91f6aa12de",
+  "action_sha256": "8f5557b1ac702b29264ea8c52d4667a4612af770c78a5a6842c953c69e1d20b5",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_44/added_12402564125__added_12435671922/action.png",
     "ready": "art/mon1cha_dax_44/added_12402564125__added_12435671922/ready.png"
   },
   "metadata_sha256": "ac5cac0f02ff0429ca64a41fb2329bc44d5fe1cad8e894af36bfd29e7997e68a",
-  "notes": "Shared source-canvas scale for both frames. Reviewed ready/action alternation at 128 in the catalog, equipment and pose, and compared body size with other saved weapon sets. The Goblin Leader bow pair was regenerated after a smaller first attempt.",
+  "notes": "Approved pose guide and newly created orc ready used. Both 128px frames reviewed alternating in catalog: shield stays up, sword moves from raised guard to a short late slash, planted boots/torso/scale stay registered.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "211bbd3667a8726245970fd9343d9dc7fe06a3d006c926f1f2b295f7c84fb254",
-  "reviewed_at": "2026-10-18T23:46:48.714400+00:00",
+  "ready_sha256": "6a770e9b25e40b4888c068c518e6342ea51a9aab0ef53ad93f303c00731a89a1",
+  "reviewed_at": "2026-10-19T04:25:14.546807+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:44",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }
