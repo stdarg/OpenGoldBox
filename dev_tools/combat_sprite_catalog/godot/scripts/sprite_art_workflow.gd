@@ -13,6 +13,7 @@ const VISUAL_CHECKS := [
     "correct_equipment_grip_and_handedness",
     "same_identity_clothing_palette_and_camera",
     "consistent_scale_and_grounded_foot_baseline_across_sets",
+    "planted_feet_same_xy_no_whole_body_translation",
     "complete_silhouette_no_clipping_or_background",
     "pixel_art_readable_at_combat_size",
     "pair_reviewed_alternating_in_catalog",

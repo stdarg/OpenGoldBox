@@ -1,15 +1,15 @@
 {
-  "action_sha256": "0c927d8733ae827c54afd9d4ca26d6fb76c5fe6c2456db5c88f54a7613eec5d6",
+  "action_sha256": "75593e602f570edff3d922bbb9225afdfe8e1d5f1d95096b338b3eb12def9ee2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_2/item_000__item_001/action.png",
     "ready": "art/mon1cha_dax_2/item_000__item_001/ready.png"
   },
   "metadata_sha256": "77651e1d13483cf0667ceeb140fc38ca8a5f8de8e6911759dc9fe7023eca7043",
-  "notes": "Restarted pair after scale feedback. Original full canvases exported with identical 128x128 transform, no per-pose crop or fit. Compared head, torso, limbs, ground baseline and equipment at combat size, side by side and alternating in catalog.",
+  "notes": "Fresh generated ready; action edited from ready. Two action attempts rejected for whole-figure shift and oversized sword. Final pair visually reviewed at 128 px and alternating in catalog-preview-v2. Boots remain registered; lower-body alpha overlap 0.97 below y=85. Pose guide used for facing and attack mechanics, not foot registration.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f8c374f026c8517f779b437fb1853ed4dff48b1717db718876848809a7e3fa61",
-  "reviewed_at": "2026-10-18T23:31:45.755637+00:00",
+  "ready_sha256": "f75baf73c2689d9879b9fbf5c453a27edfaf918286ce833afed210a917e6bbb4",
+  "reviewed_at": "2026-10-19T00:52:32.775057+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:2",
   "specification": "bipedal-v1",
@@ -23,8 +23,9 @@
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "f195fd7fd16e073a609a6c1d2552feb25adbd8878f11a53fb4c2c32340ce1ce9"
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
 }

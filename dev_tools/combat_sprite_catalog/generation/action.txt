@@ -6,7 +6,11 @@ Preserve the ready figure's head, torso and limb sizes. Do not shrink the
 character to fit the attack; if it needs more room, the pair needs a smaller
 COMMON scale established from this wider pose.
 Reference 1: approved original pose guide, for facing and action-pose mechanics.
-Reference 2: the visually approved NEW ready sprite for THIS weapon set.
-Keep its identity, colors, clothes, equipment, handedness, camera, scale and foot
-baseline. Change the pose; do not turn the character's back toward the viewer.
+Reference 2: the visually approved NEW ready sprite for THIS weapon set. Edit
+that ready image as the base frame; do not compose the action independently.
+Keep its identity, colors, clothes, equipment, handedness, camera, scale and
+planted feet at exactly the same x/y pixels. Keep the body largely registered;
+move the weapon arm and weapon, with only modest upper-body follow-through.
+Never shift, recenter or rotate the entire character to fit the attack. Change
+the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.

@@ -4,7 +4,9 @@ For melee, weapon UP in a ready-to-strike guard, never lowered at rest.
 For projectile weapons, loaded before release. Preserve an included shield.
 Leave enough canvas space for this set's later action pose at the SAME body
 scale. The larger pose determines the shared camera distance for both frames.
+Choose and retain exact planted-foot x/y coordinates on the canvas. This ready
+image is the registered base frame from which action must be derived.
 Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
-for identity, clothing, palette, scale and foot baseline across weapon sets.
+for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.

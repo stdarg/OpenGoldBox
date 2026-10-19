@@ -62,12 +62,26 @@ to fit a wider attack, and do not enlarge the ready figure to fill spare space.
 Change the pose within the shared canvas; if the attack cannot fit at the
 chosen body scale, remake the pair at a smaller common scale.
 
+FIXED ANIMATION REGISTRATION: These are successive frames of ONE character,
+not separately composed illustrations. Establish the ready figure's planted
+feet and ground contact at fixed x AND y pixel coordinates on the 128 x 128
+canvas. Make the action from the ready image at the SAME canvas origin: retain
+the planted feet at those exact coordinates and keep the hips and torso largely
+registered. Move only the limbs, weapon, clothing and modest upper-body lean
+needed to show the attack. Do not translate, recenter, crop, independently
+scale, or rotate the entire figure between frames. A matching foot baseline
+alone is insufficient if the character slides horizontally. For a stationary
+attack, do not invent a step or a new stance. Plan transparent space for the
+weapon's widest action sweep before making ready; if that cannot fit, remake
+BOTH frames at a smaller common scale while retaining a single shared foot
+anchor. Overlay the frames and play them at combat size to reject any jump.
+
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
 figure or motion blur. Keep body and equipment entirely inside the frame with
 transparent margin. Final assets are 128 x 128 PNGs with alpha. Larger working
 images are allowed; export with nearest-neighbor sampling and preserve alpha.
-Keep camera, character scale and grounded foot baseline consistent across poses
+Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
 
@@ -120,8 +134,9 @@ For melee, weapon UP in a ready-to-strike guard, never lowered at rest.
 For projectile weapons, loaded before release. Preserve an included shield.
 Leave enough canvas space for this set's later action pose at the SAME body
 scale. The larger pose determines the shared camera distance for both frames.
+Choose and retain exact planted-foot x/y coordinates on the canvas. This ready
+image is the registered base frame from which action must be derived.
 Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
-for identity, clothing, palette, scale and foot baseline across weapon sets.
+for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-ANIMATION FRAME BUDGET: Before composing this ready pose, plan the later action pose at the same character size. The wider/taller of the two poses determines camera distance. Keep transparent margin for the action, and do not zoom or change anatomical proportions between frames.
