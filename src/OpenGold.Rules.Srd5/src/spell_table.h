@@ -3002,6 +3002,14 @@ inline constexpr std::string_view natural_suffix = "_natural";
 // A carried item's spell or effect (MAGIC-3): a charge or use of the item, not
 // a slot.
 inline constexpr std::string_view item_suffix = "_item";
+// The same, used as a Bonus Action with a Thief's Fast Hands.
+inline constexpr std::string_view item_bonus_suffix = "_item_bonus";
+
+// Whether a verb uses a carried item, with the Action or a Bonus Action.
+inline constexpr bool item_verb(std::string_view verb)
+{
+    return verb.ends_with(item_suffix) || verb.ends_with(item_bonus_suffix);
+}
 
 // The slot level a "_N" verb names, or 0.
 inline constexpr unsigned cast_slot_level(std::string_view verb)
@@ -3041,6 +3049,10 @@ inline constexpr std::string_view without_cast_suffix(std::string_view verb)
     else if (verb.ends_with(item_suffix))
     {
         verb.remove_suffix(item_suffix.size());
+    }
+    else if (verb.ends_with(item_bonus_suffix))
+    {
+        verb.remove_suffix(item_bonus_suffix.size());
     }
     return verb;
 }

@@ -323,6 +323,64 @@ void javelin()
     check(rules->restore(saved)->save() == saved, "A checkpoint keeps the spent bolt");
 }
 
+// A level-3 Thief, whose Fast Hands uses a magic item as a Bonus Action.
+Character thief()
+{
+    CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "rogue";
+    d.background = "soldier";
+    d.alignment = "neutral_good";
+    d.name = "Thief";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+    {
+        r = {{6, 5, 4, 1}, 3};
+    }
+    d.training = {{"class:rogue", {"acrobatics", "stealth", "perception", "investigation"}},
+                  {"class:rogue:expertise", {"investigation", "perception"}}};
+    Character hero(*srd5::character_rules(), d, {});
+    const auto rules = module();
+    VitalState life{hero.sheet().hit_points, false, {}};
+    while (hero.sheet().level < 3)
+    {
+        check(hero.advance(*rules, life), "The Rogue advances");
+    }
+    return hero;
+}
+
+// Fast Hands takes the Magic action to use a wand as a Bonus Action.
+void fast_hands()
+{
+    const auto rules = module();
+    const auto hero = thief();
+    Participant p{1, "campaign-character", "Thief", Side::party, {1, 1},
+                  rules->character_profile(hero.sheet(), std::vector<std::string>{"wand:magic_missiles"}).data};
+    p.inventory.push_back({7, "wand:magic_missiles", 5});
+    auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+                            {p, {2, "vanguard", "Foe", Side::opposition, {6, 1}}}},
+                           5);
+    test::keep_initiative(*c);
+    for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+    {
+        check(submit(*c, "end"), "End the foe's turn");
+    }
+    check(offered(*c, "magic_missile_item") && offered(*c, "magic_missile_item_bonus"),
+          "The wand is offered with the Action and, by Fast Hands, the Bonus Action");
+    for (unsigned dart = 0; dart < 3; ++dart)
+    {
+        check(submit(*c, "magic_missile_item_bonus", 2), "Aim a dart");
+    }
+    check(uses_left(*c, 7) == 4 && offered(*c, "magic_missile_item") &&
+              !offered(*c, "magic_missile_item_bonus"),
+          "The Bonus Action spent a charge and left the Action");
+
+    auto fighter_fight = fighter_turn(*rules, {{"wand:magic_missiles", 5}}, {"wand:magic_missiles"}, 12);
+    check(!offered(*fighter_fight, "magic_missile_item_bonus"),
+          "Without Fast Hands a wand takes the Action");
+}
+
 // Aims an area item's effect at `center` and sets it off.
 bool aim_and_cast(CombatSession &c, std::string_view verb, Cell center)
 {
@@ -499,6 +557,7 @@ int main()
         areas();
         other_effects();
         javelin();
+        fast_hands();
         manual();
         drinking_outside_combat();
         after_combat();

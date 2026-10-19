@@ -1529,6 +1529,7 @@ struct Definition
     bool brave{}; // Halfling: Advantage on saves to avoid or end Frightened
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
+    bool fast_hands{}; // Thief: a magic item used as a Bonus Action (MAGIC-3)
     // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
     // Wholeness of Body's uses per Long Rest.
     int martial_die{6}, wholeness{}, wisdom{};
@@ -2303,7 +2304,7 @@ void spend_item_use(Actor &a, const detail::MagicItem &kind)
 // spell: a potion, a missile or dust. A wand casts its spell.
 bool item_effect(std::string_view verb)
 {
-    if (!verb.ends_with(detail::item_suffix))
+    if (!detail::item_verb(verb))
     {
         return false;
     }
@@ -2320,7 +2321,7 @@ bool item_effect(std::string_view verb)
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
     // A carried item's spell spends a charge or use of the item (MAGIC-3).
-    if (verb.ends_with(detail::item_suffix))
+    if (detail::item_verb(verb))
     {
         const auto *item = usable_item(a, spell);
         if (!item)
@@ -3097,6 +3098,11 @@ character_definition(std::string_view bytes,
     const auto grants = detail::read_grants(in);
     d.hp = maximum_hit_points(klass, die, race == "Dwarf", hp_modifiers,
                               klass == CharacterClass::sorcerer);
+    d.fast_hands = std::any_of(grants.begin(), grants.end(),
+                               [](const auto &g)
+                               {
+                                   return g.id == "feature:fast_hands";
+                               });
     // A species' creation choices: size, a Wood Elf's speed and a Tiefling's
     // or Dragonborn's resistance.
     const auto chose = [&](std::string_view id)
@@ -8696,7 +8702,7 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     const auto &d = def(a);
     const unsigned steps = upcast_steps(verb, spell);
     // A potion, missile or dust is not a spell: nothing counters it (MAGIC-3).
-    const bool from_item = verb.ends_with(detail::item_suffix);
+    const bool from_item = detail::item_verb(verb);
     if (from_item)
     {
         log_item_use(a, spell);
@@ -9232,9 +9238,13 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // A carried item's spell or effect (MAGIC-3): a potion with the Bonus
         // Action; a wand, missile or dust with the Action. A raging creature can
         // still drink or throw, but casts nothing from a wand.
+        // Fast Hands takes the Magic or Utilize action to use one as a Bonus
+        // Action, too.
         const auto *item = usable_item(a, spell);
-        const bool item_ready = item && (item->use == detail::ItemUse::drink) == bonus_pass &&
-                                !(spells_blocked && item->use == detail::ItemUse::wand);
+        const bool drink = item && item->use == detail::ItemUse::drink;
+        const bool item_ready =
+            item && (drink ? bonus_pass : !bonus_pass || d.fast_hands) &&
+            !(spells_blocked && item->use == detail::ItemUse::wand);
         if (!known && !intervene && !arcanum && !item_ready)
         {
             continue;
@@ -9376,9 +9386,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         // Dust is thrown with the Utilize action; a wand or missile takes the Magic
         // action.
         const bool item_offered =
-            item_ready && (item->use == detail::ItemUse::drink
-                               ? a.bonus
-                               : a.actions.available(item->use != detail::ItemUse::dust));
+            item_ready && (bonus_pass ? a.bonus
+                                      : a.actions.available(item->use != detail::ItemUse::dust));
         if (!casting_ready && !item_offered)
         {
             continue;
@@ -9397,7 +9406,10 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         };
         if (item_offered)
         {
-            offer(std::string(spell.id) + std::string(detail::item_suffix), std::string(item->label));
+            const bool fast = bonus_pass && !drink;
+            offer(std::string(spell.id) +
+                      std::string(fast ? detail::item_bonus_suffix : detail::item_suffix),
+                  std::string(item->label) + (fast ? " (Fast Hands)" : ""));
         }
         if (!casting_ready)
         {
@@ -15749,7 +15761,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     const bool quickened = !spell.bonus_action && readies(a, Metamagic::quickened, spell);
     take_metamagic(a, spell);
     take_overchannel(a, spell, aimed.verb);
-    if (spell.bonus_action || quickened)
+    if (spell.bonus_action || quickened || aimed.verb.ends_with(detail::item_bonus_suffix))
     {
         a.bonus = false;
     }
@@ -15762,7 +15774,7 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     // Dragon's Breath are not castings.
     const bool again = aimed.verb == "sunbeam_line" || aimed.verb == "telekinesis_again" ||
                        aimed.verb == "call_lightning_again";
-    const bool from_item = aimed.verb.ends_with(detail::item_suffix);
+    const bool from_item = detail::item_verb(aimed.verb);
     if (from_item)
     {
         log_item_use(a, spell);
@@ -17024,7 +17036,9 @@ void Session::cast_on_selection()
 void Session::cast_selected(Actor &a, const PendingSelection &selection)
 {
     const auto &spell = *detail::find_spell(selection.verb);
-    const bool quickened = readies(a, Metamagic::quickened, spell);
+    // Fast Hands uses an item as a Bonus Action, as Quickened Spell casts one.
+    const bool quickened = readies(a, Metamagic::quickened, spell) ||
+                           selection.verb.ends_with(detail::item_bonus_suffix);
     if (splits_among_targets(spell) || spell.pattern == detail::SpellPattern::heal ||
         spell.id == "chain_lightning")
     {
@@ -23713,7 +23727,8 @@ void Session::dispatch(const Command &command)
     }
     else if (const auto *bonus_spell = detail::find_spell(command.verb);
              bonus_spell && !command.verb.ends_with(detail::intervention_suffix) &&
-             (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell)))
+             (bonus_spell->bonus_action || readies(a, Metamagic::quickened, *bonus_spell) ||
+              command.verb.ends_with(detail::item_bonus_suffix)))
     {
         // A Bonus Action spell spends no Action, so it resolves outside the
         // Action block below.
@@ -26526,7 +26541,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && (result.level == 3 || result.level == 4))
         {
             result.description =
-                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands has no use until magic items arrive. Hide remains unavailable.";
+                "Sneak Attack: 2d6. Steady Aim: Bonus Action; next attack roll has Advantage, Speed becomes 0.\nThief: Fast Hands uses a wand, potion or other magic item as a Bonus Action. Hide remains unavailable.";
         }
         if (klass == CharacterClass::paladin && result.level <= 4)
         {
