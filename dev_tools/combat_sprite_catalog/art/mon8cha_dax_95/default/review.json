@@ -1,0 +1,31 @@
+{
+  "action_sha256": "2f3c57227757d6ed6dc40a06197a29162bff16e5bdd744a770da4bc4c6ed3f25",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon8cha_dax_95/default/action.png",
+    "ready": "art/mon8cha_dax_95/default/ready.png"
+  },
+  "metadata_sha256": "78e4c2507ef37ae7a648ec1a0cd65830866809183f78461e1e50262ec6a9912b",
+  "notes": "Both frames reviewed at 128 px and alternating in Godot catalog. Drythh holds both clawed feet, hips, tail and scale in fixed coordinates; raised empty claw makes a compact late slash. No equipment recorded. User authorized natural in-place attack. Weapon checklist interpreted as raised claw for this unarmed biped.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "0539f0459dc3b08c31f18b5d65e05f309dc76f0745338e9134497b9b36ea69a8",
+  "reviewed_at": "2026-10-19T02:51:15.823338+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON8CHA.DAX:95",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+}

@@ -213,6 +213,26 @@ the checklist. This later flag-only JSON change naturally invalidates the earlie
 input hash; the saved review remains a historical record of the generation input.
 Future regeneration always prepares from the then-current JSON.
 
+## Natural attacks for other body plans
+
+The user approved natural, in-place attacks with a fixed base on 2026-10-18 for
+unarmed, magical, and non-biped creatures. For a quadruped or invertebrate,
+establish every planted foot or walking-leg contact in `ready.png` and keep those
+contacts, the body, camera, and scale registered in `action.png`. Animate only
+the attacking jaw, claw, pincer, stinger, or other local part. Reserve enough
+transparent space for the larger pose before exporting **both** frames with the
+same canvas transform. A leap, step, body slide, or independently recentered
+silhouette fails review.
+
+The `bipedal-v1` pose guide and `accept` checklist have human-specific fields
+such as a visible chest and raised weapon. They do not certify quadrupeds or
+invertebrates. For those body plans, run the same `check` command, inspect the
+exact 128 x 128 PNG hashes side by side and alternating in the catalog, and save
+`ready-prompt.txt`, `action-prompt.txt`, and a `natural-in-place-v1` `review.json`
+beside the pair. Record the planted contacts, localized attack, complete
+silhouette, readability, equipment, source identity, reviewer, review time, and
+both hashes. Clear the regeneration flag only after every set is reviewed.
+
 ## Regression checks
 
 ```bash

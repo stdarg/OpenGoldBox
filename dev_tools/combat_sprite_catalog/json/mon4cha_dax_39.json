@@ -5,7 +5,7 @@
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"
   ],
   "equipment": [],
-  "flag_for_regeneration": true,
+  "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",
   "name": "HUGE SCORPION",
   "preview_fallback_variant": "",

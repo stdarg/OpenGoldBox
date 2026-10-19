@@ -1,0 +1,27 @@
+{
+  "action_sha256": "3f0067ef4622e94c92d15fda89d51673027e72b51a8be617eb41d52d2d3d978d",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_39/default/action.png",
+    "ready": "art/mon4cha_dax_39/default/ready.png"
+  },
+  "metadata_sha256": "a068210850707b3e84a20d0d1d91c42992e6c60ed85cda52da62b4d242122080",
+  "notes": "Both frames visually reviewed at 128 px and alternating in Godot catalog. First dark pair rejected as unreadable; bright amber pair preserves all walking-leg contacts and pincers while stinger dips. No carried gear. User authorized natural in-place attack with fixed base.",
+  "ready_sha256": "a4f9af1c82324c02aa08ecad351b60ef68b08eb1a7a1bec8ec38ef0d829b2ccb",
+  "reviewed_at": "2026-10-19T02:48:13.771150+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:39",
+  "specification": "natural-in-place-v1",
+  "technical_check": "sprite_art_workflow.gd check; bipedal accept is not applicable to quadruped/invertebrate body plan",
+  "variant_id": "default",
+  "visual_checks": {
+    "all_feet_or_base_contact_fixed_xy": true,
+    "alternating_catalog_review": true,
+    "appropriate_in_place_attack": true,
+    "complete_transparent_silhouette": true,
+    "natural_body_plan_and_identity": true,
+    "only_independent_art_references": true,
+    "readable_at_128_pixels": true,
+    "same_scale_palette_and_camera": true
+  }
+}

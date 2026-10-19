@@ -1,0 +1,27 @@
+{
+  "action_sha256": "d602637892ad4b9a0ce0e5ac54bd5de249de157a197881df413490481caa027e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_38/default/action.png",
+    "ready": "art/mon4cha_dax_38/default/ready.png"
+  },
+  "metadata_sha256": "dc41703bfc0b1d99a2a7af9b243e7c45ca7d7e02531ec634c6217a8486a9d886",
+  "notes": "Both frames visually reviewed at 128 px and alternating in Godot catalog. All four webbed feet and body stay fixed while jaw/tongue snap. No carried gear. User authorized natural in-place attack with fixed base.",
+  "ready_sha256": "bd304129ee7b48147618995b85893de7636fb411c06312d3c09e56219e59056d",
+  "reviewed_at": "2026-10-19T02:48:13.768812+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:38",
+  "specification": "natural-in-place-v1",
+  "technical_check": "sprite_art_workflow.gd check; bipedal accept is not applicable to quadruped/invertebrate body plan",
+  "variant_id": "default",
+  "visual_checks": {
+    "all_feet_or_base_contact_fixed_xy": true,
+    "alternating_catalog_review": true,
+    "appropriate_in_place_attack": true,
+    "complete_transparent_silhouette": true,
+    "natural_body_plan_and_identity": true,
+    "only_independent_art_references": true,
+    "readable_at_128_pixels": true,
+    "same_scale_palette_and_camera": true
+  }
+}
