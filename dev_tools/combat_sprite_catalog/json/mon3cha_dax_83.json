@@ -1,5 +1,6 @@
 {
   "description": "An armored cleric prepared for both religious duty and close combat. Source inventory: Potion of Healing, Banded armor +2, Mace +2. Readied: Banded armor +2, Mace +2. Source wealth: 15 gp. Catalog additions: Shield +2.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

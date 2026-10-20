@@ -1,5 +1,6 @@
 {
   "description": "An experienced eighth-level fighter in enchanted plate armor, wearing a ring of protection and carrying a two-handed sword +2. A healing potion remains stowed with the kit.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

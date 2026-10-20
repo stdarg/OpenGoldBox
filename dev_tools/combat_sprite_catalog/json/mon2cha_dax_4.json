@@ -1,5 +1,6 @@
 {
   "description": "A broad-shouldered orc raider in leather armor with a long sword, shield, and short bow. Depict the sword-and-shield guard and the loaded bow as distinct combat setups.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON2CHA.DAX:4 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

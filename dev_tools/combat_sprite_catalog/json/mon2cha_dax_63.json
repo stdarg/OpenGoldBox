@@ -1,5 +1,6 @@
 {
   "description": "A hulking, shaggy goblinoid whose long arms and imposing outline should remain clear in the combat icon. Current catalog equipment: leather armor, battle axe. Source wealth: 24 cp, 18 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "added_13161527634",

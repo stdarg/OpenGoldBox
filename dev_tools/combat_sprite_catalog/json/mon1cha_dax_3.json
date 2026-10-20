@@ -1,5 +1,6 @@
 {
   "description": "A goblin leader with a confident stance and clearer rank distinction than the ordinary guards. Source inventory: Arrows, Long bow, Short sword, Shield, Scale armor. Readied: Arrows, Scale armor. Source wealth: 24 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

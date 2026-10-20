@@ -1,5 +1,6 @@
 {
   "description": "Shared human fighter artwork used by named NPCs and generic fighters. Identical originals: CPIC2.DAX:11, CPIC3.DAX:11, CPIC4.DAX:11, CPIC5.DAX:11, CPIC6.DAX:11, CPIC7.DAX:11, CPIC8.DAX:11. Known users of this art: 3RD LVL FIGHTER, 4TH LVL FIGHTER, 5TH LVL FIGHTER, 6TH LVL FIGHTER, 8TH LVL FIGHTER, AIDES, BUCCANEER, CORPORAL, ENVOY, GUARD, HASSAD, MAD MAN, NOMAD, PRINCESS FATIMA, SKULLCRUSHER, TYRANITHRAXUS. No direct script reference found for this archive copy.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL art links and original CPIC ready/action records"
   ],

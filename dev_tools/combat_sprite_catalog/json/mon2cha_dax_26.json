@@ -1,5 +1,6 @@
 {
   "description": "A heavy-bodied reptilian monster whose dangerous gaze is its defining threat. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "sprite_size": {"height_squares": 1, "width_squares": 2},
   "description_sources": [
     "Original game MON2CHA.DAX:26 and matching MONnITM inventory",
     "https://www.dndbeyond.com/sources/dnd/br-2024/creature-stat-blocks (general creature appearance only)"

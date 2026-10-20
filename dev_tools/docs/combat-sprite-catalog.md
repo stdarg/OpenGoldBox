@@ -20,6 +20,7 @@ The game-data directory is required. The launcher uses `OPENGOLD_GAME_DIR` or
 ## Files and workflow
 
 - [`json/`](../combat_sprite_catalog/json) has one saved record per monster, NPC, or extra icon. Records hold descriptions, source identity, equipment, wealth, regeneration flags, and image variants. **Save monster data** writes edited metadata here.
+- **Sprite size (combat squares)** sits above the description in the monster editor. Choose **1 × 1**, **1 × 2 tall**, **2 × 1 wide**, or **2 × 2 (four squares)**, then press **Save monster data**. The selected `sprite_size` is stored in that record's JSON as `width_squares` and `height_squares`. **Unknown** stores `null` when a source cannot establish the size. Copied monsters inherit the chosen size and can change it independently.
 - [`art/`](../combat_sprite_catalog/art) holds replacement `ready.png` and `action.png` pairs under each source key and weapon-set variant. Missing pairs fall back to locally decoded original art. See the [art inventory](../combat_sprite_catalog/art/README.md).
 - One-handed weapons pair with available shields; ranged and two-handed weapons have separate sets. Include unready weapons when planning art. Each set needs its own reviewed ready/action pair.
 - The [generation and review workflow](../combat_sprite_catalog/generation/README.md) and [rules](../combat_sprite_catalog/generation/rules.txt) govern new sprite art. Keep body scale and planted foot/base coordinates fixed between frames; review the actual 128 x 128 images alternating in the catalog before clearing a regeneration flag. The [pose guide](../combat_sprite_catalog/art/pose-guide/README.md) covers the approved bipedal attack poses.
@@ -29,3 +30,26 @@ The [tool README](../combat_sprite_catalog/README.md) describes original-art
 bindings, metadata editing, character previews, and the `--catalog-check` and
 `--metadata-check` commands. The generation workflow documents its separate
 `prepare`, `check`, and `accept` commands and visual acceptance requirements.
+
+## How sprite sizes were assigned
+
+The catalog reads the game's current combat-icon binding and both original poses.
+The game's [CPIC decoder](../../src/OpenGold.Formats/src/formats.cpp) preserves
+each image's pixel width and height; assembled character icons use the game's
+24 × 24 character compositor. One combat-art square is 24 × 24 original pixels.
+The larger dimension of the two poses determines the initial dropdown choice:
+24 × 24 → 1 × 1; 24 × 48 → 1 × 2 tall; 48 × 24 → 2 × 1 wide; and 48 × 48 →
+2 × 2. The saved choice is editable and is not overwritten on load.
+
+All 199 current monster, NPC, and extra-icon records had a decodable ready/action
+pair: 158 are 1 × 1, 20 are 1 × 2 tall, 19 are 2 × 1 wide, and 2 are 2 × 2.
+There are no records whose **displayed source sprite dimensions** could not be
+determined. Some creature-to-icon matches are labeled candidate or shared in
+the catalog, so those sizes describe the currently displayed icon rather than
+proving a unique historical icon for the creature.
+
+The game's [current battlefield renderer](../../src/OpenGoldBox/godot/scenes/combat_battlefield.gd)
+fits ordinary visible monster art inside one cell, regardless of source image
+dimensions. The dropdown records the **intended visual sprite footprint** for
+art preparation; it does not change game occupancy or rendering. The game code
+was read for this audit and was not modified.

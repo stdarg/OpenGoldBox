@@ -1,5 +1,6 @@
 {
   "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Gauntlets of Ogre Power, Chain armor +1, Long sword +1. Source wealth: 15 gp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:48 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

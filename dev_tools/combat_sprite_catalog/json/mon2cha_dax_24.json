@@ -1,5 +1,6 @@
 {
   "description": "A magic-user whose casting pose and recorded magical equipment should read clearly at combat scale. Source inventory: Ring Of Protection +2. Source wealth: 20 cp, 15 sp. Catalog additions: Staff.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

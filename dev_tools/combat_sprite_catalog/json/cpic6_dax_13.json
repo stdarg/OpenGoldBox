@@ -1,5 +1,6 @@
 {
   "description": "Shared humanoid combat artwork used for clerics, a thief and a fighter. Identical originals: CPIC3.DAX:13, CPIC5.DAX:13, CPIC7.DAX:13. Known users of this art: 1ST LVL CLERIC, 1ST LVL THIEF, 4TH LVL FIGHTER, LEVEL 5 CLERIC. No direct script reference found for this archive copy.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL art links and original CPIC ready/action records"
   ],

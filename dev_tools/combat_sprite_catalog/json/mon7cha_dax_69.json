@@ -1,5 +1,6 @@
 {
   "description": "A humanoid upper body joined to a spider abdomen and many long legs. Source inventory: Shield, Arrows, Composite long bow. Readied: Shield, Composite long bow. Source wealth: 7 pp, 3 gems.",
+  "sprite_size": {"height_squares": 1, "width_squares": 2},
   "description_sources": [
     "Original game MON7CHA.DAX:69 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

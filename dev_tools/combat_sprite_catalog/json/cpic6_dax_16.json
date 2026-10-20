@@ -1,5 +1,6 @@
 {
   "description": "Shared combat icon used by CAPTAIN, COMMANDANT. Gear depends on the creature; see its named record.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL art links and original CPIC ready/action records"
   ],

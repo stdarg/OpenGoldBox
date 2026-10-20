@@ -1,5 +1,6 @@
 {
   "description": "An incorporeal undead figure, with a drifting outline that separates it from a living combatant. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON2CHA.DAX:17 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

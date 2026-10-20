@@ -1,5 +1,6 @@
 {
   "description": "A towering hill giant with a rough, heavy build; the source inventory includes throwing stones. Source inventory: Boulder, Boulder. Source wealth: 2 cp, 4 sp, 3 ep, 2000 gp. Catalog additions: Club.",
+  "sprite_size": {"height_squares": 2, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

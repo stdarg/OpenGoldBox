@@ -1,5 +1,6 @@
 {
   "description": "A half-orc cleric who leads the cultists and slaves at the Temple of Bane near the wealthy district. Source inventory: Mace +1, Shield, Chain armor. Readied: Shield, Chain armor. Source wealth: no coins, gems, or jewelry recorded.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

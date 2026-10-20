@@ -1,5 +1,6 @@
 {
   "description": "A junior religious servant with a holy symbol and equipment suited to temple duty. Source inventory: Silver Holy Symbol Of Sune, Holy Water vial, Shield, Mace, Chain armor. Readied: Shield, Mace, Chain armor. Source wealth: 4 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

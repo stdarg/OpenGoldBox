@@ -1,5 +1,6 @@
 {
   "description": "The commandant of the Zhentil outpost, whose quarters are a key location in the Cluebook. Source inventory: Potion Extra Healing, Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning, Long sword +2. Readied: Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning. Source wealth: 18 gp, 6 pp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:50 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 22"

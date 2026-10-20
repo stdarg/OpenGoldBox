@@ -1,5 +1,6 @@
 {
   "description": "The power behind occupied Phlan and the final adversary at the Pool of Radiance beneath Valjevo Castle. Source inventory: Gauntlets of Ogre Power, Ring Of Protection +3, Long sword +5. Source wealth: 4 gp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:92 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 28"

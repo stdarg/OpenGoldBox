@@ -1,5 +1,6 @@
 {
   "description": "A nomad fighter from the camp beyond Phlan, prepared for travel and combat in the open. Source inventory: Arrows, Long bow, Short sword, Shield, Leather armor. Readied: Arrows, Short sword, Shield, Leather armor. Source wealth: 15 cp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:40 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

@@ -1,5 +1,6 @@
 {
   "description": "A vampire in black with blue highlights on its cape and trousers. Keep the pale face, fangs, and dramatic cape visible while it aims and fires the cataloged short bow.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

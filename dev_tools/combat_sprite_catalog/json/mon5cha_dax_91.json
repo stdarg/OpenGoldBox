@@ -1,5 +1,6 @@
 {
   "description": "An armored cleric prepared for both religious duty and close combat. Source inventory: Necklace of Missiles, Mace +3, Plate armor +1. Source wealth: 4 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:91 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

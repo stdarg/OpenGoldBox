@@ -1,5 +1,6 @@
 {
   "description": "A kobold commander with a stronger, more deliberate stance than the rank-and-file cave fighters. Source inventory: Bracers AC 6, Short sword, Shield, Studded armor. Readied: Studded armor. Source wealth: 32 cp, 2 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

@@ -1,5 +1,6 @@
 {
   "description": "An enormous, thick-limbed ogre with a crude club. Keep its chest partly visible as it raises the club to strike, then show the heavy blow near the end of its downward arc.",
+  "sprite_size": {"height_squares": 2, "width_squares": 1},
   "equipment": [
     {
       "id": "added_4277717173",

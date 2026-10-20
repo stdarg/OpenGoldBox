@@ -1,5 +1,6 @@
 {
   "description": "A human-height hobgoblin with broad shoulders, orange-brown skin, a flat face, sharp teeth, pointed ears, yellow eyes, and dark gray hair tied back. It wears scale mail and can fight with a long sword or short bow.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

@@ -19,6 +19,7 @@ var name_edit: LineEdit
 var monster_image: TextureRect
 var monster_source: Label
 var description_edit: TextEdit
+var sprite_size_choice: OptionButton
 var gear_rows: VBoxContainer
 var gear_source_hint: Label
 var regeneration_flag: CheckButton
@@ -176,6 +177,14 @@ func _art_for(index: int) -> Dictionary:
             art.basis = "ECL LOAD MONSTER icon shared by %d creature%s" % [row.linked_keys.size(), "s" if row.linked_keys.size() != 1 else ""]
         elif row.has("identical_art_keys"):
             art.basis = row.art_basis
+        var ready: Texture2D = catalog.monster_image(int(row.native_index), false)
+        var strike: Texture2D = catalog.monster_image(int(row.native_index), true)
+        if ready != null and strike != null:
+            var width: int = maxi(ready.get_width(), strike.get_width())
+            var height: int = maxi(ready.get_height(), strike.get_height())
+            if width > 0 and width <= 48 and height > 0 and height <= 48:
+                art["sprite_size"] = {"width_squares": 1 if width <= 24 else 2,
+                    "height_squares": 1 if height <= 24 else 2}
         return art
     var source: Dictionary = draft_records.get(row.key, {}).get("source", {})
     if source.is_empty():
@@ -284,6 +293,14 @@ func _build_ui() -> void:
     editor.custom_minimum_size.x = 400
     editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     columns.add_child(editor)
+    var sprite_size_label := Label.new()
+    sprite_size_label.text = "Sprite size (combat squares)"
+    editor.add_child(sprite_size_label)
+    sprite_size_choice = OptionButton.new()
+    for label in ["Unknown", "1 × 1", "1 × 2 tall", "2 × 1 wide", "2 × 2 (four squares)"]:
+        sprite_size_choice.add_item(label)
+    sprite_size_choice.tooltip_text = "Desired visual size of this sprite; Save monster data writes it to JSON."
+    editor.add_child(sprite_size_choice)
     var description_heading := Label.new()
     description_heading.text = "Description for new art"
     editor.add_child(description_heading)
@@ -352,6 +369,7 @@ func _rebuild_list() -> void:
         name_edit.text = ""
         variant_choice.clear()
         description_edit.text = ""
+        sprite_size_choice.select(0)
         gear_source_hint.text = ""
         for child in gear_rows.get_children():
             gear_rows.remove_child(child)
@@ -398,6 +416,7 @@ func _select_monster(list_index: int) -> void:
     else:
         gear_source_hint.text = "Original gear loaded from the matching MONnITM record."
     description_edit.text = record.description
+    sprite_size_choice.select(_sprite_size_index(record.get("sprite_size", null)))
     regeneration_flag.set_pressed_no_signal(bool(record.flag_for_regeneration))
     for child in gear_rows.get_children():
         gear_rows.remove_child(child)
@@ -464,6 +483,7 @@ func _store_draft() -> void:
     if selected < 0 or not draft_records.has(rows[selected].key): return
     var record: Dictionary = draft_records[rows[selected].key]
     record.description = description_edit.text
+    record.sprite_size = _sprite_size_for_index(sprite_size_choice.selected)
     record.flag_for_regeneration = regeneration_flag.button_pressed
     var equipment: Array = []
     for line in gear_rows.get_children():
@@ -483,6 +503,26 @@ func _store_draft() -> void:
         })
     record.equipment = equipment
     MonsterMetadata.rebuild_variants(record)
+
+
+func _sprite_size_for_index(index: int) -> Variant:
+    match index:
+        1: return {"width_squares": 1, "height_squares": 1}
+        2: return {"width_squares": 1, "height_squares": 2}
+        3: return {"width_squares": 2, "height_squares": 1}
+        4: return {"width_squares": 2, "height_squares": 2}
+    return null
+
+
+func _sprite_size_index(size: Variant) -> int:
+    if not size is Dictionary: return 0
+    var width: int = int(size.get("width_squares", 0))
+    var height: int = int(size.get("height_squares", 0))
+    if width == 1 and height == 1: return 1
+    if width == 1 and height == 2: return 2
+    if width == 2 and height == 1: return 3
+    if width == 2 and height == 2: return 4
+    return 0
 
 func _gear_changed() -> void:
     var previous := _selected_variant()
@@ -669,19 +709,23 @@ func _metadata_check() -> void:
     duplicate_loaded = MonsterMetadata.load_record(duplicate_row, _art_for(duplicate_index), metadata_root)
     assert(duplicate_loaded.data.name == duplicate_row.identified_name)
     var commandant_index: int = native_index_by_key["MON6CHA.DAX:50"]
-    var commandant_row: Dictionary = rows[commandant_index]
+    # Use distinct labels to exercise legacy-name migration regardless of the
+    # local START.EXE word table's level of item-name detail.
+    var commandant_row: Dictionary = rows[commandant_index].duplicate(true)
+    commandant_row.equipment[0].label = "Potion Extra Healing"
+    commandant_row.equipment[4].label = "Javelin of Lightning"
     var legacy: Dictionary = MonsterMetadata.new_record(commandant_row, _art_for(commandant_index))
     assert(legacy.equipment[0].name == "Potion Extra Healing")
     assert(legacy.equipment[4].name == "Javelin of Lightning")
     legacy.equipment[0].name = "Item type 71"
     legacy.equipment[4].name = "Item type 71"
-    legacy.description = "COMMANDANT. Gear: 2 × Item type 71, Ring of Fire Resistance, Shield +1, Plate armor +2, Long sword +2."
+    legacy.description = "COMMANDANT. Gear: %s." % MonsterMetadata._gear_summary(legacy.equipment)
     assert(MonsterMetadata.save_record(legacy, metadata_root).is_empty())
     var resolved: Dictionary = MonsterMetadata.load_record(commandant_row, _art_for(commandant_index), metadata_root)
     assert(resolved.error.is_empty())
     assert(resolved.data.equipment[0].name == "Potion Extra Healing")
     assert(resolved.data.equipment[4].name == "Javelin of Lightning")
-    assert(resolved.data.description == "COMMANDANT. Gear: Potion Extra Healing, Ring of Fire Resistance, Shield +1, Plate armor +2, Javelin of Lightning, Long sword +2.")
+    assert(resolved.data.description == "COMMANDANT. Gear: %s." % MonsterMetadata._gear_summary(resolved.data.equipment))
     var first: Dictionary = rows[0]
     var art: Dictionary = catalog.monster_art(0)
     var migration_row: Dictionary = first.duplicate(true)
@@ -704,6 +748,7 @@ func _metadata_check() -> void:
     assert(migrated.data.equipment[2].weapon_role == "two_hand")
     assert(migrated.data.variants.size() == 3)
     var sample: Dictionary = MonsterMetadata.new_record(first, art)
+    sample.sprite_size = {"width_squares": 2, "height_squares": 1}
     sample.equipment = [
         {"id": "w1", "kind": "weapon", "weapon_role": "one_hand", "name": "Sword", "source_type": 36, "readied": true},
         {"id": "w2", "kind": "weapon", "weapon_role": "ranged", "name": "Long bow", "source_type": 43, "readied": false},
@@ -725,6 +770,7 @@ func _metadata_check() -> void:
     var loaded: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
     assert(loaded.error.is_empty())
     assert(loaded.data.description == sample.description and loaded.data.flag_for_regeneration)
+    assert(_sprite_size_index(loaded.data.sprite_size) == 3)
     assert(loaded.data.equipment.size() == 6 and loaded.data.variants.size() == 4)
     assert(loaded.data.variants[2].id == ranged_id)
     sample.equipment = [sample.equipment[0], sample.equipment[5]]
@@ -742,14 +788,17 @@ func _metadata_check() -> void:
     # Draft changes survive switching records; the selector follows edited gear.
     _select_monster(0)
     description_edit.text = "Unsaved draft"
+    sprite_size_choice.select(2)
     regeneration_flag.button_pressed = true
     _select_monster(1)
     _select_monster(0)
     assert(description_edit.text == "Unsaved draft" and regeneration_flag.button_pressed)
+    assert(sprite_size_choice.selected == 2)
     save_button.pressed.emit()
     var saved_draft: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
     assert(saved_draft.error.is_empty())
     assert(saved_draft.data.description == "Unsaved draft" and saved_draft.data.flag_for_regeneration)
+    assert(_sprite_size_index(saved_draft.data.sprite_size) == 2)
     _select_monster(1)
     draft_records[first.key] = loaded.data
     _select_monster(0)
@@ -837,6 +886,7 @@ func _metadata_check() -> void:
     var reloaded: Dictionary = MonsterMetadata.load_record(rows[selected], _art_for(selected), metadata_root)
     assert(reloaded.error.is_empty() and reloaded.data.name == "Copied test monster")
     assert(reloaded.data.source.origin_key == first.key and reloaded.data.equipment.size() == 5)
+    assert(_sprite_size_index(reloaded.data.sprite_size) == 3)
     assert(reloaded.data.wealth == first.wealth)
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
@@ -906,6 +956,8 @@ func _catalog_check() -> void:
             assert(not str(item.label).begins_with("Item type "))
         var metadata: Dictionary = MonsterMetadata.load_record(row, _art_for(index), metadata_root)
         assert(metadata.error.is_empty())
+        assert(metadata.data.has("sprite_size") and metadata.data.sprite_size != null)
+        assert(MonsterMetadata.valid_sprite_size(metadata.data.sprite_size))
         assert(metadata.data.wealth == row.get("wealth", {}))
         assert(str(metadata.data.description).length() >= 80)
         for item in metadata.data.equipment:

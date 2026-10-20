@@ -1,5 +1,6 @@
 {
   "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. The original template records no carried items. Source wealth: 5 cp, 2 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:101 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

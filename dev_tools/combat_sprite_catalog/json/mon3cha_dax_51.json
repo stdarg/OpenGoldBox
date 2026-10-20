@@ -1,5 +1,6 @@
 {
   "description": "A mobile thief whose lighter kit and guarded stance distinguish this template from armored soldiers. Source inventory: Leather armor, Long sword. Source wealth: 6 gp. Catalog additions: Leather armor +1, Long sword +1.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

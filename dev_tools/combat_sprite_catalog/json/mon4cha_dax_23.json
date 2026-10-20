@@ -1,5 +1,6 @@
 {
   "description": "A dangerous humanoid undead figure; use a composed, predatory stance rather than a mindless shuffle. Source inventory: Short bow. Source wealth: no coins, gems, or jewelry recorded.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:23 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

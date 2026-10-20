@@ -1,5 +1,6 @@
 {
   "description": "A wrapped, preserved undead body with a stiff, weighty stance and a clearly bandaged silhouette. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:114 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

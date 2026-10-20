@@ -38,6 +38,13 @@ the monster name, original creature and art source files/records, description,
 regeneration flag, equipment, and image variants. Unsaved edits remain available
 while switching between records during the current session.
 
+Set **Sprite size (combat squares)** to the intended visual footprint and save
+it with the other monster data. The dropdown offers Unknown, 1 × 1, 1 × 2 tall,
+2 × 1 wide, and 2 × 2. JSON stores the choice in `sprite_size` as
+`width_squares` and `height_squares`; Unknown stores `null`. The 199 built-in
+records are initialized from the dimensions of the game's currently displayed
+original ready/action icons. See the [size audit and renderer distinction](../docs/combat-sprite-catalog.md#how-sprite-sizes-were-assigned).
+
 Every built-in monster/NPC template and extra combat-icon row has a saved JSON
 record. Descriptions include the original inventory and wealth where a creature
 record exists. `wealth` preserves the seven original character fields in order:

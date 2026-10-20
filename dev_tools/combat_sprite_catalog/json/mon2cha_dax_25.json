@@ -1,5 +1,6 @@
 {
   "description": "The troubled man found in a corner of Mendor’s Library; the Cluebook advises speaking with him. Current catalog equipment: Great sword, scale armor. Source wealth: 2 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "added_1868544393",

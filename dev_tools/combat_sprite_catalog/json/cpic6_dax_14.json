@@ -1,5 +1,6 @@
 {
   "description": "A named magic-user protected by enchanted bracers and a ring against fire. This is the script-linked icon for MON6CHA.DAX:86. Source inventory: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3. Source wealth: 15 gp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL link to MON6CHA.DAX:86",
     "Original game inventory and wealth of linked creature"

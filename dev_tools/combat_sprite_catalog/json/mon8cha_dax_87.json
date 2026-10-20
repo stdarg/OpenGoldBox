@@ -1,5 +1,6 @@
 {
   "description": "An armed envoy serving the castle’s hostile leadership; its armor and blade distinguish this combatant. Source inventory: Two-handed sword +2, Plate armor. Source wealth: 5 gp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON8CHA.DAX:87 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

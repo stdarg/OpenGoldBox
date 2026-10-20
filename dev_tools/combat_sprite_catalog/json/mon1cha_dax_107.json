@@ -1,5 +1,6 @@
 {
   "description": "Dirten is an experienced 5th level human Cleric, with a mace, chain armor and wearing a holy symbol of his god, Tyr.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON1CHA.DAX:107 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 11"

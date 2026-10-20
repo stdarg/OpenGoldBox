@@ -1,5 +1,6 @@
 {
   "description": "A small, wiry kobold suited to cramped tunnels and ambushes; keep its head and hands readable at combat scale. Source inventory: Short sword. Source wealth: 16 cp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:0 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

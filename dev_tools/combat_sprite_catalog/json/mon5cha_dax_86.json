@@ -1,5 +1,6 @@
 {
   "description": "A named magic-user protected by enchanted bracers and a ring against fire. Source inventory: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3. Source wealth: 15 gp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:86 and matching MONnITM inventory",
     "Visual art direction inferred from original creature identity; no additional game inventory assumed"

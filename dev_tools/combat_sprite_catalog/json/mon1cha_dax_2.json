@@ -1,5 +1,6 @@
 {
   "description": "A goblin guard in a compact defensive stance, ready to hold a doorway or protect its band. Source inventory: Short sword, Shield, Studded armor. Readied: Shield, Studded armor. Source wealth: 18 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

@@ -1,5 +1,6 @@
 {
   "description": "A seasoned warrior with a practical stance and a full set of martial equipment. Source inventory: Shield, Long bow, Arrows, Battle axe, Banded armor. Readied: Shield, Arrows, Battle axe, Banded armor. Source wealth: 1 sp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

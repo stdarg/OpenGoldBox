@@ -1,5 +1,6 @@
 {
   "description": "A kobold leader with more ornate kit than its followers. Its shield bears a clan mark; the short sword and short bow each have their own combat setup over studded armor.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
       "id": "item_000",

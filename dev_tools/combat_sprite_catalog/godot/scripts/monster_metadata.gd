@@ -67,6 +67,16 @@ static func _wealth_values(value: Dictionary) -> Dictionary:
     return result
 
 
+static func valid_sprite_size(value: Variant) -> bool:
+    return value == null or (value is Dictionary and value.size() == 2 and \
+            _valid_square_count(value.get("width_squares", null)) and \
+            _valid_square_count(value.get("height_squares", null)))
+
+
+static func _valid_square_count(value: Variant) -> bool:
+    return typeof(value) in [TYPE_INT, TYPE_FLOAT] and float(value) in [1.0, 2.0]
+
+
 static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
     var equipment: Array = []
     for index in range(row.equipment.size()):
@@ -95,6 +105,7 @@ static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
             "linked_creature_keys": row.get("linked_keys", []),
         },
         "description": str(row.get("art_description", "")),
+        "sprite_size": art.get("sprite_size", null) if valid_sprite_size(art.get("sprite_size", null)) else null,
         "wealth": _wealth_values(row.get("wealth", {})),
         "flag_for_regeneration": false,
         "preview_fallback_variant": "",
@@ -233,6 +244,10 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
     if not str(row.key).begins_with("CUSTOM:"):
         parsed["source"] = new_record(row, art).source
     parsed["description"] = str(parsed.get("description", ""))
+    var sprite_size: Variant = parsed.get("sprite_size", art.get("sprite_size", null))
+    if not valid_sprite_size(sprite_size):
+        return {"data": new_record(row, art), "error": "Invalid sprite size in %s" % path}
+    parsed["sprite_size"] = sprite_size
     if parsed.description.ends_with(original_summary + ".") and \
             (parsed.description.contains(". Gear: ") or parsed.description.contains(". Original gear: ")):
         parsed["description"] = parsed.description.trim_suffix(original_summary + ".") + \

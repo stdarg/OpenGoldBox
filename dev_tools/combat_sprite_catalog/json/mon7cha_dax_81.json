@@ -1,5 +1,6 @@
 {
   "description": "The evil sorcerer on Sorcerer’s Island whose experiments created mutant lizard men. Source inventory: Potion of Speed, Wand of Paralyzation, Potion of Healing, Bracers AC 4. Readied: Wand of Paralyzation, Bracers AC 4. Source wealth: 8 pp.",
+  "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:81 and matching MONnITM inventory",
     "GameDocs/Cluebook.pdf, PDF page 19"
