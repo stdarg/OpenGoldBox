@@ -1385,12 +1385,15 @@ The user chose how the original's scrolls
   - **Protection From Normal Missiles**: for an hour, cast in camp or a fight
     on a creature within 5 feet, an attack from more than 5 feet away with
     ammunition, or a thrown weapon, without magic misses.
-  The stand-ins and Enhance Ability are on no class list: only scrolls hold
-  them (a default awaiting the user's answer).
+  The stand-ins are on the class lists of the original's casters: Friends,
+  Read Magic and Protection From Normal Missiles are Wizard spells, Find Traps
+  and Snake Charm Cleric spells, which Wizards learn and copy and Clerics
+  prepare (the user, 2026-10-20). Enhance Ability stays on no class list, as
+  DM-1 removed it; only scrolls hold it.
 - **Readers as the original's**: arcane scrolls (the original's magic-user
   scrolls) for Bards, Sorcerers, Warlocks and Wizards; divine scrolls (cleric
-  scrolls) for Clerics, Druids, Paladins and Rangers (Druids and Rangers are a
-  default awaiting the user's answer). A reader casts any spell
+  scrolls) for Clerics, Druids, Paladins and Rangers (the user, 2026-10-20). A
+  reader casts any spell
   on a scroll of its kind, whatever the spell's level, with no check, as in
   the original.
 - **The SRD's scroll DC**: 13 for spells of level 1 or 2, 15 for 3 or 4, 17 for
@@ -1409,5 +1412,13 @@ The user chose how the original's scrolls
   new item (the user, 2026-10-20); the general store sells it at 50 gp a
   bottle, one bottle for each spell level. Copying erases the spell from the
   scroll, as in the original.
-- **The computer reads no scroll**: Quick members and monsters leave scrolls
-  alone (a default awaiting the user's answer).
+- **Use Magic Device** (Thief 13), as the SRD's: the Thief reads any scroll,
+  with Intelligence as its spellcasting ability. A spell above level 1 needs an
+  Intelligence (Arcana) check, DC 10 + the spell's level; on a failure the
+  spell is lost from the scroll (the SRD's single-spell scroll disintegrates).
+- **Quick members read scrolls** (the user, 2026-10-20), whether or not Quick
+  magic is on, as they use their other magic items: a healing spell for a
+  creature at half its Hit Points or lower, a spell at an enemy, an area only
+  where no ally can be caught. Spells that help an ally otherwise wait for the
+  player. Monsters carry no items into a fight yet
+  ([#268](https://github.com/stdarg/OpenGold/issues/268)).

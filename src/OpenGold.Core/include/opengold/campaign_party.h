@@ -298,8 +298,9 @@ class CampaignParty
                                                                 std::uint64_t item) const;
     // Reads one of scroll_actions() on `target`, which a spell for the whole
     // party ignores; the spell leaves the scroll, and a scroll with none left
-    // is gone. Atomic: on failure nothing changes.
-    void read_scroll(MemberId reader, std::uint64_t item, MemberId target,
+    // is gone. False when the reading failed (Use Magic Device's Arcana check)
+    // and the spell was lost to no effect. Atomic: on a throw nothing changes.
+    bool read_scroll(MemberId reader, std::uint64_t item, MemberId target,
                      std::string_view action);
     // A spell on a scroll the member can copy into its spellbook now: its place
     // on the scroll and its level.

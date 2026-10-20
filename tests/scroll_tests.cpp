@@ -75,6 +75,23 @@ Character fighter()
     return Character(*srd5::character_rules(), draft("fighter", "soldier"), {});
 }
 
+// A Thief of the given level: Use Magic Device from 13.
+Character thief(int level)
+{
+    // Without Arcana, the check is Intelligence alone, so it can fail.
+    auto d = draft("rogue", "soldier");
+    d.training = {{"class:rogue", {"acrobatics", "stealth", "perception", "investigation"}},
+                  {"class:rogue:expertise", {"stealth", "perception"}}};
+    Character hero(*srd5::character_rules(), d, {});
+    const auto rules = module();
+    VitalState life{hero.sheet().hit_points, false, {}};
+    while (hero.sheet().level < level)
+    {
+        check(hero.advance(*rules, life), "The Rogue advances");
+    }
+    return hero;
+}
+
 // An original scroll: magic-user (61) or cleric (62), with spell numbers.
 por::Equipment scroll(std::uint8_t type, std::array<std::uint8_t, 3> spells)
 {
@@ -381,16 +398,54 @@ void copying()
     check(has(restored), "A save keeps the copied spell");
 }
 
-// The computer reads no scroll.
+// Use Magic Device: a level-13 Thief reads any scroll; a spell above level 1
+// needs an Arcana check, DC 10 + its level, or it is lost.
+void use_magic_device()
+{
+    const auto rules = module();
+    check(!offered(*reader_turn(*rules, thief(12), "scroll:divine:bless"), "bless_scroll"),
+          "A level-12 Thief reads no scroll");
+    auto low = reader_turn(*rules, thief(13), "scroll:divine:bless");
+    check(offered(*low, "bless_scroll"), "A level-13 Thief reads a divine scroll");
+    bool cast = false, lost = false;
+    for (std::uint64_t seed = 1; seed < 60 && !(cast && lost); ++seed)
+    {
+        Participant p{1, "campaign-character", "Reader", Side::party, {1, 1},
+                      rules->character_profile(thief(13).sheet(), std::vector<std::string>{}).data};
+        p.inventory.push_back({7, "scroll:arcane:fireball", 1});
+        auto c = rules->create(
+            {{12, 6, std::vector<Terrain>(72)}, {p, {2, "vanguard", "Foe", Side::opposition, {6, 1}}}},
+            seed);
+        test::keep_initiative(*c);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
+            (void)submit(*c, "end");
+        }
+        if (c->snapshot().actor != 1 || !aim_and_cast(*c, "fireball_scroll", {6, 1}))
+        {
+            continue;
+        }
+        check(test::logged(*c, "Arcana check for the scroll") && test::logged(*c, "vs DC 13") &&
+                  uses_left(*c, 7) == 0,
+              "Fireball calls for an Arcana check, DC 13, and leaves the scroll either way");
+        const bool failed = test::logged(*c, "The Fireball on the scroll is lost.");
+        lost |= failed;
+        cast |= !failed && test::logged(*c, "DC 15");
+    }
+    check(cast && lost, "The check casts the spell or loses it");
+}
+
+// Quick members read scrolls, whether or not Quick magic is on, as they use
+// other magic items: here a scroll's Magic Missile at the foe.
 void quick()
 {
     const auto rules = module();
-    auto c = reader_turn(*rules, wizard(), "scroll:arcane:magic_missile,fireball");
-    for (unsigned n = 0; n < 3; ++n)
-    {
-        check(choose_quick_command(*c, true).verb.find("_scroll") == std::string::npos,
-              "Quick never reads a scroll");
-    }
+    auto c = reader_turn(*rules, wizard(), "scroll:arcane:magic_missile");
+    check(choose_quick_command(*c, false).verb == "magic_missile_scroll",
+          "Quick reads a scroll's spell at an enemy");
+    auto healing = reader_turn(*rules, cleric(), "scroll:divine:cure_wounds");
+    check(choose_quick_command(*healing, false).verb != "cure_wounds_scroll",
+          "Quick keeps a healing scroll while no one is hurt");
 }
 } // namespace
 
@@ -403,6 +458,7 @@ int main()
         camp();
         stand_ins();
         copying();
+        use_magic_device();
         quick();
         std::cout << "Scroll tests passed\n";
         return 0;
@@ -413,3 +469,4 @@ int main()
         return 1;
     }
 }
+

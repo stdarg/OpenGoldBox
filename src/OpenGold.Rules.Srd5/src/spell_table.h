@@ -2991,9 +2991,9 @@ inline constexpr std::array spell_table{
              .requires_effect_capacity = true,
              .save = Ability::constitution,
              .rider = Rider::paralysis_ray},
-    // Spells only the original's scrolls hold (MAGIC-6), on no class list.
-    // SRD 5.2.1 Enhance Ability, for the original's Strength: Advantage on
-    // Strength checks, the only ability checks a fight calls for.
+    // Spells from the original's scrolls (MAGIC-6). SRD 5.2.1 Enhance Ability,
+    // for the original's Strength, on no class list (DM-1 removed it):
+    // Advantage on Strength checks, the only ability checks a fight calls for.
     SpellDef{.id = "enhance_ability",
              .label = "Enhance Ability (Strength)",
              .level = 2,

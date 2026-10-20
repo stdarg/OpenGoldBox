@@ -552,17 +552,17 @@ void behaviour()
             row.rider == Rider::heat_metal || row.rider == Rider::abjure_foes ||
             row.rider == Rider::remove_curse || row.rider == Rider::fire_shield ||
             row.rider == Rider::polymorph || row.rider == Rider::conjure_minor_elementals ||
+            // Snake Charm is offered only beside a snake or scorpion, and the
+            // probes' Wizard books stop short of Protection From Normal
+            // Missiles' level 3; scroll_tests cover both (MAGIC-6).
+            row.rider == Rider::snake_charm || row.rider == Rider::missile_ward ||
             // Potions, dust and the paralysis ray are items' effects, never on
-            // a class list (MAGIC-3); neither are the spells only scrolls hold
-            // (MAGIC-6).
+            // a class list (MAGIC-3); neither is Enhance Ability, which only
+            // scrolls hold (MAGIC-6).
             std::string_view(row.id).starts_with("potion_") ||
             row.id == std::string_view("dust_of_disappearance") ||
             row.id == std::string_view("wand_of_paralysis") ||
-            row.id == std::string_view("enhance_ability") ||
-            row.id == std::string_view("friends") || row.id == std::string_view("read_magic") ||
-            row.id == std::string_view("find_traps") ||
-            row.id == std::string_view("snake_charm") ||
-            row.id == std::string_view("protection_from_normal_missiles"))
+            row.id == std::string_view("enhance_ability"))
         {
             continue;
         }
@@ -684,3 +684,4 @@ int main()
     std::cout << "spell_table_tests: ok\n";
     return 0;
 }
+

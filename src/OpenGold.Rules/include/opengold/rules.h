@@ -891,12 +891,13 @@ class RulesModule
     scroll_actions(const CharacterSheet &, const VitalState &, std::string_view scroll) const = 0;
     // Reads one of scroll_actions() as use_camp_action() or
     // use_party_camp_action() uses a camp action; the campaign erases the spell
-    // from the scroll.
-    virtual void use_scroll(const CharacterSheet &user, VitalState &user_state,
+    // from the scroll. False when the reading failed and did nothing, as Use
+    // Magic Device's Arcana check can.
+    [[nodiscard]] virtual bool use_scroll(const CharacterSheet &user, VitalState &user_state,
                             const CharacterSheet &target, VitalState &target_state,
                             std::string_view scroll, std::string_view action,
                             RandomState &random_state) const = 0;
-    virtual void use_party_scroll(const CharacterSheet &user, VitalState &user_state,
+    [[nodiscard]] virtual bool use_party_scroll(const CharacterSheet &user, VitalState &user_state,
                                   std::span<CampTarget> party, std::string_view scroll,
                                   std::string_view action, RandomState &random_state) const = 0;
     // The spell's level when the member can copy it into a spellbook (MAGIC-6):

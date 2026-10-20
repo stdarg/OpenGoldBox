@@ -291,7 +291,15 @@ constexpr std::array spells{
     Spell{"identify", "Identify", 1, 0, bard_list | wizard_list},
     Spell{"detect_magic", "Detect Magic", 1, 0,
           bard_list | cleric_list | druid_list | paladin_list | ranger_list | sorcerer_list |
-              warlock_list | wizard_list}};
+              warlock_list | wizard_list},
+    // Stand-ins for the original's spells SRD 5.2.1 lacks (MAGIC-6), on the
+    // lists of the classes that cast them there: magic-users' as Wizard
+    // spells, clerics' as Cleric spells.
+    Spell{"friends", "Friends", 1, 0, wizard_list},
+    Spell{"read_magic", "Read Magic", 1, 0, wizard_list},
+    Spell{"protection_from_normal_missiles", "Protection From Normal Missiles", 3, 0, wizard_list},
+    Spell{"find_traps", "Find Traps", 2, 0, cleric_list},
+    Spell{"snake_charm", "Snake Charm", 2, 0, cleric_list}};
 
 // A class that prepares spells from its whole class list instead of a
 // spellbook. Arrays are indexed by class level minus one (levels 1-4).

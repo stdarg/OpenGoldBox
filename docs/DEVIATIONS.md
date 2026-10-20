@@ -65,7 +65,8 @@ Add an entry whenever a new departure is decided.
   stand-ins for the five SRD 5.2.1 lacks, cast at the SRD scroll's DC. In the
   original a scroll had to be readied in both hands; here a spell is read
   from the inventory or the Items menu. Druids and Rangers read cleric
-  scrolls. Copying a spell into a Wizard's spellbook, free in the original,
+  scrolls. The original's magic-user and cleric spells SRD 5.2.1 lacks are
+  Wizard and Cleric spells as stand-ins. Copying a spell into a Wizard's spellbook, free in the original,
   takes two hours and a 50 gp bottle of Magic Ink, a new item, for each spell
   level. Read Magic reveals all the caster's scrolls at once instead of each
   scroll opened while it lasts.

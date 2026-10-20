@@ -898,29 +898,14 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
                                    const std::vector<Command> &offered);
 } // namespace
 
-namespace
-{
-// The computer reads no scroll: a scroll's spells are the player's to spend
-// (MAGIC-6).
-std::vector<Command> without_scrolls(std::vector<Command> commands)
-{
-    std::erase_if(commands,
-                  [](const auto &command)
-                  {
-                      return command.verb.find("_scroll") != std::string::npos;
-                  });
-    return commands;
-}
-} // namespace
-
 Command choose_demo_command(const CombatSession &session)
 {
-    return choose_from(session.snapshot(), without_scrolls(session.legal_commands()));
+    return choose_from(session.snapshot(), session.legal_commands());
 }
 
 Command choose_demo_command(const rules::Snapshot &state, const std::vector<Command> &offered)
 {
-    return choose_from(state, without_scrolls(offered));
+    return choose_from(state, offered);
 }
 
 namespace
@@ -1853,9 +1838,12 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
 
 namespace
 {
+// A carried item's use: a potion, wand, missile or dust (MAGIC-3), or a spell
+// read from a scroll (MAGIC-6).
 bool item_verb(std::string_view verb)
 {
-    return verb.ends_with("_item") || verb.ends_with("_item_bonus");
+    return verb.ends_with("_item") || verb.ends_with("_item_bonus") ||
+           verb.find("_scroll") != std::string_view::npos;
 }
 
 // Whether an item's area aimed at `center` might catch an ally, judged before
@@ -1893,9 +1881,9 @@ bool area_risks_ally(const rules::Snapshot &state, const CombatantView &active,
 
 // A magic item a Quick character uses now (MAGIC-3), as the original's did:
 // healing for a creature at half its Hit Points or lower, Speed or Giant
-// Strength once, a wand at an enemy (Paralysis at one not yet Paralyzed), and
-// an area only where no ally can be caught. Dust of Disappearance is left to
-// players: attacking ends its Invisibility.
+// Strength once, a wand at an enemy (Paralysis at one not yet Paralyzed), a
+// scroll's spell (MAGIC-6), and an area only where no ally can be caught. Dust
+// of Disappearance is left to players: attacking ends its Invisibility.
 std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
                                    const std::vector<Command> &offered)
 {
@@ -1967,6 +1955,21 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
         }
         const auto *target = unit(command.target);
         const auto verb = std::string_view(command.verb);
+        // A scroll's spell (MAGIC-6): healing for a creature at half its Hit
+        // Points or lower, a spell at an enemy, or an area only where no ally
+        // can be caught; spells that help an ally otherwise wait for the
+        // player.
+        if (verb.find("_scroll") != std::string_view::npos && !command.aims_area)
+        {
+            const bool heals = verb.starts_with("cure_wounds") || verb.starts_with("healing_word");
+            if (heals ? target && target->side == active.side &&
+                            target->hit_points * 2 <= target->max_hit_points
+                      : target && target->side != active.side && target->conscious)
+            {
+                return command;
+            }
+            continue;
+        }
         if (verb.starts_with("potion_of_healing") || verb.starts_with("potion_of_greater_healing"))
         {
             if (target && target->hit_points * 2 <= target->max_hit_points)
@@ -2053,7 +2056,7 @@ Command choose_quick_command(const CombatSession &session, bool magic)
         return choose_demo_command(session);
     }
     const auto state = session.snapshot();
-    return choose_from(state, without_spells(state, without_scrolls(session.legal_commands())));
+    return choose_from(state, without_spells(state, session.legal_commands()));
 }
 
 Command choose_flee_command(const CombatSession &session)

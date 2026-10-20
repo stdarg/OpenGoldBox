@@ -351,8 +351,11 @@ records the decisions.
   `src/OpenGold.Rules/include/opengold/scroll_key.h`. A spell number above 56,
   which random treasure can roll, holds nothing.
   - An arcane scroll is read by a Bard, Sorcerer, Warlock or Wizard, a divine
-    one by a Cleric, Druid, Paladin or Ranger, once it is identified; the
-    inventory lists an identified scroll's spells.
+    one by a Cleric, Druid, Paladin or Ranger, and any by a level-13 Thief
+    (Use Magic Device, with an Arcana check above level 1), once it is
+    identified; the inventory lists an identified scroll's spells.
+  - Quick members read a scroll's spell at an enemy, or to heal a creature at
+    half its Hit Points or lower.
   - In a fight a spell is read from the Items menu ("Fireball (scroll)"), with
     the SRD scroll's DC. Outside combat, the inventory's Use opens the Cast
     menu with the spells that work there, and, for a Wizard, "Copy … into the

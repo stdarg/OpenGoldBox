@@ -2084,7 +2084,7 @@ void keep_camp_spell(PartyState &state, PartyMember &caster, PartyMember &patien
 }
 } // namespace
 
-void CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId target,
+bool CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId target,
                                 std::string_view action)
 {
     editable();
@@ -2110,6 +2110,7 @@ void CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId targ
     auto &reader = member_in(next, user);
     const auto key = rules_definition(reader, reader.character.inventory().find(item)->get());
     auto &patient = member_in(next, chosen->whole_party ? user : target);
+    bool cast = false;
     if (chosen->whole_party)
     {
         std::vector<rules::CampTarget> party;
@@ -2121,19 +2122,24 @@ void CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId targ
                 party.push_back({m.character.sheet(), m.vitals});
             }
         }
-        rules_->use_party_scroll(reader.character.sheet(), reader.vitals, party, key, action,
-                                 next.random_state);
+        cast = rules_->use_party_scroll(reader.character.sheet(), reader.vitals, party, key,
+                                        action, next.random_state);
     }
     else
     {
-        rules_->use_scroll(reader.character.sheet(), reader.vitals, patient.character.sheet(),
-                           patient.vitals, key, action, next.random_state);
+        cast = rules_->use_scroll(reader.character.sheet(), reader.vitals,
+                                  patient.character.sheet(), patient.vitals, key, action,
+                                  next.random_state);
     }
-    keep_camp_spell(next, reader, patient, action.substr(2));
+    if (cast)
+    {
+        keep_camp_spell(next, reader, patient, action.substr(2));
+    }
     // The action's id begins with the spell's place on the scroll.
     const auto spells = rules::parse_scroll_key(key)->spells.size();
     keep_scroll_spells(reader, item, ((1U << spells) - 1) & ~(1U << (action[0] - '0')));
     state_ = std::move(next);
+    return cast;
 }
 
 std::vector<CampaignParty::ScrollCopy> CampaignParty::copyable_spells(MemberId id,

@@ -50,8 +50,9 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Withdraw's
   move comes after the other effect.
 - **Use Magic Device:** a 6 on 1d6 keeps a wand's spent charge (MAGIC-3). No
-  item needs attunement (MAGIC-4). Its Spell Scroll rule is not built: a
-  Thief reads no scroll
+  item needs attunement (MAGIC-4). The Thief reads any scroll with
+  Intelligence; a spell above level 1 first needs an Arcana check, DC 10 + its
+  level, or it is lost
   ([MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls)).
 - **Fast Hands:** uses a wand, the Necklace of Missiles or Dust of
   Disappearance as a Bonus Action

@@ -838,9 +838,11 @@ void RolfTourView::read_or_copy_scroll(const std::string &id, opengold::MemberId
     }
     else
     {
-        campaign_->read_scroll(caster, *scroll_item_, patient, id);
-        result = i18n::format(N_("{name} reads {spell} from the scroll."),
-                              {{"name", name}, {"spell", label}});
+        result = campaign_->read_scroll(caster, *scroll_item_, patient, id)
+                     ? i18n::format(N_("{name} reads {spell} from the scroll."),
+                                    {{"name", name}, {"spell", label}})
+                     : i18n::format(N_("{name} fails to read {spell}, and it is lost."),
+                                    {{"name", name}, {"spell", label}});
     }
     refresh_cast();
     refresh();

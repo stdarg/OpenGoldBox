@@ -592,9 +592,10 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         return scroll->unidentified ? "Identify the scroll to learn its spells."
                : scroll->arcane     ? "An arcane scroll: a Bard, Sorcerer, Warlock or Wizard reads "
-                                      "its spells, and a Wizard can copy them."
+                                      "its spells, and a Wizard can copy them. A level-13 Thief "
+                                      "reads any scroll."
                                     : "A divine scroll: a Cleric, Druid, Paladin or Ranger reads "
-                                      "its spells.";
+                                      "its spells. A level-13 Thief reads any scroll.";
     }
     // An unidentified worn item does not say what it does (#262).
     if (const auto *worn = detail::worn_item(item))
@@ -1578,7 +1579,7 @@ struct Definition
     // Rogue levels 5-10.
     bool cunning_strike{}, uncanny_dodge{}, evasion{}, supreme_sneak{};
     bool fast_hands{}; // Thief: a magic item used as a Bonus Action (MAGIC-3)
-    bool use_magic_device{}; // Thief 13: a 6 on 1d6 keeps a spent charge
+    bool use_magic_device{}; // Thief 13: a 6 on 1d6 keeps a spent charge; reads any scroll
     // Monk levels 5-9: the Martial Arts die's sides, Stunning Strike and
     // Wholeness of Body's uses per Long Rest.
     int martial_die{6}, wholeness{}, wisdom{};
@@ -1607,6 +1608,7 @@ struct Definition
     int medicine{};
     int athletics{};     // a character's Strength (Athletics) check bonus
     int investigation{}; // and Intelligence (Investigation) check bonus
+    int arcana{};        // and Intelligence (Arcana), for Use Magic Device's scrolls
     // Wisdom (Perception) and Dexterity (Stealth) check bonuses; a creature's
     // Perception comes from its stat block.
     int perception{}, stealth{};
@@ -2375,7 +2377,8 @@ std::optional<ScrollEntry> readable_scroll(const Actor &a, const detail::SpellDe
     {
         const auto scroll = rules::parse_scroll_key(carried.definition);
         if (!scroll || scroll->unidentified ||
-            !(scroll->arcane ? d.reads_arcane_scrolls : d.reads_divine_scrolls))
+            (!(scroll->arcane ? d.reads_arcane_scrolls : d.reads_divine_scrolls) &&
+             !d.use_magic_device))
         {
             continue;
         }
@@ -2400,6 +2403,14 @@ std::optional<ScrollEntry> readable_scroll(const Actor &a, const detail::SpellDe
 
 // SRD 5.2.1's Spell Scroll: the save DC by the spell's level; its attack
 // bonus is the DC less 8.
+// Use Magic Device (MAGIC-6, SRD 5.2.1): a Thief who reads scrolls only
+// through it first makes an Intelligence (Arcana) check, DC 10 + the level,
+// for a spell above level 1. A failure loses the spell.
+bool needs_arcana_check(const Definition &d, unsigned level)
+{
+    return d.use_magic_device && !d.reads_arcane_scrolls && !d.reads_divine_scrolls && level > 1;
+}
+
 int scroll_dc(unsigned level)
 {
     return level <= 2 ? 13 : level <= 4 ? 15 : level <= 6 ? 17 : level <= 8 ? 18 : 19;
@@ -3567,6 +3578,12 @@ character_definition(std::string_view bytes,
                                        return skill.id == "investigation";
                                    })
                           ->bonus;
+    d.arcana = std::find_if(training.skills.begin(), training.skills.end(),
+                            [](const auto &skill)
+                            {
+                                return skill.id == "arcana";
+                            })
+                   ->bonus;
     d.perception = std::find_if(training.skills.begin(), training.skills.end(),
                                 [](const auto &skill)
                                 {
@@ -5343,6 +5360,8 @@ class Session final : public CombatSession
     // Use Magic Device's d6 for a charge.
     void log_item_use(Actor &a, const detail::SpellDef &spell);
     void log_scroll_use(const Actor &a, const detail::SpellDef &spell);
+    // Use Magic Device's Arcana check for a scroll's spell: true when it fails.
+    bool scroll_check_fails(const Actor &a, const detail::SpellDef &spell, std::string_view verb);
     // Snake Charm (MAGIC-6): the snakes and scorpions it charms.
     void charm_snakes(Actor &a);
     [[nodiscard]] bool snakes_to_charm(const Actor &a) const;
@@ -8966,6 +8985,11 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     if (from_scroll)
     {
         log_scroll_use(a, spell);
+        if (scroll_check_fails(a, spell, verb))
+        {
+            pay_for_spell(a, verb, spell);
+            return;
+        }
     }
     // Counterspell: a stopped spell keeps its slot.
     if (!item_effect(verb) && (countered(a) || slowed_spell_fails(a, verb, spell)))
@@ -15961,6 +15985,31 @@ void Session::log_scroll_use(const Actor &a, const detail::SpellDef &spell)
          {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
 }
 
+bool Session::scroll_check_fails(const Actor &a, const detail::SpellDef &spell,
+                                 std::string_view verb)
+{
+    const unsigned level = slot_level_of(verb, spell);
+    if (!needs_arcana_check(def(a), level))
+    {
+        return false;
+    }
+    const int natural = roll(20), bonus = def(a).arcana, dc = 10 + static_cast<int>(level);
+    log(a.source.name + "'s Arcana check for the scroll: d20 " + std::to_string(natural) + " + " +
+            std::to_string(bonus) + " vs DC " + std::to_string(dc) + ".",
+        {"{name}'s Arcana check for the scroll: d20 {roll} + {bonus} vs DC {dc}.",
+         {{"name", a.source.name},
+          {"roll", std::to_string(natural)},
+          {"bonus", std::to_string(bonus)},
+          {"dc", std::to_string(dc)}}});
+    if (natural + bonus >= dc)
+    {
+        return false;
+    }
+    log("The " + std::string(spell.label) + " on the scroll is lost.",
+        {"The {spell} on the scroll is lost.", {{"spell", std::string(spell.label), true}}});
+    return true;
+}
+
 // As the original's Snake Charm: the caster's current Hit Points are a pool,
 // and each snake or scorpion, in turn order, whose own still fit is
 // Incapacitated for the fight, its Hit Points leaving the pool. No save.
@@ -16147,6 +16196,11 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     if (from_scroll)
     {
         log_scroll_use(a, spell);
+        if (scroll_check_fails(a, spell, aimed.verb))
+        {
+            pay_for_spell(a, aimed.verb, spell);
+            return;
+        }
     }
     if (!again && spell.id != "dragons_breath_exhale" && !item_effect(aimed.verb) &&
         (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
@@ -26876,7 +26930,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && result.level == 13)
         {
             result.description =
-                "Thief: Use Magic Device, a 6 on 1d6 to keep a spent charge.\nSneak Attack 7d6; Proficiency Bonus +5.";
+                "Thief: Use Magic Device, a 6 on 1d6 to keep a spent charge, and any scroll read with Intelligence.\nSneak Attack 7d6; Proficiency Bonus +5.";
         }
         if (klass == CharacterClass::rogue && result.level == 14)
         {
@@ -28815,7 +28869,8 @@ class Module final : public RulesModule
         auto &d = reader.definition;
         const auto *spell = detail::find_spell(entry.id);
         if (!spell || scroll.unidentified ||
-            !(scroll.arcane ? d.reads_arcane_scrolls : d.reads_divine_scrolls))
+            (!(scroll.arcane ? d.reads_arcane_scrolls : d.reads_divine_scrolls) &&
+             !d.use_magic_device))
         {
             return std::nullopt;
         }
@@ -28893,22 +28948,42 @@ class Module final : public RulesModule
         throw std::runtime_error("That spell cannot be read from the scroll now");
     }
 
-    void use_scroll(const CharacterSheet &user, VitalState &user_state,
+    // Use Magic Device's Arcana check outside combat: true when it fails.
+    static bool scroll_check_fails(const Actor &reader, std::string_view verb,
+                                   RandomState &random_state)
+    {
+        const auto &spell = *detail::find_spell(verb);
+        const unsigned level = slot_level_of(verb, spell);
+        return needs_arcana_check(reader.definition, level) &&
+               roll_die(random_state, 20) + reader.definition.arcana < 10 + static_cast<int>(level);
+    }
+
+    bool use_scroll(const CharacterSheet &user, VitalState &user_state,
                     const CharacterSheet &target, VitalState &target_state, std::string_view key,
                     std::string_view action, RandomState &random_state) const override
     {
         auto [reader, verb] = scroll_caster(user, user_state, key, action);
+        if (scroll_check_fails(reader, verb, random_state))
+        {
+            return false;
+        }
         use_camp_action_of(std::move(reader), user.name, user_state, target, target_state, verb,
                            random_state);
+        return true;
     }
 
-    void use_party_scroll(const CharacterSheet &user, VitalState &user_state,
+    bool use_party_scroll(const CharacterSheet &user, VitalState &user_state,
                           std::span<CampTarget> party, std::string_view key,
                           std::string_view action, RandomState &random_state) const override
     {
         auto [reader, verb] = scroll_caster(user, user_state, key, action);
+        if (scroll_check_fails(reader, verb, random_state))
+        {
+            return false;
+        }
         use_party_camp_action_of(std::move(reader), user.name, user_state, party, verb,
                                  random_state);
+        return true;
     }
 
     std::optional<unsigned> copyable_spell_level(const CharacterSheet &sheet,

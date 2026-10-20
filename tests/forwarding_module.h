@@ -269,19 +269,20 @@ class ForwardingModule : public rules::RulesModule
         return rules_->scroll_actions(sheet, state, scroll);
     }
 
-    void use_scroll(const rules::CharacterSheet &user, rules::VitalState &user_state,
+    bool use_scroll(const rules::CharacterSheet &user, rules::VitalState &user_state,
                     const rules::CharacterSheet &target, rules::VitalState &target_state,
                     std::string_view scroll, std::string_view action,
                     RandomState &random_state) const override
     {
-        rules_->use_scroll(user, user_state, target, target_state, scroll, action, random_state);
+        return rules_->use_scroll(user, user_state, target, target_state, scroll, action,
+                                  random_state);
     }
 
-    void use_party_scroll(const rules::CharacterSheet &user, rules::VitalState &user_state,
+    bool use_party_scroll(const rules::CharacterSheet &user, rules::VitalState &user_state,
                           std::span<rules::CampTarget> party, std::string_view scroll,
                           std::string_view action, RandomState &random_state) const override
     {
-        rules_->use_party_scroll(user, user_state, party, scroll, action, random_state);
+        return rules_->use_party_scroll(user, user_state, party, scroll, action, random_state);
     }
 
     std::optional<unsigned> copyable_spell_level(const rules::CharacterSheet &sheet,
