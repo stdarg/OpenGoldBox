@@ -238,15 +238,14 @@ void attacks()
 void flame_tongue()
 {
     const auto rules = module();
-    check(parse_item_key("longsword+2:flame_tongue:attuned").attuned &&
-              !parse_item_key("longsword+2:flame_tongue").attuned &&
-              parse_item_key("longsword+2:attuned").base == "longsword+2:attuned",
-          "Attunement follows a power");
+    check(parse_item_key("longsword+2:flame_tongue:attuned").base ==
+              "longsword+2:flame_tongue:attuned",
+          "No item is attuned");
 
-    auto unattuned = fighter_turn(*rules, "longsword+2:flame_tongue", "target");
-    check(!submit(*unattuned, "ignite_flame_tongue"), "An unattuned Flame Tongue cannot be lit");
+    auto hidden = fighter_turn(*rules, "longsword+2:flame_tongue:unidentified", "target");
+    check(submit(*hidden, "ignite_flame_tongue"), "An unidentified Flame Tongue lights too");
 
-    auto c = fighter_turn(*rules, "longsword+2:flame_tongue:attuned", "target");
+    auto c = fighter_turn(*rules, "longsword+2:flame_tongue", "target");
     check(submit(*c, "ignite_flame_tongue") && !submit(*c, "douse_flame_tongue"),
           "Lighting the blade is a Bonus Action");
     const auto restored = rules->restore(c->save());
@@ -254,7 +253,7 @@ void flame_tongue()
     check(submit(*c, "melee", 2) && test::logged(*c, "Fire damage from Flame Tongue."),
           "A lit blade's hit deals extra Fire damage");
 
-    auto dark = fighter_turn(*rules, "longsword+2:flame_tongue:attuned", "target");
+    auto dark = fighter_turn(*rules, "longsword+2:flame_tongue", "target");
     check(submit(*dark, "melee", 2) && logged_hit(*dark) &&
               !test::logged(*dark, "Fire damage from Flame Tongue."),
           "An unlit blade deals no Fire damage");
@@ -264,14 +263,14 @@ void flame_tongue()
     {
         return rules->character_profile(hero.sheet(), std::vector{key}).item_modifiers;
     };
-    check(notes("longsword+2:flame_tongue").find("needs attunement") != std::string::npos &&
-              notes("longsword+2:flame_tongue:attuned").find("A Bonus Action lights the blade") !=
-                  std::string::npos,
-          "The sheet says whether the fire works");
+    check(notes("longsword+2:flame_tongue").find("A Bonus Action lights the blade") !=
+              std::string::npos,
+          "The sheet says how the fire works");
 }
 
-// A rest with Flame Tongue equipped attunes its wielder; a save keeps it.
-void attunement()
+// Nothing needs attunement: a rest does not identify a found Flame Tongue.
+// Its fire works at once, unidentified (flame_tongue).
+void no_attunement()
 {
     CampaignParty party(module());
     const auto id = party.add_pc(fighter());
@@ -288,26 +287,10 @@ void attunement()
     };
     check(name() == "Long Sword", "Flame Tongue is found as a Long Sword");
     party.equip(id, sword);
-    const auto lit = [&](const CampaignParty &p)
-    {
-        return p.profile(id).item_modifiers.find("A Bonus Action lights the blade") !=
-               std::string::npos;
-    };
-    check(!lit(party) && party.member(id).attuned.empty(), "Equipping does not attune");
     const auto rested = party.rest(RestKind::short_rest);
     check(rested && rested->spending, "Finish a Short Rest");
     party.finish_short_rest(*rested->spending);
-    check(party.member(id).attuned == std::vector{sword} && lit(party),
-          "The rest attunes the fighter to the equipped Flame Tongue");
-    check(name() == "Long Sword +2 Flame Tongue", "Attuning to it reveals its name");
-
-    CampaignParty restored(module());
-    const auto rules = module();
-    restored.restore(decode_campaign(encode_campaign(party, nullptr, "flame"),
-                                     *srd5::character_rules(), *rules, "flame", nullptr)
-                         .party);
-    check(restored.member(id).attuned == std::vector{sword} && lit(restored),
-          "A save keeps the attunement");
+    check(name() == "Long Sword", "A rest does not reveal its name");
 }
 
 // The original's cursed Broad Sword cannot be put down once equipped.
@@ -366,10 +349,11 @@ void campaign()
 void identification()
 {
     check(parse_item_key("longsword+2:unidentified").unidentified &&
-              parse_item_key("longsword+2:flame_tongue:attuned:unidentified").attuned &&
-              parse_item_key("longsword:unidentified").base == "longsword:unidentified" &&
-              parse_item_key("longsword+2:unidentified:attuned").base ==
-                  "longsword+2:unidentified:attuned",
+              parse_item_key("longsword+2:flame_tongue:unidentified").unidentified &&
+              parse_item_key("ring_of_fire_resistance:unidentified").base ==
+                  "ring_of_fire_resistance" &&
+              parse_item_key("longsword+2:unidentified:cursed").base ==
+                  "longsword+2:unidentified:cursed",
           "Unidentified is the last flag of an enchanted key");
 
     std::vector<std::string> words(256);
@@ -543,7 +527,7 @@ int main()
         attacks();
         campaign();
         flame_tongue();
-        attunement();
+        no_attunement();
         cursed_sword();
         identification();
         shop_identification();

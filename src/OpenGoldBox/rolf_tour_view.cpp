@@ -10,6 +10,7 @@
 #include "opengold/npc_portraits.h"
 #include "vital_fixtures.h"
 #include "opengold/srd5.h"
+#include "opengold/scroll_key.h"
 #include "godot_path.h"
 #include "guarded_handlers.h"
 #include "monster_picture_timing.h"
@@ -403,7 +404,7 @@ void RolfTourView::refresh_inventory()
             (std::find(m.equipped.begin(), m.equipped.end(), item.id) != m.equipped.end()
                  ? i18n::text("Equipped / ")
                  : String()) +
-            inventory_label(item));
+            inventory_label(m, item));
     }
     if (items->get_item_count())
     {
@@ -440,14 +441,20 @@ void RolfTourView::inventory_selected(std::int64_t index)
     {
         return;
     }
-    // The Manual and some potions are used outside combat (MAGIC-3).
+    // The Manual and some potions are used outside combat (MAGIC-3), and a
+    // scroll whose spell the member can read or copy now (MAGIC-6).
+    const auto &item = items[index];
+    const bool scroll = opengold::rules::parse_scroll_key(item.definition_id).has_value();
     required_node<Button>(*this, "InventoryPanel/UseItem")
-        .set_visible(opengold::srd5::usable_outside_combat(items[index].definition_id));
+        .set_visible(opengold::srd5::usable_outside_combat(item.definition_id) ||
+                     (scroll && (!campaign_->scroll_actions(campaign_->selected(), item.id).empty() ||
+                                 !campaign_->copyable_spells(campaign_->selected(), item.id).empty())));
     try
     {
         required_node<Label>(*this, "InventoryPanel/Status")
             .set_text(i18n::text(
-                opengold::srd5::equipment_note(m.character.sheet(), items[index].definition_id)));
+                opengold::srd5::equipment_note(m.character.sheet(),
+                                               opengold::rules_definition(m, items[index]))));
     }
     catch (const std::exception &e)
     {
@@ -477,7 +484,7 @@ void RolfTourView::equip_item(bool equip)
                 throw std::runtime_error("Select an existing item.");
             }
             item = items[selection[0]].id;
-            definition = items[selection[0]].definition_id;
+            definition = opengold::rules_definition(campaign_->member(id), items[selection[0]]);
         }
         if (equip)
         {
@@ -592,9 +599,30 @@ void RolfTourView::check_identification_spells()
                                            .name = "Manual of Bodily Health",
                                            .quantity = 1,
                                            .original_type = 70});
+        opengold::por::Equipment ring;
+        ring.stored.type = 93;
+        ring.stored.magic_bonus = 2;
+        ring.stored.stack_size = 1;
+        ring.decoded_name = "Ring Of Protection +2";
+        const auto protection = inventory.add({.definition_id = opengold::equipment_conversion(ring),
+                                               .name = ring.label(),
+                                               .quantity = 1,
+                                               .original_type = 93});
+        opengold::por::Equipment parchment;
+        parchment.stored.type = 61;
+        parchment.stored.magic_bonus = 1;
+        parchment.stored.effect_codes = {14, 47, 0};
+        parchment.stored.stack_size = 1;
+        parchment.decoded_name = "Magic User Scroll With 2 Spells";
+        const auto scroll = inventory.add({.definition_id = opengold::equipment_conversion(parchment),
+                                           .name = parchment.label(),
+                                           .quantity = 1,
+                                           .original_type = 61});
         caster.character.replace_inventory(std::move(inventory));
         caster.item_sources.emplace(identify_check_sword_, sword);
         caster.item_sources.emplace(manual, book);
+        caster.item_sources.emplace(protection, ring);
+        caster.item_sources.emplace(scroll, parchment);
         caster.equipped.clear();
         caster.vitals = {caster.character.sheet().hit_points, false, {}};
         campaign_->restore(std::move(fixture));
@@ -685,6 +713,55 @@ void RolfTourView::check_identification_spells()
     {
         throw std::runtime_error("Using the Manual must raise Constitution by 2");
     }
+    // A Ring of Protection is worn from the inventory (MAGIC-4).
+    const auto worn = campaign_->member(campaign_->selected()).character.inventory().items();
+    const auto ring = std::find_if(worn.begin(), worn.end(),
+                                   [](const auto &item)
+                                   {
+                                       return item.definition_id == "ring_of_protection+2";
+                                   });
+    const int armor_class = campaign_->profile(campaign_->selected()).armor_class;
+    items.select(static_cast<int>(ring - worn.begin()));
+    inventory_selected(ring - worn.begin());
+    required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
+    if (campaign_->profile(campaign_->selected()).armor_class != armor_class + 2 ||
+        campaign_->profile(campaign_->selected()).item_save_bonus != 2 ||
+        !required_node<Label>(*this, "InventoryPanel/Status").get_text().contains("Rings of Protection"))
+    {
+        throw std::runtime_error("Wearing a Ring of Protection +2 must add 2 to AC and saves");
+    }
+    // A Bard reads Friends from an arcane scroll through Use and the Cast menu
+    // (MAGIC-6); Fireball stays on it for a fight.
+    const auto carried_now = campaign_->member(campaign_->selected()).character.inventory().items();
+    const auto parchment = std::find_if(carried_now.begin(), carried_now.end(),
+                                        [](const auto &item)
+                                        {
+                                            return item.definition_id.starts_with("scroll:");
+                                        });
+    const auto parchment_id = parchment->id;
+    items.select(static_cast<int>(parchment - carried_now.begin()));
+    inventory_selected(parchment - carried_now.begin());
+    if (!required_node<Button>(*this, "InventoryPanel/UseItem").is_visible())
+    {
+        throw std::runtime_error("The inventory must offer Use for a scroll the Bard can read");
+    }
+    required_node<Button>(*this, "InventoryPanel/UseItem").emit_signal("pressed");
+    auto &spell_choice = required_node<OptionButton>(*this, "CastPanel/Action");
+    if (!required_node<Control>(*this, "CastPanel").is_visible() ||
+        spell_choice.get_item_count() != 1 ||
+        spell_choice.get_selected_metadata() != Variant(String("0:friends")))
+    {
+        throw std::runtime_error("Use on a scroll must open the Cast menu with its spell");
+    }
+    required_node<Button>(*this, "CastPanel/Use").emit_signal("pressed");
+    const auto read = campaign_->member(campaign_->selected()).character.inventory().find(parchment_id);
+    if (!read || read->get().definition_id != "scroll:arcane:fireball" ||
+        !required_node<Label>(*this, "CastPanel/Status").get_text().contains("reads"))
+    {
+        throw std::runtime_error("Reading Friends must leave Fireball on the scroll");
+    }
+    required_node<Button>(*this, "CastPanel/Close").emit_signal("pressed");
+    required_node<Button>(*this, "Inventory").emit_signal("pressed");
     campaign_->restore(std::move(*identify_check_retained_));
     identify_check_retained_.reset();
     refresh();
@@ -712,6 +789,16 @@ void RolfTourView::use_inventory_item()
         }
         const auto item = items[selection[0]];
         const auto name = String::utf8(campaign_->member(id).character.sheet().name.c_str());
+        // A scroll's spells are read, or copied, from the Cast menu (MAGIC-6).
+        if (opengold::rules::parse_scroll_key(item.definition_id))
+        {
+            scroll_item_ = item.id;
+            required_node<Control>(*this, "InventoryPanel").hide();
+            required_node<Label>(*this, "CastPanel/Status").set_text(String());
+            refresh_cast();
+            required_node<Control>(*this, "CastPanel").show();
+            return;
+        }
         String result;
         if (item.definition_id == "manual_of_bodily_health")
         {
@@ -734,6 +821,30 @@ void RolfTourView::use_inventory_item()
     {
         required_node<Label>(*this, "InventoryPanel/Status").set_text(i18n::text(e.what()));
     }
+}
+
+// Reads the scroll's spell `id` on `patient`, or copies one ("copy:N") into
+// the member's spellbook (MAGIC-6).
+void RolfTourView::read_or_copy_scroll(const std::string &id, opengold::MemberId patient,
+                                       const String &label)
+{
+    const auto caster = campaign_->selected();
+    const auto name = String::utf8(campaign_->member(caster).character.sheet().name.c_str());
+    String result;
+    if (id.starts_with("copy:"))
+    {
+        campaign_->copy_scroll_spell(caster, *scroll_item_, static_cast<unsigned>(id[5] - '0'));
+        result = i18n::format(N_("{name} copies the spell into the spellbook."), {{"name", name}});
+    }
+    else
+    {
+        campaign_->read_scroll(caster, *scroll_item_, patient, id);
+        result = i18n::format(N_("{name} reads {spell} from the scroll."),
+                              {{"name", name}, {"spell", label}});
+    }
+    refresh_cast();
+    refresh();
+    required_node<Label>(*this, "CastPanel/Status").set_text(result);
 }
 
 void RolfTourView::cast_identify()
@@ -791,6 +902,7 @@ void RolfTourView::cast_menu()
     {
         return;
     }
+    scroll_item_.reset();
     required_node<Label>(*this, "CastPanel/Status").set_text(String());
     refresh_cast();
     panel->show();
@@ -807,15 +919,47 @@ void RolfTourView::refresh_cast()
         return;
     }
     const auto caster = campaign_->selected();
-    required_node<Label>(*this, "CastPanel/Header")
-        .set_text(i18n::format(
-            N_("{name}: cast a spell or use a feature"),
-            {{"name", String::utf8(campaign_->member(caster).character.sheet().name.c_str())}}));
-    for (const auto &offered : campaign_->camp_actions(caster))
+    const auto &member = campaign_->member(caster);
+    // A scroll read or copied from: the member's own, while it still holds a
+    // spell (MAGIC-6).
+    if (scroll_item_ && !member.character.inventory().find(*scroll_item_))
     {
-        const int index = action->get_item_count();
-        action->add_item(i18n::render(offered.label));
-        action->set_item_metadata(index, String::utf8(offered.id.c_str()));
+        scroll_item_.reset();
+    }
+    const auto name = String::utf8(member.character.sheet().name.c_str());
+    required_node<Label>(*this, "CastPanel/Header")
+        .set_text(scroll_item_ ? i18n::format(N_("{name}: read a scroll"), {{"name", name}})
+                               : i18n::format(N_("{name}: cast a spell or use a feature"),
+                                              {{"name", name}}));
+    cast_options_.clear();
+    const auto add = [&](const String &label, const std::string &id, bool whole_party)
+    {
+        action->add_item(label);
+        action->set_item_metadata(action->get_item_count() - 1, String::utf8(id.c_str()));
+        cast_options_.push_back({id, whole_party});
+    };
+    if (scroll_item_)
+    {
+        for (const auto &offered : campaign_->scroll_actions(caster, *scroll_item_))
+        {
+            add(i18n::render(offered.label), offered.id, offered.whole_party);
+        }
+        // Copying takes a bottle of Magic Ink and two hours a spell level.
+        for (const auto &copy : campaign_->copyable_spells(caster, *scroll_item_))
+        {
+            add(i18n::format(N_("Copy {spell} into the spellbook ({count} Magic Ink, {hours} hours)"),
+                             {{"spell", i18n::text(opengold::srd5::spell_label(copy.spell))},
+                              {"count", static_cast<int>(copy.level)},
+                              {"hours", static_cast<int>(2 * copy.level)}}),
+                "copy:" + std::to_string(copy.entry), true);
+        }
+    }
+    else
+    {
+        for (const auto &offered : campaign_->camp_actions(caster))
+        {
+            add(i18n::render(offered.label), offered.id, offered.whole_party);
+        }
     }
     for (const auto id : campaign_->state().slots)
     {
@@ -838,14 +982,9 @@ void RolfTourView::refresh_cast()
 
 void RolfTourView::cast_action_selected(std::int64_t index)
 {
-    // A whole-party action chooses its own members.
-    bool party = false;
-    if (index >= 0 && campaign_ && campaign_->selected())
-    {
-        const auto actions = campaign_->camp_actions(campaign_->selected());
-        party = static_cast<std::size_t>(index) < actions.size() &&
-                actions[static_cast<std::size_t>(index)].whole_party;
-    }
+    // A whole-party action, and copying a spell, choose no member.
+    const bool party = index >= 0 && static_cast<std::size_t>(index) < cast_options_.size() &&
+                       cast_options_[static_cast<std::size_t>(index)].whole_party;
     required_node<OptionButton>(*this, "CastPanel/Target").set_visible(!party);
 }
 
@@ -864,6 +1003,12 @@ void RolfTourView::cast_use()
         const String id = action->get_selected_metadata();
         const auto patient =
             static_cast<unsigned>(static_cast<int64_t>(target->get_selected_metadata()));
+        if (scroll_item_)
+        {
+            read_or_copy_scroll(std::string(id.utf8().get_data()), patient,
+                                action->get_item_text(action->get_selected()));
+            return;
+        }
         const auto result = use_outside_combat(
             campaign_->selected(), patient, id, action->get_item_text(action->get_selected()),
             target->is_visible() ? target->get_item_text(target->get_selected()) : String());
@@ -900,7 +1045,9 @@ void RolfTourView::party_selected(std::int64_t index)
     }
     if (required_node<Control>(*this, "CastPanel").is_visible())
     {
-        // The Cast menu follows the chosen member.
+        // The Cast menu follows the chosen member, and their own spells: a
+        // scroll belongs to the member who opened it.
+        scroll_item_.reset();
         refresh_cast();
         refresh();
         return;

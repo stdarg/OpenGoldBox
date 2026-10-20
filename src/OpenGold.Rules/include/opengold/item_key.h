@@ -15,10 +15,9 @@ namespace opengold::rules
 // "javelin:lightning", "wand:magic_missiles").
 // The enchantment lives in the key so that saves, combat checkpoints and every
 // rules call that takes item keys carry it without a separate channel. The
-// campaign adds ":attuned" when it hands the rules an item whose wielder is
-// attuned to it, and ":unidentified" for an item whose name is still partly
-// hidden, so the rules name it without its enchantment; inventories store keys
-// without either.
+// campaign adds ":unidentified" when it hands the rules an item whose name is
+// still partly hidden, so the rules name it without its enchantment;
+// inventories store keys without it.
 enum class ItemPower : std::uint8_t
 {
     none,
@@ -37,15 +36,8 @@ struct ItemKey
     std::string_view base;
     int bonus{};
     ItemPower power{ItemPower::none};
-    bool attuned{};
     bool unidentified{};
 };
-
-// SRD Flame Tongue needs attunement; the original's other powers do not.
-[[nodiscard]] constexpr bool needs_attunement(ItemPower power) noexcept
-{
-    return power == ItemPower::flame_tongue;
-}
 
 namespace detail
 {
@@ -54,12 +46,14 @@ inline constexpr std::array<std::string_view, 8> item_power_names{
     "paralysis"};
 } // namespace detail
 
-// A key without a recognized enchantment, such as "por:unsupported:36", is all base.
+// A key without a recognized enchantment or flag, such as "por:unsupported:36",
+// is all base. A magic item without an enchantment, such as a Ring of Fire
+// Resistance, can still be ":unidentified".
 [[nodiscard]] constexpr ItemKey parse_item_key(std::string_view key) noexcept
 {
     ItemKey parsed{key};
     auto head = key.substr(0, key.find(':'));
-    // The flags follow in this order: the power, ":attuned", ":unidentified".
+    // The flags follow in this order: the power, ":unidentified".
     auto rest = key.substr(head.size());
     const auto take = [&rest](std::string_view flag)
     {
@@ -78,7 +72,6 @@ inline constexpr std::array<std::string_view, 8> item_power_names{
             break;
         }
     }
-    parsed.attuned = parsed.power != ItemPower::none && take("attuned");
     parsed.unidentified = take("unidentified");
     if (!rest.empty())
     {
@@ -94,9 +87,8 @@ inline constexpr std::array<std::string_view, 8> item_power_names{
         parsed.bonus = head[size - 2] == '+' ? amount : -amount;
         head.remove_suffix(2);
     }
-    else if (parsed.power == ItemPower::none)
+    else if (parsed.power == ItemPower::none && !parsed.unidentified)
     {
-        // Only an enchanted item can be unidentified.
         return {key};
     }
 
@@ -110,7 +102,7 @@ inline constexpr std::array<std::string_view, 8> item_power_names{
 }
 
 [[nodiscard]] inline std::string item_key(std::string_view base, int bonus,
-                                          ItemPower power = ItemPower::none, bool attuned = false)
+                                          ItemPower power = ItemPower::none)
 {
     if (bonus < -9 || bonus > 9)
     {
@@ -128,10 +120,6 @@ inline constexpr std::array<std::string_view, 8> item_power_names{
     {
         key += ':';
         key += detail::item_power_names[static_cast<std::size_t>(power)];
-        if (attuned)
-        {
-            key += ":attuned";
-        }
     }
 
     return key;

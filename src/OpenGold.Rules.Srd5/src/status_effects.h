@@ -481,9 +481,16 @@ enum class EffectKind : unsigned
     giant_strength = 194,
     // The Javelin of Lightning's bolt is spent until a Long Rest (MAGIC-3).
     javelin_spent = 195,
+    // Enhance Ability from a scroll (MAGIC-6): Advantage on Strength checks.
+    enhance_ability = 196,
+    // Protection From Normal Missiles (MAGIC-6): a missile without magic from
+    // more than 5 feet away misses.
+    missile_ward = 197,
+    // Snake Charm (MAGIC-6): Incapacitated until the fight ends; a hit slays it.
+    snake_charmed = 198,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = javelin_spent
+    last = snake_charmed
 };
 
 // Magic Circle's creature types, by `dc`.

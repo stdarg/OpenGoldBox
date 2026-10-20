@@ -3,6 +3,7 @@
 #include "opengold/dice.h"
 #include "opengold/ecl_party_host.h"
 #include "opengold/item_key.h"
+#include "opengold/scroll_key.h"
 #include "opengold/magic_item_catalog.h"
 #include <algorithm>
 #include <limits>
@@ -19,6 +20,52 @@ static_assert(std::is_nothrow_move_assignable_v<PartyMember>);
 
 namespace
 {
+// The original's scroll item types (MAGIC-6).
+constexpr std::uint8_t magic_user_scroll = 61, cleric_scroll = 62;
+std::string_view scroll_spell(std::uint8_t number);
+
+// Erases the spells read from a scroll, keeping those whose bits are set in
+// `kept` (a bit for each spell on it, in order), by clearing their spell
+// numbers in the original record (MAGIC-6). A scroll with no spell left is
+// gone.
+void keep_scroll_spells(PartyMember &member, std::uint64_t id, unsigned kept)
+{
+    const auto source = member.item_sources.find(id);
+    if (source == member.item_sources.end())
+    {
+        throw std::runtime_error("A scroll needs its original record");
+    }
+    auto &raw = source->second.stored;
+    unsigned entry = 0;
+    for (std::size_t n = 0; n < raw.effect_codes.size(); ++n)
+    {
+        // A number no spell has is no entry on the scroll.
+        if (scroll_spell(raw.effect_codes[n]).empty())
+        {
+            continue;
+        }
+        if (!(kept & (1U << entry)))
+        {
+            raw.effect_codes[n] = 0;
+            raw.raw[60 + n] = 0;
+        }
+        ++entry;
+    }
+    auto inventory = member.character.inventory();
+    const auto definition = equipment_conversion(source->second);
+    if (rules::parse_scroll_key(definition))
+    {
+        inventory.redefine(id, definition);
+    }
+    else
+    {
+        inventory.remove(id, 1);
+        std::erase(member.equipped, id);
+        member.item_sources.erase(id);
+    }
+    member.character.replace_inventory(std::move(inventory));
+}
+
 // Removes the thrown gear (Acid, Alchemist's Fire, Oil) a fight used up, so the
 // member carries `left` of `definition`, taking from the newest stacks first.
 void keep_thrown_gear(PartyMember &member, const std::string &definition, unsigned left)
@@ -56,6 +103,12 @@ void keep_thrown_gear(PartyMember &member, const std::string &definition, unsign
 void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
 {
     const auto item = member.character.inventory().find(id);
+    // A scroll reports the spells still on it (MAGIC-6).
+    if (item && rules::parse_scroll_key(item->get().definition_id))
+    {
+        keep_scroll_spells(member, id, left);
+        return;
+    }
     if (!item || left > item->get().quantity)
     {
         throw std::runtime_error("Combat reported more item uses than were carried");
@@ -70,7 +123,6 @@ void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
     if (!left)
     {
         std::erase(member.equipped, id);
-        std::erase(member.attuned, id);
         member.item_sources.erase(id);
     }
     member.character.replace_inventory(std::move(inventory));
@@ -91,29 +143,9 @@ void put_down_cursed_items(PartyMember &member)
                       }
                       inventory.remove(worn, 1);
                       member.item_sources.erase(worn);
-                      std::erase(member.attuned, worn);
                       return true;
                   });
     member.character.replace_inventory(std::move(inventory));
-}
-
-// The key the rules see for an item: it says so when its holder is attuned to
-// it, or when its enchantment is not yet identified.
-std::string rules_definition(const PartyMember &member, const InventoryItem &item)
-{
-    auto definition = item.definition_id;
-    if (std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end())
-    {
-        definition += ":attuned";
-    }
-    const auto enchantment = rules::parse_item_key(item.definition_id);
-    const auto source = member.item_sources.find(item.id);
-    if ((enchantment.bonus || enchantment.power != rules::ItemPower::none) &&
-        source != member.item_sources.end() && !source->second.identified())
-    {
-        definition += ":unidentified";
-    }
-    return definition;
 }
 
 // The definitions of a member's equipped items, which the rules read as gear.
@@ -274,7 +306,8 @@ std::string_view charged_conversion(const por::ItemRecord &raw)
                            bodily_health = 90;
     constexpr std::uint8_t wand_type = 78;
     const auto [charges, power, flags] = raw.effect_codes;
-    if (!charges || (flags & 0x80))
+    // A scroll's bytes are its spells (scroll_conversion).
+    if (!charges || (flags & 0x80) || raw.type == magic_user_scroll || raw.type == cleric_scroll)
     {
         return {};
     }
@@ -288,10 +321,9 @@ std::string_view charged_conversion(const por::ItemRecord &raw)
         return "wand:paralysis";
     case healing:
         return "potion_of_healing";
-    // Potion Extra Healing's doses are Potions of Greater Healing; a scroll
-    // naming the spell is a scroll.
+    // Potion Extra Healing's doses are Potions of Greater Healing.
     case cure_light_wounds:
-        return raw.type == 61 || raw.type == 62 ? "" : "potion_of_greater_healing";
+        return "potion_of_greater_healing";
     case speed:
         return "potion_of_speed";
     case giant_strength:
@@ -309,6 +341,134 @@ std::string_view charged_conversion(const por::ItemRecord &raw)
     }
 }
 
+// The original's spells by number (START.EXE's table, MAGIC_ITEMS.md) as SRD
+// 5.2.1 spells or stand-ins (MAGIC-6): "invisibility@3" is cast from a 3rd-level
+// slot. Empty for a number no spell has, which random treasure can roll.
+std::string_view scroll_spell(std::uint8_t number)
+{
+    static constexpr std::array<std::string_view, 57> spells{
+        "",
+        "bless",
+        "bane",                          // Curse
+        "cure_wounds",                   // Cure Light Wounds
+        "inflict_wounds",                // Cause Light Wounds
+        "detect_magic",                  // cleric
+        "protection_from_evil_and_good", // Protection From Evil, cleric
+        "protection_from_evil_and_good", // Protection From Good, cleric
+        "protection_from_energy",        // Resist Cold
+        "burning_hands",
+        "charm_person",
+        "detect_magic", // magic-user
+        "enlarge_reduce",
+        "enlarge_reduce", // Reduce
+        "friends",
+        "magic_missile",
+        "protection_from_evil_and_good",
+        "protection_from_evil_and_good",
+        "read_magic",
+        "shield",
+        "shocking_grasp",
+        "sleep",
+        "find_traps",
+        "hold_person", // cleric
+        "protection_from_energy", // Resist Fire
+        "silence",
+        "protection_from_poison", // Slow Poison
+        "snake_charm",
+        "spiritual_weapon", // Spiritual Hammer
+        "see_invisibility", // Detect Invisibility
+        "invisibility",
+        "knock",
+        "mirror_image",
+        "ray_of_enfeeblement",
+        "stinking_cloud",
+        "enhance_ability", // Strength
+        "animate_dead",
+        "lesser_restoration", // Cure Blindness
+        "blindness",          // Cause Blindness
+        "lesser_restoration", // Cure Disease
+        "contagion",          // Cause Disease
+        "dispel_magic",       // cleric
+        "bless",              // Prayer
+        "remove_curse",
+        "bestow_curse",
+        "blink",
+        "dispel_magic", // magic-user
+        "fireball",
+        "haste",
+        "hold_person",    // magic-user
+        "invisibility@3", // Invisibility, 10' Radius: two creatures
+        "lightning_bolt",
+        "magic_circle", // Protection From Evil, 10' Radius
+        "magic_circle", // Protection From Good, 10' Radius
+        "protection_from_normal_missiles",
+        "slow",
+        "greater_restoration"}; // Restoration
+    return number < spells.size() ? spells[number] : std::string_view{};
+}
+
+// The original's magic-user and cleric scrolls (MAGIC-6): bytes 60-62 are the
+// spells on it, and an arcane scroll is a magic-user's. Empty for another
+// record; "por:unsupported" for a scroll with no spell left.
+std::string scroll_conversion(const por::ItemRecord &raw)
+{
+    if (raw.type != magic_user_scroll && raw.type != cleric_scroll)
+    {
+        return {};
+    }
+    std::vector<std::string> spells;
+    for (const auto number : raw.effect_codes)
+    {
+        if (const auto spell = scroll_spell(number); !spell.empty())
+        {
+            spells.emplace_back(spell);
+        }
+    }
+    return spells.empty() ? "por:unsupported:" + std::to_string(raw.type)
+                          : rules::scroll_key(raw.type == magic_user_scroll, spells);
+}
+
+// The original's rings, bracers, cloak, gauntlets and necklace (MAGIC-4), known
+// by their item type or by the effect byte 62 applies when they are readied
+// (byte 61 is its argument); empty for any other record.
+std::string worn_conversion(const por::ItemRecord &raw)
+{
+    constexpr std::uint8_t gauntlets_type = 63, fire_resistance_type = 69,
+                           cursed_necklace_type = 76, bracers_type = 77,
+                           feather_falling_type = 90, cloak_type = 92, protection_type = 93;
+    constexpr std::uint8_t ogre_power = 0x83, grants_effect = 0x81, cloak_effect = 0x85;
+    constexpr std::uint8_t fire_resistance = 61, displacement = 89;
+    const auto [charges, argument, effect] = raw.effect_codes;
+    if (effect == ogre_power || raw.type == gauntlets_type)
+    {
+        return "gauntlets_of_ogre_power";
+    }
+    if ((effect == grants_effect && argument == fire_resistance) ||
+        raw.type == fire_resistance_type)
+    {
+        return "ring_of_fire_resistance";
+    }
+    // A second Cloak of Displacement record has another item type.
+    if ((effect == cloak_effect && argument == displacement) || raw.type == cloak_type)
+    {
+        return "cloak_of_displacement";
+    }
+    switch (raw.type)
+    {
+    case protection_type:
+        return rules::item_key("ring_of_protection", raw.magic_bonus);
+    case bracers_type:
+        return rules::item_key("bracers", raw.magic_bonus);
+    case feather_falling_type:
+        return "ring_of_feather_falling";
+    case cursed_necklace_type:
+        return rules::item_key("necklace", raw.magic_bonus,
+                               raw.cursed_raw ? rules::ItemPower::cursed : rules::ItemPower::none);
+    default:
+        return {};
+    }
+}
+
 bool has_effects(const por::ItemRecord &raw)
 {
     return std::any_of(raw.effect_codes.begin(), raw.effect_codes.end(),
@@ -318,6 +478,27 @@ bool has_effects(const por::ItemRecord &raw)
                        });
 }
 } // namespace
+
+// The key the rules see for an item: it says so when the item's magic is not
+// yet identified. A charged item's uses are known either way.
+std::string rules_definition(const PartyMember &member, const InventoryItem &item)
+{
+    auto definition = item.definition_id;
+    const auto enchantment = rules::parse_item_key(item.definition_id);
+    const auto source = member.item_sources.find(item.id);
+    if (source == member.item_sources.end() || source->second.identified())
+    {
+        return definition;
+    }
+    const auto &raw = source->second.stored;
+    const bool worn_magic = por::is_magic(raw) && !raw.effect_codes[0];
+    const bool scroll = rules::parse_scroll_key(item.definition_id).has_value();
+    if (enchantment.bonus || enchantment.power != rules::ItemPower::none || worn_magic || scroll)
+    {
+        definition += ":unidentified";
+    }
+    return definition;
+}
 
 unsigned carried_quantity(const por::Equipment &item)
 {
@@ -350,9 +531,17 @@ std::string equipment_conversion(const por::Equipment &item)
 {
     const auto &raw = item.stored;
     const auto unsupported = "por:unsupported:" + std::to_string(raw.type);
+    if (auto scroll = scroll_conversion(raw); !scroll.empty())
+    {
+        return scroll;
+    }
     if (const auto charged = charged_conversion(raw); !charged.empty())
     {
         return std::string(charged);
+    }
+    if (auto worn = worn_conversion(raw); !worn.empty())
+    {
+        return worn;
     }
     if (const auto base = enchantable_conversion(raw.type); !base.empty())
     {
@@ -380,6 +569,8 @@ std::string equipment_conversion(const por::Equipment &item)
         return "acid";
     case authored_item::alchemists_fire:
         return "alchemists_fire";
+    case authored_item::magic_ink:
+        return "magic_ink";
     default:
         return unsupported;
     }
@@ -1836,6 +2027,211 @@ bool CampaignParty::magical(MemberId id, std::uint64_t item) const
     return source != sources.end() && por::is_magic(source->second.stored);
 }
 
+std::vector<rules::CampAction> CampaignParty::scroll_actions(MemberId id, std::uint64_t item) const
+{
+    const auto &reader = member(id);
+    const auto carried = reader.character.inventory().find(item);
+    if (!carried || !rules::parse_scroll_key(carried->get().definition_id))
+    {
+        return {};
+    }
+    return rules_->scroll_actions(reader.character.sheet(), reader.vitals,
+                                  rules_definition(reader, carried->get()));
+}
+
+namespace
+{
+// What a spell cast outside combat leaves to the campaign, for the spells
+// Detect Magic, Friends, Read Magic, Find Traps and Remove Curse (MAGIC-2,
+// MAGIC-6).
+void keep_camp_spell(PartyState &state, PartyMember &caster, PartyMember &patient,
+                     std::string_view verb)
+{
+    if (verb.starts_with("detect_magic"))
+    {
+        constexpr std::uint64_t detect_magic_minutes = 10;
+        state.detect_magic_until = state.time_minutes + detect_magic_minutes;
+    }
+    // Friends, as the original's from a scroll, which casts at the 6th level:
+    // 2d4 more Charisma for six minutes, to at most 25.
+    if (verb == "friends")
+    {
+        state.friends_member = caster.id;
+        state.friends_bonus = roll_die(state.random_state, 4) + roll_die(state.random_state, 4);
+        state.friends_until = state.time_minutes + 6;
+    }
+    // Read Magic reveals the caster's scrolls, as the original's did when they
+    // were opened while it lasted.
+    if (verb == "read_magic")
+    {
+        for (const auto &carried : caster.character.inventory().items())
+        {
+            if (rules::parse_scroll_key(carried.definition_id))
+            {
+                (void)identify_item(caster, carried.id);
+            }
+        }
+    }
+    // Find Traps lasts 30 minutes, as the original's.
+    if (verb == "find_traps")
+    {
+        state.find_traps_until = state.time_minutes + 30;
+    }
+    if (verb.starts_with("remove_curse"))
+    {
+        put_down_cursed_items(patient);
+    }
+}
+} // namespace
+
+void CampaignParty::read_scroll(MemberId user, std::uint64_t item, MemberId target,
+                                std::string_view action)
+{
+    editable();
+    outside_combat();
+    for (const auto id : {user, target})
+    {
+        if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+        {
+            throw std::runtime_error("Camp actions are for active members");
+        }
+    }
+    const auto actions = scroll_actions(user, item);
+    const auto chosen = std::find_if(actions.begin(), actions.end(),
+                                     [&](const auto &a)
+                                     {
+                                         return a.id == action;
+                                     });
+    if (chosen == actions.end())
+    {
+        throw std::runtime_error("That spell cannot be read from the scroll now");
+    }
+    auto next = state_;
+    auto &reader = member_in(next, user);
+    const auto key = rules_definition(reader, reader.character.inventory().find(item)->get());
+    auto &patient = member_in(next, chosen->whole_party ? user : target);
+    if (chosen->whole_party)
+    {
+        std::vector<rules::CampTarget> party;
+        for (const auto id : next.slots)
+        {
+            if (id)
+            {
+                auto &m = member_in(next, id);
+                party.push_back({m.character.sheet(), m.vitals});
+            }
+        }
+        rules_->use_party_scroll(reader.character.sheet(), reader.vitals, party, key, action,
+                                 next.random_state);
+    }
+    else
+    {
+        rules_->use_scroll(reader.character.sheet(), reader.vitals, patient.character.sheet(),
+                           patient.vitals, key, action, next.random_state);
+    }
+    keep_camp_spell(next, reader, patient, action.substr(2));
+    // The action's id begins with the spell's place on the scroll.
+    const auto spells = rules::parse_scroll_key(key)->spells.size();
+    keep_scroll_spells(reader, item, ((1U << spells) - 1) & ~(1U << (action[0] - '0')));
+    state_ = std::move(next);
+}
+
+std::vector<CampaignParty::ScrollCopy> CampaignParty::copyable_spells(MemberId id,
+                                                                      std::uint64_t item) const
+{
+    std::vector<ScrollCopy> copies;
+    const auto &wizard = member(id);
+    const auto carried = wizard.character.inventory().find(item);
+    // The parsed key's spell names point into `key`.
+    const auto key = carried ? rules_definition(wizard, carried->get()) : std::string{};
+    const auto scroll = rules::parse_scroll_key(key);
+    if (!scroll || scroll->unidentified || !scroll->arcane || wizard.vitals.dead)
+    {
+        return copies;
+    }
+    for (unsigned n = 0; n < scroll->spells.size(); ++n)
+    {
+        const auto spell = std::string(scroll->spells[n].id);
+        const bool listed = std::any_of(copies.begin(), copies.end(),
+                                        [&](const auto &copy)
+                                        {
+                                            return copy.spell == spell;
+                                        });
+        if (const auto level = rules_->copyable_spell_level(wizard.character.sheet(), spell);
+            level && !listed)
+        {
+            copies.push_back({n, spell, *level});
+        }
+    }
+    return copies;
+}
+
+void CampaignParty::copy_scroll_spell(MemberId id, std::uint64_t item, unsigned entry)
+{
+    editable();
+    outside_combat();
+    if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+    {
+        throw std::runtime_error("Only an active member copies a spell");
+    }
+    const auto copies = copyable_spells(id, item);
+    const auto copy = std::find_if(copies.begin(), copies.end(),
+                                   [&](const auto &c)
+                                   {
+                                       return c.entry == entry;
+                                   });
+    if (copy == copies.end())
+    {
+        throw std::runtime_error("That spell cannot be copied into the spellbook");
+    }
+    auto next = state_;
+    auto &wizard = member_in(next, id);
+    // A bottle of Magic Ink for each spell level, from the Wizard's own pack.
+    auto inventory = wizard.character.inventory();
+    std::uint32_t ink = 0;
+    for (const auto &carried : inventory.items())
+    {
+        ink += carried.definition_id == "magic_ink" ? carried.quantity : 0;
+    }
+    if (ink < copy->level)
+    {
+        throw std::runtime_error("Copying the spell takes a bottle of Magic Ink for each spell "
+                                 "level");
+    }
+    for (std::uint32_t needed = copy->level; needed;)
+    {
+        const auto bottle = std::find_if(inventory.items().begin(), inventory.items().end(),
+                                         [](const auto &carried)
+                                         {
+                                             return carried.definition_id == "magic_ink";
+                                         });
+        const auto spent = std::min(needed, bottle->quantity);
+        const auto bottle_id = bottle->id;
+        inventory.remove(bottle_id, spent);
+        if (!inventory.find(bottle_id))
+        {
+            wizard.item_sources.erase(bottle_id);
+        }
+        needed -= spent;
+    }
+    wizard.character.replace_inventory(std::move(inventory));
+    // Recorded with the hall training, so a save rebuilds the spellbook.
+    wizard.character.train_at_hall(*rules_, "boon:scroll:" + copy->spell);
+    const auto spells =
+        rules::parse_scroll_key(wizard.character.inventory().find(item)->get().definition_id)
+            ->spells.size();
+    keep_scroll_spells(wizard, item, ((1U << spells) - 1) & ~(1U << entry));
+    elapse(next, std::chrono::hours{2 * copy->level});
+    state_ = std::move(next);
+}
+
+int CampaignParty::reaction_charisma(MemberId id) const
+{
+    const int charisma = member(id).character.sheet().scores[rules::Ability::charisma];
+    const bool friends = state_.friends_member == id && state_.time_minutes < state_.friends_until;
+    return friends ? std::min(25, charisma + state_.friends_bonus) : charisma;
+}
+
 void CampaignParty::use_camp_action(MemberId user, MemberId target, std::string_view action)
 {
     editable();
@@ -1953,7 +2349,15 @@ void CampaignParty::validate(const PartyState &state)
         state.claimed_rewards.size() > 1024 || state.subminute_milliseconds >= 60000 ||
         !state.next_combat_scope || !state.next_rest_session ||
         (state.leader &&
-         std::find(state.slots.begin(), state.slots.end(), state.leader) == state.slots.end()))
+         std::find(state.slots.begin(), state.slots.end(), state.leader) == state.slots.end()) ||
+        // Friends adds 2d4 to one member's Charisma (MAGIC-6).
+        state.friends_bonus < 0 || state.friends_bonus > 8 ||
+        (state.friends_member &&
+         std::none_of(state.roster.begin(), state.roster.end(),
+                      [&](const auto &m)
+                      {
+                          return m.id == state.friends_member;
+                      })))
     {
         throw std::runtime_error("Invalid party checkpoint");
     }

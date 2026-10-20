@@ -61,8 +61,7 @@ inline constexpr std::array magic_items{
               "Read it in camp: Constitution and its maximum rise by 2. Its magic is then "
               "spent."}};
 
-// The item a key names, whether or not the campaign marked it ":attuned" or
-// ":unidentified".
+// The item a key names, whether or not the campaign marked it ":unidentified".
 inline const MagicItem *magic_item(std::string_view key)
 {
     const auto parsed = rules::parse_item_key(key);

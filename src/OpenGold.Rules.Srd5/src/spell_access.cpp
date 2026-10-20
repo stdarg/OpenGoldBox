@@ -12,6 +12,8 @@ using namespace rules;
 namespace
 {
 constexpr std::string_view source = "class:wizard:spellcasting";
+// A spell a Wizard copied into its spellbook from a scroll (MAGIC-6).
+constexpr std::string_view copied_source = "item:scroll";
 
 // Class spell lists a row belongs to, as bits of Spell::lists. A per-row
 // property means a new spell describes itself in one place.
@@ -1257,6 +1259,11 @@ SpellAccess spell_access(std::span<const FeatureGrant> grants, CharacterClass kl
     return result;
 }
 
+FeatureGrant copied_spell_grant(std::string_view spell, unsigned level)
+{
+    return grant(spell, level, copied_source);
+}
+
 SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterClass klass,
                                unsigned level, std::span<const std::string> prepared)
 {
@@ -1283,6 +1290,18 @@ SpellAccess class_spell_access(std::span<const FeatureGrant> grants, CharacterCl
     std::array<unsigned, 16> books{}, cantrips{};
     for (const auto &g : grants)
     {
+        // A spell copied from a scroll (MAGIC-6): a Wizard spell of a level the
+        // Wizard could prepare when it copied it, beyond the book's choices.
+        if (class_spell_grant(g) && g.source_id == copied_source)
+        {
+            const auto &spell = find(std::string_view(g.id).substr(6));
+            require((spell.lists & wizard_list) && spell.level >= 1 && g.level >= 1 &&
+                    g.level <= level && spell.level <= (g.level + 1) / 2 &&
+                    g == grant(spell.id, g.level, copied_source) && known.insert(g.id).second);
+            result.spellbook.push_back(
+                {std::string(spell.id), std::string(spell.label), g.source_id, g.level});
+            continue;
+        }
         if (class_spell_grant(g))
         {
             require(g.source_id == source && g.level >= 1 && g.level <= level &&

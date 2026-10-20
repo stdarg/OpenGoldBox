@@ -223,7 +223,11 @@ enum class Rider : unsigned
     // The original's charged items (MAGIC-3).
     paralysis_ray,
     giant_strength,
-    disappearance
+    disappearance,
+    // Spells found on the original's scrolls (MAGIC-6).
+    enhance_ability,
+    snake_charm,
+    missile_ward
 };
 
 // Added for each slot level above the spell's. Zeroed means the spell does not upcast.
@@ -2986,7 +2990,64 @@ inline constexpr std::array spell_table{
              .requires_sight = true,
              .requires_effect_capacity = true,
              .save = Ability::constitution,
-             .rider = Rider::paralysis_ray}};
+             .rider = Rider::paralysis_ray},
+    // Spells only the original's scrolls hold (MAGIC-6), on no class list.
+    // SRD 5.2.1 Enhance Ability, for the original's Strength: Advantage on
+    // Strength checks, the only ability checks a fight calls for.
+    SpellDef{.id = "enhance_ability",
+             .label = "Enhance Ability (Strength)",
+             .level = 2,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::ally,
+             .range = 5,
+             .requires_effect_capacity = true,
+             .upcast = {.extra_instances = 1},
+             .rider = Rider::enhance_ability,
+             .concentration = true},
+    // Stand-ins for the original's spells that SRD 5.2.1 lacks, working as the
+    // original's did. Friends, Read Magic and Find Traps are cast in camp on
+    // the caster; the campaign keeps what they do.
+    SpellDef{.id = "friends",
+             .label = "Friends",
+             .level = 1,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::self,
+             .range = 5,
+             .instances = 8},
+    SpellDef{.id = "read_magic",
+             .label = "Read Magic",
+             .level = 1,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::self,
+             .range = 5,
+             .instances = 8},
+    SpellDef{.id = "find_traps",
+             .label = "Find Traps",
+             .level = 2,
+             .pattern = SpellPattern::camp,
+             .target = SpellTarget::self,
+             .range = 5,
+             .instances = 8},
+    // Snake Charm: snakes and scorpions whose current Hit Points together fit
+    // within the caster's own are Incapacitated for the fight, and a hit slays
+    // one.
+    SpellDef{.id = "snake_charm",
+             .label = "Snake Charm",
+             .level = 2,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::self,
+             .range = 5,
+             .rider = Rider::snake_charm},
+    // Protection From Normal Missiles: for an hour, an attack from more than 5
+    // feet away with ammunition, or a thrown weapon, without magic misses.
+    SpellDef{.id = "protection_from_normal_missiles",
+             .label = "Protection From Normal Missiles",
+             .level = 3,
+             .pattern = SpellPattern::buff,
+             .target = SpellTarget::ally,
+             .range = 5,
+             .requires_effect_capacity = true,
+             .rider = Rider::missile_ward}};
 
 // A verb casting a spell from a slot above its level ends in "_N", the slot's
 // level (2 to 9); one casting it with Magic Initiate's free use ends in
@@ -3010,6 +3071,11 @@ inline constexpr bool item_verb(std::string_view verb)
 {
     return verb.ends_with(item_suffix) || verb.ends_with(item_bonus_suffix);
 }
+
+// A spell read from a carried scroll (MAGIC-6) ends in "_scroll", before the
+// "_N" of a slot above the spell's own: "fireball_scroll",
+// "invisibility_scroll_3".
+inline constexpr std::string_view scroll_suffix = "_scroll";
 
 // The slot level a "_N" verb names, or 0.
 inline constexpr unsigned cast_slot_level(std::string_view verb)
@@ -3054,7 +3120,21 @@ inline constexpr std::string_view without_cast_suffix(std::string_view verb)
     {
         verb.remove_suffix(item_bonus_suffix.size());
     }
+    if (verb.ends_with(scroll_suffix))
+    {
+        verb.remove_suffix(scroll_suffix.size());
+    }
     return verb;
+}
+
+// Whether a verb reads a spell from a scroll (MAGIC-6).
+inline constexpr bool scroll_verb(std::string_view verb)
+{
+    if (cast_slot_level(verb))
+    {
+        verb.remove_suffix(2);
+    }
+    return verb.ends_with(scroll_suffix);
 }
 
 // Accepts the "_N" and "_initiate" verb forms, so callers can pass a command verb directly.

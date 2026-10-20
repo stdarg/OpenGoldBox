@@ -50,8 +50,9 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)). Withdraw's
   move comes after the other effect.
 - **Use Magic Device:** a 6 on 1d6 keeps a wand's spent charge (MAGIC-3). No
-  item needs attunement, and Spell Scrolls wait for
-  [#265](https://github.com/stdarg/OpenGold/issues/265).
+  item needs attunement (MAGIC-4). Its Spell Scroll rule is not built: a
+  Thief reads no scroll
+  ([MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls)).
 - **Fast Hands:** uses a wand, the Necklace of Missiles or Dust of
   Disappearance as a Bonus Action
   ([MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items)).

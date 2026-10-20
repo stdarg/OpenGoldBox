@@ -271,6 +271,9 @@ struct CharacterProfile
     // Hands the equipped weapon is wielded with when attacking. A Versatile
     // weapon uses two exactly when no shield or second weapon is held.
     unsigned weapon_hands{};
+    // What worn items add to every saving throw (a Ring of Protection, a
+    // cursed necklace), beyond the sheet's own saving throws.
+    int item_save_bonus{};
 };
 enum class EquipmentSlot
 {
@@ -278,7 +281,8 @@ enum class EquipmentSlot
     weapon,
     armor,
     shield,
-    carried
+    carried,
+    worn // A ring, bracers, a cloak, gauntlets or a necklace: no hand needed.
 };
 
 struct EquipmentInfo
@@ -880,6 +884,25 @@ class RulesModule
     virtual void use_party_camp_action(const CharacterSheet &user, VitalState &user_state,
                                        std::span<CampTarget> party, std::string_view action,
                                        RandomState &random_state) const = 0;
+    // The spells the member can read outside combat from the scroll whose key
+    // is `scroll` (MAGIC-6): an action for each spell on it that works outside
+    // combat, none when the member cannot read the scroll.
+    [[nodiscard]] virtual std::vector<CampAction>
+    scroll_actions(const CharacterSheet &, const VitalState &, std::string_view scroll) const = 0;
+    // Reads one of scroll_actions() as use_camp_action() or
+    // use_party_camp_action() uses a camp action; the campaign erases the spell
+    // from the scroll.
+    virtual void use_scroll(const CharacterSheet &user, VitalState &user_state,
+                            const CharacterSheet &target, VitalState &target_state,
+                            std::string_view scroll, std::string_view action,
+                            RandomState &random_state) const = 0;
+    virtual void use_party_scroll(const CharacterSheet &user, VitalState &user_state,
+                                  std::span<CampTarget> party, std::string_view scroll,
+                                  std::string_view action, RandomState &random_state) const = 0;
+    // The spell's level when the member can copy it into a spellbook (MAGIC-6):
+    // a Wizard spell of a level the Wizard can prepare, not yet in its book.
+    [[nodiscard]] virtual std::optional<unsigned> copyable_spell_level(const CharacterSheet &,
+                                                                       std::string_view spell) const = 0;
 
     // Gold coins a camp action on `target` takes from the party purse, such as
     // Revivify's offering.

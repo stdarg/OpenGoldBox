@@ -99,6 +99,10 @@ std::string_view item_type_name(std::uint8_t type)
     {
         return "Alchemist's Fire";
     }
+    if (type == authored_item::magic_ink)
+    {
+        return "Magic Ink";
+    }
     // Type IDs, not names of particular enchanted items. Name components remain exposed.
     constexpr std::string_view names[] = {"Unarmed",
                                           "Battle axe",
@@ -161,6 +165,35 @@ std::string_view item_type_name(std::uint8_t type)
                                           "Plate armor",
                                           "Shield"};
     return type < std::size(names) ? names[type] : std::string_view{};
+}
+
+// A generated worn item's or scroll's base word, for random treasure, whose
+// names are not decoded (MAGIC-4, MAGIC-6). Creature gear and fixed lists keep
+// their decoded names.
+std::string_view worn_type_name(std::uint8_t type)
+{
+    switch (type)
+    {
+    case 63:
+    case 67:
+        return "Gauntlets";
+    case 69:
+    case 90:
+    case 93:
+        return "Ring";
+    case 76:
+        return "Necklace";
+    case 77:
+        return "Bracers";
+    case 92:
+        return "Cloak";
+    // A generated scroll (MAGIC-6).
+    case 61:
+    case 62:
+        return "Scroll";
+    default:
+        return {};
+    }
 }
 } // namespace
 
@@ -330,7 +363,8 @@ std::string Equipment::label() const
     {
         return known ? decoded_name : unidentified_name;
     }
-    const auto type_name = item_type_name(stored.type);
+    const auto type_name = item_type_name(stored.type).empty() ? worn_type_name(stored.type)
+                                                               : item_type_name(stored.type);
     std::string name =
         type_name.empty() ? "Item type " + std::to_string(stored.type) : std::string(type_name);
     // Do not label charges on wands, scrolls, or potions as +N enchantments,

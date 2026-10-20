@@ -185,7 +185,7 @@ void run()
                     party.replace_rest_training(ticket, id, selected);
                 });
             party = roundtrip(party);
-            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 34\n"),
+            check(saved(party).starts_with("OPENGOLD-CAMPAIGN 36\n"),
                   "Actual training history uses the current campaign format");
             party.advance_time(std::chrono::minutes(24 * 60));
             check(bool(party.rest(RestKind::long_rest)),

@@ -12,10 +12,11 @@ inline constexpr std::uint8_t flask_of_oil = 86;
 
 // SRD 5.2.1 adventuring gear OpenGoldBox adds to the original game, numbered
 // above the original's 128 item types. They give every party Fire and Acid,
-// which stop a troll's Regeneration.
+// which stop a troll's Regeneration, and Magic Ink, which copies a scroll's
+// spell into a Wizard's spellbook (MAGIC-6).
 namespace authored_item
 {
-inline constexpr std::uint8_t torch = 200, acid = 201, alchemists_fire = 202;
+inline constexpr std::uint8_t torch = 200, acid = 201, alchemists_fire = 202, magic_ink = 203;
 }
 } // namespace opengold
 #endif

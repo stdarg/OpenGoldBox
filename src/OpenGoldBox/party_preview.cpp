@@ -451,7 +451,7 @@ void CharacterCreationView::refresh_party()
                     i18n::text(profile.equipment_positions.at(found - m.equipped.begin()).source) +
                     " / ";
             }
-            items->add_item(prefix + inventory_label(item));
+            items->add_item(prefix + inventory_label(m, item));
         }
         required_node<TextureRect>(*this, "PartyPanel/Portrait")
             .set_texture(
@@ -1027,7 +1027,7 @@ void CharacterCreationView::party_action(PartyAction action)
                 throw std::runtime_error("Select an existing item");
             }
             const auto selected = items[selection[0]].id;
-            const std::string definition = items[selection[0]].definition_id;
+            const std::string definition = rules_definition(campaign_->member(id), items[selection[0]]);
             if (action == PartyAction::equip)
             {
                 if (open_equipment_choice(id, selected))

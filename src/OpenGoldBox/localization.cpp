@@ -134,6 +134,13 @@ String text(std::string_view source)
         return format(N_("{item} (Fast Hands)"),
                       {{"item", text(source.substr(0, source.size() - fast_hands.size()))}});
     }
+    // "Fireball (scroll)", a spell read from a scroll (MAGIC-6), likewise.
+    constexpr std::string_view scroll = " (scroll)";
+    if (translated == gs(source) && source.size() > scroll.size() && source.ends_with(scroll))
+    {
+        return format(N_("{spell} (scroll)"),
+                      {{"spell", text(source.substr(0, source.size() - scroll.size()))}});
+    }
     // "Eyebite (Mystic Arcanum)", a Warlock's once-a-day spell, is
     // translated in two parts too.
     constexpr std::string_view arcanum = " (Mystic Arcanum)";

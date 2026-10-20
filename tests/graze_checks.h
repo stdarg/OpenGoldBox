@@ -291,7 +291,7 @@ void run()
                             continue;
                         }
                         const auto pending = c->save();
-                        check(pending.starts_with("OGCOMBAT 64 "),
+                        check(pending.starts_with("OGCOMBAT 65 "),
                               "Graze uses the current checkpoint format");
                         check(r->restore(pending)->save() == pending,
                               "Pending Graze round trips exactly");

@@ -113,8 +113,10 @@ AdndCombatValues adnd_combat_values(const PartyMember &m)
         {
             values.armor_class -= 10 - *suit + magic;
         }
-        else
+        else if (const auto type = source == m.item_sources.end() ? 0 : source->second.stored.type;
+                 type <= 47 || type == 73)
         {
+            // Weapon types: a ring's or bracers' bonus is not a weapon's (MAGIC-4).
             weapon_bonus = std::max(weapon_bonus, magic);
         }
     }
