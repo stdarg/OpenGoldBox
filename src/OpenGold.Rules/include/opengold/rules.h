@@ -291,6 +291,25 @@ struct EquipmentInfo
     unsigned hands{};
 };
 
+// How long a status effect lasts, as the sheet and the combat panel show it.
+enum class EffectEnd
+{
+    timed,     // `remaining` is left
+    long_rest, // a Long Rest ends it
+    removed,   // it lasts until magic undoes it
+    untimed    // it lasts while its cause does, such as Prone or Burning
+};
+
+// A status effect on a creature, worded by the rules for display; mechanics
+// stay in the module.
+struct StatusEffectView
+{
+    Message name, description;
+    std::string source; // who caused it; empty when the creature did itself
+    EffectEnd end{EffectEnd::timed};
+    std::chrono::milliseconds remaining{};
+};
+
 // Module-owned continuation, separate from encounter turn budgets.
 struct VitalState
 {
@@ -541,6 +560,7 @@ struct CombatantView
     VitalState persistent;
     std::vector<Message> status_messages;
     std::vector<Message> conditions; // Derived display state; mechanics stay in the module.
+    std::vector<StatusEffectView> status_effects;       // Every effect a player would notice.
     std::string type_name, melee_weapon, ranged_weapon; // Rules-owned combat display data.
     bool ranged_attack_available{};
     TemporaryHitPoints temporary_hp;
@@ -866,6 +886,10 @@ class RulesModule
     // above the sheet's.
     [[nodiscard]] virtual int hit_point_maximum(const CharacterSheet &,
                                                 const VitalState &) const = 0;
+    // The member's status effects outside combat, such as Aid or a used
+    // Relentless Endurance.
+    [[nodiscard]] virtual std::vector<StatusEffectView>
+    status_effects(const CharacterSheet &, const VitalState &) const = 0;
     [[nodiscard]] virtual std::vector<CampAction> camp_actions(const CharacterSheet &,
                                                                const VitalState &) const = 0;
     // Uses one of camp_actions() on the target. A character acting on itself

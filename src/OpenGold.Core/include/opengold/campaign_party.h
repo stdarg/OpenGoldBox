@@ -274,6 +274,8 @@ class CampaignParty
     std::optional<HazardHit> hazard_attack(const rules::HazardAttack &attack);
     // The member's current Hit Point maximum, raised by Aid.
     [[nodiscard]] int hit_point_maximum(MemberId id) const;
+    // The member's status effects, such as Aid or a used Relentless Endurance.
+    [[nodiscard]] std::vector<rules::StatusEffectView> status_effects(MemberId id) const;
     // Spells and features an active member can use outside combat (CLASS-3).
     [[nodiscard]] std::vector<rules::CampAction> camp_actions(MemberId id) const;
     // Atomic: on failure nothing changes.

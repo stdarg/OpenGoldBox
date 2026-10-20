@@ -3,6 +3,7 @@
 #include "opengold/srd5.h"
 #include "combat_fixture.h"
 #include "status_effects.h"
+#include "effect_labels.h"
 #include "weapons.h"
 #include "test_support.h"
 #include <fstream>
@@ -611,10 +612,34 @@ using opengold::test::logged;
 #include "optional_mastery_checks.h"
 } // namespace
 
+// Every effect kind is named for the sheet unless it is bookkeeping, and
+// never both.
+void effect_label_checks()
+{
+    for (auto n = 1u; n <= static_cast<unsigned>(fx::EffectKind::last); ++n)
+    {
+        const auto kind = static_cast<fx::EffectKind>(n);
+        const auto *label = fx::effect_label(kind);
+        const bool bookkeeping =
+            std::find(fx::unlabeled_effects.begin(), fx::unlabeled_effects.end(), kind) !=
+            fx::unlabeled_effects.end();
+        check(static_cast<bool>(label) != bookkeeping,
+              "Effect kind " + std::to_string(n) + " is either labeled or bookkeeping");
+        check(!label || (!label->name.empty() && !label->description.empty() &&
+                         (label->value == fx::EffectValue::none) ==
+                             (label->description.find("{value}") == std::string_view::npos)),
+              "Effect kind " + std::to_string(n) + " has a name, and {value} where it has one");
+    }
+    check(fx::effect_labels.size() + fx::unlabeled_effects.size() ==
+              static_cast<std::size_t>(fx::EffectKind::last),
+          "No kind is labeled twice");
+}
+
 int main()
 {
     try
     {
+        effect_label_checks();
         optional_mastery_checks::run();
         graze_checks::run();
         mastery_combat_checks::run();

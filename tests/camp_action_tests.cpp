@@ -9,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -316,11 +317,31 @@ void aid_checks()
               party.hit_point_maximum(cleric) == before[cleric] &&
               remaining(party, cleric, "spell_slot:2") == 1,
           "Aid raises the three lowest maximums by 5 from one level-two slot");
+    // The sheet lists Aid, its bonus, its caster and its eight hours.
+    const auto aid_effect = [&](MemberId id) -> std::optional<StatusEffectView>
+    {
+        for (const auto &effect : party.status_effects(id))
+        {
+            if (effect.name.source == "Aid")
+            {
+                return effect;
+            }
+        }
+        return std::nullopt;
+    };
+    const auto aided = aid_effect(low);
+    check(aided && aided->description.source == "Hit Point maximum increased by {value}." &&
+              aided->description.arguments.at(0).value == "5" && aided->source == "Cleric" &&
+              aided->end == EffectEnd::timed && aided->remaining == std::chrono::hours(8),
+          "An aided member's sheet shows Aid +5 from the Cleric for 8 hours");
+    check(!aid_effect(cleric), "The Cleric has no Aid yet");
     party.use_camp_action(cleric, cleric, "aid");
     check(party.hit_point_maximum(fighters[2]) == before[fighters[2]] + 5 &&
               party.hit_point_maximum(cleric) == before[cleric] + 5 &&
               party.hit_point_maximum(low) == before[low] + 5,
           "A second Aid passes over the members already aided");
+    check(aid_effect(cleric) && aid_effect(cleric)->source.empty(),
+          "Aid the Cleric cast on itself names no source");
 }
 
 // Lay On Hands spends 5 points to end Poisoned in camp too.

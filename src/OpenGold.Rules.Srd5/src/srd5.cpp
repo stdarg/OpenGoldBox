@@ -19,6 +19,7 @@
 #include "armor.h"
 #include "magic_items.h"
 #include "worn_items.h"
+#include "effect_labels.h"
 #include "opengold/item_key.h"
 #include "opengold/scroll_key.h"
 #include "opengold/srd5.h"
@@ -26,6 +27,8 @@
 #include <initializer_list>
 #include <utility>
 #include <array>
+#include <cctype>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -1830,6 +1833,87 @@ detail::EffectState all_effects(const Actor &a)
                   return x.id < y.id;
               });
     return effects;
+}
+
+// What the value placeholder names in an effect's description.
+rules::MessageArgument effect_value(const detail::Effect &effect, detail::EffectValue value)
+{
+    if (value == detail::EffectValue::damage_type)
+    {
+        std::string name(detail::damage_name(static_cast<detail::DamageType>(effect.dc)));
+        name[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(name[0])));
+        return {"value", name, true};
+    }
+    if (value == detail::EffectValue::beast_form)
+    {
+        return {"value",
+                std::string(detail::beast_forms.at(static_cast<std::size_t>(effect.dc - 1)).label),
+                true};
+    }
+    return {"value", std::to_string(effect.dc)};
+}
+
+// Durations past this are the "until Greater Restoration" kinds, never counted
+// down to an end.
+constexpr unsigned lasting_effect_ms = 2'592'000'000u; // 30 days
+
+// Every status effect a player would notice on the actor, in the order they
+// were applied, then the states that are not effects: Prone, Burning, oil,
+// panic and Concentration.
+std::vector<rules::StatusEffectView> status_effect_views(const Actor &a, bool oiled)
+{
+    std::vector<rules::StatusEffectView> views;
+    for (const auto &effect : all_effects(a).active)
+    {
+        const auto *label = detail::effect_label(effect.kind);
+        // Wild Resurgence's `dc` 0 only marks this turn's slot.
+        if (!label || (effect.kind == detail::EffectKind::resurged && !effect.dc))
+        {
+            continue;
+        }
+        rules::StatusEffectView view{{std::string(label->name), {}},
+                                     {std::string(label->description), {}}};
+        if (label->value != detail::EffectValue::none)
+        {
+            view.description.arguments.push_back(effect_value(effect, label->value));
+        }
+        if (effect.source_name != a.source.name)
+        {
+            view.source = effect.source_name;
+        }
+        view.end = detail::ends_with_long_rest(effect.kind)      ? rules::EffectEnd::long_rest
+                   : effect.kind == detail::EffectKind::returned ? rules::EffectEnd::untimed
+                   : effect.remaining_ms > lasting_effect_ms     ? rules::EffectEnd::removed
+                                                                 : rules::EffectEnd::timed;
+        view.remaining = std::chrono::milliseconds(effect.remaining_ms);
+        views.push_back(std::move(view));
+    }
+    const auto state = [&](bool shown, rules::Message name, rules::Message description)
+    {
+        if (shown)
+        {
+            views.push_back(
+                {std::move(name), std::move(description), {}, rules::EffectEnd::untimed});
+        }
+    };
+    state(
+        a.effects.prone, {"Prone", {}},
+        {"Attack rolls against it from within 5 feet have Advantage, others Disadvantage; standing up costs half its Speed.",
+         {}});
+    state(a.burning, {"Burning", {}},
+          {"Takes 1d4 Fire damage at the start of each of its turns.", {}});
+    state(oiled, {"Covered in oil", {}}, {"Fire damage deals it 5 more.", {}});
+    state(a.panicked, {"Fleeing in panic", {}},
+          {"Its morale broke; it runs for the edge of the field.", {}});
+    if (const auto &held = a.concentration.active())
+    {
+        views.push_back({{"Concentrating", {}},
+                         {"Taking damage calls for a Constitution save to keep its spell.", {}},
+                         {},
+                         rules::EffectEnd::timed,
+                         std::chrono::milliseconds(held->remaining_ms)});
+    }
+    return views;
 }
 
 // The actor's AC with its lasting effects. Mage Armor replaces an unarmored
@@ -3973,38 +4057,6 @@ VitalState vitals(const Actor &a)
             (!a.life.dead && !a.life.stable ? std::to_string(a.life.successes) + " successes, " +
                                                   std::to_string(a.life.failures) + " failures"
                                             : "");
-    }
-    if (detail::healing_blocked(a.effects))
-    {
-        description += "\nChill Touch: cannot regain HP.";
-    }
-    if (detail::has_effect(a.effects, detail::EffectKind::shocking_grasp))
-    {
-        description += "\nShocking Grasp: cannot make Opportunity Attacks.";
-    }
-    if (detail::frosted(a.effects))
-    {
-        description += "\nRay of Frost: Speed reduced by 10 feet.";
-    }
-    if (detail::slowed(a.effects))
-    {
-        description += "\nSlow: Speed reduced by 10 feet.";
-    }
-    if (detail::has_effect(a.effects, detail::EffectKind::frosts_chill))
-    {
-        description += "\nFrost's Chill: Speed reduced by 10 feet.";
-    }
-    if (detail::has_effect(a.effects, detail::EffectKind::hamstrung))
-    {
-        description += "\nHamstring Blow: Speed reduced by 15 feet.";
-    }
-    if (detail::blinded(a.effects))
-    {
-        description += "\nBlinded";
-    }
-    if (a.effects.prone)
-    {
-        description += "\nProne";
     }
     return {a.life.hp, a.life.dead, out.str(), description};
 }
@@ -7132,6 +7184,8 @@ Snapshot Session::snapshot() const
         view.item_uses_left = a.item_uses;
         view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
+        view.status_effects =
+            status_effect_views(a, a.oiled_until_round >= static_cast<int>(round_));
         if (physical_inventory_)
         {
             for (const auto &item : items_)
@@ -28437,6 +28491,15 @@ class Module final : public RulesModule
         {
             return sheet.hit_points;
         }
+    }
+
+    std::vector<rules::StatusEffectView> status_effects(const CharacterSheet &sheet,
+                                                        const VitalState &state) const override
+    {
+        // Its own effects, such as a Rage or Aid it cast on itself, name no source.
+        auto actor = camp_actor(sheet, state);
+        actor.source.name = sheet.name;
+        return status_effect_views(actor, false);
     }
 
     // Healing outside combat (CLASS-3): Lay On Hands and the healing spells.

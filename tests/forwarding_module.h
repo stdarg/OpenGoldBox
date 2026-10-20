@@ -250,6 +250,13 @@ class ForwardingModule : public rules::RulesModule
         return rules_->hit_point_maximum(sheet, state);
     }
 
+    std::vector<rules::StatusEffectView>
+    status_effects(const rules::CharacterSheet &sheet,
+                   const rules::VitalState &state) const override
+    {
+        return rules_->status_effects(sheet, state);
+    }
+
     std::vector<rules::CampAction> camp_actions(const rules::CharacterSheet &sheet,
                                                 const rules::VitalState &state) const override
     {

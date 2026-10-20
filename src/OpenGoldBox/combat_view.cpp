@@ -5,6 +5,7 @@
 #include "nick_controls.h"
 #include "godot_images.h"
 #include "hp_presentation.h"
+#include "status_effect_text.h"
 #include "application_settings.h"
 #include "localization.h"
 #include "godot_nodes.h"
@@ -2245,10 +2246,11 @@ void CombatView::update_hover(const Vector2 &pointer)
                                  {"hp", found->hit_points},
                                  {"maximum", found->max_hit_points},
                                  {"weapon", weapon_name}});
-    // Conditions such as Burning or Prone, so a player can see them on an enemy.
-    if (!found->conditions.empty())
+    // Every status effect, such as Burning or Hold Person, and what it does,
+    // so a player can see them on an enemy.
+    if (!found->status_effects.empty())
     {
-        details += "\n" + i18n::render(found->conditions);
+        details += "\n" + presentation::status_effect_lines(found->status_effects, true);
     }
     required_node<Label>(*this, "HoverInfo/Details").set_text(details);
     required_node<Node>(*this, "CombatLayout").call("place_hover", local);
@@ -2338,9 +2340,13 @@ void CombatView::refresh()
                   presentation::hp_text(a.hit_points, a.max_hit_points, a.dead, a.temporary_hp,
                                         a.hp_messages) +
                   "  " + i18n::format("AC {ac}", {{"ac", a.armor_class}}) + "\n";
-        if (!a.conditions.empty())
+        if (!a.status_effects.empty())
         {
-            roster += "    " + presentation::bbcode_literal(i18n::render(a.conditions)) + "\n";
+            roster += "    " +
+                      presentation::bbcode_literal(
+                          presentation::status_effect_lines(a.status_effects, false))
+                          .replace("\n", "\n    ") +
+                      "\n";
         }
     }
     required_node<RichTextLabel>(*this, "StatusStack/Roster").call("render", roster);

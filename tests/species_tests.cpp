@@ -921,6 +921,16 @@ void giant_ancestry_checks()
     check(submit(*fire.c, "end"), "The hero ends the turn");
     fire.hit(98);
     check(submit(*fire.c, "giant_boon") && fire.uses_left() == 0, "The second use");
+    const auto hero = fire.c->snapshot().combatants.front();
+    check(std::any_of(hero.status_effects.begin(), hero.status_effects.end(),
+                      [](const auto &effect)
+                      {
+                          return effect.name.source == "Species trait used" &&
+                                 effect.description.arguments.size() == 1 &&
+                                 effect.description.arguments[0].value == "2" &&
+                                 effect.source.empty() && effect.end == EffectEnd::long_rest;
+                      }),
+          "The spent uses show until a Long Rest, with no source for the hero's own trait");
     check(submit(*fire.c, "end"), "The hero ends the turn");
     fire.reach(1);
     check(submit(*fire.c, "melee", 98) && !fire.c->snapshot().reaction_pending,
@@ -948,6 +958,22 @@ void giant_ancestry_checks()
         return false;
     };
     check(chilled(), "Near shows the chill");
+    // The combat panel lists every effect with who caused it and its time left.
+    const auto chill_view = frost.c->snapshot();
+    const auto near = std::find_if(chill_view.combatants.begin(), chill_view.combatants.end(),
+                                   [](const auto &unit)
+                                   {
+                                       return unit.id == 98;
+                                   });
+    check(std::any_of(near->status_effects.begin(), near->status_effects.end(),
+                      [](const auto &effect)
+                      {
+                          return effect.name.source == "Frost's Chill" &&
+                                 effect.description.source == "Speed reduced by 10 feet." &&
+                                 effect.source == "Hero" && effect.end == EffectEnd::timed &&
+                                 effect.remaining.count() > 0 && effect.remaining.count() <= 6000;
+                      }),
+          "Near's status effects name Frost's Chill, the hero, and under a round left");
     check(submit(*frost.c, "end") && chilled(), "The chill lasts through Near's turn");
     frost.reach(1);
     check(!chilled(), "It ends when the hero's turn starts");

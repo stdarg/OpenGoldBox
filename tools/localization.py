@@ -65,6 +65,12 @@ def extract():
                 source=ast.literal_eval(match[1])
                 if " " in source or "{" in source:
                     add(source, path, content.count("\n", 0, match.start()) + 1)
+    # Status effects' names and descriptions, by EffectKind.
+    labels = ROOT / "src/OpenGold.Rules.Srd5/src/effect_labels.h"
+    content = labels.read_text(encoding="utf-8")
+    for match in re.finditer(rf'EffectKind::\w+,\s*({LITERAL}),\s*({LITERAL})', content):
+        for group in (1, 2):
+            add(ast.literal_eval(match[group]), labels, content.count("\n", 0, match.start()) + 1)
     manifest=ROOT / "src/OpenGoldBox/godot/locale/dynamic_sources.json"
     if manifest.exists():
         for source in json.loads(manifest.read_text(encoding="utf-8")):

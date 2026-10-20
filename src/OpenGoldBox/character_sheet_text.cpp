@@ -4,6 +4,7 @@
 #include "inventory_label.h"
 #include "character_text.h"
 #include "hp_presentation.h"
+#include "status_effect_text.h"
 #include "training_control.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -167,6 +168,25 @@ String formatted_sheet(const Character &character, const PartyMember *member,
         if (!member->vitals.description.empty())
         {
             text += "\n" + rich_text_literal(member->vitals.description);
+        }
+    }
+    if (member)
+    {
+        text += "\n\n[theme_title]" + i18n::utf8("Status Effects") + "[/theme_title]";
+        const auto effects = party->status_effects(member->id);
+        if (effects.empty())
+        {
+            text += "\n" + i18n::utf8("None");
+        }
+        for (const auto &effect : effects)
+        {
+            const auto plain = [](const String &value)
+            {
+                return rich_text_literal(value.utf8().get_data());
+            };
+            text += "\n" + plain(presentation::status_effect_text(effect, false)) +
+                    "\n[theme_font=sheet_note]" + plain(i18n::render(effect.description)) +
+                    "[/theme_font]";
         }
     }
     text += "\n\n[theme_title]" + i18n::utf8("Inventory") + "[/theme_title]";
