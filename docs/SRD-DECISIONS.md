@@ -1386,10 +1386,11 @@ The user chose how the original's scrolls
     on a creature within 5 feet, an attack from more than 5 feet away with
     ammunition, or a thrown weapon, without magic misses.
   The stand-ins and Enhance Ability are on no class list: only scrolls hold
-  them.
+  them (a default awaiting the user's answer).
 - **Readers as the original's**: arcane scrolls (the original's magic-user
   scrolls) for Bards, Sorcerers, Warlocks and Wizards; divine scrolls (cleric
-  scrolls) for Clerics, Druids, Paladins and Rangers. A reader casts any spell
+  scrolls) for Clerics, Druids, Paladins and Rangers (Druids and Rangers are a
+  default awaiting the user's answer). A reader casts any spell
   on a scroll of its kind, whatever the spell's level, with no check, as in
   the original.
 - **The SRD's scroll DC**: 13 for spells of level 1 or 2, 15 for 3 or 4, 17 for
@@ -1405,8 +1406,8 @@ The user chose how the original's scrolls
 - **Copying**: a Wizard copies an arcane scroll's spell of a level it can
   prepare into its spellbook, beyond the book's usual choices, as the SRD has
   it: 50 gp and two hours for each spell level. The gold is **Magic Ink**, a
-  new item the general store sells at 50 gp a bottle, one bottle for each spell
-  level (the user, 2026-10-20). Copying erases the spell from the scroll, as in
-  the original.
+  new item (the user, 2026-10-20); the general store sells it at 50 gp a
+  bottle, one bottle for each spell level. Copying erases the spell from the
+  scroll, as in the original.
 - **The computer reads no scroll**: Quick members and monsters leave scrolls
-  alone.
+  alone (a default awaiting the user's answer).
