@@ -1229,7 +1229,9 @@ The user chose how the original's enchanted weapons, armor and shields
   SRD 5.2.1 stops at +3.
 - **Long Sword +2 Flame Tongue** works as the SRD's Flame Tongue on top of its
   +2: a Bonus Action lights or douses the blade, and while lit it deals an
-  extra 2d6 Fire damage on a hit. It needs attunement.
+  extra 2d6 Fire damage on a hit. It needed attunement until 2026-10-20, when
+  attunement left the game
+  ([MAGIC-4](#magic-4-2026-10-20-no-attunement)).
 - **Two-Handed Sword +1, +3 vs Undead** has +1, or +3 against an Undead
   target, to attack and damage rolls.
 - **Cursed Broad Sword -2** follows the original: -2 to attack and damage
@@ -1260,8 +1262,9 @@ The user chose how found magic items are identified (issue
   is left out.
 - **Detect Magic** can be cast in camp or at any time outside combat. For ten
   minutes of game time, item lists mark each magic item with "* ".
-- **Flame Tongue unidentified.** Its wielder can attune to it and light it
-  before it is identified; attuning to it reveals its name.
+- **Flame Tongue unidentified.** Its wielder can light it before it is
+  identified. (Attuning to it revealed its name until attunement left the game,
+  [MAGIC-4](#magic-4-2026-10-20-no-attunement).)
 - **Cursed items** give no warning before they are equipped. Once one is, the
   refusal to unequip it says that it is cursed.
 
@@ -1306,3 +1309,49 @@ The user chose how the original's charged and single-use items work (issue
   sense (an attack needs a target in range, healing needs a wounded ally, and
   an area effect is skipped when it could catch an ally). The full
   specification of the AI is [#266](https://github.com/stdarg/OpenGold/issues/266).
+
+## MAGIC-4 (2026-10-20): no attunement
+
+The user decided that OpenGoldBox has no attunement at all (issue
+[#264](https://github.com/stdarg/OpenGold/issues/264)). This changes SRD 5.2.1,
+where many magic items need a creature attuned to them and a creature is
+attuned to at most three items:
+
+- **No item needs attunement.** Every magic item works for whoever wields,
+  wears or uses it, as in the original, which had no attunement.
+- **No limit.** A character may use any number of magic items, within the
+  slots each kind of item has.
+- **Flame Tongue** lights for anyone who wields it, and a rest no longer
+  reveals its name.
+- **Use Magic Device** keeps only its charge rule; its fourth attunement slot
+  has nothing to do.
+
+## MAGIC-5 (2026-10-20): rings, bracers and other worn items
+
+The user chose how the original's worn items
+([MAGIC_ITEMS.md](MAGIC_ITEMS.md#rings-and-worn-items), issue
+[#264](https://github.com/stdarg/OpenGold/issues/264)) work:
+
+- **Slots as the original has them.** A character wears two rings and one
+  each of bracers, a cloak, gauntlets and a necklace. Worn items need no hand.
+- **Ring of Protection +1 to +3** adds its bonus to Armor Class and to saving
+  throws. Only the better of two counts, as in the original, and it stacks
+  with magic armor, as in the SRD.
+- **Bracers**, as the original's: Armor Class is 10 + the bracers' improvement
+  + the Dexterity modifier, worn instead of armor (the better of the two
+  counts), and a shield still adds. The nomad shaman's "Bracers AC 2" have the
+  same improvement as AC 4 bracers, as in the original.
+- **Cloak of Displacement**, as the original's: +2 Armor Class, and the first
+  attack roll against the wearer in each fight misses. A natural 1 misses
+  anyway and leaves the cloak's miss for a later attack.
+- **Gauntlets of Ogre Power**, as the SRD's: Strength 19 unless it is higher.
+- **Ring of Fire Resistance**, as the original's: ordinary fire (a Torch,
+  Alchemist's Fire, burning oil) deals no damage; magical fire deals 2 less
+  per damage die, but at least 1 per die, and saves against it gain +4.
+- **Ring of Feather Falling** can be worn and does nothing, as in the original,
+  which has no falls.
+- **Cursed Necklace**, as the original's: -5 to Armor Class and to every saving
+  throw. Once worn it cannot be taken off until Remove Curse; then it is lost,
+  like the cursed sword (MAGIC-1).
+- **The alignment-bound swords** the same research found wait for
+  [#267](https://github.com/stdarg/OpenGold/issues/267).

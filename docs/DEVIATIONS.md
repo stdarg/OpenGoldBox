@@ -41,7 +41,8 @@ Add an entry whenever a new departure is decided.
   edges. [FLEE-1](SRD-DECISIONS.md#flee-1-2026-10-08-fleeing-a-fight-as-the-original-game-did).
 - **Flame Tongue** (2026-10-17). The original's Long Sword +2 Flame Tongue
   becomes the SRD's Flame Tongue with its +2 kept: a Bonus Action lights the
-  blade for an extra 2d6 Fire damage, and it needs attunement.
+  blade for an extra 2d6 Fire damage. Like every item, it needs no
+  attunement ([MAGIC-4](SRD-DECISIONS.md#magic-4-2026-10-20-no-attunement)).
   [MAGIC-1](SRD-DECISIONS.md#magic-1-2026-10-17-the-originals-enchanted-weapons-and-armor).
 - **Charged items** (2026-10-19). The original's wands, potions and other
   charged items keep their charges but work as their SRD 5.2.1 counterparts:
@@ -50,11 +51,16 @@ Add an entry whenever a new departure is decided.
   Lightning's bolt returns after a Long Rest instead of being spent, and the
   Manual of Bodily Health gives +2 Constitution.
   [MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items).
-- **Identifying by attunement and Identify** (2026-10-18). In the original only
+- **Identifying with the Identify spell** (2026-10-18). In the original only
   a shop's ID revealed a magic item's name. OpenGoldBox keeps it and adds the
-  SRD's Identify spell; attuning to an item, such as Flame Tongue, also reveals
-  its name.
+  SRD's Identify spell.
   [MAGIC-2](SRD-DECISIONS.md#magic-2-2026-10-18-identifying-magic-items).
+- **Worn items** (2026-10-20). A Ring of Protection adds its bonus to saving
+  throws as well as Armor Class, and it keeps working beside magic armor, which
+  in the original cancelled it. Gauntlets of Ogre Power give the SRD's
+  Strength 19 instead of 18/00. The second Cloak of Displacement record, which
+  gives no Armor Class in the original, gives the same +2 as the first.
+  [MAGIC-5](SRD-DECISIONS.md#magic-5-2026-10-20-rings-bracers-and-other-worn-items).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.

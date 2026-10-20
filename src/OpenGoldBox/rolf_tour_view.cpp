@@ -447,7 +447,8 @@ void RolfTourView::inventory_selected(std::int64_t index)
     {
         required_node<Label>(*this, "InventoryPanel/Status")
             .set_text(i18n::text(
-                opengold::srd5::equipment_note(m.character.sheet(), items[index].definition_id)));
+                opengold::srd5::equipment_note(m.character.sheet(),
+                                               opengold::rules_definition(m, items[index]))));
     }
     catch (const std::exception &e)
     {
@@ -477,7 +478,7 @@ void RolfTourView::equip_item(bool equip)
                 throw std::runtime_error("Select an existing item.");
             }
             item = items[selection[0]].id;
-            definition = items[selection[0]].definition_id;
+            definition = opengold::rules_definition(campaign_->member(id), items[selection[0]]);
         }
         if (equip)
         {
@@ -592,9 +593,19 @@ void RolfTourView::check_identification_spells()
                                            .name = "Manual of Bodily Health",
                                            .quantity = 1,
                                            .original_type = 70});
+        opengold::por::Equipment ring;
+        ring.stored.type = 93;
+        ring.stored.magic_bonus = 2;
+        ring.stored.stack_size = 1;
+        ring.decoded_name = "Ring Of Protection +2";
+        const auto protection = inventory.add({.definition_id = opengold::equipment_conversion(ring),
+                                               .name = ring.label(),
+                                               .quantity = 1,
+                                               .original_type = 93});
         caster.character.replace_inventory(std::move(inventory));
         caster.item_sources.emplace(identify_check_sword_, sword);
         caster.item_sources.emplace(manual, book);
+        caster.item_sources.emplace(protection, ring);
         caster.equipped.clear();
         caster.vitals = {caster.character.sheet().hit_points, false, {}};
         campaign_->restore(std::move(fixture));
@@ -684,6 +695,23 @@ void RolfTourView::check_identification_spells()
         !required_node<Label>(*this, "InventoryPanel/Status").get_text().contains("Constitution"))
     {
         throw std::runtime_error("Using the Manual must raise Constitution by 2");
+    }
+    // A Ring of Protection is worn from the inventory (MAGIC-4).
+    const auto worn = campaign_->member(campaign_->selected()).character.inventory().items();
+    const auto ring = std::find_if(worn.begin(), worn.end(),
+                                   [](const auto &item)
+                                   {
+                                       return item.definition_id == "ring_of_protection+2";
+                                   });
+    const int armor_class = campaign_->profile(campaign_->selected()).armor_class;
+    items.select(static_cast<int>(ring - worn.begin()));
+    inventory_selected(ring - worn.begin());
+    required_node<Button>(*this, "InventoryPanel/Equip").emit_signal("pressed");
+    if (campaign_->profile(campaign_->selected()).armor_class != armor_class + 2 ||
+        campaign_->profile(campaign_->selected()).item_save_bonus != 2 ||
+        !required_node<Label>(*this, "InventoryPanel/Status").get_text().contains("Rings of Protection"))
+    {
+        throw std::runtime_error("Wearing a Ring of Protection +2 must add 2 to AC and saves");
     }
     campaign_->restore(std::move(*identify_check_retained_));
     identify_check_retained_.reset();

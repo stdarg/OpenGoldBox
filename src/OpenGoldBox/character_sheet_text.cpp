@@ -119,6 +119,19 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     text += "\n\n[theme_title]" + i18n::utf8("Attributes") + "[/theme_title]";
     text += i18n::utf8(
         "\n[theme_table=abilities][theme_header]Attribute[/theme_header][theme_header]Score[/theme_header][theme_header_last]Saving throw[/theme_header_last]");
+    // Worn items change every saving throw (MAGIC-4).
+    int item_saves = 0;
+    if (member)
+    {
+        try
+        {
+            item_saves = party->profile(member->id).item_save_bonus;
+        }
+        catch (const std::exception &)
+        {
+            // The AC line below reports why the profile is unavailable.
+        }
+    }
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = opengold::rules::all_abilities[i];
@@ -130,10 +143,15 @@ String formatted_sheet(const Character &character, const PartyMember *member,
                       std::string(s.modifiers[ability] > 0 ? "score_positive" : "score_negative") +
                       "]" + score + "[/theme_color]";
         text += "[cell]" + i18n::utf8(i18n::ability_names[i]) + "[/cell][cell]" + colored +
-                "[/cell][cell]" + signed_number(s.saving_throws[ability]) +
+                "[/cell][cell]" + signed_number(s.saving_throws[ability] + item_saves) +
                 (s.save_proficiencies[ability] ? " *" : "") + "[/cell]";
     }
     text += "[/theme_table]\n" + i18n::utf8("* Proficient saving throw");
+    if (item_saves)
+    {
+        text += "\n" + i18n::formatted("Saving throws include {bonus} from worn items.",
+                                       {{"bonus", gs(signed_number(item_saves))}});
+    }
     if (member)
     {
         try

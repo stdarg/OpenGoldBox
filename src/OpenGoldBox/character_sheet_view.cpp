@@ -197,13 +197,14 @@ void CharacterCreationView::update_saving_throws(String value)
     const int dc = static_cast<int>(value.to_int());
     const bool disadvantage =
         member && campaign_->profile(member->id).strength_dexterity_disadvantage;
+    const int item_saves = member ? campaign_->profile(member->id).item_save_bonus : 0;
     std::string text = i18n::formatted(
         "Roll a d20 and add the saving throw bonus. Meet or exceed DC {dc} to save.\n\n",
         {{"dc", dc}});
     for (unsigned i = 0; i < 6; ++i)
     {
         const auto ability = rules::all_abilities[i];
-        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[ability]);
+        const int needed = srd5::minimum_save_roll(dc, s.saving_throws[ability] + item_saves);
         const auto target = needed > 20 ? i18n::text("Cannot reach this DC on a d20")
                             : needed == 1
                                 ? i18n::text("Any d20 roll saves")
@@ -211,7 +212,7 @@ void CharacterCreationView::update_saving_throws(String value)
         text += i18n::formatted(
             "[theme_emphasis]{ability} save: {bonus} | {target}[/theme_emphasis]\n{modifier} from {ability} score {score} (score minus 10, divided by 2, rounded down).\n",
             {{"ability", i18n::text(i18n::ability_names[i])},
-             {"bonus", gs(signed_number(s.saving_throws[ability]))},
+             {"bonus", gs(signed_number(s.saving_throws[ability] + item_saves))},
              {"target", target},
              {"modifier", gs(signed_number(s.modifiers[ability]))},
              {"score", s.scores[ability]}});
@@ -223,6 +224,11 @@ void CharacterCreationView::update_saving_throws(String value)
                     : i18n::formatted(
                           "+0 proficiency: {class} does not grant proficiency in this save.",
                           {{"class", i18n::text(s.character_class)}});
+        if (item_saves)
+        {
+            text += "\n" + i18n::formatted("{bonus} from worn items.",
+                                           {{"bonus", gs(signed_number(item_saves))}});
+        }
         if (disadvantage && i < 2)
         {
             text += "\n" +
@@ -232,6 +238,6 @@ void CharacterCreationView::update_saving_throws(String value)
         text += "\n\n";
     }
     text += i18n::utf8(
-        "No additional racial, item or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules.");
+        "No additional racial or spell bonuses are currently applied to these saves. Conditional traits and persistent spell effects are not implemented.\n\nOrdinary saving throws: a natural 1 or 20 does not automatically fail or succeed. Death saves use separate rules.");
     label->call("render", gs(text));
 }

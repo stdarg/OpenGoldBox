@@ -70,7 +70,6 @@ void keep_item_uses(PartyMember &member, std::uint64_t id, unsigned left)
     if (!left)
     {
         std::erase(member.equipped, id);
-        std::erase(member.attuned, id);
         member.item_sources.erase(id);
     }
     member.character.replace_inventory(std::move(inventory));
@@ -91,29 +90,9 @@ void put_down_cursed_items(PartyMember &member)
                       }
                       inventory.remove(worn, 1);
                       member.item_sources.erase(worn);
-                      std::erase(member.attuned, worn);
                       return true;
                   });
     member.character.replace_inventory(std::move(inventory));
-}
-
-// The key the rules see for an item: it says so when its holder is attuned to
-// it, or when its enchantment is not yet identified.
-std::string rules_definition(const PartyMember &member, const InventoryItem &item)
-{
-    auto definition = item.definition_id;
-    if (std::find(member.attuned.begin(), member.attuned.end(), item.id) != member.attuned.end())
-    {
-        definition += ":attuned";
-    }
-    const auto enchantment = rules::parse_item_key(item.definition_id);
-    const auto source = member.item_sources.find(item.id);
-    if ((enchantment.bonus || enchantment.power != rules::ItemPower::none) &&
-        source != member.item_sources.end() && !source->second.identified())
-    {
-        definition += ":unidentified";
-    }
-    return definition;
 }
 
 // The definitions of a member's equipped items, which the rules read as gear.
@@ -309,6 +288,47 @@ std::string_view charged_conversion(const por::ItemRecord &raw)
     }
 }
 
+// The original's rings, bracers, cloak, gauntlets and necklace (MAGIC-4), known
+// by their item type or by the effect byte 62 applies when they are readied
+// (byte 61 is its argument); empty for any other record.
+std::string worn_conversion(const por::ItemRecord &raw)
+{
+    constexpr std::uint8_t gauntlets_type = 63, fire_resistance_type = 69,
+                           cursed_necklace_type = 76, bracers_type = 77,
+                           feather_falling_type = 90, cloak_type = 92, protection_type = 93;
+    constexpr std::uint8_t ogre_power = 0x83, grants_effect = 0x81, cloak_effect = 0x85;
+    constexpr std::uint8_t fire_resistance = 61, displacement = 89;
+    const auto [charges, argument, effect] = raw.effect_codes;
+    if (effect == ogre_power || raw.type == gauntlets_type)
+    {
+        return "gauntlets_of_ogre_power";
+    }
+    if ((effect == grants_effect && argument == fire_resistance) ||
+        raw.type == fire_resistance_type)
+    {
+        return "ring_of_fire_resistance";
+    }
+    // A second Cloak of Displacement record has another item type.
+    if ((effect == cloak_effect && argument == displacement) || raw.type == cloak_type)
+    {
+        return "cloak_of_displacement";
+    }
+    switch (raw.type)
+    {
+    case protection_type:
+        return rules::item_key("ring_of_protection", raw.magic_bonus);
+    case bracers_type:
+        return rules::item_key("bracers", raw.magic_bonus);
+    case feather_falling_type:
+        return "ring_of_feather_falling";
+    case cursed_necklace_type:
+        return rules::item_key("necklace", raw.magic_bonus,
+                               raw.cursed_raw ? rules::ItemPower::cursed : rules::ItemPower::none);
+    default:
+        return {};
+    }
+}
+
 bool has_effects(const por::ItemRecord &raw)
 {
     return std::any_of(raw.effect_codes.begin(), raw.effect_codes.end(),
@@ -318,6 +338,26 @@ bool has_effects(const por::ItemRecord &raw)
                        });
 }
 } // namespace
+
+// The key the rules see for an item: it says so when the item's magic is not
+// yet identified. A charged item's uses are known either way.
+std::string rules_definition(const PartyMember &member, const InventoryItem &item)
+{
+    auto definition = item.definition_id;
+    const auto enchantment = rules::parse_item_key(item.definition_id);
+    const auto source = member.item_sources.find(item.id);
+    if (source == member.item_sources.end() || source->second.identified())
+    {
+        return definition;
+    }
+    const auto &raw = source->second.stored;
+    const bool worn_magic = por::is_magic(raw) && !raw.effect_codes[0];
+    if (enchantment.bonus || enchantment.power != rules::ItemPower::none || worn_magic)
+    {
+        definition += ":unidentified";
+    }
+    return definition;
+}
 
 unsigned carried_quantity(const por::Equipment &item)
 {
@@ -353,6 +393,10 @@ std::string equipment_conversion(const por::Equipment &item)
     if (const auto charged = charged_conversion(raw); !charged.empty())
     {
         return std::string(charged);
+    }
+    if (auto worn = worn_conversion(raw); !worn.empty())
+    {
+        return worn;
     }
     if (const auto base = enchantable_conversion(raw.type); !base.empty())
     {

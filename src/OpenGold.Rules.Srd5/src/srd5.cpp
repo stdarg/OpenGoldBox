@@ -18,6 +18,7 @@
 #include "thrown_gear.h"
 #include "armor.h"
 #include "magic_items.h"
+#include "worn_items.h"
 #include "opengold/item_key.h"
 #include "opengold/srd5.h"
 #include <algorithm>
@@ -68,6 +69,10 @@ std::string weapon_label(std::string_view key)
     else if (const auto *item = detail::armor(key))
     {
         label = item->label;
+    }
+    else if (const auto *item = detail::worn_item(key))
+    {
+        label = rules::parse_item_key(key).unidentified ? item->unidentified_label : item->label;
     }
     else
     {
@@ -122,6 +127,11 @@ std::vector<Message> enchantment_messages(std::string_view key)
         messages.push_back({"Source: equipped {item}. Its magic adds {bonus} to Armor Class.",
                             {{"item", weapon_label(key), true}, {"bonus", bonus}}});
     }
+    else if (const auto *worn = detail::worn_item(key))
+    {
+        messages.push_back({"Source: worn {item}. {note}",
+                            {{"item", weapon_label(key), true}, {"note", std::string(worn->note), true}}});
+    }
     if (item && enchantment.power == rules::ItemPower::bane_undead)
     {
         messages.push_back({"Source: equipped {item}. Against Undead it adds 2 more.",
@@ -136,9 +146,7 @@ std::vector<Message> enchantment_messages(std::string_view key)
     if (item && enchantment.power == rules::ItemPower::flame_tongue)
     {
         messages.push_back(
-            {enchantment.attuned
-                 ? "Source: equipped {item}, a Flame Tongue. A Bonus Action lights the blade; while it is lit, hits deal 2d6 more Fire damage."
-                 : "Source: equipped {item}, a Flame Tongue. Its fire needs attunement: finish a Short or Long Rest with it equipped.",
+            {"Source: equipped {item}, a Flame Tongue. A Bonus Action lights the blade; while it is lit, hits deal 2d6 more Fire damage.",
              {{"item", weapon_label(key), true}}});
     }
     return messages;
@@ -170,6 +178,11 @@ bool trained(CharacterClass klass, std::span<const FeatureGrant> grants, std::st
         return detail::armor_trained(klass, armor->category) ||
                (protector && armor->category == detail::ArmorCategory::heavy) ||
                (warden && armor->category == detail::ArmorCategory::medium);
+    }
+    // Anyone can wear a ring, bracers, a cloak, gauntlets or a necklace.
+    if (detail::worn_item(key))
+    {
+        return true;
     }
     throw std::runtime_error("Unsupported equipment conversion: " + std::string(key));
 }
@@ -563,6 +576,12 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         return std::string(magic->note);
     }
+    // An unidentified worn item does not say what it does (#262).
+    if (const auto *worn = detail::worn_item(item))
+    {
+        return rules::parse_item_key(item).unidentified ? "Worn: it needs no hand."
+                                                        : std::string(worn->note);
+    }
     std::string text;
     if (trained(detail::class_of(sheet), sheet.grants, item))
     {
@@ -603,7 +622,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 64;
+constexpr unsigned checkpoint_format = 65;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1370,7 +1389,12 @@ struct Definition
     // damage modifier, still adds it. bane_undead adds 2 more against Undead.
     int melee_magic{}, ranged_magic{};
     bool bane_undead{};
-    bool flame_tongue{}; // The wielded weapon is a Flame Tongue its wielder is attuned to.
+    bool flame_tongue{}; // The wielded weapon is a Flame Tongue.
+    // The original's worn items (MAGIC-4): a Ring of Fire Resistance, and a
+    // Cloak of Displacement, whose first attack roll against the wearer in a
+    // fight misses.
+    bool fire_ward{}, displacement{};
+    int item_saves{}; // What worn items add to every saving throw.
     int reach{5};
     Dice ranged;
     int range{}, long_range{}, winds{}, casting{}, level{};
@@ -1743,6 +1767,7 @@ struct Actor
     bool lightning_throw{};  // Its Javelin of Lightning's bolt flies, within one command
     bool keeps_charge{};     // Use Magic Device saved this use's charge, within one command
     bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
+    bool displacement_spent{}; // Its Cloak of Displacement's miss is used this fight (MAGIC-4)
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
     // Tried to run off the field as fast as the fastest enemy and failed: it
@@ -2028,12 +2053,12 @@ int channel_capacity(const Definition &d)
     return d.channel_divinity + d.rages + d.wild_shapes;
 }
 
-// A Potion of Giant Strength (MAGIC-3): Strength 21, a +5 modifier, when that
-// is better. A Strength-based melee attack and its damage, Strength saves and
-// Athletics follow it.
-Definition strengthened(Definition d)
+// A Strength modifier of `giant` when that is better: a Potion of Giant
+// Strength's 21 (+5, MAGIC-3) or Gauntlets of Ogre Power's 19 (+4, MAGIC-4). A
+// Strength-based melee attack and its damage, Strength saves and Athletics
+// follow it.
+Definition strengthened(Definition d, int giant)
 {
-    constexpr int giant = 5;
     const int gain = giant - d.strength;
     if (gain <= 0)
     {
@@ -2553,15 +2578,18 @@ bool curse(detail::EffectKind kind)
     return kind == detail::EffectKind::hex || kind == detail::EffectKind::cursed;
 }
 
-// It wields a cursed item and cannot put it down until Remove Curse (MAGIC-1).
-bool bound_to_cursed_item(const Actor &a)
+// It wields or wears a cursed item and cannot put it down until Remove Curse
+// (MAGIC-1). With `weapons_only`, only a cursed weapon counts: a cursed necklace
+// does not stop a weapon swap.
+bool bound_to_cursed_item(const Actor &a, bool weapons_only = false)
 {
     const auto &keys = a.definition.equipment_keys;
     return !a.curse_lifted && std::any_of(keys.begin(), keys.end(),
-                                          [](const auto &key)
+                                          [&](const auto &key)
                                           {
                                               return rules::parse_item_key(key).power ==
-                                                     rules::ItemPower::cursed;
+                                                         rules::ItemPower::cursed &&
+                                                     (!weapons_only || detail::weapon(key));
                                           });
 }
 
@@ -2872,7 +2900,9 @@ character_definition(std::string_view bytes,
         in >> modifier;
     }
     in >> count;
-    if (!in || count > 3 || hp_modifiers.back() != con)
+    // A weapon, armor and a shield, and two rings, bracers, a cloak, gauntlets
+    // and a necklace (MAGIC-4).
+    if (!in || count > 9 || hp_modifiers.back() != con)
     {
         throw std::runtime_error("Invalid character HP history or equipment count");
     }
@@ -3097,6 +3127,20 @@ character_definition(std::string_view bytes,
     {
         d.equipment_keys.assign(equipment_override->begin(), equipment_override->end());
     }
+    // Gauntlets of Ogre Power: Strength 19 unless it is higher (MAGIC-4). The
+    // modifier follows after the gear; the score counts for armor and Heavy
+    // weapons here.
+    const bool ogre_power = std::any_of(d.equipment_keys.begin(), d.equipment_keys.end(),
+                                        [](const auto &key)
+                                        {
+                                            return rules::base_item_key(key) ==
+                                                   "gauntlets_of_ogre_power";
+                                        });
+    auto worn_scores = scores;
+    if (ogre_power)
+    {
+        worn_scores[Ability::strength] = std::max(worn_scores[Ability::strength], 19);
+    }
     // Grants come before equipment because a Divine Order can add training.
     std::string background;
     in >> std::quoted(background);
@@ -3258,6 +3302,10 @@ character_definition(std::string_view bytes,
         d.initiative = dex + proficiency;
     }
     int shield_magic = 0;
+    // Worn items (MAGIC-4): the better Ring of Protection, the better bracers'
+    // Armor Class, and flat Armor Class and save changes.
+    int ring_bonus = 0, bracers_ac = 0, worn_ac = 0, worn_saves = 0;
+    std::array<unsigned, 5> worn_count{};
     for (const auto &key : d.equipment_keys)
     {
         const auto enchantment = rules::parse_item_key(key);
@@ -3299,10 +3347,9 @@ character_definition(std::string_view bytes,
                 d.melee_type = item->type;
                 d.melee_magic = enchantment.bonus;
                 d.bane_undead = enchantment.power == rules::ItemPower::bane_undead;
-                d.flame_tongue =
-                    enchantment.power == rules::ItemPower::flame_tongue && enchantment.attuned;
+                d.flame_tongue = enchantment.power == rules::ItemPower::flame_tongue;
                 d.reach = melee_reach;
-                d.melee_heavy_disadvantage = item->heavy_disadvantage(scores);
+                d.melee_heavy_disadvantage = item->heavy_disadvantage(worn_scores);
             }
             if (item->range)
             {
@@ -3314,7 +3361,7 @@ character_definition(std::string_view bytes,
                 d.ranged_magic = enchantment.bonus;
                 d.range = item->range;
                 d.long_range = item->long_range;
-                d.ranged_heavy_disadvantage = item->heavy_disadvantage(scores);
+                d.ranged_heavy_disadvantage = item->heavy_disadvantage(worn_scores);
             }
         }
         else if (const auto *item = detail::armor(key);
@@ -3333,7 +3380,7 @@ character_definition(std::string_view bytes,
             d.heavy_armor = item->category == detail::ArmorCategory::heavy;
             d.ac = item->base_ac + item->dexterity_contribution(dex) + enchantment.bonus;
             d.stealth_disadvantage = item->stealth_disadvantage;
-            if (scores[Ability::strength] < item->strength)
+            if (worn_scores[Ability::strength] < item->strength)
             {
                 d.speed -= 10;
             }
@@ -3347,6 +3394,36 @@ character_definition(std::string_view bytes,
             shield = true;
             shield_magic = enchantment.bonus;
             ++hands;
+        }
+        else if (const auto *worn = detail::worn_item(key))
+        {
+            auto &worn_of_kind = worn_count[static_cast<std::size_t>(worn->kind)];
+            if (++worn_of_kind > (worn->kind == detail::WornKind::ring ? 2U : 1U))
+            {
+                throw std::runtime_error(worn->kind == detail::WornKind::ring
+                                             ? "Only two rings may be worn"
+                                             : "Only one of each worn item may be worn");
+            }
+            const auto base = enchantment.base;
+            if (base == "ring_of_protection")
+            {
+                ring_bonus = std::max(ring_bonus, enchantment.bonus);
+            }
+            else if (base == "bracers")
+            {
+                bracers_ac = 10 + enchantment.bonus + dex;
+            }
+            else if (base == "cloak_of_displacement")
+            {
+                worn_ac += 2;
+                d.displacement = true;
+            }
+            else if (base == "necklace")
+            {
+                worn_ac += enchantment.bonus;
+                worn_saves += enchantment.bonus;
+            }
+            d.fire_ward |= base == "ring_of_fire_resistance";
         }
         else
         {
@@ -3527,6 +3604,15 @@ character_definition(std::string_view bytes,
         throw std::runtime_error(
             "Not enough free hands. Unequip the shield or two-handed weapon first.");
     }
+    // Bracers are worn instead of armor: the better Armor Class counts.
+    d.ac = std::max(d.ac, bracers_ac);
+    worn_ac += ring_bonus;
+    worn_saves += ring_bonus;
+    for (auto &save : d.saves)
+    {
+        save += worn_saves;
+    }
+    d.item_saves = worn_saves;
     if (!armor && klass == CharacterClass::barbarian)
     {
         d.ac = std::max(d.ac, 10 + dex + con);
@@ -3579,11 +3665,11 @@ character_definition(std::string_view bytes,
         d.melee_type = detail::DamageType::force;
     }
     const int shield_ac = shield && trained(klass, grants, "shield") ? 2 + shield_magic : 0;
-    d.ac += shield_ac;
+    d.ac += shield_ac + worn_ac;
     // Mage Armor's AC for a creature wearing no armor.
     if (!armor)
     {
-        d.mage_armor_ac = 13 + dex + shield_ac;
+        d.mage_armor_ac = std::max(13 + dex, bracers_ac) + shield_ac + worn_ac;
     }
     if (armor && (features & 1))
     {
@@ -3603,7 +3689,8 @@ character_definition(std::string_view bytes,
     {
         throw std::runtime_error("Invalid character profile fields");
     }
-    return d;
+    // Gauntlets of Ogre Power: Strength 19, a +4 modifier.
+    return ogre_power ? strengthened(std::move(d), 4) : d;
 }
 
 // The only vital-state tag this module reads or writes; see profile_magic.
@@ -4658,6 +4745,7 @@ class Session final : public CombatSession
 
     int dice(Dice d, bool critical = false)
     {
+        damage_dice_ = d.count * (critical ? 2 : 1);
         return detail::roll_damage(rng_, d, critical);
     }
 
@@ -5258,6 +5346,12 @@ class Session final : public CombatSession
     // The creature using an item's spell (MAGIC-3), whose save DC is then the
     // item's 15; 0 otherwise.
     EntityId item_caster_{};
+    // The dice in the latest damage roll, doubled on a critical hit: a Ring of
+    // Fire Resistance takes 2 from magical fire per die (MAGIC-4).
+    int damage_dice_{};
+    // Whether the spell or breath now resolving deals Fire damage: a Ring of
+    // Fire Resistance adds 4 to saves against it (MAGIC-4).
+    bool against_fire_{};
     // Overchannel: the spell its Wizard is casting deals its maximum damage,
     // and the Wizard then takes this many d12 of Necrotic damage.
     bool overchanneling_{};
@@ -5386,7 +5480,9 @@ class Session final : public CombatSession
     void study(const Actor &fighter, Actor &target);
     [[nodiscard]] int keep_higher_savage_roll(Actor &a, int first, int second);
     void finish_reaction();
-    int resolved_damage(Actor &target, detail::DamageType type, int amount);
+    // Ordinary fire is Alchemist's Fire or burning oil, not magic (MAGIC-4).
+    int resolved_damage(Actor &target, detail::DamageType type, int amount,
+                        bool ordinary_fire = false);
     // The creature's damage affinities with those its effects grant: Warding
     // Bond resists all damage, Protection from Poison resists Poison. The
     // creature's own list is read as it is unless something is added, which
@@ -6322,7 +6418,7 @@ void Session::throw_gear(Actor &a, Actor &target, const detail::ThrownGear &gear
     }
     const bool acid = gear.effect == detail::ThrownGearEffect::acid;
     const auto type = acid ? detail::DamageType::acid : detail::DamageType::fire;
-    const int amount = resolved_damage(target, type, acid ? roll(6) + roll(6) : roll(4));
+    const int amount = resolved_damage(target, type, acid ? roll(6) + roll(6) : roll(4), !acid);
     log(target.source.name + " takes " + std::to_string(amount) + " " +
             std::string(detail::damage_name(type)) + " damage.",
         {"{name} takes {damage} {type} damage.",
@@ -8396,11 +8492,17 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
                       });
         log(target.source.name + "'s curses end.",
             {"{name}'s curses end.", {{"name", target.source.name}}});
-        if (bound_to_cursed_item(target))
+        if (bound_to_cursed_item(target, true))
         {
             target.curse_lifted = true;
             log(target.source.name + " can put down the cursed weapon.",
                 {"{name} can put down the cursed weapon.", {{"name", target.source.name}}});
+        }
+        else if (bound_to_cursed_item(target))
+        {
+            target.curse_lifted = true;
+            log(target.source.name + " can take off the cursed item.",
+                {"{name} can take off the cursed item.", {{"name", target.source.name}}});
         }
         return;
     case detail::Rider::banishment:
@@ -8730,6 +8832,12 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
         EntityId &caster;
         ~ItemCasterReset() { caster = 0; }
     } item_caster_reset{item_caster_};
+    against_fire_ = spell.damage == detail::DamageType::fire;
+    const struct AgainstFireReset
+    {
+        bool &against_fire;
+        ~AgainstFireReset() { against_fire = false; }
+    } against_fire_reset{against_fire_};
     take_metamagic(a, spell);
     take_overchannel(a, spell, verb);
     if (casting_with(Metamagic::heightened))
@@ -11403,13 +11511,13 @@ std::vector<Command> Session::offered_commands() const
         const bool wields_equipment = !a.form;
         // A carried Torch is drawn as part of the attack (SRD 5.2.1: a weapon
         // can be equipped with each attack of the Attack action).
-        if (wields_equipment && feet <= 5 && carries(a, "torch") && !bound_to_cursed_item(a))
+        if (wields_equipment && feet <= 5 && carries(a, "torch") && !bound_to_cursed_item(a, true))
         {
             add(id, "torch", "Torch attack", other.source.id);
         }
         // A carried bow or crossbow is drawn as part of the attack, too.
         // A cursed weapon cannot be put down to draw it.
-        if (const auto bow = wields_equipment && !bound_to_cursed_item(a) ? carried_ranged_weapon(a)
+        if (const auto bow = wields_equipment && !bound_to_cursed_item(a, true) ? carried_ranged_weapon(a)
                                                                          : std::string_view{};
             !bow.empty() && feet <= detail::weapon(bow)->long_range)
         {
@@ -11858,7 +11966,8 @@ std::vector<Cell> Session::movement_reach(EntityId id) const
     return cells;
 }
 
-int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
+int Session::resolved_damage(Actor &target, detail::DamageType type, int amount,
+                             bool ordinary_fire)
 {
     last_damage_type_ = type;
     // Resistance (the cantrip): 1d4 less of its type, once per turn, before
@@ -11879,14 +11988,33 @@ int Session::resolved_damage(Actor &target, detail::DamageType type, int amount)
             {"{name}'s Resistance reduces the damage by {amount}.",
              {{"name", target.source.name}, {"amount", std::to_string(reduced)}}});
     }
-    // Oil: Fire damage on an oiled creature deals 5 more, once, from the burning oil.
+    // The original's Ring of Fire Resistance (MAGIC-4): ordinary fire deals no
+    // damage; magical fire 2 less per damage die, but at least 1 per die.
+    const bool fire_ward = type == detail::DamageType::fire && def(target).fire_ward && amount > 0;
+    if (fire_ward)
+    {
+        const int warded =
+            ordinary_fire ? 0 : std::max(damage_dice_, amount - 2 * damage_dice_);
+        log(target.source.name + "'s Ring of Fire Resistance reduces the Fire damage from " +
+                std::to_string(amount) + " to " + std::to_string(warded) + ".",
+            {"{name}'s Ring of Fire Resistance reduces the Fire damage from {before} to {after}.",
+             {{"name", target.source.name},
+              {"before", std::to_string(amount)},
+              {"after", std::to_string(warded)}}});
+        amount = warded;
+    }
+    // Oil: Fire damage on an oiled creature deals 5 more, once, from the burning
+    // oil, which is ordinary fire.
     if (type == detail::DamageType::fire && amount > 0 &&
         target.oiled_until_round >= static_cast<int>(round_))
     {
         target.oiled_until_round = 0;
-        amount += 5;
-        log("The oil on " + target.source.name + " burns for 5 more damage.",
-            {"The oil on {name} burns for 5 more damage.", {{"name", target.source.name}}});
+        if (!fire_ward)
+        {
+            amount += 5;
+            log("The oil on " + target.source.name + " burns for 5 more damage.",
+                {"The oil on {name} burns for 5 more damage.", {{"name", target.source.name}}});
+        }
     }
     const std::array parts{detail::DamagePart{type, amount}};
     std::vector<detail::DamageAffinity> added;
@@ -12731,6 +12859,14 @@ void Session::damage_area(Actor &caster, const detail::SpellDef &spell, std::str
         }
     }
     const auto type = std::string(detail::damage_name(damage_type));
+    const bool was_against_fire = std::exchange(against_fire_,
+                                                damage_type == detail::DamageType::fire);
+    const struct AgainstFireReset
+    {
+        bool &against_fire;
+        bool previous;
+        ~AgainstFireReset() { against_fire = previous; }
+    } against_fire_reset{against_fire_, was_against_fire};
     // Careful Spell: the chosen allies succeed and so take no half damage.
     const auto careful = careful_allies(caster, cells);
     for (auto &other : actors_)
@@ -12979,7 +13115,7 @@ void Session::refresh_form(Actor &a)
     }
     if (detail::has_effect(a.effects, detail::EffectKind::giant_strength))
     {
-        a.form = strengthened(a.form ? *a.form : a.definition);
+        a.form = strengthened(a.form ? *a.form : a.definition, 5);
     }
 }
 
@@ -18150,7 +18286,7 @@ void Session::burn_searing_smites(Actor &a)
             continue;
         }
         const int dc = a.effects.active[n].dc;
-        const int amount = resolved_damage(a, detail::DamageType::fire, roll(6));
+        const int amount = resolved_damage(a, detail::DamageType::fire, dice({1, 6, 0}));
         log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
             {"{name} burns for {damage} Fire damage.",
              {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
@@ -18509,7 +18645,11 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
     {
         message += " (Savage Attacker)";
     }
-    const int amount = resolved_damage(target, resolved.type, resolved.damage);
+    // A Torch's fire is ordinary fire (MAGIC-4).
+    const auto &keys = def(a).equipment_keys;
+    const bool torch_fire =
+        !spell && !ranged && std::find(keys.begin(), keys.end(), "torch") != keys.end();
+    const int amount = resolved_damage(target, resolved.type, resolved.damage, torch_fire);
     // The Versatile grip is chosen automatically, so the damage line names it.
     const std::string grip = spell || ranged || !def(a).versatile_sides ? ""
                              : def(a).weapon_hands == 2                 ? " (two-handed)"
@@ -18821,6 +18961,16 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         hit = false;
         log("The wind deflects the shot.", {"The wind deflects the shot.", {}});
+    }
+    // Cloak of Displacement (MAGIC-4): the first attack roll against its wearer
+    // in a fight misses. A natural 1 misses anyway and leaves it for the next.
+    if (def(target).displacement && !target.displacement_spent && natural != 1)
+    {
+        target.displacement_spent = true;
+        hit = false;
+        log(a.source.name + " strikes " + target.source.name + "'s displaced image.",
+            {"{attacker} strikes {name}'s displaced image.",
+             {{"attacker", a.source.name}, {"name", target.source.name}}});
     }
     const auto damage_type = spell    ? spell_attack->type
                              : ranged ? d.ranged_type
@@ -19410,6 +19560,7 @@ int Session::spell_dice(const Actor &caster, Dice dice, bool critical)
     // Overchannel: the most the dice can show.
     if (overchanneling_ && caster.source.id == overchannel_caster_)
     {
+        damage_dice_ = dice.count * (critical ? 2 : 1);
         return dice.count * (critical ? 2 : 1) * dice.sides + dice.bonus;
     }
     // Empowered Spell rerolls the lowest dice below their average, up to the
@@ -19418,8 +19569,9 @@ int Session::spell_dice(const Actor &caster, Dice dice, bool critical)
     {
         return this->dice(dice, critical);
     }
+    damage_dice_ = dice.count * (critical ? 2 : 1);
     std::vector<int> rolls;
-    for (int n = 0; n < dice.count * (critical ? 2 : 1); ++n)
+    for (int n = 0; n < damage_dice_; ++n)
     {
         rolls.push_back(roll(dice.sides));
     }
@@ -20347,7 +20499,7 @@ bool Session::begin_turn()
     // Burning: 1d4 Fire damage at the start of each turn until put out.
     if (a.burning && !a.life.dead)
     {
-        const int amount = resolved_damage(a, detail::DamageType::fire, roll(4));
+        const int amount = resolved_damage(a, detail::DamageType::fire, roll(4), true);
         log(a.source.name + " burns for " + std::to_string(amount) + " Fire damage.",
             {"{name} burns for {damage} Fire damage.",
              {{"name", a.source.name}, {"damage", std::to_string(amount)}}});
@@ -20720,7 +20872,8 @@ bool Session::saving_throw_succeeds(const Actor &target, detail::Ability ability
         blessing_die(target) - return_penalty(target) +
         (detail::has_effect(target.effects, detail::EffectKind::warding_bond) ? 1 : 0) +
         aura_of_protection(target) +
-        (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0) -
+        (ability == detail::Ability::dexterity && smite_protected(target) ? 2 : 0) +
+        (against_fire_ && def(target).fire_ward ? 4 : 0) -
         (ability == detail::Ability::dexterity &&
                  detail::has_effect(target.effects, detail::EffectKind::time_slowed)
              ? 2
@@ -23979,7 +24132,7 @@ std::string Session::save() const
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
             << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
-            << a.curse_lifted << ' ' << a.item_uses.size() << ' ';
+            << a.curse_lifted << ' ' << a.displacement_spent << ' ' << a.item_uses.size() << ' ';
         for (const auto &[id, left] : a.item_uses)
         {
             out << id << ' ' << left << ' ';
@@ -24231,7 +24384,8 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.oiled_until_round >> actor.shield_off >> actor.must_stay >> actor.panicked >>
         actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
-        actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted;
+        actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted >>
+        actor.displacement_spent;
     std::size_t item_count{};
     input >> item_count;
     // The inventory comes later in the checkpoint; 64 items is more than any
@@ -28741,6 +28895,10 @@ class Module final : public RulesModule
         {
             return {EquipmentSlot::armor, 0};
         }
+        if (detail::worn_item(key))
+        {
+            return {EquipmentSlot::worn, 0};
+        }
         return {};
     }
 
@@ -29061,11 +29219,14 @@ class Module final : public RulesModule
             d.melee_bonus + d.melee_magic};
         result.strength_dexterity_disadvantage = d.str_dex_disadvantage;
         result.weapon_hands = d.weapon_hands;
+        result.item_save_bonus = d.item_saves;
         unsigned hand_index = 0;
         for (const auto &key : gear)
         {
             result.equipment_positions.push_back(
-                {detail::weapon(key) ? (hand_index++ ? "Other hand" : "Main hand") : "Equipped",
+                {detail::weapon(key)      ? (hand_index++ ? "Other hand" : "Main hand")
+                 : detail::worn_item(key) ? "Worn"
+                                          : "Equipped",
                  {}});
         }
         if (d.versatile_sides)
@@ -29631,7 +29792,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.243", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.244", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

@@ -1027,7 +1027,7 @@ void CharacterCreationView::party_action(PartyAction action)
                 throw std::runtime_error("Select an existing item");
             }
             const auto selected = items[selection[0]].id;
-            const std::string definition = items[selection[0]].definition_id;
+            const std::string definition = rules_definition(campaign_->member(id), items[selection[0]]);
             if (action == PartyAction::equip)
             {
                 if (open_equipment_choice(id, selected))

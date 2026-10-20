@@ -271,6 +271,9 @@ struct CharacterProfile
     // Hands the equipped weapon is wielded with when attacking. A Versatile
     // weapon uses two exactly when no shield or second weapon is held.
     unsigned weapon_hands{};
+    // What worn items add to every saving throw (a Ring of Protection, a
+    // cursed necklace), beyond the sheet's own saving throws.
+    int item_save_bonus{};
 };
 enum class EquipmentSlot
 {
@@ -278,7 +281,8 @@ enum class EquipmentSlot
     weapon,
     armor,
     shield,
-    carried
+    carried,
+    worn // A ring, bracers, a cloak, gauntlets or a necklace: no hand needed.
 };
 
 struct EquipmentInfo

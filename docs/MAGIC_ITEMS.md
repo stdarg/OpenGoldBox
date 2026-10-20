@@ -54,7 +54,27 @@ Item records are 63 bytes ([creature-catalog.md](creature-catalog.md)).
 | 54 | Cursed (1). |
 | 60 | Charges or uses: wand charges, potion doses, the necklace's missiles. |
 | 61 | Spell or power. 1-56 is a spell from the table above. Higher numbers are powers that only items have (see the tables). |
-| 62 | Zero on charged items. Worn items and some weapons have bit 0x80 set here, and then byte 61 does not name a spell. That form is not decoded yet. |
+| 62 | Zero on charged items. With bit 0x80 set, it is an effect the item applies while readied, and byte 61 is the effect's argument (see [Byte 62](#byte-62-effects)). |
+
+### Byte 62 effects
+
+When byte 62 has bit 0x80 set, Pool of Radiance applies an effect while the
+item is readied, and byte 61 is the effect's argument. This comes from
+[por-go](https://github.com/retro-ware/por-go), a port of the game's code
+(`readyItem` and `itemAffect`). Curse of the Azure Bonds reads the byte
+differently, so coab is not a guide here.
+
+| Item | Byte 62 | Byte 61 | Effect |
+| --- | --- | --- | --- |
+| Ring of Fire Resistance | 0x81 | 61 | Grants affect 61, fire resistance. |
+| Gauntlets of Ogre Power | 0x83 | 38 | Strength 18/00 if that is higher. |
+| Long Sword +2, the knight's tomb | 0x84 | 240 | Lawful Good only; another wielder takes 15 damage and loses it (#267). |
+| Long Swords +3, Valjevo Castle | 0x84 | 82 | Lawful Evil only, 5 damage (#267). |
+| Cloak of Displacement | 0x85 | 89 | Grants affect 89: the first attack roll against the wearer each fight misses. |
+| Two-Handed Sword +1 +3 vs Undead | 0x88 | 3 | +2 to attack and damage rolls against the Undead. |
+
+For 0x84, byte 61's low four bits are the alignment and its high four bits the
+damage.
 
 ## Catalog
 
@@ -255,14 +275,13 @@ records the decisions.
   Magic Weapon adds nothing to a weapon that has its own bonus. Ammunition is
   not used up in a fight, so the best enchanted arrows or quarrels carried
   always add their bonus.
-- **Flame Tongue** needs attunement. A member is attuned to it after finishing
-  a Short or Long Rest with it equipped (at most three attuned items), and
-  stays attuned while carrying it; the character sheet says which. The
-  campaign hands the rules an attuned item's key with `:attuned` added.
-  Attuned, the wielder gets a Bonus Action to light the blade (and another to
-  douse it); while it is lit, each hit deals an extra 2d6 Fire damage. Every
-  fight starts with the blade unlit, and its light is not modeled. Its +2
-  works with or without attunement.
+- **No item needs attunement**
+  ([MAGIC-4](SRD-DECISIONS.md#magic-4-2026-10-20-no-attunement)), and there is
+  no limit on how many magic items a character uses.
+- **Flame Tongue**: its wielder gets a Bonus Action to light the blade (and
+  another to douse it); while it is lit, each hit deals an extra 2d6 Fire
+  damage. Every fight starts with the blade unlit, and its light is not
+  modeled.
 - **The cursed Broad Sword -2** cannot be unequipped, or replaced by another
   weapon, once equipped; in a fight its wielder cannot put it down to draw a
   bow or a Torch. Remove Curse, cast on the wielder in camp or in a fight,
@@ -270,8 +289,9 @@ records the decisions.
   once in camp, or when the fight ends. In that fight the wielder may already
   draw another weapon.
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
-  vs Undead" and 255 Cursed (byte 54). The bit-0x80 effects in byte 62 on the
-  Long Swords +2 and +3 are not decoded, so those swords have only their +N.
+  vs Undead" and 255 Cursed (byte 54). The Long Swords +2 and +3 bound to an
+  alignment by byte 62 have only their +N until
+  [#267](https://github.com/stdarg/OpenGold/issues/267).
 - **Wands, potions and other charged items** (#263,
   [MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items))
   do what their SRD counterparts do and keep the original's charges, which
@@ -297,8 +317,32 @@ records the decisions.
   - Quick characters use their items, whether or not Quick magic is on.
   - An item with no charge or dose left is gone. Nothing needs attunement. The
     Efreeti Bottle stays the original's scripted quest item.
-- Rings, bracers, scrolls and the other worn items are still unsupported (#264
-  and #265).
+- **Rings, bracers, the cloak, gauntlets and necklaces** (#264,
+  [MAGIC-5](SRD-DECISIONS.md#magic-5-2026-10-20-rings-bracers-and-other-worn-items))
+  are worn from the inventory: two rings and one of each other kind, needing
+  no hand. The character sheet lists them as "Worn" and adds their saving
+  throw change to its saving throws. Each converts by its item type, or by the
+  effect byte 62 applies when it is readied: `ring_of_protection+2`,
+  `ring_of_fire_resistance`, `ring_of_feather_falling`, `bracers+4` (the
+  original's Bracers AC 6), `cloak_of_displacement`,
+  `gauntlets_of_ogre_power` and `necklace-5:cursed`.
+  - A Ring of Protection adds its bonus to Armor Class and saving throws; only
+    the better of two counts.
+  - Bracers make Armor Class 10 + their improvement + Dexterity unless the
+    armor's is better; a shield still adds.
+  - The Cloak of Displacement adds 2 to Armor Class, and the first attack
+    roll against its wearer in each fight misses.
+  - Gauntlets of Ogre Power make Strength 19.
+  - The Ring of Fire Resistance stops ordinary fire (a Torch, Alchemist's
+    Fire, burning oil) and takes 2 per die from magical fire, at least 1 per
+    die; saves against magical fire gain +4.
+  - The Ring of Feather Falling does nothing.
+  - The Cursed Necklace takes 5 from Armor Class and saves and stays on until
+    Remove Curse, after which it is lost.
+  - Unidentified, a worn item's note says only that it needs no hand.
+  - Monsters keep their authored stat blocks; the worn items they carry come
+    to the party as loot.
+- Scrolls are still unsupported (#265).
 - Fixed treasure lists show magic items under their original names ("Long
   Sword +2 Flame Tongue").
 - **Identification** (#262,
@@ -309,8 +353,7 @@ records the decisions.
   name it without its enchantment and leave out its sheet notes; its bonus,
   power and curse still work. A shop's ID, in the inventory while shopping,
   reveals any item's name for 200 gp from the party purse, even an item with
-  nothing hidden, as in the original. Attuning to an item also reveals its
-  name.
+  nothing hidden, as in the original.
 - **Identify and Detect Magic** are cast outside combat. When a member can
   cast Identify, the inventory offers "Cast Identify" on the selected item,
   any item, so the offer does not tell magic items from plain ones. Detect
@@ -327,14 +370,9 @@ records the decisions.
    paralysis, 85 healing, 86 disappearance, 87 the necklace's missiles, 88
    magic missiles, 89 displacement, 90 bodily health). What each one does in
    the original executable is not traced.
-2. **Byte 62 with bit 0x80.** It is set on the Ring of Fire Resistance (0x81,
-   byte 61 = 61), the gauntlets (0x83, 38), the Long Swords +2 and +3 found as
-   treasure (0x84, 240 and 82), the Cloak of Displacement (0x85, 89) and the
-   anti-undead sword (0x88, 3). It probably selects a passive or special
-   effect. Not decoded.
-3. **Creatures with no traced area.** "Hero", "Theurgist", "Robber", the
+2. **Creatures with no traced area.** "Hero", "Theurgist", "Robber", the
    6th-level magic-user with the cloak and wand, the 7th-level thief and the
    7th-level dwarf fighter are never loaded by a constant record number. They
    may come from random encounter tables or registers.
-4. **Pre-made parties.** The `SAVE` folder's characters were not checked for
+3. **Pre-made parties.** The `SAVE` folder's characters were not checked for
    magic items.

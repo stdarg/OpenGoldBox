@@ -93,9 +93,6 @@ struct PartyMember
     std::string npc_source; // Empty for PCs; explicit campaign conversion identity for NPCs.
     rules::VitalState vitals;
     std::vector<std::uint64_t> equipped;
-    // Items it is attuned to (SRD 5.2.1, at most three): a finished rest
-    // attunes it to the equipped items that need it, such as Flame Tongue.
-    std::vector<std::uint64_t> attuned;
     unsigned morale{100};
     unsigned experience{};
     std::optional<std::uint64_t> last_rest_minutes;
@@ -392,6 +389,9 @@ class CampaignParty
 // How many an original item counts for in an inventory: a stack's items, or a
 // charged item's charges or doses (MAGIC-3), otherwise one.
 [[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
+// The item's key as the rules see it: ":unidentified" is added while its magic
+// is not identified (#262).
+[[nodiscard]] std::string rules_definition(const PartyMember &member, const InventoryItem &item);
 // Reveals the item's hidden name words, so it takes its full name. False when
 // nothing was hidden.
 bool identify_item(PartyMember &member, std::uint64_t item);
