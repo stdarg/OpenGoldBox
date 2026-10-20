@@ -451,9 +451,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
         {
             machine_.bind_variable(
                 EclAddress{0x6DCF},
-                static_cast<std::uint16_t>(
-                    2 *
-                    campaign_->member(speaker).character.sheet().scores[rules::Ability::charisma]));
+                static_cast<std::uint16_t>(2 * campaign_->reaction_charisma(speaker)));
         }
     }
     if (!machine_.start(entry.value_or(static_cast<std::size_t>(trigger))))

@@ -451,7 +451,7 @@ void CharacterCreationView::refresh_party()
                     i18n::text(profile.equipment_positions.at(found - m.equipped.begin()).source) +
                     " / ";
             }
-            items->add_item(prefix + inventory_label(item));
+            items->add_item(prefix + inventory_label(m, item));
         }
         required_node<TextureRect>(*this, "PartyPanel/Portrait")
             .set_texture(

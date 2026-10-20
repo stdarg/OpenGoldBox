@@ -898,14 +898,29 @@ std::optional<Command> choose_item(const rules::Snapshot &state, const Combatant
                                    const std::vector<Command> &offered);
 } // namespace
 
+namespace
+{
+// The computer reads no scroll: a scroll's spells are the player's to spend
+// (MAGIC-6).
+std::vector<Command> without_scrolls(std::vector<Command> commands)
+{
+    std::erase_if(commands,
+                  [](const auto &command)
+                  {
+                      return command.verb.find("_scroll") != std::string::npos;
+                  });
+    return commands;
+}
+} // namespace
+
 Command choose_demo_command(const CombatSession &session)
 {
-    return choose_from(session.snapshot(), session.legal_commands());
+    return choose_from(session.snapshot(), without_scrolls(session.legal_commands()));
 }
 
 Command choose_demo_command(const rules::Snapshot &state, const std::vector<Command> &offered)
 {
-    return choose_from(state, offered);
+    return choose_from(state, without_scrolls(offered));
 }
 
 namespace
@@ -2038,7 +2053,7 @@ Command choose_quick_command(const CombatSession &session, bool magic)
         return choose_demo_command(session);
     }
     const auto state = session.snapshot();
-    return choose_from(state, without_spells(state, session.legal_commands()));
+    return choose_from(state, without_spells(state, without_scrolls(session.legal_commands())));
 }
 
 Command choose_flee_command(const CombatSession &session)

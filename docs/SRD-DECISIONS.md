@@ -1355,3 +1355,58 @@ The user chose how the original's worn items
   like the cursed sword (MAGIC-1).
 - **The alignment-bound swords** the same research found wait for
   [#267](https://github.com/stdarg/OpenGold/issues/267).
+
+## MAGIC-6 (2026-10-20): spell scrolls
+
+The user chose how the original's scrolls
+([MAGIC_ITEMS.md](MAGIC_ITEMS.md#scrolls), issue
+[#265](https://github.com/stdarg/OpenGold/issues/265)) work:
+
+- **Spells as SRD 5.2.1 spells.** Each of the original's 56 spells becomes an
+  SRD spell: Restoration is Greater Restoration, Cause Disease is Contagion,
+  Cure Blindness and Cure Disease are Lesser Restoration, Cause Blindness is
+  Blindness, Detect Invisibility is See Invisibility, Spiritual Hammer is
+  Spiritual Weapon, Enlarge and Reduce are Enlarge/Reduce, Curse is Bane, Cure
+  and Cause Light Wounds are Cure and Inflict Wounds, Resist Fire and Resist
+  Cold are Protection from Energy, Slow Poison is Protection from Poison,
+  Prayer is Bless, Invisibility 10' Radius is Invisibility from a 3rd-level
+  slot (two creatures), the 10' Radius protections are Magic Circle, and
+  Strength is Enhance Ability for Strength. The others keep their names.
+- **Stand-ins** for the five spells SRD 5.2.1 lacks, working as the original's:
+  - **Friends**: cast in camp, 2d4 more Charisma for the caster, to at most
+    25, for six minutes; the spokesman's Charisma sets the reaction to a parley.
+  - **Read Magic**: cast in camp, it reveals the caster's scrolls.
+  - **Find Traps**: cast in camp, it lasts 30 minutes. The original's trap
+    scripts in Kovel Mansion and the Kobold Caves ask for it; until those areas
+    run, it has nothing to find.
+  - **Snake Charm**: the caster's current Hit Points are a pool, and each snake
+    or scorpion, in turn order, whose Hit Points still fit is Incapacitated for
+    the fight, its Hit Points leaving the pool; a hit slays one. No save.
+  - **Protection From Normal Missiles**: for an hour, cast in camp or a fight
+    on a creature within 5 feet, an attack from more than 5 feet away with
+    ammunition, or a thrown weapon, without magic misses.
+  The stand-ins and Enhance Ability are on no class list: only scrolls hold
+  them.
+- **Readers as the original's**: arcane scrolls (the original's magic-user
+  scrolls) for Bards, Sorcerers, Warlocks and Wizards; divine scrolls (cleric
+  scrolls) for Clerics, Druids, Paladins and Rangers. A reader casts any spell
+  on a scroll of its kind, whatever the spell's level, with no check, as in
+  the original.
+- **The SRD's scroll DC**: 13 for spells of level 1 or 2, 15 for 3 or 4, 17 for
+  5 or 6; a spell attack adds the DC less 8.
+- **Scrolls must be identified** (the shop's ID, Identify or Read Magic) before
+  their spells can be read or copied.
+- **Multi-spell scrolls stay one item**, as in the original; reading a spell
+  erases only that spell, and an empty scroll is gone.
+- **In a fight**, a scroll's spell is read from the Items menu, without
+  equipping the scroll, with the spell's own casting time. Outside combat the
+  inventory's Use opens the Cast menu with the scroll's spells that work
+  outside combat.
+- **Copying**: a Wizard copies an arcane scroll's spell of a level it can
+  prepare into its spellbook, beyond the book's usual choices, as the SRD has
+  it: 50 gp and two hours for each spell level. The gold is **Magic Ink**, a
+  new item the general store sells at 50 gp a bottle, one bottle for each spell
+  level (the user, 2026-10-20). Copying erases the spell from the scroll, as in
+  the original.
+- **The computer reads no scroll**: Quick members and monsters leave scrolls
+  alone.

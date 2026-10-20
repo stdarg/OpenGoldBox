@@ -342,7 +342,28 @@ records the decisions.
   - Unidentified, a worn item's note says only that it needs no hand.
   - Monsters keep their authored stat blocks; the worn items they carry come
     to the party as loot.
-- Scrolls are still unsupported (#265).
+- **Scrolls** (#265,
+  [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls)) convert with
+  the spells their bytes 60-62 name, mapped to SRD 5.2.1 spells or stand-ins:
+  `scroll:arcane:fireball,ray_of_enfeeblement,stinking_cloud`,
+  `scroll:divine:greater_restoration,greater_restoration`,
+  `scroll:arcane:invisibility@3` (Invisibility, 10' Radius). The format is in
+  `src/OpenGold.Rules/include/opengold/scroll_key.h`. A spell number above 56,
+  which random treasure can roll, holds nothing.
+  - An arcane scroll is read by a Bard, Sorcerer, Warlock or Wizard, a divine
+    one by a Cleric, Druid, Paladin or Ranger, once it is identified; the
+    inventory lists an identified scroll's spells.
+  - In a fight a spell is read from the Items menu ("Fireball (scroll)"), with
+    the SRD scroll's DC. Outside combat, the inventory's Use opens the Cast
+    menu with the spells that work there, and, for a Wizard, "Copy … into the
+    spellbook" for each spell it can copy.
+  - Reading or copying a spell erases it from the original record; the scroll
+    goes with its last spell. A Wizard's copied spells are kept with the hall
+    training (`boon:scroll:<spell>`), so a save rebuilds the spellbook.
+  - Magic Ink is sold by the general store, 50 gp a bottle; copying takes a
+    bottle and two hours of game time for each spell level.
+  - Shield, a reaction, can be copied from a scroll but not read from one: a
+    reaction offers only a member's own spells.
 - Fixed treasure lists show magic items under their original names ("Long
   Sword +2 Flame Tongue").
 - **Identification** (#262,

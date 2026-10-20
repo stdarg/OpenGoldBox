@@ -181,7 +181,10 @@ String formatted_sheet(const Character &character, const PartyMember *member,
     }
     for (const auto &item : character.inventory().items())
     {
-        text += "\n" + rich_text_literal(inventory_label(item).utf8().get_data());
+        text += "\n" + rich_text_literal(
+                            (member ? inventory_label(*member, item) : inventory_label(item))
+                                .utf8()
+                                .get_data());
         if (member)
         {
             const auto held = std::find(member->equipped.begin(), member->equipped.end(), item.id);

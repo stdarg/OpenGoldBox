@@ -506,7 +506,8 @@ bool incapacitated(const EffectState &effects) noexcept
            has_effect(effects, EffectKind::banished) || has_effect(effects, EffectKind::mazed) ||
            has_effect(effects, EffectKind::hurled) || has_effect(effects, EffectKind::drowsy) ||
            has_effect(effects, EffectKind::asleep) || has_effect(effects, EffectKind::laughing) ||
-           has_effect(effects, EffectKind::knocked_out);
+           has_effect(effects, EffectKind::knocked_out) ||
+           has_effect(effects, EffectKind::snake_charmed);
 }
 
 void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSource source,
@@ -788,7 +789,11 @@ unsigned benefit_duration_ms(EffectKind kind)
     case EffectKind::word_stunned:
         return 60000; // 1 minute
     case EffectKind::giant_strength:
+    case EffectKind::enhance_ability:
+    case EffectKind::missile_ward:
         return 3600000; // 1 hour
+    case EffectKind::snake_charmed:
+        return 3600000; // the fight; its effects end with it
     case EffectKind::javelin_spent:
         return 86400000; // until the next dawn; a Long Rest ends it sooner
     case EffectKind::mazed:

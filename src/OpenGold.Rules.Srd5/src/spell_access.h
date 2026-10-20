@@ -34,6 +34,9 @@ std::vector<std::string> always_prepared_spells(CharacterClass klass, unsigned l
 bool prepares_spells(CharacterClass klass);
 // Whether a spell is on a class's spell list in the game.
 bool on_class_list(CharacterClass klass, std::string_view spell);
+// The grant a Wizard of `level` gains by copying `spell` from a scroll into its
+// spellbook (MAGIC-6).
+rules::FeatureGrant copied_spell_grant(std::string_view spell, unsigned level);
 std::vector<std::string> casting_ids(const rules::SpellAccess &);
 
 // One Magic Initiate feat's spells and the ability it casts them with.

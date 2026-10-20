@@ -55,6 +55,8 @@ class Inventory
     void remove(std::uint64_t id, std::uint32_t quantity = 1);
     // An item that becomes known under a new name, such as an identified sword.
     void rename(std::uint64_t id, std::string name);
+    // An item whose definition changes, such as a scroll a spell was read from.
+    void redefine(std::uint64_t id, std::string definition_id);
 
   private:
     template <bool Reading> friend struct opengold::SaveCodec;

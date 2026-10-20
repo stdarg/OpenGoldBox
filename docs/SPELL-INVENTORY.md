@@ -341,6 +341,11 @@ effect stay.
   Detect Thoughts, Enhance Ability, Gentle Repose, Locate Animals or Plants,
   Locate Object, Magic Mouth, Rope Trick, Zone of Truth.
 
+Enhance Ability returns only on the original's Strength scrolls, for Strength
+checks
+([MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls)); it is on no
+class list.
+
 ## Removed: nothing to act on in this game
 
 Decision [DM-3](SRD-DECISIONS.md#dm-3-2026-10-04-spells-a-crpg-cannot-use)

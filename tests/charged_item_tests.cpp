@@ -89,8 +89,8 @@ void conversion()
               converts(original(21, 1, 83), "javelin:lightning", 1) &&
               converts(original(70, 1, 90), "manual_of_bodily_health", 1),
           "The other charged items convert");
-    check(equipment_conversion(original(62, 3, 3)).starts_with("por:unsupported:"),
-          "A scroll of Cure Light Wounds is not a potion");
+    check(equipment_conversion(original(62, 3, 3)) == "scroll:divine:cure_wounds,cure_wounds",
+          "A scroll of Cure Light Wounds is a scroll, not a potion");
     auto worn = original(36, 0, 82);
     worn.stored.effect_codes = {0, 82, 0x84};
     check(equipment_conversion(worn) != "potion_of_giant_strength",

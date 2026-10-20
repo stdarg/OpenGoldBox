@@ -145,6 +145,16 @@ class RolfTourView : public godot::Control
     unsigned shop_check_stage_{};
     std::optional<opengold::PartyState> identify_check_retained_;
     std::uint64_t identify_check_sword_{};
+    // The scroll whose spells the Cast menu offers (MAGIC-6); none while it
+    // offers the member's own spells and features.
+    std::optional<std::uint64_t> scroll_item_;
+    // What the Cast menu offers: an action's id and whether it needs a target.
+    struct CastOption
+    {
+        std::string id;
+        bool whole_party{};
+    };
+    std::vector<CastOption> cast_options_;
     unsigned recovery_stage_{};
     bool save_cancel_checked_{}, save_cancel_pending_{};
     bool slums_labels_checked_{};
@@ -187,6 +197,7 @@ class RolfTourView : public godot::Control
     void refresh_cast();
     void cast_action_selected(std::int64_t index);
     void cast_use();
+    void read_or_copy_scroll(const std::string &id, opengold::MemberId patient, const godot::String &label);
     bool refresh_rest_use(const std::vector<opengold::MemberRestInfo> &infos, bool spending);
     void refresh_rest_spells();
     void rest_spell_toggled(bool selected, godot::String group, godot::String option);

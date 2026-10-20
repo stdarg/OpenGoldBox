@@ -122,6 +122,14 @@ struct PartyState
     std::uint64_t time_minutes{};
     // The minute Detect Magic ends; until then item lists mark magic items.
     std::uint64_t detect_magic_until{};
+    // Friends (MAGIC-6): the member whose Charisma it raises, by how much, and
+    // the minute it ends.
+    MemberId friends_member{};
+    int friends_bonus{};
+    std::uint64_t friends_until{};
+    // The minute Find Traps ends (MAGIC-6). The original's trap scripts in
+    // Kovel Mansion and the Kobold Caves ask for it.
+    std::uint64_t find_traps_until{};
     RandomState random_state{42};
     std::vector<std::string> claimed_rewards;
     unsigned subminute_milliseconds{};
@@ -284,6 +292,35 @@ class CampaignParty
     // Whether Detect Magic would sense the member's item: an enchantment, a
     // curse, charges or a spell.
     [[nodiscard]] bool magical(MemberId id, std::uint64_t item) const;
+    // The spells the member can read outside combat from a scroll it carries
+    // (MAGIC-6). Each action's id names the spell's place on the scroll.
+    [[nodiscard]] std::vector<rules::CampAction> scroll_actions(MemberId id,
+                                                                std::uint64_t item) const;
+    // Reads one of scroll_actions() on `target`, which a spell for the whole
+    // party ignores; the spell leaves the scroll, and a scroll with none left
+    // is gone. Atomic: on failure nothing changes.
+    void read_scroll(MemberId reader, std::uint64_t item, MemberId target,
+                     std::string_view action);
+    // A spell on a scroll the member can copy into its spellbook now: its place
+    // on the scroll and its level.
+    struct ScrollCopy
+    {
+        unsigned entry{};
+        std::string spell;
+        unsigned level{};
+    };
+    [[nodiscard]] std::vector<ScrollCopy> copyable_spells(MemberId id, std::uint64_t item) const;
+    // Copies a spell from a scroll the member carries into its spellbook
+    // (MAGIC-6): it takes a bottle of Magic Ink the member carries and two hours
+    // for each spell level, and the spell leaves the scroll.
+    void copy_scroll_spell(MemberId id, std::uint64_t item, unsigned entry);
+    // The member's Charisma as the party's spokesman, with Friends (MAGIC-6).
+    [[nodiscard]] int reaction_charisma(MemberId id) const;
+    // Whether Find Traps is in effect (MAGIC-6).
+    [[nodiscard]] bool finding_traps() const noexcept
+    {
+        return state_.time_minutes < state_.find_traps_until;
+    }
     // Eligible active members, in party order, try once each until one meets
     // the difficulty. Returns every attempt; the door opens if the last succeeded.
     [[nodiscard]] std::vector<DoorAttempt> try_door(DoorMethod method, int difficulty);

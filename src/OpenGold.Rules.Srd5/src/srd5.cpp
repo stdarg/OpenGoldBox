@@ -20,6 +20,7 @@
 #include "magic_items.h"
 #include "worn_items.h"
 #include "opengold/item_key.h"
+#include "opengold/scroll_key.h"
 #include "opengold/srd5.h"
 #include <algorithm>
 #include <initializer_list>
@@ -564,6 +565,12 @@ bool usable_outside_combat(std::string_view item) noexcept
            item == "potion_of_greater_healing" || item == "potion_of_giant_strength";
 }
 
+std::string_view spell_label(std::string_view spell) noexcept
+{
+    const auto *found = detail::find_spell(spell);
+    return found && found->id == spell ? found->label : std::string_view{};
+}
+
 std::string_view charge_noun(std::string_view item) noexcept
 {
     const auto *magic = detail::magic_item(item);
@@ -575,6 +582,19 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     if (const auto *magic = detail::magic_item(item))
     {
         return std::string(magic->note);
+    }
+    if (item == "magic_ink")
+    {
+        return "Copying a scroll's spell into a Wizard's spellbook takes one bottle for each "
+               "spell level.";
+    }
+    if (const auto scroll = rules::parse_scroll_key(item))
+    {
+        return scroll->unidentified ? "Identify the scroll to learn its spells."
+               : scroll->arcane     ? "An arcane scroll: a Bard, Sorcerer, Warlock or Wizard reads "
+                                      "its spells, and a Wizard can copy them."
+                                    : "A divine scroll: a Cleric, Druid, Paladin or Ranger reads "
+                                      "its spells.";
     }
     // An unidentified worn item does not say what it does (#262).
     if (const auto *worn = detail::worn_item(item))
@@ -1492,6 +1512,10 @@ struct Definition
     int sorcery_points{};               // Sorcerer level 2: Font of Magic, in Actor::lay_on_hands
     std::vector<std::string> metamagic; // the Sorcerer's Metamagic options
     bool pact_magic{};                  // Warlock: slots of one level, back on a Short Rest
+    // The scrolls it can read (MAGIC-6), as the original's magic-user and
+    // cleric scrolls: an arcane caster reads arcane scrolls, a divine or primal
+    // caster divine ones.
+    bool reads_arcane_scrolls{}, reads_divine_scrolls{};
     // Eldritch Invocations.
     bool armor_of_shadows{}, devils_sight{}, eldritch_mind{}, fiendish_vigor{}, pact_of_the_blade{};
     // The cantrips Agonizing Blast, Eldritch Spear and Repelling Blast improve.
@@ -2327,6 +2351,60 @@ void spend_item_use(Actor &a, const detail::MagicItem &kind)
     throw std::runtime_error("No use of the item is left");
 }
 
+// A spell still on a carried scroll (MAGIC-6): the scroll's inventory ID, the
+// spell's place on it and the slot level it is cast at.
+struct ScrollEntry
+{
+    std::uint64_t item{};
+    unsigned index{};
+    unsigned level{};
+};
+
+// The first spell `spell` that `a` can read from a carried scroll this fight,
+// at `level` when it is not 0: an identified scroll of its kind of magic, with
+// the spell not yet read. Wearing armor without training, it reads none.
+std::optional<ScrollEntry> readable_scroll(const Actor &a, const detail::SpellDef &spell,
+                                           unsigned level = 0)
+{
+    const auto &d = a.definition;
+    if (d.str_dex_disadvantage)
+    {
+        return std::nullopt;
+    }
+    for (const auto &carried : a.source.inventory)
+    {
+        const auto scroll = rules::parse_scroll_key(carried.definition);
+        if (!scroll || scroll->unidentified ||
+            !(scroll->arcane ? d.reads_arcane_scrolls : d.reads_divine_scrolls))
+        {
+            continue;
+        }
+        const auto left = std::find_if(a.item_uses.begin(), a.item_uses.end(),
+                                       [&](const auto &entry)
+                                       {
+                                           return entry.first == carried.inventory_id;
+                                       });
+        for (unsigned n = 0; n < scroll->spells.size(); ++n)
+        {
+            const auto &entry = scroll->spells[n];
+            const unsigned cast = std::max(entry.level, spell.level);
+            if (entry.id == spell.id && (!level || level == cast) &&
+                left != a.item_uses.end() && (left->second & (1U << n)))
+            {
+                return ScrollEntry{carried.inventory_id, n, cast};
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+// SRD 5.2.1's Spell Scroll: the save DC by the spell's level; its attack
+// bonus is the DC less 8.
+int scroll_dc(unsigned level)
+{
+    return level <= 2 ? 13 : level <= 4 ? 15 : level <= 6 ? 17 : level <= 8 ? 18 : 19;
+}
+
 // Whether a verb uses a carried item, and the use is not the casting of a
 // spell: a potion, a missile or dust. A wand casts its spell.
 bool item_effect(std::string_view verb)
@@ -2347,6 +2425,23 @@ bool item_effect(std::string_view verb)
 // the level it is cast at, the turn's one slot.
 void pay_for_spell(Actor &a, std::string_view verb, const detail::SpellDef &spell)
 {
+    // A scroll's spell is erased from it (MAGIC-6).
+    if (detail::scroll_verb(verb))
+    {
+        const auto entry = readable_scroll(a, spell, slot_level_of(verb, spell));
+        if (!entry)
+        {
+            throw std::runtime_error("That spell is not on a scroll");
+        }
+        for (auto &[id, left] : a.item_uses)
+        {
+            if (id == entry->item)
+            {
+                left &= ~(1U << entry->index);
+            }
+        }
+        return;
+    }
     // A carried item's spell spends a charge or use of the item (MAGIC-3).
     if (detail::item_verb(verb))
     {
@@ -2593,6 +2688,14 @@ bool bound_to_cursed_item(const Actor &a, bool weapons_only = false)
                                           });
 }
 
+// A snake or scorpion, the original's creature kind that Snake Charm affects
+// (MAGIC-6), known by its combat creature's name.
+bool charmable_snake(const Actor &c)
+{
+    const auto &id = c.source.definition;
+    return id.find("snake") != std::string::npos || id.find("scorpion") != std::string::npos;
+}
+
 bool cursed(const Actor &a)
 {
     return bound_to_cursed_item(a) || std::any_of(a.effects.active.begin(), a.effects.active.end(),
@@ -2782,6 +2885,8 @@ struct PendingCheck
 // The Manual of Bodily Health (MAGIC-3): each one read adds this grant, from
 // this source, and 2 to Constitution and its maximum.
 constexpr std::string_view bodily_health = "boon:bodily_health";
+// A spell a Wizard copied from a scroll (MAGIC-6): "boon:scroll:fireball".
+constexpr std::string_view copied_spell = "boon:scroll:";
 constexpr std::string_view manual_source = "item:manual_of_bodily_health";
 
 // The grants a class, species, background or feat gives, without a Manual's.
@@ -2953,6 +3058,11 @@ character_definition(std::string_view bytes,
     d.sorcery_points =
         klass == CharacterClass::sorcerer && level >= 2 ? static_cast<int>(level) : 0;
     d.pact_magic = klass == CharacterClass::warlock;
+    d.reads_arcane_scrolls = klass == CharacterClass::wizard ||
+                             klass == CharacterClass::sorcerer ||
+                             klass == CharacterClass::warlock || klass == CharacterClass::bard;
+    d.reads_divine_scrolls = klass == CharacterClass::cleric || klass == CharacterClass::paladin ||
+                             klass == CharacterClass::druid || klass == CharacterClass::ranger;
     d.magical_cunning = klass == CharacterClass::warlock && level >= 2 ? 1 : 0;
     d.dark_luck = klass == CharacterClass::warlock && level >= 6
                       ? std::max(1, ability_modifier(scores[Ability::charisma]))
@@ -4241,6 +4351,13 @@ class Session final : public CombatSession
                     {
                         a.item_uses.emplace_back(item.inventory_id, item.quantity);
                     }
+                    // A scroll's uses are a bit for each spell still on it
+                    // (MAGIC-6).
+                    else if (const auto scroll = rules::parse_scroll_key(item.definition))
+                    {
+                        a.item_uses.emplace_back(item.inventory_id,
+                                                 (1U << scroll->spells.size()) - 1);
+                    }
                 }
             }
             for (const auto &a : actors_)
@@ -5225,6 +5342,10 @@ class Session final : public CombatSession
     // Logs that `a` uses the carried item a spell comes from (MAGIC-3), and rolls
     // Use Magic Device's d6 for a charge.
     void log_item_use(Actor &a, const detail::SpellDef &spell);
+    void log_scroll_use(const Actor &a, const detail::SpellDef &spell);
+    // Snake Charm (MAGIC-6): the snakes and scorpions it charms.
+    void charm_snakes(Actor &a);
+    [[nodiscard]] bool snakes_to_charm(const Actor &a) const;
     // Throws the Javelin of Lightning `token` at `target` as a bolt (MAGIC-3).
     void lightning_javelin(Actor &a, Actor &target, unsigned token);
     void cast_aimed_area(Actor &a, const PendingArea &aimed);
@@ -5346,6 +5467,8 @@ class Session final : public CombatSession
     // The creature using an item's spell (MAGIC-3), whose save DC is then the
     // item's 15; 0 otherwise.
     EntityId item_caster_{};
+    // That item's save DC: a wand's 15, or a scroll's by the spell's level.
+    int item_dc_{15};
     // The dice in the latest damage roll, doubled on a critical hit: a Ring of
     // Fire Resistance takes 2 from magical fire per die (MAGIC-4).
     int damage_dice_{};
@@ -5363,10 +5486,9 @@ class Session final : public CombatSession
     // a class feature names no spell and uses the class's.
     [[nodiscard]] int spell_dc(const Actor &caster, std::string_view spell = {}) const
     {
-        constexpr int item_dc = 15;
         if (item_caster_ && caster.source.id == item_caster_)
         {
-            return item_dc;
+            return item_dc_;
         }
         return 8 + casting_bonus(def(caster), spell) +
                (detail::has_effect(caster.effects, detail::EffectKind::innate_sorcery) ? 1 : 0);
@@ -7401,6 +7523,9 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::hasted, "Haste"},
               std::pair{detail::EffectKind::paralysis_ray, "Paralyzed (Wand of Paralysis)"},
               std::pair{detail::EffectKind::giant_strength, "Giant Strength"},
+              std::pair{detail::EffectKind::enhance_ability, "Enhance Ability (Strength)"},
+              std::pair{detail::EffectKind::missile_ward, "Protection From Normal Missiles"},
+              std::pair{detail::EffectKind::snake_charmed, "Incapacitated (Snake Charm)"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
@@ -8467,6 +8592,23 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
             }
         }
         return;
+    case detail::Rider::enhance_ability:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::enhance_ability, 0);
+        log(target.source.name + " gains Enhance Ability (Strength).",
+            {"{name} gains {spell}.",
+             {{"name", target.source.name}, {"spell", "Enhance Ability (Strength)", true}}});
+        return;
+    case detail::Rider::missile_ward:
+        detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::missile_ward, 0);
+        log(target.source.name + " gains Protection From Normal Missiles.",
+            {"{name} gains {spell}.",
+             {{"name", target.source.name}, {"spell", "Protection From Normal Missiles", true}}});
+        return;
+    case detail::Rider::snake_charm:
+        charm_snakes(a);
+        return;
     case detail::Rider::guiding_bolt:
     {
         // Until the end of the caster's next turn.
@@ -8820,19 +8962,26 @@ void Session::cast_resolved_spell(const detail::SpellDef &spell, std::string_vie
     {
         log_item_use(a, spell);
     }
+    const bool from_scroll = detail::scroll_verb(verb);
+    if (from_scroll)
+    {
+        log_scroll_use(a, spell);
+    }
     // Counterspell: a stopped spell keeps its slot.
     if (!item_effect(verb) && (countered(a) || slowed_spell_fails(a, verb, spell)))
     {
         return;
     }
-    // A wand's spell has the item's save DC.
-    item_caster_ = from_item ? a.source.id : 0;
+    // A wand's or a scroll's spell has the item's save DC (MAGIC-6).
+    item_caster_ = from_item || from_scroll ? a.source.id : 0;
+    item_dc_ = from_scroll ? scroll_dc(slot_level_of(verb, spell)) : 15;
     const struct ItemCasterReset
     {
         EntityId &caster;
         ~ItemCasterReset() { caster = 0; }
     } item_caster_reset{item_caster_};
-    against_fire_ = spell.damage == detail::DamageType::fire;
+    // A spell without damage dice keeps the default damage type, Fire.
+    against_fire_ = spell.dice.count && spell.damage == detail::DamageType::fire;
     const struct AgainstFireReset
     {
         bool &against_fire;
@@ -9364,14 +9513,17 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         const bool item_ready =
             item && (drink ? bonus_pass : !bonus_pass || d.fast_hands) &&
             !(spells_blocked && item->use == detail::ItemUse::wand);
-        if (!known && !intervene && !arcanum && !item_ready)
+        // A spell on a carried scroll (MAGIC-6), read with its own casting time.
+        const auto scroll = spells_blocked ? std::nullopt : readable_scroll(a, spell);
+        const bool scroll_ready = scroll && spell.bonus_action == bonus_pass;
+        if (!known && !intervene && !arcanum && !item_ready && !scroll_ready)
         {
             continue;
         }
         // Quickened Spell offers an Action spell in the Bonus Action pass.
         const bool as_bonus = spell.bonus_action || readies(a, Metamagic::quickened, spell);
         const bool usual = known && as_bonus == bonus_pass;
-        if (!usual && !intervene && !arcanum && !item_ready)
+        if (!usual && !intervene && !arcanum && !item_ready && !scroll_ready)
         {
             continue;
         }
@@ -9449,6 +9601,15 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         {
             continue;
         }
+        if (spell.rider == detail::Rider::snake_charm && !snakes_to_charm(a))
+        {
+            continue;
+        }
+        if (spell.rider == detail::Rider::missile_ward &&
+            detail::has_effect(other.effects, detail::EffectKind::missile_ward))
+        {
+            continue;
+        }
         if (spell.humanoid_only && def(other).creature_type != "humanoid")
         {
             continue;
@@ -9507,7 +9668,8 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
         const bool item_offered =
             item_ready && (bonus_pass ? a.bonus
                                       : a.actions.available(item->use != detail::ItemUse::dust));
-        if (!casting_ready && !item_offered)
+        const bool scroll_offered = scroll_ready && (bonus_pass ? a.bonus : a.actions.available(true));
+        if (!casting_ready && !item_offered && !scroll_offered)
         {
             continue;
         }
@@ -9529,6 +9691,12 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             offer(std::string(spell.id) +
                       std::string(fast ? detail::item_bonus_suffix : detail::item_suffix),
                   std::string(item->label) + (fast ? " (Fast Hands)" : ""));
+        }
+        if (scroll_offered)
+        {
+            offer(std::string(spell.id) + std::string(detail::scroll_suffix) +
+                      (scroll->level > spell.level ? "_" + std::to_string(scroll->level) : ""),
+                  std::string(spell.label) + " (scroll)");
         }
         if (!casting_ready)
         {
@@ -15786,6 +15954,48 @@ void Session::log_item_use(Actor &a, const detail::SpellDef &spell)
     }
 }
 
+void Session::log_scroll_use(const Actor &a, const detail::SpellDef &spell)
+{
+    log(a.source.name + " reads " + std::string(spell.label) + " from a scroll.",
+        {"{name} reads {spell} from a scroll.",
+         {{"name", a.source.name}, {"spell", std::string(spell.label), true}}});
+}
+
+// As the original's Snake Charm: the caster's current Hit Points are a pool,
+// and each snake or scorpion, in turn order, whose own still fit is
+// Incapacitated for the fight, its Hit Points leaving the pool. No save.
+void Session::charm_snakes(Actor &a)
+{
+    int pool = a.life.hp;
+    for (auto &other : actors_)
+    {
+        if (&other == &a || other.life.dead || other.life.hp <= 0 || other.life.hp > pool ||
+            !charmable_snake(other) || !detail::can_apply(other.effects) ||
+            detail::has_effect(other.effects, detail::EffectKind::snake_charmed))
+        {
+            continue;
+        }
+        pool -= other.life.hp;
+        detail::apply_spell_benefit(other.effects, effect_source(a), a.source.name,
+                                    detail::EffectKind::snake_charmed, 0);
+        log(other.source.name + " is charmed by Snake Charm.",
+            {"{name} is charmed by Snake Charm.", {{"name", other.source.name}}});
+        end_incapacitated_effects(other);
+    }
+}
+
+bool Session::snakes_to_charm(const Actor &a) const
+{
+    return std::any_of(actors_.begin(), actors_.end(),
+                       [&](const auto &other)
+                       {
+                           return &other != &a && !other.life.dead && other.life.hp > 0 &&
+                                  other.life.hp <= a.life.hp && charmable_snake(other) &&
+                                  !detail::has_effect(other.effects,
+                                                      detail::EffectKind::snake_charmed);
+                       });
+}
+
 void Session::cast_area()
 {
     const auto aimed = std::move(*area_);
@@ -15933,13 +16143,20 @@ void Session::cast_aimed_area(Actor &a, const PendingArea &aimed)
     {
         log_item_use(a, spell);
     }
+    const bool from_scroll = detail::scroll_verb(aimed.verb);
+    if (from_scroll)
+    {
+        log_scroll_use(a, spell);
+    }
     if (!again && spell.id != "dragons_breath_exhale" && !item_effect(aimed.verb) &&
         (countered(a) || slowed_spell_fails(a, aimed.verb, spell)))
     {
         return;
     }
-    // A wand's spell and a missile's Fireball have the item's save DC (MAGIC-3).
-    item_caster_ = from_item ? a.source.id : 0;
+    // A wand's spell, a missile's Fireball and a scroll's spell have the item's
+    // save DC (MAGIC-3, MAGIC-6).
+    item_caster_ = from_item || from_scroll ? a.source.id : 0;
+    item_dc_ = from_scroll ? scroll_dc(slot_level_of(aimed.verb, spell)) : 15;
     const struct ItemCasterReset
     {
         EntityId &caster;
@@ -17027,7 +17244,8 @@ Session::AthleticsRoll Session::roll_athletics(Actor &a, int dc)
     // A creature's Strength save bonus stands in for Athletics. Rage and the
     // Champion's Remarkable Athlete give the check Advantage.
     AthleticsRoll check;
-    check.advantage = rage_of(a) || def(a).champion;
+    check.advantage = rage_of(a) || def(a).champion ||
+                      detail::has_effect(a.effects, detail::EffectKind::enhance_ability);
     check.natural =
         reliable(a, "athletics",
                  detail::d20({check.advantage, !fears_in_sight(a).empty(), def(a).lucky}, rng_));
@@ -18649,7 +18867,14 @@ void Session::apply_hit(Actor &a, Actor &target, const ResolvedAttack &resolved)
     const auto &keys = def(a).equipment_keys;
     const bool torch_fire =
         !spell && !ranged && std::find(keys.begin(), keys.end(), "torch") != keys.end();
-    const int amount = resolved_damage(target, resolved.type, resolved.damage, torch_fire);
+    int amount = resolved_damage(target, resolved.type, resolved.damage, torch_fire);
+    // A creature Snake Charm holds is slain by a hit (MAGIC-6).
+    if (detail::has_effect(target.effects, detail::EffectKind::snake_charmed))
+    {
+        amount = std::max(amount, target.life.hp);
+        log(target.source.name + " is helpless and slain.",
+            {"{name} is helpless and slain.", {{"name", target.source.name}}});
+    }
     // The Versatile grip is chosen automatically, so the damage line names it.
     const std::string grip = spell || ranged || !def(a).versatile_sides ? ""
                              : def(a).weapon_hands == 2                 ? " (two-handed)"
@@ -18902,7 +19127,10 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         extend_rage(a);
     }
-    int bonus = (spell                      ? casting_bonus(d, spell_attack->spell)
+    // A scroll's spell attack has the scroll's bonus, its DC less 8 (MAGIC-6).
+    const bool item_attack = item_caster_ && item_caster_ == a.source.id;
+    int bonus = (spell && item_attack       ? item_dc_ - 8
+                 : spell                    ? casting_bonus(d, spell_attack->spell)
                  : !ranged && shillelagh(a) ? casting_bonus(d, "shillelagh")
                  : ranged                   ? d.ranged_bonus
                                             : d.melee_bonus) +
@@ -18961,6 +19189,17 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
     {
         hit = false;
         log("The wind deflects the shot.", {"The wind deflects the shot.", {}});
+    }
+    // Protection From Normal Missiles (MAGIC-6): ammunition without magic, or a
+    // thrown weapon without it, misses from more than 5 feet away.
+    if (hit && ranged && !spell &&
+        detail::has_effect(target.effects, detail::EffectKind::missile_ward) &&
+        distance(a.source.cell, target.source.cell) > 5 &&
+        (d.ranged_weapon ? ammunition_magic(a) == 0 : weapon_magic == 0))
+    {
+        hit = false;
+        log("The missile cannot touch " + target.source.name + ".",
+            {"The missile cannot touch {name}.", {{"name", target.source.name}}});
     }
     // Cloak of Displacement (MAGIC-4): the first attack roll against its wearer
     // in a fight misses. A natural 1 misses anyway and leaves it for the next.
@@ -25937,6 +26176,22 @@ class Module final : public RulesModule
             read_manual(sheet);
             return;
         }
+        // A spell copied from a scroll, kept with the hall training so a save
+        // rebuilds it (MAGIC-6).
+        if (grant.starts_with(copied_spell))
+        {
+            const auto spell = grant.substr(copied_spell.size());
+            if (!copyable_spell_level(sheet, spell))
+            {
+                throw std::runtime_error("That spell cannot be copied into the spellbook");
+            }
+            auto candidate = sheet;
+            candidate.grants.push_back(
+                detail::copied_spell_grant(spell, static_cast<unsigned>(sheet.level)));
+            (void)character_profile(candidate, {});
+            sheet = std::move(candidate);
+            return;
+        }
         const auto klass = detail::class_of(sheet);
         auto candidate = sheet;
         // After the last skill or Expertise grant, so a save's replay, which
@@ -28135,7 +28390,13 @@ class Module final : public RulesModule
     std::vector<CampAction> camp_actions(const CharacterSheet &sheet,
                                          const VitalState &state) const override
     {
-        const auto actor = camp_actor(sheet, state);
+        return camp_actions_of(camp_actor(sheet, state));
+    }
+
+    // The camp actions of `actor`: a member as camp_actor() builds it, or one
+    // reading a scroll (MAGIC-6).
+    std::vector<CampAction> camp_actions_of(const Actor &actor) const
+    {
         const auto &d = actor.definition;
         std::vector<CampAction> actions;
         if (actor.life.dead || actor.life.hp == 0)
@@ -28192,11 +28453,13 @@ class Module final : public RulesModule
             // Aid's and Death Ward's eight hours outlast a fight, so they are
             // cast in camp too; so is Remove Curse, as in the original, to put
             // down a cursed item (MAGIC-1).
+            // Protection From Normal Missiles' hour outlasts a fight too (MAGIC-6).
             if ((spell.pattern != detail::SpellPattern::heal &&
                  spell.pattern != detail::SpellPattern::camp && spell.rider != detail::Rider::aid &&
                  spell.rider != detail::Rider::death_ward &&
                  spell.rider != detail::Rider::regenerate &&
-                 spell.rider != detail::Rider::remove_curse) ||
+                 spell.rider != detail::Rider::remove_curse &&
+                 spell.rider != detail::Rider::missile_ward) ||
                 !detail::knows_spell(d.spells, spell.id))
             {
                 continue;
@@ -28265,7 +28528,16 @@ class Module final : public RulesModule
                          const CharacterSheet &target, VitalState &target_state,
                          std::string_view action, RandomState &random_state) const override
     {
-        const auto offered = camp_actions(user, user_state);
+        use_camp_action_of(camp_actor(user, user_state), user.name, user_state, target,
+                           target_state, action, random_state);
+    }
+
+    // use_camp_action() for `caster`, a member or one reading a scroll.
+    void use_camp_action_of(Actor caster, const std::string &user_name, VitalState &user_state,
+                            const CharacterSheet &target, VitalState &target_state,
+                            std::string_view action, RandomState &random_state) const
+    {
+        const auto offered = camp_actions_of(caster);
         if (std::none_of(offered.begin(), offered.end(),
                          [&](const auto &a)
                          {
@@ -28275,7 +28547,6 @@ class Module final : public RulesModule
             throw std::runtime_error("That spell or feature cannot be used now");
         }
         const bool self = &user_state == &target_state;
-        auto caster = camp_actor(user, user_state);
         auto healed = self ? caster : camp_actor(target, target_state);
         auto &patient = self ? caster : healed;
         if (action == "lay_on_hands_cure")
@@ -28392,7 +28663,7 @@ class Module final : public RulesModule
             if (detail::can_apply(patient.effects))
             {
                 detail::apply_spell_benefit(patient.effects,
-                                            detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                                            detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                                             detail::EffectKind::returned, 4);
             }
             user_state = vitals(caster);
@@ -28429,6 +28700,28 @@ class Module final : public RulesModule
             return;
         }
         if (const auto *ward = detail::find_spell(action);
+            ward && ward->rider == detail::Rider::missile_ward)
+        {
+            if (patient.life.dead ||
+                detail::has_effect(patient.effects, detail::EffectKind::missile_ward) ||
+                !detail::can_apply(patient.effects))
+            {
+                throw std::runtime_error(
+                    "Protection From Normal Missiles needs a living member without it");
+            }
+            pay_for_spell(caster, action, *ward);
+            // Camp effects carry scope 1: there is no encounter to source them.
+            detail::apply_spell_benefit(patient.effects,
+                                        detail::EffectSource{.scope = 1, .actor = 1}, user_name,
+                                        detail::EffectKind::missile_ward, 0);
+            user_state = vitals(caster);
+            if (!self)
+            {
+                target_state = vitals(healed);
+            }
+            return;
+        }
+        if (const auto *ward = detail::find_spell(action);
             ward && ward->rider == detail::Rider::death_ward)
         {
             if (patient.life.dead ||
@@ -28440,7 +28733,7 @@ class Module final : public RulesModule
             pay_for_spell(caster, action, *ward);
             // Camp effects carry scope 1: there is no encounter to source them.
             detail::apply_spell_benefit(patient.effects,
-                                        detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                                        detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                                         detail::EffectKind::death_ward, 0);
             user_state = vitals(caster);
             if (!self)
@@ -28508,6 +28801,137 @@ class Module final : public RulesModule
             target_state = vitals(healed);
         }
         random_state.value = rng;
+    }
+
+    // A member reading the scroll's `entry` (MAGIC-6): as camp_actor() builds
+    // it, knowing the spell and with a slot of the level the scroll casts it
+    // at, which reading spends in place of the member's own. Empty when the
+    // member cannot read the scroll.
+    std::optional<Actor> scroll_reader(const CharacterSheet &sheet, const VitalState &state,
+                                       const rules::ScrollKey &scroll,
+                                       const rules::ScrollSpell &entry) const
+    {
+        auto reader = camp_actor(sheet, state);
+        auto &d = reader.definition;
+        const auto *spell = detail::find_spell(entry.id);
+        if (!spell || scroll.unidentified ||
+            !(scroll.arcane ? d.reads_arcane_scrolls : d.reads_divine_scrolls))
+        {
+            return std::nullopt;
+        }
+        if (!detail::knows_spell(d.spells, spell->id))
+        {
+            d.spells.emplace_back(spell->id);
+        }
+        // A Warlock reads a scroll's spell at the scroll's level, not its
+        // Pact Magic slots' level.
+        d.pact_magic = false;
+        if (const unsigned level = std::max(entry.level, spell->level))
+        {
+            ++reader.slots[level];
+            d.slots[level] = std::max(d.slots[level], reader.slots[level]);
+        }
+        return reader;
+    }
+
+    // Whether `action` reads the scroll's `entry`: its spell at its level.
+    static bool reads_entry(std::string_view action, const rules::ScrollSpell &entry)
+    {
+        const auto *spell = detail::find_spell(action);
+        return spell && spell->id == entry.id &&
+               slot_level_of(action, *spell) == std::max(entry.level, spell->level);
+    }
+
+    std::vector<CampAction> scroll_actions(const CharacterSheet &sheet, const VitalState &state,
+                                           std::string_view key) const override
+    {
+        std::vector<CampAction> actions;
+        const auto scroll = rules::parse_scroll_key(key);
+        if (!scroll)
+        {
+            return actions;
+        }
+        // Each action names the spell's place on the scroll: "1:cure_wounds".
+        for (unsigned n = 0; n < scroll->spells.size(); ++n)
+        {
+            const auto reader = scroll_reader(sheet, state, *scroll, scroll->spells[n]);
+            if (!reader)
+            {
+                continue;
+            }
+            for (auto &action : camp_actions_of(*reader))
+            {
+                if (reads_entry(action.id, scroll->spells[n]))
+                {
+                    action.id = std::to_string(n) + ":" + action.id;
+                    actions.push_back(std::move(action));
+                }
+            }
+        }
+        return actions;
+    }
+
+    // The reader of one of scroll_actions(), and the camp action it uses.
+    std::pair<Actor, std::string_view> scroll_caster(const CharacterSheet &sheet,
+                                                     const VitalState &state,
+                                                     std::string_view key,
+                                                     std::string_view action) const
+    {
+        const auto scroll = rules::parse_scroll_key(key);
+        const auto colon = action.find(':');
+        if (scroll && colon == 1 && action[0] >= '0' &&
+            static_cast<std::size_t>(action[0] - '0') < scroll->spells.size())
+        {
+            const auto &entry = scroll->spells[static_cast<std::size_t>(action[0] - '0')];
+            const auto verb = action.substr(2);
+            if (auto reader = scroll_reader(sheet, state, *scroll, entry);
+                reader && reads_entry(verb, entry))
+            {
+                return {std::move(*reader), verb};
+            }
+        }
+        throw std::runtime_error("That spell cannot be read from the scroll now");
+    }
+
+    void use_scroll(const CharacterSheet &user, VitalState &user_state,
+                    const CharacterSheet &target, VitalState &target_state, std::string_view key,
+                    std::string_view action, RandomState &random_state) const override
+    {
+        auto [reader, verb] = scroll_caster(user, user_state, key, action);
+        use_camp_action_of(std::move(reader), user.name, user_state, target, target_state, verb,
+                           random_state);
+    }
+
+    void use_party_scroll(const CharacterSheet &user, VitalState &user_state,
+                          std::span<CampTarget> party, std::string_view key,
+                          std::string_view action, RandomState &random_state) const override
+    {
+        auto [reader, verb] = scroll_caster(user, user_state, key, action);
+        use_party_camp_action_of(std::move(reader), user.name, user_state, party, verb,
+                                 random_state);
+    }
+
+    std::optional<unsigned> copyable_spell_level(const CharacterSheet &sheet,
+                                                 std::string_view spell) const override
+    {
+        const auto *found = detail::find_spell(spell);
+        if (!found || found->id != spell || !found->level ||
+            detail::class_of(sheet) != detail::CharacterClass::wizard ||
+            !detail::on_class_list(detail::CharacterClass::wizard, spell) ||
+            found->level > (static_cast<unsigned>(sheet.level) + 1) / 2)
+        {
+            return std::nullopt;
+        }
+        const auto book = spell_access(sheet).spellbook;
+        if (std::any_of(book.begin(), book.end(),
+                        [&](const auto &known)
+                        {
+                            return known.id == spell;
+                        }))
+        {
+            return std::nullopt;
+        }
+        return found->level;
     }
 
     void drink_potion(const CharacterSheet &sheet, VitalState &state, std::string_view item,
@@ -28623,7 +29047,16 @@ class Module final : public RulesModule
                                std::span<CampTarget> party, std::string_view action,
                                RandomState &random_state) const override
     {
-        const auto offered = camp_actions(user, user_state);
+        use_party_camp_action_of(camp_actor(user, user_state), user.name, user_state, party,
+                                 action, random_state);
+    }
+
+    // use_party_camp_action() for `caster`, a member or one reading a scroll.
+    void use_party_camp_action_of(Actor caster, const std::string &user_name,
+                                  VitalState &user_state, std::span<CampTarget> party,
+                                  std::string_view action, RandomState &random_state) const
+    {
+        const auto offered = camp_actions_of(caster);
         if (std::none_of(offered.begin(), offered.end(),
                          [&](const auto &a)
                          {
@@ -28632,7 +29065,6 @@ class Module final : public RulesModule
         {
             throw std::runtime_error("That spell or feature cannot be used now");
         }
-        auto caster = camp_actor(user, user_state);
         if (action.starts_with("magic_circle_"))
         {
             const auto &circle = *detail::find_spell(action);
@@ -28645,7 +29077,7 @@ class Module final : public RulesModule
                           });
             // Camp effects carry scope 1: there is no encounter to source them.
             detail::apply_spell_benefit(caster.effects,
-                                        detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                                        detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                                         detail::EffectKind::circle_ward, type);
             caster.effects.active.back().remaining_ms =
                 static_cast<unsigned>(3600000 * (slot_level_of(action, circle) - 2));
@@ -28653,8 +29085,11 @@ class Module final : public RulesModule
             return;
         }
         // Detect Magic spends its slot; the campaign marks magic items for its
-        // ten minutes.
-        if (const auto *detect = detail::find_spell(action); detect && detect->id == "detect_magic")
+        // ten minutes. Friends, Read Magic and Find Traps likewise leave their
+        // effect to the campaign (MAGIC-6).
+        if (const auto *detect = detail::find_spell(action);
+            detect && (detect->id == "detect_magic" || detect->id == "friends" ||
+                       detect->id == "read_magic" || detect->id == "find_traps"))
         {
             pay_for_spell(caster, action, *detect);
             user_state = vitals(caster);
@@ -28730,7 +29165,7 @@ class Module final : public RulesModule
             if (detail::can_apply(caster.effects))
             {
                 detail::apply_spell_benefit(
-                    caster.effects, detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                    caster.effects, detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                     detail::EffectKind::contingency,
                     static_cast<int>(stored - detail::spell_table.data()) * 4 +
                         static_cast<int>(trigger - detail::contingency_triggers.begin()));
@@ -28751,7 +29186,7 @@ class Module final : public RulesModule
             if (detail::can_apply(caster.effects))
             {
                 detail::apply_spell_benefit(caster.effects,
-                                            detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                                            detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                                             detail::EffectKind::sheltered, 0);
             }
             user_state = vitals(caster);
@@ -28784,7 +29219,7 @@ class Module final : public RulesModule
                               });
                 // Camp effects carry scope 1: there is no encounter to source them.
                 detail::apply_spell_benefit(member->effects,
-                                            detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                                            detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                                             detail::EffectKind::feasted, raise);
                 (void)detail::heal_life(member->life, raise, max_hp(*member),
                                         !detail::healing_blocked(member->effects));
@@ -28799,7 +29234,7 @@ class Module final : public RulesModule
         }
         if (spell.rider == detail::Rider::aid)
         {
-            camp_aid(user.name, chosen, 5 + 5 * static_cast<int>(upcast_steps(action, spell)));
+            camp_aid(user_name, chosen, 5 + 5 * static_cast<int>(upcast_steps(action, spell)));
             pay_for_spell(caster, action, spell);
             user_state = vitals(caster);
             for (auto &[actor, state] : members)
@@ -28847,7 +29282,7 @@ class Module final : public RulesModule
                                     !detail::healing_blocked(patient->effects));
             // Camp effects carry scope 1: there is no encounter to source them.
             detail::apply_spell_benefit(patient->effects,
-                                        detail::EffectSource{.scope = 1, .actor = 1}, user.name,
+                                        detail::EffectSource{.scope = 1, .actor = 1}, user_name,
                                         detail::EffectKind::prayer_of_healing, 0);
         }
         user_state = vitals(caster);
@@ -28879,7 +29314,10 @@ class Module final : public RulesModule
 
     EquipmentInfo equipment_info(std::string_view key) const override
     {
-        if (detail::ammunition(key) || detail::thrown_gear(key))
+        // Magic Ink is spent copying a scroll into a spellbook (MAGIC-6); a
+        // scroll is read from the pack.
+        if (detail::ammunition(key) || detail::thrown_gear(key) || key == "magic_ink" ||
+            rules::parse_scroll_key(key))
         {
             return {EquipmentSlot::carried, 0};
         }
@@ -29792,7 +30230,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         throw std::runtime_error("Invalid rules content header");
     }
     Content content;
-    content.identity = {"opengold.srd5", "0.6.244", revision + "/" + std::to_string(hash)};
+    content.identity = {"opengold.srd5", "0.6.245", revision + "/" + std::to_string(hash)};
     std::set<std::string> save_rows, casting_rows, damage_rows, size_rows, trait_rows, type_rows,
         equipment_rows;
     while (std::getline(lines, line))

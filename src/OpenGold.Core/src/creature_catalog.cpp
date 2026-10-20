@@ -99,6 +99,10 @@ std::string_view item_type_name(std::uint8_t type)
     {
         return "Alchemist's Fire";
     }
+    if (type == authored_item::magic_ink)
+    {
+        return "Magic Ink";
+    }
     // Type IDs, not names of particular enchanted items. Name components remain exposed.
     constexpr std::string_view names[] = {"Unarmed",
                                           "Battle axe",
@@ -163,8 +167,9 @@ std::string_view item_type_name(std::uint8_t type)
     return type < std::size(names) ? names[type] : std::string_view{};
 }
 
-// A generated worn item's base word, for random treasure, whose names are not
-// decoded (MAGIC-4). Creature gear and fixed lists keep their decoded names.
+// A generated worn item's or scroll's base word, for random treasure, whose
+// names are not decoded (MAGIC-4, MAGIC-6). Creature gear and fixed lists keep
+// their decoded names.
 std::string_view worn_type_name(std::uint8_t type)
 {
     switch (type)
@@ -182,6 +187,10 @@ std::string_view worn_type_name(std::uint8_t type)
         return "Bracers";
     case 92:
         return "Cloak";
+    // A generated scroll (MAGIC-6).
+    case 61:
+    case 62:
+        return "Scroll";
     default:
         return {};
     }

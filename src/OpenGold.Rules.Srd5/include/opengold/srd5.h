@@ -16,6 +16,8 @@ namespace opengold::srd5
 // What one charged item's quantity counts ("charges", "missiles"); empty when the
 // quantity counts items (MAGIC-3).
 [[nodiscard]] std::string_view charge_noun(std::string_view item) noexcept;
+// A spell's English label, such as "Fireball"; empty for an unknown id.
+[[nodiscard]] std::string_view spell_label(std::string_view spell) noexcept;
 // Whether the inventory's Use works for the item outside combat: the Manual of
 // Bodily Health, or a healing or Giant Strength potion (MAGIC-3).
 [[nodiscard]] bool usable_outside_combat(std::string_view item) noexcept;

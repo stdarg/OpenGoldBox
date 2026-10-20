@@ -50,6 +50,20 @@ void Inventory::rename(std::uint64_t id, std::string name)
     it->name = std::move(name);
 }
 
+void Inventory::redefine(std::uint64_t id, std::string definition_id)
+{
+    const auto it = std::find_if(items_.begin(), items_.end(),
+                                 [&](const auto &item)
+                                 {
+                                     return item.id == id;
+                                 });
+    if (it == items_.end() || definition_id.empty())
+    {
+        throw std::runtime_error("Unknown item or empty definition");
+    }
+    it->definition_id = std::move(definition_id);
+}
+
 void Inventory::remove(std::uint64_t id, std::uint32_t quantity)
 {
     const auto it = std::find_if(items_.begin(), items_.end(),

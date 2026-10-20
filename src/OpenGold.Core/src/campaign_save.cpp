@@ -16,7 +16,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 35;
+constexpr unsigned campaign_format = 36;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -381,7 +381,8 @@ template <bool Reading> struct SaveCodec
     void field(Visited<PartyState> v)
     {
         fields(v.slots, v.next_id, v.selected_slot, v.leader, v.quick_magic, v.wealth,
-               v.time_minutes, v.detect_magic_until, v.random_state.value, v.claimed_rewards);
+               v.time_minutes, v.detect_magic_until, v.friends_member, v.friends_bonus, v.friends_until,
+               v.find_traps_until, v.random_state.value, v.claimed_rewards);
         std::map<MemberId, unsigned> rest_offsets;
         if constexpr (!reading)
         {

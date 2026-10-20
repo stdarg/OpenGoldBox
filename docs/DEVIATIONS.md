@@ -61,6 +61,15 @@ Add an entry whenever a new departure is decided.
   Strength 19 instead of 18/00. The second Cloak of Displacement record, which
   gives no Armor Class in the original, gives the same +2 as the first.
   [MAGIC-5](SRD-DECISIONS.md#magic-5-2026-10-20-rings-bracers-and-other-worn-items).
+- **Spell scrolls** (2026-10-20). A scroll's spells are SRD 5.2.1 spells, with
+  stand-ins for the five SRD 5.2.1 lacks, cast at the SRD scroll's DC. In the
+  original a scroll had to be readied in both hands; here a spell is read
+  from the inventory or the Items menu. Druids and Rangers read cleric
+  scrolls. Copying a spell into a Wizard's spellbook, free in the original,
+  takes two hours and a 50 gp bottle of Magic Ink, a new item, for each spell
+  level. Read Magic reveals all the caster's scrolls at once instead of each
+  scroll opened while it lasts.
+  [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.

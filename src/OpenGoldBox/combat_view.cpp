@@ -2632,10 +2632,13 @@ void CombatView::refresh()
             items->add_item(label, static_cast<int>(item_verbs_.size()));
             item_verbs_.emplace_back(verb);
         }
-        // Potions, wands, the necklace and dust (MAGIC-3), by the item's name.
+        // Potions, wands, the necklace and dust (MAGIC-3), by the item's name,
+        // and the spells on scrolls (MAGIC-6).
         for (const auto &command : offered)
         {
-            if (command.actor == throwing->id && command.verb.ends_with("_item") &&
+            const bool from_item = command.verb.ends_with("_item") ||
+                                   command.verb.find("_scroll") != std::string::npos;
+            if (command.actor == throwing->id && from_item &&
                 std::find(item_verbs_.begin(), item_verbs_.end(), command.verb) ==
                     item_verbs_.end())
             {
