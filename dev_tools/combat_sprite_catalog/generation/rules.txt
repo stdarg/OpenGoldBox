@@ -49,6 +49,13 @@ that body height consistent across both poses and every weapon set for this
 creature; do not fill the 128 x 128 canvas independently for each sprite. Use
 only a correctly scaled comparison sprite as a reference: an older accepted
 image is not a height authority if it breaks the Small < Normal < Tall order.
+On the catalog's stationary 3 x 3 combat-square guide, aim for a foot-to-head
+height of about 0.6 square for Small, 0.9 square for Normal, and 1.7 squares for
+Tall. These are body measurements, not canvas sizes. The complete silhouette,
+including the weapon, must fit the saved sprite_size footprint. The grid never
+moves between monsters or animation frames. If a pose or weapon overflows, redesign
+the pair at a common scale; never fit ready and action separately or quietly
+shrink only the action frame.
 
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently

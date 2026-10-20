@@ -4,6 +4,9 @@ const Evidence = preload("res://scripts/art_script_evidence.gd")
 const MonsterMetadata = preload("res://scripts/monster_metadata.gd")
 const GEAR_ROLES := ["one_hand", "two_hand", "ranged", "shield", "gear"]
 const HUMANOID_SIZES := ["na", "small", "normal", "tall"]
+const GRID_CELL := 128.0
+const GRID_ORIGIN := Vector2(96.0, 16.0)
+const GRID_CELLS := 3
 
 var catalog := SpriteCatalog.new()
 var rows: Array = []
@@ -18,6 +21,10 @@ var name_filter: LineEdit
 var monster_title: Label
 var name_edit: LineEdit
 var monster_image: TextureRect
+var image_frame: Control
+var preview_is_replacement := false
+var preview_ready_bottom := 128.0
+var preview_status: Label
 var monster_source: Label
 var description_edit: TextEdit
 var sprite_size_choice: OptionButton
@@ -259,7 +266,7 @@ func _build_ui() -> void:
     columns.add_theme_constant_override("separation", 18)
     detail.add_child(columns)
     var preview := VBoxContainer.new()
-    preview.custom_minimum_size.x = 400
+    preview.custom_minimum_size.x = 520
     preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     columns.add_child(preview)
     var variant_label := Label.new()
@@ -275,17 +282,20 @@ func _build_ui() -> void:
     show_new_art.button_pressed = true
     show_new_art.toggled.connect(func(_enabled: bool): _show_monster_image())
     preview.add_child(show_new_art)
-    var image_frame := Control.new()
-    image_frame.custom_minimum_size = Vector2(360, 390)
-    image_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    image_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    image_frame = Control.new()
+    image_frame.custom_minimum_size = Vector2(512, 416)
+    image_frame.draw.connect(_draw_preview_grid)
     preview.add_child(image_frame)
     monster_image = TextureRect.new()
-    monster_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     monster_image.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
     monster_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-    monster_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    monster_image.stretch_mode = TextureRect.STRETCH_SCALE
+    monster_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
     image_frame.add_child(monster_image)
+    preview_status = Label.new()
+    preview_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    preview_status.custom_minimum_size.y = 42
+    preview.add_child(preview_status)
     monster_source = Label.new()
     monster_source.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     monster_source.custom_minimum_size.y = 80
@@ -299,9 +309,10 @@ func _build_ui() -> void:
     sprite_size_label.text = "Sprite size (combat squares)"
     editor.add_child(sprite_size_label)
     sprite_size_choice = OptionButton.new()
-    for label in ["Unknown", "1 × 1", "1 × 2 tall", "2 × 1 wide", "2 × 2 (four squares)"]:
+    for label in ["Unknown", "1 × 1", "1 × 2 tall", "2 × 1 wide", "2 × 2 (four squares)", "3 × 3 (nine squares)"]:
         sprite_size_choice.add_item(label)
     sprite_size_choice.tooltip_text = "Desired visual size of this sprite; Save monster data writes it to JSON."
+    sprite_size_choice.item_selected.connect(func(_index: int): _refresh_monster_preview_layout())
     editor.add_child(sprite_size_choice)
     var humanoid_size_label := Label.new()
     humanoid_size_label.text = "Humanoid height"
@@ -310,6 +321,7 @@ func _build_ui() -> void:
     for label in ["N/A (non-humanoid)", "Small", "Normal", "Tall"]:
         humanoid_size_choice.add_item(label)
     humanoid_size_choice.tooltip_text = "Visual body-height tier for consistent art across monsters; Save monster data writes it to JSON."
+    humanoid_size_choice.item_selected.connect(func(_index: int): _refresh_monster_preview_layout())
     editor.add_child(humanoid_size_choice)
     var description_heading := Label.new()
     description_heading.text = "Description for new art"
@@ -374,7 +386,8 @@ func _rebuild_list() -> void:
         selected = -1
         monster_title.text = "No matching records"
         monster_image.texture = null
-        monster_image.offset_top = 0.0
+        image_frame.queue_redraw()
+        preview_status.text = ""
         monster_source.text = ""
         name_edit.text = ""
         variant_choice.clear()
@@ -403,9 +416,6 @@ func _select_monster(list_index: int) -> void:
     var row: Dictionary = rows[selected]
     monster_title.text = "%s%s" % [row.name, "  ·  Unused" if not used.has(row.key) else ""]
     name_edit.text = str(row.name)
-    # The Medusa icon sits at the top edge of its source frame. Lower its
-    # presentation within the existing preview area so the head has breathing room.
-    monster_image.offset_top = 64.0 if str(row.name).to_upper() == "MEDUSA" else 0.0
     if not draft_records.has(row.key):
         var loaded: Dictionary = MonsterMetadata.load_record(row, _art_for(selected), metadata_root)
         draft_records[row.key] = loaded.data
@@ -429,6 +439,7 @@ func _select_monster(list_index: int) -> void:
     description_edit.text = record.description
     sprite_size_choice.select(_sprite_size_index(record.get("sprite_size", null)))
     humanoid_size_choice.select(HUMANOID_SIZES.find(str(record.get("humanoid_size", "na"))))
+    image_frame.queue_redraw()
     regeneration_flag.set_pressed_no_signal(bool(record.flag_for_regeneration))
     for child in gear_rows.get_children():
         gear_rows.remove_child(child)
@@ -524,6 +535,7 @@ func _sprite_size_for_index(index: int) -> Variant:
         2: return {"width_squares": 1, "height_squares": 2}
         3: return {"width_squares": 2, "height_squares": 1}
         4: return {"width_squares": 2, "height_squares": 2}
+        5: return {"width_squares": 3, "height_squares": 3}
     return null
 
 
@@ -535,6 +547,7 @@ func _sprite_size_index(size: Variant) -> int:
     if width == 1 and height == 2: return 2
     if width == 2 and height == 1: return 3
     if width == 2 and height == 2: return 4
+    if width == 3 and height == 3: return 5
     return 0
 
 func _gear_changed() -> void:
@@ -627,6 +640,83 @@ func _copy_monster() -> void:
             break
     metadata_status.text = "Copied metadata and replacement PNGs. Original game data was not changed."
 
+func _draw_preview_grid() -> void:
+    var chosen: Variant = _sprite_size_for_index(sprite_size_choice.selected)
+    if chosen is Dictionary:
+        var width: int = int(chosen.width_squares)
+        var height: int = int(chosen.height_squares)
+        var active_top := GRID_ORIGIN + Vector2(0.0, (GRID_CELLS - height) * GRID_CELL)
+        image_frame.draw_rect(Rect2(active_top, Vector2(width, height) * GRID_CELL),
+            Color(0.22, 0.32, 0.37, 0.38), true)
+    var end := GRID_ORIGIN + Vector2.ONE * GRID_CELLS * GRID_CELL
+    for index in range(GRID_CELLS + 1):
+        var x := GRID_ORIGIN.x + index * GRID_CELL
+        var y := GRID_ORIGIN.y + index * GRID_CELL
+        _draw_dotted_grid_line(Vector2(x, GRID_ORIGIN.y), Vector2(x, end.y))
+        _draw_dotted_grid_line(Vector2(GRID_ORIGIN.x, y), Vector2(end.x, y))
+
+func _draw_dotted_grid_line(start: Vector2, finish: Vector2) -> void:
+    var length := start.distance_to(finish)
+    var direction := (finish - start) / length
+    for step in range(0, int(length), 12):
+        image_frame.draw_line(start + direction * step,
+            start + direction * minf(step + 5.0, length), Color(0.69, 0.81, 0.84, 0.82), 1.0)
+
+func _preview_scale(tier: String, footprint: Vector2i, replacement: bool) -> float:
+    if not replacement:
+        return GRID_CELL / 24.0 * (0.7 if tier == "small" else 1.0)
+    match tier:
+        "small": return 1.0
+        "normal": return 1.45
+        "tall": return 2.1
+        _: return float(maxi(footprint.x, footprint.y))
+
+func _refresh_monster_preview_layout() -> void:
+    image_frame.queue_redraw()
+    if monster_image.texture == null:
+        preview_status.text = "No image to measure."
+        return
+    var chosen: Variant = _sprite_size_for_index(sprite_size_choice.selected)
+    var footprint := Vector2i(1, 1)
+    if chosen is Dictionary:
+        footprint = Vector2i(int(chosen.width_squares), int(chosen.height_squares))
+    var tier: String = HUMANOID_SIZES[humanoid_size_choice.selected] if humanoid_size_choice.selected >= 0 else "na"
+    var scale := _preview_scale(tier, footprint, preview_is_replacement)
+    var image_size := (monster_image.texture.get_size() * scale).round()
+    var center_x := GRID_ORIGIN.x + footprint.x * GRID_CELL * 0.5
+    var ground_y := GRID_ORIGIN.y + GRID_CELLS * GRID_CELL
+    monster_image.position = Vector2(roundf(center_x - image_size.x * 0.5),
+        roundf(ground_y - preview_ready_bottom * scale))
+    monster_image.size = image_size
+    if not chosen is Dictionary:
+        preview_status.text = "Sprite footprint unknown; choose a size to check its bounds."
+        return
+    var used := monster_image.texture.get_image().get_used_rect()
+    var ink_rect := Rect2(monster_image.position + Vector2(used.position) * scale,
+        Vector2(used.size) * scale)
+    var active_top := GRID_ORIGIN + Vector2(0.0, (GRID_CELLS - footprint.y) * GRID_CELL)
+    var active := Rect2(active_top, Vector2(footprint) * GRID_CELL)
+    var over_left := maxf(0.0, active.position.x - ink_rect.position.x)
+    var over_right := maxf(0.0, ink_rect.end.x - active.end.x)
+    var over_top := maxf(0.0, active.position.y - ink_rect.position.y)
+    var over_bottom := maxf(0.0, ink_rect.end.y - active.end.y)
+    var overflow := maxf(maxf(over_left, over_right), maxf(over_top, over_bottom))
+    if overflow > 1.0:
+        preview_status.text = "Outside the selected %d × %d footprint by up to %.2f square(s)." % [
+            footprint.x, footprint.y, overflow / GRID_CELL]
+        preview_status.add_theme_color_override("font_color", Color(1.0, 0.74, 0.46))
+    else:
+        preview_status.text = "Image fits the selected %d × %d footprint." % [footprint.x, footprint.y]
+        preview_status.add_theme_color_override("font_color", Color(0.72, 0.86, 0.78))
+
+func _ready_bottom_for_image(image: Image) -> float:
+    var used := image.get_used_rect()
+    return float(used.end.y) if used.size.y > 0 else float(image.get_height())
+
+func _ready_bottom_for_path(path: String, fallback: float) -> float:
+    var ready_image := Image.new()
+    return _ready_bottom_for_image(ready_image) if ready_image.load(path) == OK else fallback
+
 func _selected_variant() -> Dictionary:
     if selected < 0 or variant_choice.selected < 0: return {}
     var record: Dictionary = draft_records[rows[selected].key]
@@ -637,6 +727,7 @@ func _show_monster_image() -> void:
     var row: Dictionary = rows[selected]
     var art: Dictionary = _art_for(selected)
     var source_note := ""
+    var ready_path := ""
     var variant := _selected_variant()
     if show_new_art.button_pressed and not variant.is_empty():
         var replacement_path: String = MonsterMetadata.art_path(str(row.key), str(variant.id), action, metadata_root)
@@ -646,6 +737,7 @@ func _show_monster_image() -> void:
                 # Art is edited outside the tool. Reload when the user chooses a
                 # set or the pose changes so a replaced PNG appears immediately.
                 monster_image.texture = ImageTexture.create_from_image(image)
+                ready_path = MonsterMetadata.art_path(str(row.key), str(variant.id), false, metadata_root)
                 source_note = "New art · %s · %s · %s" % [variant.label, "Action" if action else "Ready", replacement_path]
         if source_note.is_empty():
             var record: Dictionary = draft_records[row.key]
@@ -656,6 +748,7 @@ func _show_monster_image() -> void:
                     var prior_image := Image.new()
                     if prior_image.load(prior_path) == OK:
                         monster_image.texture = ImageTexture.create_from_image(prior_image)
+                        ready_path = MonsterMetadata.art_path(str(row.key), prior_id, false, metadata_root)
                         source_note = "Previous new art · %s · regenerate for current gear · %s" % ["Action" if action else "Ready", prior_path]
     if source_note.is_empty():
         var original_index := int(row.get("native_index", -1))
@@ -677,7 +770,17 @@ func _show_monster_image() -> void:
         shared_names.sort()
         shared_note = " · Identical originals: %s · Known users of identical art: %s · %s" % [
             ", ".join(row.identical_art_keys), ", ".join(shared_names), row.art_usage_note]
-    var replacement_visible := source_note.begins_with("New art") or source_note.begins_with("Previous new art")
+    var replacement_visible := not ready_path.is_empty()
+    preview_is_replacement = replacement_visible
+    if replacement_visible:
+        preview_ready_bottom = _ready_bottom_for_path(ready_path, float(monster_image.texture.get_height()))
+    else:
+        var original_index := int(row.get("native_index", -1))
+        if original_index < 0:
+            original_index = int(native_index_by_key.get(row.get("origin_key", ""), -1))
+        var ready_texture: Texture2D = catalog.monster_image(original_index, false) if original_index >= 0 else null
+        preview_ready_bottom = _ready_bottom_for_image(ready_texture.get_image()) if ready_texture != null else 0.0
+    _refresh_monster_preview_layout()
     if art.is_empty():
         monster_source.text = source_note if replacement_visible else source_note + "No supported ready/action CPIC binding. Source: %s" % row.key
     elif art.get("assembled", false):
@@ -687,6 +790,9 @@ func _show_monster_image() -> void:
     monster_source.text += uses_note + linked_note + shared_note
 
 func _metadata_check() -> void:
+    assert(MonsterMetadata.valid_sprite_size({"width_squares": 3, "height_squares": 3}))
+    assert(_sprite_size_index({"width_squares": 3, "height_squares": 3}) == 5)
+    assert(_sprite_size_for_index(5) == {"width_squares": 3, "height_squares": 3})
     assert(rows.size() >= 170)
     assert(show_new_art.button_pressed)
     assert(MonsterMetadata.source_weapon_role(36, 1) == "one_hand")
@@ -761,7 +867,7 @@ func _metadata_check() -> void:
     assert(migrated.data.equipment[2].weapon_role == "two_hand")
     assert(migrated.data.variants.size() == 3)
     var sample: Dictionary = MonsterMetadata.new_record(first, art)
-    sample.sprite_size = {"width_squares": 2, "height_squares": 1}
+    sample.sprite_size = {"width_squares": 3, "height_squares": 3}
     sample.humanoid_size = "tall"
     sample.equipment = [
         {"id": "w1", "kind": "weapon", "weapon_role": "one_hand", "name": "Sword", "source_type": 36, "readied": true},
@@ -784,7 +890,7 @@ func _metadata_check() -> void:
     var loaded: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
     assert(loaded.error.is_empty())
     assert(loaded.data.description == sample.description and loaded.data.flag_for_regeneration)
-    assert(_sprite_size_index(loaded.data.sprite_size) == 3)
+    assert(_sprite_size_index(loaded.data.sprite_size) == 5)
     assert(loaded.data.humanoid_size == "tall")
     assert(loaded.data.equipment.size() == 6 and loaded.data.variants.size() == 4)
     assert(loaded.data.variants[2].id == ranged_id)
@@ -904,7 +1010,7 @@ func _metadata_check() -> void:
     var reloaded: Dictionary = MonsterMetadata.load_record(rows[selected], _art_for(selected), metadata_root)
     assert(reloaded.error.is_empty() and reloaded.data.name == "Copied test monster")
     assert(reloaded.data.source.origin_key == first.key and reloaded.data.equipment.size() == 5)
-    assert(_sprite_size_index(reloaded.data.sprite_size) == 3)
+    assert(_sprite_size_index(reloaded.data.sprite_size) == 5)
     assert(reloaded.data.humanoid_size == "tall")
     assert(reloaded.data.wealth == first.wealth)
     show_new_art.button_pressed = false
@@ -928,6 +1034,9 @@ func _remove_check_tree(path: String) -> void:
     DirAccess.remove_absolute(path)
 
 func _catalog_check() -> void:
+    assert(_preview_scale("small", Vector2i.ONE, true) < _preview_scale("normal", Vector2i.ONE, true))
+    assert(_preview_scale("normal", Vector2i.ONE, true) < _preview_scale("tall", Vector2i.ONE, true))
+    assert(image_frame.custom_minimum_size == Vector2(512, 416))
     assert(rows.size() >= 170)
     assert(monster_list.item_count == rows.size())
     var mad_man: Dictionary = catalog.monster_art(native_index_by_key["MON2CHA.DAX:25"])
@@ -1005,14 +1114,16 @@ func _catalog_check() -> void:
     for index in range(rows.size()):
         if str(rows[index].name).to_upper() == "MEDUSA":
             _select_monster(index)
-            assert(monster_image.offset_top == 64.0)
             assert(monster_image.texture != null)
+            var ready_position := monster_image.position
+            var ready_size := monster_image.size
             action = true
             _show_monster_image()
             assert(monster_image.texture != null)
+            assert(monster_image.position == ready_position and monster_image.size == ready_size)
             break
     _select_monster(pictured)
-    assert(monster_image.offset_top == 0.0)
+    assert(GRID_ORIGIN == Vector2(96.0, 16.0) and GRID_CELLS == 3)
     assert(not rows[pictured].equipment.is_empty() or rows.size() > 0)
     hide_unused.button_pressed = true
     assert(monster_list.item_count < rows.size())

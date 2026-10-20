@@ -40,7 +40,7 @@ while switching between records during the current session.
 
 Set **Sprite size (combat squares)** to the intended visual footprint and save
 it with the other monster data. The dropdown offers Unknown, 1 × 1, 1 × 2 tall,
-2 × 1 wide, and 2 × 2. JSON stores the choice in `sprite_size` as
+2 × 1 wide, 2 × 2, and 3 × 3. JSON stores the choice in `sprite_size` as
 `width_squares` and `height_squares`; Unknown stores `null`. The 199 built-in
 records are initialized from the dimensions of the game's currently displayed
 original ready/action icons. See the [size audit and renderer distinction](../docs/combat-sprite-catalog.md#how-sprite-sizes-were-assigned).
@@ -48,7 +48,12 @@ The adjacent **Humanoid height** dropdown records Small, Normal, Tall, or
 N/A (non-humanoid) in JSON as `humanoid_size`. It guides consistent apparent
 body height across ready/action frames and weapon sets; it does not change
 combat-square dimensions or game rules. Art preparation includes the saved
-height tier in its prompts and requires reviewers to check it.
+height tier in its prompts and requires reviewers to check it. The monster/NPC
+preview always shows the same 3 × 3 dotted combat grid, with the selected
+footprint shaded from its lower-left corner. Ready and action use one fixed
+scale and planted-base anchor; neither pose is automatically fitted to its own
+bounds. A message below the grid reports opaque pixels outside the selected
+footprint. See the [fixed preview and height targets](../docs/combat-sprite-catalog.md#fixed-combat-square-preview).
 
 Every built-in monster/NPC template and extra combat-icon row has a saved JSON
 record. Descriptions include the original inventory and wealth where a creature
@@ -118,6 +123,9 @@ and acceptance checks. The guide's user approval status is tracked separately.
   poses and every weapon set for that monster. Draw the equipped weapon and
   shield for the selected set in both poses.
 - Review the exported images at normal combat zoom as well as in the catalog.
+  On the catalog's fixed grid, apparent foot-to-head heights should be about
+  0.6 square for Small, 0.9 for Normal, and 1.7 for Tall. Keep the entire
+  silhouette, including equipment, inside its selected footprint.
   The inspected original tactical icons are 24 x 24 pixels; the game currently
   fits visible sprite bounds to about 90% of a combat cell. Detail must remain
   readable when the 128 x 128 image is displayed at that size.

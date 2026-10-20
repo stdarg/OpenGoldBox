@@ -1,7 +1,7 @@
 {
   "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. This is the script-linked icon for MON8CHA.DAX:124. The original template records no carried items. Source wealth: 6 gp.",
   "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "sprite_size": {"height_squares": 2, "width_squares": 2},
   "description_sources": [
     "Decoded ECL link to MON8CHA.DAX:124",
     "Original game inventory and wealth of linked creature"

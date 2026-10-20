@@ -1,7 +1,7 @@
 {
   "description": "A tall, long-armed troll with a gaunt outline; the original creature data records regeneration. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
   "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "sprite_size": {"height_squares": 2, "width_squares": 2},
   "description_sources": [
     "Original game MON5CHA.DAX:31 and matching MONnITM inventory",
     "https://www.dndbeyond.com/sources/dnd/br-2024/creature-stat-blocks (general creature appearance only)"

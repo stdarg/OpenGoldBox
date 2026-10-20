@@ -20,7 +20,7 @@ The game-data directory is required. The launcher uses `OPENGOLD_GAME_DIR` or
 ## Files and workflow
 
 - [`json/`](../combat_sprite_catalog/json) has one saved record per monster, NPC, or extra icon. Records hold descriptions, source identity, equipment, wealth, regeneration flags, and image variants. **Save monster data** writes edited metadata here.
-- **Sprite size (combat squares)** sits above the description in the monster editor. Choose **1 × 1**, **1 × 2 tall**, **2 × 1 wide**, or **2 × 2 (four squares)**, then press **Save monster data**. The selected `sprite_size` is stored in that record's JSON as `width_squares` and `height_squares`. **Unknown** stores `null` when a source cannot establish the size. Copied monsters inherit the chosen size and can change it independently.
+- **Sprite size (combat squares)** sits above the description in the monster editor. Choose **1 × 1**, **1 × 2 tall**, **2 × 1 wide**, **2 × 2**, or **3 × 3**, then press **Save monster data**. The selected `sprite_size` is stored in that record's JSON as `width_squares` and `height_squares`. **Unknown** stores `null` when a source cannot establish the size. Copied monsters inherit the chosen size and can change it independently.
 - **Humanoid height** sits below Sprite size in the monster editor. Choose **Small**, **Normal**, **Tall**, or **N/A (non-humanoid)** and press **Save monster data**. JSON stores the choice as `humanoid_size`: `small`, `normal`, `tall`, or `na`. Copies inherit it and can change it independently.
 - [`art/`](../combat_sprite_catalog/art) holds replacement `ready.png` and `action.png` pairs under each source key and weapon-set variant. Missing pairs fall back to locally decoded original art. See the [art inventory](../combat_sprite_catalog/art/README.md).
 - One-handed weapons pair with available shields; ranged and two-handed weapons have separate sets. Include unready weapons when planning art. Each set needs its own reviewed ready/action pair.
@@ -49,11 +49,44 @@ determined. Some creature-to-icon matches are labeled candidate or shared in
 the catalog, so those sizes describe the currently displayed icon rather than
 proving a unique historical icon for the creature.
 
+Those counts describe the **initial source-icon audit**. The editable visual
+footprint now follows the intended creature size for identified Large and Huge
+forms: ogres, trolls, ettins, efreeti and minotaurs are 2 × 2; hill and fire
+giants are 3 × 3. The [SRD 5.2.1 creature entries](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf)
+support those size categories. Sixteen JSON records were updated; the current
+saved distribution is 158 at 1 × 1, 4 at 1 × 2, 19 at 2 × 1, 15 at 2 × 2,
+and 3 at 3 × 3. The two giant-skeleton entries retain their source-icon 1 × 2
+classification while their intended creature size remains uncertain. The two
+gnoll icons also remain 1 × 2 based on the original art. This is art direction,
+not a change to game combat occupancy.
+
 The game's [current battlefield renderer](../../src/OpenGoldBox/godot/scenes/combat_battlefield.gd)
 fits ordinary visible monster art inside one cell, regardless of source image
 dimensions. The dropdown records the **intended visual sprite footprint** for
 art preparation; it does not change game occupancy or rendering. The game code
 was read for this audit and was not modified.
+
+## Fixed combat-square preview
+
+The monster/NPC preview has a permanent **3 × 3 dotted grid**. Each square is
+128 logical pixels; its origin, cell boundaries and bottom ground line stay at
+the same coordinates when switching records, weapon sets, and ready/action
+poses. The selected `sprite_size` shades a footprint starting at the lower-left
+square. The art is centered over that footprint and registered by the ready
+frame's planted-foot/base row. The same scale and base anchor are used for the
+action frame, so a badly registered pair visibly jumps instead of being
+recentered independently. The tool window is 1600 × 1000 to retain the grid,
+editor and source details together.
+
+Replacement PNGs use one scale per height tier, never a fit-to-image transform:
+Small 1.0, Normal 1.45, Tall 2.1. Non-humanoids use the larger side of the saved
+footprint as their canvas scale. Original icons use their source pixel dimensions
+at 24 pixels per square, with Small originals reduced to 70% for the height
+comparison. These are **canvas display scales**, not assertions that every old
+painting already has the right body height. The tool reports when opaque pixels
+fall outside the selected footprint; correct the art or its intended footprint
+instead of silently shrinking a frame. Changing a dropdown immediately updates
+the preview, but saving is still required to write the JSON.
 
 ## Humanoid height and art consistency
 
@@ -81,4 +114,9 @@ goblins < human-scale fighters < hill giants. Keep the same body height and
 planted-foot coordinates in ready/action frames and every weapon set for a
 creature. The [generation rules](../combat_sprite_catalog/generation/rules.txt)
 carry the saved tier into each prompt, and the review checklist requires a
-visual height comparison. Existing PNGs were not resized by this metadata edit.
+visual height comparison. The agreed visual targets on the fixed grid are about
+**0.6 square** for Small, **0.9 square** for Normal, and **1.7 squares** for
+Tall, measured foot to head. A footprint includes the complete sprite and its
+equipment, while the height target measures only the body. Existing PNGs are
+not automatically resized or treated as correct merely because their canvas is
+128 × 128.

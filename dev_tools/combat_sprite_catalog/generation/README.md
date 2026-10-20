@@ -30,7 +30,10 @@ The authoritative prompt text is [rules.txt](rules.txt). The user confirmed on
   catalog: Small figures read shorter than Normal figures, which read shorter
   than Tall figures. Goblins, human-scale fighters, and hill giants are the
   comparison examples. Measure planted feet to head, excluding weapons and
-  raised arms. N/A is for non-humanoid body plans.
+  raised arms. N/A is for non-humanoid body plans. On the catalog's fixed 3 × 3
+  guide, aim for about 0.6, 0.9, and 1.7 combat squares of body height for
+  Small, Normal, and Tall respectively. The complete pose and equipment must
+  fit the record's selected `sprite_size` footprint.
 
 The independently generated [pose guide](../art/pose-guide/README.md) was
 **approved by the user on 2026-10-17** for production generation. Acceptance
@@ -184,7 +187,9 @@ combat size, and alternating every second in the catalog. Confirm the planted
 feet stay at the same x/y coordinates and the whole body does not slide or jump.
 Compare other weapon sets for identity, scale and foot position. For a humanoid,
 also compare its foot-to-head height with the saved height tier and other art
-of that species. A correct 128 x 128 canvas is not proof of consistent height.
+of that species. Check the stationary dotted grid and any footprint-overflow
+warning in both poses; the preview never shrinks a frame to suppress overflow.
+A correct 128 x 128 canvas is not proof of consistent height.
 To preview before installation, use a separate worktree/copy of the catalog,
 copy the staged images to that copy's `install_paths`, and run its existing
 `./dev_tools/combat_sprite_catalog/run.sh`. Keep the main checkout's accepted art

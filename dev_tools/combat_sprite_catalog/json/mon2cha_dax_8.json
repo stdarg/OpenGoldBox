@@ -1,7 +1,7 @@
 {
   "description": "A large, heavy-limbed brute whose reach and size dominate its combat silhouette. The original template records no carried items. Source wealth: 5 gp.",
   "humanoid_size": "tall",
-  "sprite_size": {"height_squares": 2, "width_squares": 1},
+  "sprite_size": {"height_squares": 2, "width_squares": 2},
   "equipment": [],
   "flag_for_regeneration": false,
   "format": "opengold-monster-art-v1",

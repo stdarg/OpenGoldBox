@@ -74,7 +74,7 @@ static func valid_sprite_size(value: Variant) -> bool:
 
 
 static func _valid_square_count(value: Variant) -> bool:
-    return typeof(value) in [TYPE_INT, TYPE_FLOAT] and float(value) in [1.0, 2.0]
+    return typeof(value) in [TYPE_INT, TYPE_FLOAT] and float(value) in [1.0, 2.0, 3.0]
 
 
 static func valid_humanoid_size(value: Variant) -> bool:
