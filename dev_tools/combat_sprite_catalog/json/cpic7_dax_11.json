@@ -1,5 +1,6 @@
 {
   "description": "A named fighter with enchanted sword, shield, and scale armor in the original character record. This is the script-linked icon for MON7CHA.DAX:42. Source inventory: Long sword +2, Shield +1, Scale armor +2. Readied: Shield +1, Scale armor +2. Source wealth: 15 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL link to MON7CHA.DAX:42",

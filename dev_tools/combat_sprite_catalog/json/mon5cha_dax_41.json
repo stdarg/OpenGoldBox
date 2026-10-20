@@ -1,5 +1,6 @@
 {
   "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Shield, Chain armor +1, Long sword +1. Source wealth: 3 ep.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:41 and matching MONnITM inventory",

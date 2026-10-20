@@ -1,5 +1,6 @@
 {
   "description": "Drythh is the young lizard-man challenger at the Lizard-Man Keep. Give him a distinct reptilian head, tail, and lean fighter build; show a guarded claw ready and a late claw strike.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON8CHA.DAX:95 and matching MONnITM inventory",

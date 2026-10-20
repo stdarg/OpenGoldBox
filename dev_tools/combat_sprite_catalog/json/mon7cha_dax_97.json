@@ -1,5 +1,6 @@
 {
   "description": "An armed outlaw with practical travel clothing and a guarded, opportunistic stance. Source inventory: Arrows, Long bow, Short sword, Shield, Leather armor. Readied: Arrows, Short sword, Shield, Leather armor. Source wealth: 15 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:97 and matching MONnITM inventory",

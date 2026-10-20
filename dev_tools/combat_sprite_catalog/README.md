@@ -44,6 +44,11 @@ it with the other monster data. The dropdown offers Unknown, 1 × 1, 1 × 2 tall
 `width_squares` and `height_squares`; Unknown stores `null`. The 199 built-in
 records are initialized from the dimensions of the game's currently displayed
 original ready/action icons. See the [size audit and renderer distinction](../docs/combat-sprite-catalog.md#how-sprite-sizes-were-assigned).
+The adjacent **Humanoid height** dropdown records Small, Normal, Tall, or
+N/A (non-humanoid) in JSON as `humanoid_size`. It guides consistent apparent
+body height across ready/action frames and weapon sets; it does not change
+combat-square dimensions or game rules. Art preparation includes the saved
+height tier in its prompts and requires reviewers to check it.
 
 Every built-in monster/NPC template and extra combat-icon row has a saved JSON
 record. Descriptions include the original inventory and wealth where a creature

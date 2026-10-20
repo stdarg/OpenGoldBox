@@ -1,5 +1,6 @@
 {
   "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Plate armor, Two-handed sword. Source wealth: 3 gp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:80 and matching MONnITM inventory",

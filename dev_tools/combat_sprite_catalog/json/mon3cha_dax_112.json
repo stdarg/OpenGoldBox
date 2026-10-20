@@ -1,5 +1,6 @@
 {
   "description": "A cleric in practical armor, carrying the arms recorded for this character template. Source inventory: Mace, Plate armor. Source wealth: 20 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON3CHA.DAX:112 and matching MONnITM inventory",

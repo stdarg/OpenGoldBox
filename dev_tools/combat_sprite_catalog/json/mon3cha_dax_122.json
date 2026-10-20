@@ -1,5 +1,6 @@
 {
   "description": "A magic-user prepared to cast spells, with small backup weapons in the original inventory. Source inventory: Dart, Dagger. Source wealth: 20 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON3CHA.DAX:122 and matching MONnITM inventory",

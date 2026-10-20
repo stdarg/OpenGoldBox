@@ -1,5 +1,6 @@
 {
   "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Javelin +1, Two-handed sword +2, Chain armor +1. Readied: Two-handed sword +2, Chain armor +1. Source wealth: 15 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:84 and matching MONnITM inventory",

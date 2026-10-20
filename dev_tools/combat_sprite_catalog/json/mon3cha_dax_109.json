@@ -1,5 +1,6 @@
 {
   "description": "An experienced hireable fighter, equipped for both close and ranged combat. Source inventory: Long bow, Arrows, Two-handed sword +1, Plate armor +1. Readied: Arrows, Two-handed sword +1, Plate armor +1. Source wealth: 5 sp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {

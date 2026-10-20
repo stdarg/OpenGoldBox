@@ -1,5 +1,6 @@
 {
   "description": "A corporal directing other soldiers; distinguish rank through bearing without inventing medals or insignia. Current catalog equipment: Shield, battle axe, scale armor. Source wealth: 1 sp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {

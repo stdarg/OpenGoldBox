@@ -1,5 +1,6 @@
 {
   "description": "High Priestess Grishnak leads worship at the Cadorna Textile House’s makeshift temple. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:28 and matching MONnITM inventory",

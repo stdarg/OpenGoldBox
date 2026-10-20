@@ -42,6 +42,7 @@ func _initialize() -> void:
     var metadata_path := fixture_dir.path_join("monster.json")
     var record := {
         "format": "opengold-monster-art-v1", "name": "Test biped", "description": "An independently designed warrior.",
+        "humanoid_size": "normal", "sprite_size": {"width_squares": 1, "height_squares": 1},
         "flag_for_regeneration": true, "source": {"key": "TEST:1"},
         "equipment": [
             {"id": "sword", "name": "Sword", "kind": "weapon", "weapon_role": "one_hand"},
@@ -64,6 +65,8 @@ func _initialize() -> void:
     expect(ready_text.begins_with(rules) and action_text.begins_with(rules), "Both prompts include complete shared rules")
     expect('"selected_set": "Sword + Shield"' in ready_text and '"name": "Mail"' in ready_text,
         "Prompt uses selected setup and other gear")
+    expect('"humanoid_size": "normal"' in ready_text and '"humanoid_size": "normal"' in action_text,
+        "Both prompts retain the saved humanoid height")
     expect('"name": "Bow"' not in ready_text and '"name": "Greatsword"' not in ready_text,
         "Prompt does not equip other weapon sets")
     var blank_review := Workflow.read_json(stage.path_join("review.json"))
@@ -145,6 +148,11 @@ func _initialize() -> void:
     record.equipment = []
     save_json(metadata_path, record)
     expect(Workflow.prepare(metadata_path, "default", fixture_dir.path_join("unarmed")).is_empty(), "No-gear default pair supported")
+    record.erase("humanoid_size")
+    save_json(metadata_path, record)
+    expect(not Workflow.prepare(metadata_path, "default", fixture_dir.path_join("missing-height")).is_empty(),
+        "Art preparation requires a saved humanoid height")
+    record.humanoid_size = "normal"
     record.equipment = [42]
     save_json(metadata_path, record)
     expect(not Workflow.prepare(metadata_path, "default", fixture_dir.path_join("invalid")).is_empty(), "Malformed equipment fails cleanly")

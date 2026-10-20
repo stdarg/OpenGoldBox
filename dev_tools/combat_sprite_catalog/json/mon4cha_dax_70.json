@@ -1,5 +1,6 @@
 {
   "description": "A powerful fire-associated genie with a tall, commanding outline and otherworldly presence. The original template records no carried items. Source wealth: 6 gp.",
+  "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:70 and matching MONnITM inventory",

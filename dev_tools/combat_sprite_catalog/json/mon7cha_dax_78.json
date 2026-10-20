@@ -1,5 +1,6 @@
 {
   "description": "An armored cleric prepared for both religious duty and close combat. The original template records no carried items. Source wealth: 4 sp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:78 and matching MONnITM inventory",

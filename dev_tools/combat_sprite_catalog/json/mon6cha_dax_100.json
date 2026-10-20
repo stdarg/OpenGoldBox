@@ -1,5 +1,6 @@
 {
   "description": "An experienced martial fighter; the listed level and source equipment guide the combat silhouette. Source inventory: Long sword, Plate armor, Quarrel, Heavy crossbow. Readied: Long sword, Plate armor, Quarrel. Source wealth: 5 sp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:100 and matching MONnITM inventory",

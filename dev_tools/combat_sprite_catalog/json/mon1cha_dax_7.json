@@ -1,5 +1,6 @@
 {
   "description": "A broad-shouldered hobgoblin leader with orange-brown skin, a flat face, pointed ears, yellow eyes, and dark hair tied back. Its golden scale mail and clan-marked shield identify its rank; it can switch between long sword and long bow.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {

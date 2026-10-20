@@ -1,5 +1,6 @@
 {
   "description": "A cleric of Tyr sent to help cleanse the Temple of Bane; he remains to rebuild it afterward. Source inventory: Wooden Holy Symbol, Mace, Chain armor. Readied: Chain armor. Source wealth: 20 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON3CHA.DAX:107 and matching MONnITM inventory",

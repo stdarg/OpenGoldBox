@@ -1,5 +1,6 @@
 {
   "description": "An enormous animated skeleton, perhaps built from a hill giant, with heavy bones and long reach. It raises its bony arms to menace its foe, then lunges with a late clawing strike.",
+  "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "description_sources": [
     "Original game MON1CHA.DAX:22 and matching MONnITM inventory",

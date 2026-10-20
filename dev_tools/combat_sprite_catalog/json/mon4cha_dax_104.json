@@ -1,5 +1,6 @@
 {
   "description": "A captive in the Kobold Caves who fights the kobolds fiercely and can join the party. Source inventory: Shield, Leather armor, Short sword. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:104 and matching MONnITM inventory",

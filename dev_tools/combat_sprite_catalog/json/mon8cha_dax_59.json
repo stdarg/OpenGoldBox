@@ -1,5 +1,6 @@
 {
   "description": "A large four-legged reptile from the swamp, with a low body, long tail, and strong jaws. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "na",
   "sprite_size": {"height_squares": 1, "width_squares": 2},
   "description_sources": [
     "Original game MON8CHA.DAX:59 and matching MONnITM inventory",

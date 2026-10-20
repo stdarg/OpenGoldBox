@@ -1,5 +1,6 @@
 {
   "description": "A broad-shouldered orc from the hostile bands occupying Phlan; depict a rough, practical raider. Current catalog equipment: leather armor, long sword, shield, short bow. Source wealth: 24 sp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:4 and matching MONnITM inventory",

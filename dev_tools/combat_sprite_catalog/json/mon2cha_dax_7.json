@@ -1,5 +1,6 @@
 {
   "description": "A hobgoblin leader directing organized fighters, with a more commanding posture than its troops. Source inventory: Long sword, Arrows, Long bow. Readied: Arrows. Source wealth: 18 cp, 7 gp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {

@@ -1,5 +1,6 @@
 {
   "description": "An animated corpse with a slow, heavy posture and visible signs of decay. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:35 and matching MONnITM inventory",

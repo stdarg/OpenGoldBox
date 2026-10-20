@@ -21,6 +21,7 @@ The game-data directory is required. The launcher uses `OPENGOLD_GAME_DIR` or
 
 - [`json/`](../combat_sprite_catalog/json) has one saved record per monster, NPC, or extra icon. Records hold descriptions, source identity, equipment, wealth, regeneration flags, and image variants. **Save monster data** writes edited metadata here.
 - **Sprite size (combat squares)** sits above the description in the monster editor. Choose **1 × 1**, **1 × 2 tall**, **2 × 1 wide**, or **2 × 2 (four squares)**, then press **Save monster data**. The selected `sprite_size` is stored in that record's JSON as `width_squares` and `height_squares`. **Unknown** stores `null` when a source cannot establish the size. Copied monsters inherit the chosen size and can change it independently.
+- **Humanoid height** sits below Sprite size in the monster editor. Choose **Small**, **Normal**, **Tall**, or **N/A (non-humanoid)** and press **Save monster data**. JSON stores the choice as `humanoid_size`: `small`, `normal`, `tall`, or `na`. Copies inherit it and can change it independently.
 - [`art/`](../combat_sprite_catalog/art) holds replacement `ready.png` and `action.png` pairs under each source key and weapon-set variant. Missing pairs fall back to locally decoded original art. See the [art inventory](../combat_sprite_catalog/art/README.md).
 - One-handed weapons pair with available shields; ranged and two-handed weapons have separate sets. Include unready weapons when planning art. Each set needs its own reviewed ready/action pair.
 - The [generation and review workflow](../combat_sprite_catalog/generation/README.md) and [rules](../combat_sprite_catalog/generation/rules.txt) govern new sprite art. Keep body scale and planted foot/base coordinates fixed between frames; review the actual 128 x 128 images alternating in the catalog before clearing a regeneration flag. The [pose guide](../combat_sprite_catalog/art/pose-guide/README.md) covers the approved bipedal attack poses.
@@ -53,3 +54,31 @@ fits ordinary visible monster art inside one cell, regardless of source image
 dimensions. The dropdown records the **intended visual sprite footprint** for
 art preparation; it does not change game occupancy or rendering. The game code
 was read for this audit and was not modified.
+
+## Humanoid height and art consistency
+
+`humanoid_size` is a **visual height tier**, separate from `sprite_size` and
+from the SRD creature-type tag. The [SRD 5.2.1 creature-size rules](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf)
+name Tiny, Small, Medium, Large, Huge, and Gargantuan; the catalog's simpler
+Small/Normal/Tall choices group these for art direction. A goblin or kobold is
+Small, human-scale figures are Normal, and an ogre or hill giant is Tall.
+This includes humanoid-shaped creatures even when the current SRD calls their
+game type Fey, Dragon, Giant, Undead, or another type. Non-humanoid body plans
+use N/A. The tiers do not change tactical occupancy or creature rules.
+
+The initial values for the 199 saved records are 14 Small, 143 Normal, 18 Tall,
+and 24 N/A. Comparable SRD stat blocks or species entries informed the values
+where available. Named Pool of Radiance characters, Quicklings, the giant
+skeleton, and forms without exact SRD matches use the catalog description and
+currently bound art as visual evidence. Tyranthraxus's dragon-form icon is N/A;
+its separate humanoid-form icon is Normal. These are editable art-direction
+choices rather than inferred rule statistics.
+
+For humanoid art, measure apparent body height from planted feet to the head,
+without counting weapons, raised arms, horns, or effects. Small figures must
+read shorter than Normal figures, and Tall figures taller; specifically,
+goblins < human-scale fighters < hill giants. Keep the same body height and
+planted-foot coordinates in ready/action frames and every weapon set for a
+creature. The [generation rules](../combat_sprite_catalog/generation/rules.txt)
+carry the saved tier into each prompt, and the review checklist requires a
+visual height comparison. Existing PNGs were not resized by this metadata edit.

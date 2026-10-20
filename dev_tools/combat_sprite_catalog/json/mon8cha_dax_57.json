@@ -1,5 +1,6 @@
 {
   "description": "A reptilian warrior from the swamp and ruined keep, with a long tail and strong jaws. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON8CHA.DAX:57 and matching MONnITM inventory",

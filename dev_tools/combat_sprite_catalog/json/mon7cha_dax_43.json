@@ -1,5 +1,6 @@
 {
   "description": "A spellcasting tribal leader, with magical protection and a wand in the original inventory. Source inventory: Wand of Magic Missiles, Bracers AC 2, Dagger +2. Source wealth: 20 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:43 and matching MONnITM inventory",

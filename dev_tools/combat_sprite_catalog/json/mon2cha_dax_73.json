@@ -1,5 +1,6 @@
 {
   "description": "A hyena-headed humanoid raider with a hunched, alert outline and a powerful bite. Current catalog equipment: LLeather armor, Shield, flail. Source wealth: 12 ep, 8 gp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "equipment": [
     {

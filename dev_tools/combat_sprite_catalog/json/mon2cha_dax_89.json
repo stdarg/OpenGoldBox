@@ -1,5 +1,6 @@
 {
   "description": "A magic-user whose casting pose and recorded magical equipment should read clearly at combat scale. Source inventory: Dagger. Source wealth: 20 cp. Catalog additions: Dagger +1, ring of protection +1, Wand of Magic Missiles.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {

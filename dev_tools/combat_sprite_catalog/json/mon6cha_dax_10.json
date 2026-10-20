@@ -1,5 +1,6 @@
 {
   "description": "Tiny, exceptionally swift humanoids; the pose should suggest motion without obscuring the body. The original template records no carried items. Source wealth: 2 cp, 3 sp, 1 ep, 2 gems.",
+  "humanoid_size": "small",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:10 and matching MONnITM inventory",

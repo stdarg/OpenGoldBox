@@ -1,5 +1,6 @@
 {
   "description": "A mobile thief whose lighter kit and guarded stance distinguish this template from armored soldiers. Source inventory: Leather armor, Wand of Magic Missiles. Source wealth: 6 gp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON7CHA.DAX:77 and matching MONnITM inventory",

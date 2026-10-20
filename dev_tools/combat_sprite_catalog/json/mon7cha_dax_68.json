@@ -1,5 +1,6 @@
 {
   "description": "A sleek six-legged predator with two long tentacles rising from its shoulders. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "na",
   "sprite_size": {"height_squares": 1, "width_squares": 2},
   "description_sources": [
     "Original game MON7CHA.DAX:68 and matching MONnITM inventory",

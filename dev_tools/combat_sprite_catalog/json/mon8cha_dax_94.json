@@ -1,5 +1,6 @@
 {
   "description": "A magic-user whose casting pose and recorded magical equipment should read clearly at combat scale. Source inventory: Wand of Magic Missiles. Source wealth: 20 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON8CHA.DAX:94 and matching MONnITM inventory",

@@ -1,5 +1,6 @@
 {
   "description": "An oversized animated skeleton with long bony arms and no weapon in the current catalog loadout. Its raised claw guard gives way to a late reaching strike. Source archive inventory lists an unselected short bow.",
+  "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "description_sources": [
     "Original game MON4CHA.DAX:22 and matching MONnITM inventory",

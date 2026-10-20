@@ -1,5 +1,6 @@
 {
   "description": "An orc commander whose bearing and equipment distinguish this template from common orcs. Source inventory: Battle axe, Chain armor, Arrows, Long bow. Readied: Chain armor, Arrows. Source wealth: 4 sp, 20 ep.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON2CHA.DAX:5 and matching MONnITM inventory",

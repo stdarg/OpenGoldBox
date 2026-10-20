@@ -1,5 +1,6 @@
 {
   "description": "The bandit leader waiting in the catacombs beneath Kuto’s Well with kobold archers and his band. This is the script-linked icon for MON8CHA.DAX:32. Source inventory: Long sword +1, Shield, Chain armor. Readied: Shield, Chain armor. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL link to MON8CHA.DAX:32",

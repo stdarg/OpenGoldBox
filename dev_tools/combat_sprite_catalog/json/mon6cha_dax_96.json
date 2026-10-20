@@ -1,5 +1,6 @@
 {
   "description": "An armed guard with a disciplined stance suitable for patrols and defended entrances. Source inventory: Long sword, Leather armor, Quarrel, Light crossbow. Readied: Long sword, Leather armor, Quarrel. Source wealth: 5 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:96 and matching MONnITM inventory",

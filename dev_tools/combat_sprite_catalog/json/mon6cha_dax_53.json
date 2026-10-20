@@ -1,5 +1,6 @@
 {
   "description": "Armed aides assigned to support a leader, equipped for both close and ranged combat. Source inventory: Arrows, Long bow, Chain armor, Long sword. Readied: Arrows, Chain armor, Long sword. Source wealth: 5 sp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON6CHA.DAX:53 and matching MONnITM inventory",

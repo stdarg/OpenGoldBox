@@ -1,5 +1,6 @@
 {
   "description": "Orc combat artwork, identical to the orc pairs in other archives. Identical originals: CPIC1.DAX:4, CPIC2.DAX:4, CPIC4.DAX:4. Known users of this art: ORC. No direct script reference found for this archive copy.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Decoded ECL art links and original CPIC ready/action records"

@@ -3,6 +3,7 @@ extends Control
 const Evidence = preload("res://scripts/art_script_evidence.gd")
 const MonsterMetadata = preload("res://scripts/monster_metadata.gd")
 const GEAR_ROLES := ["one_hand", "two_hand", "ranged", "shield", "gear"]
+const HUMANOID_SIZES := ["na", "small", "normal", "tall"]
 
 var catalog := SpriteCatalog.new()
 var rows: Array = []
@@ -20,6 +21,7 @@ var monster_image: TextureRect
 var monster_source: Label
 var description_edit: TextEdit
 var sprite_size_choice: OptionButton
+var humanoid_size_choice: OptionButton
 var gear_rows: VBoxContainer
 var gear_source_hint: Label
 var regeneration_flag: CheckButton
@@ -301,6 +303,14 @@ func _build_ui() -> void:
         sprite_size_choice.add_item(label)
     sprite_size_choice.tooltip_text = "Desired visual size of this sprite; Save monster data writes it to JSON."
     editor.add_child(sprite_size_choice)
+    var humanoid_size_label := Label.new()
+    humanoid_size_label.text = "Humanoid height"
+    editor.add_child(humanoid_size_label)
+    humanoid_size_choice = OptionButton.new()
+    for label in ["N/A (non-humanoid)", "Small", "Normal", "Tall"]:
+        humanoid_size_choice.add_item(label)
+    humanoid_size_choice.tooltip_text = "Visual body-height tier for consistent art across monsters; Save monster data writes it to JSON."
+    editor.add_child(humanoid_size_choice)
     var description_heading := Label.new()
     description_heading.text = "Description for new art"
     editor.add_child(description_heading)
@@ -370,6 +380,7 @@ func _rebuild_list() -> void:
         variant_choice.clear()
         description_edit.text = ""
         sprite_size_choice.select(0)
+        humanoid_size_choice.select(0)
         gear_source_hint.text = ""
         for child in gear_rows.get_children():
             gear_rows.remove_child(child)
@@ -417,6 +428,7 @@ func _select_monster(list_index: int) -> void:
         gear_source_hint.text = "Original gear loaded from the matching MONnITM record."
     description_edit.text = record.description
     sprite_size_choice.select(_sprite_size_index(record.get("sprite_size", null)))
+    humanoid_size_choice.select(HUMANOID_SIZES.find(str(record.get("humanoid_size", "na"))))
     regeneration_flag.set_pressed_no_signal(bool(record.flag_for_regeneration))
     for child in gear_rows.get_children():
         gear_rows.remove_child(child)
@@ -484,6 +496,7 @@ func _store_draft() -> void:
     var record: Dictionary = draft_records[rows[selected].key]
     record.description = description_edit.text
     record.sprite_size = _sprite_size_for_index(sprite_size_choice.selected)
+    record.humanoid_size = HUMANOID_SIZES[humanoid_size_choice.selected]
     record.flag_for_regeneration = regeneration_flag.button_pressed
     var equipment: Array = []
     for line in gear_rows.get_children():
@@ -749,6 +762,7 @@ func _metadata_check() -> void:
     assert(migrated.data.variants.size() == 3)
     var sample: Dictionary = MonsterMetadata.new_record(first, art)
     sample.sprite_size = {"width_squares": 2, "height_squares": 1}
+    sample.humanoid_size = "tall"
     sample.equipment = [
         {"id": "w1", "kind": "weapon", "weapon_role": "one_hand", "name": "Sword", "source_type": 36, "readied": true},
         {"id": "w2", "kind": "weapon", "weapon_role": "ranged", "name": "Long bow", "source_type": 43, "readied": false},
@@ -771,6 +785,7 @@ func _metadata_check() -> void:
     assert(loaded.error.is_empty())
     assert(loaded.data.description == sample.description and loaded.data.flag_for_regeneration)
     assert(_sprite_size_index(loaded.data.sprite_size) == 3)
+    assert(loaded.data.humanoid_size == "tall")
     assert(loaded.data.equipment.size() == 6 and loaded.data.variants.size() == 4)
     assert(loaded.data.variants[2].id == ranged_id)
     sample.equipment = [sample.equipment[0], sample.equipment[5]]
@@ -789,16 +804,19 @@ func _metadata_check() -> void:
     _select_monster(0)
     description_edit.text = "Unsaved draft"
     sprite_size_choice.select(2)
+    humanoid_size_choice.select(1)
     regeneration_flag.button_pressed = true
     _select_monster(1)
     _select_monster(0)
     assert(description_edit.text == "Unsaved draft" and regeneration_flag.button_pressed)
     assert(sprite_size_choice.selected == 2)
+    assert(humanoid_size_choice.selected == 1)
     save_button.pressed.emit()
     var saved_draft: Dictionary = MonsterMetadata.load_record(first, art, metadata_root)
     assert(saved_draft.error.is_empty())
     assert(saved_draft.data.description == "Unsaved draft" and saved_draft.data.flag_for_regeneration)
     assert(_sprite_size_index(saved_draft.data.sprite_size) == 2)
+    assert(saved_draft.data.humanoid_size == "small")
     _select_monster(1)
     draft_records[first.key] = loaded.data
     _select_monster(0)
@@ -887,6 +905,7 @@ func _metadata_check() -> void:
     assert(reloaded.error.is_empty() and reloaded.data.name == "Copied test monster")
     assert(reloaded.data.source.origin_key == first.key and reloaded.data.equipment.size() == 5)
     assert(_sprite_size_index(reloaded.data.sprite_size) == 3)
+    assert(reloaded.data.humanoid_size == "tall")
     assert(reloaded.data.wealth == first.wealth)
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
@@ -958,6 +977,11 @@ func _catalog_check() -> void:
         assert(metadata.error.is_empty())
         assert(metadata.data.has("sprite_size") and metadata.data.sprite_size != null)
         assert(MonsterMetadata.valid_sprite_size(metadata.data.sprite_size))
+        assert(MonsterMetadata.valid_humanoid_size(metadata.data.get("humanoid_size", null)))
+        if row.key == "MON1CHA.DAX:2": assert(metadata.data.humanoid_size == "small")
+        if row.key == "MON1CHA.DAX:41": assert(metadata.data.humanoid_size == "normal")
+        if row.key == "MON2CHA.DAX:55": assert(metadata.data.humanoid_size == "tall")
+        if row.key == "CPIC4.DAX:37": assert(metadata.data.humanoid_size == "na")
         assert(metadata.data.wealth == row.get("wealth", {}))
         assert(str(metadata.data.description).length() >= 80)
         for item in metadata.data.equipment:

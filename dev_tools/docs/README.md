@@ -9,13 +9,13 @@ are read from a local installation; they are not included here.
 | --- | --- | --- |
 | Tile Art Viewer | Browse original wall pieces and maps, edit piece descriptions, and inspect replacement art in map context. | [Tile Art Viewer](tile-art-viewer.md) |
 | Replacement Art Creator | Prepare new wall and feature art, project it into perspective views, and export replacement sets. | [Replacement Art Creator](replacement-art-creator.md) |
-| Combat Sprite Catalog | Inspect monster/NPC and character combat images, edit monster metadata, and review ready/action replacement sprites. | [Combat Sprite Catalog](combat-sprite-catalog.md) |
+| Combat Sprite Catalog | Inspect monster/NPC and character combat images, edit monster metadata and visual height tiers, and review ready/action replacement sprites. | [Combat Sprite Catalog](combat-sprite-catalog.md) |
 
 ## Documents in this folder
 
 - [Tile Art Viewer](tile-art-viewer.md): launch, catalog and map workflows, data, and checks.
 - [Replacement Art Creator](replacement-art-creator.md): briefs, source art, perspective exports, and checks.
-- [Combat Sprite Catalog](combat-sprite-catalog.md): metadata, weapon sets, animation review, and checks.
+- [Combat Sprite Catalog](combat-sprite-catalog.md): metadata, sprite footprint and humanoid height, weapon sets, animation review, and checks.
 
 ## Detailed tool documents
 

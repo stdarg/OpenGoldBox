@@ -1,5 +1,6 @@
 {
   "description": "An imposing ogre leader wearing a blue helmet and carrying a crude halberd or long bow. The halberd is held high and aimed forward in ready, then follows through near the end of a forceful strike.",
+  "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "equipment": [
     {

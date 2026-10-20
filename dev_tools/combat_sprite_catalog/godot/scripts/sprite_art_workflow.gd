@@ -13,6 +13,7 @@ const VISUAL_CHECKS := [
     "correct_equipment_grip_and_handedness",
     "same_identity_clothing_palette_and_camera",
     "consistent_scale_and_grounded_foot_baseline_across_sets",
+    "humanoid_height_tier_or_na_reviewed",
     "planted_feet_same_xy_no_whole_body_translation",
     "complete_silhouette_no_clipping_or_background",
     "pixel_art_readable_at_combat_size",
@@ -46,6 +47,8 @@ static func metadata_errors(record: Dictionary) -> Array[String]:
             not record.get("equipment") is Array or not record.get("source") is Dictionary or \
             not record.source.get("key") is String or str(record.source.key).is_empty():
         return ["Invalid monster-art metadata."]
+    if not record.has("humanoid_size") or not Metadata.valid_humanoid_size(record.humanoid_size):
+        return ["Choose and save a valid humanoid height in the Combat Sprite Catalog."]
     var ids := {}
     for item in record.equipment:
         if not item is Dictionary or not item.has_all(["id", "name", "kind"]) or \
@@ -87,6 +90,7 @@ static func prepare(metadata_path: String, variant_id: String, directory: String
     var context := {
         "name": record.get("name", ""), "description": record.get("description", ""),
         "source_key": record.source.key, "selected_set": variant.label,
+        "humanoid_size": record.humanoid_size, "sprite_size": record.get("sprite_size", null),
         "weapon_role": variant.weapon_role, "selected_equipment": selected,
         "other_gear": other_gear,
     }

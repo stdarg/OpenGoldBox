@@ -1,5 +1,6 @@
 {
   "description": "A striped big cat with a low predatory body and a poised springing stance. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "humanoid_size": "na",
   "sprite_size": {"height_squares": 1, "width_squares": 2},
   "description_sources": [
     "Original game MON6CHA.DAX:119 and matching MONnITM inventory",

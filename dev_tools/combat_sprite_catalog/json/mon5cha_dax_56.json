@@ -1,5 +1,6 @@
 {
   "description": "A massive fire giant with a broad, imposing frame and heat-marked styling. The original template records no carried items. Source wealth: 2000 cp, 1000 sp, 4000 gp.",
+  "humanoid_size": "tall",
   "sprite_size": {"height_squares": 2, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:56 and matching MONnITM inventory",

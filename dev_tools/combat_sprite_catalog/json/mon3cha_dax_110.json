@@ -1,5 +1,6 @@
 {
   "description": "A spellcaster with light weapons and protective magic, posed to cast rather than charge. Source inventory: Dart, Dagger, Ring Of Protection +1. Readied: Dagger, Ring Of Protection +1. Source wealth: 20 cp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON3CHA.DAX:110 and matching MONnITM inventory",

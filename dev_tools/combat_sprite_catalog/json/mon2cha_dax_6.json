@@ -1,5 +1,6 @@
 {
   "description": "A disciplined goblinoid soldier with a sturdier build and more martial bearing than a goblin. Source inventory: Long sword. Source wealth: 18 cp, 7 gp.",
+  "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {
