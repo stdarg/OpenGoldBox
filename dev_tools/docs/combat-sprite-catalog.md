@@ -88,6 +88,21 @@ fall outside the selected footprint; correct the art or its intended footprint
 instead of silently shrinking a frame. Changing a dropdown immediately updates
 the preview, but saving is still required to write the JSON.
 
+Run the read-only [art-fit audit](../combat_sprite_catalog/godot/scripts/art_fit_audit.gd)
+to list every installed replacement pose that crosses its selected footprint:
+
+```bash
+OPENGOLD_GAME_DIR="$HOME/POOLRAD" /Applications/Godot_mono.app/Contents/MacOS/Godot \
+  --headless --path dev_tools/combat_sprite_catalog/godot \
+  --script res://scripts/art_fit_audit.gd
+```
+
+The audit counts both poses of every weapon-set variant, reports missing
+replacement poses that currently fall back to original art, and lists each
+installed pose that crosses its selected footprint. The resulting list is an
+art-correction queue, not an animation approval or a reason to recenter either
+frame.
+
 ## Humanoid height and art consistency
 
 `humanoid_size` is a **visual height tier**, separate from `sprite_size` and
