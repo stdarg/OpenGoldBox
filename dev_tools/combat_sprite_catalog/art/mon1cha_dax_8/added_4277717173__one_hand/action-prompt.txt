@@ -37,6 +37,26 @@ identity, clothing, colors, handedness and equipment across the pair and all its
 weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
 not permission to invent a different setup.
 
+HUMANOID HEIGHT: The catalog's humanoid_size is a visual body-height tier, separate
+from sprite_size (combat squares) and from the SRD creature-type tag. "small"
+humanoids, such as goblins and kobolds, must read shorter than "normal"
+human-scale figures; "tall" figures, such as ogres and hill giants, must read
+taller than normal figures. "na" means this humanoid-height comparison does
+not apply to the body plan. Compare with correctly scaled art from the same
+species and tier before choosing a body scale. Measure the figure from planted feet to
+the top of its head, excluding weapons, horns, raised arms and effects. Keep
+that body height consistent across both poses and every weapon set for this
+creature; do not fill the 128 x 128 canvas independently for each sprite. Use
+only a correctly scaled comparison sprite as a reference: an older accepted
+image is not a height authority if it breaks the Small < Normal < Tall order.
+On the catalog's stationary 3 x 3 combat-square guide, aim for a foot-to-head
+height of about 0.6 square for Small, 0.9 square for Normal, and 1.7 squares for
+Tall. These are body measurements, not canvas sizes. The complete silhouette,
+including the weapon, must fit the saved sprite_size footprint. The grid never
+moves between monsters or animation frames. If a pose or weapon overflows, redesign
+the pair at a common scale; never fit ready and action separately or quietly
+shrink only the action frame.
+
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
 readied. Each set needs its own ready.png AND action.png. A one-handed weapon
@@ -88,6 +108,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 MONSTER AND SELECTED SET (current catalog JSON):
 {
   "description": "An enormous, thick-limbed ogre with a crude club. Keep its chest partly visible as it raises the club to strike, then show the heavy blow near the end of its downward arc.",
+  "humanoid_size": "tall",
   "name": "OGRE",
   "other_gear": [],
   "selected_equipment": [
@@ -104,6 +125,10 @@ MONSTER AND SELECTED SET (current catalog JSON):
   ],
   "selected_set": "club",
   "source_key": "MON1CHA.DAX:8",
+  "sprite_size": {
+    "height_squares": 2.0,
+    "width_squares": 2.0
+  },
   "weapon_role": "one_hand"
 }
 
@@ -124,7 +149,8 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL EDIT DIRECTION: Edit the generated ogre ready frame in place. Lower
-only its club arm and club into a near-finished strike. Preserve both planted
-feet, legs, loincloth and body base at the same canvas coordinates. The guide
-shows attack direction, not foot positions.
+FINAL ART-SPECIFIC EDIT: Edit the approved-new ogre ready sprite. Keep both
+planted feet, legs, hips, torso, face, scale, camera, palette and clothing at
+the same canvas coordinates. Swing the one-handed club down and toward screen
+right near the end of its blow. Shorten the forward extension enough to leave
+transparent right-edge margin; do not move or recenter the whole ogre.
