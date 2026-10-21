@@ -2331,6 +2331,66 @@ void victory_with_a_monster_left_out()
     check(one > 0 && one < both, "A monster left out of the fight is worth no experience");
 }
 
+// On Hard and above a monster brings its potions, wands and scrolls into the
+// fight, and what it uses is gone from the loot (DIFF-1).
+void monsters_bring_their_gear()
+{
+    const auto resources = orc_encounter_resources();
+    auto district = std::make_shared<por::PhlanResources>(*resources->districts.at(20));
+    por::Equipment wand, potion;
+    wand.stored.type = 79;
+    wand.stored.effect_codes = {5, 88, 0}; // five charges of Magic Missiles
+    potion.stored.type = 71;
+    potion.stored.effect_codes = {1, 85, 0}; // one Potion of Healing
+    district->encounter_creatures[4].equipment = {wand, potion};
+    resources->districts[20] = district;
+    const auto encounter = [&](Difficulty difficulty, por::RolfTourSession &town,
+                               const std::shared_ptr<CampaignParty> &party)
+    {
+        town.difficulty(difficulty);
+        town.campaign_party(party);
+        settle(town);
+        check(town.explore(por::ExplorationCommand::look), "Synthetic gate starts the encounter");
+        settle(town);
+        return town.pending_encounter().value().enemies.front().inventory;
+    };
+    {
+        auto party = std::make_shared<CampaignParty>(module());
+        (void)party->add_pc(character("fighter"));
+        por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+        check(encounter(Difficulty::normal, town, party).empty(),
+              "On Normal a monster brings no gear into the fight");
+    }
+    auto party = std::make_shared<CampaignParty>(module());
+    const auto id = party->add_pc(character("fighter"));
+    por::RolfTourSession town({}, resources->programs.at(0), {}, 0x9914, {}, resources);
+    const auto gear = encounter(Difficulty::hard, town, party);
+    check(gear.size() == 2 && gear[0].definition == "wand:magic_missiles" &&
+              gear[0].quantity == 5 && gear[1].definition == "potion_of_healing",
+          "On Hard the orc brings its wand and potion");
+    auto result = [&]
+    {
+        CombatDemo combat(module());
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), 42);
+        return combat.combat().snapshot();
+    }();
+    result.outcome = Outcome::victory;
+    for (auto &unit : result.combatants)
+    {
+        if (unit.side == Side::opposition)
+        {
+            unit.hit_points = 0;
+            unit.item_uses_left = {{gear[0].inventory_id, 2}, {gear[1].inventory_id, 0}};
+        }
+    }
+    check(town.resolve_combat(result), "The victory resolves");
+    const auto items = party->member(id).character.inventory().items();
+    check(items.size() == 1 && items[0].definition_id == "wand:magic_missiles" &&
+              items[0].quantity == 2,
+          "The loot holds the wand's two charges left, and not the drunk potion");
+}
+
 // Resolving a fight loses members and claims rewards before the original
 // script hears the result. Whichever step fails, the party ends either fully
 // rewarded or exactly as it was before the event (Effective C++ Item 29).
@@ -2889,6 +2949,7 @@ int main()
         failed_combat_result_rolls_back();
         victory_when_every_monster_fled();
         victory_with_a_monster_left_out();
+        monsters_bring_their_gear();
         monster_picture_before_combat();
         recovery_hosts();
         training_hall_service();

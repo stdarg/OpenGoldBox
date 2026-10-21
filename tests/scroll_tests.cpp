@@ -496,6 +496,76 @@ void writing()
           "Its spell heals, and the scroll is gone");
 }
 
+// A monster's turn against a Fighter at (1, 1), carrying `item` as gear 1, at
+// `hit_points` when it is not 0 (DIFF-1).
+std::unique_ptr<CombatSession> monster_turn(const RulesModule &rules, const std::string &kind,
+                                            const std::string &item, unsigned quantity,
+                                            int hit_points = 0)
+{
+    Participant hero{
+        1,      "campaign-character",
+        "Hero", Side::party,
+        {1, 1}, rules.character_profile(fighter().sheet(), std::vector<std::string>{}).data};
+    Participant monster{2, kind, "Monster", Side::opposition, {6, 1}};
+    monster.inventory.push_back({1, item, quantity, 0});
+    if (hit_points)
+    {
+        monster.state = VitalState{hit_points, false, {}, {}};
+    }
+    auto c = rules.create({{12, 6, std::vector<Terrain>(72)}, {hero, monster}}, 5);
+    test::keep_initiative(*c);
+    for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 4; ++turns)
+    {
+        check(submit(*c, "end"), "End the Fighter's turn");
+    }
+    check(c->snapshot().actor == 2, "The monster acts");
+    return c;
+}
+
+unsigned monster_uses_left(const CombatSession &c)
+{
+    for (const auto &combatant : c.snapshot().combatants)
+    {
+        if (combatant.id == 2 && !combatant.item_uses_left.empty())
+        {
+            return combatant.item_uses_left.front().second;
+        }
+    }
+    throw std::runtime_error("The monster's item is not reported");
+}
+
+// On Hard and above, monsters use their potions, wands and scrolls (DIFF-1):
+// a wand without equipping it, a scroll only when the monster casts spells.
+void monster_items()
+{
+    const auto rules = module();
+    auto wand = monster_turn(*rules, "slums-hobgoblin", "wand:magic_missiles", 5);
+    const auto zap = choose_demo_command(*wand);
+    check(zap.verb == "magic_missile_item" && zap.target == 1,
+          "A monster zaps its Wand of Magic Missiles at the Fighter");
+    // Each dart is aimed in turn.
+    for (unsigned step = 0; step < 6 && monster_uses_left(*wand) == 5; ++step)
+    {
+        check(wand->submit(choose_demo_command(*wand)), "The monster aims its darts");
+    }
+    check(monster_uses_left(*wand) == 4 && test::logged(*wand, "Magic Missile"),
+          "The wand spends a charge");
+    check(rules->restore(wand->save())->save() == wand->save(),
+          "A checkpoint keeps the monster's gear");
+
+    check(!offered(*monster_turn(*rules, "slums-hobgoblin", "scroll:arcane:magic_missile", 1),
+                   "magic_missile_scroll"),
+          "A monster that casts no spells reads no scroll");
+    auto scroll = monster_turn(*rules, "slums-magic-user", "scroll:divine:guiding_bolt", 1);
+    check(offered(*scroll, "guiding_bolt_scroll"), "A monster that casts spells reads any scroll");
+
+    auto potion = monster_turn(*rules, "slums-hobgoblin", "potion_of_healing", 1, 2);
+    const auto drink = choose_demo_command(*potion);
+    check(drink.verb.starts_with("potion_of_healing") && potion->submit(drink) &&
+              monster_uses_left(*potion) == 0,
+          "A monster at half its Hit Points or lower drinks its Potion of Healing");
+}
+
 // Use Magic Device: a level-13 Thief reads any scroll; a spell above level 1
 // needs an Arcana check, DC 10 + its level, or it is lost.
 void use_magic_device()
@@ -557,6 +627,7 @@ int main()
         stand_ins();
         copying();
         writing();
+        monster_items();
         use_magic_device();
         quick();
         std::cout << "Scroll tests passed\n";

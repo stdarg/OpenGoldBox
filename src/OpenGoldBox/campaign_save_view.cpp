@@ -197,6 +197,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     session_ = std::move(session);
     forget_monster_picture();
     session_->encounter_challenge(settings::encounter_challenge());
+    session_->difficulty(settings::difficulty());
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;

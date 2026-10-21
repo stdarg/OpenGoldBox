@@ -190,8 +190,10 @@ whatever Quick magic says (#263):
 - Magic Missile items on any enemy;
 - an area item only where it catches an enemy and no ally within its reach.
 
-Dust of Disappearance is left to the player. Monsters carry no items into a
-fight yet (#268).
+Dust of Disappearance is left to the player. Monsters bring their potions,
+wands and scrolls into a fight on Hard and above, and use them by these rules;
+only a monster that casts spells reads a scroll
+([DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items)).
 
 **Original.** The same 1d7 priority as spells, applied to readied items with a
 spell effect (never scrolls), with the same sense checks; usable with Magic

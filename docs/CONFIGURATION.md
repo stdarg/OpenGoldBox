@@ -7,6 +7,7 @@ per-user location; moving settings does not move or convert saves.
 ```ini
 [game]
 path="D:/Games/POOLRAD/GAME/POOLRAD"
+difficulty="normal"
 
 [interface]
 language="es"
@@ -19,6 +20,13 @@ encounter_challenge=33
 Use the actual folder containing `START.EXE`, `ITEMS`, and the original `.DAX`
 archives, not the Steam launcher directory. Store an absolute folder path.
 The supported language codes are `en` and `es`.
+
+`difficulty` is one of `easy`, `normal`, `hard`, `nightmare` and `infernal`,
+easiest first; the default, also used for an unknown value, is `normal`. On
+`hard` and above monsters use the potions, wands and scrolls they carry. The
+game reads it when exploration starts or a save is loaded, and new settings
+files receive the default. See
+[DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
 
 The combat screen reads `combat_zoom` from `[combat]` when it opens. The value
 is a percentage, clamped to 10–1000. The default is 100, also recorded in the

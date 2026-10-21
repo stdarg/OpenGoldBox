@@ -34,23 +34,11 @@ void keep_scroll_spells(PartyMember &member, std::uint64_t id, unsigned kept)
     std::string definition;
     if (const auto source = member.item_sources.find(id); source != member.item_sources.end())
     {
-        auto &raw = source->second.stored;
-        unsigned entry = 0;
-        for (std::size_t n = 0; n < raw.effect_codes.size(); ++n)
+        if (auto left = item_after_uses(source->second, kept))
         {
-            // A number no spell has is no entry on the scroll.
-            if (scroll_spell(raw.effect_codes[n]).empty())
-            {
-                continue;
-            }
-            if (!(kept & (1U << entry)))
-            {
-                raw.effect_codes[n] = 0;
-                raw.raw[60 + n] = 0;
-            }
-            ++entry;
+            source->second = std::move(*left);
+            definition = equipment_conversion(source->second);
         }
-        definition = equipment_conversion(source->second);
     }
     auto inventory = member.character.inventory();
     if (rules::parse_scroll_key(definition))
@@ -535,6 +523,45 @@ unsigned carried_quantity(const por::Equipment &item)
     return stack > 1                                   ? stack
            : charged_conversion(item.stored).empty() ? 1u
                                                      : item.stored.effect_codes[0];
+}
+
+std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left)
+{
+    auto &raw = item.stored;
+    if (!scroll_conversion(raw).empty())
+    {
+        unsigned entry = 0;
+        for (std::size_t n = 0; n < raw.effect_codes.size(); ++n)
+        {
+            // A number no spell has is no entry on the scroll.
+            if (scroll_spell(raw.effect_codes[n]).empty())
+            {
+                continue;
+            }
+            if (!(left & (1U << entry)))
+            {
+                raw.effect_codes[n] = 0;
+                raw.raw[60 + n] = 0;
+            }
+            ++entry;
+        }
+        return rules::parse_scroll_key(scroll_conversion(raw)) ? std::optional{std::move(item)}
+                                                               : std::nullopt;
+    }
+    if (!left)
+    {
+        return std::nullopt;
+    }
+    if (raw.stack_size > 1)
+    {
+        raw.stack_size = static_cast<std::uint8_t>(left);
+    }
+    else
+    {
+        raw.effect_codes[0] = static_cast<std::uint8_t>(left);
+        raw.raw[60] = static_cast<std::uint8_t>(left);
+    }
+    return item;
 }
 
 bool identify_item(PartyMember &member, std::uint64_t item)

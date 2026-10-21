@@ -341,7 +341,10 @@ records the decisions.
     Remove Curse, after which it is lost.
   - Unidentified, a worn item's note says only that it needs no hand.
   - Monsters keep their authored stat blocks; the worn items they carry come
-    to the party as loot.
+    to the party as loot. On Hard and above they bring their potions, wands
+    and scrolls into the fight and use them, and what they use is gone from
+    the loot
+    ([DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items)).
 - **Scrolls** (#265,
   [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls)) convert with
   the spells their bytes 60-62 name, mapped to SRD 5.2.1 spells or stand-ins:

@@ -437,6 +437,10 @@ class CampaignParty
 // How many an original item counts for in an inventory: a stack's items, or a
 // charged item's charges or doses (MAGIC-3), otherwise one.
 [[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
+// The original item as a fight left it: `left` of its stacked items, charges
+// or doses, or for a scroll the spells whose bits are set in `left` (MAGIC-6).
+// Nothing when none is left.
+[[nodiscard]] std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left);
 // The item's key as the rules see it: ":unidentified" is added while its magic
 // is not identified (#262).
 [[nodiscard]] std::string rules_definition(const PartyMember &member, const InventoryItem &item);

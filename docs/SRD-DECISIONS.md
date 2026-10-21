@@ -1459,3 +1459,27 @@ following the original Gold Box engine (read from coab; no code copied):
 - The features the computer never uses (Two-Weapon Fighting, Action Surge, slot
   smites, Cunning Action and others) are
   [#269](https://github.com/stdarg/OpenGold/issues/269).
+
+## DIFF-1 (2026-10-21): difficulty, and monsters that use their items
+
+The original had no difficulty setting: its Alter menu offers only Order, Drop,
+Speed, Icon and Pics. The user decided on 2026-10-21 (#268):
+
+- **Five levels**, easiest first: Easy, Normal, Hard, Nightmare, Infernal.
+  Normal is the default. The setting is `[game] difficulty` in `settings.cfg`
+  ([CONFIGURATION.md](CONFIGURATION.md)); the Settings screen will show it
+  later. For now it decides only whether monsters use their items.
+- **Monsters use their potions, wands and scrolls on Hard and above**, not on
+  Normal and below. A monster brings the ones its original record carries into
+  the fight and uses them by the same rules as Quick members (AI.md §5):
+  healing at half its Hit Points or lower, Speed and Giant Strength on itself,
+  a wand or scroll at an enemy. A monster needs no hand free for its wand.
+  The original's monsters used their readied wands at every level and never a
+  potion or scroll.
+- **Only a monster that casts spells reads a scroll**, of either kind: a
+  monster has no class list.
+- **What a monster uses is gone from the loot**, as in the original: spent
+  charges, drunk potions and read spells.
+
+So far the one such monster the game meets is the Slums magic-user, whose
+Wand of Magic Missiles it zaps on Hard.

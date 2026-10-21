@@ -276,6 +276,7 @@ void RolfTourView::restart()
             const auto directory = settings::game_path();
             session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory)));
             session_->encounter_challenge(settings::encounter_challenge());
+            session_->difficulty(settings::difficulty());
             if (campaign_)
             {
                 session_->campaign_party(campaign_);

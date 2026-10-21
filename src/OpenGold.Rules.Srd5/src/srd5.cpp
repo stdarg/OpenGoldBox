@@ -2401,12 +2401,15 @@ const detail::MagicItem *usable_item(const Actor &a, const detail::SpellDef &spe
         {
             continue;
         }
-        const bool held = std::any_of(a.definition.equipment_keys.begin(),
-                                      a.definition.equipment_keys.end(),
-                                      [&](const auto &key)
-                                      {
-                                          return detail::magic_item(key) == item;
-                                      });
+        // A monster, which has no character profile, has its wand in hand
+        // (DIFF-1).
+        const bool held =
+            a.source.character_profile.empty() ||
+            std::any_of(a.definition.equipment_keys.begin(), a.definition.equipment_keys.end(),
+                        [&](const auto &key)
+                        {
+                            return detail::magic_item(key) == item;
+                        });
         const auto uses = std::find_if(a.item_uses.begin(), a.item_uses.end(),
                                        [&](const auto &entry)
                                        {
@@ -26053,7 +26056,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         std::size_t carried{};
         input >> carried;
-        if (!input || carried > 64 || (carried && a.source.character_profile.empty()))
+        // Monsters carry their potions, wands and scrolls on Hard and above
+        // (DIFF-1).
+        if (!input || carried > 64)
         {
             throw std::runtime_error("Invalid checkpoint inventory");
         }
@@ -30843,6 +30848,9 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         {
             definition.perception = definition.saves[4];
         }
+        // A monster that casts spells reads any scroll it carries (DIFF-1).
+        definition.reads_arcane_scrolls = definition.reads_divine_scrolls =
+            !definition.spells.empty();
     }
     return std::make_unique<Module>(std::move(content));
 }

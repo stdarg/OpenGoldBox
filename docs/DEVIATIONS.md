@@ -31,6 +31,11 @@ Add an entry whenever a new departure is decided.
   OpenGoldBox shrinks an encounter over the SRD budget or with more creatures
   than living characters, and never grows one. Experience and treasure stay the
   original encounter's. [MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks).
+- **Difficulty** (2026-10-21). The original had no difficulty setting.
+  OpenGoldBox has five levels, Easy to Infernal. Its monsters used their
+  readied wands at all times and never a potion or scroll; here monsters use
+  their potions, wands and scrolls on Hard and above and no items on Normal and
+  below. [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
 - **Empty fights** (2026-10-10). With no room for a whole band, the original
   started an empty fight the party won at once. OpenGoldBox places the band's
   first monster on the nearest free square the party can reach.
