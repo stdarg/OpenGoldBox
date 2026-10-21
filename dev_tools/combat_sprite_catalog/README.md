@@ -38,7 +38,7 @@ the monster name, original creature and art source files/records, description,
 regeneration flag, equipment, and image variants. Unsaved edits remain available
 while switching between records during the current session.
 
-Set **Sprite size (combat squares)** to the intended visual footprint and save
+Set **Sprite size (combat squares)** to the decoded game-art footprint and save
 it with the other monster data. The dropdown offers Unknown, 1 × 1, 1 × 2 tall,
 2 × 1 wide, 2 × 2, and 3 × 3. JSON stores the choice in `sprite_size` as
 `width_squares` and `height_squares`; Unknown stores `null`. The 199 built-in
@@ -47,7 +47,8 @@ original ready/action icons. See the [size audit and renderer distinction](../do
 The adjacent **Humanoid height** dropdown records Small, Normal, Tall, or
 N/A (non-humanoid) in JSON as `humanoid_size`. It guides consistent apparent
 body height across ready/action frames and weapon sets; it does not change
-combat-square dimensions or game rules. Art preparation includes the saved
+combat-square dimensions or game rules. Do not substitute SRD creature space
+for the source-art dimensions. Art preparation includes the saved
 height tier in its prompts and requires reviewers to check it. The monster/NPC
 preview always shows the same 3 × 3 dotted combat grid, with the selected
 footprint shaded from its lower-left corner. Ready and action use one fixed

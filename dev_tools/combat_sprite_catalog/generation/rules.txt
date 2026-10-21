@@ -4,6 +4,9 @@ Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
+The saved sprite_size comes from the game's decoded combat-art dimensions,
+measured in 24-pixel source tiles; never replace it with an SRD creature-space
+category. Do not use original game artwork as a generation reference.
 
 FACING: Front three-quarter view toward the RIGHT EDGE OF THE IMAGE (screen
 right), approximately 45 degrees between frontal and right-side profile. The

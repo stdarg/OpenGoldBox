@@ -26,6 +26,10 @@ The authoritative prompt text is [rules.txt](rules.txt). The user confirmed on
   attack in place; never slide the whole figure between frames.
 - Inspect the monster's gear and create a ready/action pair for **every weapon
   set**, including both ranged and melee alternatives (confirmed 2026-10-17).
+- Take `sprite_size` from the decoded original game combat art: 24 source pixels
+  per tile, using the larger width and height of ready/action. SRD creature
+  space is not sprite width or height. Do not enlarge a 1 × 2 source sprite to
+  2 × 2 merely because its creature is Large.
 - Use the saved `humanoid_size` to keep body height consistent across the
   catalog: Small figures read shorter than Normal figures, which read shorter
   than Tall figures. Goblins, human-scale fighters, and hill giants are the

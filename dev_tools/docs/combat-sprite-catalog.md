@@ -49,22 +49,28 @@ determined. Some creature-to-icon matches are labeled candidate or shared in
 the catalog, so those sizes describe the currently displayed icon rather than
 proving a unique historical icon for the creature.
 
-Those counts describe the **initial source-icon audit**. The editable visual
-footprint now follows the intended creature size for identified Large and Huge
-forms: ogres, trolls, ettins, efreeti and minotaurs are 2 × 2; hill and fire
-giants are 3 × 3. The [SRD 5.2.1 creature entries](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf)
-support those size categories. Sixteen JSON records were updated; the current
-saved distribution is 158 at 1 × 1, 4 at 1 × 2, 19 at 2 × 1, 15 at 2 × 2,
-and 3 at 3 × 3. The two giant-skeleton entries retain their source-icon 1 × 2
-classification while their intended creature size remains uncertain. The two
-gnoll icons also remain 1 × 2 based on the original art. This is art direction,
-not a change to game combat occupancy.
+The saved footprint must match the **decoded game art**, including both poses.
+The 199 current records have the same distribution as the source-icon audit
+above. In particular, ogres, trolls, ettins, efreeti, minotaurs, hill giants,
+and fire giants use 24 × 48 art and therefore have a 1 × 2 sprite footprint.
+Tyranthraxus and the wyvern use 48 × 48 art and have a 2 × 2 footprint. Do not
+convert SRD Large/Huge creature spaces into sprite dimensions: those rules
+describe controlled ground area, not the source image's width and height.
 
 The game's [current battlefield renderer](../../src/OpenGoldBox/godot/scenes/combat_battlefield.gd)
 fits ordinary visible monster art inside one cell, regardless of source image
-dimensions. The dropdown records the **intended visual sprite footprint** for
-art preparation; it does not change game occupancy or rendering. The game code
-was read for this audit and was not modified.
+dimensions. The dropdown records the **game-art sprite footprint** for art
+preparation; it does not change game occupancy or rendering. The game code was
+read for this audit and was not modified. Run the read-only
+[source-size audit](../combat_sprite_catalog/godot/scripts/source_size_audit.gd)
+after changing footprint JSON; it checks every saved size against both decoded
+original poses and fails if any record disagrees:
+
+```bash
+OPENGOLD_GAME_DIR="$HOME/POOLRAD" /Applications/Godot_mono.app/Contents/MacOS/Godot \
+  --headless --path dev_tools/combat_sprite_catalog/godot \
+  --script res://scripts/source_size_audit.gd
+```
 
 ## Fixed combat-square preview
 
