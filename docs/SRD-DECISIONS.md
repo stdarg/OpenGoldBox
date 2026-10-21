@@ -710,7 +710,7 @@ OpenGold follows it, with the layout the user approved on 2026-10-09:
   where Flee stands, and M works on any turn.
 - The campaign party keeps who is on Quick and Quick magic between fights and
   in saves (campaign format 25). The computer plays a Quick member as the
-  automated demo policy does.
+  automated demo policy does, described in [AI.md](AI.md).
 
 ## PLACE-1 (2026-10-10): starting positions, as the original game had them
 
