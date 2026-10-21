@@ -36,8 +36,10 @@ The authoritative prompt text is [rules.txt](rules.txt). The user confirmed on
   comparison examples. Measure planted feet to head, excluding weapons and
   raised arms. N/A is for non-humanoid body plans. On the catalog's fixed 3 × 3
   guide, aim for about 0.6, 0.9, and 1.7 combat squares of body height for
-  Small, Normal, and Tall respectively. The complete pose and equipment must
-  fit the record's selected `sprite_size` footprint.
+  Small, Normal, and Tall respectively. These targets round body height down
+  to fit the artwork footprint. The body and planted base must fit the selected
+  `sprite_size`; an action weapon may cross its dotted border if it stays fully
+  visible inside the PNG canvas.
 - For a leader, compare every pose and weapon set against the regular creature
   of its kind in the same archive. Make the leader's body modestly taller and
   broader, not just more ornate or more heavily armed. Its game-derived tile
@@ -162,7 +164,9 @@ equipment list requires a fresh packet and review before acceptance.
    whole. Inspect identity, facing and gear as well as attack timing.
 5. Before export, compare the full silhouettes and the body landmarks in both
    working images. Set the common scale from whichever pose occupies more space,
-   then place both poses on the same canvas with transparent margins. Keep the
+   then place both poses on the same canvas with transparent margins. An action
+   weapon may cross the dotted footprint border without shrinking the body, but
+   may not be clipped by the PNG canvas. Keep the
    head and torso the same apparent size and keep the planted feet at the same
    x/y pixels. A shared baseline without horizontal registration is not enough.
    If one generated figure is intrinsically smaller, regenerate that frame; a
@@ -197,7 +201,9 @@ feet stay at the same x/y coordinates and the whole body does not slide or jump.
 Compare other weapon sets for identity, scale and foot position. For a humanoid,
 also compare its foot-to-head height with the saved height tier and other art
 of that species. Check the stationary dotted grid and any footprint-overflow
-warning in both poses; the preview never shrinks a frame to suppress overflow.
+warning in both poses. For an action pose, a warning caused solely by the
+weapon crossing the footprint border is permitted; body or planted-base overflow
+is not. The preview never shrinks a frame to suppress overflow.
 A correct 128 x 128 canvas is not proof of consistent height.
 To preview before installation, use a separate worktree/copy of the catalog,
 copy the staged images to that copy's `install_paths`, and run its existing

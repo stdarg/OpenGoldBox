@@ -1,0 +1,32 @@
+{
+  "action_sha256": "ad8e1b7328c406e1d20334488e5c47057a21fab2a183bbb836e9ad11fc2ae99e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_10/default/action.png",
+    "ready": "art/mon6cha_dax_10/default/ready.png"
+  },
+  "metadata_sha256": "598b5b4e4666c0ae47461a13e18c7be15bc023931c4a1f9bf6fc24971737a00f",
+  "notes": "Reviewed in the isolated catalog at normal combat size with one-second ready/action alternation. Original game art measured 15 source pixels / 56 display pixels, below the Small target. New pale-blue, silver-haired fey identity follows published Quickling appearance; natural in-place unarmed punch, no equipment. Both planted feet occupy the same bottom pixels in ready/action. Appearance source: https://www.5esrd.com/database/creature/quickling/ (text only, no art reference).",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "8c25c4dca48a10cde4b0e46a0ee2d34d8153b6b4c10f97edfc00f18933391b43",
+  "reviewed_at": "2026-10-21T21:23:44+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:10",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+}

@@ -90,8 +90,11 @@ footprint as their canvas scale. Original icons use their source pixel dimension
 at 24 pixels per square, with Small originals reduced to 70% for the height
 comparison. These are **canvas display scales**, not assertions that every old
 painting already has the right body height. The tool reports when opaque pixels
-fall outside the selected footprint; correct the art or its intended footprint
-instead of silently shrinking a frame. Changing a dropdown immediately updates
+fall outside the selected footprint. In an action pose, a weapon may cross the
+dotted footprint border if the body and planted base stay inside and the complete
+weapon remains visible within the PNG canvas. The warning uses the whole image
+and cannot distinguish weapon from body overflow; inspect the pose before
+accepting it. Changing a dropdown immediately updates
 the preview, but saving is still required to write the JSON.
 
 Run the read-only [art-fit audit](../combat_sprite_catalog/godot/scripts/art_fit_audit.gd)
@@ -137,8 +140,10 @@ creature. The [generation rules](../combat_sprite_catalog/generation/rules.txt)
 carry the saved tier into each prompt, and the review checklist requires a
 visual height comparison. The agreed visual targets on the fixed grid are about
 **0.6 square** for Small, **0.9 square** for Normal, and **1.7 squares** for
-Tall, measured foot to head. A footprint includes the complete sprite and its
-equipment, while the height target measures only the body. Existing PNGs are
+Tall, measured foot to head. These visual targets round down physical height to
+leave room within the saved footprint; they do not redefine a creature's lore
+height. The height target measures only the body. An action weapon can cross the
+dotted footprint border while remaining fully inside the PNG canvas. Existing PNGs are
 not automatically resized or treated as correct merely because their canvas is
 128 × 128.
 
