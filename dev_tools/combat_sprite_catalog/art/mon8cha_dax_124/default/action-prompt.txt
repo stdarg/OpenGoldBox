@@ -54,11 +54,22 @@ only a correctly scaled comparison sprite as a reference: an older accepted
 image is not a height authority if it breaks the Small < Normal < Tall order.
 On the catalog's stationary 3 x 3 combat-square guide, aim for a foot-to-head
 height of about 0.6 square for Small, 0.9 square for Normal, and 1.7 squares for
-Tall. These are body measurements, not canvas sizes. The complete silhouette,
-including the weapon, must fit the saved sprite_size footprint. The grid never
-moves between monsters or animation frames. If a pose or weapon overflows, redesign
-the pair at a common scale; never fit ready and action separately or quietly
-shrink only the action frame.
+Tall. These are rounded-down visual body measurements, not literal species
+heights or canvas sizes. The body and planted base must stay within the saved
+sprite_size footprint. The ACTION weapon may cross the dotted footprint border
+at full length; keep it completely visible within the PNG canvas. Do not shrink
+the action character to contain its weapon. The grid never moves between monsters
+or animation frames. If the body overflows, redesign the pair at a common scale;
+never fit ready and action separately.
+
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. In both
+poses and every weapon set, the leader must be modestly taller and broader from
+planted feet to head, excluding weapons, helmets, horns and raised arms. Rank
+ornament alone does not satisfy this rule. Keep its saved humanoid height tier
+and game-derived sprite_size unchanged. If the regular art leaves no room for a
+larger leader in that footprint, correct the regular art scale; never overflow
+the tile guide or independently shrink one animation frame.
 
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
@@ -95,9 +106,11 @@ needed to show the attack. Do not translate, recenter, crop, independently
 scale, or rotate the entire figure between frames. A matching foot baseline
 alone is insufficient if the character slides horizontally. For a stationary
 attack, do not invent a step or a new stance. Plan transparent space for the
-weapon's widest action sweep before making ready; if that cannot fit, remake
-BOTH frames at a smaller common scale while retaining a single shared foot
-anchor. Overlay the frames and play them at combat size to reject any jump.
+weapon's widest action sweep before making ready; the action weapon may cross
+the dotted footprint border but must remain fully visible in the PNG. If the
+body cannot fit, remake BOTH frames at a smaller common scale while retaining
+a single shared foot anchor. Overlay the frames and play them at combat size
+to reject any jump.
 
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
@@ -140,5 +153,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-Production edit: palm opens and flame lengthens slightly, same torso and smoke-tail base, no halo or background.

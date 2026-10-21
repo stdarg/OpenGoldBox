@@ -1,16 +1,16 @@
 {
-  "action_sha256": "4989031e78088ae3ae95eb78ff68b89385699dd071ad7b04d3cd12b2d0c4c97f",
+  "action_sha256": "85d5ec79b03493695764dc1c5764beb4bdefd4cd0a90567e5c54c4e87a83796b",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_12/item_000__item_001/action.png",
     "ready": "art/mon2cha_dax_12/item_000__item_001/ready.png"
   },
   "metadata_sha256": "80e24cface6ed2191d95593929fa51d41203b74d2f49371ec65af200dc4caa15",
-  "notes": "Compared with MON2CHA.DAX:2 ordinary Goblin Guard at fixed catalog zoom. Leather-armored leader body is modestly taller/broader while complete silhouette fits 1x1. Short sword up in ready and near end of slash in action; shield remains. Exact pair visually inspected side by side and in both catalog states, planted boots and hips register. Approved replacement art and pose guide only; no original-game art generation reference.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "e3c2d63dc5e0c0f9f984e889ea24d21a4d8761fd099d6eb695c436205f9bcf4f",
-  "reviewed_at": "2026-10-21T02:21:33+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "5e99c5427d55c305a644b0e39458765a08c80bae5e9562c28348e1aeee461d88",
+  "reviewed_at": "2026-10-21T21:50:50.768177+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:12",
   "specification": "bipedal-v1",
   "variant_id": "item_000__item_001",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

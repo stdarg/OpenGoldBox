@@ -1,16 +1,16 @@
 {
-  "action_sha256": "6718cfebbf45baf4b2ecac375cad06601bb4b39f81b18eafbe286341635d672e",
+  "action_sha256": "3156975a68e3bf5a526ec0bdcc07a4d823750b509dcd15b388db5387ea6cbedf",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon8cha_dax_31/default/action.png",
     "ready": "art/mon8cha_dax_31/default/ready.png"
   },
   "metadata_sha256": "efaa7f2d133d702b095aca3f059763b30b1440309895ecb4b6b82dfbfb359cdd",
-  "notes": "Decoded game ready/action are 24x48 (1x2). This shared unarmed Troll design is appropriate for identical type/size/equipment records. Generated from approved pose guide and accepted new 1x2 scale reference, no original game art. Shared 789x1266 crop/transform; body and planted feet fixed, one claw swipes. Reviewed native frames, enlarged pair, and live catalog ready/action on fixed grid for this record; both fit.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "d01f884e7ef972826762e29f320abbcbfcbbbc4fd88a9e7baa24a3ec8c45c63a",
-  "reviewed_at": "2026-10-21T01:02:56+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "85abf52165176fdcaa09fbf94c79bac8ad44e9a9c4be74c1398633cb0e070714",
+  "reviewed_at": "2026-10-21T21:51:08.315731+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON8CHA.DAX:31",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

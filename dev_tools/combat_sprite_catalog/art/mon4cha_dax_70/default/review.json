@@ -1,16 +1,16 @@
 {
-  "action_sha256": "bea3e4a08be4176bcb8e2376fc46806860b88018df013034add5644ea97ba84f",
+  "action_sha256": "d0ea1b407b6937c83194b6c72ceb1d627a2e099db3415910944bf52dbd5ccf78",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_70/default/action.png",
     "ready": "art/mon4cha_dax_70/default/ready.png"
   },
   "metadata_sha256": "e5cb9b369720d6de7538e1a6e023203e4b2664c8e34bdce4512062570b231ca8",
-  "notes": "Game source 24x48 (1x2), no carried equipment. Shared newly generated Efreeti design appropriate to matching monster copies and script-linked CPIC8 combat icon. Approved pose guide only; no original game art reference. Two glow/background drafts were rejected. Final flat transparent cutout uses shared 720x1609 crop/scale, fixed pointed smoke-tail base, small palm-flame change. Native pair and live catalog ready/action on stationary grid reviewed for this record; both fit.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "810caa997c14ff9afb7076b093082b005665870780dc855b179752b6f5421a0c",
-  "reviewed_at": "2026-10-21T01:25:51+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "e4d7077dd3587b274dba7de7f9408b6024787d1e040e9b53b687d249e199c368",
+  "reviewed_at": "2026-10-21T21:51:01.736121+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON4CHA.DAX:70",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

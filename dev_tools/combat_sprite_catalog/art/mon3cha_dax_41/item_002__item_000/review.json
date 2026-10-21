@@ -1,15 +1,15 @@
 {
-  "action_sha256": "edfbe75a0a5b186525eb2830d07cd8f90db10c2b7393ad627e53189ed207aa68",
+  "action_sha256": "8992a92006b473cebffec421e6a73896a392e5acade379b34465457f4d9bb0b9",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_41/item_002__item_000/action.png",
     "ready": "art/mon3cha_dax_41/item_002__item_000/ready.png"
   },
-  "metadata_sha256": "3f708521244c3e148c1c1b113fe865bac8d9b11ece1bfcf22909ddc89526c405",
-  "notes": "Fresh human fighter ready and ready-derived sword-strike action, reviewed at 128 px and alternating in this exact catalog source record. First action rejected for foot translation; final lower body and boot anchors remain registered. MON3CHA record reuses exact matching new art.",
+  "metadata_sha256": "51e7f813fa8cf33fb5ffe2bca04f239fc6e6c01ea6e15c3fae638df86877b2ee",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "5ec6f823c44bbee7e583341300d27a262f0a5cb96c0c82d52c073d5c41c88346",
-  "reviewed_at": "2026-10-19T01:41:10.603457+00:00",
+  "ready_sha256": "91aed90ba584fa9afbd882708fee224f2ddb08cf7965e86bb58259d339c6aeaf",
+  "reviewed_at": "2026-10-21T21:51:00.619566+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:41",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

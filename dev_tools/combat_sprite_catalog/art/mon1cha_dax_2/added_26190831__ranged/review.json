@@ -1,15 +1,15 @@
 {
-  "action_sha256": "84ca229ebfc80757671f4dffcbf2e8f91db9b6ec73b401762f5f97e50c2a24d1",
+  "action_sha256": "111e82c5bf7e81d6b5f35f4b385d089e6d5fdeb6e6ac0a77002cf5d104f436ad",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_2/added_26190831__ranged/action.png",
     "ready": "art/mon1cha_dax_2/added_26190831__ranged/ready.png"
   },
   "metadata_sha256": "e3fd07c5c577dee330067d8df366231279ea299b88a8a117dd07df9f95438365",
-  "notes": "Generated with approved bipedal guide and newly created accepted goblin art. Reviewed both 128px frames and catalog preview, fixed planted feet and common transform; 1x1 fits. Guard remains smaller than named goblin leader. The saved short bow has its own loaded/released pair.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "70d1d7df0079da2d3cc912f5bdc72b7ca3904f48fe455a6831ec632149c1acbd",
-  "reviewed_at": "2026-10-21T03:43:35.081953+00:00",
+  "ready_sha256": "952cd96cc607ef3c5390d48c53e45bab8f307c404e6306919b5aa99d85f406a3",
+  "reviewed_at": "2026-10-21T21:50:46.403005+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:2",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

@@ -1,16 +1,16 @@
 {
-  "action_sha256": "9347e469a1e00ca92b67d5230205bdf485668470857a5a4252ba3c16ed14410f",
+  "action_sha256": "d886e2f8e704695b194e49ee64bfdde62c3325152fc6cb54e85772d86670f606",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_71/default/action.png",
     "ready": "art/mon2cha_dax_71/default/ready.png"
   },
   "metadata_sha256": "33481fbf5202ef620cb65a012eb9aa2f4eff58893e791b3e37df152ed069c571",
-  "notes": "Game source 24x48 (1x2), no saved gear. New two-headed natural-attack design from approved pose guide and accepted narrow ogre scale; no original game art. Two wider first action drafts rejected for border clipping. Final action crosses one fist a short distance within original silhouette, feet and both heads fixed. Shared 846x1587 crop/scale. Native frames and live catalog grid ready/action reviewed; both fit.",
+  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "db3af72ba723b4b5d2f3dbb195b1153fa822662100cdf004a3aa070646250998",
-  "reviewed_at": "2026-10-21T01:20:40+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "8582d1c2b39791693beb209585e77e9e577d9055c2ede1ccc39c5432d0123faa",
+  "reviewed_at": "2026-10-21T21:50:57.305806+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:71",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }
