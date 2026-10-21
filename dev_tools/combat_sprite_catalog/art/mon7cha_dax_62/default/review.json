@@ -1,0 +1,32 @@
+{
+  "action_sha256": "a99bf42303b3047829684851b4728e5e23d018dbc8047200602b7db78e139300",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_62/default/action.png",
+    "ready": "art/mon7cha_dax_62/default/ready.png"
+  },
+  "metadata_sha256": "ff49420ca5c3160c2311eab33542a389ce2f47a1abc28f44b632495221f9791f",
+  "notes": "Game decoded ready/action source is 24x48 pixels, so footprint is 1x2. Saved equipment empty; one natural horn-jab set. Approved original pose guide and newly accepted tall Fire Giant art were the only visual references; original game pixels were not generation references. Both Minotaur banks share the same type, dimensions and no-gear set, so this reviewed pair is reused. Ready and action use a common source crop and export transform. On exact 128x128 pixel-art exports, both hooves register at the same x/y positions; hips and legs remain fixed while head and shoulders dip for a short jab. Inspected both poses at combat size in the actual catalog for this bank; both report fitting 1x2.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "11cd7874fb885480dbf73cabec53c46d62310f2437b1b184e95bce62b36270d0",
+  "reviewed_at": "2026-10-21T01:32:03+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON7CHA.DAX:62",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+}
