@@ -1,0 +1,32 @@
+{
+  "action_sha256": "c50ef879e87db49176af2e6b2c856f3e392e8ebd978bbd2292f3f858bd73d698",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon8cha_dax_1/item_002__item_003/action.png",
+    "ready": "art/mon8cha_dax_1/item_002__item_003/ready.png"
+  },
+  "metadata_sha256": "8d5e85812af69d355a420be95487845edd78165adf17b53017bb1695be77a2d5",
+  "notes": "Leader is modestly taller and broader than ordinary Kobold. Source Kobold design/pair: mon7cha_dax_1/item_002__item_003; equipment matches this saved set (including visible bracers where present). Both exact PNG hashes inspected at combat size in this record's catalog ready and action states, with 1x1 fit; fixed claw contacts and hips, raised short sword and late in-place strike. No original game art was a generation reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "5060d7b3a3248909890afdb6d93463558d73f8572bcc005e7d7c363dd81c4170",
+  "reviewed_at": "2026-10-21T02:18:00+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON8CHA.DAX:1",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_003",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+}

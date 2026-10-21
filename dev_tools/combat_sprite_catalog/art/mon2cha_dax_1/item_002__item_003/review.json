@@ -1,16 +1,16 @@
 {
-  "action_sha256": "409a3474dd9204e789083f4432392f09d06458459609929e2407af37620156c4",
+  "action_sha256": "c50ef879e87db49176af2e6b2c856f3e392e8ebd978bbd2292f3f858bd73d698",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_1/item_002__item_003/action.png",
     "ready": "art/mon2cha_dax_1/item_002__item_003/ready.png"
   },
-  "metadata_sha256": "bc57ac9a5375b2d30387bc9ac3228a6a189b70c52fd27c491b8e4974967925a1",
-  "notes": "128px ready/action inspected alternating in catalog. Clawed feet and tail remain fixed; shield and studded armor retained; short sword moves from raised guard to a short forward late strike. New art and approved guide only.",
+  "metadata_sha256": "ecb1b1fee8d9d45bbc6a45d051bca64ccbf63388d6b5c878e26bd14188f63fe1",
+  "notes": "Leader is modestly taller and broader than ordinary Kobold. Source Kobold design/pair: mon7cha_dax_1/item_002__item_003; equipment matches this saved set (including visible bracers where present). Both exact PNG hashes inspected at combat size in this record's catalog ready and action states, with 1x1 fit; fixed claw contacts and hips, raised short sword and late in-place strike. No original game art was a generation reference.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f1034b7eb2344d43c5eb094d904138c23eb32a6d1006cd16c5b2243f1c945be8",
-  "reviewed_at": "2026-10-19T04:39:35.883729+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "5060d7b3a3248909890afdb6d93463558d73f8572bcc005e7d7c363dd81c4170",
+  "reviewed_at": "2026-10-21T02:17:59+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:1",
   "specification": "bipedal-v1",
   "variant_id": "item_002__item_003",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }

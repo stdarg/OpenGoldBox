@@ -1,0 +1,32 @@
+{
+  "action_sha256": "69de88cf01b4775b21d84771bd99038081516937f198fe2374a8f24c0e0faf89",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon8cha_dax_0/item_000__one_hand/action.png",
+    "ready": "art/mon8cha_dax_0/item_000__one_hand/ready.png"
+  },
+  "metadata_sha256": "9a8604fb9d494a83f72bfc25f3b21e8c8cbb3eb07974b52c2b72acfbb66bcf0c",
+  "notes": "Ordinary Kobold body is modestly smaller than Kobold Leader. Source Kobold design/pair: mon2cha_dax_0/item_000__one_hand; equipment matches this saved set (including visible bracers where present). Both exact PNG hashes inspected at combat size in this record's catalog ready and action states, with 1x1 fit; fixed claw contacts and hips, raised short sword and late in-place strike. No original game art was a generation reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "9fcbf8d55b9fe64dd6d5fcab429e4d8ca3e666fff22cfb70ed5ee8e976a87fd8",
+  "reviewed_at": "2026-10-21T02:17:57+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON8CHA.DAX:0",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+}
