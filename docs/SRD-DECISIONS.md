@@ -1410,9 +1410,9 @@ The user chose how the original's scrolls
   prepare into its spellbook, beyond the book's usual choices: 1000 gp and two
   hours for each spell level (the user, 2026-10-21; the SRD asks 50 gp). The
   gold is **Magic Ink**, a new item (the user, 2026-10-20). Each bottle has a
-  level, 1 to 9, and costs 1000 gp a level; it serves a spell of its level or
-  lower (the user, 2026-10-21). The general store sells level 1; a magic shop
-  will sell the rest. Copying erases the spell from the scroll, as in the
+  level, from 1 to the highest spell level the game has (8), and costs 1000 gp
+  a level; it serves a spell of its level or lower (the user, 2026-10-21). The
+  general store sells every level until a magic shop does. Copying erases the spell from the scroll, as in the
   original.
 - **Writing a scroll** (the user, 2026-10-21): any caster writes a scroll of
   one spell it can cast, in camp (the Camp dialog), with a bottle of Magic Ink

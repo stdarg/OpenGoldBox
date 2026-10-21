@@ -200,9 +200,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
 
     // The general store, which sells the original's oil, also stocks the SRD
     // gear OpenGoldBox adds: torches (sold by ten, as prices are whole gold),
-    // Acid and Alchemist's Fire at their SRD prices, and Magic Ink of level 1,
-    // 1000 gp a bottle, the user's cost of writing or copying a spell level
-    // (MAGIC-6). Higher levels wait for a magic shop.
+    // Acid and Alchemist's Fire at their SRD prices, and Magic Ink (MAGIC-6) of
+    // each level up to the highest spell level the game has, at the user's
+    // 1000 gp a level, until a magic shop sells it.
     struct StockedGear
     {
         std::uint8_t type;
@@ -211,21 +211,34 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         std::uint8_t quantity;
     };
 
-    constexpr std::array<StockedGear, 4> added_gear{
+    constexpr std::array<StockedGear, 3> added_gear{
         {{authored_item::torch, "10 Torches", 1, 10},
          {authored_item::acid, "Vial of Acid", 25, 1},
-         {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1},
-         {authored_item::magic_ink, "Bottle of Magic Ink (Level 1)", 1000, 1}}};
+         {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1}}};
     auto &general_store = town->treasure[general_store_list];
-    for (const auto &gear : added_gear)
+    const auto stock = [&](std::uint8_t type, std::string name, std::uint16_t price_gp,
+                           std::uint8_t quantity)
     {
         Equipment item;
         item.index = general_store.size();
-        item.stored.type = gear.type;
-        item.stored.stored_name = gear.name;
-        item.stored.value = gear.price_gp;
-        item.stored.stack_size = gear.quantity;
+        item.stored.type = type;
+        item.stored.stored_name = std::move(name);
+        item.stored.value = price_gp;
+        item.stored.stack_size = quantity;
         general_store.push_back(std::move(item));
+    };
+    for (const auto &gear : added_gear)
+    {
+        stock(gear.type, gear.name, gear.price_gp, gear.quantity);
+    }
+    // No spell is above level 8: the level cap of 15 (LEVELS-2) gives no
+    // level-9 slot.
+    constexpr unsigned highest_spell_level = 8;
+    for (unsigned level = 1; level <= highest_spell_level; ++level)
+    {
+        stock(static_cast<std::uint8_t>(authored_item::magic_ink + level - 1),
+              "Bottle of Magic Ink (Level " + std::to_string(level) + ")",
+              static_cast<std::uint16_t>(1000 * level), 1);
     }
     town->item_templates = *templates;
     town->sprite_archive = std::move(bytes);

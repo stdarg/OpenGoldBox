@@ -581,18 +581,18 @@ void installed_town(const RolfTourSession &finished)
         std::string_view portrait;
     };
 
-    // Every general store adds Torches, Acid, Alchemist's Fire and Magic Ink to
-    // its seven original items.
+    // Every general store adds Torches, Acid, Alchemist's Fire and Magic Ink of
+    // levels 1 to 8 to its seven original items.
     for (const auto target : std::array{
              ShopCase{13, 8, 57, "NPCs/phlan-arms-13-08.png"},
              ShopCase{8, 11, 57, "NPCs/phlan-arms-08-11.png"},
              ShopCase{11, 12, 57, "NPCs/phlan-arms-11-12.png"},
              ShopCase{9, 13, 57, "NPCs/phlan-arms-09-13.png"},
-             ShopCase{15, 8, 11, "NPCs/phlan-general-15-08.png"},
-             ShopCase{9, 10, 11, "NPCs/phlan-general-09-10.png"},
-             ShopCase{12, 10, 11, "NPCs/phlan-general-12-10.png"},
-             ShopCase{9, 11, 11, "NPCs/phlan-general-09-11.png"},
-             ShopCase{11, 11, 11, "NPCs/phlan-general-11-11.png"},
+             ShopCase{15, 8, 18, "NPCs/phlan-general-15-08.png"},
+             ShopCase{9, 10, 18, "NPCs/phlan-general-09-10.png"},
+             ShopCase{12, 10, 18, "NPCs/phlan-general-12-10.png"},
+             ShopCase{9, 11, 18, "NPCs/phlan-general-09-11.png"},
+             ShopCase{11, 11, 18, "NPCs/phlan-general-11-11.png"},
              ShopCase{11, 10, 13, "NPCs/phlan-silver-11-10.png"},
              ShopCase{10, 13, 13, "NPCs/phlan-silver-10-13.png"},
              ShopCase{8, 10, 11, "NPCs/phlan-jeweler-08-10.png"},

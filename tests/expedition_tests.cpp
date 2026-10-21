@@ -5,6 +5,7 @@
 #include "opengold/combat_demo.h"
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
+#include "opengold/scroll_key.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
@@ -900,8 +901,8 @@ Expedition create_party(const std::filesystem::path &directory)
     return {party, std::move(town)};
 }
 
-// The general store at (15,8) sells the original's oil and the SRD gear the
-// game adds (Torch, Acid, Alchemist's Fire), all converting to SRD items.
+// The general store at (15,8) sells the original's oil and the gear the game
+// adds (Torch, Acid, Alchemist's Fire, Magic Ink), all converting to SRD items.
 void general_store_gear(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
@@ -927,6 +928,23 @@ void general_store_gear(const std::filesystem::path &directory)
     check(sold.contains("oil") && sold.contains("torch") && sold.contains("acid") &&
               sold.contains("alchemists_fire"),
           "The general store sells Oil, Torches, Acid and Alchemist's Fire");
+    for (unsigned level = 1; level <= 8; ++level)
+    {
+        const auto ink = std::find_if(stock.begin(), stock.end(),
+                                      [&](const auto &item)
+                                      {
+                                          return equipment_conversion(item) ==
+                                                 rules::magic_ink_key(level);
+                                      });
+        check(ink != stock.end() && ink->stored.value == 1000 * level,
+              "Magic Ink of each spell level costs 1000 gp a level");
+    }
+    check(std::none_of(stock.begin(), stock.end(),
+                       [](const auto &item)
+                       {
+                           return equipment_conversion(item) == rules::magic_ink_key(9);
+                       }),
+          "No Magic Ink above the highest spell level, 8");
     const auto acid = std::find_if(stock.begin(), stock.end(),
                                    [](const auto &item)
                                    {

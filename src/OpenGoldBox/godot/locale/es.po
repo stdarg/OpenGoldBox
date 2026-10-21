@@ -1378,6 +1378,34 @@ msgid "Bottle of Magic Ink (Level 1)"
 msgstr "Frasco de tinta mágica (nivel 1)"
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 2)"
+msgstr "Frasco de tinta mágica (nivel 2)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 3)"
+msgstr "Frasco de tinta mágica (nivel 3)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 4)"
+msgstr "Frasco de tinta mágica (nivel 4)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 5)"
+msgstr "Frasco de tinta mágica (nivel 5)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 6)"
+msgstr "Frasco de tinta mágica (nivel 6)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 7)"
+msgstr "Frasco de tinta mágica (nivel 7)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+msgid "Bottle of Magic Ink (Level 8)"
+msgstr "Frasco de tinta mágica (nivel 8)"
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bracers"
 msgstr "Brazales"
 

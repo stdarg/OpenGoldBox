@@ -366,10 +366,10 @@ records the decisions.
   - Reading or copying a spell erases it from the original record; the scroll
     goes with its last spell. A Wizard's copied spells are kept with the hall
     training (`boon:scroll:<spell>`), so a save rebuilds the spellbook.
-  - Magic Ink comes in levels 1 to 9, at 1000 gp a level; a bottle writes or
-    copies a spell of its level or lower, and the lowest bottle that serves is
-    used. The general store sells level 1; the other levels wait for a magic
-    shop. Copying takes a bottle and two hours of game time for each spell
+  - Magic Ink comes in a level for each spell level, 1 to 8 (the game has no
+    level-9 spell), at 1000 gp a level; a bottle writes or copies a spell of
+    its level or lower, and the lowest bottle that serves is used. The general
+    store sells every level until a magic shop does. Copying takes a bottle and two hours of game time for each spell
     level.
   - **Writing a scroll**: in the Camp dialog's Cast / Use row, a caster
     carrying Magic Ink writes a scroll of one spell it can cast (a spell on its
