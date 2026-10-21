@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7e174e5373d80c5c599ec4fa048fc772278726988f89c007a43ac6eab8deee53",
+  "action_sha256": "949f8b55f9daa7633789eeb31cffbea78d3f503dd432f490e1de914ae04a52b1",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_44/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_44/item_001__ranged/ready.png"
   },
-  "metadata_sha256": "ac5cac0f02ff0429ca64a41fb2329bc44d5fe1cad8e894af36bfd29e7997e68a",
-  "notes": "New shield/sword ready art supplied as identity reference. Both 128px bow frames reviewed alternating in catalog: nocked arrow in ready, absent in action, bow and same feet/body/armor remain registered. Scale and ground line compared with shield/sword set.",
+  "metadata_sha256": "4274987855013fd8197c2e33a888b15cf1efb3b8e64d7ce7a021c2f25764f73c",
+  "notes": "Reused newly regenerated ordinary orc short-bow pair for matching leather-armored record; smaller than MON1 leader. Ready/action checked at 128px and fixed catalog zoom; both fit 1x1 with stable planted base.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "db9fa49047e47d9c9173a3837c6ecfddc735343d2f56f48b6cf0b7e214dcb563",
-  "reviewed_at": "2026-10-19T04:27:52.190058+00:00",
+  "ready_sha256": "51623a97f77ebbbb3bf3623a116c4d1d465f73b40d843dad46ea9d9be0efc2ef",
+  "reviewed_at": "2026-10-21T02:51:00.602843+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:44",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }

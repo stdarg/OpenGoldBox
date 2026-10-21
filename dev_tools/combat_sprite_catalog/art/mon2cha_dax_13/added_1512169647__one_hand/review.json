@@ -1,15 +1,15 @@
 {
-  "action_sha256": "866d0e1a5c31953634959603e99b1013d33d47fff479f77218891dfa1fe601fc",
+  "action_sha256": "0f9f4d599d94531c79a00a41735c9280be2ea2a60e97b7c7dc2ab06e9616cacf",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_13/added_1512169647__one_hand/action.png",
     "ready": "art/mon2cha_dax_13/added_1512169647__one_hand/ready.png"
   },
-  "metadata_sha256": "7ae0ea66c2885c743abbf4f0c03f44c8ba75c862e52079a5ed362e88a2e2bc47",
-  "notes": "Ready and final action inspected at 128 px and alternating in the Godot catalog. Same planted boot coordinates and scale; local scimitar-arm slash only. Rejected first action for whole-body shift and regenerated from the ready frame.",
+  "metadata_sha256": "5df57f1a404b7bfe9dd0dc8f2505d7b991e66af0af51a16552327d017f2224ad",
+  "notes": "Regenerated ordinary orc with scimitar and belt scroll, smaller than MON2 orc leaders; first action rejected for stance shift. Ready/action checked at 128px and fixed catalog zoom; both fit 1x1 with stable planted base.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "77caed9d5e7ce39d8477f474e127f936b90ef64a52fc16b2e5dca05baf1b49f6",
-  "reviewed_at": "2026-10-19T02:25:31.108235+00:00",
+  "ready_sha256": "5d2318c82316d7a26de3c2f4e43e19a0379ff7c0d6a5fda5e4b6999025a4a60a",
+  "reviewed_at": "2026-10-21T02:50:59.154400+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:13",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }

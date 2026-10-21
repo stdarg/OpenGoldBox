@@ -1,15 +1,15 @@
 {
-  "action_sha256": "b4fe62e4712858172aa7f6801336b1708a0a9d45329f9a3948e141a310e5810c",
+  "action_sha256": "99118f8a6706f1eb8e35b80679b1341f088e128da70b5bec7c46f3125f403ebd",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_14/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_14/item_000__one_hand/ready.png"
   },
-  "metadata_sha256": "ab602c78ec7a35c9b39b884f235bf96b4bdfdeba9f0d10e4558b448df6d561b4",
-  "notes": "Broad sword +1: new ready derived from approved Orc Leader identity; first action rejected for whole-body shift, final action keeps boots registered. Both frames checked at 128 px and alternating in this exact catalog source record.",
+  "metadata_sha256": "cfa36dfd824136f36d25b9f609d3b60b4bfee3ef87594024209213074647d2dd",
+  "notes": "Fresh regenerated broad sword +1 pair, same chainmail leader body scale as axe and bow. First action rejected for stance drift; second action reviewed at 128px and catalog zoom. Both poses fit 1x1 and are taller than regular Orc.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "0acdd6a9053fe977b98144462e06ac9b595892b2e06ea116f08793549b63fc43",
-  "reviewed_at": "2026-10-19T01:58:32.515643+00:00",
+  "ready_sha256": "801b94411b8fc409cbe43baa4a5820ba3b906a3ac59b6d83d13f967fc0b0e5a3",
+  "reviewed_at": "2026-10-21T02:46:09.899462+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:14",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }
