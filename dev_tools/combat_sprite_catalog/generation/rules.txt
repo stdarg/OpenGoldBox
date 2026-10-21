@@ -60,6 +60,15 @@ moves between monsters or animation frames. If a pose or weapon overflows, redes
 the pair at a common scale; never fit ready and action separately or quietly
 shrink only the action frame.
 
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. In both
+poses and every weapon set, the leader must be modestly taller and broader from
+planted feet to head, excluding weapons, helmets, horns and raised arms. Rank
+ornament alone does not satisfy this rule. Keep its saved humanoid height tier
+and game-derived sprite_size unchanged. If the regular art leaves no room for a
+larger leader in that footprint, correct the regular art scale; never overflow
+the tile guide or independently shrink one animation frame.
+
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
 readied. Each set needs its own ready.png AND action.png. A one-handed weapon

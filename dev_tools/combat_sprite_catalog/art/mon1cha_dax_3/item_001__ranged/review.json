@@ -1,16 +1,16 @@
 {
-  "action_sha256": "b8fb44340e2697fd6d04374dd73a10b1ac0f72fc11f379dd7844ee45271d3565",
+  "action_sha256": "a297924bc426069513d3f06098f2512a5245baa9f554f47460ae33c576784208",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_3/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_3/item_001__ranged/ready.png"
   },
-  "metadata_sha256": "a2d0353a9229c0ec8bc00e4149e7bb912c512223198e80171e66d0f80828dc54",
-  "notes": "Fresh generated ready and edited action. Reviewed both 128 px frames and one-second alternation for MON1CHA.DAX:3 long bow in catalog-preview-v2. Nocked arrow releases; both planted feet remain in place, body and bow scale consistent. Approved guide used only for facing and attack mechanics.",
+  "metadata_sha256": "a93bec2a7b8a12a44aa6b9413e07503568c863caf056d67077deecafce44f6a0",
+  "notes": "Long-bow set compared with MON1 regular Goblin Guard and this leader's accepted sword/shield set at combat zoom. Body is modestly taller/broader than guard and consistent with melee set. Arrow nocked in ready and gone just after release in action. Exact pair inspected at combat size and in both catalog states; planted boots and hips register. Only approved new replacement art and pose guide referenced, no original game image.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "dd1f700fe9b76cd1f1e8ee10477c18ac20b4f97199efeafc03761d0613f23d2a",
-  "reviewed_at": "2026-10-19T00:58:40.268035+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "910c421049aea8a9df41d78059698a20050c873ecd3715763b9adf74ebf88c38",
+  "reviewed_at": "2026-10-21T02:04:58+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:3",
   "specification": "bipedal-v1",
   "variant_id": "item_001__ranged",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }

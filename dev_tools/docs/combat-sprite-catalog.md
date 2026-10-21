@@ -141,3 +141,15 @@ Tall, measured foot to head. A footprint includes the complete sprite and its
 equipment, while the height target measures only the body. Existing PNGs are
 not automatically resized or treated as correct merely because their canvas is
 128 × 128.
+
+For every named leader, compare its body against the regular creature of the
+same kind in the same game archive (and against other regular records of that
+kind when the archive has more than one). The leader must read as **a little
+larger and more imposing**, never smaller: aim for a modest increase in
+foot-to-head height and body mass while retaining the same humanoid height tier.
+Distinctive clothing and gear may reinforce the rank, but a larger weapon,
+helmet, horns, or raised arm cannot substitute for a larger body. Check both
+ready and action poses and **every weapon set** at the fixed catalog zoom.
+Preserve the game-derived `sprite_size` and keep the complete silhouette inside
+its footprint. When a regular sprite already fills that footprint, correct its
+art scale as needed rather than enlarging the leader beyond the allowed tiles.

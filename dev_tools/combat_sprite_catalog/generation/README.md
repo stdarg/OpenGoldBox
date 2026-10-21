@@ -38,6 +38,11 @@ The authoritative prompt text is [rules.txt](rules.txt). The user confirmed on
   guide, aim for about 0.6, 0.9, and 1.7 combat squares of body height for
   Small, Normal, and Tall respectively. The complete pose and equipment must
   fit the record's selected `sprite_size` footprint.
+- For a leader, compare every pose and weapon set against the regular creature
+  of its kind in the same archive. Make the leader's body modestly taller and
+  broader, not just more ornate or more heavily armed. Its game-derived tile
+  footprint and humanoid height tier remain unchanged. If the regular art fills
+  the footprint, correct the regular art's scale so the leader still fits.
 
 The independently generated [pose guide](../art/pose-guide/README.md) was
 **approved by the user on 2026-10-17** for production generation. Acceptance
