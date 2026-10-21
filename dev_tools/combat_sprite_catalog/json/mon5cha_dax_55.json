@@ -9,13 +9,13 @@
   "equipment": [
     {
       "id": "item_000",
-      "kind": "gear",
+      "kind": "weapon",
       "name": "Boulder",
       "readied": false,
       "source_hands": 2,
       "source_range": 10,
       "source_type": 87,
-      "weapon_role": ""
+      "weapon_role": "ranged"
     },
     {
       "id": "item_001",
@@ -41,13 +41,13 @@
   },
   "variants": [
     {
-      "action": "art/mon5cha_dax_55/default/action.png",
-      "id": "default",
-      "label": "Default (no selectable weapon setup)",
-      "ready": "art/mon5cha_dax_55/default/ready.png",
+      "action": "art/mon5cha_dax_55/item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "label": "Boulder",
+      "ready": "art/mon5cha_dax_55/item_000__ranged/ready.png",
       "shield_id": "",
-      "weapon_id": "",
-      "weapon_role": "default"
+      "weapon_id": "item_000",
+      "weapon_role": "ranged"
     }
   ],
   "wealth": {
