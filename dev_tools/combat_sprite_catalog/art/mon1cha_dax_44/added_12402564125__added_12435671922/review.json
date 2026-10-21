@@ -1,15 +1,15 @@
 {
-  "action_sha256": "e601796040ca4ab71a98dc7806adec032b63a1f8253a3bb98a8900e728c3077c",
+  "action_sha256": "5175502577006b891de035f7a04c2f9537d1a6e4f497f94cfb8923d11bef95c2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_44/added_12402564125__added_12435671922/action.png",
     "ready": "art/mon1cha_dax_44/added_12402564125__added_12435671922/ready.png"
   },
   "metadata_sha256": "4274987855013fd8197c2e33a888b15cf1efb3b8e64d7ce7a021c2f25764f73c",
-  "notes": "Regenerated ordinary orc with short sword and shield, smaller than MON1 orc leader. Ready/action checked at 128px and fixed catalog zoom; both fit 1x1 with stable planted base.",
+  "notes": "Orc short-sword pair independently edited from matching new Orc art; bow pair uses matching independent new Orc art. No original game art reference. Exact pair visually inspected at combat size and one-second catalog alternation. Both ready silhouettes fit 1x1; body and feet remain fixed, action short-sword alone crosses guide 0.08 square. Body matches normal Orc height and scale across sets.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "e13d4bd3a4fafde1298f8db33dee0d3f657bb78fda055ec5ba6c49513e86f835",
-  "reviewed_at": "2026-10-21T02:50:59.880934+00:00",
+  "ready_sha256": "a14a9221c0201c53d208476b8c1bba5db2bb351669b89bf4fefbcba05ef151eb",
+  "reviewed_at": "2026-10-21T22:20:12.025718+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:44",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

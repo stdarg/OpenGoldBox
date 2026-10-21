@@ -1,15 +1,15 @@
 {
-  "action_sha256": "99118f8a6706f1eb8e35b80679b1341f088e128da70b5bec7c46f3125f403ebd",
+  "action_sha256": "2677da8d99e0597a54f2830a3f96af7a995c5575a3bbcc916e12f9d10f5451d7",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_14/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_14/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "cfa36dfd824136f36d25b9f609d3b60b4bfee3ef87594024209213074647d2dd",
-  "notes": "Fresh regenerated broad sword +1 pair, same chainmail leader body scale as axe and bow. First action rejected for stance drift; second action reviewed at 128px and catalog zoom. Both poses fit 1x1 and are taller than regular Orc.",
+  "notes": "New independently generated Orc Leader broad sword +1 melee pair; matching independently generated Orc Leader bow reused for identical ranged setup. Both poses separately checked at combat size and in catalog one-second animation. Leader broader and modestly taller than regular Orc, shared scale and planted feet across its sets; ready fits 1x1. Action flail alone crosses dotted border by 0.05 square; body remains inside. Bow loaded then released.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "801b94411b8fc409cbe43baa4a5820ba3b906a3ac59b6d83d13f967fc0b0e5a3",
-  "reviewed_at": "2026-10-21T02:46:09.899462+00:00",
+  "ready_sha256": "a9dd601e9471cb5d622e936441270d8e736a510b5b21f3617499146175361ba3",
+  "reviewed_at": "2026-10-21T22:29:15.729154+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:14",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }

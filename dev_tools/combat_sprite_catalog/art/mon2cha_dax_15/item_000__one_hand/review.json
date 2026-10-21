@@ -1,15 +1,15 @@
 {
-  "action_sha256": "ef93d32e4d4f7b6d7186ef3a043431ffe1bdee0d6062cdfd81fe036e6db2c38d",
+  "action_sha256": "c0549a926f40f31196e3eae1046a686cbe2a936d7270a6ce19a5f272c6ba207f",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_15/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_15/item_000__one_hand/ready.png"
   },
   "metadata_sha256": "994cfd5bafe54f1a3eb488f03580126a84072d14f5a82806ee8d79ca53490a44",
-  "notes": "Several action attempts rejected for whole-body shift. Final late-strike action became registration base; final ready was regenerated from it with boots and torso fixed. Both poses reviewed at 128px and catalog zoom; flail grip and chain clear, 1x1 fit, body larger than ordinary Orc.",
+  "notes": "New independently generated Orc Leader flail +1 melee pair; matching independently generated Orc Leader bow reused for identical ranged setup. Both poses separately checked at combat size and in catalog one-second animation. Leader broader and modestly taller than regular Orc, shared scale and planted feet across its sets; ready fits 1x1. Action flail alone crosses dotted border by 0.05 square; body remains inside. Bow loaded then released.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "9396c6c3004b0a2e5c27bece650ffd1677893aa214d32f686de86447440d339d",
-  "reviewed_at": "2026-10-21T02:53:07.512670+00:00",
+  "ready_sha256": "6627955bbe5aaac5236cf30d202b5dd3ad0447a684af5555f8b6c3c60618abe0",
+  "reviewed_at": "2026-10-21T22:29:17.895024+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:15",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }
