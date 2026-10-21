@@ -1,0 +1,32 @@
+{
+  "action_sha256": "bea3e4a08be4176bcb8e2376fc46806860b88018df013034add5644ea97ba84f",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_70/default/action.png",
+    "ready": "art/mon4cha_dax_70/default/ready.png"
+  },
+  "metadata_sha256": "e5cb9b369720d6de7538e1a6e023203e4b2664c8e34bdce4512062570b231ca8",
+  "notes": "Game source 24x48 (1x2), no carried equipment. Shared newly generated Efreeti design appropriate to matching monster copies and script-linked CPIC8 combat icon. Approved pose guide only; no original game art reference. Two glow/background drafts were rejected. Final flat transparent cutout uses shared 720x1609 crop/scale, fixed pointed smoke-tail base, small palm-flame change. Native pair and live catalog ready/action on stationary grid reviewed for this record; both fit.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "810caa997c14ff9afb7076b093082b005665870780dc855b179752b6f5421a0c",
+  "reviewed_at": "2026-10-21T01:25:51+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON4CHA.DAX:70",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+}
