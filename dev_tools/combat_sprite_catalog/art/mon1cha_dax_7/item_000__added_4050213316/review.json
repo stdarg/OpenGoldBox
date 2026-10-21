@@ -1,15 +1,15 @@
 {
-  "action_sha256": "b3775224875b278515332c858d56064f0afe854361e39c3f5dfbd7c3fee28488",
+  "action_sha256": "bddbc0ec127ad1ea8745520171560ffe4020d7a6f936acdc0c6c75039a3c75cd",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_7/item_000__added_4050213316/action.png",
     "ready": "art/mon1cha_dax_7/item_000__added_4050213316/ready.png"
   },
-  "metadata_sha256": "6a25569484b08f6915e810f8684e4fa18ea05366834da2a192ed18f5ed5dcd52",
-  "notes": "Rejected first sword edit because the full figure and feet shifted. Derived final raised ready from the completed thrust frame. Enlarged exact-coordinate boot comparison and catalog alternation show the same planted feet; only sword arm changes. Shield and scale mail remain.",
+  "metadata_sha256": "c5214fa63cec28e07d9e1dfb6d37913b220749e36fc546ca06bb686f270cc31b",
+  "notes": "Fresh regenerated MON1 hobgoblin pair. Ready/action visually checked at 128px and catalog zoom; both fit fixed 1x1 and preserve planted base. Leader body is modestly taller and broader than ordinary counterpart in every set. Early shifted action attempts rejected.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "0a4d23eae967e2d1d1473d686796b8e73c24b59a8db01e99cc3834dd95ff8cfa",
-  "reviewed_at": "2026-10-19T05:08:49.475886+00:00",
+  "ready_sha256": "ab7e92011972afa48dc624adec4151e3a4eda4f408aa387213178cc2b65d69c2",
+  "reviewed_at": "2026-10-21T03:04:14.255651+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:7",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }

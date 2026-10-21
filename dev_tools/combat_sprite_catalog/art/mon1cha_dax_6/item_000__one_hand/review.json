@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7bd08ff9fe6237a24207df684320d53c9468458abb9bc770db9efbc5dfa30b0a",
+  "action_sha256": "2a813f3395382d98de506d65b4607e70c5948a25c6b7fc897e05544220b1a8be",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_6/item_000__one_hand/action.png",
     "ready": "art/mon1cha_dax_6/item_000__one_hand/ready.png"
   },
-  "metadata_sha256": "8aea6f50a0fd13244396d7c6155e8775319f1f4a75eca6ad094475fd8a32ef27",
-  "notes": "Earlier full-strike edits shifted the stance and were rejected. Final pair was made from the new action art with a small raised-guard blade change; exact 128px frames inspected alternating in catalog, with matching boots, scale mail, body scale and facing.",
+  "metadata_sha256": "9ef101013098017989037b64ecfa563e18614814e6b3426c43f0009f5fc8462e",
+  "notes": "Fresh regenerated MON1 hobgoblin pair. Ready/action visually checked at 128px and catalog zoom; both fit fixed 1x1 and preserve planted base. Leader body is modestly taller and broader than ordinary counterpart in every set. Early shifted action attempts rejected.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "f228caea7a3255f0bc2a3961136560352559930485258694100007de6ebdbceb",
-  "reviewed_at": "2026-10-19T04:19:47.162936+00:00",
+  "ready_sha256": "6e13a00e782011bde7cba2e7374a65f507455cf2a5ebd1e9c9c5820f69d43d37",
+  "reviewed_at": "2026-10-21T03:04:12.807085+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:6",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }
