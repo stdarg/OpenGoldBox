@@ -1,16 +1,16 @@
 {
-  "action_sha256": "106dd0b4a804289ae90612e0b59cc0eb90585c1ab34f09d5aa2257592e4f6522",
+  "action_sha256": "e2b26c0b1b3af609db16ff9705e5d0a0d30d6b10e20b644b2f2c533386e79635",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_9/added_4389207748__two_hand/action.png",
     "ready": "art/mon1cha_dax_9/added_4389207748__two_hand/ready.png"
   },
-  "metadata_sha256": "c8f17a64c2dda18e92d80a376ab79a6f7fb28d3e15556cfc9e40c1ffc78c45b7",
-  "notes": "Blue-helmed ogre leader. Both hands retain the halberd shaft; ready is raised, action is a late forward thrust. Boots, hips, scale and camera remain registered. Rejected an earlier independently generated ready due to horizontal foot shift; accepted inverse edit from the action at fixed boot coordinates. Reviewed both 128 x 128 frames side by side and alternating in the catalog.",
+  "metadata_sha256": "ec55dd5e4ea3699f010e8a7efa651471acf9ff2fc7ebe800125af7ffbef8b528",
+  "notes": "Game original is 24x48 (1x2). Full saved equipment inspected: halberd and unready long bow each require a separate pair; this is only the halberd pair. Approved existing leader art, accepted narrow ogre art, and pose guide were references; no original game artwork. Shared 810x1468 crop/scale keeps boots and body fixed while both hands lower the halberd into late chop. Native pair and catalog grid ready/action visually reviewed; both fit.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "797f9cd66a40eb07cfc590698d98d380a37544a95b80c1e7ce34642ab15f6b91",
-  "reviewed_at": "2026-10-19T05:46:48.043059+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "24b36560caf2806b29cafa02904c00c5e04414b54b5047c0e5765cf2b880e2e2",
+  "reviewed_at": "2026-10-21T01:08:18+00:00",
+  "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:9",
   "specification": "bipedal-v1",
   "variant_id": "added_4389207748__two_hand",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
 }
