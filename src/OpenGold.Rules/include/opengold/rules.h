@@ -602,6 +602,16 @@ struct CombatantView
     // Every spell it knows, cantrips included: a command whose verb is one of
     // these, or one of these and a suffix (an upcast form), casts a spell.
     std::vector<std::string> spells;
+    // The enemy its last command on its own turn aimed at, which the computer
+    // keeps attacking while it can (#266); 0 for none.
+    EntityId last_target{};
+    // A Wizard or Sorcerer wearing no armor, or a monster magic-user: the
+    // computer keeps it out of melee, as the original kept its magic-users.
+    bool unarmored_arcane_caster{};
+    // The original's weapon power rating (#266), dice count times sides plus 8
+    // for each magic plus, times its attacks a turn, of its melee weapon and of
+    // the ranged weapon it holds or could draw; 0 with none.
+    int melee_rating{}, ranged_rating{};
 };
 
 struct TemporaryHpOffer
@@ -654,6 +664,18 @@ struct SpellTargeting
 
 // An area spell being aimed (CLASS-5): `center` is the previewed point and
 // `cells` the squares the spell would affect there.
+// What the computer weighs in a spell it may cast or is aiming (#266).
+struct SpellFacts
+{
+    bool concentration{};
+    int range_feet{};
+    // An aimed area's reach in feet: from its center (a sphere's radius, half
+    // a square's side), or from the caster when `from_caster` (a cone, a cube
+    // beside it, a line).
+    int area_feet{};
+    bool from_caster{};
+};
+
 struct AreaTargeting
 {
     EntityId actor{};
@@ -661,6 +683,7 @@ struct AreaTargeting
     Cell center;
     std::vector<Cell> cells;
     int step{1}; // squares an arrow key moves the aim: 2 for Fire Storm's 10-foot cubes
+    SpellFacts spell;
 };
 
 struct FreeMovement
@@ -689,6 +712,15 @@ struct Snapshot
     std::vector<CombatantView> combatants; // Initiative order.
     std::vector<LogEntry> log_entries;     // Oldest first.
     bool reaction_pending{};
+
+    // The attack roll a reaction such as Shield answers: its total and the AC
+    // it hit, which the player is shown too.
+    struct AttackRoll
+    {
+        int total{}, armor_class{};
+    };
+
+    std::optional<AttackRoll> reaction_attack;
     std::uint64_t elapsed_milliseconds{};
     std::optional<TemporaryHpOffer> temporary_hp_offer;
     std::optional<AbilityCheckChoice> ability_check_choice;
@@ -757,6 +789,7 @@ struct Command
     Cell destination;
     unsigned item{};
     bool aims_area{}; // Starts aiming an area spell (CLASS-5).
+    SpellFacts spell; // Zero unless it casts a spell.
 };
 
 class CombatSession

@@ -896,6 +896,215 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
 Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered);
 std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
                                    const std::vector<Command> &offered);
+
+bool item_verb(std::string_view verb);
+
+// A choice the original made at random, here repeatable from the fight's state
+// so a replay or a test sees the same one: an index below `count`.
+std::size_t pick(const rules::Snapshot &state, EntityId actor, std::uint64_t salt,
+                 std::size_t count)
+{
+    std::uint64_t x =
+        state.revision * 0x9E3779B97F4A7C15ull ^ (static_cast<std::uint64_t>(actor) << 32) ^ salt;
+    x ^= x >> 30;
+    x *= 0xBF58476D1CE4E5B9ull;
+    x ^= x >> 27;
+    x *= 0x94D049BB133111EBull;
+    x ^= x >> 31;
+    return static_cast<std::size_t>(x % count);
+}
+
+// The spells the computer casts with a slot, each with the original's priority
+// (#266): it rolls 1d7 and tries the priorities from 7 down to 8 less the roll,
+// so the strongest come first and the weakest only on a high roll. A helpful
+// spell goes on the caster or an ally. Healing, cantrips and the spells with
+// their own rules below (Moonbeam, Hex, Spiritual Weapon, Hunter's Mark) are
+// not here; neither is any spell left to the player.
+struct AiSpell
+{
+    std::string_view id;
+    int priority;
+    bool helpful{};
+};
+
+constexpr std::array ai_spells{AiSpell{"fireball", 7},
+                               AiSpell{"hold_monster", 7},
+                               AiSpell{"confusion", 7},
+                               AiSpell{"ice_storm", 7},
+                               AiSpell{"finger_of_death", 7},
+                               AiSpell{"circle_of_death", 7},
+                               AiSpell{"chain_lightning", 7},
+                               AiSpell{"sunburst", 7},
+                               AiSpell{"power_word_stun", 7},
+                               AiSpell{"disintegrate", 7},
+                               AiSpell{"harm", 7},
+                               AiSpell{"prismatic_spray", 7},
+                               AiSpell{"freezing_sphere", 7},
+                               AiSpell{"hold_person", 6},
+                               AiSpell{"lightning_bolt", 6},
+                               AiSpell{"cone_of_cold", 6},
+                               AiSpell{"flame_strike", 6},
+                               AiSpell{"inflict_wounds", 6},
+                               AiSpell{"fear", 6},
+                               AiSpell{"charm_monster", 6},
+                               AiSpell{"blight", 6},
+                               AiSpell{"phantasmal_killer", 6},
+                               AiSpell{"contagion", 6},
+                               AiSpell{"flesh_to_stone", 6},
+                               AiSpell{"eyebite", 6},
+                               AiSpell{"dominate_person", 6},
+                               AiSpell{"banishment", 6},
+                               AiSpell{"hypnotic_pattern", 6},
+                               AiSpell{"vitriolic_sphere", 6},
+                               AiSpell{"irresistible_dance", 6},
+                               AiSpell{"stinking_cloud", 5},
+                               AiSpell{"bestow_curse", 5},
+                               AiSpell{"cloudkill", 5},
+                               AiSpell{"sleet_storm", 5},
+                               AiSpell{"black_tentacles", 5},
+                               AiSpell{"shatter", 5},
+                               AiSpell{"blindness", 5},
+                               AiSpell{"vampiric_touch", 5},
+                               AiSpell{"insect_plague", 5},
+                               AiSpell{"magic_missile", 4},
+                               AiSpell{"charm_person", 4},
+                               AiSpell{"silence", 4},
+                               AiSpell{"slow", 4},
+                               AiSpell{"faerie_fire", 4},
+                               AiSpell{"scorching_ray", 4},
+                               AiSpell{"acid_arrow", 4},
+                               AiSpell{"guiding_bolt", 4},
+                               AiSpell{"mind_spike", 4},
+                               AiSpell{"ray_of_enfeeblement", 4},
+                               AiSpell{"hideous_laughter", 4},
+                               AiSpell{"dissonant_whispers", 4},
+                               AiSpell{"chromatic_orb", 4},
+                               AiSpell{"ice_knife", 4},
+                               AiSpell{"ray_of_sickness", 4},
+                               AiSpell{"web", 4},
+                               AiSpell{"mirror_image", 3, true},
+                               AiSpell{"haste", 3, true},
+                               AiSpell{"protection_from_normal_missiles", 3, true},
+                               AiSpell{"entangle", 3},
+                               AiSpell{"bane", 3},
+                               AiSpell{"blur", 3, true},
+                               AiSpell{"greater_invisibility", 3, true},
+                               AiSpell{"stoneskin", 3, true},
+                               AiSpell{"fire_shield", 3, true},
+                               AiSpell{"heroism", 3, true},
+                               AiSpell{"sleep", 2},
+                               AiSpell{"burning_hands", 2},
+                               AiSpell{"thunderwave", 2},
+                               AiSpell{"color_spray", 2},
+                               AiSpell{"blink", 2, true},
+                               AiSpell{"mage_armor", 2, true},
+                               AiSpell{"false_life", 2, true},
+                               AiSpell{"magic_weapon", 2, true},
+                               AiSpell{"barkskin", 2, true},
+                               AiSpell{"bless", 1, true},
+                               AiSpell{"protection_from_evil_and_good", 1, true},
+                               AiSpell{"divine_favor", 1, true},
+                               AiSpell{"shield_of_faith", 1, true}};
+
+const AiSpell *ai_spell(std::string_view id)
+{
+    const auto found = std::find_if(ai_spells.begin(), ai_spells.end(),
+                                    [&](const AiSpell &spell)
+                                    {
+                                        return spell.id == id;
+                                    });
+    return found == ai_spells.end() ? nullptr : &*found;
+}
+
+// The known spell a command casts: the longest of the creature's spell ids that
+// is the verb or begins it before a suffix ("magic_missile_2"); empty if none.
+std::string_view spell_of(const CombatantView &caster, std::string_view verb)
+{
+    std::string_view found;
+    for (const auto &id : caster.spells)
+    {
+        if ((verb == id ||
+             (verb.starts_with(id) && verb.size() > id.size() && verb[id.size()] == '_')) &&
+            id.size() > found.size())
+        {
+            found = id;
+        }
+    }
+    return found;
+}
+
+// How a cast ranks among the same spell's casts: its own level first, then the
+// lowest slot above it, then any other form.
+int cast_rank(std::string_view verb, std::string_view spell)
+{
+    if (verb == spell)
+    {
+        return 0;
+    }
+    const auto suffix = verb.substr(spell.size() + 1);
+    return suffix.size() == 1 && suffix[0] >= '2' && suffix[0] <= '9' ? suffix[0] - '0' : 100;
+}
+
+// Whether an area aimed at `center` might catch one of the caster's side,
+// judged on the safe side of the area the rules will draw (#266): anyone
+// within its reach of the center, plus a square; or, for a cone, a cube
+// beside the caster or a line, anyone but the caster ahead of it within the
+// reach and near the line toward the center.
+bool area_risks_side(const rules::Snapshot &state, const CombatantView &caster,
+                     const SpellFacts &spell, Cell center)
+{
+    const int reach = (spell.area_feet + 4) / 5 + (spell.from_caster ? 2 : 1);
+    return std::any_of(
+        state.combatants.begin(), state.combatants.end(),
+        [&](const auto &a)
+        {
+            if (a.side != caster.side || a.dead)
+            {
+                return false;
+            }
+            if (!spell.from_caster)
+            {
+                return std::max(std::abs(a.cell.x - center.x), std::abs(a.cell.y - center.y)) <=
+                       reach;
+            }
+            if (a.id == caster.id)
+            {
+                return false;
+            }
+            const double dx = center.x - caster.cell.x, dy = center.y - caster.cell.y;
+            const double length = std::max(1.0, std::sqrt(dx * dx + dy * dy));
+            const double cx = a.cell.x - caster.cell.x, cy = a.cell.y - caster.cell.y;
+            const double along = (cx * dx + cy * dy) / length;
+            const double off = std::abs(cx * dy - cy * dx) / length;
+            return along > 0 && along <= reach && off <= along / 2 + 1.5;
+        });
+}
+
+// Whether an area spell can be aimed at `target` safely: within its range
+// and in the caster's sight, as the rules let it be aimed, within the reach of
+// a cone or line, and catching no one of the caster's side.
+bool safe_area_target(const rules::Snapshot &state, const CombatantView &caster,
+                      const SpellFacts &spell, const CombatantView &target)
+{
+    const int distance = 5 * std::max(std::abs(target.cell.x - caster.cell.x),
+                                      std::abs(target.cell.y - caster.cell.y));
+    return target.side != caster.side && target.conscious && distance <= spell.range_feet &&
+           (!spell.from_caster || distance <= spell.area_feet) &&
+           rules::has_line_of_sight(state.battlefield, caster.cell, target.cell) &&
+           !area_risks_side(state, caster, spell, target.cell);
+}
+
+// Whether the creature already shows the spell's effect, by its name in the
+// creature's status effects ("Paralyzed (Hold Person)").
+bool shows_spell(const CombatantView &unit, std::string_view label)
+{
+    label = label.substr(0, label.find(" ("));
+    return std::any_of(unit.status_effects.begin(), unit.status_effects.end(),
+                       [&](const auto &effect)
+                       {
+                           return effect.name.source.find(label) != std::string::npos;
+                       });
+}
 } // namespace
 
 Command choose_demo_command(const CombatSession &session)
@@ -979,7 +1188,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                        });
     // The module orders its pending check choices by its default AI preference.
     if (!state.initiative_choices.empty() || state.effect_targeting ||
-        state.optional_effect_choice || state.ability_check_choice || state.free_movement)
+        state.optional_effect_choice || state.ability_check_choice)
     {
         return offered.front();
     }
@@ -1012,22 +1221,95 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return *run;
         }
     }
-    // Rank offered destinations by a geometric route around obstacles. Straight
-    // distance alone can strand both sides on opposite corners of a wall.
-    // This is an AI heuristic; legal movement and its costs remain module-owned.
     const auto &board = state.battlefield;
+    // The enemies the creature can see: it goes for those, and with none in
+    // view it holds its ground (#266).
+    std::vector<const CombatantView *> in_view;
+    for (const auto &enemy : state.combatants)
+    {
+        if (enemy.side != active.side && !enemy.dead && enemy.hit_points > 0 &&
+            rules::has_line_of_sight(board, active.cell, enemy.cell))
+        {
+            in_view.push_back(&enemy);
+        }
+    }
+    // When no one on either side can see an enemy, holding would stall the
+    // fight for good, so it advances on them all, as the original did.
+    const bool anyone_sees = std::any_of(
+        state.combatants.begin(), state.combatants.end(),
+        [&](const auto &viewer)
+        {
+            return viewer.conscious &&
+                   std::any_of(state.combatants.begin(), state.combatants.end(),
+                               [&](const auto &seen)
+                               {
+                                   return seen.side != viewer.side && !seen.dead &&
+                                          seen.hit_points > 0 &&
+                                          rules::has_line_of_sight(board, viewer.cell, seen.cell);
+                               });
+        });
+    if (!anyone_sees)
+    {
+        for (const auto &enemy : state.combatants)
+        {
+            if (enemy.side != active.side && !enemy.dead && enemy.hit_points > 0)
+            {
+                in_view.push_back(&enemy);
+            }
+        }
+    }
+    // It keeps its target while that target stands in view, as the original
+    // did; otherwise any enemy in view.
+    const auto kept = std::find_if(in_view.begin(), in_view.end(),
+                                   [&](const auto *enemy)
+                                   {
+                                       return enemy->id == active.last_target;
+                                   });
+    // One of the creatures commands with `verb` are aimed at: its target if one
+    // is, else one at random from the other side (#266).
+    const auto aim = [&](std::string_view verb) -> const Command *
+    {
+        std::vector<const Command *> aims;
+        for (const auto &command : offered)
+        {
+            if (command.verb != verb)
+            {
+                continue;
+            }
+            const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                             [&](const auto &a)
+                                             {
+                                                 return a.id == command.target;
+                                             });
+            if (target == state.combatants.end() || target->side == active.side ||
+                target->hit_points <= 0)
+            {
+                continue;
+            }
+            if (kept != in_view.end() && command.target == active.last_target)
+            {
+                return &command;
+            }
+            aims.push_back(&command);
+        }
+        return aims.empty() ? nullptr : aims[pick(state, active.id, verb.size(), aims.size())];
+    };
+    // Rank offered destinations by a geometric route around obstacles to its
+    // target, or to the nearest enemy in view. Straight distance alone can
+    // strand both sides on opposite corners of a wall. This is an AI
+    // heuristic; legal movement and its costs remain module-owned.
     const auto index = [&](Cell p)
     {
         return p.y * board.width + p.x;
     };
     std::vector<int> routes(board.terrain.size(), 10000);
     std::queue<Cell> frontier;
-    for (const auto &a : state.combatants)
+    for (const auto *enemy : in_view)
     {
-        if (a.side != active.side && !a.dead && a.hit_points > 0)
+        if (kept == in_view.end() || enemy == *kept)
         {
-            routes[index(a.cell)] = 0;
-            frontier.push(a.cell);
+            routes[index(enemy->cell)] = 0;
+            frontier.push(enemy->cell);
         }
     }
     while (!frontier.empty())
@@ -1062,11 +1344,51 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     {
         return routes[index(p)];
     };
+    // A free move (a Champion's) is taken toward the enemy, not given up.
+    if (state.free_movement)
+    {
+        const Command *closer = nullptr;
+        int closest = nearest(active.cell);
+        for (const auto &command : offered)
+        {
+            if (command.verb == "move" && nearest(command.destination) < closest)
+            {
+                closer = &command;
+                closest = nearest(command.destination);
+            }
+        }
+        return closer ? *closer : offered.front();
+    }
     // A choice of creatures left open casts on those already chosen. Magic
     // Missile and Scorching Ray cannot be cast early: every dart or ray goes
     // where the last one went while it can, else at the first creature offered.
     if (const auto &targeting = state.spell_targeting)
     {
+        // A spell for several creatures, such as Bless, takes in more of the
+        // side its first creature is on before it is cast.
+        const auto side_of = [&](EntityId id)
+        {
+            return std::find_if(state.combatants.begin(), state.combatants.end(),
+                                [&](const auto &a)
+                                {
+                                    return a.id == id;
+                                });
+        };
+        if (!targeting->repeats && !targeting->chosen.empty())
+        {
+            const auto first = side_of(targeting->chosen.front());
+            for (const auto &command : offered)
+            {
+                const auto other = side_of(command.target);
+                if (command.verb == targeting->verb && first != state.combatants.end() &&
+                    other != state.combatants.end() && other->side == first->side && !other->dead &&
+                    std::find(targeting->chosen.begin(), targeting->chosen.end(), command.target) ==
+                        targeting->chosen.end())
+                {
+                    return command;
+                }
+            }
+        }
         for (const auto &command : offered)
         {
             if (command.verb == (targeting->chosen.empty() ? "spell_cancel" : "spell_cast"))
@@ -1143,7 +1465,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     }
     for (const auto &command : offered)
     {
-        if (command.verb == "opportunity" || command.verb == "shield" ||
+        // Shield only when its +5 turns the hit into a miss (#266), or
+        // against Magic Missile, which it stops whole.
+        const bool shield_helps =
+            !state.reaction_attack ||
+            state.reaction_attack->total < state.reaction_attack->armor_class + 5;
+        if (command.verb == "opportunity" || (command.verb == "shield" && shield_helps) ||
             command.verb == "deflect" || command.verb == "redirect" || command.verb == "rebuke" ||
             command.verb == "giant_boon" || command.verb == "stones_endurance" ||
             command.verb == "storms_thunder" ||
@@ -1152,27 +1479,50 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
-    // An ally below half Hit Points is healed, by Lay On Hands first because it
-    // costs no spell slot. Borrowed view into local offered commands.
-    const auto heal_below_half =
-        [&](std::initializer_list<std::string_view> verbs) -> const Command *
+    // The other reactions are used whenever offered; otherwise declined.
+    if (state.reaction_pending)
     {
-        for (const auto &command : offered)
+        for (const auto verb :
+             {"uncanny_dodge", "superior_defense", "retaliate", "counterspell", "decline"})
         {
-            if (std::find(verbs.begin(), verbs.end(), command.verb) != verbs.end())
+            for (const auto &command : offered)
             {
-                const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                                   [&](const auto &a)
-                                                   {
-                                                       return a.id == command.target;
-                                                   });
-                if (target.side == active.side && target.hit_points * 2 < target.max_hit_points)
+                if (command.verb == verb)
                 {
-                    return &command;
+                    return command;
                 }
             }
         }
-        return nullptr;
+    }
+    // The most wounded ally at half its Hit Points or lower is healed (#266),
+    // by Lay On Hands first because it costs no spell slot. Borrowed view into
+    // local offered commands.
+    const auto heal_most_wounded =
+        [&](std::initializer_list<std::string_view> verbs) -> const Command *
+    {
+        const Command *best = nullptr;
+        const CombatantView *worst = nullptr;
+        for (const auto &command : offered)
+        {
+            if (std::find(verbs.begin(), verbs.end(), command.verb) == verbs.end())
+            {
+                continue;
+            }
+            const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
+                                               [&](const auto &a)
+                                               {
+                                                   return a.id == command.target;
+                                               });
+            // The lower share of its maximum, compared without division.
+            if (target.side == active.side && target.hit_points * 2 <= target.max_hit_points &&
+                (!worst || static_cast<long long>(target.hit_points) * worst->max_hit_points <
+                               static_cast<long long>(worst->hit_points) * target.max_hit_points))
+            {
+                best = &command;
+                worst = &target;
+            }
+        }
+        return best;
     };
     // Magic items first, as the original's Quick characters used their
     // readied ones, whether or not Quick magic is on (MAGIC-3).
@@ -1181,7 +1531,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         return *item;
     }
     // Lay On Hands and Divine Spark cost no spell slot.
-    if (const auto *command = heal_below_half({"lay_on_hands", "divine_spark"}))
+    if (const auto *command = heal_most_wounded({"lay_on_hands", "divine_spark"}))
     {
         return *command;
     }
@@ -1196,7 +1546,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
     }
     if (const auto *command =
-            heal_below_half({"cure_wounds", "cure_wounds_2", "healing_word", "healing_word_2"}))
+            heal_most_wounded({"cure_wounds", "cure_wounds_2", "healing_word", "healing_word_2"}))
     {
         return *command;
     }
@@ -1300,6 +1650,50 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                 }
             }
         }
+        // Any other area spell goes off where its drawn area holds an enemy
+        // and no one of the caster's side; else it is aimed at the next enemy
+        // where that is safe, else given up (#266).
+        const auto &aimed = *state.area_targeting;
+        const auto in_area = [&](const CombatantView &a)
+        {
+            return !a.dead &&
+                   std::find(aimed.cells.begin(), aimed.cells.end(), a.cell) != aimed.cells.end();
+        };
+        if (aimed.verb != "moonbeam" && aimed.verb != "lands_aid")
+        {
+            const bool ally = std::any_of(state.combatants.begin(), state.combatants.end(),
+                                          [&](const auto &a)
+                                          {
+                                              return a.side == active.side && in_area(a);
+                                          });
+            const bool enemy = std::any_of(in_view.begin(), in_view.end(),
+                                           [&](const auto *a)
+                                           {
+                                               return a->conscious && in_area(*a);
+                                           });
+            if (enemy && !ally)
+            {
+                if (const auto *cast = offers("area_cast"))
+                {
+                    return *cast;
+                }
+            }
+            for (const auto *target : in_view)
+            {
+                if (target->cell == aimed.center ||
+                    !safe_area_target(state, active, aimed.spell, *target))
+                {
+                    continue;
+                }
+                for (const auto &command : offered)
+                {
+                    if (command.verb == "area_move" && command.destination == target->cell)
+                    {
+                        return command;
+                    }
+                }
+            }
+        }
         if (const auto *cancel = offers("spell_cancel"))
         {
             return *cancel;
@@ -1398,20 +1792,89 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
-    for (const auto &command : offered)
+    // A spell with a slot, by the original's priorities (#266): a 1d7 roll,
+    // then the priorities from 7 down to 8 less the roll, and at each one of
+    // the spells that make sense, chosen at random. A harmful spell needs an
+    // enemy in view not already under it, an area one a place where it
+    // catches no one of the caster's side; a helpful one a creature of its
+    // side not already under it. A spell that would end the caster's
+    // Concentration waits.
+    const auto makes_sense = [&](const Command &command, const AiSpell &spell)
     {
-        if (command.verb == "blindness" || command.verb == "hold_person" ||
-            command.verb == "hideous_laughter" || command.verb == "ray_of_enfeeblement")
+        if (command.aims_area)
         {
-            const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
-                                             [&](const auto &a)
-                                             {
-                                                 return a.id == command.target;
-                                             });
-            if (target->conditions.empty())
+            return std::any_of(in_view.begin(), in_view.end(),
+                               [&](const auto *enemy)
+                               {
+                                   return safe_area_target(state, active, command.spell, *enemy);
+                               });
+        }
+        const auto target = std::find_if(state.combatants.begin(), state.combatants.end(),
+                                         [&](const auto &a)
+                                         {
+                                             return a.id == command.target;
+                                         });
+        if (target == state.combatants.end() || shows_spell(*target, command.label))
+        {
+            return false;
+        }
+        if (spell.helpful)
+        {
+            return target->side == active.side && !target->dead;
+        }
+        return target->conscious &&
+               std::find(in_view.begin(), in_view.end(), &*target) != in_view.end();
+    };
+    if (!in_view.empty())
+    {
+        const int roll = static_cast<int>(pick(state, active.id, 7, 7)) + 1;
+        for (int priority = 7; priority >= 8 - roll; --priority)
+        {
+            std::vector<std::string_view> spells;
+            for (const auto &command : offered)
             {
-                return command;
+                const auto spell =
+                    item_verb(command.verb) ? std::string_view{} : spell_of(active, command.verb);
+                const auto *known = spell.empty() ? nullptr : ai_spell(spell);
+                if (known && known->priority == priority &&
+                    !(concentrating && command.spell.concentration) &&
+                    makes_sense(command, *known) &&
+                    std::find(spells.begin(), spells.end(), spell) == spells.end())
+                {
+                    spells.push_back(spell);
+                }
             }
+            if (spells.empty())
+            {
+                continue;
+            }
+            const auto spell = spells[pick(state, active.id, 77, spells.size())];
+            const auto &known = *ai_spell(spell);
+            // The lowest slot it is offered at, then the creature: its target
+            // or the caster when one is offered, else one at random.
+            int lowest = 1000;
+            for (const auto &command : offered)
+            {
+                if (spell_of(active, command.verb) == spell && makes_sense(command, known))
+                {
+                    lowest = std::min(lowest, cast_rank(command.verb, spell));
+                }
+            }
+            std::vector<const Command *> casts;
+            for (const auto &command : offered)
+            {
+                if (spell_of(active, command.verb) == spell &&
+                    cast_rank(command.verb, spell) == lowest && makes_sense(command, known))
+                {
+                    if (command.target == (known.helpful ? active.id : active.last_target) &&
+                        (known.helpful || kept != in_view.end()))
+                    {
+                        return command;
+                    }
+                    casts.push_back(&command);
+                }
+            }
+            return *casts[pick(state, active.id, 777, casts.size())];
         }
     }
     // A downed enemy is still offered only when it may rise again (a troll's
@@ -1504,53 +1967,31 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
-    for (const auto verb : {"magic_missile",
-                            "magic_missile_2",
-                            "scorching_ray",
-                            "acid_arrow",
-                            "mind_spike",
-                            "inflict_wounds",
-                            "guiding_bolt",
-                            "dissonant_whispers",
-                            "eldritch_blast",
-                            "sorcerous_burst_fire",
-                            "flame_blade_strike",
-                            "hurl_flame",
-                            "heat_metal_again",
-                            "melee",
-                            "fire_bolt",
-                            "sacred_flame",
-                            "vicious_mockery",
-                            "starry_wisp",
-                            "ray_of_frost",
-                            "chill_touch",
-                            "shocking_grasp",
-                            "poison_spray",
-                            "ranged"})
+    // Attacks, the strongest kinds first. With no enemy beside it, a creature
+    // whose ranged weapon rates more than half its melee weapon shoots, held
+    // or drawn, as the original readied its bow (#266).
+    const bool enemy_beside = std::any_of(
+        in_view.begin(), in_view.end(),
+        [&](const auto *enemy)
+        {
+            return enemy->conscious && std::max(std::abs(enemy->cell.x - active.cell.x),
+                                                std::abs(enemy->cell.y - active.cell.y)) <= 1;
+        });
+    const bool shoots = !enemy_beside && active.ranged_rating * 2 > active.melee_rating;
+    std::vector<std::string_view> attacks{"eldritch_blast", "sorcerous_burst_fire",
+                                          "flame_blade_strike", "hurl_flame", "heat_metal_again"};
+    if (shoots)
     {
-        const Command *best = nullptr;
-        int hp = 100000; // Borrowed view into local offered commands.
-        for (const auto &command : offered)
+        attacks.insert(attacks.end(), {"ranged", "shoot"});
+    }
+    attacks.insert(attacks.end(),
+                   {"melee", "fire_bolt", "sacred_flame", "vicious_mockery", "starry_wisp",
+                    "ray_of_frost", "chill_touch", "shocking_grasp", "poison_spray", "ranged"});
+    for (const auto verb : attacks)
+    {
+        if (const auto *command = aim(verb))
         {
-            if (command.verb == verb)
-            {
-                const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                                   [&](const auto &a)
-                                                   {
-                                                       return a.id == command.target;
-                                                   });
-                // Some attack spells, such as Eldritch Blast, may target any
-                // creature; the policy attacks only the other side.
-                if (target.side != active.side && target.hit_points > 0 && target.hit_points < hp)
-                {
-                    best = &command;
-                    hp = target.hit_points;
-                }
-            }
-        }
-        if (best)
-        {
-            return *best;
+            return *command;
         }
     }
     // With the Action spent, a Bonus Action may still strike: Flurry of Blows,
@@ -1580,13 +2021,15 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // The nearest square with a clear line to an enemy, when none is in view here.
     const auto sees_enemy = [&](Cell from)
     {
-        return std::any_of(state.combatants.begin(), state.combatants.end(),
-                           [&](const auto &a)
+        return std::any_of(in_view.begin(), in_view.end(),
+                           [&](const auto *a)
                            {
-                               return a.side != active.side && a.hit_points > 0 &&
-                                      rules::has_line_of_sight(board, from, a.cell);
+                               return rules::has_line_of_sight(board, from, a->cell);
                            });
     };
+    // An unarmored Wizard or Sorcerer, or a monster magic-user, never closes
+    // in, as the original's magic-users did not: it casts from where it stands.
+    const bool stays_back = active.unarmored_arcane_caster && !active.panicked;
     const auto step_into_view = [&]() -> const Command *
     {
         if (sees_enemy(active.cell))
@@ -1610,10 +2053,11 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         }
         return step;
     };
-    // With nothing to attack yet, Aggressive covers more ground toward the enemy.
+    // With nothing to attack yet, Aggressive covers more ground toward an
+    // enemy in view.
     for (const auto &command : offered)
     {
-        if (command.verb == "aggressive")
+        if (command.verb == "aggressive" && !in_view.empty() && !stays_back)
         {
             return command;
         }
@@ -1630,7 +2074,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                id == "vicious_mockery" || id == "starry_wisp" ||
                                id == "produce_flame" || id == "sorcerous_burst";
                     });
-    if (casts_from_afar)
+    if (casts_from_afar && !stays_back)
     {
         if (const auto *step = step_into_view())
         {
@@ -1641,7 +2085,7 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     int closest = nearest(active.cell);
     for (const auto &command : offered)
     {
-        if (command.verb == "move" && nearest(command.destination) < closest)
+        if (!stays_back && command.verb == "move" && nearest(command.destination) < closest)
         {
             move = &command;
             closest = nearest(command.destination);
@@ -1652,32 +2096,14 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         return *move;
     }
     // Unable to get any closer, a character draws a carried bow or crossbow and
-    // shoots the weakest enemy in range.
-    const Command *shot = nullptr;
-    int weakest = 100000;
-    for (const auto &command : offered)
-    {
-        if (command.verb == "shoot")
-        {
-            const auto &target = *std::find_if(state.combatants.begin(), state.combatants.end(),
-                                               [&](const auto &a)
-                                               {
-                                                   return a.id == command.target;
-                                               });
-            if (target.hit_points > 0 && target.hit_points < weakest)
-            {
-                shot = &command;
-                weakest = target.hit_points;
-            }
-        }
-    }
-    if (shot)
+    // shoots.
+    if (const auto *shot = aim("shoot"))
     {
         return *shot;
     }
     // Seeing no enemy from here (behind a wall corner, say), a character steps to
     // the nearest square with a clear line to one, to shoot or cast from there.
-    if (const auto *step = step_into_view())
+    if (const auto *step = stays_back ? nullptr : step_into_view())
     {
         return *step;
     }
@@ -2059,7 +2485,7 @@ Command choose_quick_command(const CombatSession &session, bool magic)
     return choose_from(state, without_spells(state, session.legal_commands()));
 }
 
-Command choose_flee_command(const CombatSession &session)
+Command choose_flee_command(const CombatSession &session, bool magic)
 {
     const auto state = session.snapshot();
     const auto offered = session.legal_commands();
@@ -2077,7 +2503,7 @@ Command choose_flee_command(const CombatSession &session)
     if (active == state.combatants.end() || active->side != Side::party || !active->can_flee ||
         state.reaction_pending || end == offered.end())
     {
-        return choose_demo_command(session);
+        return choose_quick_command(session, magic);
     }
     if (const auto run = run_for_edge(state, offered, *active))
     {

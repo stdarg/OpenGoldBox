@@ -126,8 +126,8 @@ bool has_grant(const CampaignParty &party, MemberId id, std::string_view grant)
 
 // Plays a fight: the member uses the first offered class verb, then the demo
 // AI plays both sides to the end.
-std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::string> verbs,
-                                     std::uint64_t seed, const std::string &label)
+std::unique_ptr<CombatSession> fight_once(CampaignParty &party, std::span<const std::string> verbs,
+                                          std::uint64_t seed, const std::string &label)
 {
     auto combat = party.rule_module().create(encounter(party), seed);
     bool used = false;
@@ -138,7 +138,32 @@ std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::
         {
             break;
         }
-        const auto legal_commands = combat->legal_commands();
+        auto legal_commands = combat->legal_commands();
+        // The member fights in melee and keeps its slots for the class action
+        // under test: with a bow it would shoot from afar, as the computer
+        // readies one, and it would spend slots on other spells (#266).
+        std::vector<std::string> spells;
+        for (const auto &unit : now.combatants)
+        {
+            if (unit.id != 99)
+            {
+                spells.insert(spells.end(), unit.spells.begin(), unit.spells.end());
+            }
+        }
+        std::erase_if(legal_commands,
+                      [&](const auto &c)
+                      {
+                          const bool other_spell =
+                              std::find(verbs.begin(), verbs.end(), c.verb) == verbs.end() &&
+                              std::any_of(spells.begin(), spells.end(),
+                                          [&](const auto &spell)
+                                          {
+                                              return c.verb == spell ||
+                                                     c.verb.starts_with(spell + "_");
+                                          });
+                          return c.actor != 99 && (c.verb == "shoot" || c.verb == "ranged" ||
+                                                   c.verb == "doff_shield" || other_spell);
+                      });
         auto command = choose_demo_command(now, legal_commands);
         if (!used)
         {
@@ -163,9 +188,28 @@ std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::
         }
         check(combat->submit(command), label + ": the fight accepts a legal command");
     }
-    check(used || verbs.empty(), label + ": the class's own action is offered in the fight");
     check(combat->snapshot().outcome != Outcome::ongoing, label + ": the fight ends");
+    if (!used && !verbs.empty())
+    {
+        return nullptr;
+    }
     return combat;
+}
+
+// A fight in which the member's class action comes up: a fight the first blow
+// ends gives it no chance, so a few more seeds are tried.
+std::unique_ptr<CombatSession> fight(CampaignParty &party, std::span<const std::string> verbs,
+                                     std::uint64_t seed, const std::string &label)
+{
+    for (std::uint64_t attempt = 0; attempt < 5; ++attempt)
+    {
+        if (auto combat = fight_once(party, verbs, seed + 100 * attempt, label))
+        {
+            return combat;
+        }
+    }
+    check(false, label + ": the class's own action is offered in the fight");
+    return nullptr;
 }
 
 CampaignParty reloaded(const CampaignParty &party, std::string_view label)
