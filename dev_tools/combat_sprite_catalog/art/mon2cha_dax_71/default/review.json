@@ -1,16 +1,16 @@
 {
-  "action_sha256": "b2dd011aad371de245fba239a91498857fdd25a4c227e542381bd586276b223d",
+  "action_sha256": "9347e469a1e00ca92b67d5230205bdf485668470857a5a4252ba3c16ed14410f",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_71/default/action.png",
     "ready": "art/mon2cha_dax_71/default/ready.png"
   },
-  "metadata_sha256": "478957aa3e90b94c51cdc07563db60b336f1314bb659ffcda9b57f2675e3d66a",
-  "notes": "Both frames reviewed at 128 px and alternating in Godot catalog. Two-headed Ettin: both heads, feet, legs, torso and scale remain registered while right guarded fist extends into a punch. An alternate edit of raised fist was rejected as less legible; no gear recorded. User authorized natural in-place unarmed attack; weapon checklist interpreted as raised empty fist.",
+  "metadata_sha256": "33481fbf5202ef620cb65a012eb9aa2f4eff58893e791b3e37df152ed069c571",
+  "notes": "Game source 24x48 (1x2), no saved gear. New two-headed natural-attack design from approved pose guide and accepted narrow ogre scale; no original game art. Two wider first action drafts rejected for border clipping. Final action crosses one fist a short distance within original silhouette, feet and both heads fixed. Shared 846x1587 crop/scale. Native frames and live catalog grid ready/action reviewed; both fit.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b7305c5b11a1c3d712d16b9e048ff60b9568c417fc8d49543df22903c1084905",
-  "reviewed_at": "2026-10-19T03:04:14.050587+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "db3af72ba723b4b5d2f3dbb195b1153fa822662100cdf004a3aa070646250998",
+  "reviewed_at": "2026-10-21T01:20:40+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:71",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
 }
