@@ -1,15 +1,15 @@
 {
-  "action_sha256": "d8a71918e83de1cceb29bb2ad9e3d3ac9d13bdad4ce12ef2cd25a41533989e32",
+  "action_sha256": "ef93d32e4d4f7b6d7186ef3a043431ffe1bdee0d6062cdfd81fe036e6db2c38d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_15/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_15/item_000__one_hand/ready.png"
   },
-  "metadata_sha256": "c6b5323d89700fa605cd05c51d52ad8df894145f4cd6186c94afeb47bebd65cb",
-  "notes": "Flail +1: several shifted-body and stretched-chain action attempts rejected. Final pair jointly refined from one registered body; small chain/ball swing with planted boots fixed. Both frames checked at 128 px and alternating in this exact catalog source record.",
+  "metadata_sha256": "994cfd5bafe54f1a3eb488f03580126a84072d14f5a82806ee8d79ca53490a44",
+  "notes": "Several action attempts rejected for whole-body shift. Final late-strike action became registration base; final ready was regenerated from it with boots and torso fixed. Both poses reviewed at 128px and catalog zoom; flail grip and chain clear, 1x1 fit, body larger than ordinary Orc.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "15ad030affc905015e3d4b4acf8e9c9a55b9dc263663c0223a8175d371fb5898",
-  "reviewed_at": "2026-10-19T02:13:02.687477+00:00",
+  "ready_sha256": "9396c6c3004b0a2e5c27bece650ffd1677893aa214d32f686de86447440d339d",
+  "reviewed_at": "2026-10-21T02:53:07.512670+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:15",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }

@@ -4,6 +4,9 @@ Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
+The saved sprite_size comes from the game's decoded combat-art dimensions,
+measured in 24-pixel source tiles; never replace it with an SRD creature-space
+category. Do not use original game artwork as a generation reference.
 
 FACING: Front three-quarter view toward the RIGHT EDGE OF THE IMAGE (screen
 right), approximately 45 degrees between frontal and right-side profile. The
@@ -36,6 +39,35 @@ Do not add a shield to a two-handed or ranged setup. Preserve the character's
 identity, clothing, colors, handedness and equipment across the pair and all its
 weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
 not permission to invent a different setup.
+
+HUMANOID HEIGHT: The catalog's humanoid_size is a visual body-height tier, separate
+from sprite_size (combat squares) and from the SRD creature-type tag. "small"
+humanoids, such as goblins and kobolds, must read shorter than "normal"
+human-scale figures; "tall" figures, such as ogres and hill giants, must read
+taller than normal figures. "na" means this humanoid-height comparison does
+not apply to the body plan. Compare with correctly scaled art from the same
+species and tier before choosing a body scale. Measure the figure from planted feet to
+the top of its head, excluding weapons, horns, raised arms and effects. Keep
+that body height consistent across both poses and every weapon set for this
+creature; do not fill the 128 x 128 canvas independently for each sprite. Use
+only a correctly scaled comparison sprite as a reference: an older accepted
+image is not a height authority if it breaks the Small < Normal < Tall order.
+On the catalog's stationary 3 x 3 combat-square guide, aim for a foot-to-head
+height of about 0.6 square for Small, 0.9 square for Normal, and 1.7 squares for
+Tall. These are body measurements, not canvas sizes. The complete silhouette,
+including the weapon, must fit the saved sprite_size footprint. The grid never
+moves between monsters or animation frames. If a pose or weapon overflows, redesign
+the pair at a common scale; never fit ready and action separately or quietly
+shrink only the action frame.
+
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. In both
+poses and every weapon set, the leader must be modestly taller and broader from
+planted feet to head, excluding weapons, helmets, horns and raised arms. Rank
+ornament alone does not satisfy this rule. Keep its saved humanoid height tier
+and game-derived sprite_size unchanged. If the regular art leaves no room for a
+larger leader in that footprint, correct the regular art scale; never overflow
+the tile guide or independently shrink one animation frame.
 
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
@@ -88,6 +120,7 @@ action must read clearly at normal combat size, not only in a magnified preview.
 MONSTER AND SELECTED SET (current catalog JSON):
 {
   "description": "An orc commander whose bearing and equipment distinguish this template from common orcs. Source inventory: Flail +1, Chain armor +1, Arrows, Long bow. Source wealth: 4 sp, 20 ep.",
+  "humanoid_size": "normal",
   "name": "ORC LEADER",
   "other_gear": [
     {
@@ -115,6 +148,10 @@ MONSTER AND SELECTED SET (current catalog JSON):
   ],
   "selected_set": "Flail +1",
   "source_key": "MON2CHA.DAX:15",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
   "weapon_role": "one_hand"
 }
 
@@ -130,3 +167,5 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
+
+FINAL PAIR NOTE: The first action attempts shifted the body. The accepted action was regenerated with the ball low and the planted base near the left of the working canvas; the final ready was then edited from that accepted action with its boots, legs, torso and head fixed, lifting only flail arm and chain into guard.
