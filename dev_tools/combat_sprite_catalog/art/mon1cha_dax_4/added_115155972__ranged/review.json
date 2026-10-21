@@ -1,15 +1,15 @@
 {
-  "action_sha256": "949f8b55f9daa7633789eeb31cffbea78d3f503dd432f490e1de914ae04a52b1",
+  "action_sha256": "864f7eedd8893f6f5cace7b134390fff0671b9563313483bc31c223dbcf2f125",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_4/added_115155972__ranged/action.png",
     "ready": "art/mon1cha_dax_4/added_115155972__ranged/ready.png"
   },
   "metadata_sha256": "648ff4dcb6a75cb0734ba58a1fc5c7ae1354209975b6addc099d06e56054792d",
-  "notes": "Regenerated regular leather orc with short bow, same body height as sword set and shorter than leader. Rejected first action for foot drift. Both poses fit 1x1 catalog.",
+  "notes": "New independently generated Orc bow pair made using approved pose guide and matching independently generated Orc set for identity. Shared 0.10 source scale across both sets and poses. Inspected exact exports and one-second catalog animation; ready silhouette fits 1x1 grid, feet fixed across poses and sets, body visibly taller than Small goblins. Action weapon may cross guide, but does not need to.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "51623a97f77ebbbb3bf3623a116c4d1d465f73b40d843dad46ea9d9be0efc2ef",
-  "reviewed_at": "2026-10-21T02:36:23.003262+00:00",
+  "ready_sha256": "931cf55962f0cc3bacc6e0e97df9c07d49c337283e23ce1cfc0c3a9b95c08896",
+  "reviewed_at": "2026-10-21T21:55:30.755495+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:4",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }
