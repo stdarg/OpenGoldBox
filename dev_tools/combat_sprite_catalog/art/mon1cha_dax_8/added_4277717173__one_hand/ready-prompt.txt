@@ -60,6 +60,15 @@ moves between monsters or animation frames. If a pose or weapon overflows, redes
 the pair at a common scale; never fit ready and action separately or quietly
 shrink only the action frame.
 
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. In both
+poses and every weapon set, the leader must be modestly taller and broader from
+planted feet to head, excluding weapons, helmets, horns and raised arms. Rank
+ornament alone does not satisfy this rule. Keep its saved humanoid height tier
+and game-derived sprite_size unchanged. If the regular art leaves no room for a
+larger leader in that footprint, correct the regular art scale; never overflow
+the tile guide or independently shrink one animation frame.
+
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
 readied. Each set needs its own ready.png AND action.png. A one-handed weapon
@@ -147,10 +156,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-FINAL SOURCE-SIZE CORRECTION: MON1CHA.DAX:8 decodes to 24 x 48 game pixels,
-so the replacement must fit a 1 x 2 combat-square column. Use the approved
-screen-right bipedal guide, but give this ogre a naturally upright compact
-stance: both feet shoulder-width, broad torso in depth, free arm tucked, and a
-short club raised near the head. Keep the planted foot x/y positions for action.
-The final ready and action exports share one source crop and one scale transform.
