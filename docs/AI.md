@@ -78,10 +78,12 @@ Turn Undead, a spell, choosing a weapon, then moving and attacking.
 
 A creature goes for the enemies **it can see**. It walks, around walls, toward
 its target while that target stands in view, otherwise toward the nearest enemy
-in view. One that sees no enemy **holds its ground** until one comes into view.
-When no creature on either side can see an enemy, holding would stall the fight
-for good, so then the computer advances on them all, as the original always
-did.
+in view. One that sees no enemy **holds its ground** until one comes into view,
+even when no one on the field sees anyone (the user, 2026-10-21): then a fight
+the computer plays alone waits for the player to take control. Automated runs,
+with no player to break a standoff, go looking: the tests and the campaign
+simulator play the party as a stand-in for the player that searches for the
+enemy, and the game's own checks have every creature search.
 
 The walk counts every step as one, so it neither avoids Difficult Terrain nor
 Opportunity Attacks, and it never Disengages (#269). Exceptions:
@@ -90,8 +92,6 @@ Opportunity Attacks, and it never Disengages (#269). Exceptions:
   as the original's magic-users did not: it casts or shoots from where it
   stands, and fights only an enemy that comes to it.
 - An orc's Aggressive moves it toward an enemy in view.
-- When no one on the field sees anyone, a creature that knows a ranged cantrip
-  steps to the nearest square with a line of sight to an enemy.
 - Commanded, frightened, turned, incapacitated or lost creatures make the
   moves the rules force on them; the policy sees only that command.
 - A panicked monster runs for an edge nearer to it than to the party; a
@@ -105,8 +105,7 @@ walls too, and walked toward it. A pure magic-user without armor stood guard
 instead of advancing. Attacks of opportunity were ignored.
 
 **Departures.** Our walk finds a way around walls; a creature that sees no
-enemy waits instead of walking toward one it cannot see, unless no one on the
-field can see anyone.
+enemy waits instead of walking toward one it cannot see.
 
 ## 2. Target choice
 
@@ -240,8 +239,7 @@ hidden enemy's position, or anything the game does not show.
 
 - **Hidden enemies** (HIDE-1) are removed from what the policy sees; with none
   in sight it Searches.
-- **Sight:** it goes only for enemies it can see, save when no one on the field
-  sees anyone.
+- **Sight:** it goes only for enemies it can see.
 - **Hit Points and AC** are shown to the player, so the policy may read them;
   it no longer uses them to choose a target.
 - **Dice:** the policy reads none, and rolls no hidden save to judge an area; a

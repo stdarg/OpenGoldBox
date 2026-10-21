@@ -1164,7 +1164,8 @@ void finish(CombatDemo &fight)
 {
     for (unsigned n = 0; n < 2000 && fight.combat().snapshot().outcome == Outcome::ongoing; ++n)
     {
-        check(fight.submit(choose_demo_command(fight.combat())), "Accepted combat command");
+        check(fight.submit(choose_demo_command(fight.combat(), Searching::party)),
+              "Accepted combat command");
     }
     check(fight.combat().snapshot().outcome != Outcome::ongoing, "Fight terminates");
 }

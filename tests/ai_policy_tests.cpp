@@ -101,11 +101,14 @@ void sight_checks()
                                divided());
     check(choose_demo_command(watched, offered).verb == "end",
           "A creature that sees no enemy holds its ground");
-    // With no one on the field seeing anyone, it advances rather than stall.
+    // Even when no one on the field sees anyone; a stand-in for the player in
+    // an automated run goes looking.
     const auto blind =
         field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {8, 1})}, divided());
-    check(choose_demo_command(blind, offered).verb == "move",
-          "When no one sees anyone, it advances around the wall");
+    check(choose_demo_command(blind, offered).verb == "end",
+          "When no one sees anyone, it still holds its ground");
+    check(choose_demo_command(blind, offered, Searching::party).verb == "move",
+          "A stand-in for the player walks around the wall to find the enemy");
 }
 
 void stay_back_checks()

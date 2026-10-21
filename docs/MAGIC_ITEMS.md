@@ -363,7 +363,7 @@ records the decisions.
   - Reading or copying a spell erases it from the original record; the scroll
     goes with its last spell. A Wizard's copied spells are kept with the hall
     training (`boon:scroll:<spell>`), so a save rebuilds the spellbook.
-  - Magic Ink is sold by the general store, 50 gp a bottle; copying takes a
+  - Magic Ink is sold by the general store, 1000 gp a bottle; copying takes a
     bottle and two hours of game time for each spell level.
   - Shield, a reaction, can be copied from a scroll but not read from one: a
     reaction offers only a member's own spells.

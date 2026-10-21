@@ -892,8 +892,10 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
 // The demonstration AI's choice from what it reads of a fight: its state and
 // the commands open to it. It submits nothing, so it takes no session
 // (Effective C++ Item 32).
-Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered);
-Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered);
+Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered,
+                    Searching searching);
+Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered,
+                        Searching searching);
 std::optional<Command> choose_item(const rules::Snapshot &state, const CombatantView &active,
                                    const std::vector<Command> &offered);
 
@@ -1107,21 +1109,23 @@ bool shows_spell(const CombatantView &unit, std::string_view label)
 }
 } // namespace
 
-Command choose_demo_command(const CombatSession &session)
+Command choose_demo_command(const CombatSession &session, Searching searching)
 {
-    return choose_from(session.snapshot(), session.legal_commands());
+    return choose_from(session.snapshot(), session.legal_commands(), searching);
 }
 
-Command choose_demo_command(const rules::Snapshot &state, const std::vector<Command> &offered)
+Command choose_demo_command(const rules::Snapshot &state, const std::vector<Command> &offered,
+                            Searching searching)
 {
-    return choose_from(state, offered);
+    return choose_from(state, offered, searching);
 }
 
 namespace
 {
 // The AI does not know where a hidden enemy is (HIDE-1): it chooses as if the
 // enemy were absent, and with no other enemy left it takes the Search action.
-Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered)
+Command choose_from(const rules::Snapshot &state, const std::vector<Command> &offered,
+                    Searching searching)
 {
     const auto active = std::find_if(state.combatants.begin(), state.combatants.end(),
                                      [&](const auto &a)
@@ -1143,7 +1147,7 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
                          return hidden_enemy(a.id);
                      }))
     {
-        return choose_in_sight(state, offered);
+        return choose_in_sight(state, offered, searching);
     }
     auto seen = state;
     std::erase_if(seen.combatants,
@@ -1172,10 +1176,11 @@ Command choose_from(const rules::Snapshot &state, const std::vector<Command> &of
             }
         }
     }
-    return choose_in_sight(seen, open);
+    return choose_in_sight(seen, open, searching);
 }
 
-Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered)
+Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command> &offered,
+                        Searching searching)
 {
     if (offered.empty())
     {
@@ -1233,22 +1238,12 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             in_view.push_back(&enemy);
         }
     }
-    // When no one on either side can see an enemy, holding would stall the
-    // fight for good, so it advances on them all, as the original did.
-    const bool anyone_sees = std::any_of(
-        state.combatants.begin(), state.combatants.end(),
-        [&](const auto &viewer)
-        {
-            return viewer.conscious &&
-                   std::any_of(state.combatants.begin(), state.combatants.end(),
-                               [&](const auto &seen)
-                               {
-                                   return seen.side != viewer.side && !seen.dead &&
-                                          seen.hit_points > 0 &&
-                                          rules::has_line_of_sight(board, viewer.cell, seen.cell);
-                               });
-        });
-    if (!anyone_sees)
+    // A stand-in for the player, or in a check every creature, goes looking
+    // for the enemies it cannot see, magic-users too.
+    const bool seeking =
+        in_view.empty() && (searching == Searching::everyone ||
+                            (searching == Searching::party && active.side == Side::party));
+    if (seeking)
     {
         for (const auto &enemy : state.combatants)
         {
@@ -2018,41 +2013,9 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             }
         }
     }
-    // The nearest square with a clear line to an enemy, when none is in view here.
-    const auto sees_enemy = [&](Cell from)
-    {
-        return std::any_of(in_view.begin(), in_view.end(),
-                           [&](const auto *a)
-                           {
-                               return rules::has_line_of_sight(board, from, a->cell);
-                           });
-    };
     // An unarmored Wizard or Sorcerer, or a monster magic-user, never closes
     // in, as the original's magic-users did not: it casts from where it stands.
-    const bool stays_back = active.unarmored_arcane_caster && !active.panicked;
-    const auto step_into_view = [&]() -> const Command *
-    {
-        if (sees_enemy(active.cell))
-        {
-            return nullptr;
-        }
-        const Command *step = nullptr;
-        int shortest = 1000;
-        for (const auto &command : offered)
-        {
-            if (command.verb == "move" && sees_enemy(command.destination))
-            {
-                const int steps = std::max(std::abs(command.destination.x - active.cell.x),
-                                           std::abs(command.destination.y - active.cell.y));
-                if (steps < shortest)
-                {
-                    step = &command;
-                    shortest = steps;
-                }
-            }
-        }
-        return step;
-    };
+    const bool stays_back = active.unarmored_arcane_caster && !active.panicked && !seeking;
     // With nothing to attack yet, Aggressive covers more ground toward an
     // enemy in view.
     for (const auto &command : offered)
@@ -2060,25 +2023,6 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
         if (command.verb == "aggressive" && !in_view.empty() && !stays_back)
         {
             return command;
-        }
-    }
-    // A character with a ranged attack cantrip that sees no enemy steps into
-    // view to cast from there rather than walking up to the enemy.
-    const auto &cantrips = active.known_cantrips;
-    const bool casts_from_afar =
-        std::any_of(cantrips.begin(), cantrips.end(),
-                    [](const auto &id)
-                    {
-                        return id == "fire_bolt" || id == "eldritch_blast" ||
-                               id == "ray_of_frost" || id == "sacred_flame" ||
-                               id == "vicious_mockery" || id == "starry_wisp" ||
-                               id == "produce_flame" || id == "sorcerous_burst";
-                    });
-    if (casts_from_afar && !stays_back)
-    {
-        if (const auto *step = step_into_view())
-        {
-            return *step;
         }
     }
     const Command *move = nullptr;
@@ -2100,12 +2044,6 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     if (const auto *shot = aim("shoot"))
     {
         return *shot;
-    }
-    // Seeing no enemy from here (behind a wall corner, say), a character steps to
-    // the nearest square with a clear line to one, to shoot or cast from there.
-    if (const auto *step = stays_back ? nullptr : step_into_view())
-    {
-        return *step;
     }
     // Stuck with no enemy it can strike in melee (and so none that can strike
     // it), a shield-bearer carrying a bow takes its shield off to shoot.
@@ -2475,17 +2413,17 @@ std::vector<Command> without_spells(const rules::Snapshot &state, std::vector<Co
 }
 } // namespace
 
-Command choose_quick_command(const CombatSession &session, bool magic)
+Command choose_quick_command(const CombatSession &session, bool magic, Searching searching)
 {
     if (magic)
     {
-        return choose_demo_command(session);
+        return choose_demo_command(session, searching);
     }
     const auto state = session.snapshot();
-    return choose_from(state, without_spells(state, session.legal_commands()));
+    return choose_from(state, without_spells(state, session.legal_commands()), searching);
 }
 
-Command choose_flee_command(const CombatSession &session, bool magic)
+Command choose_flee_command(const CombatSession &session, bool magic, Searching searching)
 {
     const auto state = session.snapshot();
     const auto offered = session.legal_commands();
@@ -2503,7 +2441,7 @@ Command choose_flee_command(const CombatSession &session, bool magic)
     if (active == state.combatants.end() || active->side != Side::party || !active->can_flee ||
         state.reaction_pending || end == offered.end())
     {
-        return choose_quick_command(session, magic);
+        return choose_quick_command(session, magic, searching);
     }
     if (const auto run = run_for_edge(state, offered, *active))
     {

@@ -67,7 +67,7 @@ Add an entry whenever a new departure is decided.
   from the inventory or the Items menu. Druids and Rangers read cleric
   scrolls. The original's magic-user and cleric spells SRD 5.2.1 lacks are
   Wizard and Cleric spells as stand-ins. Copying a spell into a Wizard's spellbook, free in the original,
-  takes two hours and a 50 gp bottle of Magic Ink, a new item, for each spell
+  takes two hours and a 1000 gp bottle of Magic Ink, a new item, for each spell
   level. Read Magic reveals all the caster's scrolls at once instead of each
   scroll opened while it lasts.
   [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls).
@@ -79,12 +79,12 @@ Add an entry whenever a new departure is decided.
 - **Computer play** (2026-10-21). The original's AI walked toward an enemy it
   could not see, rolled each ally's saving throw to judge an area spell (so
   monsters cast nearly regardless), and drew three random spells at each
-  priority. OpenGoldBox's computer waits until it sees an enemy (unless no one
-  on the field sees anyone), keeps every caster's allies out of its areas
-  without a hidden roll, picks one spell at random among those that make
-  sense, treats cantrips as attacks, never casts a helpful spell twice on one
-  creature, counts a weapon's melee attacks a turn in its rating, and makes its
-  random choices from the fight's state so a fight replays the same.
+  priority. OpenGoldBox's computer waits until it sees an enemy, keeps every
+  caster's allies out of its areas without a hidden roll, picks one spell at
+  random among those that make sense, treats cantrips as attacks, never casts a
+  helpful spell twice on one creature, counts a weapon's melee attacks a turn
+  in its rating, and makes its random choices from the fight's state so a fight
+  replays the same.
   [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
   [AI.md](AI.md).
 

@@ -1407,10 +1407,10 @@ The user chose how the original's scrolls
   inventory's Use opens the Cast menu with the scroll's spells that work
   outside combat.
 - **Copying**: a Wizard copies an arcane scroll's spell of a level it can
-  prepare into its spellbook, beyond the book's usual choices, as the SRD has
-  it: 50 gp and two hours for each spell level. The gold is **Magic Ink**, a
-  new item (the user, 2026-10-20); the general store sells it at 50 gp a
-  bottle, one bottle for each spell level. Copying erases the spell from the
+  prepare into its spellbook, beyond the book's usual choices: 1000 gp and two
+  hours for each spell level (the user, 2026-10-21; the SRD asks 50 gp). The
+  gold is **Magic Ink**, a new item (the user, 2026-10-20); the general store
+  sells it at 1000 gp a bottle, one bottle for each spell level. Copying erases the spell from the
   scroll, as in the original.
 - **Use Magic Device** (Thief 13), as the SRD's: the Thief reads any scroll,
   with Intelligence as its spellcasting ability. A spell above level 1 needs an
@@ -1433,8 +1433,8 @@ following the original Gold Box engine (read from coab; no code copied):
 - **Targets**: a creature keeps attacking its target while it can reach it,
   otherwise an enemy at random, not the weakest.
 - **Sight**: a creature that sees no enemy holds its ground until one comes
-  into view. When no creature on either side sees an enemy, it advances as the
-  original did, so a fight never stalls.
+  into view, even when no one on the field sees anyone (the user,
+  2026-10-21); a fight the computer plays alone then waits for the player.
 - **Magic-users stay back**: an unarmored Wizard or Sorcerer, or a monster
   magic-user, never closes in.
 - **Spells by priority**: the original's 1d7 roll over each spell's priority

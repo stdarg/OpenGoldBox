@@ -812,7 +812,8 @@ bool arena_fight(const PartyPlan &plan, const std::vector<Character> &members,
         {
             break;
         }
-        if (!combat.submit(choose_demo_command(state, combat.combat().legal_commands())))
+        if (!combat.submit(
+                choose_demo_command(state, combat.combat().legal_commands(), Searching::party)))
         {
             throw std::runtime_error("Combat refused the demo command");
         }
@@ -934,7 +935,8 @@ RunResult play(const PartyPlan &plan, const std::vector<Character> &members, con
                 {
                     break;
                 }
-                const auto command = choose_demo_command(state, combat.combat().legal_commands());
+                const auto command =
+                    choose_demo_command(state, combat.combat().legal_commands(), Searching::party);
                 if (command.actor < 1000 && command.verb != "move" && command.verb != "end" &&
                     command.verb != "area_move")
                 {
