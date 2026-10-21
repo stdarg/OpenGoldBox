@@ -1,15 +1,15 @@
 {
-  "action_sha256": "2a1a842e9161c2d2e996832cb5645c784209975d7e166238ef38b7d7cf12700a",
+  "action_sha256": "cd7337d763e3e2c5ea314c7e8bbc08054342aa3b6ba213bfd14f2acfd036b369",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_6/added_4182722453__ranged/action.png",
     "ready": "art/mon1cha_dax_6/added_4182722453__ranged/ready.png"
   },
   "metadata_sha256": "9ef101013098017989037b64ecfa563e18614814e6b3426c43f0009f5fc8462e",
-  "notes": "Fresh regenerated MON1 hobgoblin pair. Ready/action visually checked at 128px and catalog zoom; both fit fixed 1x1 and preserve planted base. Leader body is modestly taller and broader than ordinary counterpart in every set. Early shifted action attempts rejected.",
+  "notes": "New independent MON1 Hobgoblin bow pair using approved guide and the new Hobgoblin identity reference; no original game art used. Shared 0.095 source scale across both weapon sets. Exact pair inspected at combat size and alternating in catalog; ready fits 1x1, body remains inside, action sword alone crosses 0.11 square. Both planted feet stay at same x/y across frames; sword raised in ready, near-end thrust in action; bow loaded then released.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "890de0a5b6bb46b6a7f8be5b539358cc02f357957c55aeb6992b364d95aa36e5",
-  "reviewed_at": "2026-10-21T03:04:13.534424+00:00",
+  "ready_sha256": "093794da8a16155743a3976edf4f55107984656784bb01bc7f2e9215da48b213",
+  "reviewed_at": "2026-10-21T22:09:37.857408+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON1CHA.DAX:6",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }
