@@ -1,0 +1,32 @@
+{
+  "action_sha256": "b88aa2c7ed4401a006e45b8072896032bf1dad36e072d2e469324f62c46a3b6a",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_2/item_000__item_001/action.png",
+    "ready": "art/mon2cha_dax_2/item_000__item_001/ready.png"
+  },
+  "metadata_sha256": "59b97cbb23ebb95601f76f3a4d9025200ddc3a9445705dc85a968407b01ad3fe",
+  "notes": "Generated with approved bipedal guide and newly created goblin art only. Reviewed both 128px frames and catalog poses: 1x1 fits, fixed planted feet and common transform within each pair. Regular guard has studded armor; leader has scale armor and is larger than guard. Bow ready has loaded arrow; action has just released it.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "45c68a84ecc01fec6a7451143f3ff9de41d81b616f380f6c14be1cc1ce069d3b",
+  "reviewed_at": "2026-10-21T03:36:52.091196+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:2",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__item_001",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+}
