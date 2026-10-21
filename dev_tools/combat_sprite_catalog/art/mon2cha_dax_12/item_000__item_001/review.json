@@ -1,16 +1,16 @@
 {
-  "action_sha256": "355c22550da3428404eec8c31e149435fc23c76542918bfd71382fe071ad20fa",
+  "action_sha256": "4989031e78088ae3ae95eb78ff68b89385699dd071ad7b04d3cd12b2d0c4c97f",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_12/item_000__item_001/action.png",
     "ready": "art/mon2cha_dax_12/item_000__item_001/ready.png"
   },
-  "metadata_sha256": "eeacd4589179be6efbd15d92c868f7b13d01a9305846c6bda51c0ee8427a9592",
-  "notes": "Both frames reviewed at 128 px and alternating in Godot catalog. Leather armor and shield match saved gear; both feet, hips, scale and facing remain fixed while short sword arm makes a late slash. Approved new Goblin Leader art used only for identity reference.",
+  "metadata_sha256": "80e24cface6ed2191d95593929fa51d41203b74d2f49371ec65af200dc4caa15",
+  "notes": "Compared with MON2CHA.DAX:2 ordinary Goblin Guard at fixed catalog zoom. Leather-armored leader body is modestly taller/broader while complete silhouette fits 1x1. Short sword up in ready and near end of slash in action; shield remains. Exact pair visually inspected side by side and in both catalog states, planted boots and hips register. Approved replacement art and pose guide only; no original-game art generation reference.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "80e566edefe2a91103c895beb6590c612ac929fbd8a45ed358fdb053e5e9e92d",
-  "reviewed_at": "2026-10-19T02:29:03.225508+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "e3c2d63dc5e0c0f9f984e889ea24d21a4d8761fd099d6eb695c436205f9bcf4f",
+  "reviewed_at": "2026-10-21T02:21:33+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:12",
   "specification": "bipedal-v1",
   "variant_id": "item_000__item_001",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }
