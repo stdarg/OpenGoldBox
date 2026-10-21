@@ -1,16 +1,16 @@
 {
-  "action_sha256": "5cae813cc38100d0f1bf71a413a93466603c1eb406c14387e533a501f12f8dbb",
+  "action_sha256": "fb6101a3cb6a37e3981654405597bcb4d0a8c77fc6b66f066c8f04edcbc2d0fe",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon4cha_dax_8/default/action.png",
     "ready": "art/mon4cha_dax_8/default/ready.png"
   },
   "metadata_sha256": "baceb3cb8017394947eea5b5ac1614ccaed2519ea998d99fef635a9dfedcdfcf",
-  "notes": "Decoded game ready/action are 24x48 (1x2). New independent gray-olive ogre identity based only on approved pose guide and accepted new 1x2 ogre scale reference. Shared 780x1409 crop and transform; planted feet and body stay fixed while one fist punches. Reviewed both native frames, enlarged pair and live catalog grid ready/action; both fit.",
+  "notes": "Height-corrected technical re-export of independently generated Ogre art. Ready and late unarmed punch inspected at 128px side by side and in fixed 3x3 catalog after one-second alternation; both fit saved 1x2 footprint, tall body about 1.7 squares. Planted feet stay at the same x/y positions.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "75be1bdc836e09617801cb2d12ab29b9268f0ef41f5b17b6d4a7ee55d178a593",
-  "reviewed_at": "2026-10-21T01:00:35+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "672edec51e54c74c0bea3c334e75f21000ab956c4b8477ce793adb0e0b8d6692",
+  "reviewed_at": "2026-10-21T22:41:32+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON4CHA.DAX:8",
   "specification": "bipedal-v1",
   "variant_id": "default",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
+  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
 }
