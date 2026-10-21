@@ -96,5 +96,29 @@ inline constexpr std::string_view scroll_prefix = "scroll:";
     }
     return key;
 }
+
+// Magic Ink (MAGIC-6) writes or copies a spell of its level or lower. Level 1
+// keeps the key saves already hold, "magic_ink"; level 3 is "magic_ink:3".
+inline constexpr std::string_view magic_ink = "magic_ink";
+
+[[nodiscard]] inline std::optional<unsigned> magic_ink_level(std::string_view key)
+{
+    if (key == magic_ink)
+    {
+        return 1;
+    }
+    if (key.size() != magic_ink.size() + 2 || !key.starts_with(magic_ink) ||
+        key[magic_ink.size()] != ':' || key.back() < '2' || key.back() > '9')
+    {
+        return std::nullopt;
+    }
+    return static_cast<unsigned>(key.back() - '0');
+}
+
+[[nodiscard]] inline std::string magic_ink_key(unsigned level)
+{
+    return level == 1 ? std::string(magic_ink)
+                      : std::string(magic_ink) + ":" + std::to_string(level);
+}
 } // namespace opengold::rules
 #endif

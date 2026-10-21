@@ -355,13 +355,31 @@ bool RolfTourView::refresh_rest_use(const std::vector<opengold::MemberRestInfo> 
     const auto previous_action = keep(*action), previous_target = keep(*target);
     action->clear();
     target->clear();
-    const auto actions = spending || !rest_member_ ? std::vector<opengold::rules::CampAction>{}
-                                                   : campaign_->camp_actions(rest_member_);
+    auto actions = spending || !rest_member_ ? std::vector<opengold::rules::CampAction>{}
+                                             : campaign_->camp_actions(rest_member_);
+    std::vector<String> labels;
     for (const auto &offered : actions)
     {
+        labels.push_back(rest_text(offered.label.source));
+    }
+    // Writing a scroll (MAGIC-6) is offered in camp, not from the Cast menu.
+    if (!spending && rest_member_)
+    {
+        for (const auto &writing : campaign_->writable_spells(rest_member_))
+        {
+            actions.push_back({"write:" + writing.spell, {}, true});
+            labels.push_back(i18n::format(
+                N_("Write a scroll of {spell} (Magic Ink of level {level} or higher, {hours} hours)"),
+                {{"spell", i18n::text(opengold::srd5::spell_label(writing.spell))},
+                 {"level", static_cast<int>(writing.level)},
+                 {"hours", static_cast<int>(2 * writing.level)}}));
+        }
+    }
+    for (std::size_t n = 0; n < actions.size(); ++n)
+    {
         const int index = action->get_item_count();
-        action->add_item(rest_text(offered.label.source));
-        action->set_item_metadata(index, String::utf8(offered.id.c_str()));
+        action->add_item(labels[n]);
+        action->set_item_metadata(index, String::utf8(actions[n].id.c_str()));
         if (action->get_item_metadata(index) == previous_action)
         {
             action->select(index);
@@ -480,6 +498,18 @@ void RolfTourView::rest_use()
             return;
         }
         const String id = action->get_selected_metadata();
+        if (id.begins_with("write:"))
+        {
+            const auto spell = std::string(id.substr(6).utf8().get_data());
+            campaign_->write_scroll(rest_member_, spell);
+            rest_result_ = i18n::format(
+                N_("{name} writes a scroll of {spell}."),
+                {{"name",
+                  String::utf8(campaign_->member(rest_member_).character.sheet().name.c_str())},
+                 {"spell", i18n::text(opengold::srd5::spell_label(spell))}});
+            refresh_rest();
+            return;
+        }
         const auto patient =
             static_cast<unsigned>(static_cast<int64_t>(target->get_selected_metadata()));
         const auto result = use_outside_combat(
@@ -1024,9 +1054,44 @@ void RolfTourView::check_rest_controls()
             check(patient_class == "cleric" || patient_class == "paladin" ||
                       !presentation::required_node<Button>(*w, "Use").is_visible(),
                   "A member with nothing to use has no Cast / Use row");
+
+            // Writing a scroll: offered once the Cleric carries Magic Ink.
+            auto inked = campaign_->checkpoint();
+            for (auto &m : inked.roster)
+            {
+                if (m.id == id)
+                {
+                    (void)m.character.add_item(
+                        {.definition_id = "magic_ink", .name = "Bottle of Magic Ink"});
+                }
+            }
+            campaign_->restore(std::move(inked));
+            rest_member_ = id;
+            refresh_rest();
+            int writing = -1;
+            for (int n = 0; n < action->get_item_count(); ++n)
+            {
+                writing =
+                    action->get_item_metadata(n) == Variant("write:cure_wounds") ? n : writing;
+            }
+            check(writing >= 0, "The Cast / Use row offers a scroll of Cure Wounds");
+            action->select(writing);
+            action->emit_signal("item_selected", writing);
+            check(!target->is_visible(), "Writing a scroll chooses no member");
+            presentation::required_node<Button>(*w, "Use").emit_signal("pressed");
+            const auto items = campaign_->member(id).character.inventory().items();
+            check(std::any_of(items.begin(), items.end(),
+                              [](const auto &item)
+                              {
+                                  return item.definition_id == "scroll:divine:cure_wounds";
+                              }) &&
+                      presentation::required_node<Label>(*w, "Result")
+                          .get_text()
+                          .contains(rest_text(N_("Cure Wounds"))),
+                  "Use writes the scroll and reports it");
             w->hide();
             UtilityFunctions::print(
-                "Godot rest controls passed: existing recovery, Arcane Recovery, Wizard preparation/replacement, sequential Wizards, Cleric preparation, Cast / Use, keyboard, limits and save continuation.");
+                "Godot rest controls passed: existing recovery, Arcane Recovery, Wizard preparation/replacement, sequential Wizards, Cleric preparation, Cast / Use, scroll writing, keyboard, limits and save continuation.");
             get_tree()->quit();
         }
         if (rest_check_stage_ == 10 || rest_check_stage_ == 22 || rest_check_stage_ == 34 ||

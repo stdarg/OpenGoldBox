@@ -200,9 +200,9 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
 
     // The general store, which sells the original's oil, also stocks the SRD
     // gear OpenGoldBox adds: torches (sold by ten, as prices are whole gold),
-    // Acid and Alchemist's Fire at their SRD prices, and Magic Ink, 1000 gp a
-    // bottle, the user's cost of copying a spell level into a spellbook
-    // (MAGIC-6).
+    // Acid and Alchemist's Fire at their SRD prices, and Magic Ink of level 1,
+    // 1000 gp a bottle, the user's cost of writing or copying a spell level
+    // (MAGIC-6). Higher levels wait for a magic shop.
     struct StockedGear
     {
         std::uint8_t type;
@@ -215,7 +215,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
         {{authored_item::torch, "10 Torches", 1, 10},
          {authored_item::acid, "Vial of Acid", 25, 1},
          {authored_item::alchemists_fire, "Flask of Alchemist's Fire", 50, 1},
-         {authored_item::magic_ink, "Bottle of Magic Ink", 1000, 1}}};
+         {authored_item::magic_ink, "Bottle of Magic Ink (Level 1)", 1000, 1}}};
     auto &general_store = town->treasure[general_store_list];
     for (const auto &gear : added_gear)
     {

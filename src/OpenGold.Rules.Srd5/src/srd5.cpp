@@ -586,10 +586,10 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         return std::string(magic->note);
     }
-    if (item == "magic_ink")
+    if (rules::magic_ink_level(item))
     {
-        return "Copying a scroll's spell into a Wizard's spellbook takes one bottle for each "
-               "spell level.";
+        return "A bottle writes a spell of its level or lower on a scroll, or copies one from a "
+               "scroll into a Wizard's spellbook.";
     }
     if (const auto scroll = rules::parse_scroll_key(item))
     {
@@ -29149,6 +29149,37 @@ class Module final : public RulesModule
         return found->level;
     }
 
+    std::vector<ScrollWriting> writable_spells(const CharacterSheet &sheet) const override
+    {
+        const auto d = character_definition(character_profile(sheet, {}).data);
+        std::vector<ScrollWriting> writable;
+        // The scroll is of the writer's kind of magic, as the scrolls it reads.
+        if (!d.reads_arcane_scrolls && !d.reads_divine_scrolls)
+        {
+            return writable;
+        }
+        unsigned highest_slot = 0;
+        for (unsigned level = 1; level <= highest_slot_level; ++level)
+        {
+            highest_slot = d.slots[level] > 0 ? level : highest_slot;
+        }
+        for (const auto &id : d.spells)
+        {
+            const auto *spell = detail::find_spell(id);
+            if (spell && spell->level && detail::on_class_list(detail::class_of(sheet), id) &&
+                (spell->level <= highest_slot || d.arcanum.contains(id)))
+            {
+                writable.push_back({id, spell->level, d.reads_arcane_scrolls});
+            }
+        }
+        std::stable_sort(writable.begin(), writable.end(),
+                         [](const auto &a, const auto &b)
+                         {
+                             return a.level < b.level;
+                         });
+        return writable;
+    }
+
     void drink_potion(const CharacterSheet &sheet, VitalState &state, std::string_view item,
                       RandomState &random_state) const override
     {
@@ -29529,9 +29560,9 @@ class Module final : public RulesModule
 
     EquipmentInfo equipment_info(std::string_view key) const override
     {
-        // Magic Ink is spent copying a scroll into a spellbook (MAGIC-6); a
-        // scroll is read from the pack.
-        if (detail::ammunition(key) || detail::thrown_gear(key) || key == "magic_ink" ||
+        // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
+        // is read from the pack.
+        if (detail::ammunition(key) || detail::thrown_gear(key) || rules::magic_ink_level(key) ||
             rules::parse_scroll_key(key))
         {
             return {EquipmentSlot::carried, 0};

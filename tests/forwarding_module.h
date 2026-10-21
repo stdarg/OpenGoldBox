@@ -298,6 +298,12 @@ class ForwardingModule : public rules::RulesModule
         return rules_->copyable_spell_level(sheet, spell);
     }
 
+    std::vector<rules::ScrollWriting>
+    writable_spells(const rules::CharacterSheet &sheet) const override
+    {
+        return rules_->writable_spells(sheet);
+    }
+
     void use_camp_action(const rules::CharacterSheet &user, rules::VitalState &user_state,
                          const rules::CharacterSheet &target, rules::VitalState &target_state,
                          std::string_view action, RandomState &random_state) const override

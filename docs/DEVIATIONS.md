@@ -67,8 +67,9 @@ Add an entry whenever a new departure is decided.
   from the inventory or the Items menu. Druids and Rangers read cleric
   scrolls. The original's magic-user and cleric spells SRD 5.2.1 lacks are
   Wizard and Cleric spells as stand-ins. Copying a spell into a Wizard's spellbook, free in the original,
-  takes two hours and a 1000 gp bottle of Magic Ink, a new item, for each spell
-  level. Read Magic reveals all the caster's scrolls at once instead of each
+  takes two hours a spell level and a bottle of Magic Ink, a new item, of the
+  spell's level or higher, at 1000 gp a level. Casters also write scrolls of
+  their own spells in camp, which the original never allowed. Read Magic reveals all the caster's scrolls at once instead of each
   scroll opened while it lasts.
   [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and

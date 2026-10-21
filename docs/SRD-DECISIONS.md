@@ -1409,9 +1409,16 @@ The user chose how the original's scrolls
 - **Copying**: a Wizard copies an arcane scroll's spell of a level it can
   prepare into its spellbook, beyond the book's usual choices: 1000 gp and two
   hours for each spell level (the user, 2026-10-21; the SRD asks 50 gp). The
-  gold is **Magic Ink**, a new item (the user, 2026-10-20); the general store
-  sells it at 1000 gp a bottle, one bottle for each spell level. Copying erases the spell from the
-  scroll, as in the original.
+  gold is **Magic Ink**, a new item (the user, 2026-10-20). Each bottle has a
+  level, 1 to 9, and costs 1000 gp a level; it serves a spell of its level or
+  lower (the user, 2026-10-21). The general store sells level 1; a magic shop
+  will sell the rest. Copying erases the spell from the scroll, as in the
+  original.
+- **Writing a scroll** (the user, 2026-10-21): any caster writes a scroll of
+  one spell it can cast, in camp (the Camp dialog), with a bottle of Magic Ink
+  of the spell's level or higher, in two hours a spell level, spending no
+  spell slot. The SRD's scribing takes days and gold instead; the original
+  had no scroll writing. No cantrip scrolls: ink has no level 0.
 - **Use Magic Device** (Thief 13), as the SRD's: the Thief reads any scroll,
   with Intelligence as its spellcasting ability. A spell above level 1 needs an
   Intelligence (Arcana) check, DC 10 + the spell's level; on a failure the

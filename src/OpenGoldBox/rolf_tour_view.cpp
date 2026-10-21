@@ -946,13 +946,15 @@ void RolfTourView::refresh_cast()
         {
             add(i18n::render(offered.label), offered.id, offered.whole_party);
         }
-        // Copying takes a bottle of Magic Ink and two hours a spell level.
+        // Copying takes a bottle of Magic Ink of the spell's level or higher
+        // and two hours a spell level.
         for (const auto &copy : campaign_->copyable_spells(caster, *scroll_item_))
         {
-            add(i18n::format(N_("Copy {spell} into the spellbook ({count} Magic Ink, {hours} hours)"),
-                             {{"spell", i18n::text(opengold::srd5::spell_label(copy.spell))},
-                              {"count", static_cast<int>(copy.level)},
-                              {"hours", static_cast<int>(2 * copy.level)}}),
+            add(i18n::format(
+                    N_("Copy {spell} into the spellbook (Magic Ink of level {level} or higher, {hours} hours)"),
+                    {{"spell", i18n::text(opengold::srd5::spell_label(copy.spell))},
+                     {"level", static_cast<int>(copy.level)},
+                     {"hours", static_cast<int>(2 * copy.level)}}),
                 "copy:" + std::to_string(copy.entry), true);
         }
     }

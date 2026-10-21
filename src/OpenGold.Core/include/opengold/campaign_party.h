@@ -314,9 +314,17 @@ class CampaignParty
     };
     [[nodiscard]] std::vector<ScrollCopy> copyable_spells(MemberId id, std::uint64_t item) const;
     // Copies a spell from a scroll the member carries into its spellbook
-    // (MAGIC-6): it takes a bottle of Magic Ink the member carries and two hours
-    // for each spell level, and the spell leaves the scroll.
+    // (MAGIC-6): it takes a bottle of Magic Ink of the spell's level or higher
+    // the member carries and two hours for each spell level, and the spell
+    // leaves the scroll.
     void copy_scroll_spell(MemberId id, std::uint64_t item, unsigned entry);
+    // The spells the member can write on a scroll now (MAGIC-6), with a
+    // bottle of Magic Ink it carries.
+    [[nodiscard]] std::vector<rules::ScrollWriting> writable_spells(MemberId id) const;
+    // Writes a scroll of one spell (MAGIC-6): it takes a bottle of Magic Ink
+    // of the spell's level or higher the member carries and two hours for each
+    // spell level, and no spell slot. The Camp dialog offers it.
+    void write_scroll(MemberId id, std::string_view spell);
     // The member's Charisma as the party's spokesman, with Friends (MAGIC-6).
     [[nodiscard]] int reaction_charisma(MemberId id) const;
     // Whether Find Traps is in effect (MAGIC-6).

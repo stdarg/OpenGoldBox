@@ -363,8 +363,19 @@ records the decisions.
   - Reading or copying a spell erases it from the original record; the scroll
     goes with its last spell. A Wizard's copied spells are kept with the hall
     training (`boon:scroll:<spell>`), so a save rebuilds the spellbook.
-  - Magic Ink is sold by the general store, 1000 gp a bottle; copying takes a
-    bottle and two hours of game time for each spell level.
+  - Magic Ink comes in levels 1 to 9, at 1000 gp a level; a bottle writes or
+    copies a spell of its level or lower, and the lowest bottle that serves is
+    used. The general store sells level 1; the other levels wait for a magic
+    shop. Copying takes a bottle and two hours of game time for each spell
+    level.
+  - **Writing a scroll**: in the Camp dialog's Cast / Use row, a caster
+    carrying Magic Ink writes a scroll of one spell it can cast (a spell on its
+    class's list it has prepared or knows, with a slot of the spell's level or
+    a Mystic Arcanum; no cantrip). It takes a bottle of the spell's level or
+    higher, two hours a spell level, and no spell slot. The scroll is arcane
+    for a Bard, Sorcerer, Warlock or Wizard and divine for a Cleric, Druid,
+    Paladin or Ranger, and is read like a found one. A written scroll has no
+    original record; its item key holds its spell.
   - Shield, a reaction, can be copied from a scroll but not read from one: a
     reaction offers only a member's own spells.
 - Fixed treasure lists show magic items under their original names ("Long
