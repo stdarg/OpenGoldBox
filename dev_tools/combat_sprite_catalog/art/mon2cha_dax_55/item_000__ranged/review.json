@@ -1,16 +1,16 @@
 {
-  "action_sha256": "3e91819d4f6520cc1b535e1254e6cb67ac38b1b1977c15f30626d153ef816db8",
+  "action_sha256": "6dd89193188ff80ce3419d75bc0d3cb4cd2c47f86c0f635f912d49425153afb4",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_55/item_000__ranged/action.png",
     "ready": "art/mon2cha_dax_55/item_000__ranged/ready.png"
   },
-  "metadata_sha256": "869e1a04191a4f50093aa9739c3c792ac9141b1eb9a21ffab682d267a56cdb82",
-  "notes": "First throw draft switched arms and was rejected. Final pair reviewed alternating at 128px in catalog: boulder in throwing hand in ready and gone after release, same arm follows through, sandals, torso, scale and ground remain registered. Compared identity with club set.",
+  "metadata_sha256": "81c3f9f9c69063a6a73ca96d92a87564622c9ffb20357e2f006263bf68044028",
+  "notes": "Game source 24x48 (1x2). Full saved equipment reviewed; Boulder is separate ranged set from Club. Approved new Club giant art and pose guide used; no original game art. Shared 744x966 crop and 60x104 placement aligns this giant body/feet to Club set. Ready rock at shoulder, action rock released with fixed feet. Native pair and live catalog grid ready/action reviewed; both fit.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "d0009b536edcd5ceaa806dcc315973869cafd294ac85be8dfe085cf935a86eff",
-  "reviewed_at": "2026-10-19T04:35:55.419097+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "33b152b4792f512f4199a64dec0a9501427914c7e4f703baf1baeb49275994f5",
+  "reviewed_at": "2026-10-21T01:16:55+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:55",
   "specification": "bipedal-v1",
   "variant_id": "item_000__ranged",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
 }
