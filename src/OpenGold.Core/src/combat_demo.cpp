@@ -986,6 +986,7 @@ constexpr std::array ai_spells{AiSpell{"fireball", 7},
                                AiSpell{"web", 4},
                                AiSpell{"mirror_image", 3, true},
                                AiSpell{"haste", 3, true},
+                               AiSpell{"dragons_breath", 3, true},
                                AiSpell{"protection_from_normal_missiles", 3, true},
                                AiSpell{"entangle", 3},
                                AiSpell{"bane", 3},
@@ -1414,6 +1415,34 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
+    // A smite that costs a slot only on a Critical Hit, from the lowest slot,
+    // so slots stay for spells (#269).
+    if (active.critical_hit)
+    {
+        for (const auto smite :
+             {"divine_smite", "searing_smite", "shining_smite", "ensnaring_strike"})
+        {
+            const Command *lowest = nullptr;
+            for (const auto &command : offered)
+            {
+                if (spell_of(active, command.verb) == smite &&
+                    !(command.spell.concentration &&
+                      std::any_of(active.conditions.begin(), active.conditions.end(),
+                                  [](const auto &c)
+                                  {
+                                      return c.source == "Concentrating";
+                                  })) &&
+                    (!lowest || cast_rank(command.verb, smite) < cast_rank(lowest->verb, smite)))
+                {
+                    lowest = &command;
+                }
+            }
+            if (lowest)
+            {
+                return *lowest;
+            }
+        }
+    }
     // Favored Enemy's Hunter's Mark and moving it cost no slot, and Horde
     // Breaker's attack, Superior Hunter's Prey and Divine Strike cost nothing,
     // so they come first.
@@ -1450,6 +1479,15 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return command;
         }
     }
+    // Burning at half its Hit Points or lower, a creature rolls on the ground
+    // to put the fire out (#269); otherwise it fights on.
+    for (const auto &command : offered)
+    {
+        if (command.verb == "extinguish" && active.hit_points * 2 <= active.max_hit_points)
+        {
+            return command;
+        }
+    }
     // A creature caught by vines spends its Action trying to break free.
     for (const auto &command : offered)
     {
@@ -1469,7 +1507,8 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             command.verb == "deflect" || command.verb == "redirect" || command.verb == "rebuke" ||
             command.verb == "giant_boon" || command.verb == "stones_endurance" ||
             command.verb == "storms_thunder" ||
-            (command.verb == "second_wind" && active.hit_points * 2 <= active.max_hit_points))
+            ((command.verb == "second_wind" || command.verb == "wholeness_of_body") &&
+             active.hit_points * 2 <= active.max_hit_points))
         {
             return command;
         }
@@ -1705,6 +1744,16 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                         std::abs(a.cell.y - active.cell.y)) <= 24;
                     });
 
+    // The extra attacks of Light and Nick weapons follow the Attack action at
+    // the same target (#269).
+    for (const auto verb :
+         {"nick_melee", "nick_ranged", "nick_throw", "light_melee", "light_ranged", "light_throw"})
+    {
+        if (const auto *command = aim(verb))
+        {
+            return *command;
+        }
+    }
     // Bonus Action buffs come before the Action: Innate Sorcery before a spell
     // attack, a Druid's flame or staff, Hex and Bardic Inspiration on an ally.
     struct Buff
@@ -1973,21 +2022,58 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
                                                 std::abs(enemy->cell.y - active.cell.y)) <= 1;
         });
     const bool shoots = !enemy_beside && active.ranged_rating * 2 > active.melee_rating;
+    // A thrown weapon is rated as a ranged one, as the original did (#269).
+    const bool throws = !enemy_beside && active.thrown_rating * 2 > active.melee_rating;
+    // A Breath Weapon or Dragon's Breath goes off before the attacks, where it
+    // catches an enemy and no ally (#269).
+    for (const auto &command : offered)
+    {
+        if ((command.verb.starts_with("breath_weapon_") ||
+             command.verb.starts_with("dragons_breath_exhale_")) &&
+            std::any_of(in_view.begin(), in_view.end(),
+                        [&](const auto *enemy)
+                        {
+                            return safe_area_target(state, active, command.spell, *enemy);
+                        }))
+        {
+            return command;
+        }
+    }
     std::vector<std::string_view> attacks{"eldritch_blast", "sorcerous_burst_fire",
                                           "flame_blade_strike", "hurl_flame", "heat_metal_again"};
     if (shoots)
     {
         attacks.insert(attacks.end(), {"ranged", "shoot"});
     }
+    if (throws)
+    {
+        attacks.push_back("throw");
+    }
     attacks.insert(attacks.end(),
                    {"melee", "fire_bolt", "sacred_flame", "vicious_mockery", "starry_wisp",
                     "ray_of_frost", "chill_touch", "shocking_grasp", "poison_spray", "ranged"});
+    // Able to attack without moving, a Rogue takes Steady Aim first (#269).
+    if (const auto *steady = offers("steady_aim"); steady && active.action &&
+                                                   std::any_of(attacks.begin(), attacks.end(),
+                                                               [&](auto verb)
+                                                               {
+                                                                   return aim(verb) != nullptr;
+                                                               }))
+    {
+        return *steady;
+    }
     for (const auto verb : attacks)
     {
         if (const auto *command = aim(verb))
         {
             return *command;
         }
+    }
+    // Its Action spent, a Fighter surges for another while an enemy is in view
+    // (#269).
+    if (const auto *surge = offers("action_surge"); surge && !active.action && !in_view.empty())
+    {
+        return *surge;
     }
     // With the Action spent, a Bonus Action may still strike: Flurry of Blows,
     // a Martial Arts strike, Hex or Heat Metal again.
@@ -2016,6 +2102,26 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
     // An unarmored Wizard or Sorcerer, or a monster magic-user, never closes
     // in, as the original's magic-users did not: it casts from where it stands.
     const bool stays_back = active.unarmored_arcane_caster && !active.panicked && !seeking;
+    // Out of reach of its target even with all its movement, a Rogue or an Orc
+    // dashes with its Bonus Action and keeps its Action to attack (#269).
+    int reachable = nearest(active.cell);
+    for (const auto &command : offered)
+    {
+        if (command.verb == "move")
+        {
+            reachable = std::min(reachable, nearest(command.destination));
+        }
+    }
+    if (active.action && !stays_back && !in_view.empty() && reachable > 1 && reachable < 10000)
+    {
+        for (const auto verb : {"cunning_dash", "adrenaline_rush"})
+        {
+            if (const auto *command = offers(verb))
+            {
+                return *command;
+            }
+        }
+    }
     // With nothing to attack yet, Aggressive covers more ground toward an
     // enemy in view.
     for (const auto &command : offered)
@@ -2054,6 +2160,11 @@ Command choose_in_sight(const rules::Snapshot &state, const std::vector<Command>
             return *command;
         }
     }
+    // With its Action unused and an enemy beside it, it Dodges (#269).
+    if (const auto *dodge = offers("dodge"); dodge && active.action && enemy_beside)
+    {
+        return *dodge;
+    }
     for (const auto &command : offered)
     {
         if (command.verb == "end")
@@ -2090,6 +2201,26 @@ std::optional<Command> run_for_edge(const rules::Snapshot &state,
     if (const auto *flee = offer("flee"))
     {
         return *flee;
+    }
+    // With an enemy beside it, it Disengages before running, so it is not hit
+    // as it leaves (#269).
+    const bool enemy_beside =
+        std::any_of(state.combatants.begin(), state.combatants.end(),
+                    [&](const auto &other)
+                    {
+                        return other.side != active.side && other.conscious &&
+                               std::max(std::abs(other.cell.x - active.cell.x),
+                                        std::abs(other.cell.y - active.cell.y)) <= 1;
+                    });
+    if (enemy_beside && !active.disengaged)
+    {
+        for (const auto verb : {"cunning_disengage", "disengage"})
+        {
+            if (const auto *disengage = offer(verb))
+            {
+                return *disengage;
+            }
+        }
     }
     const auto &board = state.battlefield;
     const auto cells = static_cast<std::size_t>(board.width * board.height);

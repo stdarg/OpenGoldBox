@@ -7211,6 +7211,8 @@ Snapshot Session::snapshot() const
         view.prone = a.effects.prone;
         view.last_target = a.last_target;
         view.unarmored_arcane_caster = def(a).unarmored_arcane_caster;
+        view.critical_hit = a.smite_target && a.smite_critical;
+        view.disengaged = a.disengaged;
         // Each rated by its attacks a turn too: Martial Arts' bonus strike
         // counts for a Monk's melee.
         const int attacks = 1 + def(a).extra_attacks;
@@ -7238,6 +7240,11 @@ Snapshot Session::snapshot() const
                 {
                     if (const auto *w = detail::weapon(item.definition); w && w->thrown)
                     {
+                        view.thrown_rating = std::max(
+                            view.thrown_rating,
+                            (w->dice * w->sides +
+                             8 * std::max(0, rules::parse_item_key(item.definition).bonus)) *
+                                attacks);
                         view.thrown_weapons.push_back({item.id, item.label,
                                                        std::any_of(offered.begin(), offered.end(),
                                                                    [&](const auto &c)
@@ -11638,6 +11645,7 @@ std::vector<Command> Session::offered_commands() const
                 auto [verb, label] =
                     cast_at(spell, level, std::string(spell.id), std::string(spell.label));
                 add(id, std::move(verb), std::move(label), a.smite_target);
+                commands.back().spell = spell_facts(a, spell);
             }
         };
         if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
@@ -11649,6 +11657,7 @@ std::vector<Command> Session::offered_commands() const
         if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
         {
             add(id, "searing_smite", "Searing Smite", a.smite_target);
+            commands.back().spell = spell_facts(a, *detail::find_spell("searing_smite"));
         }
         add_smite("shining_smite");
         // Ensnaring Strike follows a Ranged hit too.
@@ -11660,6 +11669,7 @@ std::vector<Command> Session::offered_commands() const
                 auto [verb, label] =
                     cast_at(spell, level, std::string(spell.id), std::string(spell.label));
                 add(id, std::move(verb), std::move(label), a.smite_target);
+                commands.back().spell = spell_facts(a, spell);
             }
         }
     }
@@ -11963,6 +11973,8 @@ std::vector<Command> Session::offered_commands() const
                         commands.push_back({revision_, id, 0,
                                             "dragons_breath_exhale_" + std::string(type),
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
+                        commands.back().spell =
+                            spell_facts(a, *detail::find_spell("dragons_breath_exhale"));
                     }
                 }
             }
@@ -11972,8 +11984,10 @@ std::vector<Command> Session::offered_commands() const
         {
             commands.push_back(
                 {revision_, id, 0, "breath_weapon_cone", "Breath Weapon (cone)", Cell{}, 0, true});
+            commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_cone"));
             commands.push_back(
                 {revision_, id, 0, "breath_weapon_line", "Breath Weapon (line)", Cell{}, 0, true});
+            commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_line"));
         }
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");

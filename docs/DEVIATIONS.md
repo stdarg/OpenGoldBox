@@ -90,7 +90,8 @@ Add an entry whenever a new departure is decided.
   random among those that make sense, treats cantrips as attacks, never casts a
   helpful spell twice on one creature, counts a weapon's melee attacks a turn
   in its rating, and makes its random choices from the fight's state so a fight
-  replays the same.
+  replays the same. The original breathed by chance each round; a Breath Weapon
+  here goes off only where it catches an enemy and no ally.
   [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
   [AI.md](AI.md).
 

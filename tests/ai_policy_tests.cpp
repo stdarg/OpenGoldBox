@@ -263,6 +263,157 @@ void free_move_checks()
     check(choose_demo_command(state, offered).verb == "move",
           "A free move is taken toward the enemy");
 }
+
+// The features #269 taught the computer, one rule each.
+void light_and_nick_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1}),
+                        unit(3, Side::opposition, {1, 2})});
+    state.combatants[0].last_target = 3;
+    const std::vector<Command> offered{command("light_melee", 2), command("light_melee", 3),
+                                       command("end")};
+    const auto light = choose_demo_command(state, offered);
+    check(light.verb == "light_melee" && light.target == 3,
+          "A Light weapon's extra attack follows at the same target");
+}
+
+void thrown_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {6, 1})});
+    state.combatants[0].melee_rating = 8;
+    state.combatants[0].thrown_rating = 6;
+    const std::vector<Command> offered{command("throw", 2), command("move", 0, {2, 1}),
+                                       command("end")};
+    check(choose_demo_command(state, offered).verb == "throw",
+          "A javelin rated more than half the sword is thrown before closing in");
+    state.combatants[1].cell = {2, 1};
+    check(choose_demo_command(state, {command("throw", 2), command("melee", 2), command("end")})
+                  .verb == "melee",
+          "With the enemy beside it, it fights in melee");
+}
+
+void action_surge_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {4, 1})});
+    state.combatants[0].action = false;
+    const std::vector<Command> offered{command("action_surge", 1), command("end")};
+    check(choose_demo_command(state, offered).verb == "action_surge",
+          "A Fighter surges once its Action is spent");
+    const auto hidden = field({state.combatants[0], unit(2, Side::opposition, {8, 1})}, divided());
+    check(choose_demo_command(hidden, offered).verb == "end", "With no enemy in view, it does not");
+}
+
+void smite_checks()
+{
+    auto paladin = unit(1, Side::party, {1, 1});
+    paladin.spells = {"divine_smite"};
+    paladin.bonus_action = true;
+    auto state = field({paladin, unit(2, Side::opposition, {2, 1})});
+    const std::vector<Command> offered{command("divine_smite_2", 2), command("divine_smite", 2),
+                                       command("end")};
+    check(choose_demo_command(state, offered).verb == "end",
+          "No slot is spent on a smite after an ordinary hit");
+    state.combatants[0].critical_hit = true;
+    check(choose_demo_command(state, offered).verb == "divine_smite",
+          "A Critical Hit is smitten from the lowest slot");
+}
+
+void steady_aim_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1})});
+    check(choose_demo_command(state, {command("melee", 2), command("steady_aim"), command("end")})
+                  .verb == "steady_aim",
+          "A Rogue that can attack without moving takes Steady Aim first");
+    state.combatants[1].cell = {8, 1};
+    check(choose_demo_command(state,
+                              {command("move", 0, {2, 1}), command("steady_aim"), command("end")})
+                  .verb == "move",
+          "A Rogue that must move first does not");
+}
+
+void dash_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {9, 1})});
+    for (const auto *verb : {"cunning_dash", "adrenaline_rush"})
+    {
+        check(
+            choose_demo_command(state, {command("move", 0, {4, 1}), command(verb), command("end")})
+                    .verb == verb,
+            "Out of reach even with all its movement, it dashes with its Bonus Action");
+        check(
+            choose_demo_command(state, {command("move", 0, {8, 1}), command(verb), command("end")})
+                    .verb == "move",
+            "Within reach, it walks");
+    }
+}
+
+void disengage_checks()
+{
+    auto state = field({unit(1, Side::opposition, {1, 1}), unit(2, Side::party, {2, 1})});
+    state.combatants[0].panicked = true;
+    const std::vector<Command> offered{command("move", 0, {0, 1}), command("disengage"),
+                                       command("dash"), command("end")};
+    check(choose_demo_command(state, offered).verb == "disengage",
+          "A panicked monster with an enemy beside it Disengages before running");
+    state.combatants[0].disengaged = true;
+    check(choose_demo_command(state, offered).verb == "move", "Disengaged, it runs");
+}
+
+void dodge_checks()
+{
+    const auto state = field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {2, 1})});
+    check(choose_demo_command(state, {command("dodge"), command("end")}).verb == "dodge",
+          "With nothing else to do and an enemy beside it, it Dodges");
+}
+
+void breath_checks()
+{
+    auto breath = command("breath_weapon_cone");
+    breath.aims_area = true;
+    breath.spell = {false, 15, 15, true};
+    const std::vector<Command> offered{breath, command("melee", 2), command("end")};
+    check(choose_demo_command(
+              field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {3, 1})}), offered)
+                  .verb == "breath_weapon_cone",
+          "A Breath Weapon goes off before the attacks");
+    check(
+        choose_demo_command(field({unit(1, Side::party, {1, 1}), unit(2, Side::opposition, {3, 1}),
+                                   unit(3, Side::party, {2, 1})}),
+                            offered)
+                .verb == "melee",
+        "Not where it would catch an ally");
+}
+
+void dragons_breath_checks()
+{
+    auto caster = unit(1, Side::party, {1, 1});
+    caster.spells = {"dragons_breath"};
+    auto state = field({caster, unit(2, Side::opposition, {6, 1})});
+    auto spell = command("dragons_breath", 1);
+    spell.label = "Dragon's Breath";
+    spell.spell.concentration = true;
+    bool cast = false;
+    for (std::uint64_t revision = 1; revision <= 40 && !cast; ++revision)
+    {
+        state.revision = revision;
+        const auto chosen = choose_demo_command(state, {spell, command("end")});
+        cast = chosen.verb == "dragons_breath" && chosen.target == 1;
+    }
+    check(cast, "Dragon's Breath is cast as a helpful spell of priority 3");
+}
+
+void fire_and_healing_checks()
+{
+    auto state = field({unit(1, Side::party, {1, 1}, 10, 10), unit(2, Side::opposition, {2, 1})});
+    const std::vector<Command> burning{command("extinguish"), command("melee", 2), command("end")};
+    check(choose_demo_command(state, burning).verb == "melee", "Burning but healthy, it fights on");
+    state.combatants[0].hit_points = 5;
+    check(choose_demo_command(state, burning).verb == "extinguish",
+          "Burning at half its Hit Points, it puts the fire out");
+    check(choose_demo_command(state, {command("wholeness_of_body", 1), command("melee", 2)}).verb ==
+              "wholeness_of_body",
+          "Wholeness of Body heals at half its Hit Points");
+}
 } // namespace
 
 int main()
@@ -278,6 +429,17 @@ int main()
         healing_checks();
         reaction_checks();
         free_move_checks();
+        light_and_nick_checks();
+        thrown_checks();
+        action_surge_checks();
+        smite_checks();
+        steady_aim_checks();
+        dash_checks();
+        disengage_checks();
+        dodge_checks();
+        breath_checks();
+        dragons_breath_checks();
+        fire_and_healing_checks();
         std::cout << "AI policy tests passed\n";
     }
     catch (const std::exception &e)

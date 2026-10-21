@@ -1456,9 +1456,18 @@ following the original Gold Box engine (read from coab; no code copied):
   shows the attack's total and the AC to the player too.
 - **A Champion's free move** is taken toward the enemy.
 - **Flee mode** obeys Quick magic for members who cannot flee.
-- The features the computer never uses (Two-Weapon Fighting, Action Surge, slot
-  smites, Cunning Action and others) are
-  [#269](https://github.com/stdarg/OpenGold/issues/269).
+- **Features it had never used** (the user, 2026-10-21, #269): Light and Nick
+  extra attacks follow the Attack action at the same target; a thrown weapon is
+  rated and thrown as the original's were; Action Surge once the Action is
+  spent with an enemy in view; a smite that costs a slot only on a Critical
+  Hit, from the lowest slot; Steady Aim when it can attack without moving;
+  Cunning Action's Dash or Adrenaline Rush when its target is out of reach even
+  with all its movement; Disengage before running from an enemy beside it;
+  Dodge instead of ending its turn with the Action unused beside an enemy;
+  Breath Weapon and Dragon's Breath's exhale where they catch an enemy and no
+  ally; Dragon's Breath cast as a helpful spell of priority 3; putting out
+  flames at half Hit Points or lower; Wholeness of Body at half Hit Points or
+  lower. Hide is left to the player.
 
 ## DIFF-1 (2026-10-21): difficulty, and monsters that use their items
 

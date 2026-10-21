@@ -621,6 +621,12 @@ struct CombatantView
     // for each magic plus, times its attacks a turn, of its melee weapon and of
     // the ranged weapon it holds or could draw; 0 with none.
     int melee_rating{}, ranged_rating{};
+    // The same for the best weapon it can throw (#269); 0 with none.
+    int thrown_rating{};
+    // Its hit that the smites now offered follow was a Critical Hit (#269).
+    bool critical_hit{};
+    // It took the Disengage action this turn (#269).
+    bool disengaged{};
 };
 
 struct TemporaryHpOffer
