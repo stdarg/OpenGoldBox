@@ -1,0 +1,32 @@
+{
+  "action_sha256": "8a808e3914293750b8e1375e0596961763403ae6ef902d6eb37fd47879c68a85",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_5/item_000__one_hand/action.png",
+    "ready": "art/mon4cha_dax_5/item_000__one_hand/ready.png"
+  },
+  "metadata_sha256": "8f0513dbbe10c4f68b86783a7484f4f84dae7c26b4a9db0cc5d8201a501efc42",
+  "notes": "Newly regenerated species-template art reused for this matching equipment set; same approved new-art hashes. Ready/action inspected at catalog zoom and both fit fixed 1x1 grid. Regular body is smaller than leader; planted boots and body scale are consistent.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "0101d96620697a8322efaff427d09c49891c14b8dca368c009f6fabdd8a144a7",
+  "reviewed_at": "2026-10-21T02:38:28.834513+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:5",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+}

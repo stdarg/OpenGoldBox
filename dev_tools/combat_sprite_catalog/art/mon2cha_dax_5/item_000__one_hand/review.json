@@ -1,15 +1,15 @@
 {
-  "action_sha256": "3842957a87b929e1b7ab44e8e04d07da2abcac21517ed9352f79c17f5b612321",
+  "action_sha256": "8a808e3914293750b8e1375e0596961763403ae6ef902d6eb37fd47879c68a85",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_5/item_000__one_hand/action.png",
     "ready": "art/mon2cha_dax_5/item_000__one_hand/ready.png"
   },
-  "metadata_sha256": "008e310521f9e13432cd16e27c30ad5ddf8f81683342fedaac5042b36f27876b",
-  "notes": "Exact new independently generated art reused from accepted MON1CHA.DAX:5 battle axe for identical creature identity, armor and weapon setup. Both frames checked at 128 px and alternating in this source record in the catalog; fixed boots, correct attack and equipment.",
+  "metadata_sha256": "90ebe82f417ef156c022227f980c3e9947e8779c9925fa1d1fc565a09a1c1be7",
+  "notes": "Newly regenerated species-template art reused for this matching equipment set; same approved new-art hashes. Ready/action inspected at catalog zoom and both fit fixed 1x1 grid. Regular body is smaller than leader; planted boots and body scale are consistent.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b10b011fd5b4d81143a4388df512bf0d0fd560e586a7243c8b7dbbb36f632b12",
-  "reviewed_at": "2026-10-19T01:36:22.926245+00:00",
+  "ready_sha256": "0101d96620697a8322efaff427d09c49891c14b8dca368c009f6fabdd8a144a7",
+  "reviewed_at": "2026-10-21T02:38:25.930630+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:5",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
 }
