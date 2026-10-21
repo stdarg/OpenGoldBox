@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7964df66850b1e975096aee097f2efd6a2ea3ff512861f8506323aa0737f71f1",
+  "action_sha256": "cf404b05b30ac1e733444e801f9d50fa7ce09de2846b7a8952d747457423c8d4",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_8/added_4277717173__one_hand/action.png",
     "ready": "art/mon1cha_dax_8/added_4277717173__one_hand/ready.png"
   },
-  "metadata_sha256": "cfd47b86cfe1c00c704806b80a92d52f7c9a6db6c22848606d30d98d40fc6ab5",
-  "notes": "Built-in image generation edited the existing approved-new ogre art; original game art was not used. Reviewed both 128x128 PNGs, native-coordinate overlay, lower-foot difference, and ready/action catalog screenshots in a separate preview copy. Tall body about 1.7 combat squares; both poses fit 2x2. Club up in ready and late downswing in action; feet stay planted.",
+  "metadata_sha256": "2055b569373c6729bd9f851ea41fe968047c8572efdc7fdc00ee8cf91ac15145",
+  "notes": "Game source ready/action are 24x48 pixels (1x2 tiles); no SRD space inference. Built-in imagegen redrew a compact upright ogre, then edited ready for the late club strike. Original game art was used only for dimensions, never as a generation reference. Reviewed 128x128 exports, common-coordinate overlay and foot difference, and both poses on the catalog grid. Same crop/scale/placement applied to both working images; no per-pose recenter. Both fit 1x2.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "6aaa1aab57f3add05be114d1d31f6ef594ea045d57e97fa9230ef21e92f600ba",
-  "reviewed_at": "2026-10-20T23:56:09.027997+00:00",
+  "ready_sha256": "f22f2197b93e0df9faf4c03bba0449ea170d28c27dd2d9fc1af788bd3ba2d26b",
+  "reviewed_at": "2026-10-21T00:50:21.271536+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:8",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "43c64d05e04428cc554699a3fe373184ed23fadcaffbb3dbba4c71d540700cba"
+  "workflow_sha256": "1fe2faa151b4a827802563a8f036e0f015a0d1f6a820098a15985427cb2ec019"
 }

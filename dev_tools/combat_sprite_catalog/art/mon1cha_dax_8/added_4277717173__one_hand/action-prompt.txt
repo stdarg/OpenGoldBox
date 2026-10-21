@@ -4,6 +4,9 @@ Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
+The saved sprite_size comes from the game's decoded combat-art dimensions,
+measured in 24-pixel source tiles; never replace it with an SRD creature-space
+category. Do not use original game artwork as a generation reference.
 
 FACING: Front three-quarter view toward the RIGHT EDGE OF THE IMAGE (screen
 right), approximately 45 degrees between frontal and right-side profile. The
@@ -127,7 +130,7 @@ MONSTER AND SELECTED SET (current catalog JSON):
   "source_key": "MON1CHA.DAX:8",
   "sprite_size": {
     "height_squares": 2.0,
-    "width_squares": 2.0
+    "width_squares": 1.0
   },
   "weapon_role": "one_hand"
 }
@@ -149,8 +152,9 @@ Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
 
-FINAL ART-SPECIFIC EDIT: Edit the approved-new ogre ready sprite. Keep both
-planted feet, legs, hips, torso, face, scale, camera, palette and clothing at
-the same canvas coordinates. Swing the one-handed club down and toward screen
-right near the end of its blow. Shorten the forward extension enough to leave
-transparent right-edge margin; do not move or recenter the whole ogre.
+FINAL SOURCE-SIZE CORRECTION: Edit this set's new narrow ready figure. Keep
+both planted feet, legs, hips, torso, head, camera and scale fixed. Swing the
+one-handed club down to a late strike in front of the torso, still inside the
+same 1 x 2 combat-square column. The final exports share the exact crop
+698x1164+270+180, resize 60x120, and placement at x=34,y=4 on 128x128 alpha.
+This is one common transform for the pair, never a per-pose fit or recenter.
