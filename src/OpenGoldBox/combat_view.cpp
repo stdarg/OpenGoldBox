@@ -2865,6 +2865,11 @@ void CombatView::refresh()
             : s.reaction_pending && enabled("shield")
                 ? (missile_shield
                        ? i18n::text("Magic Missile is aimed at you. Cast Shield or decline.")
+                   : s.reaction_attack
+                       ? i18n::format(
+                             "You are hit: {total} against AC {ac}. Cast Shield (+5 AC) or decline.",
+                             {{"total", s.reaction_attack->total},
+                              {"ac", s.reaction_attack->armor_class}})
                        : i18n::text("You are hit. Cast Shield (+5 AC) or decline."))
             : s.reaction_pending && enabled("deflect")
                 ? i18n::text(
@@ -3628,7 +3633,7 @@ void CombatView::_process(double delta)
                 }
                 throw std::runtime_error(details);
             }
-            act(flee_mode_      ? choose_flee_command(demo_->combat())
+            act(flee_mode_      ? choose_flee_command(demo_->combat(), quick_magic())
                 : quick_turn(s) ? choose_quick_command(demo_->combat(), quick_magic())
                                 : choose_demo_command(demo_->combat()));
         }

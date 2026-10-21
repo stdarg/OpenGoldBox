@@ -1422,3 +1422,33 @@ The user chose how the original's scrolls
   where no ally can be caught. Spells that help an ally otherwise wait for the
   player. Monsters carry no items into a fight yet
   ([#268](https://github.com/stdarg/OpenGold/issues/268)).
+
+
+## AI-1 (2026-10-21): computer play, as the original game had it
+
+How the computer plays monsters and Quick members is described in
+[AI.md](AI.md); the user decided its open questions on 2026-10-21 (#266),
+following the original Gold Box engine (read from coab; no code copied):
+
+- **Targets**: a creature keeps attacking its target while it can reach it,
+  otherwise an enemy at random, not the weakest.
+- **Sight**: a creature that sees no enemy holds its ground until one comes
+  into view. When no creature on either side sees an enemy, it advances as the
+  original did, so a fight never stalls.
+- **Magic-users stay back**: an unarmored Wizard or Sorcerer, or a monster
+  magic-user, never closes in.
+- **Spells by priority**: the original's 1d7 roll over each spell's priority
+  (1 to 7), the strongest first; area spells are cast where they catch no ally;
+  a spell that needs Concentration waits while the caster holds one.
+- **Ranged weapons**: with no enemy beside it, a creature shoots when its
+  ranged weapon rates more than half its melee weapon (the original's rating,
+  counting attacks a turn).
+- **Healing** goes to the most wounded ally at half its Hit Points or lower,
+  the same line for spells, features and items.
+- **Shield** is cast only when +5 AC turns the hit into a miss; the prompt
+  shows the attack's total and the AC to the player too.
+- **A Champion's free move** is taken toward the enemy.
+- **Flee mode** obeys Quick magic for members who cannot flee.
+- The features the computer never uses (Two-Weapon Fighting, Action Surge, slot
+  smites, Cunning Action and others) are
+  [#269](https://github.com/stdarg/OpenGold/issues/269).

@@ -646,7 +646,7 @@ constexpr std::string_view profile_magic = "PC43";
 
 // The only combat checkpoint format this module reads or writes. Older
 // checkpoints are rejected rather than migrated; change it in place until 1.0.
-constexpr unsigned checkpoint_format = 65;
+constexpr unsigned checkpoint_format = 66;
 // MELEE-1: as in the original game, melee reaches adjacent squares only; the
 // SRD's 10-foot reach (polearms, the whip, a troll's claws) is not used.
 constexpr int melee_reach = 5;
@@ -1548,6 +1548,9 @@ struct Definition
     int dexterity{};    // Dexterity modifier
     bool frenzy{};      // Berserker, Barbarian level 3
     bool heavy_armor{}; // wearing Heavy armor, which prevents Rage
+    // A Wizard or Sorcerer wearing no armor, or a monster magic-user, which the
+    // computer keeps out of melee as the original did its magic-users (#266).
+    bool unarmored_arcane_caster{};
     // Hunter, Ranger level 3: Hunter's Lore and one Hunter's Prey option.
     bool hunters_lore{}, colossus_slayer{}, horde_breaker{};
     // Hunter, Ranger level 7: one Defensive Tactics option.
@@ -1797,6 +1800,8 @@ struct Actor
     bool keeps_charge{};     // Use Magic Device saved this use's charge, within one command
     bool curse_lifted{};     // Remove Curse freed it from its cursed weapon (MAGIC-1)
     bool displacement_spent{}; // Its Cloak of Displacement's miss is used this fight (MAGIC-4)
+    // The enemy its last command on its own turn aimed at, for the computer (#266).
+    rules::EntityId last_target{};
     int oiled_until_round{}; // Covered in Oil through this round: Fire damage deals 5 more
     bool shield_off{};       // Took its shield off this fight (for a two-handed bow)
     // Tried to run off the field as fast as the fastest enemy and failed: it
@@ -3881,6 +3886,8 @@ character_definition(std::string_view bytes,
     if (!armor)
     {
         d.mage_armor_ac = std::max(13 + dex, bracers_ac) + shield_ac + worn_ac;
+        d.unarmored_arcane_caster =
+            klass == CharacterClass::wizard || klass == CharacterClass::sorcerer;
     }
     if (armor && (features & 1))
     {
@@ -4475,6 +4482,11 @@ class Session final : public CombatSession
     [[nodiscard]] std::vector<Command> offered_commands() const;
     std::vector<Cell> movement_reach(EntityId actor) const override;
     bool submit(const Command &command) override;
+    // Records the enemy a command on the actor's own turn aims at.
+    void remember_target(const Command &command);
+    // What the computer weighs in the spell as the actor casts it (#266).
+    [[nodiscard]] rules::SpellFacts spell_facts(const Actor &a,
+                                                const detail::SpellDef &spell) const;
     std::string save() const override;
     static std::unique_ptr<Session> restore(std::shared_ptr<const Content> content,
                                             std::string_view bytes);
@@ -4680,6 +4692,9 @@ class Session final : public CombatSession
         Asked asked{};
         bool deflectable{}; // the hit deals Bludgeoning, Piercing or Slashing damage
         bool critical{};    // a hit Shield cannot turn aside
+        // The hit's attack roll total and the AC it hit, shown with the
+        // question so Shield is chosen knowing whether +5 turns it (#266).
+        int total{}, armor_class{};
     };
 
     // A creature's answer during the command being replayed: "shield",
@@ -4723,7 +4738,7 @@ class Session final : public CombatSession
     // Uncanny Dodge (Rogue 5): the hit's damage halved, when the Rogue chose it.
     int dodged(Actor &target, int amount);
     void ask_reaction(const Actor &target, Asked asked, bool deflectable = false,
-                      bool critical = false) const;
+                      bool critical = false, int total = 0, int armor_class = 0) const;
     int deflected(const Actor &attacker, Actor &target, int amount, detail::DamageType type,
                   bool ranged);
     [[nodiscard]] bool can_rebuke(const Actor &warlock, const Actor &attacker) const;
@@ -6955,6 +6970,10 @@ Snapshot Session::snapshot() const
     {
         s.actor = reaction_prompt_->question.target;
         s.reaction_pending = true;
+        if (const auto &question = reaction_prompt_->question; question.asked == Asked::hit)
+        {
+            s.reaction_attack = Snapshot::AttackRoll{question.total, question.armor_class};
+        }
     }
     s.battlefield = zoned_board();
     for (const auto &zone : zones_)
@@ -7065,11 +7084,14 @@ Snapshot Session::snapshot() const
         s.actor = area_->caster;
         const auto &spell = *detail::find_spell(area_->verb);
         s.area_targeting =
-            AreaTargeting{area_->caster, area_->verb, area_->center,
+            AreaTargeting{area_->caster,
+                          area_->verb,
+                          area_->center,
                           spell.storm ? storm_cells(area_->cubes)
                                       : area_cells(spell, area_->verb,
                                                    actor(area_->caster).source.cell, area_->center),
-                          spell.storm ? 2 : 1};
+                          spell.storm ? 2 : 1,
+                          spell_facts(actor(area_->caster), spell)};
     }
     if (!champion_move_ && effect_waiting())
     {
@@ -7184,6 +7206,25 @@ Snapshot Session::snapshot() const
         view.item_uses_left = a.item_uses;
         view.temporary_hp = a.life.temporary_hp;
         view.prone = a.effects.prone;
+        view.last_target = a.last_target;
+        view.unarmored_arcane_caster = def(a).unarmored_arcane_caster;
+        // Each rated by its attacks a turn too: Martial Arts' bonus strike
+        // counts for a Monk's melee.
+        const int attacks = 1 + def(a).extra_attacks;
+        view.melee_rating = (def(a).melee.count * def(a).melee.sides + 8 * def(a).melee_magic) *
+                            (attacks + (def(a).martial_arts ? 1 : 0));
+        if (def(a).range)
+        {
+            view.ranged_rating =
+                (def(a).ranged.count * def(a).ranged.sides + 8 * def(a).ranged_magic) * attacks;
+        }
+        else if (const auto bow = carried_ranged_weapon(a); !bow.empty())
+        {
+            const auto *weapon = detail::weapon(bow);
+            view.ranged_rating =
+                (weapon->dice * weapon->sides + 8 * std::max(0, rules::parse_item_key(bow).bonus)) *
+                attacks;
+        }
         view.status_effects =
             status_effect_views(a, a.oiled_until_round >= static_cast<int>(round_));
         if (physical_inventory_)
@@ -9762,6 +9803,7 @@ void Session::offer_spells(std::vector<Command> &commands, const Actor &a, const
             }
             commands.push_back({revision_, a.source.id, aimed ? 0 : other.source.id,
                                 std::move(verb), std::move(label), Cell{}, 0, aimed});
+            commands.back().spell = spell_facts(a, spell);
         };
         if (item_offered)
         {
@@ -19330,7 +19372,7 @@ bool Session::attack(Actor &a, Actor &target, AttackRange range,
                      damage_type == detail::DamageType::bludgeoning ||
                          damage_type == detail::DamageType::piercing ||
                          damage_type == detail::DamageType::slashing,
-                     automatic);
+                     automatic, natural + bonus, armor_class(target));
     }
     if (hit && strikes_duplicate(a, target))
     {
@@ -22234,6 +22276,36 @@ void Session::progress_movement()
     flight_.reset();
 }
 
+rules::SpellFacts Session::spell_facts(const Actor &a, const detail::SpellDef &spell) const
+{
+    return {spell.concentration, spell_range(a, spell),
+            spell.radius ? spell.radius
+            : spell.area ? spell.area / 2
+            : spell.cone ? spell.cone
+            : spell.cube ? spell.cube
+            : spell.line ? spell.line
+                         : std::max(spell.wall, spell.ring),
+            spell.cone || spell.cube || spell.line};
+}
+
+void Session::remember_target(const Command &command)
+{
+    const auto find = [&](rules::EntityId id)
+    {
+        return std::find_if(actors_.begin(), actors_.end(),
+                            [&](const Actor &a)
+                            {
+                                return a.source.id == id;
+                            });
+    };
+    const auto user = find(command.actor), target = find(command.target);
+    if (command.target && user != actors_.end() && target != actors_.end() &&
+        target->source.side != user->source.side)
+    {
+        user->last_target = command.target;
+    }
+}
+
 bool Session::submit(const Command &command)
 {
     const auto offered = legal_commands();
@@ -22260,6 +22332,7 @@ bool Session::submit(const Command &command)
         }
         else
         {
+            remember_target(command);
             perform(command);
         }
         limit_slowed_turn();
@@ -22348,7 +22421,8 @@ bool Session::can_deflect(const Actor &target, bool deflectable) const
            conscious(target) && target.reaction && !detail::incapacitated(target.effects);
 }
 
-void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable, bool critical) const
+void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable, bool critical,
+                           int total, int armor_class) const
 {
     // Unwinds the command to perform(), which asks the creature. A creature
     // asks once per command about the same kind of moment.
@@ -22364,7 +22438,7 @@ void Session::ask_reaction(const Actor &target, Asked asked, bool deflectable, b
          (can_deflect(target, deflectable) || can_dodge(target) || can_defend(target)));
     if (askable)
     {
-        throw ReactionQuestion{target.source.id, asked, deflectable, critical};
+        throw ReactionQuestion{target.source.id, asked, deflectable, critical, total, armor_class};
     }
 }
 
@@ -24479,7 +24553,8 @@ std::string Session::save() const
             << ' ' << a.source.morale << ' ' << a.source.intelligence << ' ' << a.run_start.x << ' '
             << a.run_start.y << ' ' << a.run_end.x << ' ' << a.run_end.y << ' ' << a.run_step.x
             << ' ' << a.run_step.y << ' ' << a.run_feet << ' ' << a.flame_lit << ' '
-            << a.curse_lifted << ' ' << a.displacement_spent << ' ' << a.item_uses.size() << ' ';
+            << a.curse_lifted << ' ' << a.displacement_spent << ' ' << a.last_target << ' '
+            << a.item_uses.size() << ' ';
         for (const auto &[id, left] : a.item_uses)
         {
             out << id << ' ' << left << ' ';
@@ -24632,9 +24707,10 @@ std::string Session::save() const
         const auto &question = prompt.question;
         const auto &command = prompt.command;
         out << ' ' << question.target << ' ' << static_cast<unsigned>(question.asked) << ' '
-            << question.deflectable << ' ' << question.critical << ' ' << command.actor << ' '
-            << command.target << ' ' << std::quoted(command.verb) << ' ' << command.destination.x
-            << ' ' << command.destination.y << ' ' << command.item << ' ' << prompt.answers.size();
+            << question.deflectable << ' ' << question.critical << ' ' << question.total << ' '
+            << question.armor_class << ' ' << command.actor << ' ' << command.target << ' '
+            << std::quoted(command.verb) << ' ' << command.destination.x << ' '
+            << command.destination.y << ' ' << command.item << ' ' << prompt.answers.size();
         for (const auto &answer : prompt.answers)
         {
             out << ' ' << answer.target << ' ' << static_cast<unsigned>(answer.asked) << ' '
@@ -24732,7 +24808,7 @@ Actor read_checkpoint_actor(std::istream &input, const Content &content)
         actor.source.morale >> actor.source.intelligence >> actor.run_start.x >>
         actor.run_start.y >> actor.run_end.x >> actor.run_end.y >> actor.run_step.x >>
         actor.run_step.y >> actor.run_feet >> actor.flame_lit >> actor.curse_lifted >>
-        actor.displacement_spent;
+        actor.displacement_spent >> actor.last_target;
     std::size_t item_count{};
     input >> item_count;
     // The inventory comes later in the checkpoint; 64 items is more than any
@@ -25942,8 +26018,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
         unsigned asked{};
         std::size_t answers{};
         input >> question.target >> asked >> question.deflectable >> question.critical >>
-            command.actor >> command.target >> std::quoted(command.verb) >> command.destination.x >>
-            command.destination.y >> command.item >> answers;
+            question.total >> question.armor_class >> command.actor >> command.target >>
+            std::quoted(command.verb) >> command.destination.x >> command.destination.y >>
+            command.item >> answers;
         if (!input || !known_actor(question.target) ||
             asked > static_cast<unsigned>(Asked::counter) || !known_actor(command.actor) ||
             (command.target && !known_actor(command.target)) || command.verb.empty() ||
@@ -30720,6 +30797,7 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         {
             throw std::runtime_error("Unknown creature fields: " + key);
         }
+        d.unarmored_arcane_caster = key.find("magic-user") != std::string::npos;
         content.definitions.emplace(std::move(key), std::move(d));
     }
     if (content.definitions.empty())

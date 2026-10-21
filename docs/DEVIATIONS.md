@@ -76,6 +76,18 @@ Add an entry whenever a new departure is decided.
   party can keep a troll down.
   [GEAR-1](SRD-DECISIONS.md#gear-1-2026-10-08-fire-and-acid-for-every-party).
 
+- **Computer play** (2026-10-21). The original's AI walked toward an enemy it
+  could not see, rolled each ally's saving throw to judge an area spell (so
+  monsters cast nearly regardless), and drew three random spells at each
+  priority. OpenGoldBox's computer waits until it sees an enemy (unless no one
+  on the field sees anyone), keeps every caster's allies out of its areas
+  without a hidden roll, picks one spell at random among those that make
+  sense, treats cantrips as attacks, never casts a helpful spell twice on one
+  creature, counts a weapon's melee attacks a turn in its rating, and makes its
+  random choices from the fight's state so a fight replays the same.
+  [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
+  [AI.md](AI.md).
+
 ## Party and parley
 
 - **Party leader** (2026-10-08). The original asked who speaks at every parley.

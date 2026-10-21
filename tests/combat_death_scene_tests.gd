@@ -27,34 +27,38 @@ func check() -> void:
     await keep_initiative(combat)
     var canvas := combat.get_node("BattlefieldScroll/Canvas")
     var tile: float = canvas.custom_minimum_size.x / 12.0
-    combat.get_node("Melee").emit_signal("pressed")
     var click := InputEventMouseButton.new()
     click.button_index = MOUSE_BUTTON_LEFT
     click.pressed = true
-    click.position = canvas.get_global_transform_with_canvas() * Vector2(7.5 * tile, 4.5 * tile)
-    root.push_input(click)
-    # Merric acts eighth, after four Kobold turns of about 155 frames each.
-    for frame in range(2000):
-        if combat.get_node("StatusStack/Turn").text.contains("Merric Mistvale turn"):
-            break
+    # Dorian Nightwind and Merric Mistvale, both beside Kobold 3, attack it on
+    # each of their turns until a blow fells it; the others end their turns.
+    # The dice decide which blow does it.
+    var felled := false
+    for frame in range(8000):
+        var turn: String = combat.get_node("StatusStack/Turn").text
         # A Goliath's Reaction boon asks when a Kobold hits it; it is declined.
         var decline: Button = combat.get_node("Decline")
         if decline.visible and not decline.disabled:
             decline.pressed.emit()
             await process_frame
             continue
-        var end_key := InputEventKey.new()
-        end_key.keycode = KEY_ENTER
-        end_key.pressed = true
-        root.push_input(end_key)
+        if turn.contains("Dorian Nightwind turn") or turn.contains("Merric Mistvale turn"):
+            combat.get_node("Melee").emit_signal("pressed")
+            click.position = canvas.get_global_transform_with_canvas() * Vector2(7.5 * tile, 4.5 * tile)
+            root.push_input(click)
+            if combat.get_node("LogStack/Log").text.contains("Kobold 3 is defeated."):
+                felled = true
+                break
+        if turn.contains(" turn") and not turn.contains("Enemy"):
+            var end_key := InputEventKey.new()
+            end_key.keycode = KEY_ENTER
+            end_key.pressed = true
+            root.push_input(end_key)
         await process_frame
-    if not combat.get_node("StatusStack/Turn").text.contains("Merric Mistvale turn"):
-        push_error("Merric did not receive a turn to attack Kobold 3")
+    if not felled:
+        push_error("Dorian and Merric did not fell Kobold 3")
         quit(1)
         return
-    combat.get_node("Melee").emit_signal("pressed")
-    click.position = canvas.get_global_transform_with_canvas() * Vector2(7.5 * tile, 4.5 * tile)
-    root.push_input(click)
     if not combat.get_node("LogStack/Log").text.contains("Kobold 3 is defeated."):
         push_error("Expected a lethal attack in the shared combat scene")
         quit(1)
