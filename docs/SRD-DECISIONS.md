@@ -1508,3 +1508,40 @@ Speed, Icon and Pics. The user decided on 2026-10-21 (#268):
 
 So far the one such monster the game meets is the Slums magic-user, whose
 Wand of Magic Missiles it zaps on Hard.
+
+## TEMPLE-1 (2026-10-22): temple services
+
+The original's temples cast nine clerical spells for a price, the same at every
+temple; only Cure Light Wounds was in the game, as Cure Wounds for 100 gp. The
+user decided on 2026-10-22:
+
+- **Each service casts an SRD 5.2.1 spell** under the original's name, as a
+  temple cleric with Wisdom +3:
+
+  | Service | Spell | Helps |
+  |---|---|---|
+  | Cure Light Wounds | Cure Wounds, level-1 slot (2d8 + 3) | a wounded living member |
+  | Cure Serious Wounds | Cure Wounds, level-3 slot (6d8 + 3) | a wounded living member |
+  | Cure Critical Wounds | Cure Wounds, level-5 slot (10d8 + 3) | a wounded living member |
+  | Cure Blindness | Lesser Restoration | a Blinded member |
+  | Cure Disease | Lesser Restoration | a member with Contagion's disease |
+  | Neutralize Poison | Lesser Restoration | a Poisoned member, other than by disease |
+  | Remove Curse | Remove Curse | a cursed member, or one holding a cursed item, which is lost |
+  | Stone to Flesh | Greater Restoration | a Petrified member, or one turning to stone |
+  | Raise Dead | Raise Dead (1 Hit Point, −4 to D20 Tests easing by 1 a Long Rest) | a member dead up to ten days, not turned to dust |
+  | Resurrection | Resurrection (all its Hit Points) | a member Raise Dead cannot help |
+
+- **The price is the whole cost**: Raise Dead's 5,500 gp includes the offering
+  camp revival takes (300 gp × level).
+- **Resurrection is offered only on Easy and Normal**, at 11,000 gp. On Hard
+  and above, the Raise Dead list shows a member it cannot help with the reason,
+  and the temple cannot bring that member back.
+- **Prices come from the Shop & Temple Manager's files** in
+  [`data/shops/`](../data/shops/README.md), which start at the original's
+  prices; each temple's prices and **Offered** switches apply where its service
+  opens. A temple the files do not name charges the original's prices.
+- **The Heal list** works like the training hall's: choosing a service lists
+  the members it would help, and choosing a member asks to confirm the price, as
+  the original did. The party may buy several services before leaving.
+- **The party's money is always pooled**, so the original's Take, Pool and
+  Share commands are not needed (#232).

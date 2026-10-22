@@ -1583,5 +1583,22 @@
   "Ranged attack (Poison, Knock Out)",
   "Ranged attack (Poison, Obscure)",
   "Poisoner's Kit",
-  "A Rogue carrying it can poison a foe with Cunning Strike."
+  "A Rogue carrying it can poison a foe with Cunning Strike.",
+  "The clerics will cast these spells for the party.",
+  "{spell} ({fee} gp)",
+  "Choose who receives {spell}.",
+  "{name}",
+  "{name} (beyond Raise Dead)",
+  "The clerics will cast {spell} on {name} for {fee} gp.",
+  "Pay",
+  "No one in the party needs {spell}.",
+  "Raise Dead cannot bring back {name}, who has been dead too long or is dust.",
+  "The clerics cast {spell} on {name}.",
+  "Cure Blindness",
+  "Cure Disease",
+  "Cure Light Wounds",
+  "Cure Serious Wounds",
+  "Cure Critical Wounds",
+  "Neutralize Poison",
+  "Stone to Flesh"
 ]

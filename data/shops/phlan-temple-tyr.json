@@ -75,6 +75,12 @@
       "offered": true,
       "price_gp": 2000,
       "service_id": "stone_to_flesh"
+    },
+    {
+      "name": "Resurrection",
+      "offered": true,
+      "price_gp": 11000,
+      "service_id": "resurrection"
     }
   ],
   "portrait": "art/portraits/NPCs/bishop-braccio.png",

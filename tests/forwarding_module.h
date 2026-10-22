@@ -229,10 +229,16 @@ class ForwardingModule : public rules::RulesModule
         rules_->set_hit_points(state, sheet, hit_points);
     }
 
-    void temple_heal(rules::VitalState &state, const rules::CharacterSheet &sheet,
-                     RandomState &random_state) const override
+    bool temple_service_helps(const rules::CharacterSheet &sheet, const rules::VitalState &state,
+                              rules::TempleService service) const override
     {
-        rules_->temple_heal(state, sheet, random_state);
+        return rules_->temple_service_helps(sheet, state, service);
+    }
+
+    void temple_service(rules::VitalState &state, const rules::CharacterSheet &sheet,
+                        rules::TempleService service, RandomState &random_state) const override
+    {
+        rules_->temple_service(state, sheet, service, random_state);
     }
 
     rules::HazardAttackResult hazard_attack(rules::VitalState &state,

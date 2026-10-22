@@ -1438,39 +1438,11 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     {
         return choose_at_hall(choice);
     }
-    if (temple_request_)
+    if (temple_visit_)
     {
-        // The original COMBAT request remains suspended until payment or cancellation.
-        auto before = campaign_->checkpoint();
-        try
-        {
-            const bool cancel = choice == temple_targets_.size();
-            if (!cancel)
-            {
-                campaign_->temple_heal(temple_targets_.at(choice));
-            }
-            auto reply = character_reply(selected_character_);
-            reply.writes.push_back({ecl_temple_service, 0});
-            if (!machine_.resume_host(temple_request_, reply))
-            {
-                throw EclError("Temple reply rejected");
-            }
-            temple_request_ = 0;
-            temple_targets_.clear();
-            snapshot_.phase = TourPhase::running;
-            snapshot_.dialogue =
-                cancel ? "Temple service cancelled." : "Cure Wounds completed for 100 gp.";
-            snapshot_.diagnostic.clear();
-        }
-        catch (const std::exception &e)
-        {
-            campaign_->restore(std::move(before));
-            snapshot_.diagnostic = e.what();
-            ++snapshot_.revision;
-            return false;
-        }
+        return choose_at_temple(choice);
     }
-    else if (damage_request_)
+    if (damage_request_)
     {
         if (!machine_.resume_host(damage_request_, character_reply(selected_character_)))
         {
@@ -1976,34 +1948,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 throw EclError("Temple service requires a campaign party");
             }
             read_character();
-            temple_targets_.clear();
-            snapshot_.choices.clear();
-            for (auto id : campaign_->state().slots)
-            {
-                if (id)
-                {
-                    const auto &m = campaign_->member(id);
-                    if (!m.vitals.dead && m.vitals.hit_points < campaign_->hit_point_maximum(id))
-                    {
-                        temple_targets_.push_back(id);
-                        snapshot_.choices.push_back("Cure Wounds: " + m.character.sheet().name +
-                                                    " (100 gp)");
-                    }
-                }
-            }
-            snapshot_.choices.push_back("Cancel");
-            temple_request_ = request.id;
             // Word of Recall may prepare its sanctuary on this square.
             if (!current_area_)
             {
                 temple_square_ = Sanctuary{current_script_, snapshot_.pose};
             }
-            snapshot_.dialogue +=
-                "\nCure Wounds costs 100 gp of the party's gold and heals 2d8 + 3 HP. Choose a wounded living member. Other temple services are not supported.";
-            snapshot_.diagnostic.clear();
-            snapshot_.phase = TourPhase::awaiting_continue;
-            snapshot_.continue_ticket = ++next_ticket_;
-            ++snapshot_.revision;
+            open_temple(request.id);
             return true;
         }
         if (machine_.variable(ecl_shop_service) == 1)
@@ -2399,6 +2349,200 @@ bool RolfTourSession::choose_at_hall(std::size_t choice)
                     {{"name", name}, {"skill", lesson->label, true}}}});
         return true;
     }
+    }
+    return false;
+}
+
+void RolfTourSession::open_temple(std::uint64_t request)
+{
+    // The temple data/shops places on this square, else the original's list.
+    const auto archive = "GEO" + std::to_string(current_area_ ? area_resources().bank : 3) + ".DAX";
+    auto offerings = opengold::original_temple_offerings();
+    for (const auto &site : temples_)
+    {
+        const bool here =
+            site.archive == archive && site.record == current_area_ &&
+            std::find(site.markers.begin(), site.markers.end(),
+                      std::pair{snapshot_.pose.x, snapshot_.pose.y}) != site.markers.end();
+        if (here)
+        {
+            offerings = site.offerings;
+        }
+    }
+    // Resurrection is for Easy and Normal only.
+    if (difficulty_ > opengold::Difficulty::normal)
+    {
+        std::erase_if(offerings,
+                      [](const auto &offering)
+                      {
+                          return offering.service == opengold::rules::TempleService::resurrection;
+                      });
+    }
+    temple_visit_ = TempleVisit{request, std::move(offerings), {}, 0, {}};
+    show_temple({});
+}
+
+void RolfTourSession::show_temple(std::vector<Message> notice)
+{
+    using opengold::rules::TempleService;
+    auto &visit = *temple_visit_;
+    auto dialogue = std::move(notice);
+    std::vector<Message> choices;
+    visit.choices.clear();
+    const auto add = [&](Message label, TempleChoice choice)
+    {
+        choices.push_back(std::move(label));
+        visit.choices.push_back(std::move(choice));
+    };
+    const auto spell = [](const opengold::TempleOffering &offering)
+    {
+        return opengold::rules::MessageArgument{
+            "spell", std::string(opengold::temple_service_info(offering.service).name), true};
+    };
+    if (visit.member)
+    {
+        const auto &offering = *visit.chosen;
+        dialogue.push_back({"The clerics will cast {spell} on {name} for {fee} gp.",
+                            {spell(offering),
+                             {"name", campaign_->member(visit.member).character.sheet().name},
+                             {"fee", amount(offering.price_gp)}}});
+        add({"Pay", {}}, {TempleChoice::Kind::confirm, visit.member, offering});
+        add({"Back", {}}, {TempleChoice::Kind::back});
+    }
+    else if (visit.chosen)
+    {
+        const auto &offering = *visit.chosen;
+        if (dialogue.empty())
+        {
+            dialogue.push_back({"Choose who receives {spell}.", {spell(offering)}});
+        }
+        for (const auto id : campaign_->state().slots)
+        {
+            if (!id)
+            {
+                continue;
+            }
+            const auto name = campaign_->member(id).character.sheet().name;
+            if (campaign_->temple_service_helps(id, offering.service))
+            {
+                add({"{name}", {{"name", name}}}, {TempleChoice::Kind::member, id, offering});
+            }
+            else if (offering.service == TempleService::raise_dead &&
+                     campaign_->temple_service_helps(id, TempleService::resurrection))
+            {
+                add({"{name} (beyond Raise Dead)", {{"name", name}}},
+                    {TempleChoice::Kind::beyond_raising, id, offering});
+            }
+        }
+        add({"Back", {}}, {TempleChoice::Kind::back});
+    }
+    else
+    {
+        if (dialogue.empty())
+        {
+            dialogue.push_back({"The clerics will cast these spells for the party.", {}});
+        }
+        for (const auto &offering : visit.offerings)
+        {
+            add({"{spell} ({fee} gp)", {spell(offering), {"fee", amount(offering.price_gp)}}},
+                {TempleChoice::Kind::service, 0, offering});
+        }
+        add({"Leave", {}}, {TempleChoice::Kind::leave});
+    }
+    snapshot_.host_dialogue = dialogue;
+    snapshot_.dialogue = english(dialogue);
+    snapshot_.host_choices = choices;
+    snapshot_.choices.clear();
+    for (const auto &choice : choices)
+    {
+        snapshot_.choices.push_back(english(choice));
+    }
+    snapshot_.diagnostic.clear();
+    snapshot_.phase = TourPhase::awaiting_continue;
+    snapshot_.continue_ticket = ++next_ticket_;
+    ++snapshot_.revision;
+}
+
+bool RolfTourSession::choose_at_temple(std::size_t choice)
+{
+    auto &visit = *temple_visit_;
+    const auto picked = visit.choices.at(choice);
+    const auto name =
+        picked.member ? campaign_->member(picked.member).character.sheet().name : std::string{};
+    const opengold::rules::MessageArgument spell{
+        "spell", std::string(opengold::temple_service_info(picked.offering.service).name), true};
+    switch (picked.kind)
+    {
+    case TempleChoice::Kind::leave:
+    {
+        auto reply = character_reply(selected_character_);
+        reply.writes.push_back({ecl_temple_service, 0});
+        if (!machine_.resume_host(visit.request, reply))
+        {
+            throw EclError("Temple reply rejected");
+        }
+        temple_visit_.reset();
+        snapshot_.host_dialogue.clear();
+        snapshot_.host_choices.clear();
+        snapshot_.choices.clear();
+        snapshot_.dialogue.clear();
+        snapshot_.phase = TourPhase::running;
+        ++snapshot_.revision;
+        return true;
+    }
+    case TempleChoice::Kind::back:
+        if (visit.member)
+        {
+            visit.member = 0;
+        }
+        else
+        {
+            visit.chosen.reset();
+        }
+        show_temple({});
+        return true;
+    case TempleChoice::Kind::service:
+    {
+        const auto slots = campaign_->state().slots;
+        const bool needed = std::any_of(
+            slots.begin(), slots.end(),
+            [&](opengold::MemberId id)
+            {
+                return id &&
+                       (campaign_->temple_service_helps(id, picked.offering.service) ||
+                        (picked.offering.service == opengold::rules::TempleService::raise_dead &&
+                         campaign_->temple_service_helps(
+                             id, opengold::rules::TempleService::resurrection)));
+            });
+        if (!needed)
+        {
+            show_temple({{"No one in the party needs {spell}.", {spell}}});
+            return true;
+        }
+        visit.chosen = picked.offering;
+        show_temple({});
+        return true;
+    }
+    case TempleChoice::Kind::beyond_raising:
+        show_temple({{"Raise Dead cannot bring back {name}, who has been dead too long or is dust.",
+                      {{"name", name}}}});
+        return true;
+    case TempleChoice::Kind::member:
+        if (coins(campaign_->state().wealth, Coin::gold) < picked.offering.price_gp)
+        {
+            show_temple({{"The party's gold cannot pay {fee} gp.",
+                          {{"fee", amount(picked.offering.price_gp)}}}});
+            return true;
+        }
+        visit.member = picked.member;
+        show_temple({});
+        return true;
+    case TempleChoice::Kind::confirm:
+        campaign_->temple_service(picked.member, picked.offering.service, picked.offering.price_gp);
+        visit.member = 0;
+        visit.chosen.reset();
+        show_temple({{"The clerics cast {spell} on {name}.", {spell, {"name", name}}}});
+        return true;
     }
     return false;
 }

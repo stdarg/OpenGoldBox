@@ -786,10 +786,10 @@ template <bool Reading> struct SaveCodec
             v.member_chosen_ = false;
             v.meeting_pose_.reset();
             v.robbed_ = false;
-            v.temple_targets_.clear();
+            v.temple_visit_.reset();
             v.hall_visit_.reset();
-            v.menu_request_ = v.delayed_request_ = v.who_request_ = v.temple_request_ =
-                v.shop_request_ = v.damage_request_ = 0;
+            v.menu_request_ = v.delayed_request_ = v.who_request_ = v.shop_request_ =
+                v.damage_request_ = 0;
             v.remaining_delay_ = 0;
             v.transition_ = v.message_only_ = false;
             v.event_stage_ = por::RolfTourSession::EventStage::none;

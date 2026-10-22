@@ -4,19 +4,23 @@
     "map": "New Phlan",
     "markers": [
       [
-        0.0,
-        12.0
+        1.0,
+        1.0
       ],
       [
-        2.0,
-        12.0
+        3.0,
+        1.0
+      ],
+      [
+        1.0,
+        3.0
       ]
     ],
     "record": 0.0
   },
-  "id": "phlan-temple-tempus",
+  "id": "phlan-temple-sune",
   "kind": "temple",
-  "name": "Temple of Tempus",
+  "name": "Temple of Sune",
   "offerings": [
     {
       "name": "Cure Blindness",
@@ -71,9 +75,15 @@
       "offered": true,
       "price_gp": 2000,
       "service_id": "stone_to_flesh"
+    },
+    {
+      "name": "Resurrection",
+      "offered": true,
+      "price_gp": 11000,
+      "service_id": "resurrection"
     }
   ],
-  "portrait": "dev_tools/shop_manager/portraits/temple-tempus.png",
+  "portrait": "dev_tools/shop_manager/portraits/temple-sune.png",
   "type": "Temple",
   "version": 1
 }

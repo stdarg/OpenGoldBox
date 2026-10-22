@@ -272,7 +272,12 @@ class CampaignParty
     [[nodiscard]] rules::Message recover_rest_choice(RestTicket ticket, MemberId id,
                                                      std::string_view choice);
     void finish_short_rest(RestTicket ticket);
-    void temple_heal(MemberId target);
+    // Whether a temple's service would help an active member (TEMPLE-1);
+    // Remove Curse also frees one from its cursed items.
+    [[nodiscard]] bool temple_service_helps(MemberId target, rules::TempleService service) const;
+    // A temple casts the service on an active member it would help, paid
+    // from the party's gold.
+    void temple_service(MemberId target, rules::TempleService service, std::uint32_t price_gp);
     // An attack from outside combat, such as an arrow trap, on a random active
     // conscious member; nothing when none is conscious.
     std::optional<HazardHit> hazard_attack(const rules::HazardAttack &attack);

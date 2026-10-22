@@ -160,6 +160,17 @@ in the game: answering YES at a hall lists its services in the dialogue
   rolls with the saved script random state, so reloading cannot reroll a camp.
   [RECOVERY.md](RECOVERY.md#camp-interruption-evidence).
 
+- **Temple services** (2026-10-22). The original's temples cast AD&D spells.
+  Each service now casts an SRD 5.2.1 spell under its original name: Cure
+  Serious and Cure Critical Wounds are Cure Wounds from a level-3 and a level-5
+  slot, the three other cures Lesser Restoration, Stone to Flesh Greater
+  Restoration, and Raise Dead returns a member with 1 Hit Point and −4 to D20
+  Tests. On Easy and Normal the temples also cast Resurrection, which the
+  original's did not. Each temple may have its own prices, edited with the
+  Shop & Temple Manager; they start at the original's, which were the same
+  everywhere.
+  [TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services).
+
 ## Interface and saves
 
 - **Modern shell.** A Godot interface that follows the Gold Box screens'

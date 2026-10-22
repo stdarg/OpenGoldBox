@@ -269,8 +269,8 @@ accepts explicit native character conversions for this bank; unregistered NPCs
 and the special hostile NPC 24 fault. General bank resolution, morale behavior
 and original NPC conversion coverage remain campaign work. An eligible,
 uninterrupted long rest advances campaign time by eight hours. The original
-city-watch interruption grants no recovery. Temple Cure Wounds costs 100 gp for
-a wounded living active member; resurrection is unsupported. See
+city-watch interruption grants no recovery. A temple heals, cures and raises
+active members for its prices ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)). See
 [service limits and checks](RECOVERY.md). The preview guard
 and synthetic ADD NPC test establish ownership/recruitment without inventing
 conversions for original content.

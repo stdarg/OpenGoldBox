@@ -255,7 +255,7 @@ void combat_and_campaign()
           "Advancement adds only its new Hit Die and retains the exact Stable deadline");
     auto healed = stable;
     RandomState rng{42};
-    rules->temple_heal(healed, character.sheet(), rng);
+    rules->temple_service(healed, character.sheet(), TempleService::cure_light_wounds, rng);
     check(healed.hit_points > 0 && healed.resources == recovered,
           "Temple healing cancels the recovery clock without replenishing pools");
     for (const auto invalid :

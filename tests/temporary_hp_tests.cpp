@@ -146,7 +146,7 @@ void rule_operations()
     rules->set_hit_points(state, c.sheet(), 1);
     check(state.hit_points == 1 && pool(c, state).amount == 8,
           "Campaign script assignment is not typed damage");
-    rules->temple_heal(state, c.sheet(), rng);
+    rules->temple_service(state, c.sheet(), TempleService::cure_light_wounds, rng);
     check(state.hit_points > 1 && pool(c, state).amount == 8,
           "Temple healing neither spends nor restores Temporary HP");
     auto participants = std::vector<Participant>{{1,

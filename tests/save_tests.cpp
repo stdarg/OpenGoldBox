@@ -397,7 +397,7 @@ void roundtrip(const std::filesystem::path &directory)
     state.roster[1].vitals.description =
         "Level-one spell slots: 1 / 3\nArcane Recovery uses: 1 / 1";
     party->restore(state);
-    party->temple_heal(fighter);
+    party->temple_service(fighter, rules::TempleService::cure_light_wounds, 100);
     auto town = prototype();
     town.campaign_party(party);
     settle(town);
@@ -451,8 +451,8 @@ void roundtrip(const std::filesystem::path &directory)
     wounded.roster[0].vitals.hit_points = 1;
     replacement->restore(wounded);
     party->restore(std::move(wounded));
-    replacement->temple_heal(fighter);
-    party->temple_heal(fighter);
+    replacement->temple_service(fighter, rules::TempleService::cure_light_wounds, 100);
+    party->temple_service(fighter, rules::TempleService::cure_light_wounds, 100);
     check(replacement->member(fighter).vitals == party->member(fighter).vitals &&
               replacement->state().random_state == party->state().random_state,
           "Service RNG continuation matches");

@@ -12,7 +12,8 @@ New Phlan temples, and the hidden Temple of Ilmater in Podol Plaza. Multiple
 entrances to one temple select the same record. Green markers are shops and
 violet crosses are temples. The walls and doors come from locally decoded
 `GEO*.DAX` files; the fixed locations are recorded in
-[`data/locations.json`](data/locations.json). There are no position controls.
+[`data/shops/locations.json`](../../data/shops/locations.json). There are no
+position controls.
 
 All twelve shops start with stock decoded from `ITEM3.DAX` records 52–55. The
 general shops also start with the current game's added gear: ten Torches, Acid,
@@ -24,8 +25,9 @@ JSON record, even if it shares an original stock list with other shops. Use
 behavior; `0` means out of stock. The item picker can search decoded item lists
 from `ITEM1.DAX` through `ITEM8.DAX` and keeps each added item's source identity.
 
-The four temples each have the nine original curative services, with independent
-editable prices and **Offered** switches. Their type is fixed to Temple. Shops
+The four temples each have the nine original curative services and
+OpenGoldBox's Resurrection, which the game offers only on Easy and Normal, with
+independent editable prices and **Offered** switches. Their type is fixed to Temple. Shops
 can change among Arms & Armor, General Items, Silver Items, and Jewelry, but
 cannot become temples. Changing a shop type preserves its independently edited
 offerings so the user can adjust its stock deliberately.
@@ -37,11 +39,12 @@ The default Tyr record uses Bishop Braccio's existing portrait. Sune, Tempus,
 and Ilmater use the new portraits in [`portraits/`](portraits/).
 
 Changes save immediately to one file per location under
-[`data/shops/`](data/shops/). Each file has a stable ID, a fixed map and marker
-list, a shop or temple kind, the editable type and portrait, and its offerings.
-The tool validates the fixed location and the shop/temple boundary before
-replacing a file. These files are dev-tool data for later game integration;
-the current game does not read them.
+[`data/shops/`](../../data/shops/). Each file has a stable ID, a fixed map and
+marker list, a shop or temple kind, the editable type and portrait, and its
+offerings. The tool validates the fixed location and the shop/temple boundary
+before replacing a file. The game reads the temples' services, prices and
+**Offered** switches; it does not read the shops yet
+([#271](https://github.com/stdarg/OpenGold/issues/271)).
 
 ## Run
 
@@ -80,6 +83,7 @@ menu and starting gold prices follow the [Pool of Radiance walkthrough's Temple
 Spells table](https://easydamus.s3.us-east-1.amazonaws.com/PoR.pdf), section
 8.5: Cure Blindness 1000, Cure Disease 1000, Cure Light Wounds 100, Cure Serious
 Wounds 350, Cure Critical Wounds 600, Neutralize Poison 1000, Raise Dead 5500,
-Remove Curse 3500, and Stone to Flesh 2000 gp. These prices are editable. The
-current game currently implements only its Cure Wounds service; the other
-services are stored here for later integration.
+Remove Curse 3500, and Stone to Flesh 2000 gp. Resurrection, at 11000 gp, is
+OpenGoldBox's. These prices are editable. The game casts each service as an SRD
+5.2.1 spell
+([TEMPLE-1](../../docs/SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)).

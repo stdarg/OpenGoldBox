@@ -11,6 +11,9 @@ const TEMPLE_SERVICES := [
     ["raise_dead", "Raise Dead", 5500],
     ["remove_curse", "Remove Curse", 3500],
     ["stone_to_flesh", "Stone to Flesh", 2000],
+    # OpenGoldBox's addition: on Easy and Normal, for a member Raise Dead
+    # cannot help (TEMPLE-1).
+    ["resurrection", "Resurrection", 11000],
 ]
 const ADDED_GEAR := [
     ["10 Torches", 1, 10, 200],
@@ -50,7 +53,8 @@ var add_row: HBoxContainer
 
 func _ready() -> void:
     repo_dir = ProjectSettings.globalize_path("res://../../..").simplify_path()
-    data_dir = ProjectSettings.globalize_path("res://../data").simplify_path()
+    # The game reads these files too (TEMPLE-1).
+    data_dir = repo_dir.path_join("data/shops")
     var parsed: Variant = _read_json(data_dir.path_join("locations.json"))
     if not parsed is Dictionary:
         _fatal("Cannot read fixed shop locations")
@@ -125,7 +129,7 @@ func _read_json(path: String) -> Variant:
     return JSON.parse_string(file.get_as_text())
 
 func _record_path(id: String) -> String:
-    return data_dir.path_join("shops").path_join(id + ".json")
+    return data_dir.path_join(id + ".json")
 
 func _fixed_location(location: Dictionary) -> Dictionary:
     var map: Dictionary = _map_meta(String(location["map"]))
@@ -622,7 +626,7 @@ func _run_check() -> void:
             if cell.is_empty():
                 _fatal("Invalid map marker for " + id)
                 return
-    if shops != 12 or temples != 4 or records["podol-temple-ilmater"]["offerings"].size() != 9:
+    if shops != 12 or temples != 4 or records["podol-temple-ilmater"]["offerings"].size() != 10:
         _fatal("Shop/temple inventory mismatch")
         return
     var saved_type: String = records["phlan-arms-13-08"]["type"]

@@ -203,8 +203,9 @@ co-occupancy remain in the condition/creature-state increments (#35/#44).
   feats, spells, HP and slots persist together. [Recovery](RECOVERY.md) restores
   supported resources after eligible eight-hour rests; repeated rests require
   a 16-hour wait. Stable reward IDs survive scene recreation and saves.
-- Temple Cure Wounds is a 100 gp atomic service for a wounded living active
-  member. Dead targets reject; no resurrection is implied.
+- A temple's services are atomic: each casts its SRD spell on an active member
+  it would help and charges the party's gold, or changes nothing
+  ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)).
 
 The fixed profiles are intentionally limited to levels 1–4 and ordinary Medium-sized
 ground combatants. Created campaign profiles support the documented level 1–4

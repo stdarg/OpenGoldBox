@@ -164,6 +164,19 @@ void put_down_cursed_items(PartyMember &member)
     member.character.replace_inventory(std::move(inventory));
 }
 
+// Whether the member holds a cursed item it cannot put down.
+bool holds_cursed_item(const PartyMember &member)
+{
+    const auto &inventory = member.character.inventory();
+    return std::any_of(member.equipped.begin(), member.equipped.end(),
+                       [&](std::uint64_t worn)
+                       {
+                           const auto &definition = inventory.find(worn)->get().definition_id;
+                           return rules::parse_item_key(definition).power ==
+                                  rules::ItemPower::cursed;
+                       });
+}
+
 // The definitions of a member's equipped items, which the rules read as gear.
 std::vector<std::string> equipped_definitions(const PartyMember &member)
 {
@@ -2015,27 +2028,46 @@ std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
     throw std::runtime_error("No member can cast Knock");
 }
 
-void CampaignParty::temple_heal(MemberId target)
+bool CampaignParty::temple_service_helps(MemberId target, rules::TempleService service) const
+{
+    if (std::find(state_.slots.begin(), state_.slots.end(), target) == state_.slots.end())
+    {
+        return false;
+    }
+    const auto &current = member(target);
+    return rules_->temple_service_helps(current.character.sheet(), current.vitals, service) ||
+           (service == rules::TempleService::remove_curse && !current.vitals.dead &&
+            holds_cursed_item(current));
+}
+
+void CampaignParty::temple_service(MemberId target, rules::TempleService service,
+                                   std::uint32_t price_gp)
 {
     editable();
-    const auto &current = member(target);
     if (std::find(state_.slots.begin(), state_.slots.end(), target) == state_.slots.end())
     {
         throw std::runtime_error("Temple target must be active");
     }
-    if (current.vitals.dead || current.vitals.hit_points >= hit_point_maximum(target))
+    if (!temple_service_helps(target, service))
     {
-        throw std::runtime_error("Cure Wounds requires a wounded living member");
+        throw std::runtime_error("The temple's service would not help the member");
     }
-    constexpr std::uint32_t temple_fee = 100;
-    if (coins(state_.wealth, Coin::gold) < temple_fee)
+    if (coins(state_.wealth, Coin::gold) < price_gp)
     {
         throw std::runtime_error("Party cannot afford temple service");
     }
     auto next = state_;
-    auto &healed = member_in(next, target);
-    coins(next.wealth, Coin::gold) -= temple_fee;
-    rules_->temple_heal(healed.vitals, healed.character.sheet(), next.random_state);
+    auto &patient = member_in(next, target);
+    coins(next.wealth, Coin::gold) -= price_gp;
+    const auto &sheet = patient.character.sheet();
+    if (rules_->temple_service_helps(sheet, patient.vitals, service))
+    {
+        rules_->temple_service(patient.vitals, sheet, service, next.random_state);
+    }
+    if (service == rules::TempleService::remove_curse)
+    {
+        put_down_cursed_items(patient);
+    }
     state_ = std::move(next);
 }
 

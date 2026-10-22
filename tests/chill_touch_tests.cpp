@@ -492,7 +492,7 @@ void recovery()
     auto state = blocked_state(*rules, h, 1);
     const auto hp = state.hit_points;
     RandomState random{13};
-    rules->temple_heal(state, h.sheet(), random);
+    rules->temple_service(state, h.sheet(), TempleService::cure_light_wounds, random);
     check(state.hit_points == hp && random.value != 13,
           "Temple cast consumes rolls but cannot heal");
     rules->set_hit_points(state, h.sheet(), h.sheet().hit_points);

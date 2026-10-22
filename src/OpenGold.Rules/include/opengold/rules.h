@@ -331,6 +331,26 @@ enum class TemporaryHpChoice
     keep_current,
     use_new
 };
+// The clerical spells a temple casts for a fee, by the original's names
+// (TEMPLE-1). Each casts an SRD 5.2.1 spell: the three Cure services cast Cure
+// Wounds from a level-1, -3 or -5 slot, the Cure Blindness, Cure Disease and
+// Neutralize Poison services Lesser Restoration, Stone to Flesh Greater
+// Restoration. Resurrection is OpenGoldBox's, for a member Raise Dead cannot
+// help.
+enum class TempleService : std::uint8_t
+{
+    cure_blindness,
+    cure_disease,
+    cure_light_wounds,
+    cure_serious_wounds,
+    cure_critical_wounds,
+    neutralize_poison,
+    raise_dead,
+    remove_curse,
+    stone_to_flesh,
+    resurrection
+};
+
 enum class RestKind
 {
     short_rest,
@@ -927,8 +947,16 @@ class RulesModule
     [[nodiscard]] virtual RestPolicy long_rest_policy() const = 0;
     [[nodiscard]] virtual RestPolicy short_rest_policy() const = 0;
     virtual void set_hit_points(VitalState &, const CharacterSheet &, int) const = 0;
-    virtual void temple_heal(VitalState &state, const CharacterSheet &sheet,
-                             RandomState &random_state) const = 0;
+    // Whether the temple's service would help the member: a Cure a wounded
+    // living one, Raise Dead one dead up to ten days and not turned to dust,
+    // Remove Curse one under a curse (the campaign adds its cursed items).
+    [[nodiscard]] virtual bool temple_service_helps(const CharacterSheet &sheet,
+                                                    const VitalState &state,
+                                                    TempleService service) const = 0;
+    // Casts the service on the member, as a temple's cleric with Wisdom +3;
+    // throws when it would not help.
+    virtual void temple_service(VitalState &state, const CharacterSheet &sheet,
+                                TempleService service, RandomState &random_state) const = 0;
     // `gear` is what the member wears, so the attack meets its armor and shield.
     [[nodiscard]] virtual HazardAttackResult
     hazard_attack(VitalState &state, const CharacterSheet &sheet, std::span<const std::string> gear,

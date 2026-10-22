@@ -135,18 +135,20 @@ training requests (PROGRAM 0) and victory services (PROGRAM 8)
 remain unsupported; see the [training hall proposal](TRAINING-HALL.md). Manual SRD advancement does not imply payment of an
 original training fee or completion of a training-hall script.
 
-The original temple **COMBAT** request with `6DE2=1` offers the supported
-**Cure Wounds** service using the existing dialogue list. Select a wounded living
-active member, or **Cancel**. The original Cure Light Wounds price is retained at
-**100 gp**, paid from the party's gold coins only. Its healing is
-explicitly converted to SRD Cure Wounds, **2d8 + 3**, with an authored Wisdom +3
-temple caster. Dice are deterministic and campaign-owned; the rules module
-calculates healing, caps HP and clears death-save state without refilling slots
-or Second Wind. Resurrection and other temple spells remain unsupported.
+The original temple **COMBAT** request with `6DE2=1` opens the temple's **Heal
+list** ([TEMPLE-1](SRD-DECISIONS.md#temple-1-2026-10-22-temple-services)): its services with their prices, and **Leave**.
+Choosing a service lists the active members it would help; choosing a member
+shows the price to confirm with **Pay** or **Back**. Each service casts an SRD
+5.2.1 spell with an authored Wisdom +3 temple caster, paid from the party's gold
+coins only: the Cures heal (Cure Light Wounds is Cure Wounds, **2d8 + 3**, for
+100 gp), the others end blindness, disease, poison, curses or petrification, and
+Raise Dead and, on Easy and Normal, Resurrection bring a member back. Prices
+come from `data/shops`. Dice are deterministic and campaign-owned; the rules
+module applies each spell without refilling slots or Second Wind.
 
-Unaffordable, dead, full-health, reserve and stale-ticket requests do not charge
-or change HP, resources or RNG. Success and cancellation clear `6DE2` and resume
-the waiting original script. A later unsupported instruction rolls back the
+Unaffordable, unneeded, reserve and stale-ticket requests do not charge or
+change HP, resources or RNG. The party may buy several services; **Leave**
+clears `6DE2` and resumes the waiting original script. A later unsupported instruction rolls back the
 entire event, including healing, payment and RNG.
 
 Campaign minutes are authoritative for recovery. ECL minute/hour/day fields are

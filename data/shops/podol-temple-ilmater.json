@@ -1,26 +1,18 @@
 {
   "fixed_location": {
-    "archive": "GEO3.DAX",
-    "map": "New Phlan",
+    "archive": "GEO1.DAX",
+    "map": "Podol Plaza",
     "markers": [
       [
         1.0,
-        1.0
-      ],
-      [
-        3.0,
-        1.0
-      ],
-      [
-        1.0,
-        3.0
+        15.0
       ]
     ],
-    "record": 0.0
+    "record": 18.0
   },
-  "id": "phlan-temple-sune",
+  "id": "podol-temple-ilmater",
   "kind": "temple",
-  "name": "Temple of Sune",
+  "name": "Hidden Temple of Ilmater",
   "offerings": [
     {
       "name": "Cure Blindness",
@@ -75,9 +67,15 @@
       "offered": true,
       "price_gp": 2000,
       "service_id": "stone_to_flesh"
+    },
+    {
+      "name": "Resurrection",
+      "offered": true,
+      "price_gp": 11000,
+      "service_id": "resurrection"
     }
   ],
-  "portrait": "dev_tools/shop_manager/portraits/temple-sune.png",
+  "portrait": "dev_tools/shop_manager/portraits/temple-ilmater.png",
   "type": "Temple",
   "version": 1
 }

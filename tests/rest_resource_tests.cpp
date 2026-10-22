@@ -321,7 +321,8 @@ void persistence_and_advancement()
           "Effect elapsed time retains Hit Dice");
     auto healed = party.member(id).vitals;
     auto healing_rng = party.state().random_state;
-    rules->temple_heal(healed, party.member(id).character.sheet(), healing_rng);
+    rules->temple_service(healed, party.member(id).character.sheet(),
+                          TempleService::cure_light_wounds, healing_rng);
     check(rules->recovery_info(party.member(id).character.sheet(), healed).hit_dice == 1,
           "Spell healing preserves Hit Dice");
     auto members = party.participants();

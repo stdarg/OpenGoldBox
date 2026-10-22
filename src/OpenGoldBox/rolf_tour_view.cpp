@@ -4,6 +4,7 @@
 #include "character_text.h"
 #include "localization.h"
 #include "game_resources.h"
+#include "temple_data.h"
 #include "rolf_tour_view.h"
 #include "inventory_label.h"
 #include "opengold/campaign_party.h"
@@ -277,6 +278,7 @@ void RolfTourView::restart()
             session_.emplace(RolfTourSession::load(presentation::path_from_godot(directory)));
             session_->encounter_challenge(settings::encounter_challenge());
             session_->difficulty(settings::difficulty());
+            session_->temples(load_temple_sites());
             if (campaign_)
             {
                 session_->campaign_party(campaign_);
@@ -1601,10 +1603,6 @@ void RolfTourView::refresh()
                              : multiple ? N_("Choose [Enter]")
                              : answer   ? N_("Submit [Enter]")
                                         : N_("Continue [Enter]")));
-    if (waiting && s.choices.size() == 1 && s.choices[0] == "Cancel")
-    {
-        required_node<Button>(*this, "Continue").set_text(i18n::text(N_("Leave temple [Enter]")));
-    }
     required_node<Button>(*this, "Continue").set_visible(!completed);
     required_node<Label>(*this, "Progress")
         .set_text(faulted                 ? i18n::text("Stopped")
@@ -2436,7 +2434,21 @@ void RolfTourView::check_recovery()
     };
     if (s.phase == TourPhase::awaiting_continue)
     {
-        if (recovery_stage_ == 3 && !s.choices.empty() && s.choices[0].starts_with("Cure Wounds:"))
+        // The temple's Heal list (TEMPLE-1): Cure Light Wounds for the first
+        // member, its price confirmed, then Leave.
+        const auto choice_at = [&](std::string_view label)
+        {
+            const auto found = std::find_if(s.choices.begin(), s.choices.end(),
+                                            [&](const auto &c)
+                                            {
+                                                return c.starts_with(label);
+                                            });
+            return found == s.choices.end() ? std::optional<std::size_t>{}
+                                            : std::optional<std::size_t>{static_cast<std::size_t>(
+                                                  found - s.choices.begin())};
+        };
+        const auto light = choice_at("Cure Light Wounds (");
+        if (recovery_stage_ == 3 && light)
         {
             if (save_check_ && !save_cancel_checked_)
             {
@@ -2450,10 +2462,25 @@ void RolfTourView::check_recovery()
                 recovery_capture_ticket_ = s.continue_ticket;
                 return;
             }
+            if (s.dialogue.starts_with("The clerics cast "))
+            {
+                choose(s.choices.size() - 1);
+                recovery_stage_ = 4;
+                return;
+            }
             recovery_before_ = campaign_->checkpoint();
             capture_frame("party-temple");
-            choose(0);
-            recovery_stage_ = 4;
+            choose(*light);
+            return;
+        }
+        if (recovery_stage_ == 3 && s.dialogue == "Choose who receives Cure Light Wounds.")
+        {
+            choose(*choice_at(campaign_->member(id).character.sheet().name));
+            return;
+        }
+        if (const auto pay = choice_at("Pay"); recovery_stage_ == 3 && pay)
+        {
+            choose(*pay);
             return;
         }
         std::size_t selection = s.choices.size() - 1;
@@ -2600,7 +2627,8 @@ void RolfTourView::check_recovery()
             bool rejected = false;
             try
             {
-                campaign_->temple_heal(id);
+                campaign_->temple_service(id, opengold::rules::TempleService::cure_light_wounds,
+                                          100);
             }
             catch (const std::exception &)
             {

@@ -10,6 +10,7 @@
 #include "opengold/campaign_encounter.h"
 #include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
+#include "opengold/temple_catalog.h"
 #include <bitset>
 
 namespace opengold
@@ -207,10 +208,18 @@ class RolfTourSession
     void encounter_challenge(unsigned challenge);
 
     // On Hard and above, monsters bring their potions, wands and scrolls into
-    // a fight and use them (DIFF-1).
+    // a fight and use them (DIFF-1), and temples cast no Resurrection
+    // (TEMPLE-1).
     void difficulty(opengold::Difficulty difficulty) noexcept
     {
         difficulty_ = difficulty;
+    }
+
+    // The temples data/shops describes (TEMPLE-1); a temple it does not name
+    // offers the original's services and prices.
+    void temples(std::vector<opengold::TempleSite> sites)
+    {
+        temples_ = std::move(sites);
     }
 
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
@@ -297,10 +306,9 @@ class RolfTourSession
     std::shared_ptr<const PhlanResources> town_;
     TownParty party_;
     std::shared_ptr<opengold::CampaignParty> campaign_;
-    std::uint64_t who_request_{}, temple_request_{};
+    std::uint64_t who_request_{};
     // A DAMAGE volley waits here until its results are acknowledged.
     std::uint64_t damage_request_{};
-    std::vector<opengold::MemberId> temple_targets_;
 
     // A training hall's PROGRAM 0: the script waits on `request` while the
     // party buys sessions of experience and skill lessons from the list.
@@ -331,6 +339,41 @@ class RolfTourSession
     void open_hall(std::uint64_t request);
     void show_hall(std::vector<opengold::rules::Message> notice);
     bool choose_at_hall(std::size_t choice);
+
+    // A temple's COMBAT request with the healing flag: the script waits on
+    // `request` while the party buys services from the temple's Heal list
+    // (TEMPLE-1). The list names the services; choosing one lists the members
+    // it would help, and choosing one of those asks to confirm the price.
+    struct TempleChoice
+    {
+        enum class Kind
+        {
+            service,
+            member,
+            beyond_raising, // dead too long or turned to dust, on Hard and above
+            confirm,
+            back,
+            leave
+        };
+        Kind kind{};
+        opengold::MemberId member{};
+        opengold::TempleOffering offering;
+    };
+
+    struct TempleVisit
+    {
+        std::uint64_t request{};
+        std::vector<opengold::TempleOffering> offerings;
+        std::optional<opengold::TempleOffering> chosen; // the service whose members are listed
+        opengold::MemberId member{};                    // whose purchase awaits confirmation
+        std::vector<TempleChoice> choices;
+    };
+
+    std::vector<opengold::TempleSite> temples_;
+    std::optional<TempleVisit> temple_visit_;
+    void open_temple(std::uint64_t request);
+    void show_temple(std::vector<opengold::rules::Message> notice);
+    bool choose_at_temple(std::size_t choice);
     std::vector<PartySlot> who_slots_;
     // How a pre-combat meeting ended without a fight, said when its event ends.
     std::string encounter_outcome_;

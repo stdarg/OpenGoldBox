@@ -2794,6 +2794,79 @@ bool curse(detail::EffectKind kind)
     return kind == detail::EffectKind::hex || kind == detail::EffectKind::cursed;
 }
 
+// Raise Dead, Resurrection and Reincarnate bring a dead creature back with
+// `hit_points`, its poisons neutralized and a body turned to dust restored.
+void bring_back(Actor &patient, int hit_points)
+{
+    std::erase_if(patient.effects.active,
+                  [](const auto &e)
+                  {
+                      return e.kind == detail::EffectKind::fallen ||
+                             e.kind == detail::EffectKind::deceased ||
+                             e.kind == detail::EffectKind::poisoned ||
+                             e.kind == detail::EffectKind::dust;
+                  });
+    patient.life.dead = false;
+    patient.life.successes = patient.life.failures = 0;
+    patient.life.stable = false;
+    patient.life.recovery = {};
+    patient.life.hp = hit_points;
+}
+
+// A Poisoned effect other than Contagion's disease.
+bool poison(detail::EffectKind kind)
+{
+    return gives_condition(kind, "poisoned") && kind != detail::EffectKind::contagion;
+}
+
+// Whether a temple's service would help the creature (TEMPLE-1).
+bool temple_helps(const Actor &a, TempleService service)
+{
+    const auto any = [&](auto &&matches)
+    {
+        return std::any_of(a.effects.active.begin(), a.effects.active.end(),
+                           [&](const auto &e)
+                           {
+                               return matches(e.kind);
+                           });
+    };
+    // Raise Dead: dead up to ten days and not turned to dust; Resurrection
+    // the rest.
+    const bool raisable = detail::has_effect(a.effects, detail::EffectKind::deceased) &&
+                          !detail::has_effect(a.effects, detail::EffectKind::dust);
+    if (service == TempleService::raise_dead || service == TempleService::resurrection)
+    {
+        return a.life.dead && raisable == (service == TempleService::raise_dead);
+    }
+    if (a.life.dead)
+    {
+        return false;
+    }
+    switch (service)
+    {
+    case TempleService::cure_light_wounds:
+    case TempleService::cure_serious_wounds:
+    case TempleService::cure_critical_wounds:
+        return a.life.hp < max_hp(a);
+    case TempleService::cure_blindness:
+        return has_condition(a, "blinded");
+    case TempleService::cure_disease:
+        return detail::has_effect(a.effects, detail::EffectKind::contagion);
+    case TempleService::neutralize_poison:
+        return any(poison);
+    case TempleService::remove_curse:
+        return any(curse);
+    case TempleService::stone_to_flesh:
+        return any(
+            [](detail::EffectKind kind)
+            {
+                return kind == detail::EffectKind::petrified || kind == detail::EffectKind::stoning;
+            });
+    default:
+        return false;
+    }
+}
+
 // It wields or wears a cursed item and cannot put it down until Remove Curse
 // (MAGIC-1). With `weapons_only`, only a cursed weapon counts: a cursed necklace
 // does not stop a weapon swap.
@@ -28595,26 +28668,93 @@ class Module final : public RulesModule
                            });
     }
 
-    void temple_heal(VitalState &state, const CharacterSheet &sheet,
-                     RandomState &random_state) const override
+    bool temple_service_helps(const CharacterSheet &sheet, const VitalState &state,
+                              TempleService service) const override
     {
-        const auto d = character_definition(character_profile(sheet, {}).data);
-        auto actor = actor_from(d, state);
-        if (actor.life.dead || actor.life.hp >= max_hp(actor))
+        return temple_helps(camp_actor(sheet, state), service);
+    }
+
+    void temple_service(VitalState &state, const CharacterSheet &sheet, TempleService service,
+                        RandomState &random_state) const override
+    {
+        auto patient = camp_actor(sheet, state);
+        if (!temple_helps(patient, service))
         {
-            throw std::runtime_error("Cure Wounds requires a wounded living member");
+            throw std::runtime_error("The temple's service would not help the member");
         }
-        // Authored temple caster: Cure Wounds, Wisdom +3. Same SplitMix64 as combat.
+        // The authored temple caster has Wisdom +3. Same SplitMix64 as combat.
         auto rng = random_state.value;
-        int amount = 3;
-        for (int i = 0; i < 2; ++i)
+        const auto end_effects = [&](auto &&ends)
         {
-            amount += roll_die(rng, 8);
+            std::erase_if(patient.effects.active,
+                          [&](const auto &e)
+                          {
+                              return ends(e.kind);
+                          });
+        };
+        switch (service)
+        {
+        case TempleService::cure_light_wounds:
+        case TempleService::cure_serious_wounds:
+        case TempleService::cure_critical_wounds:
+        {
+            // Cure Wounds from a level-1, -3 or -5 slot: 2d8 a slot level.
+            const int dice = service == TempleService::cure_light_wounds     ? 2
+                             : service == TempleService::cure_serious_wounds ? 6
+                                                                             : 10;
+            int amount = 3;
+            for (int i = 0; i < dice; ++i)
+            {
+                amount += roll_die(rng, 8);
+            }
+            (void)detail::heal_life(patient.life, amount, max_hp(patient),
+                                    !detail::healing_blocked(patient.effects));
+            break;
         }
-        (void)detail::heal_life(actor.life, amount, max_hp(actor),
-                                !detail::healing_blocked(actor.effects));
-        auto next = vitals(actor);
-        state = std::move(next);
+        case TempleService::cure_blindness:
+            end_effects(
+                [](detail::EffectKind kind)
+                {
+                    return gives_condition(kind, "blinded");
+                });
+            break;
+        case TempleService::cure_disease:
+            end_effects(
+                [](detail::EffectKind kind)
+                {
+                    return kind == detail::EffectKind::contagion;
+                });
+            break;
+        case TempleService::neutralize_poison:
+            end_effects(poison);
+            break;
+        case TempleService::remove_curse:
+            end_effects(curse);
+            break;
+        case TempleService::stone_to_flesh:
+            end_effects(
+                [](detail::EffectKind kind)
+                {
+                    return kind == detail::EffectKind::petrified ||
+                           kind == detail::EffectKind::stoning;
+                });
+            break;
+        case TempleService::raise_dead:
+        case TempleService::resurrection:
+        {
+            const bool whole = service == TempleService::resurrection;
+            bring_back(patient, whole ? max_hp(patient) : 1);
+            // As in camp: −4 to D20 Tests, easing by 1 a Long Rest.
+            if (detail::can_apply(patient.effects))
+            {
+                detail::apply_spell_benefit(patient.effects,
+                                            detail::EffectSource{.scope = 1, .actor = 1}, "Temple",
+                                            detail::EffectKind::returned, 4);
+            }
+            break;
+        }
+        }
+        state = vitals(patient);
         random_state.value = rng;
     }
 
@@ -28896,19 +29036,7 @@ class Module final : public RulesModule
                                              : "Raise Dead needs a member dead up to ten days");
             }
             pay_for_spell(caster, action, *raise);
-            std::erase_if(patient.effects.active,
-                          [](const auto &e)
-                          {
-                              return e.kind == detail::EffectKind::fallen ||
-                                     e.kind == detail::EffectKind::deceased ||
-                                     e.kind == detail::EffectKind::poisoned ||
-                                     e.kind == detail::EffectKind::dust;
-                          });
-            patient.life.dead = false;
-            patient.life.successes = patient.life.failures = 0;
-            patient.life.stable = false;
-            patient.life.recovery = {};
-            patient.life.hp = resurrection || reincarnation ? max_hp(patient) : 1;
+            bring_back(patient, resurrection || reincarnation ? max_hp(patient) : 1);
             if (reincarnation)
             {
                 user_state = vitals(caster);

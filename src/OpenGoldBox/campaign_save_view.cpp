@@ -2,6 +2,7 @@
 #include "application_settings.h"
 #include "localization.h"
 #include "game_resources.h"
+#include "temple_data.h"
 #include "character_creation_view.h"
 #include "character_pool_dialog.h"
 #include "town_sheet_dialog.h"
@@ -198,6 +199,7 @@ void RolfTourView::restore_campaign(std::shared_ptr<CampaignParty> party,
     forget_monster_picture();
     session_->encounter_challenge(settings::encounter_challenge());
     session_->difficulty(settings::difficulty());
+    session_->temples(load_temple_sites());
     shown_revision_ = 0;
     rendered_pose_.reset();
     rendered_sprite_id_ = 999;

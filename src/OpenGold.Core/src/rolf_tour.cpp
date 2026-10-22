@@ -475,9 +475,9 @@ void RolfTourSession::reset_run()
     staged_treasure_.reset();
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
-    who_request_ = temple_request_ = damage_request_ = 0;
+    who_request_ = damage_request_ = 0;
     who_slots_.clear();
-    temple_targets_.clear();
+    temple_visit_.reset();
     hall_visit_.reset();
     pending_movement_.reset();
     transition_ = message_only_ = false;
@@ -566,9 +566,9 @@ void RolfTourSession::roll_back_event()
     const auto revision = snapshot_.revision + 1;
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
-    who_request_ = temple_request_ = damage_request_ = 0;
+    who_request_ = damage_request_ = 0;
     who_slots_.clear();
-    temple_targets_.clear();
+    temple_visit_.reset();
     hall_visit_.reset();
     selected_character_ = saved.selected_character;
     pending_movement_.reset();

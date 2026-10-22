@@ -1688,7 +1688,7 @@ void progression_and_services()
     rejects(
         [&]
         {
-            party.temple_heal(pc);
+            party.temple_service(pc, TempleService::cure_light_wounds, 100);
         });
     auto wounded = party.checkpoint();
     wounded.roster[0].vitals = {
@@ -1703,14 +1703,14 @@ void progression_and_services()
     rejects(
         [&]
         {
-            party.temple_heal(pc);
+            party.temple_service(pc, TempleService::cure_light_wounds, 100);
         });
     check(party.state().wealth[3] == 50 && party.member(pc).vitals == temple_before,
           "Rejected temple request is atomic");
     check(party.state().random_state == before.random_state,
           "Rejected payment preserves random state");
     party.set_wealth({0, 0, 0, 100, 0, 0, 0});
-    party.temple_heal(pc);
+    party.temple_service(pc, TempleService::cure_light_wounds, 100);
     check(party.member(pc).vitals.hit_points > 0 && party.state().wealth[3] == 0 &&
               party.member(pc).vitals.resources ==
                   "SRD13 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 \"\" 0 0 0 0 0 0 0 FX8 1 0 0",
@@ -1730,7 +1730,7 @@ void progression_and_services()
     rejects(
         [&]
         {
-            party.temple_heal(pc);
+            party.temple_service(pc, TempleService::cure_light_wounds, 100);
         });
     check(party.member(pc).vitals.dead, "Cheap healing cannot resurrect");
     party.restore(checkpoint);
@@ -1738,7 +1738,7 @@ void progression_and_services()
     rejects(
         [&]
         {
-            party.temple_heal(pc);
+            party.temple_service(pc, TempleService::cure_light_wounds, 100);
         });
     check(!party.rest(), "Empty party cannot rest");
     party.rejoin(pc);
@@ -1816,12 +1816,12 @@ void temple_party_purse()
     rejects(
         [&]
         {
-            party.temple_heal(target);
+            party.temple_service(target, TempleService::cure_light_wounds, 100);
         });
     check(party.state().wealth[3] == 90 && party.member(target).vitals == state.roster[1].vitals,
           "Too little party gold charges nothing");
     party.set_wealth({0, 0, 0, 130, 0, 0, 0});
-    party.temple_heal(target);
+    party.temple_service(target, TempleService::cure_light_wounds, 100);
     check(party.state().wealth[3] == 30 && party.member(target).vitals.hit_points > 0 &&
               party.member(other).vitals == state.roster[0].vitals,
           "The party's gold heals only the requested target");
@@ -2628,15 +2628,34 @@ void recovery_hosts()
     settle(temple);
     temple.explore(por::ExplorationCommand::look);
     settle(temple);
+    // The Heal list (TEMPLE-1): a service, the member, then its price confirmed.
+    const auto pick = [](por::RolfTourSession &session, std::string_view label)
+    {
+        const auto &s = session.snapshot();
+        for (std::size_t n = 0; n < s.choices.size(); ++n)
+        {
+            if (s.choices[n].starts_with(label))
+            {
+                return session.choose(s.continue_ticket, n);
+            }
+        }
+        return false;
+    };
+    const auto name = party->member(pc).character.sheet().name;
     const auto ticket = temple.snapshot().continue_ticket;
-    check(temple.snapshot().choices.size() == 2 && !temple.choose(ticket + 1, 0),
-          "Temple offers wounded target and cancel with stale-ticket rejection");
-    check(!temple.choose(ticket, 0) && party->member(pc).vitals.hit_points == 1 &&
+    check(!temple.choose(ticket + 1, 0) && pick(temple, "Cure Light Wounds (100 gp)") &&
+              pick(temple, name),
+          "Temple lists Cure Light Wounds and the wounded member; a stale ticket is rejected");
+    check(temple.snapshot().dialogue == "The party's gold cannot pay 100 gp." &&
+              party->member(pc).vitals.hit_points == 1 &&
               party->state().random_state == state.random_state,
           "Unaffordable temple choice leaves request and party unchanged");
     party->set_wealth({0, 0, 0, 100, 0, 0, 0});
-    check(temple.choose(ticket, 0) && !temple.choose(ticket, 0),
+    check(pick(temple, name), "With the gold, choose the member again");
+    const auto confirm = temple.snapshot().continue_ticket;
+    check(pick(temple, "Pay") && !temple.choose(confirm, 0),
           "Temple payment accepted exactly once");
+    check(pick(temple, "Leave"), "Leave the temple");
     settle(temple);
     check(temple.can_leave() && temple.script_variable(por::ecl_temple_service) == 0 &&
               temple.script_variable(por::EclAddress{0x9811}) == 1 &&
@@ -2651,7 +2670,8 @@ void recovery_hosts()
     settle(rollback);
     rollback.explore(por::ExplorationCommand::look);
     settle(rollback);
-    check(rollback.choose(rollback.snapshot().continue_ticket, 0),
+    check(pick(rollback, "Cure Light Wounds") && pick(rollback, name) && pick(rollback, "Pay") &&
+              pick(rollback, "Leave"),
           "Service before unsupported continuation");
     settle(rollback);
     if (party->state().wealth[3] != 100 || party->member(pc).vitals.hit_points != 1 ||
@@ -2662,7 +2682,7 @@ void recovery_hosts()
             ", HP=" + std::to_string(party->member(pc).vitals.hit_points) + ", " +
             rollback.snapshot().dialogue);
     }
-    check(rollback.choose(rollback.snapshot().continue_ticket, 0) && rollback.can_leave(),
+    check(pick(rollback, "Continue") && rollback.can_leave(),
           "Rollback clears pending temple ticket");
 }
 
