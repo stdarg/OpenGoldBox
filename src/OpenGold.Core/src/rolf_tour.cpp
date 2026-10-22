@@ -3,6 +3,7 @@
 #include "opengold/magic_item_catalog.h"
 #include "opengold/por_sound.h"
 #include "opengold/rolf_tour.h"
+#include <utility>
 #include "opengold/exploration_view.h"
 #include <algorithm>
 #include <cmath>
@@ -315,7 +316,19 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                                        {57, "lizardfolk", 100, 100},
                                        {59, "giant-lizard", 50, 50},
                                        {73, "gnoll-warrior", 100, 100},
-                                       {32, "norris-the-gray", 450, 450}}}};
+                                       {32, "norris-the-gray", 450, 450}}},
+                           // Podol Plaza (docs/audits/podol-plaza.md): its
+                           // MON1CHA records 2-8 are the Slums' MON2CHA ones.
+                           AreaSource{18,
+                                      1,
+                                      {{18, {1, 3, 5}}},
+                                      {{2, "slums-goblin", 50, 50},
+                                       {3, "slums-goblin-leader", 50, 100},
+                                       {4, "slums-orc", 100, 75},
+                                       {5, "slums-orc-leader", 100, 150},
+                                       {6, "slums-hobgoblin", 100, 100},
+                                       {7, "slums-hobgoblin", 100, 200},
+                                       {8, "ogre", 450, 450}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -518,6 +531,14 @@ void RolfTourSession::reset_run()
 
 void RolfTourSession::fail(std::string diagnostic)
 {
+    if (snapshot_.tour_finished && event_checkpoint_ && !closed_way_.empty())
+    {
+        auto message = std::exchange(closed_way_, {});
+        roll_back_event();
+        notice(std::move(message));
+        return;
+    }
+    closed_way_.clear();
     if (snapshot_.tour_finished && event_checkpoint_)
     {
         diagnostics_.push_back(diagnostic);

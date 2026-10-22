@@ -171,6 +171,22 @@ Message hall_welcome(opengold::TrainingHall hall)
 }
 
 // Why a member cannot buy a session or lesson, for the dialogue.
+// The areas next to the loaded ones that the game cannot enter yet.
+std::string_view area_beyond(unsigned script)
+{
+    switch (script)
+    {
+    case 2:
+        return "Cadorna Textile House";
+    case 9:
+        return "Stojanow Gate";
+    case 26:
+        return "the wilderness";
+    default:
+        return "another area";
+    }
+}
+
 Message refusal(opengold::TrainingDenial denial, const std::string &name, std::uint32_t fee)
 {
     using opengold::TrainingDenial;
@@ -963,13 +979,6 @@ void RolfTourSession::finish_event()
 // Returns the minutes rested before an interruption, or nothing when none occurs.
 std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance)
 {
-    const bool city_watch = interval == 1 && (chance == 100 || chance == 101);
-    const bool slums_street = interval == 24 && chance == 24;
-    const bool kutos_well_plaza = interval == 12 && chance == 12;
-    if (interval && chance && !city_watch && !slums_street && !kutos_well_plaza)
-    {
-        throw EclError("Unsupported probabilistic camp interruption");
-    }
     if (!interval)
     {
         return std::nullopt;
@@ -1999,7 +2008,9 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         const auto found = town_->programs.find(arg(0));
         if (found == town_->programs.end())
         {
-            throw EclError("Travel outside New Phlan (script " + std::to_string(arg(0)) + ")");
+            closed_way_ =
+                "The way to " + std::string(area_beyond(arg(0))) + " is not in the game yet.";
+            throw EclError(closed_way_);
         }
         reply.next_program = found->second;
         // 0x6E12 names the new script's archive bank: ECL3 for the town.

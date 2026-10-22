@@ -54,13 +54,17 @@ const std::array<Vector2, 4> direction{Vector2(0, -1), Vector2(1, 0), Vector2(0,
 constexpr std::array<const char *, 4> direction_name{N_("North"), N_("East"), N_("South"),
                                                      N_("West")};
 
-// The areas the session can enter: the town (0), the Slums (20) and Kuto's
-// Well's plaza (29) and catacombs (32).
+// The areas the session can enter: the town (0), the Slums (20), Kuto's
+// Well's plaza (29) and catacombs (32), and Podol Plaza (18).
 [[nodiscard]] const char *district_name(unsigned area_id)
 {
     if (area_id == 20)
     {
         return N_("Slums");
+    }
+    if (area_id == 18)
+    {
+        return N_("Podol Plaza");
     }
     if (area_id == 29 || area_id == 32)
     {
@@ -1340,7 +1344,11 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("Rest denied: no active member is eligible."),
          N_("The rest was interrupted. Rest again to recover."), N_("Your camp is attacked!"),
          N_("The monsters go on their way."), N_("You get away."),
-         N_("Your party flees the battle."), N_("Locked.")})
+         N_("Your party flees the battle."), N_("Locked."),
+         N_("The way to Stojanow Gate is not in the game yet."),
+         N_("The way to Cadorna Textile House is not in the game yet."),
+         N_("The way to the wilderness is not in the game yet."),
+         N_("The way to another area is not in the game yet.")})
     {
         result = result.replace(String::utf8(source), i18n::text(source));
     }

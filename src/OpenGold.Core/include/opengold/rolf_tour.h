@@ -517,6 +517,9 @@ class RolfTourSession
     void publish_pose();
     void handle_host(const EclRequest &request);
     void fail(std::string diagnostic);
+    // Set when a step leads to an area the game does not have yet: fail()
+    // then rolls the step back with this notice instead of a diagnostic.
+    std::string closed_way_;
 };
 } // namespace opengold::por
 #endif

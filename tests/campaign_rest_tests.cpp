@@ -604,7 +604,10 @@ void campaign_services()
           "Next script cannot overwrite committed Hit Die healing with stale HP");
     for (const auto kind : {RestKind::short_rest, RestKind::long_rest})
     {
-        for (const auto chance : {255u, 50u, 100u, 101u, 102u, 200u, 254u})
+        // Any interval and chance follow the original's rule; a chance of
+        // 100 or more always interrupts at the first check, and 255 forbids
+        // camping.
+        for (const auto chance : {255u, 100u, 101u, 102u, 200u, 254u})
         {
             party->restore(state);
             auto script = program({9, 0, 1, 1, 0xd2, 0x6d, 9, 0, static_cast<std::uint8_t>(chance),
@@ -619,14 +622,9 @@ void campaign_services()
                     party->member(id).vitals.hit_points == state.roster[0].vitals.hit_points &&
                     party->member(id).vitals.resources == state.roster[0].vitals.resources &&
                     party->state().random_state.value == 42 &&
-                    party->state().time_minutes == ((chance == 100 || chance == 101) ? 5 : 0),
-                "Forbidden, unsupported and five-minute interrupted camps grant neither resources nor spending rights");
-            if (chance != 255 && chance != 100 && chance != 101)
-            {
-                check(
-                    !blocked.script_diagnostics().empty(),
-                    "Unverified interruption profiles reject explicitly instead of becoming city-watch events");
-            }
+                    party->state().time_minutes == (chance == 255 ? 0 : 5) &&
+                    blocked.script_diagnostics().empty(),
+                "Forbidden and five-minute interrupted camps grant neither resources nor spending rights");
         }
     }
     // Inn completion is still an event transaction. An unsupported instruction

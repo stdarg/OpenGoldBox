@@ -1719,6 +1719,155 @@ void visit(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     }
 }
 
+// Steps off the map toward an area the game does not have yet: the step is
+// refused with a notice naming it, and the party stays where it was.
+void refused_exit(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party,
+                  unsigned facing, std::string_view area)
+{
+    face(town, party, facing);
+    const auto before = town.snapshot().pose;
+    town.explore(por::ExplorationCommand::forward);
+    bool refused = false;
+    for (unsigned n = 0; n < 200 && town.snapshot().phase != por::TourPhase::completed; ++n)
+    {
+        const auto &s = town.snapshot();
+        if (s.phase == por::TourPhase::awaiting_continue)
+        {
+            refused |= s.dialogue.find("The way to " + std::string(area) +
+                                       " is not in the game yet") != std::string::npos;
+            check(town.choose(s.continue_ticket, peaceful(s)), "Acknowledge the notice");
+        }
+        else
+        {
+            town.advance(.5);
+        }
+    }
+    check(refused && town.snapshot().area_id == 18 && town.snapshot().pose.x == before.x &&
+              town.snapshot().pose.y == before.y,
+          "The way to " + std::string(area) + " is refused and the party stays");
+}
+
+// Restores every living member's Hit Points, so one check's fight does not
+// decide the next.
+void heal(CampaignParty &party)
+{
+    auto state = party.checkpoint();
+    for (auto &member : state.roster)
+    {
+        if (!member.vitals.dead)
+        {
+            member.vitals.hit_points = member.character.sheet().hit_points;
+        }
+    }
+    party.restore(std::move(state));
+}
+
+// Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
+// entered by Kuto's Well's west edge, its exits to areas not in the game yet
+// refused, a roaming group met on the plaza, the robed orc fought for his holy
+// symbols, a camp made, and the way back east to Kuto's Well.
+void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
+                 const std::filesystem::path &directory)
+{
+    auto &[party, town] = trip;
+    check(town.snapshot().area_id == 29, "The party starts in Kuto's Well");
+    // The audit expects a party of about level 4 here; the expedition's is 2.
+    party->award_experience(6 * 2700, "test:podol-plaza-level");
+    for (const auto id : party->state().slots)
+    {
+        while (id && party->can_advance(id))
+        {
+            party->advance(id, party->default_advancement(id));
+        }
+    }
+    heal(*party);
+    unsigned edge = 16;
+    for (unsigned y = 0; y < 16 && edge == 16; ++y)
+    {
+        const auto &cell = town.map().at(0, y);
+        if (!cell.walls[3] || cell.doors[3] == 1)
+        {
+            edge = y;
+        }
+    }
+    check(edge < 16, "Kuto's Well has a west way out");
+    walk_to(town, party, 0, edge, peaceful);
+    step(town, party, 3);
+    check(town.snapshot().area_id == 18 && town.snapshot().script_id == 18,
+          "Leaving Kuto's Well westward enters Podol Plaza");
+    const auto save = folder / "podol-plaza.ogs";
+    write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    check(load_expedition(save, directory).town.snapshot().area_id == 18,
+          "A save in Podol Plaza loads back there");
+    // Every edge has openings at 4 and 11; only the east one leads anywhere
+    // the game has.
+    walk_to(town, party, 4, 0, peaceful);
+    refused_exit(town, party, 0, "Stojanow Gate");
+    walk_to(town, party, 0, 4, peaceful);
+    refused_exit(town, party, 3, "the wilderness");
+    walk_to(town, party, 4, 15, peaceful);
+    refused_exit(town, party, 2, "Cadorna Textile House");
+    // Off the mission, a roaming group comes on one plaza step in 26; the
+    // party flees it or fights.
+    const auto fight_them = [](const por::TourSnapshot &s) -> std::size_t
+    {
+        return s.choices.size() == 4 && s.choices[0] == "Fight" ? 0 : peaceful(s);
+    };
+    const auto met = fights_started.size();
+    const auto lead = party->state().slots[0];
+    const auto experience = party->member(lead).experience;
+    for (unsigned crossing = 0; crossing < 60 && fights_started.size() == met; ++crossing)
+    {
+        walk_to(town, party, crossing % 2 ? 5 : 11, 9, fight_them);
+    }
+    check(fights_started.size() > met && party->member(lead).experience > experience,
+          "A roaming group meets the party on the plaza, and the party wins its XP");
+    // Camping on the plaza: a roaming group may interrupt, every two steps 16%,
+    // so the walk heals the party instead of camping to recover.
+    heal(*party);
+    check(town.camp(RestKind::short_rest), "Camp starts on the plaza");
+    settle(town, party, fight_them);
+    if (party->state().short_rest)
+    {
+        party->finish_short_rest(party->state().short_rest->ticket);
+    }
+    // The robed orc in the Bane shrine fights a party that is not disguised;
+    // he guards six leather holy symbols, the Temple of Bane's password.
+    const auto holy_symbols = [&]
+    {
+        unsigned count = 0;
+        for (const auto &member : party->state().roster)
+        {
+            for (const auto &[id, source] : member.item_sources)
+            {
+                if (source.stored.type == 74)
+                {
+                    count += member.character.inventory().find(id)->get().quantity;
+                }
+            }
+        }
+        return count;
+    };
+    heal(*party);
+    const auto before = fights_started.size();
+    visit(town, party, 14, 8,
+          [](const por::TourSnapshot &s) -> std::size_t
+          {
+              if (s.dialogue.find("DO YOU TAKE IT?") != std::string::npos)
+              {
+                  return 0;
+              }
+              return peaceful(s);
+          });
+    check(fights_started.size() == before + 1 && holy_symbols() == 6 &&
+              town.script_variable(por::EclAddress{0x4A38}) == 2,
+          "The party defeats the robed orc and takes his six leather holy symbols");
+    heal(*party);
+    walk_to(town, party, 15, 4, peaceful);
+    step(town, party, 1);
+    check(town.snapshot().area_id == 29, "Podol Plaza's east edge leads back to Kuto's Well");
+}
+
 void slums_set_encounters(const std::filesystem::path &save, const std::filesystem::path &directory)
 {
     const Answer fight_them = [](const por::TourSnapshot &s) -> std::size_t
@@ -2478,6 +2627,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
         auto explorer = load_expedition(save, directory);
         enter_kutos_well(explorer, folder, directory);
         kutos_well_catacombs(explorer, folder, directory);
+        auto podol = load_expedition(folder / "kutos-well.ogs", directory);
+        podol_plaza(podol, folder, directory);
     }
 
     const auto program = "\"" + executable.string() + "\"";
@@ -2509,7 +2660,8 @@ void installed_first_expedition(const std::filesystem::path &executable,
            "hobgoblins and monster leaders, advanced on, parleyed with, paid, surrendered to, "
            "waited for and fled from its street monsters, met its trolls, won fights in "
            "Kuto's Well, "
-           "defeated Norris and surrendered to him from a save.\n";
+           "defeated Norris and surrendered to him from a save, and went on west into Podol "
+           "Plaza, its roaming groups and the robed orc.\n";
 }
 
 } // namespace
@@ -2528,6 +2680,16 @@ int main(int argc, char **argv)
         {
             verify_hand_in(argv[2], argv[3], directory);
             std::cout << "Ohlo hand-in save verified.\n";
+            return 0;
+        }
+        // Plays Podol Plaza alone, from a save in Kuto's Well.
+        if (argc == 3 && std::string_view(argv[1]) == "--podol")
+        {
+            const auto folder = std::filesystem::temp_directory_path() / "opengold-podol";
+            std::filesystem::create_directories(folder);
+            auto trip = load_expedition(argv[2], directory);
+            podol_plaza(trip, folder, directory);
+            std::filesystem::remove_all(folder);
             return 0;
         }
         if (argc == 4 && std::string_view(argv[1]) == "--resume")
