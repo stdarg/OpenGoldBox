@@ -1,0 +1,4 @@
+godot/.godot/
+godot/bin/
+data/shops/*.tmp
+!portraits/*.png

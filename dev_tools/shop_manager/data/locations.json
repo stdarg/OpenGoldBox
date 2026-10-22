@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "maps": [
+    {"name": "New Phlan", "archive": "GEO3.DAX", "record": 0},
+    {"name": "Podol Plaza", "archive": "GEO1.DAX", "record": 18}
+  ],
+  "locations": [
+    {"id": "phlan-arms-13-08", "name": "Arms & Armor (13,8)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[13,8]], "portrait": "art/portraits/NPCs/phlan-arms-13-08.png"},
+    {"id": "phlan-arms-08-11", "name": "Arms & Armor (8,11)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[8,11]], "portrait": "art/portraits/NPCs/phlan-arms-08-11.png"},
+    {"id": "phlan-arms-11-12", "name": "Arms & Armor (11,12)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[11,12]], "portrait": "art/portraits/NPCs/phlan-arms-11-12.png"},
+    {"id": "phlan-arms-09-13", "name": "Arms & Armor (9,13)", "map": "New Phlan", "kind": "shop", "default_type": "Arms & Armor", "source_record": 53, "markers": [[9,13]], "portrait": "art/portraits/NPCs/phlan-arms-09-13.png"},
+    {"id": "phlan-general-15-08", "name": "General Items (15,8)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[15,8]], "portrait": "art/portraits/NPCs/phlan-general-15-08.png"},
+    {"id": "phlan-general-09-10", "name": "General Items (9,10)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[9,10]], "portrait": "art/portraits/NPCs/phlan-general-09-10.png"},
+    {"id": "phlan-general-12-10", "name": "General Items (12,10)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[12,10]], "portrait": "art/portraits/NPCs/phlan-general-12-10.png"},
+    {"id": "phlan-general-09-11", "name": "General Items (9,11)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[9,11]], "portrait": "art/portraits/NPCs/phlan-general-09-11.png"},
+    {"id": "phlan-general-11-11", "name": "General Items (11,11)", "map": "New Phlan", "kind": "shop", "default_type": "General Items", "source_record": 54, "markers": [[11,11]], "portrait": "art/portraits/NPCs/phlan-general-11-11.png"},
+    {"id": "phlan-silver-11-10", "name": "Silver Items (11,10)", "map": "New Phlan", "kind": "shop", "default_type": "Silver Items", "source_record": 55, "markers": [[11,10]], "portrait": "art/portraits/NPCs/phlan-silver-11-10.png"},
+    {"id": "phlan-silver-10-13", "name": "Silver Items (10,13)", "map": "New Phlan", "kind": "shop", "default_type": "Silver Items", "source_record": 55, "markers": [[10,13]], "portrait": "art/portraits/NPCs/phlan-silver-10-13.png"},
+    {"id": "phlan-jeweler-08-10", "name": "Jeweler (8,10)", "map": "New Phlan", "kind": "shop", "default_type": "Jewelry", "source_record": 52, "markers": [[8,10]], "portrait": "art/portraits/NPCs/phlan-jeweler-08-10.png"},
+    {"id": "phlan-temple-tyr", "name": "Temple of Tyr", "map": "New Phlan", "kind": "temple", "markers": [[11,3],[8,4],[8,6]], "portrait": "art/portraits/NPCs/bishop-braccio.png"},
+    {"id": "phlan-temple-sune", "name": "Temple of Sune", "map": "New Phlan", "kind": "temple", "markers": [[1,1],[3,1],[1,3]], "portrait": ""},
+    {"id": "phlan-temple-tempus", "name": "Temple of Tempus", "map": "New Phlan", "kind": "temple", "markers": [[0,12],[2,12]], "portrait": ""},
+    {"id": "podol-temple-ilmater", "name": "Hidden Temple of Ilmater", "map": "Podol Plaza", "kind": "temple", "markers": [[1,15]], "portrait": ""}
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "fixed_location": {
+    "archive": "GEO3.DAX",
+    "map": "New Phlan",
+    "markers": [
+      [
+        11.0,
+        10.0
+      ]
+    ],
+    "record": 0.0
+  },
+  "id": "phlan-silver-11-10",
+  "kind": "shop",
+  "name": "Silver Items (11,10)",
+  "offerings": [
+    {
+      "bundle_quantity": 1,
+      "item_type": 45,
+      "name": "Fine Composite Long Bow",
+      "price_gp": 25000,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 0,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "Silver Ring",
+      "price_gp": 90,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 1,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 58,
+      "name": "Silver Plate Mail",
+      "price_gp": 4000,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 2,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 55,
+      "name": "Silver Chain Mail",
+      "price_gp": 750,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 3,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 28,
+      "name": "1 Silver Quarrel(s)",
+      "price_gp": 20,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 4,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 20,
+      "item_type": 73,
+      "name": "20 Silver Arrow(s)",
+      "price_gp": 20,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 5,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 8,
+      "name": "1 Silver Dagger",
+      "price_gp": 20,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 6,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 38,
+      "name": "Silver Two-Handed Sword",
+      "price_gp": 300,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 7,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 37,
+      "name": "Silver Short Sword",
+      "price_gp": 80,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 8,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 36,
+      "name": "Silver Long Sword",
+      "price_gp": 150,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 9,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 35,
+      "name": "Silver Broad Sword",
+      "price_gp": 100,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 10,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 34,
+      "name": "Silver Bastard Sword",
+      "price_gp": 250,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 11,
+      "source_record": 55
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 23,
+      "name": "Silver Mace",
+      "price_gp": 80,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 12,
+      "source_record": 55
+    }
+  ],
+  "portrait": "art/portraits/NPCs/phlan-silver-11-10.png",
+  "type": "Silver Items",
+  "version": 1
+}

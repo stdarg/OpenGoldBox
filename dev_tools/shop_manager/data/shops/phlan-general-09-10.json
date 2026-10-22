@@ -1,0 +1,201 @@
+{
+  "fixed_location": {
+    "archive": "GEO3.DAX",
+    "map": "New Phlan",
+    "markers": [
+      [
+        9.0,
+        10.0
+      ]
+    ],
+    "record": 0.0
+  },
+  "id": "phlan-general-09-10",
+  "kind": "shop",
+  "name": "General Items (9,10)",
+  "offerings": [
+    {
+      "bundle_quantity": 1,
+      "item_type": 85,
+      "name": "1 Vial Of Holy Water",
+      "price_gp": 25,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 0,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 71,
+      "name": "Silver Holy Symbol Of Sune",
+      "price_gp": 50,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 1,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 71,
+      "name": "Iron Holy Symbol Of Tempus",
+      "price_gp": 2,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 2,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 71,
+      "name": "Wooden Holy Symbol Of Tyr",
+      "price_gp": 1,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 3,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 86,
+      "name": "1 Flask OF Oil Flask(s)",
+      "price_gp": 1,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 4,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 71,
+      "name": "Silver Mirror",
+      "price_gp": 20,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 5,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 71,
+      "name": "Brass Mirror",
+      "price_gp": 10,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 6,
+      "source_record": 54
+    },
+    {
+      "bundle_quantity": 10,
+      "item_type": 200,
+      "name": "10 Torches",
+      "price_gp": 1,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 201,
+      "name": "Vial of Acid",
+      "price_gp": 25,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 202,
+      "name": "Flask of Alchemist's Fire",
+      "price_gp": 50,
+      "quantity": -1,
+      "source_archive": "OpenGold authored gear",
+      "source_index": -1,
+      "source_record": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 1)",
+      "item_type": 203,
+      "price_gp": 1000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 2)",
+      "item_type": 204,
+      "price_gp": 2000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 3)",
+      "item_type": 205,
+      "price_gp": 3000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 4)",
+      "item_type": 206,
+      "price_gp": 4000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 5)",
+      "item_type": 207,
+      "price_gp": 5000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 6)",
+      "item_type": 208,
+      "price_gp": 6000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 7)",
+      "item_type": 209,
+      "price_gp": 7000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    },
+    {
+      "source_archive": "OpenGold authored gear",
+      "source_record": -1,
+      "source_index": -1,
+      "name": "Bottle of Magic Ink (Level 8)",
+      "item_type": 210,
+      "price_gp": 8000,
+      "bundle_quantity": 1,
+      "quantity": -1
+    }
+  ],
+  "portrait": "art/portraits/NPCs/phlan-general-09-10.png",
+  "type": "General Items",
+  "version": 1
+}

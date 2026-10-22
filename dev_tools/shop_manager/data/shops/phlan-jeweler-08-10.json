@@ -1,0 +1,131 @@
+{
+  "fixed_location": {
+    "archive": "GEO3.DAX",
+    "map": "New Phlan",
+    "markers": [
+      [
+        8.0,
+        10.0
+      ]
+    ],
+    "record": 0.0
+  },
+  "id": "phlan-jeweler-08-10",
+  "kind": "shop",
+  "name": "Jeweler (8,10)",
+  "offerings": [
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Brass Dragon Figurine",
+      "price_gp": 75,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 0,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Gold Chain(s)",
+      "price_gp": 100,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 1,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Pearl Necklace",
+      "price_gp": 400,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 2,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Gold Lightning Figurine",
+      "price_gp": 650,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 3,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Jewelled Silver Wings",
+      "price_gp": 1050,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 4,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Silver Dragon Statuette",
+      "price_gp": 2500,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 5,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Gold Scarab",
+      "price_gp": 4500,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 6,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Emerald Broach",
+      "price_gp": 8000,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 7,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Platinum Sphere",
+      "price_gp": 18500,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 8,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Fine Opal Pendant",
+      "price_gp": 28500,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 9,
+      "source_record": 52
+    },
+    {
+      "bundle_quantity": 1,
+      "item_type": 70,
+      "name": "1 Diamond Necklace",
+      "price_gp": 50000,
+      "quantity": -1,
+      "source_archive": "ITEM3.DAX",
+      "source_index": 10,
+      "source_record": 52
+    }
+  ],
+  "portrait": "art/portraits/NPCs/phlan-jeweler-08-10.png",
+  "type": "Jewelry",
+  "version": 1
+}

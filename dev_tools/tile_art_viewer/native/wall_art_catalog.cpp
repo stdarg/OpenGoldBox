@@ -3,6 +3,8 @@
 #include "map_art_profiles.h"
 #include "opengold/exploration_view.h"
 #include "opengold/map_catalog.h"
+#include "opengold/magic_item_catalog.h"
+#include "opengold/por_sound.h"
 #include "opengold/wall_art.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
@@ -92,14 +94,53 @@ Ref<godot::Image> godot_image(const opengold::Image &source)
     return godot::Image::create_from_data(source.width, source.height, false,
                                           godot::Image::FORMAT_RGBA8, pixels);
 }
+
+Equipment make_equipment(const ItemRecord &item, unsigned index,
+                         const std::vector<ItemTemplate> &templates,
+                         const std::vector<std::string> &words)
+{
+    if (item.type >= templates.size())
+    {
+        throw std::runtime_error("Item type exceeds ITEMS templates");
+    }
+    Equipment result;
+    result.index = index;
+    result.stored = item;
+    result.base = templates[item.type];
+    result.bonuses = equipment_bonuses(item, result.base);
+    if (is_magic(item) && !words.empty())
+    {
+        result.decoded_name = item_name(item, words);
+        result.unidentified_name = item_name(item, words, item.hidden_name_words);
+    }
+    return result;
+}
+
+Dictionary shop_item(const Equipment &item, const std::string &archive, unsigned record_id)
+{
+    Dictionary result;
+    result["source_archive"] = godot_string(archive);
+    result["source_record"] = static_cast<int>(record_id);
+    result["source_index"] = static_cast<int>(item.index);
+    result["name"] = godot_string(item.label());
+    result["item_type"] = static_cast<int>(item.stored.type);
+    result["price_gp"] = static_cast<int>(item.stored.value);
+    result["bundle_quantity"] = std::max(1, static_cast<int>(item.stored.stack_size));
+    result["quantity"] = -1; // Unlimited until the editor sets a stock limit.
+    return result;
+}
 } // namespace
 
 void WallArtCatalog::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("load_directory", "directory"), &WallArtCatalog::load_directory);
+    ClassDB::bind_method(D_METHOD("load_shop_directory", "directory"),
+                         &WallArtCatalog::load_shop_directory);
     ClassDB::bind_method(D_METHOD("entries"), &WallArtCatalog::entries);
     ClassDB::bind_method(D_METHOD("image_at", "index"), &WallArtCatalog::image_at);
     ClassDB::bind_method(D_METHOD("maps"), &WallArtCatalog::maps);
+    ClassDB::bind_method(D_METHOD("shop_stock", "record"), &WallArtCatalog::shop_stock);
+    ClassDB::bind_method(D_METHOD("item_catalog"), &WallArtCatalog::item_catalog);
     ClassDB::bind_method(D_METHOD("map_cell", "map_index", "profile_index", "x", "y", "view"),
                          &WallArtCatalog::map_cell);
     ClassDB::bind_method(D_METHOD("map_view", "map_index", "profile_index", "x", "y", "facing"),
@@ -116,6 +157,8 @@ String WallArtCatalog::load_directory(const String &directory)
 {
     entries_.clear();
     maps_.clear();
+    shop_stock_.clear();
+    item_catalog_.clear();
     try
     {
         const auto path = std::filesystem::path(std::string(directory.utf8().get_data()));
@@ -257,6 +300,87 @@ String WallArtCatalog::load_directory(const String &directory)
     }
 }
 
+String WallArtCatalog::load_shop_directory(const String &directory)
+{
+    shop_stock_.clear();
+    item_catalog_.clear();
+    try
+    {
+        const auto path = std::filesystem::path(std::string(directory.utf8().get_data()));
+        const auto items_file = archive_path(path, "ITEMS");
+        const auto template_bytes = detail::read_archive_bytes<std::runtime_error>(
+            items_file, "ITEMS exceeds size limit", "Cannot open ITEMS", "Incomplete ITEMS read");
+        const auto templates = decode_item_templates(template_bytes);
+        if (!templates)
+        {
+            throw std::runtime_error("Invalid ITEMS templates");
+        }
+        std::vector<std::string> words;
+        try
+        {
+            const auto start_file = archive_path(path, "START.EXE");
+            const auto start_bytes = detail::read_archive_bytes<std::runtime_error>(
+                start_file, "START.EXE exceeds size limit", "Cannot open START.EXE",
+                "Incomplete START.EXE read");
+            auto decoded = decode_item_words(unpack_sound_executable(start_bytes));
+            if (!decoded)
+            {
+                throw std::runtime_error("Invalid START.EXE item words");
+            }
+            words = std::move(*decoded);
+        }
+        catch (const std::runtime_error &error)
+        {
+            if (std::string(error.what()).find("Missing archive: START.EXE") == std::string::npos)
+            {
+                throw;
+            }
+        }
+        std::map<unsigned, std::vector<Equipment>> loaded_stock;
+        Array loaded_items;
+        for (unsigned bank = 1; bank <= 8; ++bank)
+        {
+            const auto name = "ITEM" + std::to_string(bank) + ".DAX";
+            const auto archive = read_archive(path, name);
+            for (const auto &list : archive.records)
+            {
+                const auto items = decode_items(list.bytes);
+                if (!items)
+                {
+                    throw std::runtime_error("Invalid item list " + name + ":" +
+                                             std::to_string(list.id));
+                }
+                std::vector<Equipment> stock;
+                for (unsigned index = 0; index < items->size(); ++index)
+                {
+                    auto item = make_equipment((*items)[index], index, *templates, words);
+                    loaded_items.push_back(shop_item(item, name, list.id));
+                    stock.push_back(std::move(item));
+                }
+                if (bank == 3 && (list.id == 52 || list.id == 53 || list.id == 54 || list.id == 55))
+                {
+                    loaded_stock.emplace(list.id, std::move(stock));
+                }
+            }
+        }
+        for (unsigned id : {52, 53, 54, 55})
+        {
+            if (!loaded_stock.contains(id))
+            {
+                throw std::runtime_error("Missing New Phlan stock list ITEM3.DAX:" +
+                                         std::to_string(id));
+            }
+        }
+        shop_stock_ = std::move(loaded_stock);
+        item_catalog_ = std::move(loaded_items);
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return godot_string(error.what());
+    }
+}
+
 Array WallArtCatalog::entries() const
 {
     Array result;
@@ -305,6 +429,26 @@ Array WallArtCatalog::maps() const
         result.push_back(metadata);
     }
     return result;
+}
+
+Array WallArtCatalog::shop_stock(int record_id) const
+{
+    Array result;
+    const auto found = shop_stock_.find(static_cast<unsigned>(record_id));
+    if (record_id < 0 || found == shop_stock_.end())
+    {
+        return result;
+    }
+    for (const auto &item : found->second)
+    {
+        result.push_back(shop_item(item, "ITEM3.DAX", static_cast<unsigned>(record_id)));
+    }
+    return result;
+}
+
+Array WallArtCatalog::item_catalog() const
+{
+    return item_catalog_.duplicate(true);
 }
 
 Dictionary WallArtCatalog::map_cell(int map_index, int profile_index, int x, int y, int view) const

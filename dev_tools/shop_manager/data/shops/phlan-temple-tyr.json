@@ -1,0 +1,83 @@
+{
+  "fixed_location": {
+    "archive": "GEO3.DAX",
+    "map": "New Phlan",
+    "markers": [
+      [
+        11.0,
+        3.0
+      ],
+      [
+        8.0,
+        4.0
+      ],
+      [
+        8.0,
+        6.0
+      ]
+    ],
+    "record": 0.0
+  },
+  "id": "phlan-temple-tyr",
+  "kind": "temple",
+  "name": "Temple of Tyr",
+  "offerings": [
+    {
+      "name": "Cure Blindness",
+      "offered": true,
+      "price_gp": 1000,
+      "service_id": "cure_blindness"
+    },
+    {
+      "name": "Cure Disease",
+      "offered": true,
+      "price_gp": 1000,
+      "service_id": "cure_disease"
+    },
+    {
+      "name": "Cure Light Wounds",
+      "offered": true,
+      "price_gp": 100,
+      "service_id": "cure_light_wounds"
+    },
+    {
+      "name": "Cure Serious Wounds",
+      "offered": true,
+      "price_gp": 350,
+      "service_id": "cure_serious_wounds"
+    },
+    {
+      "name": "Cure Critical Wounds",
+      "offered": true,
+      "price_gp": 600,
+      "service_id": "cure_critical_wounds"
+    },
+    {
+      "name": "Neutralize Poison",
+      "offered": true,
+      "price_gp": 1000,
+      "service_id": "neutralize_poison"
+    },
+    {
+      "name": "Raise Dead",
+      "offered": true,
+      "price_gp": 5500,
+      "service_id": "raise_dead"
+    },
+    {
+      "name": "Remove Curse",
+      "offered": true,
+      "price_gp": 3500,
+      "service_id": "remove_curse"
+    },
+    {
+      "name": "Stone to Flesh",
+      "offered": true,
+      "price_gp": 2000,
+      "service_id": "stone_to_flesh"
+    }
+  ],
+  "portrait": "art/portraits/NPCs/bishop-braccio.png",
+  "type": "Temple",
+  "version": 1
+}
