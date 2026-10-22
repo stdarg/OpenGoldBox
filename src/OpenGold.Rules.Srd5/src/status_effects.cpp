@@ -516,7 +516,8 @@ void apply_repeating_condition(EffectState &effects, EffectKind kind, EffectSour
     if ((kind != EffectKind::drowsy && kind != EffectKind::laughing &&
          kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
          kind != EffectKind::knocked_out && kind != EffectKind::confused &&
-         kind != EffectKind::time_slowed && kind != EffectKind::paralysis_ray) ||
+         kind != EffectKind::time_slowed && kind != EffectKind::paralysis_ray &&
+         kind != EffectKind::envenomed) ||
         !can_apply(effects) || !recorded(source, name) || save.dc < -2 || save.dc > 38 ||
         !save.first_save_ms || save.first_save_ms > round_ms)
     {
@@ -1007,20 +1008,21 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                 bool removed = !e.remaining_ms;
                 if (!removed &&
                     (e.kind == EffectKind::blindness || e.kind == EffectKind::hold_person ||
-                     e.kind == EffectKind::paralysis_ray ||
-                     e.kind == EffectKind::drowsy || e.kind == EffectKind::laughing ||
-                     e.kind == EffectKind::enfeebled || e.kind == EffectKind::frightened ||
-                     e.kind == EffectKind::knocked_out || e.kind == EffectKind::confused ||
-                     e.kind == EffectKind::time_slowed) &&
+                     e.kind == EffectKind::paralysis_ray || e.kind == EffectKind::drowsy ||
+                     e.kind == EffectKind::laughing || e.kind == EffectKind::enfeebled ||
+                     e.kind == EffectKind::frightened || e.kind == EffectKind::knocked_out ||
+                     e.kind == EffectKind::confused || e.kind == EffectKind::time_slowed ||
+                     e.kind == EffectKind::envenomed) &&
                     !e.save_in_ms)
                 {
-                    // Blindness, Ray of Enfeeblement and Knock Out repeat a Constitution save,
-                    // the others a Wisdom one, at the end of each of the target's turns.
-                    const auto ability = e.kind == EffectKind::blindness ||
-                                                 e.kind == EffectKind::enfeebled ||
-                                                 e.kind == EffectKind::knocked_out
-                                             ? Ability::constitution
-                                             : Ability::wisdom;
+                    // Blindness, Ray of Enfeeblement, Knock Out and Cunning Strike's Poison
+                    // repeat a Constitution save, the others a Wisdom one, at the end of each
+                    // of the target's turns.
+                    const auto ability =
+                        e.kind == EffectKind::blindness || e.kind == EffectKind::enfeebled ||
+                                e.kind == EffectKind::knocked_out || e.kind == EffectKind::envenomed
+                            ? Ability::constitution
+                            : Ability::wisdom;
                     e.save_in_ms = round_ms;
                     if (!subject.dead)
                     {
@@ -1041,7 +1043,8 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                         {
                             modifiers.advantage |= subject.brave;
                         }
-                        else if (e.kind != EffectKind::knocked_out)
+                        else if (e.kind != EffectKind::knocked_out &&
+                                 e.kind != EffectKind::envenomed)
                         {
                             modifiers.disadvantage |=
                                 heightened_against(subject.effects.get(), e.source_scope,
@@ -1217,10 +1220,10 @@ EffectState read_effects(std::istream &in)
         if (!in ||
             (!timed && !turn_save && kind != EffectKind::blindness &&
              kind != EffectKind::hold_person && kind != EffectKind::paralysis_ray &&
-             kind != EffectKind::drowsy &&
-             kind != EffectKind::laughing && kind != EffectKind::enfeebled &&
-             kind != EffectKind::frightened && kind != EffectKind::knocked_out &&
-             kind != EffectKind::confused && kind != EffectKind::time_slowed) ||
+             kind != EffectKind::drowsy && kind != EffectKind::laughing &&
+             kind != EffectKind::enfeebled && kind != EffectKind::frightened &&
+             kind != EffectKind::knocked_out && kind != EffectKind::confused &&
+             kind != EffectKind::time_slowed && kind != EffectKind::envenomed) ||
             e.id <= previous || e.id >= result.next_id || !e.source_scope || !e.source_actor ||
             e.source_name.empty() || e.source_name.size() > 160 ||
             (!timed &&

@@ -1,3 +1,4 @@
+#include "opengold/authored_items.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
@@ -143,14 +144,19 @@ CombatantView unit(const CombatSession &c, EntityId id)
 }
 
 // The Rogue with a dagger at (1, 1), the dummy at (2, 1) and an ally beside
-// the dummy, so Sneak Attack applies; at the Rogue's turn.
+// the dummy, so Sneak Attack applies; at the Rogue's turn. The Rogue may carry
+// a Poisoner's Kit.
 std::unique_ptr<CombatSession> fight(const RulesModule &rules, const Character &hero,
-                                     std::uint64_t seed, bool ally = true)
+                                     std::uint64_t seed, bool ally = true, bool kit = false)
 {
     const auto profile =
         rules.character_profile(hero.sheet(), std::vector<std::string>{"dagger"}).data;
     std::vector<Participant> setup{{1, "campaign-character", "Rogue", Side::party, {1, 1}, profile},
                                    {98, "dummy", "Dummy", Side::opposition, {2, 1}}};
+    if (kit)
+    {
+        setup.front().inventory.push_back({1, "poisoners_kit", 1});
+    }
     if (ally)
     {
         setup.push_back({2, "dull", "Ally", Side::party, {3, 1}});
@@ -345,6 +351,56 @@ void cunning_checks()
     check(!offered(*alone, "melee_trip"), "No Cunning Strike without Sneak Attack");
 }
 
+bool shows(const CombatSession &c, EntityId id, std::string_view condition)
+{
+    const auto conditions = unit(c, id).conditions;
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [&](const auto &m)
+                       {
+                           return m.source == condition;
+                       });
+}
+
+// Cunning Strike's Poison (#233): a Rogue carrying a Poisoner's Kit gives up a
+// Sneak Attack die, and the target saves or is Poisoned, repeating the save at
+// the end of each of its turns.
+void poison_checks()
+{
+    por::Equipment kit;
+    kit.stored.type = authored_item::poisoners_kit;
+    check(equipment_conversion(kit) == "poisoners_kit" && kit.label() == "Poisoner's Kit",
+          "The original-format kit converts to the SRD Poisoner's Kit");
+    const auto rules = dummy_rules();
+    check(rules->equipment_info("poisoners_kit").slot == EquipmentSlot::carried,
+          "The kit is carried gear");
+    check(!offered(*fight(*rules, rogue(5), 1), "melee_poison"), "No Poison without the kit");
+    check(!offered(*fight(*rules, rogue(4), 1, true, true), "melee_poison"),
+          "No Cunning Strike before level 5");
+    bool poisoned = false, recovered = false;
+    for (std::uint64_t seed = 1; seed < 80 && !(poisoned && recovered); ++seed)
+    {
+        auto c = fight(*rules, rogue(5), seed, true, true);
+        check(offered(*c, "melee_poison"), "A Rogue carrying the kit is offered Poison");
+        check(submit(*c, "melee_poison", 98), "A Poison attack");
+        if (!logged(*c, "adds Sneak Attack: 2d6") || !logged(*c, "Dummy is poisoned."))
+        {
+            continue;
+        }
+        check(shows(*c, 98, "Poisoned (Cunning Strike)"), "The dummy shows the condition");
+        const auto saved = c->save();
+        check(rules->restore(saved)->save() == saved, "A checkpoint keeps the poison");
+        poisoned = true;
+        // The dummy's turn ends with a Constitution save that may end it.
+        check(submit(*c, "end"), "The Rogue ends its turn");
+        for (unsigned steps = 0; steps < 12 && c->snapshot().actor != 1; ++steps)
+        {
+            check(submit(*c, "end") || c->submit(choose_demo_command(*c)), "Reach the next round");
+        }
+        recovered |= !shows(*c, 98, "Poisoned (Cunning Strike)");
+    }
+    check(poisoned && recovered, "Poison lands on some seed and a later save ends it");
+}
+
 // Uncanny Dodge: the Rogue's Reaction halves a hit's damage.
 void uncanny_dodge_checks()
 {
@@ -507,6 +563,7 @@ int main()
         improved_cunning_checks();
         devious_checks();
         cunning_checks();
+        poison_checks();
         uncanny_dodge_checks();
         evasion_checks();
         reliable_checks();

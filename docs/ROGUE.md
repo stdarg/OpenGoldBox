@@ -28,8 +28,12 @@ every class ([LEVELS-2](SRD-DECISIONS.md#levels-2-2026-10-15-level-cap-15)).
   save against 8 + Dexterity modifier + Proficiency Bonus or falls Prone) and
   **Withdraw** (after the attack, half the Speed of free movement that provokes
   nothing), each for one Sneak Attack die. The effect needs the attack to deal
-  Sneak Attack damage. **Poison** waits for a Poisoner's Kit to buy
-  ([#233](https://github.com/stdarg/OpenGold/issues/233)).
+  Sneak Attack damage. **Poison** is offered too while the Rogue carries a
+  Poisoner's Kit (#233): the target makes a Constitution save against the same
+  DC or is Poisoned for up to a minute, repeating the save at the end of each
+  of its turns. Carrying the kit is enough, as the SRD says; there is no tool
+  proficiency (DM-1). No shop sells the kit yet
+  ([#271](https://github.com/stdarg/OpenGold/issues/271)).
 - **Uncanny Dodge:** when an attack hits the Rogue, React halves its damage
   with the Reaction; a Blinded Rogue cannot use it.
 - **Expertise (6):** a Training page choice of two proficient skills.

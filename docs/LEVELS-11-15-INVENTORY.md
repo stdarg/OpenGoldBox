@@ -369,7 +369,7 @@ always-prepared spells.
 | 15 | Slippery Mind | Proficiency in Wisdom and Charisma saves. | 63 | | **Existing.** |
 
 Counts (p. 62): Sneak Attack 6d6 (11–12), 7d6 (13–14), 8d6 (15). Cunning
-Strike save DC stays 8 + Dex + PB. Poison still waits for a Poisoner's Kit
+Strike save DC stays 8 + Dex + PB. Poison needs a carried Poisoner's Kit
 (#233).
 
 ### Sorcerer (table p. 65) — Draconic Sorcery (p. 70)

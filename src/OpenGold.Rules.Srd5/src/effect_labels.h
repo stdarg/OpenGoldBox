@@ -377,7 +377,10 @@ inline constexpr std::array effect_labels{
     EffectLabel{EffectKind::missile_ward, "Protection From Normal Missiles",
                 "Missiles without magic from more than 5 feet away miss it."},
     EffectLabel{EffectKind::snake_charmed, "Incapacitated (Snake Charm)",
-                "Charmed until the fight ends; a hit slays it."}};
+                "Charmed until the fight ends; a hit slays it."},
+    EffectLabel{
+        EffectKind::envenomed, "Poisoned (Cunning Strike)",
+        "Disadvantage on attack rolls and ability checks. A Constitution save at the end of each of its turns ends it."}};
 
 // Bookkeeping no player sees: a save already made against an area this turn,
 // a summoned spirit's breath, a casting's dice, or a double's secret. Every

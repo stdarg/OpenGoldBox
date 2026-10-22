@@ -580,11 +580,19 @@ std::string_view charge_noun(std::string_view item) noexcept
     return magic ? magic->noun : std::string_view{};
 }
 
+// A Rogue carrying the kit can poison with Cunning Strike (#233); owning it is
+// enough, as tool proficiencies are gone (DM-1).
+constexpr std::string_view poisoners_kit = "poisoners_kit";
+
 std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
 {
     if (const auto *magic = detail::magic_item(item))
     {
         return std::string(magic->note);
+    }
+    if (item == poisoners_kit)
+    {
+        return "A Rogue carrying it can poison a foe with Cunning Strike.";
     }
     if (rules::magic_ink_level(item))
     {
@@ -2736,7 +2744,8 @@ bool gives_condition(detail::EffectKind kind, std::string_view condition)
         return kind == detail::EffectKind::hold_person || kind == detail::EffectKind::paralysis_ray;
     }
     return kind == detail::EffectKind::poisoned || kind == detail::EffectKind::contagion ||
-           kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened;
+           kind == detail::EffectKind::retching || kind == detail::EffectKind::sickened ||
+           kind == detail::EffectKind::envenomed;
 }
 
 std::string condition_name(std::string_view condition)
@@ -4151,6 +4160,7 @@ constexpr std::array<std::tuple<std::string_view, std::string_view, BrutalBlow>,
 // Cunning Strike's effects (Rogue 5).
 enum class CunningStrike : unsigned
 {
+    poison, // with a Poisoner's Kit
     trip,
     withdraw,
     stealth, // Supreme Sneak's Stealth Attack (Thief 9)
@@ -4160,7 +4170,7 @@ enum class CunningStrike : unsigned
 };
 
 // Cunning Strike's options by verb suffix, with their names and the Sneak
-// Attack dice they cost; the Poison option waits for a Poisoner's Kit (#233).
+// Attack dice they cost.
 // A command's verb is "melee_" or "ranged_" and one suffix, or two joined by
 // "+" with Improved Cunning Strike (Rogue 11).
 struct CunningOption
@@ -4171,8 +4181,9 @@ struct CunningOption
     int cost;
 };
 
-constexpr std::array<CunningOption, 6> cunning_strikes{
-    {{"trip", CunningStrike::trip, "Trip", 1},
+constexpr std::array<CunningOption, 7> cunning_strikes{
+    {{"poison", CunningStrike::poison, "Poison", 1},
+     {"trip", CunningStrike::trip, "Trip", 1},
      {"withdraw", CunningStrike::withdraw, "Withdraw", 1},
      {"stealth", CunningStrike::stealth, "Stealth Attack", 1},
      {"daze", CunningStrike::daze, "Daze", 2},
@@ -7659,6 +7670,7 @@ Snapshot Session::snapshot() const
               std::pair{detail::EffectKind::enhance_ability, "Enhance Ability (Strength)"},
               std::pair{detail::EffectKind::missile_ward, "Protection From Normal Missiles"},
               std::pair{detail::EffectKind::snake_charmed, "Incapacitated (Snake Charm)"},
+              std::pair{detail::EffectKind::envenomed, "Poisoned (Cunning Strike)"},
               std::pair{detail::EffectKind::lethargic, "Incapacitated (lethargy)"},
               std::pair{detail::EffectKind::entranced, "Charmed (Hypnotic Pattern)"},
               std::pair{detail::EffectKind::terrified, "Frightened (Fear)"},
@@ -7925,7 +7937,8 @@ void Session::apply_rider(const detail::SpellDef &spell, std::string_view verb, 
         std::erase_if(target.effects.active,
                       [](const auto &e)
                       {
-                          return e.kind == detail::EffectKind::poisoned;
+                          return e.kind == detail::EffectKind::poisoned ||
+                                 e.kind == detail::EffectKind::envenomed;
                       });
         detail::apply_spell_benefit(target.effects, effect_source(a), a.source.name,
                                     detail::EffectKind::protection_from_poison, 0);
@@ -11761,7 +11774,8 @@ std::vector<Command> Session::offered_commands() const
                                  option.kind == CunningStrike::knock_out ||
                                  option.kind == CunningStrike::obscure;
             return option.cost <= dice && (!devious || d.devious_strikes) &&
-                   (option.kind != CunningStrike::stealth || (d.supreme_sneak && hidden(a)));
+                   (option.kind != CunningStrike::stealth || (d.supreme_sneak && hidden(a))) &&
+                   (option.kind != CunningStrike::poison || carries(a, poisoners_kit));
         };
         for (std::size_t i = 0; i < cunning_strikes.size(); ++i)
         {
@@ -18793,7 +18807,8 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
     }
     if (detail::sapped(a.effects) ||
         ((detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
-          detail::has_effect(a.effects, detail::EffectKind::contagion)) &&
+          detail::has_effect(a.effects, detail::EffectKind::contagion) ||
+          detail::has_effect(a.effects, detail::EffectKind::envenomed)) &&
          !detail::has_effect(a.effects, detail::EffectKind::feasted)) ||
         detail::has_effect(a.effects, detail::EffectKind::scorched) || !fears_in_sight(a).empty())
     {
@@ -20184,6 +20199,19 @@ void Session::cunning_effect(Actor &rogue, Actor &target, CunningStrike kind)
                                next_save_ms(target.source.id), detail::EffectKind::dazed);
         log(target.source.name + " is dazed.",
             {"{name} is dazed.", {{"name", target.source.name}}});
+        return;
+    }
+    if (kind == CunningStrike::poison)
+    {
+        if (!standing || saving_throw_succeeds(target, detail::Ability::constitution, dc))
+        {
+            return;
+        }
+        detail::apply_repeating_condition(
+            target.effects, detail::EffectKind::envenomed, effect_source(rogue), rogue.source.name,
+            detail::RepeatingSave{.dc = dc, .first_save_ms = next_save_ms(target.source.id)});
+        log(target.source.name + " is poisoned.",
+            {"{name} is poisoned.", {{"name", target.source.name}}});
         return;
     }
     if (kind == CunningStrike::knock_out)
@@ -27061,7 +27089,7 @@ class Module final : public RulesModule
         if (klass == CharacterClass::rogue && result.level == 5)
         {
             result.description =
-                "Cunning Strike: when an attack would deal Sneak Attack damage, give up a die to Trip the target (Dexterity save or Prone) or Withdraw (half your Speed without provoking).\nUncanny Dodge: your Reaction halves the damage of a hit.\nSneak Attack 3d6; Proficiency Bonus +3.";
+                "Cunning Strike: when an attack would deal Sneak Attack damage, give up a die to Poison the target if you carry a Poisoner's Kit (Constitution save or Poisoned), Trip it (Dexterity save or Prone) or Withdraw (half your Speed without provoking).\nUncanny Dodge: your Reaction halves the damage of a hit.\nSneak Attack 3d6; Proficiency Bonus +3.";
         }
         if (klass == CharacterClass::rogue && result.level == 6)
         {
@@ -29597,9 +29625,9 @@ class Module final : public RulesModule
     EquipmentInfo equipment_info(std::string_view key) const override
     {
         // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
-        // is read from the pack.
+        // is read from the pack, and a Poisoner's Kit used from it.
         if (detail::ammunition(key) || detail::thrown_gear(key) || rules::magic_ink_level(key) ||
-            rules::parse_scroll_key(key))
+            rules::parse_scroll_key(key) || key == poisoners_kit)
         {
             return {EquipmentSlot::carried, 0};
         }

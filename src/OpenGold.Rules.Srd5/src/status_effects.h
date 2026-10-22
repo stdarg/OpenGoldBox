@@ -488,9 +488,12 @@ enum class EffectKind : unsigned
     missile_ward = 197,
     // Snake Charm (MAGIC-6): Incapacitated until the fight ends; a hit slays it.
     snake_charmed = 198,
+    // Cunning Strike's Poison (Rogue 5): Poisoned for up to a minute, a
+    // Constitution save at the end of each of its turns.
+    envenomed = 199,
     // The last kind: a new one goes after it and updates saved_effect_kind().
     // Plant Growth's Overgrowth has no effect kind; it is a zone.
-    last = snake_charmed
+    last = envenomed
 };
 
 // Magic Circle's creature types, by `dc`.

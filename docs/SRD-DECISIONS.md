@@ -1012,8 +1012,10 @@ class's cap rises to 10 only when its features work. Decisions on the
 - **Expertise:** the new picks at Rogue 6, Bard 9 and Ranger 9 are
   implemented, replacing SCOPE-2's "no further Expertise work" for them.
 - **Reliable Talent** (Rogue 7) is implemented too, replacing SCOPE-2's cut.
-- **Cunning Strike's Poison** waits for a store that sells a Poisoner's Kit
-  ([#233](https://github.com/stdarg/OpenGold/issues/233)).
+- **Cunning Strike's Poison** is offered to a Rogue carrying a Poisoner's Kit
+  (#233); the user decided on 2026-10-22 that carrying it is enough, with no
+  tool proficiency. A Rogue's shop will sell it
+  ([#271](https://github.com/stdarg/OpenGold/issues/271)).
 - **Supreme Sneak:** the game has no cover, so a Thief's Stealth Attack keeps
   it hidden whenever it is hidden.
 - **Adrenaline Rush** is also offered in the Camp dialog's Cast / Use list
