@@ -374,6 +374,33 @@ stage after Kuto's Well.
   holy symbols (`0x4A38` = 2). At level 2 the expedition party lost a camp
   fight there: with a check every ten minutes, almost every rest on the
   plaza is attacked, as in the original, whose only safe rest is the temple.
+- **Increment 2 (done, 2026-10-22):** wizard-locked doors (door code 3) offer
+  Bash, Pick and Knock under "Wizard locked."; Bash and Pick need DC 35 and
+  Knock always opens (PODOL-1). Played: Bash fails at the temple's west door,
+  a recruited Wizard's Knock opens it, the healer's YES opens the temple of
+  Ilmater at its own record's prices (Cure Light Wounds bought), and three
+  rests inside are never interrupted.
+- **Increment 3 (done, 2026-10-22):** combat results are the original
+  engine's (coab `ovr006`): 129 when the party flees, 128 when it falls or
+  loses a duel. The engine wrote 128 for a flight, so scripts testing "above
+  128" treated fleeing as winning: New Phlan's tavern brawl sent the city
+  watch after a fleeing party, and fleeing a Slums fight counted toward
+  clearing the Slums. The buccaneer is the SRD Pirate (`buccaneer` in
+  `combat.rules`, Enthralling Panache not modeled). With SPRIT1 lacking
+  sprite 19, `SETUP MONSTER` at distance 0 shows the head-and-body portrait.
+  `CALL 0x8001` makes the next `COMBAT` a duel: only the member `WHO` chose
+  fights; a lost duel leaves the champion on 1 Hit Point and is not the
+  party's defeat. A staged monster's record (slot 8 and up) loads and stores
+  without effect, so the free-for-all's berserk picks change nothing. Played
+  from a save on entering the plaza: the bribe (a tenth of the coins, no
+  items), the duel won, then drinking heavily (all coins taken, waking on
+  (2,10)), the patrons' attack (the bar wrecked), the free-for-all, and a
+  duel lost by a champion on 1 Hit Point.
+- **Not yet played:** the council's mission (the plaza menu, disguise and
+  sneaking, rumours, the auction and its City Hall reward, the robed orc's
+  greeting and the loyalty test, the cancelled auction's group). City Hall
+  offers the auction commission only after one of its first three
+  commissions is done, which the expedition route does not do yet.
 
 ## Suggested increments
 

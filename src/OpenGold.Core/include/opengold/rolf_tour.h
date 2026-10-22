@@ -420,6 +420,8 @@ class RolfTourSession
     unsigned encounter_distance_{};
     std::optional<opengold::CampaignEncounter> encounter_;
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
+    // CALL 0x8001 before COMBAT: the member WHO chose fights alone.
+    bool duel_{};
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
@@ -440,6 +442,8 @@ class RolfTourSession
     void award_staged_treasure();
     [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;
     [[nodiscard]] bool locked_door_ahead() const;
+    // Whether the lock ahead is a wizard lock (door code 3).
+    [[nodiscard]] bool wizard_locked_ahead() const;
     void show_locked_door();
     void try_locked_door(opengold::DoorMethod method);
     void search_destination();

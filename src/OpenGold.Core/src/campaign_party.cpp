@@ -2028,6 +2028,19 @@ std::vector<DoorAttempt> CampaignParty::cast_knock(int difficulty)
     throw std::runtime_error("No member can cast Knock");
 }
 
+void CampaignParty::recover_duelist(MemberId id)
+{
+    editable();
+    auto next = state_;
+    auto &champion = member_in(next, id);
+    if (champion.vitals.dead || champion.vitals.hit_points > 0)
+    {
+        return;
+    }
+    rules_->set_hit_points(champion.vitals, champion.character.sheet(), 1);
+    state_ = std::move(next);
+}
+
 bool CampaignParty::temple_service_helps(MemberId target, rules::TempleService service) const
 {
     if (std::find(state_.slots.begin(), state_.slots.end(), target) == state_.slots.end())

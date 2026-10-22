@@ -319,6 +319,18 @@ void CombatDemo::encounter(CampaignEncounter encounter, std::uint64_t seed)
         }
     }
     auto participants = campaign_->participants();
+    if (encounter.champion)
+    {
+        std::erase_if(participants,
+                      [&](const auto &participant)
+                      {
+                          return participant.id != encounter.champion;
+                      });
+        if (participants.empty())
+        {
+            throw std::runtime_error("The duel's champion cannot fight");
+        }
+    }
     for (auto &participant : participants)
     {
         participant.resting = encounter.party_resting;
@@ -812,10 +824,12 @@ void CombatDemo::finish_combat()
     }
     EclHostReply reply;
     reply.writes = {
-        // The original's combat results: 0 won, 128 the party fled, 129 it fell.
+        // The original's combat results, as its engine wrote them (coab
+        // ovr006): 0 won, 128 (0x80) the party fell or lost a duel, 129 (0x81)
+        // it fled. Scripts test "above 128" for a flight.
         {ecl_combat_result, static_cast<std::uint16_t>(state.outcome == Outcome::victory ? 0
-                                                       : state.outcome == Outcome::fled  ? 128
-                                                                                         : 129)},
+                                                       : state.outcome == Outcome::fled  ? 129
+                                                                                         : 128)},
         {ecl_monsters_defeated, static_cast<std::uint16_t>(defeated)},
         {ecl_encounter_surprise, 0},
         {EclAddress{0x6DE3}, 0},

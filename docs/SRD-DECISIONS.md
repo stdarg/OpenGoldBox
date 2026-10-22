@@ -649,7 +649,8 @@ reach provokes an opportunity attack as any move does. One who got away is out
 of the fight and rejoins the party after it. When no party member is left on
 the field and someone got away, the party has fled: everyone left on the field
 is lost for good (dead and out of the party), the treasure stays, and the
-original script receives its "fled" result (128; a party wiped out is 129).
+original script receives its "fled" result (129; a party wiped out is 128, as
+the original engine wrote them; corrected on 2026-10-22, docs/audits/podol-plaza.md).
 Experience comes from the monsters the party killed (the user's ruling): a
 flight earns the experience of those it killed, and members who fled share
 the experience of a fight the rest went on to win.
@@ -1545,3 +1546,24 @@ user decided on 2026-10-22:
   the original did. The party may buy several services before leaving.
 - **The party's money is always pooled**, so the original's Take, Pool and
   Share commands are not needed (#232).
+
+## PODOL-1 (2026-10-22): Podol Plaza
+
+The user decided on 2026-10-22 how Podol Plaza's original events that SRD
+5.2.1 or the engine cannot copy work
+([audit](audits/podol-plaza.md)):
+
+- **The Pitt's buccaneer** (MON1CHA 41, a 4th-level fighter in the original)
+  is the SRD 5.2.1 **Pirate** (CR 1, 200 XP), so a single member of level 3-5
+  can survive his duel. His Long Sword +1 and Chain Mail +1 are still the
+  loot.
+- **Wizard-locked doors** (door code 3): Knock always opens one; Bash and Pick
+  need DC 35, where an ordinary lock is DC 15.
+- **Robbery** takes coins only, as in Kuto's Well: the bribe (10%) and the
+  drunken stupor (all coins) take no items.
+- **The tavern free-for-all**: all its goblins, hobgoblins and ogres are
+  ordinary enemies of the party; none goes berserk to attack the nearest
+  creature, as 21 of them did in the original.
+- **The cancelled auction**: when no roaming group was rolled this visit, the
+  crowd that attacks is a freshly rolled plaza group, not whatever group
+  another area left behind.

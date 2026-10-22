@@ -1762,6 +1762,277 @@ void heal(CampaignParty &party)
     party.restore(std::move(state));
 }
 
+// A level-3 Wizard with Knock prepared, recruited to open Podol's wizard-locked
+// doors.
+Character knock_wizard()
+{
+    rules::CharacterDraft d;
+    d.race = "human";
+    d.gender = "female";
+    d.character_class = "wizard";
+    d.background = "sage";
+    d.alignment = "neutral_good";
+    d.name = "Gwen";
+    d.rolled = true;
+    for (auto &r : d.rolls)
+    {
+        r = {{6, 5, 4, 1}, 3};
+    }
+    d.cantrips = std::vector<std::string>{"fire_bolt", "ray_of_frost", "chill_touch"};
+    const std::vector<std::string> spells{"magic_missile"};
+    d.spells = rules::SpellChoices{{{"spellbook:1", spells}}, spells, {}, {}};
+    d.training = {{"class:wizard", {"medicine", "nature"}}};
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    party.award_experience(900, "wizard-xp");
+    for (unsigned level = 2; level <= 3; ++level)
+    {
+        auto choice = party.default_advancement(id);
+        if (level == 3)
+        {
+            (*choice.spell_learning)["spellbook:3"] = {"knock", "shatter"};
+            choice.spells = party.member(id).character.sheet().prepared_spells;
+            choice.spells.insert(choice.spells.end(), {"knock", "shatter"});
+        }
+        party.advance(id, choice);
+    }
+    return party.member(id).character;
+}
+
+// Podol's hidden temple of Ilmater, behind wizard-locked doors (PODOL-1): Bash
+// fails against DC 35 and Knock opens the door; the healer's YES opens the
+// temple's Heal list at its own prices; camping there is never interrupted.
+void podol_temple(Expedition &trip)
+{
+    auto &[party, town] = trip;
+    party->recruit("test:knock-wizard", knock_wizard());
+    auto offerings = original_temple_offerings();
+    offerings.at(2).price_gp = 90; // Ilmater's Cure Light Wounds, in its own record
+    town.temples({{"GEO1.DAX", 18, {{1, 15}}, offerings}});
+    walk_to(town, party, 2, 13);
+    face(town, party, 3);
+    const auto knock_door = [&](std::string_view method)
+    {
+        town.explore(por::ExplorationCommand::forward);
+        for (unsigned n = 0; n < 50 && town.snapshot().phase == por::TourPhase::running; ++n)
+        {
+            town.advance(.5);
+        }
+        const auto &s = town.snapshot();
+        check(s.dialogue == "Wizard locked." && s.choices.back() == "Exit",
+              "The temple's door is wizard locked");
+        const auto chosen = std::find(s.choices.begin(), s.choices.end(), method);
+        check(chosen != s.choices.end(), std::string(method) + " is offered");
+        check(town.choose(s.continue_ticket, static_cast<std::size_t>(chosen - s.choices.begin())),
+              "Try the door");
+    };
+    knock_door("Bash");
+    const auto bashes = town.snapshot().door_checks;
+    check(!bashes.empty() && bashes.back().difficulty == 35 && !town.snapshot().door_opened,
+          "Bashing a wizard-locked door is a DC 35 check, and it holds");
+    settle(town, party);
+    check(town.snapshot().pose.x == 2, "The party is still outside");
+    knock_door("Knock");
+    check(town.snapshot().door_opened, "Knock opens the wizard-locked door");
+    settle(town, party);
+    check(town.snapshot().pose.x == 1 && town.snapshot().pose.y == 13, "The party is inside");
+    // The healer at (1,15).
+    auto state = party->checkpoint();
+    auto &hurt = state.roster.front();
+    hurt.vitals.hit_points = 1;
+    party->restore(std::move(state));
+    const auto hurt_id = party->state().roster.front().id;
+    const auto gold = coins(party->state().wealth, Coin::gold);
+    bool healed = false;
+    walk_to(town, party, 1, 15,
+            [&](const por::TourSnapshot &s) -> std::size_t
+            {
+                const auto pick = [&](std::string_view label)
+                {
+                    for (std::size_t n = 0; n < s.choices.size(); ++n)
+                    {
+                        if (s.choices[n].starts_with(label))
+                        {
+                            return n;
+                        }
+                    }
+                    throw std::runtime_error("No choice " + std::string(label));
+                };
+                if (s.dialogue.find("IN NEED OF HEALING") != std::string::npos)
+                {
+                    return pick("YES");
+                }
+                if (s.dialogue.starts_with("The clerics cast "))
+                {
+                    healed = true;
+                    return pick("Leave");
+                }
+                if (s.dialogue == "The clerics will cast these spells for the party.")
+                {
+                    check(std::find(s.choices.begin(), s.choices.end(),
+                                    "Cure Light Wounds (90 gp)") != s.choices.end(),
+                          "The temple of Ilmater charges its own record's prices");
+                    return pick("Cure Light Wounds");
+                }
+                if (s.dialogue == "Choose who receives Cure Light Wounds.")
+                {
+                    return pick(party->member(hurt_id).character.sheet().name);
+                }
+                if (s.dialogue.starts_with("The clerics will cast Cure Light Wounds on "))
+                {
+                    return pick("Pay");
+                }
+                return peaceful(s);
+            });
+    check(healed && party->member(hurt_id).vitals.hit_points > 1 &&
+              coins(party->state().wealth, Coin::gold) == gold - 90,
+          "The temple of Ilmater heals a member for 90 gp");
+    // The healer says the party may rest here as long as it likes.
+    for (unsigned rest = 0; rest < 3; ++rest)
+    {
+        check(town.camp(RestKind::short_rest), "Camp in the temple");
+        settle(town, party);
+        check(town.snapshot().dialogue.find("Short rest complete") != std::string::npos &&
+                  party->state().short_rest,
+              "Nothing interrupts a rest in the temple");
+        party->finish_short_rest(party->state().short_rest->ticket);
+    }
+}
+
+// Answers with the first of `labels` a menu offers, else peacefully.
+Answer prefer(std::vector<std::string> labels)
+{
+    return [labels = std::move(labels)](const por::TourSnapshot &s) -> std::size_t
+    {
+        for (const auto &label : labels)
+        {
+            for (std::size_t n = 0; n < s.choices.size(); ++n)
+            {
+                if (s.choices[n] == label)
+                {
+                    return n;
+                }
+            }
+        }
+        return peaceful(s);
+    };
+}
+
+// Steps once into the Pitt (4,8) from its door, answering with `answer`.
+void enter_pitt(Expedition &trip, const Answer &answer)
+{
+    auto &[party, town] = trip;
+    walk_to(town, party, 5, 8, answer);
+    step(town, party, 3, answer);
+}
+
+// The Pitt (docs/audits/podol-plaza.md, PODOL-1): the drunk buccaneer's
+// bribe, his duel with one member, the patrons' fight, heavy drinking and the
+// free-for-all, each played from the save made on entering the plaza.
+void podol_pitt(const std::filesystem::path &save, const std::filesystem::path &directory)
+{
+    const auto pitt_state = [](const Expedition &trip)
+    {
+        return trip.town.script_variable(por::EclAddress{0x4A37});
+    };
+    {
+        auto trip = load_expedition(save, directory);
+        const auto coins = party_coins(*trip.party);
+        const auto items = party_items(*trip.party);
+        enter_pitt(trip, prefer({"BRIBE", "YES"}));
+        check(party_coins(*trip.party) < coins && party_coins(*trip.party) >= coins * 8 / 10 &&
+                  party_items(*trip.party) == items && pitt_state(trip) == 0,
+              "The bribe costs a tenth of the money and no items, and he comes back");
+    }
+    // The duel: only the chosen member fights the buccaneer, the SRD Pirate.
+    const auto duel = [&](const Answer &later)
+    {
+        auto trip = load_expedition(save, directory);
+        const auto lead = trip.party->state().slots[0];
+        const auto fought = fights_started.size();
+        enter_pitt(trip, prefer({"CHALLENGE"}));
+        check(fights_started.size() == fought + 1 && fights_started.back().cells.size() == 2 &&
+                  fights_started.back().cells.contains(lead) && pitt_state(trip) == 1,
+              "The challenger alone fights the buccaneer");
+        check(std::find(enemies_fought.end() - 1, enemies_fought.end(), "buccaneer") !=
+                  enemies_fought.end(),
+              "The buccaneer is the SRD Pirate");
+        // Back out, then in again: the patrons ignore the party now.
+        enter_pitt(trip, later);
+        return trip;
+    };
+    {
+        auto trip = duel(prefer({"DRINK HEAVILY"}));
+        const auto items = party_items(*trip.party);
+        check(party_coins(*trip.party) == 0 && party_items(*trip.party) == items &&
+                  trip.town.snapshot().pose.x == 2 && trip.town.snapshot().pose.y == 10,
+              "Drinking heavily, the party wakes on (2,10) robbed of its money but not its items");
+    }
+    {
+        auto trip = duel(prefer({"ATTACK"}));
+        check(pitt_state(trip) >= 2, "Attacking the patrons wrecks the bar");
+    }
+    {
+        const auto fought = fights_started.size();
+        auto trip = duel(prefer({"MIX WITH MONSTERS", "INSULT BACK"}));
+        check(fights_started.size() > fought + 1 && trip.town.script_diagnostics().empty(),
+              "Insulting back starts the free-for-all, which the party wins");
+    }
+    // A champion on 1 Hit Point who loses the duel: not the party's defeat; he
+    // is left on 1 Hit Point, as in the original. Seeds are tried until the
+    // buccaneer wins one.
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        auto trip = load_expedition(save, directory);
+        auto state = trip.party->checkpoint();
+        state.roster.front().vitals.hit_points = 1;
+        trip.party->restore(std::move(state));
+        const auto lead = trip.party->state().roster.front().id;
+        auto &[party, town] = trip;
+        walk_to(town, party, 5, 8);
+        face(town, party, 3);
+        town.explore(por::ExplorationCommand::forward);
+        for (unsigned n = 0; n < 2000 && town.snapshot().phase != por::TourPhase::combat; ++n)
+        {
+            const auto &s = town.snapshot();
+            if (s.phase == por::TourPhase::awaiting_continue)
+            {
+                check(town.choose(s.continue_ticket, prefer({"CHALLENGE"})(s)), "Answer");
+            }
+            else
+            {
+                town.advance(.5);
+            }
+        }
+        if (town.monster_picture())
+        {
+            check(town.start_encounter(), "The close-up is dismissed");
+        }
+        CombatDemo combat(module());
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), seed);
+        for (unsigned n = 0;
+             n < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing; ++n)
+        {
+            check(combat.submit(choose_demo_command(combat.combat(), Searching::party)),
+                  "Combat accepts the command");
+        }
+        const auto result = combat.combat().snapshot();
+        if (result.outcome != rules::Outcome::defeat)
+        {
+            continue;
+        }
+        check(town.resolve_combat(result) && town.snapshot().phase != por::TourPhase::defeated &&
+                  town.script_variable(por::ecl_combat_result) == 128,
+              "A lost duel is not the party's defeat; the script hears 128");
+        check(!party->member(lead).vitals.dead && party->member(lead).vitals.hit_points == 1,
+              "The champion is left on 1 Hit Point");
+        settle(town, party);
+        return;
+    }
+    throw std::runtime_error("No seed's buccaneer wins the duel");
+}
+
 // Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
 // entered by Kuto's Well's west edge, its exits to areas not in the game yet
 // refused, a roaming group met on the plaza, the robed orc fought for his holy
@@ -1799,6 +2070,7 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
     check(load_expedition(save, directory).town.snapshot().area_id == 18,
           "A save in Podol Plaza loads back there");
+    podol_pitt(save, directory);
     // Every edge has openings at 4 and 11; only the east one leads anywhere
     // the game has.
     walk_to(town, party, 4, 0, peaceful);
@@ -1863,6 +2135,7 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
               town.script_variable(por::EclAddress{0x4A38}) == 2,
           "The party defeats the robed orc and takes his six leather holy symbols");
     heal(*party);
+    podol_temple(trip);
     walk_to(town, party, 15, 4, peaceful);
     step(town, party, 1);
     check(town.snapshot().area_id == 29, "Podol Plaza's east edge leads back to Kuto's Well");
@@ -2464,7 +2737,7 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     check(result.outcome == rules::Outcome::fled, "The party flees the fight");
     check(town.resolve_combat(result), "Exploration accepts the flight");
     check(town.snapshot().phase != por::TourPhase::faulted &&
-              town.script_variable(por::ecl_combat_result) == 128,
+              town.script_variable(por::ecl_combat_result) == 129,
           "The original script hears that the party fled");
     bool someone_got_away = false;
     for (const auto &unit : result.combatants)

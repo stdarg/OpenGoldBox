@@ -64,10 +64,16 @@ namespace
 
 // GEO door code 2. The original engine answers it with "Locked." and Bash/Pick/
 // Knock/Exit; code 3 (wizard locked) needs magic or exceptional AD&D Strength.
-constexpr std::uint8_t locked_door = 2;
+constexpr std::uint8_t locked_door = 2, wizard_locked_door = 3;
 // Authored SRD conversion of the original Strength-table bash: a Medium (DC 15)
-// Strength (Athletics) check.
-constexpr int locked_door_difficulty = 15;
+// Strength (Athletics) check. A wizard-locked door takes DC 35, the user's
+// choice (PODOL-1); Knock always opens either.
+constexpr int locked_door_difficulty = 15, wizard_locked_difficulty = 35;
+
+[[nodiscard]] constexpr bool lock(std::uint8_t door) noexcept
+{
+    return door == locked_door || door == wizard_locked_door;
+}
 
 struct Edge
 {
@@ -171,6 +177,24 @@ Message hall_welcome(opengold::TrainingHall hall)
 }
 
 // Why a member cannot buy a session or lesson, for the dialogue.
+// The original's close-up portrait: an 88 x 40 HEAD record above an 88 x 48
+// BODY record.
+Image close_up_portrait(const PhlanResources &resources, unsigned head_id, unsigned body_id)
+{
+    const auto head = resources.heads.find(head_id), body = resources.bodies.find(body_id);
+    if (head == resources.heads.end() || body == resources.bodies.end() ||
+        head->second.width != 88 || body->second.width != 88 || head->second.height != 40 ||
+        body->second.height != 48)
+    {
+        throw EclError("Unsupported town portrait composition");
+    }
+    Image portrait;
+    portrait.width = portrait.height = 88;
+    portrait.rgba = head->second.rgba;
+    portrait.rgba.insert(portrait.rgba.end(), body->second.rgba.begin(), body->second.rgba.end());
+    return portrait;
+}
+
 // The areas next to the loaded ones that the game cannot enter yet.
 std::string_view area_beyond(unsigned script)
 {
@@ -594,10 +618,12 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     // room for (PLACE-1), are worth neither experience nor treasure.
     std::vector<unsigned> unpaid_records;
     std::set<rules::EntityId> enemies, party_ids;
+    // In a duel only the champion fights; the rest of the party stands by.
+    const auto champion = encounter_->champion;
     std::set<rules::EntityId> expected_party;
     for (auto id : campaign_->state().slots)
     {
-        if (id)
+        if (id && (!champion || id == champion))
         {
             expected_party.insert(id);
         }
@@ -647,7 +673,10 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             unpaid_records.push_back(staged_records_[n]);
         }
     }
-    if (result.outcome == rules::Outcome::defeat)
+    // A lost duel is not the party's defeat: the champion is left with 1 Hit
+    // Point and the script hears 128 (coab ovr006).
+    const bool duel_lost = champion && result.outcome == rules::Outcome::defeat;
+    if (result.outcome == rules::Outcome::defeat && !duel_lost)
     {
         snapshot_.phase = TourPhase::defeated;
         ++snapshot_.revision;
@@ -693,6 +722,12 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             {
                 campaign_->award_experience(experience, reward);
             }
+        }
+        else if (duel_lost)
+        {
+            // No experience, and the opponent keeps its gear.
+            campaign_->recover_duelist(champion);
+            snapshot_.dialogue = "You have lost the fight.";
         }
         else
         {
@@ -744,9 +779,13 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             }
         }
         auto reply = character_reply(selected_character_);
-        // The original's combat results: 0 won, 128 the party fled.
+        // The original's combat results (coab ovr006): 0 won, 128 (0x80) a
+        // duel lost, 129 (0x81) the party fled; scripts test "above 128" for a
+        // flight.
         for (auto write : std::array<EclMemoryWrite, 7>{
-                 {{ecl_combat_result, static_cast<std::uint16_t>(fled ? 128 : 0)},
+                 {{ecl_combat_result, static_cast<std::uint16_t>(fled        ? 129
+                                                                 : duel_lost ? 128
+                                                                             : 0)},
                   {ecl_monsters_defeated, static_cast<std::uint16_t>(defeated)},
                   {ecl_encounter_surprise, 0},
                   {EclAddress{0x6DE3}, 0},
@@ -1022,14 +1061,20 @@ bool RolfTourSession::locked_door_ahead() const
     const auto edge = edge_ahead(snapshot_.pose);
     const auto &from = map_.at(edge.x, edge.y);
     const auto &to = map_.at(edge.next_x, edge.next_y);
-    const auto passable_or_locked = [](unsigned wall, unsigned door)
+    const auto passable_or_locked = [](unsigned wall, std::uint8_t door)
     {
-        return !wall || door == 1 || door == locked_door;
+        return !wall || door == 1 || lock(door);
     };
-    return (from.doors[index(edge.side)] == locked_door ||
-            to.doors[index(edge.other)] == locked_door) &&
+    return (lock(from.doors[index(edge.side)]) || lock(to.doors[index(edge.other)])) &&
            passable_or_locked(from.walls[index(edge.side)], from.doors[index(edge.side)]) &&
            passable_or_locked(to.walls[index(edge.other)], to.doors[index(edge.other)]);
+}
+
+bool RolfTourSession::wizard_locked_ahead() const
+{
+    const auto edge = edge_ahead(snapshot_.pose);
+    return map_.at(edge.x, edge.y).doors[index(edge.side)] == wizard_locked_door ||
+           map_.at(edge.next_x, edge.next_y).doors[index(edge.other)] == wizard_locked_door;
 }
 
 void RolfTourSession::show_locked_door()
@@ -1048,7 +1093,7 @@ void RolfTourSession::show_locked_door()
         snapshot_.choices.push_back("Knock");
     }
     snapshot_.choices.push_back("Exit");
-    snapshot_.dialogue = "Locked.";
+    snapshot_.dialogue = wizard_locked_ahead() ? "Wizard locked." : "Locked.";
     snapshot_.phase = TourPhase::awaiting_continue;
     snapshot_.continue_ticket = ++next_ticket_;
     ++snapshot_.revision;
@@ -1060,14 +1105,15 @@ void RolfTourSession::try_locked_door(DoorMethod method)
     {
         pick_tried_ = true;
     }
-    const auto attempts = campaign_->try_door(method, locked_door_difficulty);
+    const int difficulty =
+        wizard_locked_ahead() ? wizard_locked_difficulty : locked_door_difficulty;
+    const auto attempts = campaign_->try_door(method, difficulty);
     for (const auto &attempt : attempts)
     {
         snapshot_.door_checks.push_back({campaign_->member(attempt.member).character.sheet().name,
-                                         method, attempt.roll.die, attempt.roll.total,
-                                         locked_door_difficulty});
+                                         method, attempt.roll.die, attempt.roll.total, difficulty});
     }
-    if (attempts.empty() || attempts.back().roll.total < locked_door_difficulty)
+    if (attempts.empty() || attempts.back().roll.total < difficulty)
     {
         return;
     }
@@ -1076,7 +1122,7 @@ void RolfTourSession::try_locked_door(DoorMethod method)
     const auto edge = edge_ahead(snapshot_.pose);
     const auto unlock = [](std::uint8_t &door)
     {
-        if (door == locked_door)
+        if (lock(door))
         {
             door = 1;
         }
@@ -1652,6 +1698,13 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     switch (op)
     {
     case 10:
+        // A staged monster's record (slot 8 and up), which the tavern
+        // free-for-all loads to send monsters berserk. None goes berserk here
+        // (PODOL-1), so reading or storing one changes nothing.
+        if ((arg(0) & 127) >= 8 && (arg(0) & 127) < 8 + staged_enemies_.size())
+        {
+            break;
+        }
         if (arg(0) >= 128)
         {
             if ((arg(0) & 127) != selected_character_.index)
@@ -1706,6 +1759,20 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             throw EclError("Unsupported encounter distance");
         }
+        encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
+        // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
+        // to face, the original shows the head (0x6DE1) and body portrait.
+        const auto head_id = machine_.variable(EclAddress{0x6DE1});
+        if (!decode_ega_sprite(area_resources().sprite_archive, arg(0), 0) &&
+            encounter_distance_ == 0 && head_id != 255)
+        {
+            snapshot_.sprite_frame = -1;
+            snapshot_.sprite_id = arg(0);
+            monster_picture_id_.reset();
+            picture_ = close_up_portrait(area_resources(), head_id, arg(2));
+            ++snapshot_.picture_revision;
+            break;
+        }
         for (unsigned n = 0; n < 3; ++n)
         {
             auto image = decode_ega_sprite(area_resources().sprite_archive, arg(0), n);
@@ -1716,7 +1783,6 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             decoded[n] = std::move(image.image);
         }
         sprites_ = std::move(decoded);
-        encounter_distance_ = std::min<unsigned>(arg(1), open_squares_ahead(map_, snapshot_.pose));
         snapshot_.sprite_frame = static_cast<int>(encounter_distance_);
         snapshot_.sprite_id = arg(0);
         monster_picture_id_ = arg(2);
@@ -1745,20 +1811,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         else
         {
-            const auto head = area_resources().heads.find(head_id),
-                       body = area_resources().bodies.find(arg(0));
-            if (head == area_resources().heads.end() || body == area_resources().bodies.end() ||
-                head->second.width != 88 || body->second.width != 88 || head->second.height != 40 ||
-                body->second.height != 48)
-            {
-                throw EclError("Unsupported town portrait composition");
-            }
-            Image portrait;
-            portrait.width = portrait.height = 88;
-            portrait.rgba = head->second.rgba;
-            portrait.rgba.insert(portrait.rgba.end(), body->second.rgba.begin(),
-                                 body->second.rgba.end());
-            picture_ = std::move(portrait);
+            picture_ = close_up_portrait(area_resources(), head_id, arg(0));
         }
         break;
     }
@@ -1937,6 +1990,14 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 p.facing,
                 script_surprise(machine_.variable(ecl_encounter_surprise))};
             encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
+            if (std::exchange(duel_, false))
+            {
+                encounter_->champion = campaign_->state().slots.at(selected_character_.index);
+                if (!encounter_->champion)
+                {
+                    throw EclError("A duel needs a chosen member");
+                }
+            }
             encounter_distance_ = std::min(encounter_distance_, open_squares_ahead(map_, p));
             encounter_->distance = encounter_distance_;
             // The script sets the encounter's morale before COMBAT.

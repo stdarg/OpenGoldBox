@@ -10167,6 +10167,10 @@ msgstr ""
 msgid "Wizard class"
 msgstr ""
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:1348
+msgid "Wizard locked."
+msgstr ""
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Wizard skills"
 msgstr ""
@@ -10280,6 +10284,10 @@ msgstr ""
 
 #: src/OpenGoldBox/rolf_tour_view.cpp:1346
 msgid "You get away."
+msgstr ""
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:1347
+msgid "You have lost the fight."
 msgstr ""
 
 #: src/OpenGoldBox/combat_view.cpp:101

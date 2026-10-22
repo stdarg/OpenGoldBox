@@ -10167,6 +10167,10 @@ msgstr "Trucos de Mago"
 msgid "Wizard class"
 msgstr "Clase de mago"
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:1348
+msgid "Wizard locked."
+msgstr "Cerrada con magia."
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Wizard skills"
 msgstr "Habilidades de mago"
@@ -10281,6 +10285,10 @@ msgstr "No puedes huir del campo de batalla ahora: un enemigo es más rápido, n
 #: src/OpenGoldBox/rolf_tour_view.cpp:1346
 msgid "You get away."
 msgstr "Logras escapar."
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:1347
+msgid "You have lost the fight."
+msgstr "Has perdido el combate."
 
 #: src/OpenGoldBox/combat_view.cpp:101
 msgid "Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline."

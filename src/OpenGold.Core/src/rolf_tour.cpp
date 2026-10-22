@@ -328,7 +328,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                                        {5, "slums-orc-leader", 100, 150},
                                        {6, "slums-hobgoblin", 100, 100},
                                        {7, "slums-hobgoblin", 100, 200},
-                                       {8, "ogre", 450, 450}}}};
+                                       {8, "ogre", 450, 450},
+                                       {41, "buccaneer", 200, 200}}}};
     const auto creatures = CreatureCatalog::load(directory);
     const auto dungeon = read_archive(resolve_archive(directory, "DUNGCOM.DAX"));
     std::vector<Image> terrain_art;
@@ -489,6 +490,7 @@ void RolfTourSession::reset_run()
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
     who_request_ = damage_request_ = 0;
+    duel_ = false;
     who_slots_.clear();
     temple_visit_.reset();
     hall_visit_.reset();
@@ -588,6 +590,7 @@ void RolfTourSession::roll_back_event()
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
     who_request_ = damage_request_ = 0;
+    duel_ = false;
     who_slots_.clear();
     temple_visit_.reset();
     hall_visit_.reset();
@@ -720,6 +723,12 @@ void RolfTourSession::handle_host(const EclRequest &request)
             const auto &cell = map_.at(x, y);
             reply.writes = {{ecl_wall_ahead, cell.walls[f]}, {ecl_cell_event, cell.event_raw}};
             ++snapshot_.redraws;
+        }
+        else if (service == EclAddress{0x8001})
+        {
+            // The original's one-on-one duel: the next COMBAT is the
+            // selected member's alone (coab's isDuel).
+            duel_ = true;
         }
         else if (service == EclAddress{0xBA03})
         {

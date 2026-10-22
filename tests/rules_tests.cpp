@@ -1336,7 +1336,9 @@ void installed()
         demo.continue_script();
     }
     check(demo.script_complete(), "Original ECL resumes after real combat");
-    check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0 : 128),
+    check(demo.script_variable(por::ecl_combat_result) == (outcome == Outcome::victory ? 0
+                                                           : outcome == Outcome::fled  ? 129
+                                                                                       : 128),
           "Actual outcome mapped to original ECL");
     if (outcome == Outcome::victory)
     {

@@ -50,6 +50,9 @@ struct CampaignEncounter
     std::vector<rules::Cell> positions;
     // The original script's encounter morale (100 never breaks).
     unsigned morale{100};
+    // A duel (the original's CALL 0x8001): only this member fights; 0 means
+    // the whole party.
+    rules::EntityId champion{};
 };
 } // namespace opengold
 #endif

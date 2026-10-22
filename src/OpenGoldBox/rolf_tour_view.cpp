@@ -1344,8 +1344,8 @@ String rest_notice(const std::string &resource, const std::string &text)
          N_("Rest denied: no active member is eligible."),
          N_("The rest was interrupted. Rest again to recover."), N_("Your camp is attacked!"),
          N_("The monsters go on their way."), N_("You get away."),
-         N_("Your party flees the battle."), N_("Locked."),
-         N_("The way to Stojanow Gate is not in the game yet."),
+         N_("Your party flees the battle."), N_("You have lost the fight."), N_("Locked."),
+         N_("Wizard locked."), N_("The way to Stojanow Gate is not in the game yet."),
          N_("The way to Cadorna Textile House is not in the game yet."),
          N_("The way to the wilderness is not in the game yet."),
          N_("The way to another area is not in the game yet.")})

@@ -160,6 +160,13 @@ in the game: answering YES at a hall lists its services in the dialogue
   rolls with the saved script random state, so reloading cannot reroll a camp.
   [RECOVERY.md](RECOVERY.md#camp-interruption-evidence).
 
+- **Podol Plaza** (2026-10-22). The Pitt's buccaneer, a 4th-level fighter
+  in the original, is the SRD Pirate; wizard-locked doors open to Knock or a
+  DC 35 Bash or Pick, where the original needed magic or exceptional Strength;
+  robbery takes coins but no items; none of the free-for-all's monsters goes
+  berserk; and a cancelled auction with no group rolled yet meets a fresh
+  plaza group.
+  [PODOL-1](SRD-DECISIONS.md#podol-1-2026-10-22-podol-plaza).
 - **Temple services** (2026-10-22). The original's temples cast AD&D spells.
   Each service now casts an SRD 5.2.1 spell under its original name: Cure
   Serious and Cure Critical Wounds are Cure Wounds from a level-3 and a level-5

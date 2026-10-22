@@ -10167,6 +10167,10 @@ msgstr "Wizard cantrips"
 msgid "Wizard class"
 msgstr "Wizard class"
 
+#: src/OpenGoldBox/rolf_tour_view.cpp:1348
+msgid "Wizard locked."
+msgstr "Wizard locked."
+
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Wizard skills"
 msgstr "Wizard skills"
@@ -10281,6 +10285,10 @@ msgstr "You cannot run off the battlefield now: an enemy is faster, you have no 
 #: src/OpenGoldBox/rolf_tour_view.cpp:1346
 msgid "You get away."
 msgstr "You get away."
+
+#: src/OpenGoldBox/rolf_tour_view.cpp:1347
+msgid "You have lost the fight."
+msgstr "You have lost the fight."
 
 #: src/OpenGoldBox/combat_view.cpp:101
 msgid "Your attack hit. Add Fire's Burn (1d10 Fire damage), or decline."
