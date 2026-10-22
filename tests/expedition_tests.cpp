@@ -5,6 +5,7 @@
 #include "opengold/combat_demo.h"
 #include "opengold/random_treasure.h"
 #include "opengold/rolf_tour.h"
+#include "opengold/scroll_key.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
@@ -673,7 +674,8 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     for (unsigned n = 0; n < 4000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
          ++n)
     {
-        check(combat.submit(choose_demo_command(combat.combat())), "Combat accepts the command");
+        check(combat.submit(choose_demo_command(combat.combat(), Searching::party)),
+              "Combat accepts the command");
     }
     const auto result = combat.combat().snapshot();
     check(result.outcome == rules::Outcome::victory, "The party wins its fight");
@@ -899,8 +901,8 @@ Expedition create_party(const std::filesystem::path &directory)
     return {party, std::move(town)};
 }
 
-// The general store at (15,8) sells the original's oil and the SRD gear the
-// game adds (Torch, Acid, Alchemist's Fire), all converting to SRD items.
+// The general store at (15,8) sells the original's oil and the gear the game
+// adds (Torch, Acid, Alchemist's Fire, Magic Ink), all converting to SRD items.
 void general_store_gear(const std::filesystem::path &directory)
 {
     auto trip = create_party(directory);
@@ -926,6 +928,23 @@ void general_store_gear(const std::filesystem::path &directory)
     check(sold.contains("oil") && sold.contains("torch") && sold.contains("acid") &&
               sold.contains("alchemists_fire"),
           "The general store sells Oil, Torches, Acid and Alchemist's Fire");
+    for (unsigned level = 1; level <= 8; ++level)
+    {
+        const auto ink = std::find_if(stock.begin(), stock.end(),
+                                      [&](const auto &item)
+                                      {
+                                          return equipment_conversion(item) ==
+                                                 rules::magic_ink_key(level);
+                                      });
+        check(ink != stock.end() && ink->stored.value == 1000 * level,
+              "Magic Ink of each spell level costs 1000 gp a level");
+    }
+    check(std::none_of(stock.begin(), stock.end(),
+                       [](const auto &item)
+                       {
+                           return equipment_conversion(item) == rules::magic_ink_key(9);
+                       }),
+          "No Magic Ink above the highest spell level, 8");
     const auto acid = std::find_if(stock.begin(), stock.end(),
                                    [](const auto &item)
                                    {
@@ -2198,77 +2217,100 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
         check(town.start_encounter(), "The monster close-up is dismissed");
     }
     const auto experience = party->member(party->state().slots[0]).experience;
-    CombatDemo combat(module());
-    combat.campaign_party(party);
-    combat.encounter(*town.pending_encounter(), 42);
-    const auto board = combat.combat().snapshot().battlefield;
-    std::vector<rules::Cell> edges;
-    for (int y = 0; y < board.height; ++y)
+    // A member that fails its flight stays and fights; the monsters wait for
+    // what they see (AI-1). A seed whose fight ends with the party away, and
+    // no monster killed, is used.
+    std::unique_ptr<CombatDemo> fight;
+    for (std::uint64_t seed = 42; seed < 52; ++seed)
     {
-        for (int x = 0; x < board.width; ++x)
+        fight = std::make_unique<CombatDemo>(module());
+        auto &combat = *fight;
+        combat.campaign_party(party);
+        combat.encounter(*town.pending_encounter(), seed);
+        const auto board = combat.combat().snapshot().battlefield;
+        std::vector<rules::Cell> edges;
+        for (int y = 0; y < board.height; ++y)
         {
-            if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
-                board.at({x, y}) != rules::Terrain::obstacle)
+            for (int x = 0; x < board.width; ++x)
             {
-                edges.push_back({x, y});
-            }
-        }
-    }
-    const auto to_edge = [&](rules::Cell from)
-    {
-        int best = 1000;
-        for (const auto edge : edges)
-        {
-            best = std::min(best, std::max(std::abs(edge.x - from.x), std::abs(edge.y - from.y)));
-        }
-        return best;
-    };
-    for (unsigned n = 0; n < 6000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing;
-         ++n)
-    {
-        const auto s = combat.combat().snapshot();
-        const auto offered = combat.combat().legal_commands();
-        const auto mover = std::find_if(s.combatants.begin(), s.combatants.end(),
-                                        [&](const auto &u)
-                                        {
-                                            return u.id == s.actor;
-                                        });
-        std::optional<rules::Command> pick;
-        if (mover != s.combatants.end() && mover->side == rules::Side::party && !s.reaction_pending)
-        {
-            for (const auto &c : offered)
-            {
-                if (c.verb == "flee")
+                if ((x == 0 || y == 0 || x == board.width - 1 || y == board.height - 1) &&
+                    board.at({x, y}) != rules::Terrain::obstacle)
                 {
-                    pick = c;
+                    edges.push_back({x, y});
                 }
             }
-            int closest = to_edge(mover->cell);
-            if (!pick)
+        }
+        const auto to_edge = [&](rules::Cell from)
+        {
+            int best = 1000;
+            for (const auto edge : edges)
+            {
+                best =
+                    std::min(best, std::max(std::abs(edge.x - from.x), std::abs(edge.y - from.y)));
+            }
+            return best;
+        };
+        for (unsigned n = 0;
+             n < 2000 && combat.combat().snapshot().outcome == rules::Outcome::ongoing; ++n)
+        {
+            const auto s = combat.combat().snapshot();
+            const auto offered = combat.combat().legal_commands();
+            const auto mover = std::find_if(s.combatants.begin(), s.combatants.end(),
+                                            [&](const auto &u)
+                                            {
+                                                return u.id == s.actor;
+                                            });
+            std::optional<rules::Command> pick;
+            // A member that failed its flight fights on, as in the Flee mode.
+            if (mover != s.combatants.end() && mover->side == rules::Side::party &&
+                mover->can_flee && !s.reaction_pending)
             {
                 for (const auto &c : offered)
                 {
-                    if (c.verb == "move" && to_edge(c.destination) < closest)
-                    {
-                        pick = c;
-                        closest = to_edge(c.destination);
-                    }
-                }
-            }
-            if (!pick)
-            {
-                for (const auto &c : offered)
-                {
-                    if (c.verb == "end")
+                    if (c.verb == "flee")
                     {
                         pick = c;
                     }
                 }
+                int closest = to_edge(mover->cell);
+                if (!pick)
+                {
+                    for (const auto &c : offered)
+                    {
+                        if (c.verb == "move" && to_edge(c.destination) < closest)
+                        {
+                            pick = c;
+                            closest = to_edge(c.destination);
+                        }
+                    }
+                }
+                if (!pick)
+                {
+                    for (const auto &c : offered)
+                    {
+                        if (c.verb == "end")
+                        {
+                            pick = c;
+                        }
+                    }
+                }
             }
+            check(combat.submit(pick ? *pick
+                                     : choose_demo_command(combat.combat(), Searching::party)),
+                  "Combat accepts the command");
         }
-        check(combat.submit(pick ? *pick : choose_demo_command(combat.combat())),
-              "Combat accepts the command");
+        const auto end = combat.combat().snapshot();
+        if (end.outcome == rules::Outcome::fled &&
+            std::none_of(end.combatants.begin(), end.combatants.end(),
+                         [](const auto &unit)
+                         {
+                             return unit.side == rules::Side::opposition && unit.hit_points <= 0;
+                         }))
+        {
+            break;
+        }
     }
+    auto &combat = *fight;
     const auto result = combat.combat().snapshot();
     check(result.outcome == rules::Outcome::fled, "The party flees the fight");
     check(town.resolve_combat(result), "Exploration accepts the flight");

@@ -586,10 +586,10 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         return std::string(magic->note);
     }
-    if (item == "magic_ink")
+    if (rules::magic_ink_level(item))
     {
-        return "Copying a scroll's spell into a Wizard's spellbook takes one bottle for each "
-               "spell level.";
+        return "A bottle writes a spell of its level or lower on a scroll, or copies one from a "
+               "scroll into a Wizard's spellbook.";
     }
     if (const auto scroll = rules::parse_scroll_key(item))
     {
@@ -2401,12 +2401,15 @@ const detail::MagicItem *usable_item(const Actor &a, const detail::SpellDef &spe
         {
             continue;
         }
-        const bool held = std::any_of(a.definition.equipment_keys.begin(),
-                                      a.definition.equipment_keys.end(),
-                                      [&](const auto &key)
-                                      {
-                                          return detail::magic_item(key) == item;
-                                      });
+        // A monster, which has no character profile, has its wand in hand
+        // (DIFF-1).
+        const bool held =
+            a.source.character_profile.empty() ||
+            std::any_of(a.definition.equipment_keys.begin(), a.definition.equipment_keys.end(),
+                        [&](const auto &key)
+                        {
+                            return detail::magic_item(key) == item;
+                        });
         const auto uses = std::find_if(a.item_uses.begin(), a.item_uses.end(),
                                        [&](const auto &entry)
                                        {
@@ -7208,6 +7211,8 @@ Snapshot Session::snapshot() const
         view.prone = a.effects.prone;
         view.last_target = a.last_target;
         view.unarmored_arcane_caster = def(a).unarmored_arcane_caster;
+        view.critical_hit = a.smite_target && a.smite_critical;
+        view.disengaged = a.disengaged;
         // Each rated by its attacks a turn too: Martial Arts' bonus strike
         // counts for a Monk's melee.
         const int attacks = 1 + def(a).extra_attacks;
@@ -7235,6 +7240,11 @@ Snapshot Session::snapshot() const
                 {
                     if (const auto *w = detail::weapon(item.definition); w && w->thrown)
                     {
+                        view.thrown_rating = std::max(
+                            view.thrown_rating,
+                            (w->dice * w->sides +
+                             8 * std::max(0, rules::parse_item_key(item.definition).bonus)) *
+                                attacks);
                         view.thrown_weapons.push_back({item.id, item.label,
                                                        std::any_of(offered.begin(), offered.end(),
                                                                    [&](const auto &c)
@@ -11635,6 +11645,7 @@ std::vector<Command> Session::offered_commands() const
                 auto [verb, label] =
                     cast_at(spell, level, std::string(spell.id), std::string(spell.label));
                 add(id, std::move(verb), std::move(label), a.smite_target);
+                commands.back().spell = spell_facts(a, spell);
             }
         };
         if (melee && detail::knows_spell(d.spells, "divine_smite") && a.free_casts > 0)
@@ -11646,6 +11657,7 @@ std::vector<Command> Session::offered_commands() const
         if (melee && detail::knows_spell(d.spells, "searing_smite") && slot)
         {
             add(id, "searing_smite", "Searing Smite", a.smite_target);
+            commands.back().spell = spell_facts(a, *detail::find_spell("searing_smite"));
         }
         add_smite("shining_smite");
         // Ensnaring Strike follows a Ranged hit too.
@@ -11657,6 +11669,7 @@ std::vector<Command> Session::offered_commands() const
                 auto [verb, label] =
                     cast_at(spell, level, std::string(spell.id), std::string(spell.label));
                 add(id, std::move(verb), std::move(label), a.smite_target);
+                commands.back().spell = spell_facts(a, spell);
             }
         }
     }
@@ -11960,6 +11973,8 @@ std::vector<Command> Session::offered_commands() const
                         commands.push_back({revision_, id, 0,
                                             "dragons_breath_exhale_" + std::string(type),
                                             "Exhale (Dragon's Breath)", Cell{}, 0, true});
+                        commands.back().spell =
+                            spell_facts(a, *detail::find_spell("dragons_breath_exhale"));
                     }
                 }
             }
@@ -11969,8 +11984,10 @@ std::vector<Command> Session::offered_commands() const
         {
             commands.push_back(
                 {revision_, id, 0, "breath_weapon_cone", "Breath Weapon (cone)", Cell{}, 0, true});
+            commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_cone"));
             commands.push_back(
                 {revision_, id, 0, "breath_weapon_line", "Breath Weapon (line)", Cell{}, 0, true});
+            commands.back().spell = spell_facts(a, *detail::find_spell("breath_weapon_line"));
         }
         add(id, "dash", "Dash");
         add(id, "dodge", "Dodge");
@@ -26053,7 +26070,9 @@ std::unique_ptr<Session> Session::restore(std::shared_ptr<const Content> content
     {
         std::size_t carried{};
         input >> carried;
-        if (!input || carried > 64 || (carried && a.source.character_profile.empty()))
+        // Monsters carry their potions, wands and scrolls on Hard and above
+        // (DIFF-1).
+        if (!input || carried > 64)
         {
             throw std::runtime_error("Invalid checkpoint inventory");
         }
@@ -29149,6 +29168,37 @@ class Module final : public RulesModule
         return found->level;
     }
 
+    std::vector<ScrollWriting> writable_spells(const CharacterSheet &sheet) const override
+    {
+        const auto d = character_definition(character_profile(sheet, {}).data);
+        std::vector<ScrollWriting> writable;
+        // The scroll is of the writer's kind of magic, as the scrolls it reads.
+        if (!d.reads_arcane_scrolls && !d.reads_divine_scrolls)
+        {
+            return writable;
+        }
+        unsigned highest_slot = 0;
+        for (unsigned level = 1; level <= highest_slot_level; ++level)
+        {
+            highest_slot = d.slots[level] > 0 ? level : highest_slot;
+        }
+        for (const auto &id : d.spells)
+        {
+            const auto *spell = detail::find_spell(id);
+            if (spell && spell->level && detail::on_class_list(detail::class_of(sheet), id) &&
+                (spell->level <= highest_slot || d.arcanum.contains(id)))
+            {
+                writable.push_back({id, spell->level, d.reads_arcane_scrolls});
+            }
+        }
+        std::stable_sort(writable.begin(), writable.end(),
+                         [](const auto &a, const auto &b)
+                         {
+                             return a.level < b.level;
+                         });
+        return writable;
+    }
+
     void drink_potion(const CharacterSheet &sheet, VitalState &state, std::string_view item,
                       RandomState &random_state) const override
     {
@@ -29529,9 +29579,9 @@ class Module final : public RulesModule
 
     EquipmentInfo equipment_info(std::string_view key) const override
     {
-        // Magic Ink is spent copying a scroll into a spellbook (MAGIC-6); a
-        // scroll is read from the pack.
-        if (detail::ammunition(key) || detail::thrown_gear(key) || key == "magic_ink" ||
+        // Magic Ink is spent writing or copying a scroll (MAGIC-6); a scroll
+        // is read from the pack.
+        if (detail::ammunition(key) || detail::thrown_gear(key) || rules::magic_ink_level(key) ||
             rules::parse_scroll_key(key))
         {
             return {EquipmentSlot::carried, 0};
@@ -30812,6 +30862,9 @@ std::unique_ptr<RulesModule> parse_content(std::string_view content_bytes)
         {
             definition.perception = definition.saves[4];
         }
+        // A monster that casts spells reads any scroll it carries (DIFF-1).
+        definition.reads_arcane_scrolls = definition.reads_divine_scrolls =
+            !definition.spells.empty();
     }
     return std::make_unique<Module>(std::move(content));
 }

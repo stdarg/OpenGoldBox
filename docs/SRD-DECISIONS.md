@@ -1407,11 +1407,18 @@ The user chose how the original's scrolls
   inventory's Use opens the Cast menu with the scroll's spells that work
   outside combat.
 - **Copying**: a Wizard copies an arcane scroll's spell of a level it can
-  prepare into its spellbook, beyond the book's usual choices, as the SRD has
-  it: 50 gp and two hours for each spell level. The gold is **Magic Ink**, a
-  new item (the user, 2026-10-20); the general store sells it at 50 gp a
-  bottle, one bottle for each spell level. Copying erases the spell from the
-  scroll, as in the original.
+  prepare into its spellbook, beyond the book's usual choices: 1000 gp and two
+  hours for each spell level (the user, 2026-10-21; the SRD asks 50 gp). The
+  gold is **Magic Ink**, a new item (the user, 2026-10-20). Each bottle has a
+  level, from 1 to the highest spell level the game has (8), and costs 1000 gp
+  a level; it serves a spell of its level or lower (the user, 2026-10-21). The
+  general store sells every level until a magic shop does. Copying erases the spell from the scroll, as in the
+  original.
+- **Writing a scroll** (the user, 2026-10-21): any caster writes a scroll of
+  one spell it can cast, in camp (the Camp dialog), with a bottle of Magic Ink
+  of the spell's level or higher, in two hours a spell level, spending no
+  spell slot. The SRD's scribing takes days and gold instead; the original
+  had no scroll writing. No cantrip scrolls: ink has no level 0.
 - **Use Magic Device** (Thief 13), as the SRD's: the Thief reads any scroll,
   with Intelligence as its spellcasting ability. A spell above level 1 needs an
   Intelligence (Arcana) check, DC 10 + the spell's level; on a failure the
@@ -1433,8 +1440,8 @@ following the original Gold Box engine (read from coab; no code copied):
 - **Targets**: a creature keeps attacking its target while it can reach it,
   otherwise an enemy at random, not the weakest.
 - **Sight**: a creature that sees no enemy holds its ground until one comes
-  into view. When no creature on either side sees an enemy, it advances as the
-  original did, so a fight never stalls.
+  into view, even when no one on the field sees anyone (the user,
+  2026-10-21); a fight the computer plays alone then waits for the player.
 - **Magic-users stay back**: an unarmored Wizard or Sorcerer, or a monster
   magic-user, never closes in.
 - **Spells by priority**: the original's 1d7 roll over each spell's priority
@@ -1449,6 +1456,39 @@ following the original Gold Box engine (read from coab; no code copied):
   shows the attack's total and the AC to the player too.
 - **A Champion's free move** is taken toward the enemy.
 - **Flee mode** obeys Quick magic for members who cannot flee.
-- The features the computer never uses (Two-Weapon Fighting, Action Surge, slot
-  smites, Cunning Action and others) are
-  [#269](https://github.com/stdarg/OpenGold/issues/269).
+- **Features it had never used** (the user, 2026-10-21, #269): Light and Nick
+  extra attacks follow the Attack action at the same target; a thrown weapon is
+  rated and thrown as the original's were; Action Surge once the Action is
+  spent with an enemy in view; a smite that costs a slot only on a Critical
+  Hit, from the lowest slot; Steady Aim when it can attack without moving;
+  Cunning Action's Dash or Adrenaline Rush when its target is out of reach even
+  with all its movement; Disengage before running from an enemy beside it;
+  Dodge instead of ending its turn with the Action unused beside an enemy;
+  Breath Weapon and Dragon's Breath's exhale where they catch an enemy and no
+  ally; Dragon's Breath cast as a helpful spell of priority 3; putting out
+  flames at half Hit Points or lower; Wholeness of Body at half Hit Points or
+  lower. Hide is left to the player.
+
+## DIFF-1 (2026-10-21): difficulty, and monsters that use their items
+
+The original had no difficulty setting: its Alter menu offers only Order, Drop,
+Speed, Icon and Pics. The user decided on 2026-10-21 (#268):
+
+- **Five levels**, easiest first: Easy, Normal, Hard, Nightmare, Infernal.
+  Normal is the default. The setting is `[game] difficulty` in `settings.cfg`
+  ([CONFIGURATION.md](CONFIGURATION.md)); the Settings screen will show it
+  later. For now it decides only whether monsters use their items.
+- **Monsters use their potions, wands and scrolls on Hard and above**, not on
+  Normal and below. A monster brings the ones its original record carries into
+  the fight and uses them by the same rules as Quick members (AI.md §5):
+  healing at half its Hit Points or lower, Speed and Giant Strength on itself,
+  a wand or scroll at an enemy. A monster needs no hand free for its wand.
+  The original's monsters used their readied wands at every level and never a
+  potion or scroll.
+- **Only a monster that casts spells reads a scroll**, of either kind: a
+  monster has no class list.
+- **What a monster uses is gone from the loot**, as in the original: spent
+  charges, drunk potions and read spells.
+
+So far the one such monster the game meets is the Slums magic-user, whose
+Wand of Magic Missiles it zaps on Hard.

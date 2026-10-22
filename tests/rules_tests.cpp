@@ -1327,7 +1327,8 @@ void installed()
     for (unsigned i = 0; demo.combat().snapshot().outcome == Outcome::ongoing; ++i)
     {
         check(i < 1000, "Original Slums combat completes");
-        check(demo.submit(choose_demo_command(demo.combat())), "Real combat command accepted");
+        check(demo.submit(choose_demo_command(demo.combat(), Searching::party)),
+              "Real combat command accepted");
     }
     const auto outcome = demo.combat().snapshot().outcome;
     while (demo.waiting())

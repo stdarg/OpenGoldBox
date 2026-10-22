@@ -383,6 +383,15 @@ struct CampAction
     bool whole_party{}; // affects several members at once; no target is chosen
 };
 
+// A spell a member can write on a scroll (MAGIC-6), and whether the scroll is
+// arcane or divine.
+struct ScrollWriting
+{
+    std::string spell;
+    unsigned level{};
+    bool arcane{};
+};
+
 // A party member a whole-party camp action may affect: its sheet is read and
 // its state changed. References, so neither can be null, and the action takes
 // a non-const span, so the call shows that party state changes (Effective C++
@@ -612,6 +621,12 @@ struct CombatantView
     // for each magic plus, times its attacks a turn, of its melee weapon and of
     // the ranged weapon it holds or could draw; 0 with none.
     int melee_rating{}, ranged_rating{};
+    // The same for the best weapon it can throw (#269); 0 with none.
+    int thrown_rating{};
+    // Its hit that the smites now offered follow was a Critical Hit (#269).
+    bool critical_hit{};
+    // It took the Disengage action this turn (#269).
+    bool disengaged{};
 };
 
 struct TemporaryHpOffer
@@ -961,6 +976,11 @@ class RulesModule
     // a Wizard spell of a level the Wizard can prepare, not yet in its book.
     [[nodiscard]] virtual std::optional<unsigned> copyable_spell_level(const CharacterSheet &,
                                                                        std::string_view spell) const = 0;
+    // The spells the member can write on a scroll (MAGIC-6): those on its
+    // class's list it can cast, with a slot of the spell's level or a Mystic
+    // Arcanum. No cantrip; writing spends no slot.
+    [[nodiscard]] virtual std::vector<ScrollWriting>
+    writable_spells(const CharacterSheet &) const = 0;
 
     // Gold coins a camp action on `target` takes from the party purse, such as
     // Revivify's offering.

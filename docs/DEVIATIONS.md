@@ -31,6 +31,11 @@ Add an entry whenever a new departure is decided.
   OpenGoldBox shrinks an encounter over the SRD budget or with more creatures
   than living characters, and never grows one. Experience and treasure stay the
   original encounter's. [MON-1](SRD-DECISIONS.md#mon-1-2026-10-02-original-monsters-as-srd-stat-blocks).
+- **Difficulty** (2026-10-21). The original had no difficulty setting.
+  OpenGoldBox has five levels, Easy to Infernal. Its monsters used their
+  readied wands at all times and never a potion or scroll; here monsters use
+  their potions, wands and scrolls on Hard and above and no items on Normal and
+  below. [DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items).
 - **Empty fights** (2026-10-10). With no room for a whole band, the original
   started an empty fight the party won at once. OpenGoldBox places the band's
   first monster on the nearest free square the party can reach.
@@ -67,8 +72,9 @@ Add an entry whenever a new departure is decided.
   from the inventory or the Items menu. Druids and Rangers read cleric
   scrolls. The original's magic-user and cleric spells SRD 5.2.1 lacks are
   Wizard and Cleric spells as stand-ins. Copying a spell into a Wizard's spellbook, free in the original,
-  takes two hours and a 50 gp bottle of Magic Ink, a new item, for each spell
-  level. Read Magic reveals all the caster's scrolls at once instead of each
+  takes two hours a spell level and a bottle of Magic Ink, a new item, of the
+  spell's level or higher, at 1000 gp a level. Casters also write scrolls of
+  their own spells in camp, which the original never allowed. Read Magic reveals all the caster's scrolls at once instead of each
   scroll opened while it lasts.
   [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
@@ -79,12 +85,13 @@ Add an entry whenever a new departure is decided.
 - **Computer play** (2026-10-21). The original's AI walked toward an enemy it
   could not see, rolled each ally's saving throw to judge an area spell (so
   monsters cast nearly regardless), and drew three random spells at each
-  priority. OpenGoldBox's computer waits until it sees an enemy (unless no one
-  on the field sees anyone), keeps every caster's allies out of its areas
-  without a hidden roll, picks one spell at random among those that make
-  sense, treats cantrips as attacks, never casts a helpful spell twice on one
-  creature, counts a weapon's melee attacks a turn in its rating, and makes its
-  random choices from the fight's state so a fight replays the same.
+  priority. OpenGoldBox's computer waits until it sees an enemy, keeps every
+  caster's allies out of its areas without a hidden roll, picks one spell at
+  random among those that make sense, treats cantrips as attacks, never casts a
+  helpful spell twice on one creature, counts a weapon's melee attacks a turn
+  in its rating, and makes its random choices from the fight's state so a fight
+  replays the same. The original breathed by chance each round; a Breath Weapon
+  here goes off only where it catches an enemy and no ally.
   [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it),
   [AI.md](AI.md).
 

@@ -27,32 +27,20 @@ std::string_view scroll_spell(std::uint8_t number);
 // Erases the spells read from a scroll, keeping those whose bits are set in
 // `kept` (a bit for each spell on it, in order), by clearing their spell
 // numbers in the original record (MAGIC-6). A scroll with no spell left is
-// gone.
+// gone, as is a scroll a member wrote: it has no original record and holds
+// one spell.
 void keep_scroll_spells(PartyMember &member, std::uint64_t id, unsigned kept)
 {
-    const auto source = member.item_sources.find(id);
-    if (source == member.item_sources.end())
+    std::string definition;
+    if (const auto source = member.item_sources.find(id); source != member.item_sources.end())
     {
-        throw std::runtime_error("A scroll needs its original record");
-    }
-    auto &raw = source->second.stored;
-    unsigned entry = 0;
-    for (std::size_t n = 0; n < raw.effect_codes.size(); ++n)
-    {
-        // A number no spell has is no entry on the scroll.
-        if (scroll_spell(raw.effect_codes[n]).empty())
+        if (auto left = item_after_uses(source->second, kept))
         {
-            continue;
+            source->second = std::move(*left);
+            definition = equipment_conversion(source->second);
         }
-        if (!(kept & (1U << entry)))
-        {
-            raw.effect_codes[n] = 0;
-            raw.raw[60 + n] = 0;
-        }
-        ++entry;
     }
     auto inventory = member.character.inventory();
-    const auto definition = equipment_conversion(source->second);
     if (rules::parse_scroll_key(definition))
     {
         inventory.redefine(id, definition);
@@ -62,6 +50,34 @@ void keep_scroll_spells(PartyMember &member, std::uint64_t id, unsigned kept)
         inventory.remove(id, 1);
         std::erase(member.equipped, id);
         member.item_sources.erase(id);
+    }
+    member.character.replace_inventory(std::move(inventory));
+}
+
+// Spends the member's lowest bottle of Magic Ink that writes a spell of
+// `level` (MAGIC-6).
+void spend_magic_ink(PartyMember &member, unsigned level)
+{
+    auto inventory = member.character.inventory();
+    std::optional<std::uint64_t> bottle;
+    unsigned bottle_level = 0;
+    for (const auto &carried : inventory.items())
+    {
+        const auto ink = rules::magic_ink_level(carried.definition_id);
+        if (ink && *ink >= level && (!bottle || *ink < bottle_level))
+        {
+            bottle = carried.id;
+            bottle_level = *ink;
+        }
+    }
+    if (!bottle)
+    {
+        throw std::runtime_error("It takes a bottle of Magic Ink of the spell's level or higher");
+    }
+    inventory.remove(*bottle, 1);
+    if (!inventory.find(*bottle))
+    {
+        member.item_sources.erase(*bottle);
     }
     member.character.replace_inventory(std::move(inventory));
 }
@@ -509,6 +525,45 @@ unsigned carried_quantity(const por::Equipment &item)
                                                      : item.stored.effect_codes[0];
 }
 
+std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left)
+{
+    auto &raw = item.stored;
+    if (!scroll_conversion(raw).empty())
+    {
+        unsigned entry = 0;
+        for (std::size_t n = 0; n < raw.effect_codes.size(); ++n)
+        {
+            // A number no spell has is no entry on the scroll.
+            if (scroll_spell(raw.effect_codes[n]).empty())
+            {
+                continue;
+            }
+            if (!(left & (1U << entry)))
+            {
+                raw.effect_codes[n] = 0;
+                raw.raw[60 + n] = 0;
+            }
+            ++entry;
+        }
+        return rules::parse_scroll_key(scroll_conversion(raw)) ? std::optional{std::move(item)}
+                                                               : std::nullopt;
+    }
+    if (!left)
+    {
+        return std::nullopt;
+    }
+    if (raw.stack_size > 1)
+    {
+        raw.stack_size = static_cast<std::uint8_t>(left);
+    }
+    else
+    {
+        raw.effect_codes[0] = static_cast<std::uint8_t>(left);
+        raw.raw[60] = static_cast<std::uint8_t>(left);
+    }
+    return item;
+}
+
 bool identify_item(PartyMember &member, std::uint64_t item)
 {
     if (!member.character.inventory().find(item))
@@ -557,6 +612,10 @@ std::string equipment_conversion(const por::Equipment &item)
     {
         return unsupported;
     }
+    if (const auto ink = authored_item::magic_ink_level(raw.type))
+    {
+        return rules::magic_ink_key(ink);
+    }
     switch (raw.type)
     {
     case 79:
@@ -569,8 +628,6 @@ std::string equipment_conversion(const por::Equipment &item)
         return "acid";
     case authored_item::alchemists_fire:
         return "alchemists_fire";
-    case authored_item::magic_ink:
-        return "magic_ink";
     default:
         return unsupported;
     }
@@ -2198,35 +2255,7 @@ void CampaignParty::copy_scroll_spell(MemberId id, std::uint64_t item, unsigned 
     }
     auto next = state_;
     auto &wizard = member_in(next, id);
-    // A bottle of Magic Ink for each spell level, from the Wizard's own pack.
-    auto inventory = wizard.character.inventory();
-    std::uint32_t ink = 0;
-    for (const auto &carried : inventory.items())
-    {
-        ink += carried.definition_id == "magic_ink" ? carried.quantity : 0;
-    }
-    if (ink < copy->level)
-    {
-        throw std::runtime_error("Copying the spell takes a bottle of Magic Ink for each spell "
-                                 "level");
-    }
-    for (std::uint32_t needed = copy->level; needed;)
-    {
-        const auto bottle = std::find_if(inventory.items().begin(), inventory.items().end(),
-                                         [](const auto &carried)
-                                         {
-                                             return carried.definition_id == "magic_ink";
-                                         });
-        const auto spent = std::min(needed, bottle->quantity);
-        const auto bottle_id = bottle->id;
-        inventory.remove(bottle_id, spent);
-        if (!inventory.find(bottle_id))
-        {
-            wizard.item_sources.erase(bottle_id);
-        }
-        needed -= spent;
-    }
-    wizard.character.replace_inventory(std::move(inventory));
+    spend_magic_ink(wizard, copy->level);
     // Recorded with the hall training, so a save rebuilds the spellbook.
     wizard.character.train_at_hall(*rules_, "boon:scroll:" + copy->spell);
     const auto spells =
@@ -2234,6 +2263,58 @@ void CampaignParty::copy_scroll_spell(MemberId id, std::uint64_t item, unsigned 
             ->spells.size();
     keep_scroll_spells(wizard, item, ((1U << spells) - 1) & ~(1U << entry));
     elapse(next, std::chrono::hours{2 * copy->level});
+    state_ = std::move(next);
+}
+
+std::vector<rules::ScrollWriting> CampaignParty::writable_spells(MemberId id) const
+{
+    const auto &writer = member(id);
+    unsigned ink = 0;
+    for (const auto &carried : writer.character.inventory().items())
+    {
+        ink = std::max(ink, rules::magic_ink_level(carried.definition_id).value_or(0));
+    }
+    if (writer.vitals.dead || !ink)
+    {
+        return {};
+    }
+    auto writable = rules_->writable_spells(writer.character.sheet());
+    std::erase_if(writable,
+                  [&](const auto &w)
+                  {
+                      return w.level > ink;
+                  });
+    return writable;
+}
+
+void CampaignParty::write_scroll(MemberId id, std::string_view spell)
+{
+    editable();
+    if (std::find(state_.slots.begin(), state_.slots.end(), id) == state_.slots.end())
+    {
+        throw std::runtime_error("Only an active member writes a scroll");
+    }
+    const auto writable = writable_spells(id);
+    const auto writing = std::find_if(writable.begin(), writable.end(),
+                                      [&](const auto &w)
+                                      {
+                                          return w.spell == spell;
+                                      });
+    if (writing == writable.end())
+    {
+        throw std::runtime_error("That spell cannot be written on a scroll");
+    }
+    auto next = state_;
+    auto &writer = member_in(next, id);
+    spend_magic_ink(writer, writing->level);
+    if (writer.character.inventory().items().size() >= 16)
+    {
+        throw std::runtime_error("Inventory is full (16 items)");
+    }
+    const std::array<std::string, 1> entries{writing->spell};
+    (void)writer.character.add_item(
+        {.definition_id = rules::scroll_key(writing->arcane, entries), .name = "Scroll"});
+    elapse(next, std::chrono::hours{2 * writing->level});
     state_ = std::move(next);
 }
 

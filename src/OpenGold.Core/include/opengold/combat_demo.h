@@ -144,20 +144,35 @@ struct CombatDemoOptions
                                                const rules::CharacterRules &characters,
                                                const std::filesystem::path &game_directory,
                                                const CombatDemoOptions &options = {});
+// Whom the computer goes looking for when its creature sees no enemy: no one,
+// as in the game (docs/AI.md); or, in an automated run with no player to
+// break a standoff, a stand-in for the player that searches for the enemy;
+// or, in a check that needs every fight to end, monsters too.
+enum class Searching
+{
+    by_sight,
+    party,
+    everyone
+};
+
 // Demonstration AI consumes only public state/commands. No rolls or damage here.
-[[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session);
+[[nodiscard]] rules::Command choose_demo_command(const rules::CombatSession &session,
+                                                 Searching searching = Searching::by_sight);
 // The same choice from a snapshot and the commands already read, so a caller
 // that has them does not build them again.
 [[nodiscard]] rules::Command choose_demo_command(const rules::Snapshot &state,
-                                                 const std::vector<rules::Command> &offered);
+                                                 const std::vector<rules::Command> &offered,
+                                                 Searching searching = Searching::by_sight);
 // The party's flee policy: a member fast enough to flee runs for the nearest
 // open edge of the field (Dashing when it must, whatever reactions it
 // provokes) and steps off it; everyone else acts as choose_quick_command does,
 // casting no spells unless `magic` (Quick magic).
 [[nodiscard]] rules::Command choose_flee_command(const rules::CombatSession &session,
-                                                 bool magic = true);
+                                                 bool magic = true,
+                                                 Searching searching = Searching::by_sight);
 // Quick combat, as in the original: the computer plays the active party
 // member as choose_demo_command does, casting no spells unless `magic`.
-[[nodiscard]] rules::Command choose_quick_command(const rules::CombatSession &session, bool magic);
+[[nodiscard]] rules::Command choose_quick_command(const rules::CombatSession &session, bool magic,
+                                                  Searching searching = Searching::by_sight);
 } // namespace opengold
 #endif

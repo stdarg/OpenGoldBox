@@ -341,7 +341,10 @@ records the decisions.
     Remove Curse, after which it is lost.
   - Unidentified, a worn item's note says only that it needs no hand.
   - Monsters keep their authored stat blocks; the worn items they carry come
-    to the party as loot.
+    to the party as loot. On Hard and above they bring their potions, wands
+    and scrolls into the fight and use them, and what they use is gone from
+    the loot
+    ([DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items)).
 - **Scrolls** (#265,
   [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls)) convert with
   the spells their bytes 60-62 name, mapped to SRD 5.2.1 spells or stand-ins:
@@ -363,8 +366,19 @@ records the decisions.
   - Reading or copying a spell erases it from the original record; the scroll
     goes with its last spell. A Wizard's copied spells are kept with the hall
     training (`boon:scroll:<spell>`), so a save rebuilds the spellbook.
-  - Magic Ink is sold by the general store, 50 gp a bottle; copying takes a
-    bottle and two hours of game time for each spell level.
+  - Magic Ink comes in a level for each spell level, 1 to 8 (the game has no
+    level-9 spell), at 1000 gp a level; a bottle writes or copies a spell of
+    its level or lower, and the lowest bottle that serves is used. The general
+    store sells every level until a magic shop does. Copying takes a bottle and two hours of game time for each spell
+    level.
+  - **Writing a scroll**: in the Camp dialog's Cast / Use row, a caster
+    carrying Magic Ink writes a scroll of one spell it can cast (a spell on its
+    class's list it has prepared or knows, with a slot of the spell's level or
+    a Mystic Arcanum; no cantrip). It takes a bottle of the spell's level or
+    higher, two hours a spell level, and no spell slot. The scroll is arcane
+    for a Bard, Sorcerer, Warlock or Wizard and divine for a Cleric, Druid,
+    Paladin or Ranger, and is read like a found one. A written scroll has no
+    original record; its item key holds its spell.
   - Shield, a reaction, can be copied from a scroll but not read from one: a
     reaction offers only a member's own spells.
 - Fixed treasure lists show magic items under their original names ("Long

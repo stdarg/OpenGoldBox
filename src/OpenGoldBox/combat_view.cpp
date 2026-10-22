@@ -3506,7 +3506,7 @@ void CombatView::_process(double delta)
         if (checking_ && !checked_input_ && active->side == rules::Side::party &&
             !s.reaction_pending)
         {
-            const auto command = choose_demo_command(demo_->combat());
+            const auto command = choose_demo_command(demo_->combat(), Searching::everyone);
             if (command.target)
             {
                 for (const auto &[node, verb] : action_buttons)
@@ -3633,9 +3633,14 @@ void CombatView::_process(double delta)
                 }
                 throw std::runtime_error(details);
             }
-            act(flee_mode_      ? choose_flee_command(demo_->combat(), quick_magic())
-                : quick_turn(s) ? choose_quick_command(demo_->combat(), quick_magic())
-                                : choose_demo_command(demo_->combat()));
+            // A check plays every fight to its end with no player to break a
+            // standoff, so every creature goes looking for the enemy.
+            const auto searching = checking_ || party_check_ || defeat_check_ || expedition_check_
+                                       ? Searching::everyone
+                                       : Searching::by_sight;
+            act(flee_mode_      ? choose_flee_command(demo_->combat(), quick_magic(), searching)
+                : quick_turn(s) ? choose_quick_command(demo_->combat(), quick_magic(), searching)
+                                : choose_demo_command(demo_->combat(), searching));
         }
     }
     catch (const std::exception &e)

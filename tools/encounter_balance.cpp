@@ -272,7 +272,8 @@ Tally play(const PartyState &start, const std::vector<Group> &groups, const GeoM
             {
                 break;
             }
-            if (!combat.submit(choose_demo_command(state, combat.combat().legal_commands())))
+            if (!combat.submit(
+                    choose_demo_command(state, combat.combat().legal_commands(), Searching::party)))
             {
                 throw std::runtime_error("Combat refused the demo command");
             }

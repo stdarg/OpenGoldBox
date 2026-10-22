@@ -1,6 +1,7 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/random_treasure.h"
 #include "opengold/ecl_party_host.h"
+#include "opengold/scroll_key.h"
 #include <algorithm>
 #include <set>
 
@@ -690,6 +691,22 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                     paying.erase(it);
                 }
             }
+            // What the monsters still on the field used of their gear is gone
+            // from the loot (DIFF-1).
+            std::vector<SpentGear> spent;
+            for (const auto &unit : result.combatants)
+            {
+                if (unit.side == rules::Side::opposition && !unit.fled &&
+                    !unit.item_uses_left.empty())
+                {
+                    SpentGear gear{staged_records_.at(unit.id - 1000), {}};
+                    for (const auto &[item, left] : unit.item_uses_left)
+                    {
+                        gear.uses_left.emplace_back(item - 1, left);
+                    }
+                    spent.push_back(std::move(gear));
+                }
+            }
             // Monsters that all got away leave nothing to pay.
             if (!paying.empty())
             {
@@ -699,9 +716,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                     experience += area_resources().conversions.at(record).award_xp;
                 }
                 campaign_->award_experience(experience, reward);
-                pending_loot_.push_back(encounter_loot(current_area_, std::move(paying),
-                                                       reward + ":loot",
-                                                       machine_.variable(EclAddress{0x6DE3}) != 1));
+                pending_loot_.push_back(
+                    encounter_loot(current_area_, std::move(paying), reward + ":loot",
+                                   machine_.variable(EclAddress{0x6DE3}) != 1, std::move(spent)));
                 claim_loot();
             }
             // Treasure the script added to the fight is won with it.
@@ -752,7 +769,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
 }
 
 PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned> records,
-                                            std::string reward, bool items) const
+                                            std::string reward, bool items,
+                                            std::vector<SpentGear> spent) const
 {
     const auto district = town_->districts.find(area);
     if (district == town_->districts.end() || records.empty() || records.size() > 56 ||
@@ -777,10 +795,36 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
         {
             loot.wealth[coin] += creature.stored.wealth[coin];
         }
-        if (items)
+        if (!items)
         {
-            loot.items.insert(loot.items.end(), creature.equipment.begin(),
-                              creature.equipment.end());
+            continue;
+        }
+        auto gear = std::vector<std::optional<Equipment>>(creature.equipment.begin(),
+                                                          creature.equipment.end());
+        // One monster of this record used its gear in the fight (DIFF-1).
+        if (const auto used = std::find_if(spent.begin(), spent.end(),
+                                           [&](const auto &s)
+                                           {
+                                               return s.record == id;
+                                           });
+            used != spent.end())
+        {
+            for (const auto &[index, left] : used->uses_left)
+            {
+                if (index >= gear.size() || !gear[index])
+                {
+                    throw EclError("Invalid spent monster gear");
+                }
+                gear[index] = item_after_uses(std::move(*gear[index]), left);
+            }
+            spent.erase(used);
+        }
+        for (auto &item : gear)
+        {
+            if (item)
+            {
+                loot.items.push_back(std::move(*item));
+            }
         }
     }
     return loot;
@@ -1164,6 +1208,26 @@ void RolfTourSession::show_encounter_menu()
     ++snapshot_.revision;
 }
 
+namespace
+{
+// The potions, wands and scrolls a monster brings into a fight on Hard and
+// above (DIFF-1), each known by its place in the creature's gear, plus one.
+std::vector<rules::CarriedEquipment> fighting_gear(const Creature &creature)
+{
+    std::vector<rules::CarriedEquipment> gear;
+    for (std::size_t n = 0; n < creature.equipment.size(); ++n)
+    {
+        const auto &item = creature.equipment[n];
+        const auto key = equipment_conversion(item);
+        if (key.starts_with("potion_") || key.starts_with("wand:") || rules::parse_scroll_key(key))
+        {
+            gear.push_back({n + 1, key, carried_quantity(item), static_cast<int>(n)});
+        }
+    }
+    return gear;
+}
+} // namespace
+
 // Shrinks the staged original encounter to the party's SRD XP budget at the
 // encounter challenge and to one creature per living character, the size the
 // party can face without being swarmed. Each LOAD MONSTER group keeps its first.
@@ -1208,6 +1272,10 @@ void RolfTourSession::fit_staged_encounter()
         enemies.push_back(std::move(staged_enemies_[n]));
         enemies.back().id = id;
         enemies.back().name = creature.stored.name + " " + std::to_string(enemies.size());
+        if (monsters_use_items(difficulty_))
+        {
+            enemies.back().inventory = fighting_gear(creature);
+        }
         art.push_back(std::move(staged_art_[n]));
         art.back().entity = id;
         records.push_back(staged_records_[n]);

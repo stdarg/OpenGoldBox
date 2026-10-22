@@ -140,8 +140,10 @@ std::unique_ptr<CombatSession> fight_once(CampaignParty &party, std::span<const 
         }
         auto legal_commands = combat->legal_commands();
         // The member fights in melee and keeps its slots for the class action
-        // under test: with a bow it would shoot from afar, as the computer
-        // readies one, and it would spend slots on other spells (#266).
+        // under test: with a bow or javelins it would shoot or throw from
+        // afar, as the computer readies them, and it would spend slots on
+        // other spells or its Bonus Action on an Orc's Adrenaline Rush (#266,
+        // #269).
         std::vector<std::string> spells;
         for (const auto &unit : now.combatants)
         {
@@ -161,8 +163,10 @@ std::unique_ptr<CombatSession> fight_once(CampaignParty &party, std::span<const 
                                               return c.verb == spell ||
                                                      c.verb.starts_with(spell + "_");
                                           });
-                          return c.actor != 99 && (c.verb == "shoot" || c.verb == "ranged" ||
-                                                   c.verb == "doff_shield" || other_spell);
+                          return c.actor != 99 &&
+                                 (c.verb == "shoot" || c.verb == "ranged" || c.verb == "throw" ||
+                                  c.verb == "adrenaline_rush" || c.verb == "doff_shield" ||
+                                  other_spell);
                       });
         auto command = choose_demo_command(now, legal_commands);
         if (!used)
@@ -270,7 +274,8 @@ void attained_levels(const std::string &klass, const std::vector<LevelPlan> &pla
         party.apply_combat(combat->snapshot());
         party.end_combat();
         // A Rogue's actions spend nothing; every other class's do.
-        check(step.verbs.empty() || pools(party, id).empty() || spent(party, id) > 0,
+        check(step.verbs.empty() || klass == "rogue" || pools(party, id).empty() ||
+                  spent(party, id) > 0,
               label + ": the class action's use stays spent after the fight");
 
         // A save mid-adventure reads back, and the next fight plays out the same.

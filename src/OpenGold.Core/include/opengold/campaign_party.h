@@ -314,9 +314,17 @@ class CampaignParty
     };
     [[nodiscard]] std::vector<ScrollCopy> copyable_spells(MemberId id, std::uint64_t item) const;
     // Copies a spell from a scroll the member carries into its spellbook
-    // (MAGIC-6): it takes a bottle of Magic Ink the member carries and two hours
-    // for each spell level, and the spell leaves the scroll.
+    // (MAGIC-6): it takes a bottle of Magic Ink of the spell's level or higher
+    // the member carries and two hours for each spell level, and the spell
+    // leaves the scroll.
     void copy_scroll_spell(MemberId id, std::uint64_t item, unsigned entry);
+    // The spells the member can write on a scroll now (MAGIC-6), with a
+    // bottle of Magic Ink it carries.
+    [[nodiscard]] std::vector<rules::ScrollWriting> writable_spells(MemberId id) const;
+    // Writes a scroll of one spell (MAGIC-6): it takes a bottle of Magic Ink
+    // of the spell's level or higher the member carries and two hours for each
+    // spell level, and no spell slot. The Camp dialog offers it.
+    void write_scroll(MemberId id, std::string_view spell);
     // The member's Charisma as the party's spokesman, with Friends (MAGIC-6).
     [[nodiscard]] int reaction_charisma(MemberId id) const;
     // Whether Find Traps is in effect (MAGIC-6).
@@ -429,6 +437,10 @@ class CampaignParty
 // How many an original item counts for in an inventory: a stack's items, or a
 // charged item's charges or doses (MAGIC-3), otherwise one.
 [[nodiscard]] unsigned carried_quantity(const por::Equipment &item);
+// The original item as a fight left it: `left` of its stacked items, charges
+// or doses, or for a scroll the spells whose bits are set in `left` (MAGIC-6).
+// Nothing when none is left.
+[[nodiscard]] std::optional<por::Equipment> item_after_uses(por::Equipment item, unsigned left);
 // The item's key as the rules see it: ":unidentified" is added while its magic
 // is not identified (#262).
 [[nodiscard]] std::string rules_definition(const PartyMember &member, const InventoryItem &item);

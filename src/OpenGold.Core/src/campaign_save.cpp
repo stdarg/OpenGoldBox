@@ -16,7 +16,7 @@ namespace
 constexpr std::size_t limit = 16 * 1024 * 1024;
 // The only campaign format this build reads or writes. Pre-1.0 formats are
 // rejected rather than migrated; change this format in place until 1.0.
-constexpr unsigned campaign_format = 36;
+constexpr unsigned campaign_format = 37;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 void require(bool ok, const char *message)
@@ -25,6 +25,29 @@ void require(bool ok, const char *message)
     {
         throw std::runtime_error(message);
     }
+}
+
+// Whether `left` could be what remains of the creatures' original `gear` after
+// a fight (DIFF-1): each item is one of the original items' kinds, each kind
+// at most as often as it was carried.
+bool original_gear_left(const std::vector<por::Equipment> &gear,
+                        const std::vector<por::Equipment> &left)
+{
+    std::vector<bool> matched(gear.size());
+    for (const auto &item : left)
+    {
+        bool found = false;
+        for (std::size_t n = 0; n < gear.size() && !found; ++n)
+        {
+            found = !matched[n] && gear[n].stored.type == item.stored.type;
+            matched[n] = matched[n] || found;
+        }
+        if (!found)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 std::uint64_t fingerprint(std::string_view data)
@@ -651,30 +674,33 @@ template <bool Reading> struct SaveCodec
                 area = loot.area;
             }
             fields(records, reward, items, wealth, area);
+            // Script treasure has no creature records, and monsters may have
+            // used some of their gear (DIFF-1): the items are saved.
+            std::vector<por::Equipment> saved_items;
+            if constexpr (!reading)
+            {
+                saved_items = v.pending_loot_[index].items;
+            }
+            field(saved_items);
             if (records.empty())
             {
-                // Script treasure has no creature records; its generated items are saved.
-                std::vector<por::Equipment> generated;
-                if constexpr (!reading)
-                {
-                    generated = v.pending_loot_[index].items;
-                }
-                field(generated);
                 if constexpr (reading)
                 {
                     require(!reward.empty() && reward.size() <= 160 && !items &&
-                                generated.size() <= 127,
+                                saved_items.size() <= 127,
                             "Invalid pending script treasure");
                     v.pending_loot_.push_back(
-                        {wealth, std::move(generated), std::move(reward), {}, false});
+                        {wealth, std::move(saved_items), std::move(reward), {}, false});
                 }
             }
             else if constexpr (reading)
             {
                 v.pending_loot_.push_back(
                     v.encounter_loot(area, std::move(records), std::move(reward), items));
-                require(v.pending_loot_.back().wealth == wealth,
+                auto &loot = v.pending_loot_.back();
+                require(loot.wealth == wealth && original_gear_left(loot.items, saved_items),
                         "Saved loot does not match its original creatures");
+                loot.items = std::move(saved_items);
             }
         }
         if constexpr (reading)

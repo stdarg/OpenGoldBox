@@ -325,6 +325,33 @@ void stand_ins()
     check(!traps.finding_traps(), "Find Traps ends after 30 minutes");
 }
 
+// A bottle of Magic Ink of `level`, bought into the member's pack.
+void buy_ink(CampaignParty &party, MemberId id, unsigned level)
+{
+    Purse purse{};
+    coins(purse, Coin::gold) = 50;
+    party.set_wealth(purse);
+    por::Equipment ink;
+    ink.stored.type = static_cast<std::uint8_t>(authored_item::magic_ink + level - 1);
+    ink.stored.stored_name = "Bottle of Magic Ink";
+    ink.stored.value = 50;
+    ink.stored.stack_size = 1;
+    party.purchase(id, ink);
+}
+
+std::vector<std::string> carried_ink(const CampaignParty &party, MemberId id)
+{
+    std::vector<std::string> ink;
+    for (const auto &carried : party.member(id).character.inventory().items())
+    {
+        if (rules::magic_ink_level(carried.definition_id))
+        {
+            ink.push_back(carried.definition_id);
+        }
+    }
+    return ink;
+}
+
 // A Wizard copies a spell into the spellbook with Magic Ink and two hours a
 // spell level.
 void copying()
@@ -358,15 +385,7 @@ void copying()
             party.copy_scroll_spell(id, item, 0);
         },
         "Copying needs Magic Ink");
-    Purse purse{};
-    coins(purse, Coin::gold) = 50;
-    party.set_wealth(purse);
-    por::Equipment ink;
-    ink.stored.type = authored_item::magic_ink;
-    ink.stored.stored_name = "Bottle of Magic Ink";
-    ink.stored.value = 50;
-    ink.stored.stack_size = 1;
-    party.purchase(id, ink);
+    buy_ink(party, id, 1);
     const auto before = party.state().time_minutes;
     party.copy_scroll_spell(id, item, 0);
     const auto spell = copies.front().spell;
@@ -396,6 +415,155 @@ void copying()
                                      *srd5::character_rules(), *rules, "copy", nullptr)
                          .party);
     check(has(restored), "A save keeps the copied spell");
+}
+
+// A caster writes a scroll of one spell it can cast, with a bottle of Magic
+// Ink of the spell's level or higher, in two hours a spell level and without a
+// spell slot; another caster reads it.
+void writing()
+{
+    auto d = draft("cleric", "acolyte");
+    d.cantrips = std::vector<std::string>{"sacred_flame", "spare_the_dying", "resistance"};
+    d.spells = SpellChoices{{}, std::vector<std::string>{"cure_wounds"}, {}, {}};
+    d.training = {{"class:cleric", {"medicine", "persuasion"}},
+                  {"class:cleric:divine_order", {"protector"}}};
+    CampaignParty party(module());
+    const auto id = party.add_pc(Character(*srd5::character_rules(), d, {}));
+    const auto reader = party.add_pc(cleric());
+    check(party.writable_spells(id).empty(), "Without Magic Ink, nothing is written");
+    test::rejects(
+        [&]
+        {
+            party.write_scroll(id, "cure_wounds");
+        },
+        "Writing needs Magic Ink");
+    buy_ink(party, id, 3);
+    buy_ink(party, id, 1);
+    const auto writable = party.writable_spells(id);
+    check(std::any_of(writable.begin(), writable.end(),
+                      [](const auto &w)
+                      {
+                          return w.spell == "cure_wounds" && w.level == 1 && !w.arcane;
+                      }) &&
+              std::all_of(writable.begin(), writable.end(),
+                          [](const auto &w)
+                          {
+                              return w.level == 1;
+                          }),
+          "A level-1 Cleric writes the level-1 spells it can cast on divine scrolls, no cantrip");
+    const auto warrior = party.add_pc(fighter());
+    check(party.writable_spells(warrior).empty(), "A Fighter writes no scroll");
+    test::rejects(
+        [&]
+        {
+            party.write_scroll(id, "sacred_flame");
+        },
+        "No scroll of a cantrip");
+    const auto before = party.state().time_minutes;
+    const auto resources = party.member(id).vitals.resources;
+    party.write_scroll(id, "cure_wounds");
+    const auto written = party.member(id).character.inventory().items().back();
+    check(written.definition_id == "scroll:divine:cure_wounds" && written.name == "Scroll",
+          "The scroll holds the one spell");
+    check(party.state().time_minutes == before + 120 &&
+              party.member(id).vitals.resources == resources,
+          "Writing takes two hours and no spell slot");
+    check(carried_ink(party, id) == std::vector<std::string>{"magic_ink:3"},
+          "The lowest bottle that serves is used");
+    party.write_scroll(id, "cure_wounds");
+    check(carried_ink(party, id).empty() && party.writable_spells(id).empty(),
+          "A higher bottle writes a lower spell");
+
+    CampaignParty restored(module());
+    const auto rules = module();
+    restored.restore(decode_campaign(encode_campaign(party, nullptr, "written"),
+                                     *srd5::character_rules(), *rules, "written", nullptr)
+                         .party);
+    check(restored.member(id).character.inventory().find(written.id)->get().definition_id ==
+              "scroll:divine:cure_wounds",
+          "A save keeps the written scroll");
+    auto wounded = restored.checkpoint();
+    for (auto &m : wounded.roster)
+    {
+        m.vitals.hit_points = m.id == reader ? 1 : m.vitals.hit_points;
+    }
+    restored.restore(std::move(wounded));
+    check(restored.scroll_actions(id, written.id).front().id == "0:cure_wounds",
+          "The written scroll is read as a found one");
+    restored.read_scroll(id, written.id, reader, "0:cure_wounds");
+    check(restored.member(reader).vitals.hit_points > 1 &&
+              !restored.member(id).character.inventory().find(written.id),
+          "Its spell heals, and the scroll is gone");
+}
+
+// A monster's turn against a Fighter at (1, 1), carrying `item` as gear 1, at
+// `hit_points` when it is not 0 (DIFF-1).
+std::unique_ptr<CombatSession> monster_turn(const RulesModule &rules, const std::string &kind,
+                                            const std::string &item, unsigned quantity,
+                                            int hit_points = 0)
+{
+    Participant hero{
+        1,      "campaign-character",
+        "Hero", Side::party,
+        {1, 1}, rules.character_profile(fighter().sheet(), std::vector<std::string>{}).data};
+    Participant monster{2, kind, "Monster", Side::opposition, {6, 1}};
+    monster.inventory.push_back({1, item, quantity, 0});
+    if (hit_points)
+    {
+        monster.state = VitalState{hit_points, false, {}, {}};
+    }
+    auto c = rules.create({{12, 6, std::vector<Terrain>(72)}, {hero, monster}}, 5);
+    test::keep_initiative(*c);
+    for (unsigned turns = 0; c->snapshot().actor != 2 && turns < 4; ++turns)
+    {
+        check(submit(*c, "end"), "End the Fighter's turn");
+    }
+    check(c->snapshot().actor == 2, "The monster acts");
+    return c;
+}
+
+unsigned monster_uses_left(const CombatSession &c)
+{
+    for (const auto &combatant : c.snapshot().combatants)
+    {
+        if (combatant.id == 2 && !combatant.item_uses_left.empty())
+        {
+            return combatant.item_uses_left.front().second;
+        }
+    }
+    throw std::runtime_error("The monster's item is not reported");
+}
+
+// On Hard and above, monsters use their potions, wands and scrolls (DIFF-1):
+// a wand without equipping it, a scroll only when the monster casts spells.
+void monster_items()
+{
+    const auto rules = module();
+    auto wand = monster_turn(*rules, "slums-hobgoblin", "wand:magic_missiles", 5);
+    const auto zap = choose_demo_command(*wand);
+    check(zap.verb == "magic_missile_item" && zap.target == 1,
+          "A monster zaps its Wand of Magic Missiles at the Fighter");
+    // Each dart is aimed in turn.
+    for (unsigned step = 0; step < 6 && monster_uses_left(*wand) == 5; ++step)
+    {
+        check(wand->submit(choose_demo_command(*wand)), "The monster aims its darts");
+    }
+    check(monster_uses_left(*wand) == 4 && test::logged(*wand, "Magic Missile"),
+          "The wand spends a charge");
+    check(rules->restore(wand->save())->save() == wand->save(),
+          "A checkpoint keeps the monster's gear");
+
+    check(!offered(*monster_turn(*rules, "slums-hobgoblin", "scroll:arcane:magic_missile", 1),
+                   "magic_missile_scroll"),
+          "A monster that casts no spells reads no scroll");
+    auto scroll = monster_turn(*rules, "slums-magic-user", "scroll:divine:guiding_bolt", 1);
+    check(offered(*scroll, "guiding_bolt_scroll"), "A monster that casts spells reads any scroll");
+
+    auto potion = monster_turn(*rules, "slums-hobgoblin", "potion_of_healing", 1, 2);
+    const auto drink = choose_demo_command(*potion);
+    check(drink.verb.starts_with("potion_of_healing") && potion->submit(drink) &&
+              monster_uses_left(*potion) == 0,
+          "A monster at half its Hit Points or lower drinks its Potion of Healing");
 }
 
 // Use Magic Device: a level-13 Thief reads any scroll; a spell above level 1
@@ -458,6 +626,8 @@ int main()
         camp();
         stand_ins();
         copying();
+        writing();
+        monster_items();
         use_magic_device();
         quick();
         std::cout << "Scroll tests passed\n";

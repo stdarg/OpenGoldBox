@@ -4,8 +4,8 @@ Scope: [#266](https://github.com/stdarg/OpenGold/issues/266). How the computer
 plays monsters and the party members on Quick, what the original Gold Box
 engine did, and where we depart from it. The choices are recorded in
 [AI-1](SRD-DECISIONS.md#ai-1-2026-10-21-computer-play-as-the-original-game-had-it);
-[#269](https://github.com/stdarg/OpenGold/issues/269) adds the features the
-computer does not use yet.
+[#269](https://github.com/stdarg/OpenGold/issues/269) added the features the
+computer had never used.
 
 Sources: our policy is `choose_from` and `choose_in_sight` in
 `src/OpenGold.Core/src/combat_demo.cpp`, driven by `CombatView` in
@@ -54,22 +54,28 @@ The policy works down one list and takes the first command that applies:
 2. Stand up from Prone.
 3. A panicked monster, or a member in Flee mode, runs for the edge.
 4. Finish aiming a spell it has begun, or take a free move.
-5. Free riders: a Paladin's free Divine Smite, Hunter's Mark, Horde Breaker,
-   Divine Strike, Spiritual Weapon; then Rage, Sacred Weapon, escaping vines.
-6. A reaction, or Second Wind at half Hit Points or less.
+5. Free riders: a Paladin's free Divine Smite, a smite with a slot on a
+   Critical Hit, Hunter's Mark, Horde Breaker, Divine Strike, Spiritual Weapon;
+   then Rage, Sacred Weapon, putting out flames at half Hit Points or less,
+   escaping vines.
+6. A reaction, or Second Wind or Wholeness of Body at half Hit Points or less.
 7. Magic items and scrolls.
 8. Healing: Lay On Hands and Divine Spark, Turn Undead and Preserve Life, cure
    spells, Stabilize, shaking a sleeper awake.
-9. Buffs and setup with their own rules: Innate Sorcery, Produce Flame,
+9. Light and Nick extra attacks at the same target. Then buffs and setup with
+   their own rules: Innate Sorcery, Produce Flame,
    Shillelagh, Hex, Spiritual Weapon, Bardic Inspiration, the Druid's Moonbeam
    and Wild Shape.
 10. A spell with a slot, by priority (below).
 11. Fire and acid against a regenerating enemy (trolls).
-12. Attacks, in a fixed order (below).
-13. With the Action spent: Flurry of Blows, Martial Arts, moving Hex or Heat
-    Metal, then End turn.
-14. Otherwise move toward its target, draw a bow, or take off a shield to
-    shoot; else End turn.
+12. A Breath Weapon or Dragon's Breath's exhale where it is safe; Steady Aim
+    when it can attack without moving; then attacks, in a fixed order (below).
+13. With the Action spent: Action Surge with an enemy in view; Flurry of
+    Blows, Martial Arts, moving Hex or Heat Metal; then End turn.
+14. Otherwise Cunning Action's Dash or Adrenaline Rush when its target is out
+    of reach even with all its movement; move toward its target, draw a bow, or
+    take off a shield to shoot; Dodge with the Action unused and an enemy
+    beside it; else End turn.
 
 The original's turn ran: morale check, a magic item, finishing a slow spell,
 Turn Undead, a spell, choosing a weapon, then moving and attacking.
@@ -78,24 +84,27 @@ Turn Undead, a spell, choosing a weapon, then moving and attacking.
 
 A creature goes for the enemies **it can see**. It walks, around walls, toward
 its target while that target stands in view, otherwise toward the nearest enemy
-in view. One that sees no enemy **holds its ground** until one comes into view.
-When no creature on either side can see an enemy, holding would stall the fight
-for good, so then the computer advances on them all, as the original always
-did.
+in view. One that sees no enemy **holds its ground** until one comes into view,
+even when no one on the field sees anyone (the user, 2026-10-21): then a fight
+the computer plays alone waits for the player to take control. Automated runs,
+with no player to break a standoff, go looking: the tests and the campaign
+simulator play the party as a stand-in for the player that searches for the
+enemy, and the game's own checks have every creature search.
 
 The walk counts every step as one, so it neither avoids Difficult Terrain nor
-Opportunity Attacks, and it never Disengages (#269). Exceptions:
+Opportunity Attacks. Exceptions:
 
 - **An unarmored Wizard or Sorcerer, or a monster magic-user, never closes in**,
   as the original's magic-users did not: it casts or shoots from where it
   stands, and fights only an enemy that comes to it.
 - An orc's Aggressive moves it toward an enemy in view.
-- When no one on the field sees anyone, a creature that knows a ranged cantrip
-  steps to the nearest square with a line of sight to an enemy.
 - Commanded, frightened, turned, incapacitated or lost creatures make the
   moves the rules force on them; the policy sees only that command.
 - A panicked monster runs for an edge nearer to it than to the party; a
-  fleeing member runs for the nearest edge. Both Dash when out of movement.
+  fleeing member runs for the nearest edge. With an enemy beside it, it first
+  Disengages (Cunning Action's if it has one); both Dash when out of movement.
+- A creature whose target is out of reach even with all its movement Dashes
+  with Cunning Action or Adrenaline Rush, keeping its Action for an attack.
 - A Champion's free move is taken toward the enemy.
 
 **Original.** It walked straight at its target with no pathfinding, trying
@@ -105,8 +114,7 @@ walls too, and walked toward it. A pure magic-user without armor stood guard
 instead of advancing. Attacks of opportunity were ignored.
 
 **Departures.** Our walk finds a way around walls; a creature that sees no
-enemy waits instead of walking toward one it cannot see, unless no one on the
-field can see anyone.
+enemy waits instead of walking toward one it cannot see.
 
 ## 2. Target choice
 
@@ -125,23 +133,38 @@ The order is: Eldritch Blast, Sorcerous Burst and the flame weapons, then
 **melee**, the other attack cantrips, then the **held ranged weapon**. With
 no enemy beside it, a creature whose ranged weapon rates **more than half** its
 melee weapon shoots instead of closing in: the held one, or a carried bow it
-draws (taking off its shield if the bow needs both hands). The rating is the
+draws (taking off its shield if the bow needs both hands). A **thrown weapon**
+is rated and thrown the same way, after the bow; with an enemy beside it, the
+creature fights in melee. The rating is the
 original's: dice count times sides, plus 8 for each magic plus, times the
 weapon's attacks a turn (a Monk's Martial Arts strike counts for its melee).
 Weapon masteries' optional effects are always used. Sneak Attack, Savage
 Attacker and a Versatile grip apply automatically (AUTO-1).
 
-Not used yet (#269): thrown weapons, Two-Weapon Fighting, Action Surge, smites
-that cost a slot, Cunning Action, Steady Aim, Dodge, Disengage, Hide, Breath
-Weapon, Dragon's Breath, putting out flames.
+The features added by #269:
+
+- **Light and Nick** extra attacks are always taken, at the same target, right
+  after the Attack action; Bonus Action healing and Second Wind come first.
+- **Action Surge** is used as soon as the Action is spent, with an enemy in
+  view.
+- **Smites that cost a slot** (Divine Smite, Searing Smite, Shining Smite,
+  Ensnaring Strike) only on a Critical Hit, from the lowest slot, so slots stay
+  for spells; one that needs Concentration waits while the caster holds one.
+- **Steady Aim** when the Rogue can attack without moving.
+- **Breath Weapon** and **Dragon's Breath**'s exhale before the attacks, while
+  uses remain, where the area catches an enemy and no ally; Dragon's Breath
+  itself is a helpful spell of priority 3.
+- **Hide**, with the action or Cunning Action, is left to the player.
 
 **Original.** It scored each usable weapon (damage dice, magic bonus, extra
-attacks, one hand) and readied the best ranged one whenever no enemy stood
-next to it and it scored more than half the best melee weapon, switching back
-when an enemy closed. Breath and gaze attacks fired by chance each round.
+attacks, one hand) and readied the best ranged one, a thrown weapon too,
+whenever no enemy stood next to it and it scored more than half the best melee
+weapon, switching back when an enemy closed; a thrown weapon next to an enemy
+was used in melee. Breath and gaze attacks fired by chance each round.
 
-**Departure.** The rating counts melee attacks a turn, which the original did
-only for missile launchers, so a Monk fights with its fists.
+**Departures.** The rating counts melee attacks a turn, which the original did
+only for missile launchers, so a Monk fights with its fists. A Breath Weapon
+goes off where it is safe, not by chance.
 
 ## 4. Spells
 
@@ -191,8 +214,10 @@ whatever Quick magic says (#263):
 - Magic Missile items on any enemy;
 - an area item only where it catches an enemy and no ally within its reach.
 
-Dust of Disappearance is left to the player. Monsters carry no items into a
-fight yet (#268).
+Dust of Disappearance is left to the player. Monsters bring their potions,
+wands and scrolls into a fight on Hard and above, and use them by these rules;
+only a monster that casts spells reads a scroll
+([DIFF-1](SRD-DECISIONS.md#diff-1-2026-10-21-difficulty-and-monsters-that-use-their-items)).
 
 **Original.** The same 1d7 priority as spells, applied to readied items with a
 spell effect (never scrolls), with the same sense checks; usable with Magic
@@ -202,7 +227,8 @@ off. coab's loop keeps the first sensible item in inventory order.
 
 Lay On Hands and Divine Spark, then the cure spells, go to the **most wounded**
 ally, by share of its Hit Points, at **half its Hit Points or lower** (0
-counts); items and Second Wind use the same line. Stabilize only when no enemy
+counts); items, Second Wind and Wholeness of Body use the same line. A
+Burning creature puts the fire out at the same line; above it, it fights on. Stabilize only when no enemy
 stands next to the healer; monsters never stabilize.
 
 **Original.** Cure Light Wounds went to the adjacent ally with the fewest Hit
@@ -240,8 +266,7 @@ hidden enemy's position, or anything the game does not show.
 
 - **Hidden enemies** (HIDE-1) are removed from what the policy sees; with none
   in sight it Searches.
-- **Sight:** it goes only for enemies it can see, save when no one on the field
-  sees anyone.
+- **Sight:** it goes only for enemies it can see.
 - **Hit Points and AC** are shown to the player, so the policy may read them;
   it no longer uses them to choose a target.
 - **Dice:** the policy reads none, and rolls no hidden save to judge an area; a

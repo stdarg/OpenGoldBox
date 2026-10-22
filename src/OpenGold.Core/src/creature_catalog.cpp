@@ -99,7 +99,7 @@ std::string_view item_type_name(std::uint8_t type)
     {
         return "Alchemist's Fire";
     }
-    if (type == authored_item::magic_ink)
+    if (authored_item::magic_ink_level(type))
     {
         return "Magic Ink";
     }

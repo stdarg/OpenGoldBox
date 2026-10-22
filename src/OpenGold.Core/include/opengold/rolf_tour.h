@@ -8,6 +8,7 @@
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
+#include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
 #include <bitset>
 
@@ -54,6 +55,14 @@ struct PendingLoot
     std::vector<unsigned> records;
     bool include_items{true};
     unsigned area{}; // the district whose original creature records these are
+};
+
+// What a monster used of its gear in a fight (DIFF-1): its creature record and,
+// by each item's place in the record's gear, the uses it has left.
+struct SpentGear
+{
+    unsigned record{};
+    std::vector<std::pair<std::size_t, unsigned>> uses_left;
 };
 
 // What an original creature record fights as: its combat creature, the XP of
@@ -196,6 +205,13 @@ class RolfTourSession
     // A percentage of the SRD's Moderate XP budget, 0-200. Original encounters
     // above the party's budget, or with more creatures than characters, shrink.
     void encounter_challenge(unsigned challenge);
+
+    // On Hard and above, monsters bring their potions, wands and scrolls into
+    // a fight and use them (DIFF-1).
+    void difficulty(opengold::Difficulty difficulty) noexcept
+    {
+        difficulty_ = difficulty;
+    }
 
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
     {
@@ -364,6 +380,7 @@ class RolfTourSession
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
+    opengold::Difficulty difficulty_{opengold::default_difficulty};
     // The original encounter before fitting: its experience and loot are awarded.
     std::vector<unsigned> encounter_records_;
     std::vector<PendingLoot> pending_loot_;
@@ -383,9 +400,11 @@ class RolfTourSession
     void show_locked_door();
     void try_locked_door(opengold::DoorMethod method);
     void search_destination();
-    // The coins and items of an encounter's original creature records.
+    // The coins and items of an encounter's original creature records, less
+    // the gear the monsters used up.
     [[nodiscard]] PendingLoot encounter_loot(unsigned area, std::vector<unsigned> records,
-                                             std::string reward, bool items) const;
+                                             std::string reward, bool items,
+                                             std::vector<SpentGear> spent = {}) const;
     void show_encounter_menu();
     void fit_staged_encounter();
     void announce_spokesman();

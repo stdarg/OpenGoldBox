@@ -1,4 +1,5 @@
 #include "application_settings.h"
+#include "opengold/difficulty.h"
 #include "opengold/encounter_budget.h"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
@@ -47,6 +48,14 @@ bool save(const char *section, const char *key, const String &value)
     {
         config->set_value("combat", "encounter_challenge",
                           static_cast<int>(opengold::default_encounter_challenge));
+    }
+    if (!config->has_section_key("game", "difficulty"))
+    {
+        config->set_value(
+            "game", "difficulty",
+            String(
+                opengold::difficulty_names[static_cast<std::size_t>(opengold::default_difficulty)]
+                    .data()));
     }
     const String temporary = settings::path() + ".tmp";
     if (config->save(temporary) != OK)
@@ -128,6 +137,13 @@ unsigned encounter_challenge()
         }
     }
     return opengold::default_encounter_challenge;
+}
+
+opengold::Difficulty difficulty()
+{
+    const auto name = read("game", "difficulty").to_lower();
+    return opengold::parse_difficulty(name.utf8().get_data())
+        .value_or(opengold::default_difficulty);
 }
 
 bool valid_language(const String &locale)
