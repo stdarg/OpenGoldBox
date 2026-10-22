@@ -33,8 +33,8 @@ offerings so the user can adjust its stock deliberately.
 Portraits can be selected from `art/portraits/NPCs/` or
 [`portraits/`](portraits/). Add a new PNG to the latter folder and press
 **Refresh portraits**. The tool stores a repository-relative portrait path.
-The default Tyr record uses Bishop Braccio's existing portrait; Sune, Tempus,
-and Ilmater have no default portrait yet.
+The default Tyr record uses Bishop Braccio's existing portrait. Sune, Tempus,
+and Ilmater use the new portraits in [`portraits/`](portraits/).
 
 Changes save immediately to one file per location under
 [`data/shops/`](data/shops/). Each file has a stable ID, a fixed map and marker

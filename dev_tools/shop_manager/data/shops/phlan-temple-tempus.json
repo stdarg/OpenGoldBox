@@ -73,7 +73,7 @@
       "service_id": "stone_to_flesh"
     }
   ],
-  "portrait": "",
+  "portrait": "dev_tools/shop_manager/portraits/temple-tempus.png",
   "type": "Temple",
   "version": 1
 }

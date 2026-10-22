@@ -69,7 +69,7 @@
       "service_id": "stone_to_flesh"
     }
   ],
-  "portrait": "",
+  "portrait": "dev_tools/shop_manager/portraits/temple-ilmater.png",
   "type": "Temple",
   "version": 1
 }
