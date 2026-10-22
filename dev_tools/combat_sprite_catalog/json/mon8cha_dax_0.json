@@ -1,6 +1,8 @@
 {
   "description": "A small, wiry kobold suited to cramped tunnels and ambushes; keep its head and hands readable at combat scale. Source inventory: Short sword. Source wealth: 16 cp.",
   "humanoid_size": "small",
+  "height_feet": 2.5,
+  "height_reference": {"min_feet": 2, "max_feet": 3, "url": "https://www.dndbeyond.com/forums/dungeons-dragons-discussion/rules-game-mechanics/8948-kobolds", "note": "Volo's Guide to Monsters playable-kobold range, quoted in D&D Beyond discussion."},
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON8CHA.DAX:0 and matching MONnITM inventory",

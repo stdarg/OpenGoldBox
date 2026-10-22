@@ -148,6 +148,19 @@ func _initialize() -> void:
     record.equipment = []
     save_json(metadata_path, record)
     expect(Workflow.prepare(metadata_path, "default", fixture_dir.path_join("unarmed")).is_empty(), "No-gear default pair supported")
+    record.humanoid_size = "small"
+    record.height_feet = 3.5
+    record.height_reference = {"min_feet": 3, "max_feet": 4, "url": "test source", "note": "Goblin range"}
+    save_json(metadata_path, record)
+    var small_stage := fixture_dir.path_join("small-height")
+    expect(Workflow.prepare(metadata_path, "default", small_stage).is_empty(), "Small art height is valid")
+    var small_prompt := FileAccess.get_file_as_string(small_stage.path_join("ready-prompt.txt"))
+    expect('"height_feet": 3.5' in small_prompt and '"min_feet": 3' in small_prompt,
+        "Prompt includes the Small art target and source range")
+    record.erase("height_feet")
+    save_json(metadata_path, record)
+    expect(not Workflow.prepare(metadata_path, "default", fixture_dir.path_join("missing-small-height")).is_empty(),
+        "Small art preparation requires saved foot height")
     record.erase("humanoid_size")
     save_json(metadata_path, record)
     expect(not Workflow.prepare(metadata_path, "default", fixture_dir.path_join("missing-height")).is_empty(),

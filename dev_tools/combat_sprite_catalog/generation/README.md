@@ -32,8 +32,9 @@ on 2026-10-22:
   space is not sprite width or height. Do not enlarge a 1 × 2 source sprite to
   2 × 2 merely because its creature is Large.
 - Each square on the fixed 3 × 3 combat guide represents **5 × 5 feet**. Use
-  the saved `humanoid_size` to keep body height consistent: Small figures such
-  as goblins and kobolds stand **2–3 feet** (0.4–0.6 square); Normal figures,
+  the saved `humanoid_size` and, for Small figures, `height_feet` to keep body
+  height consistent: Small humanoids stand **2–4 feet** (0.4–0.8 square), with
+  goblins typically 3–4 feet and kobolds 2–3 feet; Normal figures,
   including orcs, stand a **full 5 feet** (one square), never 3–4 feet; Tall
   figures such as hill giants aim for about 1.7 squares when their footprint
   permits. Measure planted feet to head, excluding weapons and raised arms.

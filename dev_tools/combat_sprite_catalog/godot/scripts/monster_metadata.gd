@@ -81,6 +81,10 @@ static func valid_humanoid_size(value: Variant) -> bool:
     return value is String and value in ["na", "small", "normal", "tall"]
 
 
+static func valid_small_height(value: Variant) -> bool:
+    return typeof(value) in [TYPE_INT, TYPE_FLOAT] and float(value) >= 2.0 and float(value) <= 4.0
+
+
 static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
     var equipment: Array = []
     for index in range(row.equipment.size()):
@@ -111,6 +115,7 @@ static func new_record(row: Dictionary, art: Dictionary) -> Dictionary:
         "description": str(row.get("art_description", "")),
         "sprite_size": art.get("sprite_size", null) if valid_sprite_size(art.get("sprite_size", null)) else null,
         "humanoid_size": "na",
+        "height_feet": null,
         "wealth": _wealth_values(row.get("wealth", {})),
         "flag_for_regeneration": false,
         "preview_fallback_variant": "",
@@ -257,6 +262,10 @@ static func load_record(row: Dictionary, art: Dictionary, root: String = "") -> 
     if not valid_humanoid_size(humanoid_size):
         return {"data": new_record(row, art), "error": "Invalid humanoid size in %s" % path}
     parsed["humanoid_size"] = humanoid_size
+    var height_feet: Variant = parsed.get("height_feet", null)
+    if height_feet != null and not valid_small_height(height_feet):
+        return {"data": new_record(row, art), "error": "Invalid small humanoid height in %s" % path}
+    parsed["height_feet"] = height_feet
     if parsed.description.ends_with(original_summary + ".") and \
             (parsed.description.contains(". Gear: ") or parsed.description.contains(". Original gear: ")):
         parsed["description"] = parsed.description.trim_suffix(original_summary + ".") + \

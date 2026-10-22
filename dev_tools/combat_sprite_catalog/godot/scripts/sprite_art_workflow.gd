@@ -49,6 +49,8 @@ static func metadata_errors(record: Dictionary) -> Array[String]:
         return ["Invalid monster-art metadata."]
     if not record.has("humanoid_size") or not Metadata.valid_humanoid_size(record.humanoid_size):
         return ["Choose and save a valid humanoid height in the Combat Sprite Catalog."]
+    if record.humanoid_size == "small" and not Metadata.valid_small_height(record.get("height_feet", null)):
+        return ["Choose and save a 2–4-foot Small humanoid art height in the Combat Sprite Catalog."]
     var ids := {}
     for item in record.equipment:
         if not item is Dictionary or not item.has_all(["id", "name", "kind"]) or \
@@ -90,7 +92,9 @@ static func prepare(metadata_path: String, variant_id: String, directory: String
     var context := {
         "name": record.get("name", ""), "description": record.get("description", ""),
         "source_key": record.source.key, "selected_set": variant.label,
-        "humanoid_size": record.humanoid_size, "sprite_size": record.get("sprite_size", null),
+        "humanoid_size": record.humanoid_size, "height_feet": record.get("height_feet", null),
+        "height_reference": record.get("height_reference", null),
+        "sprite_size": record.get("sprite_size", null),
         "weapon_role": variant.weapon_role, "selected_equipment": selected,
         "other_gear": other_gear,
     }

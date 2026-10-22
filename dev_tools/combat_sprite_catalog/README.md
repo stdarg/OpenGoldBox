@@ -49,7 +49,11 @@ N/A (non-humanoid) in JSON as `humanoid_size`. It guides consistent apparent
 body height across ready/action frames and weapon sets; it does not change
 combat-square dimensions or game rules. Do not substitute SRD creature space
 for the source-art dimensions. Art preparation includes the saved
-height tier in its prompts and requires reviewers to check it. The monster/NPC
+height tier in its prompts and requires reviewers to check it. The adjacent
+**Small humanoid art height (feet)** control stores a concrete `height_feet`
+target for Small records. The saved `height_reference` preserves the species
+range and source or identifies an estimate. The [height lookup](../docs/combat-sprite-catalog.md#humanoid-height-and-art-consistency)
+lists every Small-tier monster and NPC. The monster/NPC
 preview always shows the same 3 × 3 dotted combat grid, with the selected
 footprint shaded from its lower-left corner. Ready and action use one fixed
 scale and planted-base anchor; neither pose is automatically fitted to its own
@@ -125,8 +129,9 @@ and acceptance checks. The guide's user approval status is tracked separately.
   shield for the selected set in both poses.
 - Review the exported images at normal combat zoom as well as in the catalog.
   Each fixed-grid combat square represents 5 × 5 feet. Apparent foot-to-head
-  heights should be 2–3 feet (0.4–0.6 square) for Small, a full 5 feet (one
-  square) for Normal humanoids such as orcs, and about 1.7 squares for Tall
+  heights should be 2–4 feet (0.4–0.8 square) for Small, using each saved
+  `height_feet` target, a full 5 feet (one square) for Normal humanoids such as
+  orcs, and about 1.7 squares for Tall
   when their saved footprint permits. The complete ready silhouette, including
   its weapon, stays inside the selected footprint. In action, only the moving
   attack weapon may cross that tile boundary; all pixels remain inside the PNG.

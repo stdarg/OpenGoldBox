@@ -1,6 +1,8 @@
 {
   "description": "A goblin guard in a compact defensive stance, ready to hold a doorway or protect its band. Source inventory: Short sword, Shield, Studded armor. Readied: Shield, Studded armor. Source wealth: 18 sp.",
   "humanoid_size": "small",
+  "height_feet": 3.5,
+  "height_reference": {"min_feet": 3, "max_feet": 4, "url": "https://www.dndbeyond.com/forums/d-d-beyond-general/bugs-support/37376-attempting-to-select-goblin-as-a-races-causes-a", "note": "Volo's Guide to Monsters playable-goblin range, reproduced in D&D Beyond data."},
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON2CHA.DAX:2 and matching MONnITM inventory",

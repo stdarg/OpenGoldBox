@@ -1,6 +1,8 @@
 {
   "description": "A kobold leader with more ornate kit than its followers. Its shield bears a clan mark; the short sword and short bow each have their own combat setup over studded armor.",
   "humanoid_size": "small",
+  "height_feet": 3.0,
+  "height_reference": {"min_feet": 2, "max_feet": 3, "url": "https://www.dndbeyond.com/forums/dungeons-dragons-discussion/rules-game-mechanics/8948-kobolds", "note": "Volo's Guide to Monsters playable-kobold range, quoted in D&D Beyond discussion."},
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "equipment": [
     {

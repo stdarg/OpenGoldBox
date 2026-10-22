@@ -29,6 +29,8 @@ var monster_source: Label
 var description_edit: TextEdit
 var sprite_size_choice: OptionButton
 var humanoid_size_choice: OptionButton
+var height_edit: SpinBox
+var height_source_label: Label
 var gear_rows: VBoxContainer
 var gear_source_hint: Label
 var regeneration_flag: CheckButton
@@ -321,8 +323,21 @@ func _build_ui() -> void:
     for label in ["N/A (non-humanoid)", "Small", "Normal", "Tall"]:
         humanoid_size_choice.add_item(label)
     humanoid_size_choice.tooltip_text = "Visual body-height tier for consistent art across monsters; Save monster data writes it to JSON."
-    humanoid_size_choice.item_selected.connect(func(_index: int): _refresh_monster_preview_layout())
+    humanoid_size_choice.item_selected.connect(func(_index: int): _on_humanoid_size_changed())
     editor.add_child(humanoid_size_choice)
+    var height_label := Label.new()
+    height_label.text = "Small humanoid art height (feet)"
+    editor.add_child(height_label)
+    height_edit = SpinBox.new()
+    height_edit.min_value = 2.0
+    height_edit.max_value = 4.0
+    height_edit.step = 0.25
+    height_edit.suffix = "ft"
+    height_edit.tooltip_text = "Foot-to-head art target for Small humanoids. One combat square is 5 feet tall."
+    editor.add_child(height_edit)
+    height_source_label = Label.new()
+    height_source_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    editor.add_child(height_source_label)
     var description_heading := Label.new()
     description_heading.text = "Description for new art"
     editor.add_child(description_heading)
@@ -394,6 +409,8 @@ func _rebuild_list() -> void:
         description_edit.text = ""
         sprite_size_choice.select(0)
         humanoid_size_choice.select(0)
+        height_edit.editable = false
+        height_source_label.text = ""
         gear_source_hint.text = ""
         for child in gear_rows.get_children():
             gear_rows.remove_child(child)
@@ -439,6 +456,7 @@ func _select_monster(list_index: int) -> void:
     description_edit.text = record.description
     sprite_size_choice.select(_sprite_size_index(record.get("sprite_size", null)))
     humanoid_size_choice.select(HUMANOID_SIZES.find(str(record.get("humanoid_size", "na"))))
+    _refresh_height_editor(record)
     image_frame.queue_redraw()
     regeneration_flag.set_pressed_no_signal(bool(record.flag_for_regeneration))
     for child in gear_rows.get_children():
@@ -502,12 +520,43 @@ func _add_gear() -> void:
     var line: HBoxContainer = gear_rows.get_child(gear_rows.get_child_count() - 1)
     line.get_child(1).grab_focus()
 
+func _on_humanoid_size_changed() -> void:
+    if selected >= 0 and draft_records.has(rows[selected].key):
+        _refresh_height_editor(draft_records[rows[selected].key], true)
+    _refresh_monster_preview_layout()
+
+func _refresh_height_editor(record: Dictionary, preserve_value: bool = false) -> void:
+    var small: bool = HUMANOID_SIZES[humanoid_size_choice.selected] == "small"
+    height_edit.editable = small
+    if not small:
+        height_source_label.text = ""
+        return
+    var reference: Variant = record.get("height_reference", null)
+    var low := 2.0
+    var high := 4.0
+    if reference is Dictionary and reference.get("min_feet") != null and reference.get("max_feet") != null:
+        low = float(reference.min_feet)
+        high = float(reference.max_feet)
+        height_source_label.text = "Published species range: %s–%s ft. %s" % [str(reference.min_feet), str(reference.max_feet), str(reference.get("note", ""))]
+        height_source_label.tooltip_text = str(reference.get("url", ""))
+    elif reference is Dictionary:
+        height_source_label.text = str(reference.get("note", "Art-direction estimate; no published range recorded."))
+        height_source_label.tooltip_text = str(reference.get("url", ""))
+    else:
+        height_source_label.text = "No species-specific source range recorded."
+        height_source_label.tooltip_text = ""
+    height_edit.min_value = low
+    height_edit.max_value = high
+    var saved: Variant = height_edit.value if preserve_value else record.get("height_feet", null)
+    height_edit.value = float(saved) if MonsterMetadata.valid_small_height(saved) else (low + high) * 0.5
+
 func _store_draft() -> void:
     if selected < 0 or not draft_records.has(rows[selected].key): return
     var record: Dictionary = draft_records[rows[selected].key]
     record.description = description_edit.text
     record.sprite_size = _sprite_size_for_index(sprite_size_choice.selected)
     record.humanoid_size = HUMANOID_SIZES[humanoid_size_choice.selected]
+    record.height_feet = height_edit.value if record.humanoid_size == "small" else null
     record.flag_for_regeneration = regeneration_flag.button_pressed
     var equipment: Array = []
     for line in gear_rows.get_children():
@@ -911,6 +960,7 @@ func _metadata_check() -> void:
     description_edit.text = "Unsaved draft"
     sprite_size_choice.select(2)
     humanoid_size_choice.select(1)
+    height_edit.value = 3.5
     regeneration_flag.button_pressed = true
     _select_monster(1)
     _select_monster(0)
@@ -923,6 +973,7 @@ func _metadata_check() -> void:
     assert(saved_draft.data.description == "Unsaved draft" and saved_draft.data.flag_for_regeneration)
     assert(_sprite_size_index(saved_draft.data.sprite_size) == 2)
     assert(saved_draft.data.humanoid_size == "small")
+    assert(is_equal_approx(float(saved_draft.data.height_feet), 3.5))
     _select_monster(1)
     draft_records[first.key] = loaded.data
     _select_monster(0)
@@ -1012,6 +1063,7 @@ func _metadata_check() -> void:
     assert(reloaded.data.source.origin_key == first.key and reloaded.data.equipment.size() == 5)
     assert(_sprite_size_index(reloaded.data.sprite_size) == 5)
     assert(reloaded.data.humanoid_size == "tall")
+    assert(reloaded.data.height_feet == null)
     assert(reloaded.data.wealth == first.wealth)
     show_new_art.button_pressed = false
     _remove_check_tree(metadata_root)
@@ -1087,6 +1139,8 @@ func _catalog_check() -> void:
         assert(metadata.data.has("sprite_size") and metadata.data.sprite_size != null)
         assert(MonsterMetadata.valid_sprite_size(metadata.data.sprite_size))
         assert(MonsterMetadata.valid_humanoid_size(metadata.data.get("humanoid_size", null)))
+        if metadata.data.humanoid_size == "small":
+            assert(MonsterMetadata.valid_small_height(metadata.data.get("height_feet", null)))
         if row.key == "MON1CHA.DAX:2": assert(metadata.data.humanoid_size == "small")
         if row.key == "MON1CHA.DAX:41": assert(metadata.data.humanoid_size == "normal")
         if row.key == "MON2CHA.DAX:55": assert(metadata.data.humanoid_size == "tall")

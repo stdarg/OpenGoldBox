@@ -22,6 +22,7 @@ The game-data directory is required. The launcher uses `OPENGOLD_GAME_DIR` or
 - [`json/`](../combat_sprite_catalog/json) has one saved record per monster, NPC, or extra icon. Records hold descriptions, source identity, equipment, wealth, regeneration flags, and image variants. **Save monster data** writes edited metadata here.
 - **Sprite size (combat squares)** sits above the description in the monster editor. Choose **1 × 1**, **1 × 2 tall**, **2 × 1 wide**, **2 × 2**, or **3 × 3**, then press **Save monster data**. The selected `sprite_size` is stored in that record's JSON as `width_squares` and `height_squares`. **Unknown** stores `null` when a source cannot establish the size. Copied monsters inherit the chosen size and can change it independently.
 - **Humanoid height** sits below Sprite size in the monster editor. Choose **Small**, **Normal**, **Tall**, or **N/A (non-humanoid)** and press **Save monster data**. JSON stores the choice as `humanoid_size`: `small`, `normal`, `tall`, or `na`. Copies inherit it and can change it independently.
+- **Small humanoid art height (feet)** is an editable foot-to-head target beside the height tier. For Small records, JSON stores `height_feet` and a `height_reference` with the source range, link, and qualification. A copied monster inherits these fields. Other height tiers leave `height_feet` unset; this control does not change combat occupancy.
 - [`art/`](../combat_sprite_catalog/art) holds replacement `ready.png` and `action.png` pairs under each source key and weapon-set variant. Missing pairs fall back to locally decoded original art. See the [art inventory](../combat_sprite_catalog/art/README.md).
 - One-handed weapons pair with available shields; ranged and two-handed weapons have separate sets. Include unready weapons when planning art. Each set needs its own reviewed ready/action pair.
 - The [generation and review workflow](../combat_sprite_catalog/generation/README.md) and [rules](../combat_sprite_catalog/generation/rules.txt) govern new sprite art. Keep body scale and planted foot/base coordinates fixed between frames; review the actual 128 x 128 images alternating in the catalog before clearing a regeneration flag. The [pose guide](../combat_sprite_catalog/art/pose-guide/README.md) covers the approved bipedal attack poses.
@@ -128,6 +129,23 @@ currently bound art as visual evidence. Tyranthraxus's dragon-form icon is N/A;
 its separate humanoid-form icon is Normal. These are editable art-direction
 choices rather than inferred rule statistics.
 
+All 14 saved Small-tier records were checked by name. The chosen heights are
+individual **art targets**, not exact measurements supplied by the game or SRD:
+
+| Creature | Records | Published range or basis | Regular art height | Leader art height |
+| --- | ---: | --- | ---: | ---: |
+| Goblin | 5 | 3–4 ft in *Volo's Guide to Monsters* [race data reproduced on D&D Beyond](https://www.dndbeyond.com/forums/d-d-beyond-general/bugs-support/37376-attempting-to-select-goblin-as-a-races-causes-a) | 3.5 ft | 4 ft |
+| Kobold | 8 | 2–3 ft in *Volo's Guide to Monsters* [quoted on D&D Beyond](https://www.dndbeyond.com/forums/dungeons-dragons-discussion/rules-game-mechanics/8948-kobolds) | 2.5 ft | 3 ft |
+| Quickling | 1 | [Current D&D listing](https://www.dndbeyond.com/monsters?filter-search=&filter-type=3&filter-type=8&page=3&sort=cr) calls it a Tiny Fey but supplies no height in feet; 2 ft is an estimate for this older game's humanoid-shaped sprite | 2 ft | — |
+
+The [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf)
+marks its goblin and kobold monsters Small but gives no individual foot height.
+Its Small species examples vary: halflings are about 2–3 feet, gnomes about
+3–4 feet, and Small humans about 2–4 feet. That is why the tier allows 2–4 feet
+while the saved species ranges and art targets are more specific. The Quickling
+is included here because its existing catalog **visual** tier is Small; its
+current D&D creature type and size are Fey and Tiny, respectively.
+
 For humanoid art, measure apparent body height from planted feet to the head,
 without counting weapons, raised arms, horns, or effects. Small figures must
 read shorter than Normal figures, and Tall figures taller; specifically,
@@ -136,9 +154,10 @@ planted-foot coordinates in ready/action frames and every weapon set for a
 creature. The [generation rules](../combat_sprite_catalog/generation/rules.txt)
 carry the saved tier into each prompt, and the review checklist requires a
 visual height comparison. Each fixed-grid combat square represents **5 × 5
-feet**. The visual targets measured foot to head are **2–3 feet** (0.4–0.6
-square) for Small, a **full 5 feet** (one square) for Normal humanoids including
-orcs, and about **1.7 squares** for Tall when the saved footprint permits.
+feet**. The visual targets measured foot to head are **2–4 feet** (0.4–0.8
+square) for Small, using the record's `height_feet`; a **full 5 feet** (one
+square) for Normal humanoids including orcs; and about **1.7 squares** for Tall
+when the saved footprint permits.
 Orcs rendered at 3–4 feet are too short. The height target measures only the
 body, not a weapon or raised arm. The ready pose, including its weapon, must
 fit the selected footprint. In action, only the moving attack weapon may cross
