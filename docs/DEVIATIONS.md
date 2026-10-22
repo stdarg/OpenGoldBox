@@ -77,6 +77,11 @@ Add an entry whenever a new departure is decided.
   their own spells in camp, which the original never allowed. Read Magic reveals all the caster's scrolls at once instead of each
   scroll opened while it lasts.
   [MAGIC-6](SRD-DECISIONS.md#magic-6-2026-10-20-spell-scrolls).
+- **Alignment-bound swords** (2026-10-22). The original's three bound swords
+  served only their exact alignment (Lawful Good, Lawful Evil). Here only the
+  good-evil half counts: any Good member wields the Lawful Good sword, any Evil
+  member the Lawful Evil ones. The damage is the original's, as Force.
+  [MAGIC-7](SRD-DECISIONS.md#magic-7-2026-10-22-alignment-bound-swords).
 - **Fire and Acid** (2026-10-08). New Phlan's general store also sells Acid and
   Alchemist's Fire at SRD prices, and every starting kit has a Torch, so any
   party can keep a troll down.

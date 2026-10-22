@@ -124,8 +124,9 @@ void conversion()
     auto broad = original(35, -2, {255, 202, 35});
     broad.stored.cursed_raw = 1;
     check(equipment_conversion(broad) == "longsword-2:cursed", "Cursed Broad Sword -2");
-    check(equipment_conversion(original(36, 3, {0, 164, 36}, {0, 82, 0x84})) == "longsword+3",
-          "An undecoded special effect leaves the plain enchantment");
+    check(equipment_conversion(original(36, 3, {0, 164, 36}, {0, 82, 0x84})) ==
+              "longsword+3:evil",
+          "Long Sword +3 bound to Lawful Evil (#267)");
     check(equipment_conversion(original(55, 1)) == "chain_mail+1" &&
               equipment_conversion(original(59, 2)) == "shield+2" &&
               equipment_conversion(original(73, 1)) == "arrow+1" &&
@@ -320,6 +321,52 @@ void cursed_sword()
         "Another weapon cannot replace it");
     check(party.profile(id).item_modifiers.find("It is cursed") != std::string::npos,
           "The sheet says the sword is cursed");
+}
+
+// The original's alignment-bound swords (#267): the knight's Long Sword +2 is
+// for Good wielders and burns anyone else for 15, the castle's Long Swords +3
+// for Evil wielders, 5. Only the good-evil half of an alignment counts.
+void alignment_bound_swords()
+{
+    check(equipment_conversion(original(36, 2, {}, {0, 240, 0x84})) == "longsword+2:good" &&
+              equipment_conversion(original(36, 3, {}, {0, 82, 0x84})) == "longsword+3:evil",
+          "The swords convert with the alignment they are bound to");
+    CampaignParty party(module());
+    const auto id = party.add_pc(fighter()); // Neutral Good
+    check(party.award_loot({}, {original(36, 2, {}, {0, 240, 0x84}), original(36, 3, {}, {0, 82, 0x84})},
+                           "test:bound"),
+          "Collect both swords");
+    const auto items = party.member(id).character.inventory().items();
+    const auto good = items[items.size() - 2].id, evil = items.back().id;
+    const auto equipped = [&](std::uint64_t item)
+    {
+        const auto &worn = party.member(id).equipped;
+        return std::find(worn.begin(), worn.end(), item) != worn.end();
+    };
+    check(!party.equip(id, good) && equipped(good),
+          "A Neutral Good fighter wields the Lawful Good sword");
+    const int before = party.member(id).vitals.hit_points;
+    const auto burn = party.equip(id, evil);
+    check(burn && burn->damage == 5 && party.member(id).vitals.hit_points == before - 5 &&
+              !equipped(evil) && equipped(good),
+          "The Evil sword stays in the pack and burns the fighter for 5 Force damage");
+    check(srd5::equipment_note(party.member(id).character.sheet(), "longsword+2:good")
+                      .find("Only a Good wielder") != std::string::npos &&
+              srd5::equipment_note(party.member(id).character.sheet(),
+                                   "longsword+2:good:unidentified")
+                      .find("Only a Good") == std::string::npos,
+          "Identified, the sword says whom it serves");
+
+    auto neutral = fighter();
+    auto draft = neutral.creation_data();
+    draft.alignment = "lawful_neutral";
+    CampaignParty other(module());
+    const auto lawful = other.add_pc(Character(*srd5::character_rules(), draft, {}));
+    check(other.award_loot({}, {original(36, 2, {}, {0, 240, 0x84})}, "test:bound-neutral"),
+          "Collect the Good sword");
+    const auto sword = other.member(lawful).character.inventory().items().back().id;
+    const auto burned = other.equip(lawful, sword);
+    check(burned && burned->damage == 15, "A Lawful Neutral fighter is burned for 15");
 }
 
 // Loot from the original keeps its enchantment in the party and in a save.
@@ -529,6 +576,7 @@ int main()
         flame_tongue();
         no_attunement();
         cursed_sword();
+        alignment_bound_swords();
         identification();
         shop_identification();
         identification_spells();

@@ -289,9 +289,14 @@ records the decisions.
   once in camp, or when the fight ends. In that fight the wielder may already
   draw another weapon.
 - The special weapons are known by their name words: 241 Flame Tongue, 253 "+3
-  vs Undead" and 255 Cursed (byte 54). The Long Swords +2 and +3 bound to an
-  alignment by byte 62 have only their +N until
-  [#267](https://github.com/stdarg/OpenGold/issues/267).
+  vs Undead" and 255 Cursed (byte 54).
+- **Alignment-bound swords** (#267,
+  [MAGIC-7](SRD-DECISIONS.md#magic-7-2026-10-22-alignment-bound-swords)): byte
+  62 = 0x84 binds the sword to the good or evil half of byte 61's alignment
+  (`longsword+2:good`, `longsword+3:evil`). A member of another alignment who
+  equips it keeps it in the pack and takes byte 61's high four bits as Force
+  damage, each time; a member already at 0 Hit Points takes none. Identified,
+  its note says whom it serves.
 - **Wands, potions and other charged items** (#263,
   [MAGIC-3](SRD-DECISIONS.md#magic-3-2026-10-19-wands-potions-and-other-charged-items))
   do what their SRD counterparts do and keep the original's charges, which

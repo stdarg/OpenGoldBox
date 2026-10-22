@@ -487,9 +487,10 @@ void RolfTourView::equip_item(bool equip)
             item = items[selection[0]].id;
             definition = opengold::rules_definition(campaign_->member(id), items[selection[0]]);
         }
+        std::optional<opengold::rules::HazardAttackResult> burn;
         if (equip)
         {
-            campaign_->equip(id, item);
+            burn = campaign_->equip(id, item);
         }
         else
         {
@@ -498,6 +499,17 @@ void RolfTourView::equip_item(bool equip)
         refresh_inventory();
         required_node<ItemList>(*this, "InventoryPanel/Items").select(selection[0]);
         refresh();
+        // An alignment-bound sword refuses a wielder of another alignment (#267).
+        if (burn)
+        {
+            required_node<Label>(*this, "InventoryPanel/Status")
+                .set_text(i18n::format(
+                    N_("The sword will not stay in {name}'s hand and burns for {damage} Force damage."),
+                    {{"name",
+                      String::utf8(campaign_->member(id).character.sheet().name.c_str())},
+                     {"damage", burn->damage}}));
+            return;
+        }
         required_node<Label>(*this, "InventoryPanel/Status")
             .set_text(equip ? i18n::text("Equipped.") + " " +
                                   i18n::text(opengold::srd5::equipment_note(

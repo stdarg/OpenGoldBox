@@ -1563,5 +1563,9 @@
   "That spell cannot be written on a scroll",
   "Only an active member writes a scroll",
   "Protection From Normal Missiles needs a living member without it",
-  "That spell is not on a scroll"
+  "That spell is not on a scroll",
+  "Class training: no untrained-use penalty. Only a Good wielder can hold it; it burns anyone else who takes it up.",
+  "Class training: no untrained-use penalty. Only an Evil wielder can hold it; it burns anyone else who takes it up.",
+  "Untrained weapon: no proficiency bonus on attack rolls. Only a Good wielder can hold it; it burns anyone else who takes it up.",
+  "Untrained weapon: no proficiency bonus on attack rolls. Only an Evil wielder can hold it; it burns anyone else who takes it up."
 ]

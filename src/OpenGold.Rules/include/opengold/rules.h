@@ -345,6 +345,9 @@ struct HazardAttack
     unsigned dice{}, sides{};
     int damage_bonus{};
     std::string damage_type;
+    // No attack roll: it always hits, never critically (an alignment-bound
+    // sword's burn, #267).
+    bool automatic{};
 };
 
 struct HazardAttackResult

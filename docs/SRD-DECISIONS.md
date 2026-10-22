@@ -1431,6 +1431,20 @@ The user chose how the original's scrolls
   ([#268](https://github.com/stdarg/OpenGold/issues/268)).
 
 
+
+## MAGIC-7 (2026-10-22): alignment-bound swords
+
+The original binds three swords to an alignment: the Long Sword +2 in
+Valhingen Graveyard's knight's tomb to Lawful Good (15 damage) and the two Long
+Swords +3 behind the altar in Valjevo Castle SW to Lawful Evil (5 damage). A
+wielder of another alignment who readied one lost it from the hand and took
+magic damage. The user decided on 2026-10-22 (#267):
+
+- **The original's damage**, as Force damage, each time a member of another
+  alignment equips the sword, which stays in the pack.
+- **Good or evil only**: the Lawful Good sword serves any Good member, the
+  Lawful Evil swords any Evil member; a member Neutral on that half is burned.
+- **Its note says so once identified**; until then it reads as its plain +N.
 ## AI-1 (2026-10-21): computer play, as the original game had it
 
 How the computer plays monsters and Quick members is described in

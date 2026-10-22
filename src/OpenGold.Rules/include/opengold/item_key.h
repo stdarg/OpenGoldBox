@@ -28,7 +28,11 @@ enum class ItemPower : std::uint8_t
     // The original's charged wands (MAGIC-3): a held wand that casts its spell.
     magic_missiles,
     lightning_bolts,
-    paralysis
+    paralysis,
+    // The original's alignment-bound swords (#267): only a Good, or an Evil,
+    // wielder keeps one in hand; it wounds anyone else who readies it.
+    good,
+    evil
 };
 
 struct ItemKey
@@ -41,9 +45,9 @@ struct ItemKey
 
 namespace detail
 {
-inline constexpr std::array<std::string_view, 8> item_power_names{
+inline constexpr std::array<std::string_view, 10> item_power_names{
     "", "flame_tongue", "undead", "cursed", "lightning", "magic_missiles", "lightning_bolts",
-    "paralysis"};
+    "paralysis", "good", "evil"};
 } // namespace detail
 
 // A key without a recognized enchantment or flag, such as "por:unsupported:36",

@@ -204,8 +204,12 @@ class CampaignParty
     void remove(MemberId id);
     [[nodiscard]] std::vector<rules::EquipmentChoice> equipment_choices(MemberId id,
                                                                         std::uint64_t item) const;
-    void equip(MemberId id, std::uint64_t item,
-               rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
+    // An alignment-bound sword (#267) taken up by a member of another
+    // alignment stays in the pack and burns the member for its damage, which
+    // is returned; otherwise nothing is returned.
+    std::optional<rules::HazardAttackResult>
+    equip(MemberId id, std::uint64_t item,
+          rules::EquipmentOperation operation = rules::EquipmentOperation::equip);
     void unequip(MemberId id, std::uint64_t item);
     [[nodiscard]] rules::EquipmentInfo equipment_info(MemberId id, std::uint64_t item) const;
     // The party's gold pays; the item goes to the member.
@@ -392,6 +396,7 @@ class CampaignParty
     [[nodiscard]] unsigned next_level(const PartyMember &m) const;
     [[nodiscard]] std::vector<DoorAttempt> cast_knock(int difficulty);
     void change_equipment(MemberId id, std::uint64_t item, rules::EquipmentOperation operation);
+    std::optional<rules::HazardAttackResult> refuse_bound_weapon(MemberId id, std::uint64_t item);
     std::unique_ptr<rules::RulesModule> rules_;
     PartyState state_;
     bool combat_{};

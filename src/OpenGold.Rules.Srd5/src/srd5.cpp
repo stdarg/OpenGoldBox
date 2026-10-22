@@ -632,6 +632,15 @@ std::string equipment_note(const CharacterSheet &sheet, std::string_view item)
     {
         text += " Plain focus only; no charged wand spell is granted.";
     }
+    // An alignment-bound sword says so once identified (#267).
+    if (const auto key = rules::parse_item_key(item);
+        !key.unidentified &&
+        (key.power == rules::ItemPower::good || key.power == rules::ItemPower::evil))
+    {
+        text += key.power == rules::ItemPower::good
+                    ? " Only a Good wielder can hold it; it burns anyone else who takes it up."
+                    : " Only an Evil wielder can hold it; it burns anyone else who takes it up.";
+    }
     return text;
 }
 
@@ -28421,11 +28430,19 @@ class Module final : public RulesModule
         }
         auto rng = random_state.value;
         HazardAttackResult result;
-        result.natural = roll_die(rng, 20);
-        result.total = result.natural + attack.attack_bonus;
         result.armor_class = armor_class_of(actor);
-        result.critical = result.natural == 20;
-        result.hit = result.critical || (result.natural != 1 && result.total >= result.armor_class);
+        if (attack.automatic)
+        {
+            result.hit = true;
+        }
+        else
+        {
+            result.natural = roll_die(rng, 20);
+            result.total = result.natural + attack.attack_bonus;
+            result.critical = result.natural == 20;
+            result.hit =
+                result.critical || (result.natural != 1 && result.total >= result.armor_class);
+        }
         if (result.hit)
         {
             int rolled = attack.damage_bonus;

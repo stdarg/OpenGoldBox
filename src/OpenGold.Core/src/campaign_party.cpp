@@ -288,6 +288,8 @@ std::string_view enchantable_conversion(int type)
 
 // The original's special weapons, known by the name word START.EXE gives them.
 constexpr std::uint8_t flame_tongue_word = 241, bane_undead_word = 253;
+// Byte 62 of a sword bound to an alignment (#267).
+constexpr std::uint8_t bound_to_alignment = 0x84;
 
 rules::ItemPower item_power(const por::ItemRecord &raw)
 {
@@ -307,6 +309,22 @@ rules::ItemPower item_power(const por::ItemRecord &raw)
     if (named(bane_undead_word))
     {
         return rules::ItemPower::bane_undead;
+    }
+    // The original's alignment-bound swords (#267): byte 62 is 0x84 and byte
+    // 61's low four bits the alignment, in the original's order Lawful Good,
+    // Lawful Neutral, Lawful Evil, Neutral Good and so on: a remainder of 0 by
+    // 3 is Good, 2 Evil. Only the good-evil half binds (the user, 2026-10-22).
+    if (raw.effect_codes[2] == bound_to_alignment)
+    {
+        switch ((raw.effect_codes[1] & 0x0F) % 3)
+        {
+        case 0:
+            return rules::ItemPower::good;
+        case 2:
+            return rules::ItemPower::evil;
+        default:
+            break;
+        }
     }
     return rules::ItemPower::none;
 }
@@ -1146,13 +1164,56 @@ std::vector<rules::EquipmentChoice> CampaignParty::equipment_choices(MemberId id
                                      static_cast<unsigned>(keys.size() - 1));
 }
 
-void CampaignParty::equip(MemberId id, std::uint64_t item, rules::EquipmentOperation operation)
+std::optional<rules::HazardAttackResult>
+CampaignParty::equip(MemberId id, std::uint64_t item, rules::EquipmentOperation operation)
 {
     if (operation == rules::EquipmentOperation::unequip)
     {
         throw std::runtime_error("Invalid equip operation");
     }
+    if (auto burn = refuse_bound_weapon(id, item))
+    {
+        return burn;
+    }
     change_equipment(id, item, operation);
+    return std::nullopt;
+}
+
+std::optional<rules::HazardAttackResult> CampaignParty::refuse_bound_weapon(MemberId id,
+                                                                            std::uint64_t item)
+{
+    editable();
+    const auto &wielder = member(id);
+    const auto carried = wielder.character.inventory().find(item);
+    const auto source = wielder.item_sources.find(item);
+    if (!carried || source == wielder.item_sources.end())
+    {
+        return std::nullopt;
+    }
+    const auto power = rules::parse_item_key(carried->get().definition_id).power;
+    const auto &alignment = wielder.character.creation_data().alignment;
+    if ((power != rules::ItemPower::good || alignment.ends_with("good")) &&
+        (power != rules::ItemPower::evil || alignment.ends_with("evil")))
+    {
+        return std::nullopt;
+    }
+    // Byte 61's high four bits are the damage, as Force (the user, 2026-10-22).
+    rules::HazardAttack burn;
+    burn.damage_bonus = source->second.stored.effect_codes[1] >> 4;
+    burn.damage_type = "force";
+    burn.automatic = true;
+    auto next = state_;
+    auto &burned = member_in(next, id);
+    rules::HazardAttackResult result;
+    result.hit = true;
+    // A member already down is not burned again; the sword still stays put.
+    if (burned.vitals.hit_points > 0)
+    {
+        result = rules_->hazard_attack(burned.vitals, burned.character.sheet(),
+                                       equipped_definitions(burned), burn, next.random_state);
+    }
+    state_ = std::move(next);
+    return result;
 }
 
 void CampaignParty::unequip(MemberId id, std::uint64_t item)
