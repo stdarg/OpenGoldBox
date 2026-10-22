@@ -124,9 +124,12 @@ and acceptance checks. The guide's user approval status is tracked separately.
   poses and every weapon set for that monster. Draw the equipped weapon and
   shield for the selected set in both poses.
 - Review the exported images at normal combat zoom as well as in the catalog.
-  On the catalog's fixed grid, apparent foot-to-head heights should be about
-  0.6 square for Small, 0.9 for Normal, and 1.7 for Tall. Keep the entire
-  silhouette, including equipment, inside its selected footprint.
+  Each fixed-grid combat square represents 5 × 5 feet. Apparent foot-to-head
+  heights should be 2–3 feet (0.4–0.6 square) for Small, a full 5 feet (one
+  square) for Normal humanoids such as orcs, and about 1.7 squares for Tall
+  when their saved footprint permits. The complete ready silhouette, including
+  its weapon, stays inside the selected footprint. In action, only the moving
+  attack weapon may cross that tile boundary; all pixels remain inside the PNG.
   The inspected original tactical icons are 24 x 24 pixels; the game currently
   fits visible sprite bounds to about 90% of a combat cell. Detail must remain
   readable when the 128 x 128 image is displayed at that size.

@@ -2,9 +2,13 @@ POSE TO GENERATE: ACTION only.
 Apply the ACTION rule for the selected weapon from the specification above.
 For melee, near the END of the swing or thrust, not a windup. For projectile
 weapons, just AFTER release, with no projectile remaining loaded. Keep any shield.
+Only the moving attack weapon may cross the saved combat-square footprint line
+in ACTION. Keep the full-size body, planted feet, shield and other gear inside
+the footprint. The weapon may pass the dotted tile border but all its visible
+pixels must remain inside the 128 x 128 PNG canvas with transparent margin.
 Preserve the ready figure's head, torso and limb sizes. Do not shrink the
-character to fit the attack; if it needs more room, the pair needs a smaller
-COMMON scale established from this wider pose.
+character to fit the attack or make a normal humanoid less than 5 feet tall.
+Revise the weapon arc if it cannot fit inside the PNG canvas.
 Reference 1: approved original pose guide, for facing and action-pose mechanics.
 Reference 2: the visually approved NEW ready sprite for THIS weapon set. Edit
 that ready image as the base frame; do not compose the action independently.

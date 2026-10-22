@@ -135,12 +135,17 @@ goblins < human-scale fighters < hill giants. Keep the same body height and
 planted-foot coordinates in ready/action frames and every weapon set for a
 creature. The [generation rules](../combat_sprite_catalog/generation/rules.txt)
 carry the saved tier into each prompt, and the review checklist requires a
-visual height comparison. The agreed visual targets on the fixed grid are about
-**0.6 square** for Small, **0.9 square** for Normal, and **1.7 squares** for
-Tall, measured foot to head. A footprint includes the complete sprite and its
-equipment, while the height target measures only the body. Existing PNGs are
-not automatically resized or treated as correct merely because their canvas is
-128 × 128.
+visual height comparison. Each fixed-grid combat square represents **5 × 5
+feet**. The visual targets measured foot to head are **2–3 feet** (0.4–0.6
+square) for Small, a **full 5 feet** (one square) for Normal humanoids including
+orcs, and about **1.7 squares** for Tall when the saved footprint permits.
+Orcs rendered at 3–4 feet are too short. The height target measures only the
+body, not a weapon or raised arm. The ready pose, including its weapon, must
+fit the selected footprint. In action, only the moving attack weapon may cross
+the dotted tile boundary; the body, feet, shield, and other gear remain inside.
+Every visible pixel stays inside the 128 × 128 PNG canvas. Existing PNGs are
+not automatically resized or treated as correct merely because their canvas
+is 128 × 128.
 
 For every named leader, compare its body against the regular creature of the
 same kind in the same game archive (and against other regular records of that
@@ -150,6 +155,7 @@ foot-to-head height and body mass while retaining the same humanoid height tier.
 Distinctive clothing and gear may reinforce the rank, but a larger weapon,
 helmet, horns, or raised arm cannot substitute for a larger body. Check both
 ready and action poses and **every weapon set** at the fixed catalog zoom.
-Preserve the game-derived `sprite_size` and keep the complete silhouette inside
-its footprint. When a regular sprite already fills that footprint, correct its
-art scale as needed rather than enlarging the leader beyond the allowed tiles.
+Preserve the game-derived `sprite_size` and keep the body inside its footprint.
+Do not shrink a correctly sized 5-foot Normal creature to make a taller leader
+fit. If that footprint cannot contain both the required Normal body height and
+a taller leader, flag the conflict for review before generating either pair.
