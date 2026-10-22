@@ -29039,15 +29039,31 @@ class Module final : public RulesModule
         {
             pay_for_spell(caster, action, spell);
             // Disciple of Life adds 2 + the slot's level.
-            int amount =
-                casting_modifier(caster.definition, spell.id) +
-                (caster.definition.life_domain ? 2 + static_cast<int>(slot_level_of(action, spell))
-                                               : 0);
-            const int count = spell.dice.count + static_cast<int>(upcast_steps(action, spell) *
-                                                                  spell.upcast.extra_dice);
-            for (int n = 0; n < count; ++n)
+            int amount = caster.definition.life_domain
+                             ? 2 + static_cast<int>(slot_level_of(action, spell))
+                             : 0;
+            if (spell.id == "heal")
             {
-                amount += roll_die(rng, spell.dice.sides);
+                // Heal restores 70, 10 more for each slot level above 6, as in
+                // a fight, and ends Blinded, Poisoned and Befuddlement.
+                amount += 70 + 10 * static_cast<int>(upcast_steps(action, spell));
+                std::erase_if(patient.effects.active,
+                              [](const auto &e)
+                              {
+                                  return gives_condition(e.kind, "blinded") ||
+                                         gives_condition(e.kind, "poisoned") ||
+                                         e.kind == detail::EffectKind::befuddled;
+                              });
+            }
+            else
+            {
+                amount += casting_modifier(caster.definition, spell.id);
+                const int count = spell.dice.count + static_cast<int>(upcast_steps(action, spell) *
+                                                                      spell.upcast.extra_dice);
+                for (int n = 0; n < count; ++n)
+                {
+                    amount += roll_die(rng, spell.dice.sides);
+                }
             }
             (void)detail::heal_life(patient.life, std::max(0, amount), maximum, can_heal);
         }

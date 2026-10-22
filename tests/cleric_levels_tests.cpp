@@ -2,6 +2,7 @@
 #include "opengold/campaign_save.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
+#include "status_effects.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -1023,6 +1024,49 @@ void resurrection_checks()
     check(hurt.hit_points == fallen_hero.sheet().hit_points, "Regenerate in camp heals fully");
 }
 
+// Heal in camp restores 70 Hit Points and ends Poisoned, as in a fight.
+void camp_heal_checks()
+{
+    namespace fx = opengold::srd5::detail;
+    const auto rules = module();
+    const auto healer = with_spells(cleric(11), {"heal"});
+    RandomState random{1};
+    VitalState self{1, false, {}};
+    rules->use_camp_action(healer, self, healer, self, "heal", random);
+    // 70, and Disciple of Life's 2 + the slot's level.
+    check(self.hit_points == std::min(healer.hit_points, 1 + 70 + 8),
+          "Heal in camp restores 70 Hit Points");
+
+    auto patient_draft = draft();
+    patient_draft.name = "Patient";
+    const Character patient(*srd5::character_rules(), patient_draft, {});
+    VitalState target{1, false, {}};
+    rules->recover(target, patient.sheet());
+    target.hit_points = 1;
+    const auto at = target.resources.find("FX8");
+    check(at != std::string::npos, "The patient's record holds its effects");
+    std::istringstream in(target.resources.substr(at));
+    auto effects = fx::read_effects(in);
+    fx::apply_poisoned(effects, {.scope = 9, .actor = 99}, "Bandit", 12000);
+    std::ostringstream out;
+    fx::write_effects(out, effects);
+    target.resources.replace(at, std::string::npos, out.str());
+    const auto poisoned = [&]
+    {
+        const auto shown = rules->status_effects(patient.sheet(), target);
+        return std::any_of(shown.begin(), shown.end(),
+                           [](const auto &effect)
+                           {
+                               return effect.name.source == "Poisoned";
+                           });
+    };
+    check(poisoned(), "The patient is Poisoned");
+    VitalState rested{healer.hit_points, false, {}};
+    rules->use_camp_action(healer, rested, patient.sheet(), target, "heal", random);
+    check(!poisoned() && target.hit_points == patient.sheet().hit_points,
+          "Heal in camp ends Poisoned and heals fully");
+}
+
 void earthquake_checks()
 {
     const auto rules = dummy_rules();
@@ -1211,6 +1255,7 @@ int main()
         fire_storm_checks();
         regenerate_checks();
         resurrection_checks();
+        camp_heal_checks();
         earthquake_checks();
         holy_aura_checks();
         sunburst_checks();

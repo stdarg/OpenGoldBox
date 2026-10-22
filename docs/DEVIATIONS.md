@@ -119,7 +119,10 @@ Add an entry whenever a new departure is decided.
 - **Party gold** (2026-10-13). The original kept a purse per character, pooled
   for party purchases. OpenGoldBox keeps one purse for the party that pays for
   everything; scripts see it as every member's money
-  ([#232](https://github.com/stdarg/OpenGold/issues/232)).
+  ([#232](https://github.com/stdarg/OpenGold/issues/232)). The user confirmed on
+  2026-10-22 that the party's money is always pooled and coins weigh nothing,
+  where the original counted them toward a character's load; the original's
+  Take, Pool and Share commands are not needed.
   [TRAINING-HALL.md](TRAINING-HALL.md#decisions-2026-10-13),
   [PHLAN.md](PHLAN.md#coin-payments).
 
