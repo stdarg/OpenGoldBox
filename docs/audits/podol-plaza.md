@@ -396,11 +396,28 @@ stage after Kuto's Well.
   items), the duel won, then drinking heavily (all coins taken, waking on
   (2,10)), the patrons' attack (the bar wrecked), the free-for-all, and a
   duel lost by a champion on 1 Hit Point.
-- **Not yet played:** the council's mission (the plaza menu, disguise and
-  sneaking, rumours, the auction and its City Hall reward, the robed orc's
-  greeting and the loyalty test, the cancelled auction's group). City Hall
+- **Increment 4 (done, 2026-10-22):** the council's mission. City Hall
   offers the auction commission only after one of its first three
-  commissions is done, which the expedition route does not do yet.
+  commissions is done, which the expedition route does not do, so the test
+  sets its flag (`0x4AB0` = 1) through a test-only friend
+  (`tests/tour_access.h`), by the user's choice; the same friend reseeds the
+  script's dice, so the test tries a few seeds until a disguise or a sneak
+  holds long enough (a fight on the plaza blows the party's cover). The auctioneer's picture
+  (`PIC1` 16) is an animation; its first frame stands for it. When the
+  auction opens with no roaming group rolled this visit, the engine rolls one
+  from the script's own tables (`0x9F86`), so a cancelled auction meets a
+  plaza group (PODOL-1); host replies can now set text cells, for the group's
+  name. Played from a level-4 save in Kuto's Well: the plaza menu (disguised
+  and sneaking), a rumour overheard, the auction waited out (`0x4AB0` and
+  `0x4A35` = 254), the robed orc's greeting and, three hours later, the
+  loyalty test fought (`0x4A38` = 2), and a sneaking party's cancelled
+  auction attacked by a fresh group.
+- **Gaps:** the disguise check reads each member's race byte (`0x72`), which
+  `LOAD CHARACTER` leaves 0, so every slot counts against the party and a
+  disguised group questions it 45% of the time; humans (7) should not count.
+  City Hall's reward for the auction and for clearing the plaza is not played
+  in a test, and clearing the plaza (nine won fights in one visit) is not
+  played either.
 
 ## Suggested increments
 

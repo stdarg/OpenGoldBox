@@ -990,6 +990,10 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
                 return false;
             }
         }
+        for (const auto &[address, text] : reply.strings)
+        {
+            validate_string(address, text);
+        }
         for (std::size_t n = 0; n < pending_->arguments.size(); ++n)
         {
             if (((opcode == 29 && n == 0) || (opcode == 30 && n >= 2) || opcode == 34 ||
@@ -1008,6 +1012,10 @@ bool EclMachine::resume_host(std::uint64_t id, const EclHostReply &reply)
     for (const auto &w : reply.writes)
     {
         write(w.address, w.value);
+    }
+    for (const auto &[address, text] : reply.strings)
+    {
+        write_string(address, text);
     }
     if (reply.conditions)
     {

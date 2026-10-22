@@ -9,6 +9,7 @@
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
 #include "test_support.h"
+#include "tour_access.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -693,7 +694,11 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
         {
         case por::TourPhase::completed:
         case por::TourPhase::shopping:
-            check(town.script_diagnostics().empty(), "The route uses only supported events");
+            check(town.script_diagnostics().empty(),
+                  "The route uses only supported events" +
+                      (town.script_diagnostics().empty()
+                           ? std::string{}
+                           : ": " + town.script_diagnostics().back()));
             return;
         case por::TourPhase::running:
             town.advance(.5);
@@ -711,7 +716,12 @@ void settle(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &pa
             throw std::runtime_error("Event failed: " + s.diagnostic);
         }
     }
-    throw std::runtime_error("Event did not finish");
+    std::string choices;
+    for (const auto &c : town.snapshot().choices)
+    {
+        choices += " [" + c + "]";
+    }
+    throw std::runtime_error("Event did not finish: " + town.snapshot().dialogue + choices);
 }
 
 void face(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &party, unsigned facing)
@@ -2033,6 +2043,134 @@ void podol_pitt(const std::filesystem::path &save, const std::filesystem::path &
     throw std::runtime_error("No seed's buccaneer wins the duel");
 }
 
+// Enters Podol Plaza by Kuto's Well's west edge, answering Podol's events
+// with `answer`.
+void enter_podol(Expedition &trip, const Answer &answer = peaceful)
+{
+    auto &[party, town] = trip;
+    unsigned edge = 16;
+    for (unsigned y = 0; y < 16 && edge == 16; ++y)
+    {
+        const auto &cell = town.map().at(0, y);
+        if (!cell.walls[3] || cell.doors[3] == 1)
+        {
+            edge = y;
+        }
+    }
+    check(edge < 16, "Kuto's Well has a west way out");
+    walk_to(town, party, 0, edge);
+    step(town, party, 3, answer);
+    check(town.snapshot().area_id == 18 && town.snapshot().script_id == 18,
+          "Leaving Kuto's Well westward enters Podol Plaza");
+}
+
+// Podol Plaza on the council's mission to learn what is auctioned there,
+// from a save in Kuto's Well. City Hall offers that commission only after one
+// of its first three is done, which this route does not do, so the test sets
+// the commission's flag (0x4AB0) itself.
+void podol_mission(const std::filesystem::path &kuto, const std::filesystem::path &directory)
+{
+    // Each try reseeds the script's dice: whether a group or a rumour comes
+    // first is a roll, and a fight on the plaza blows the party's cover.
+    const auto commissioned = [&](std::uint32_t seed)
+    {
+        auto trip = load_expedition(kuto, directory);
+        opengold::test::TourAccess::set_variable(trip.town, por::EclAddress{0x4AB0}, 1);
+        opengold::test::TourAccess::seed_dice(trip.town, seed);
+        return trip;
+    };
+    const auto approach = [](const Expedition &trip)
+    {
+        return trip.town.script_variable(por::EclAddress{0x4A35});
+    };
+    // Disguised as monsters: the party overhears rumours on the plaza, waits
+    // out the auction, and greets the robed orc. False when its cover was
+    // blown first.
+    const auto disguised_visit = [&](std::uint32_t seed)
+    {
+        auto trip = commissioned(seed);
+        auto &[party, town] = trip;
+        // A haughty answer passes most questionings by a party this strong.
+        const auto disguised = prefer({"DISGUISE PARTY AS MONSTERS.", "HAUGHTY", "Fight",
+                                       "STAND AND LISTEN", "WAIT FOR WINNER", "GREET", "YES"});
+        enter_podol(trip, disguised);
+        step(town, party, 3, disguised);
+        check(town.script_variable(por::EclAddress{0x4A34}) == 64,
+              "On the mission, the party chooses how to cross the plaza");
+        // Back and forth across the plaza, a step at a time: a rumour is
+        // printed with no menu after it.
+        walk_to(town, party, 8, 9, disguised);
+        bool rumour = false;
+        for (unsigned steps = 0; steps < 120 && !rumour && approach(trip) == 1; ++steps)
+        {
+            heal(*party);
+            step(town, party, steps % 2 ? 1 : 3, disguised);
+            rumour =
+                town.snapshot().dialogue.find("AS YOU MOVE YOU OVERHEAR SOME") != std::string::npos;
+        }
+        if (!rumour || approach(trip) != 1)
+        {
+            return false;
+        }
+        heal(*party);
+        visit(town, party, 7, 7, disguised);
+        check(town.script_variable(por::EclAddress{0x4AB0}) == 254 && approach(trip) == 254,
+              "Waiting out the auction learns what is sold: the mission is done");
+        // The robed orc greets a disguised party and names a meeting.
+        heal(*party);
+        walk_to(town, party, 13, 8, disguised);
+        step(town, party, 1, disguised);
+        check(town.script_variable(por::EclAddress{0x4A38}) == 1,
+              "The robed orc recruits the party and names a meeting in two hours");
+        // Out of the shrine, three hours, then in again for the meeting.
+        walk_to(town, party, 13, 8, disguised);
+        party->advance_time(std::chrono::hours(3));
+        heal(*party);
+        const auto fought = fights_started.size();
+        step(town, party, 1, disguised);
+        check(fights_started.size() > fought && town.script_variable(por::EclAddress{0x4A38}) == 2,
+              "At the meeting the creatures gathered there test the party's loyalty on it");
+        return true;
+    };
+    bool disguised = false;
+    for (std::uint32_t seed = 1; seed <= 10 && !disguised; ++seed)
+    {
+        disguised = disguised_visit(seed);
+    }
+    check(disguised, "On some seed a disguised party overhears a rumour before a fight");
+    // Sneaking: the crowd always notices a sneaking party at the auction,
+    // which is cancelled; with no roaming group met this visit, a fresh plaza
+    // group attacks (PODOL-1).
+    const auto sneaking_visit = [&](std::uint32_t seed)
+    {
+        auto trip = commissioned(seed);
+        auto &[party, town] = trip;
+        const auto sneaking =
+            prefer({"SNEAK, REMAINING UNSEEN", "HAUGHTY", "Fight", "MOVE IN CLOSER"});
+        enter_podol(trip, sneaking);
+        step(town, party, 3, sneaking);
+        const auto fought = fights_started.size();
+        heal(*party);
+        visit(town, party, 7, 7, sneaking);
+        // Only the auction's own fight counts: a roaming group met on the way
+        // blows the party's cover before it gets there.
+        if (fights_started.size() != fought + 1 || fights_started.back().pose.x != 7)
+        {
+            return false;
+        }
+        check(town.script_diagnostics().empty() &&
+                  town.script_variable(por::EclAddress{0x4AB0}) == 254,
+              "The cancelled auction's crowd, a fresh plaza group, attacks the party");
+        return true;
+    };
+    bool cancelled = false;
+    for (std::uint32_t seed = 1; seed <= 10 && !cancelled; ++seed)
+    {
+        cancelled = sneaking_visit(seed);
+    }
+    check(cancelled, "On some seed a sneaking party reaches the auction unseen");
+}
+
 // Podol Plaza (docs/audits/podol-plaza.md), off the council's mission:
 // entered by Kuto's Well's west edge, its exits to areas not in the game yet
 // refused, a roaming group met on the plaza, the robed orc fought for his holy
@@ -2052,20 +2190,10 @@ void podol_plaza(Expedition &trip, const std::filesystem::path &folder,
         }
     }
     heal(*party);
-    unsigned edge = 16;
-    for (unsigned y = 0; y < 16 && edge == 16; ++y)
-    {
-        const auto &cell = town.map().at(0, y);
-        if (!cell.walls[3] || cell.doors[3] == 1)
-        {
-            edge = y;
-        }
-    }
-    check(edge < 16, "Kuto's Well has a west way out");
-    walk_to(town, party, 0, edge, peaceful);
-    step(town, party, 3);
-    check(town.snapshot().area_id == 18 && town.snapshot().script_id == 18,
-          "Leaving Kuto's Well westward enters Podol Plaza");
+    const auto kuto = folder / "kutos-well-level-4.ogs";
+    write_campaign_file(kuto, encode_campaign(*party, &town, campaign_asset_identity(directory)));
+    podol_mission(kuto, directory);
+    enter_podol(trip);
     const auto save = folder / "podol-plaza.ogs";
     write_campaign_file(save, encode_campaign(*party, &town, campaign_asset_identity(directory)));
     check(load_expedition(save, directory).town.snapshot().area_id == 18,

@@ -16,6 +16,11 @@
 namespace opengold
 {
 template <bool Reading> struct SaveCodec;
+
+namespace test
+{
+struct TourAccess;
+}
 }
 
 namespace opengold::por
@@ -291,6 +296,8 @@ class RolfTourSession
     RolfTourSession(const RolfTourSession &) = default;
     RolfTourSession &operator=(const RolfTourSession &) = default;
     template <bool Reading> friend struct opengold::SaveCodec;
+    // Tests set a flag the route cannot reach through the game (tests/tour_access.h).
+    friend struct opengold::test::TourAccess;
     // Clears everything one run of the tour builds up; restart() also reloads
     // the town's map and a fresh script machine.
     void reset_run();
@@ -422,6 +429,10 @@ class RolfTourSession
     std::optional<unsigned> monster_picture_id_; // SETUP MONSTER's PIC record.
     // CALL 0x8001 before COMBAT: the member WHO chose fights alone.
     bool duel_{};
+    // Whether Podol Plaza's script rolled a roaming group since the party
+    // entered the area; a cancelled auction needs one (PODOL-1).
+    bool plaza_group_rolled_{};
+    void roll_plaza_group(const EclRequest &request, EclHostReply &reply);
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
     unsigned encounter_challenge_{opengold::default_encounter_challenge};

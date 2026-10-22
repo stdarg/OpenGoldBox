@@ -100,6 +100,8 @@ struct EclMemoryWrite
 struct EclHostReply
 {
     std::vector<EclMemoryWrite> writes;
+    // Text cells the host sets, such as a monster group's name.
+    std::vector<std::pair<EclAddress, std::string>> strings;
     // FIND ITEM must return its condition flags; other host operations preserve them.
     std::optional<EclConditions> conditions;
     // Required only for NEW ECL. The host resolves the current disk/script ID.

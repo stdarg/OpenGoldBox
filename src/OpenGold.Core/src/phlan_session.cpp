@@ -29,6 +29,7 @@ void RolfTourSession::change_area(unsigned id)
     }
     visited_areas_[current_area_] = snapshot_.visited;
     seen_areas_[current_area_] = snapshot_.seen;
+    plaza_group_rolled_ = false;
     current_area_ = id;
     snapshot_.area_id = id;
     map_ = *resource.map;
@@ -1799,15 +1800,31 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             break;
         }
+        // A cancelled auction meets the plaza group rolled last; when none was
+        // rolled this visit, one is rolled as the auction opens (PODOL-1).
+        if (current_script_ == 18 && arg(0) == 16 && !plaza_group_rolled_)
+        {
+            roll_plaza_group(request, reply);
+        }
         const auto head_id = machine_.variable(EclAddress{0x6DE1});
         if (head_id == 255)
         {
             const auto found = area_resources().pictures.find(arg(0));
-            if (found == area_resources().pictures.end())
+            const auto animation = area_resources().animations.find(arg(0));
+            if (found != area_resources().pictures.end())
+            {
+                picture_ = found->second;
+            }
+            else if (animation != area_resources().animations.end() && !animation->second.empty())
+            {
+                // Podol's auctioneer (PIC1 16) is an animation; its first frame
+                // stands for it.
+                picture_ = animation->second.front().image;
+            }
+            else
             {
                 throw EclError("Unsupported town picture " + std::to_string(arg(0)));
             }
-            picture_ = found->second;
         }
         else
         {
@@ -1903,6 +1920,11 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         show_encounter_menu();
         return true;
     case 29:
+        // Podol Plaza's group roll asks the party's strength (ECL1:18 0xA00D).
+        if (current_script_ == 18 && request.instruction && request.instruction->address == 0xA00D)
+        {
+            plaza_group_rolled_ = true;
+        }
         read_character();
         reply = character_reply(selected_character_);
         reply.writes.push_back(
@@ -2423,6 +2445,47 @@ bool RolfTourSession::choose_at_hall(std::size_t choice)
     }
     }
     return false;
+}
+
+// Podol Plaza's roaming-group roll (ECL1:18 0x9F86), from the script's own
+// tables: the group's kind, record, size, leaders, speed, parley modifier and
+// name, as the script would have rolled them.
+void RolfTourSession::roll_plaza_group(const EclRequest &request, EclHostReply &reply)
+{
+    const auto table = [&](std::uint16_t base, unsigned index) -> unsigned
+    {
+        return machine_.variable(EclAddress{static_cast<std::uint16_t>(base + index)});
+    };
+    const unsigned pick = machine_.host_random(request.id, 9);
+    const unsigned kind = table(0xB260, pick);
+    constexpr std::array<std::string_view, 4> names{" GOBLINS", " ORCS", " HOBGOBLINS", " OGRES"};
+    const auto name = names[pick < 4 ? 0 : pick < 7 ? 1 : pick < 8 ? 2 : 3];
+    unsigned size = party_strength(*campaign_) / std::max(1u, table(0xB275, kind)) / 3;
+    size += machine_.host_random(request.id, size + 1);
+    // A mission party whose cover is blown meets twice as many.
+    if (machine_.variable(EclAddress{0x4A34}) == 64 && machine_.variable(EclAddress{0x4A35}) == 255)
+    {
+        size *= 2;
+    }
+    size = std::max(size, 2u);
+    unsigned leaders = 0;
+    if (size >= table(0xB287, kind))
+    {
+        leaders = table(0xB28D, kind);
+        size = std::min(size, 50u);
+    }
+    for (const auto &[address, value] :
+         std::array<std::pair<std::uint16_t, unsigned>, 6>{{{0x4A01, size},
+                                                            {0x4A02, table(0xB269, kind)},
+                                                            {0x4A03, leaders},
+                                                            {0x4A04, kind},
+                                                            {0x4A08, table(0xB26F, kind)},
+                                                            {0x4A0B, table(0xB27B, kind)}}})
+    {
+        reply.writes.push_back({EclAddress{address}, static_cast<std::uint16_t>(value)});
+    }
+    reply.strings.emplace_back(EclAddress{0x9800}, std::string(name));
+    plaza_group_rolled_ = true;
 }
 
 void RolfTourSession::open_temple(std::uint64_t request)
