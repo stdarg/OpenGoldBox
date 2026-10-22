@@ -18806,9 +18806,7 @@ detail::RollModifiers Session::attack_modifiers(const Actor &a, const Actor &tar
         result.disadvantage = true;
     }
     if (detail::sapped(a.effects) ||
-        ((detail::has_effect(a.effects, detail::EffectKind::poisoned) ||
-          detail::has_effect(a.effects, detail::EffectKind::contagion) ||
-          detail::has_effect(a.effects, detail::EffectKind::envenomed)) &&
+        (has_condition(a, "poisoned") &&
          !detail::has_effect(a.effects, detail::EffectKind::feasted)) ||
         detail::has_effect(a.effects, detail::EffectKind::scorched) || !fears_in_sight(a).empty())
     {

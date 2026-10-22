@@ -382,6 +382,57 @@ void fast_hands()
           "Without Fast Hands a wand takes the Action");
 }
 
+// The Wand of Paralysis's target repeats a Constitution save, not a Wisdom
+// one, at the end of each of its turns.
+void paralysis_saves()
+{
+    const auto rules = module();
+    const auto profile =
+        rules->character_profile(fighter().sheet(), std::vector<std::string>{"wand:paralysis"})
+            .data;
+    for (std::uint64_t seed = 1; seed < 80; ++seed)
+    {
+        Participant p{1, "campaign-character", "Fighter", Side::party, {1, 1}, profile};
+        p.inventory.push_back({7, "wand:paralysis", 23});
+        auto c = rules->create({{12, 6, std::vector<Terrain>(72)},
+                                {p, {2, "vanguard", "Foe", Side::opposition, {6, 1}}}},
+                               seed);
+        test::keep_initiative(*c);
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
+            check(submit(*c, "end"), "End the foe's turn");
+        }
+        check(submit(*c, "wand_of_paralysis_item", 2), "Use the wand");
+        if (!logged(*c, "Foe is Paralyzed."))
+        {
+            continue;
+        }
+        const auto log = c->snapshot().log();
+        const auto saves_before =
+            std::count_if(log.begin(), log.end(),
+                          [](const auto &line)
+                          {
+                              return line.starts_with("Foe Constitution save:");
+                          });
+        check(submit(*c, "end"), "The fighter ends its turn");
+        for (unsigned turns = 0; c->snapshot().actor != 1 && turns < 4; ++turns)
+        {
+            check(submit(*c, "end"), "Pass the foe's turn");
+        }
+        const auto after = c->snapshot().log();
+        const auto saves_after =
+            std::count_if(after.begin(), after.end(),
+                          [](const auto &line)
+                          {
+                              return line.starts_with("Foe Constitution save:");
+                          });
+        check(saves_after == saves_before + 1 && !logged(*c, "Foe Wisdom save:"),
+              "The paralyzed foe repeats a Constitution save at the end of its turn");
+        return;
+    }
+    throw std::runtime_error("No seed's wand paralyzes the foe");
+}
+
 // Use Magic Device (Thief 13): a 6 on 1d6 keeps a wand's spent charge.
 void use_magic_device()
 {
@@ -643,6 +694,7 @@ int main()
         javelin();
         fast_hands();
         quick_items();
+        paralysis_saves();
         use_magic_device();
         manual();
         drinking_outside_combat();

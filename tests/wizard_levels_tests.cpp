@@ -1458,6 +1458,25 @@ void eyebite_checks()
               "A Magic action targets another creature");
     }
     check(asleep, "A seed where the foe falls asleep");
+    // A sickened creature is Poisoned: Disadvantage on its attack rolls.
+    for (std::uint64_t seed = 1; seed < 40; ++seed)
+    {
+        auto c = field(*rules, with_spells(wizard(11), {"eyebite"}),
+                       {{98, "brute", "Foe", Side::opposition, {2, 2}}}, seed);
+        check(submit(*c, "eyebite_sickened", 98), "Eyebite");
+        if (!logged(*c, "Foe is sickened."))
+        {
+            continue;
+        }
+        check(submit(*c, "end"), "End the turn");
+        check(c->snapshot().actor == 98 && submit(*c, "melee", 1), "The sickened foe attacks");
+        // The Wizard declines any Reaction the attack offers.
+        submit(*c, "decline");
+        check(logged(*c, "Foe -> Wizard: d20") && logged(*c, " (disadvantage)"),
+              "Its attack roll has Disadvantage");
+        return;
+    }
+    throw std::runtime_error("No seed sickens the foe");
 }
 
 void flesh_and_dance_checks()

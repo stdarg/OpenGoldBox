@@ -1015,11 +1015,12 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
                      e.kind == EffectKind::envenomed) &&
                     !e.save_in_ms)
                 {
-                    // Blindness, Ray of Enfeeblement, Knock Out and Cunning Strike's Poison
-                    // repeat a Constitution save, the others a Wisdom one, at the end of each
-                    // of the target's turns.
+                    // Blindness, the Wand of Paralysis, Ray of Enfeeblement, Knock Out and
+                    // Cunning Strike's Poison repeat a Constitution save, the others a Wisdom
+                    // one, at the end of each of the target's turns.
                     const auto ability =
-                        e.kind == EffectKind::blindness || e.kind == EffectKind::enfeebled ||
+                        e.kind == EffectKind::blindness || e.kind == EffectKind::paralysis_ray ||
+                                e.kind == EffectKind::enfeebled ||
                                 e.kind == EffectKind::knocked_out || e.kind == EffectKind::envenomed
                             ? Ability::constitution
                             : Ability::wisdom;
