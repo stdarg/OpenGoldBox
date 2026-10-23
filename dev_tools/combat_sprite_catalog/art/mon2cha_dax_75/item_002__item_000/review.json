@@ -1,0 +1,32 @@
+{
+  "action_sha256": "b1b9723f1859b86e9a9fb6d4d298e956d53e4e063acb6325cd868976ec9bc990",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon2cha_dax_75/item_002__item_000/action.png",
+    "ready": "art/mon2cha_dax_75/item_002__item_000/ready.png"
+  },
+  "metadata_sha256": "56dd525e79e5ea946f42bc9247a90adc23debfea87ac51cb99ff5495f58f59d1",
+  "notes": "Reviewed exact MON1CHA.DAX:75 plate-armored Long sword +1 and shield pair at native 128 px and in catalog. Head-to-foot height is about 86 source pixels, filling the 5-foot Normal tile at 1.45x preview; planted boots match exactly between poses. Reused without editing because description and all saved equipment match this archive record.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "7716fcdbe82761b96c4f7163ea8f6e32c02b67b412418d34b45a6658a78a2e39",
+  "reviewed_at": "2026-10-23T04:02:39.458166+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON2CHA.DAX:75",
+  "specification": "bipedal-v1",
+  "variant_id": "item_002__item_000",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
