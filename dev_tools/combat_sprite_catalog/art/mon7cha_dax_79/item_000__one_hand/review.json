@@ -1,0 +1,32 @@
+{
+  "action_sha256": "2448aeaadc77400d7fc5df196d984f368818d6dc051e47359c34451cb499062e",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_79/item_000__one_hand/action.png",
+    "ready": "art/mon7cha_dax_79/item_000__one_hand/ready.png"
+  },
+  "metadata_sha256": "9f824443278d242951210722e3eeff4b9ee135bd68ae053866b915e5e73341db",
+  "notes": "Approved pose guide and independently generated Diane: distinct human woman in blue and green cloth, saved dagger only. Ready dagger raised, action nearly completed rightward stab. Both frames exported at shared five-foot scale; action retains exact ready boot region. Reviewed full transparent PNGs side by side and alternating at combat size; only raised ready dagger crosses top and attacking dagger crosses side.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "fb826dba4334b7a30b5bbff082ae2eb0e73a4637eaef05546febef33a17291ac",
+  "reviewed_at": "2026-10-23T13:00:27.704776+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON7CHA.DAX:79",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
