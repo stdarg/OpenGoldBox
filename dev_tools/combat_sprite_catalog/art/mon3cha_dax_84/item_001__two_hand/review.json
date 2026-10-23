@@ -1,15 +1,15 @@
 {
-  "action_sha256": "0ff7c0cd0f63e2885f73742c68dc0b0a6da9823c5a82a8cdc223b53d25841ff3",
+  "action_sha256": "7ca980182c67600d40fa4c3f19cb338ff9ea06caface57f2c2c6099d397e085d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_84/item_001__two_hand/action.png",
     "ready": "art/mon3cha_dax_84/item_001__two_hand/ready.png"
   },
-  "metadata_sha256": "718d97800e4f14190911c193d8d17dc350b573258a273a87a9975afdc92939b3",
-  "notes": "Rejected first ready/action pair for substantial foot shift. Final raised two-hand sword guard derived from late-strike action at fixed boot positions. Chain armor +1, sword +2, no shield. Reviewed alternating in catalog.",
+  "metadata_sha256": "4c12ba69ba7f22ba964a5c2433017ac7598dacfa70eab65687cc8d5b2102c415",
+  "notes": "Height-corrected from this record's previously approved newly generated two-handed-sword pair. Shared vertical transform makes head-to-planted-feet about 88 native pixels, full 5-foot Normal body at 1.45 catalog scale. Shared horizontal right-side compression keeps arm/body in 1x1; ready sword alone rises above top. Bottom 20 action rows taken from ready to preserve exact foot pixels. Both poses inspected on white at 128px and alternating on the fixed catalog grid. Chain armor +1, sword +2, no shield. Other saved javelin set separately reviewed.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "affd67229172e7950042f3bcb70e9801b0be5bc48acecd71bd592bbb203e5b5d",
-  "reviewed_at": "2026-10-19T05:37:01.212451+00:00",
+  "ready_sha256": "5cbd6dee7b00809456b9c041f64304d30c95eab4b201392af5ffe4f3902e0f39",
+  "reviewed_at": "2026-10-23T05:35:22.701728+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:84",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
