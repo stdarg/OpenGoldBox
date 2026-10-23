@@ -35,6 +35,8 @@ ask the user for its ready/action behavior before generating it.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
+For a spellcaster whose saved wand is classified as gear, show that wand in the
+default casting pair without changing its equipment classification.
 Do not add a shield to a two-handed or ranged setup. Preserve the character's
 identity, clothing, colors, handedness and equipment across the pair and all its
 weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
@@ -78,15 +80,13 @@ or frames. If the body cannot fit at the correct height, resolve that conflict
 before generating; never solve it by shrinking only one frame.
 
 LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
-against regular creatures of the same kind in the same game archive. In both
-poses and every weapon set, the leader must be modestly taller and broader from
-planted feet to head, excluding weapons, helmets, horns and raised arms. Rank
-ornament alone does not satisfy this rule. Keep its saved humanoid height tier
-and game-derived sprite_size unchanged. Do not shrink a correctly sized 5-foot
-normal creature to manufacture room for its leader. If the saved footprint
-cannot contain both the required normal height and a taller leader, flag that
-conflict for review before generation; do not silently overflow the body or
-independently shrink one animation frame.
+against regular creatures of the same kind in the same game archive. Make the
+leader broader and more impressive in both poses and every weapon set, with
+richer treatment of its saved armor and weapons. A 1 x 1 Normal leader and its
+regular counterpart both have 5-foot bodies: do not shrink the regular figure
+or push the leader's head above the square. Where the saved tier and footprint
+leave room, the leader may also be modestly taller. Keep the game-derived
+sprite_size unchanged and do not invent gameplay gear to signal rank.
 
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently

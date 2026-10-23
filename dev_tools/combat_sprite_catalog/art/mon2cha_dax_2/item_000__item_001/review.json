@@ -1,16 +1,16 @@
 {
-  "action_sha256": "94ddecf483326f01d4121d6bb480f7d13775124a5d250f67d270b4e58a140254",
+  "action_sha256": "b96ae85f729a7c9d84a084e67835b7a060ae47cf60e228af2a2edbe3898db168",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_2/item_000__item_001/action.png",
     "ready": "art/mon2cha_dax_2/item_000__item_001/ready.png"
   },
   "metadata_sha256": "d2ebce5a63e3da3e77d6ece0e1e8b2718dcec1ffc87fcdf5bc4aba70916f7f82",
-  "notes": "Re-reviewed unchanged accepted goblin pair under revised raised-ready-weapon rule. Exact-coordinate overlay and one-second catalog preview show fixed feet; body ~3.5 ft, ready sword within footprint.",
+  "notes": "Generated new Guard identity and attack from approved guide. Both frames share one canvas transform; action upper arm/sword were composited over the ready lower body to preserve exact planted feet. Inspected native pair side by side and one-second alternation in catalog fixed 1x1 grid. Foot-to-head body is about 90/128 px, consistent with saved 3.5 ft and shorter than MON2 Goblin Leader 4.0 ft; Leader is broader and more ornate. Sword, shield, and studded armor match the complete saved gear.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "2759baa1e8fdc6311626f05f0e38bfb785a79740ce23aa13ed49877dff6a6af0",
-  "reviewed_at": "2026-10-23T01:04:52.551115+00:00",
-  "reviewer": "Codex",
+  "ready_sha256": "591d94bd12247ad8b690d84d4c629a9302514581f4d00aec9176944789069154",
+  "reviewed_at": "2026-10-23T03:25:13+00:00",
+  "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:2",
   "specification": "bipedal-v1",
   "variant_id": "item_000__item_001",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "25c1b13954a8f94b31cd46da533e6970c56d8c53d89f3a7be98d9443fde33563"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
