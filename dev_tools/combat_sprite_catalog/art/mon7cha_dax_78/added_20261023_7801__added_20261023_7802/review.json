@@ -1,0 +1,32 @@
+{
+  "action_sha256": "f23ee1f42d9e4a293f71ea2c642039ad5984e3d89f1e4076b999071c009dd9b8",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_78/added_20261023_7801__added_20261023_7802/action.png",
+    "ready": "art/mon7cha_dax_78/added_20261023_7801__added_20261023_7802/ready.png"
+  },
+  "metadata_sha256": "a487f320a3262df79bc2e773790e3adfa04a26a56489b65c63de68ddcde7e888",
+  "notes": "Alternated ready/action at combat size: same five-foot body, planted boot x/y, blue tabard, chain mail, plain holy symbol and shield. Mace raised in ready, lowered near the end of a strike in action. Ready overhead weapon overhang only; body, shield and feet within selected square.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "cfdda85da6e2835337e18af090e63f12c3000017a52b8d32eb12e5e19a2aff2d",
+  "reviewed_at": "2026-10-23T15:18:49Z",
+  "reviewer": "Codex visual review in combat catalog",
+  "source_key": "MON7CHA.DAX:78",
+  "specification": "bipedal-v1",
+  "variant_id": "added_20261023_7801__added_20261023_7802",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
