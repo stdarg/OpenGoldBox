@@ -1,0 +1,32 @@
+{
+  "action_sha256": "e790a09d122886a8938718d57cb4d3015e18452878ec21f15e9ce7c66dc5cb3a",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon7cha_dax_77/item_001__ranged/action.png",
+    "ready": "art/mon7cha_dax_77/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "542f972c762f2a9cb09f8684ce88f6423d9c6345f78b0387697a3071cc6aa03a",
+  "notes": "Current inventory is leather armor and one ranged Wand of Magic Missiles, one set. Ready charges wand raised above head; only wand/glow cross top line. Action wand points screen right after release with no orb retained; only wand crosses right line. Same wand hand, head/body/boot scale and anchored feet in alternating catalog. No original-game art used as generation reference.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "f55ad0363e188c739f0831d49c0904c4c3dfb7c973321e17938bee7feeb1ba6b",
+  "reviewed_at": "2026-10-23T13:30:19+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON7CHA.DAX:77",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
