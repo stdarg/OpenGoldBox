@@ -48,11 +48,12 @@ on 2026-10-22:
   any combat sprite in the square above. Both images still keep every visible
   pixel inside their 128 × 128 PNG canvas with transparent margin.
 - For a leader, compare every pose and weapon set against the regular creature
-  of its kind in the same archive. Make the leader's body modestly taller and
-  broader, not just more ornate or more heavily armed. Its game-derived tile
-  footprint and humanoid height tier remain unchanged. If a correctly sized
-  5-foot regular figure leaves no height for a taller leader in the saved
-  footprint, record the conflict for review before generating that pair.
+  of its kind in the same archive. Make the leader broader and visually more
+  impressive, with richer treatment of its saved armor and weapons. Within a
+  1 × 1 Normal footprint, both regular and leader bodies stand 5 feet tall;
+  do not shrink the regular creature or push the leader's head above its square.
+  Where the saved height tier and footprint leave room, a leader may also be
+  modestly taller. Do not invent gameplay equipment to signal rank.
 
 The independently generated [pose guide](../art/pose-guide/README.md) was
 **approved by the user on 2026-10-17** for production generation. Acceptance
@@ -76,6 +77,12 @@ change. The fixed-foot rule below is this project's specific requirement.
 - Use ready as the action edit target. The planted feet must remain at the same
   **x and y pixel positions**. Keep the hips and most of the torso registered;
   animate the weapon and arms, with only a modest upper-body follow-through.
+- If a generated action moves the base, a deterministic pixel composite may
+  transfer its attacking arm and weapon onto the ready figure while retaining
+  the ready lower body and planted feet at their exact pixels. Use only newly
+  generated character art for this composite. Reject a splice with doubled
+  gear, a visible seam, displaced head/body height, or an inconsistent limb.
+  Apply any final canvas translation or scale equally to both frames.
 - Do not center each silhouette independently, shift the whole cutout, crop to
   its changing bounds, or fit either pose separately into the canvas. Matching
   only the lowest occupied row does not prevent a horizontal shuffle.
@@ -119,6 +126,8 @@ set**. A currently selected or readied set does not limit generation coverage.
 
 Resolve conflicts between the description and equipment with the user. For an
 unarmed, magical or unusual attack, ask for the pose behavior if unspecified.
+A saved wand classified as gear remains gear; show it in a spellcaster's
+default casting pair when present rather than silently omitting it.
 
 From the repository root, in bash on macOS:
 

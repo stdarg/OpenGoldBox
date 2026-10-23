@@ -1,16 +1,16 @@
 {
-  "action_sha256": "91b0a9ca10cf2b61e28e708b0f57afb5cbdd0ec3859ed0b861e51d99b49490d4",
+  "action_sha256": "715410bb5ac999c33c4db44aaeafd07d9c362f80f5f48d71200ce21ae1f3025c",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_25/added_1868544393__two_hand/action.png",
     "ready": "art/mon2cha_dax_25/added_1868544393__two_hand/ready.png"
   },
   "metadata_sha256": "0dba17e0ef4dc410e22afcc070b6d4aebb028b998ce447f0d91c22b53beb45e3",
-  "notes": "Previously reviewed independent character art re-exported at a shared frame scale for the saved height tier. Both poses inspected side by side and in the catalog one-second animation at combat size; planted feet and body checked against fixed grid. Action weapon may cross the dotted footprint border only while the body stays within it. Exact exported hashes reviewed.",
+  "notes": "Action attack arm/weapon composited from newly generated action over exact ready lower body. Inspected enlarged and alternating in catalog; feet/legs remain registered, normal body fills 5-foot tile, raised ready weapon alone crosses top tile line, action weapon alone crosses right tile line. Original game artwork was not a generation reference. Re-reviewed unchanged final image hashes under revised leader and saved-wand instructions.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "68de4b35486be3bd121e4dfba023d8d4f510e556f8ee98d4a4cf6f39cf9aa9be",
-  "reviewed_at": "2026-10-21T21:50:52.956871+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "f979e131420a44b5ad564cf365bc46267e6ca4a2a846280620a40bee3e097c85",
+  "reviewed_at": "2026-10-23T03:03:36+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:25",
   "specification": "bipedal-v1",
   "variant_id": "added_1868544393__two_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

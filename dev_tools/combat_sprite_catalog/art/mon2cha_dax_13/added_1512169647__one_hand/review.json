@@ -1,16 +1,16 @@
 {
-  "action_sha256": "0f9f4d599d94531c79a00a41735c9280be2ea2a60e97b7c7dc2ab06e9616cacf",
+  "action_sha256": "7b88b7c44c0d41c9f7684b4adb29ef4cc3f9f66c339392a7a72b292dd02bfe03",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_13/added_1512169647__one_hand/action.png",
     "ready": "art/mon2cha_dax_13/added_1512169647__one_hand/ready.png"
   },
   "metadata_sha256": "5df57f1a404b7bfe9dd0dc8f2505d7b991e66af0af51a16552327d017f2224ad",
-  "notes": "Regenerated ordinary orc with scimitar and belt scroll, smaller than MON2 orc leaders; first action rejected for stance shift. Ready/action checked at 128px and fixed catalog zoom; both fit 1x1 with stable planted base.",
+  "notes": "Action attack arm/weapon composited from newly generated action over exact ready lower body. Inspected enlarged and alternating in catalog; feet/legs remain registered, normal body fills 5-foot tile, raised ready weapon alone crosses top tile line, action weapon alone crosses right tile line. Original game artwork was not a generation reference. Re-reviewed unchanged final image hashes under revised leader and saved-wand instructions.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "5d2318c82316d7a26de3c2f4e43e19a0379ff7c0d6a5fda5e4b6999025a4a60a",
-  "reviewed_at": "2026-10-21T02:50:59.154400+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "7164199fb75da3fdffeb992398ca9ad39638a0584299432bc98c4ac045f484f5",
+  "reviewed_at": "2026-10-23T03:03:35+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:13",
   "specification": "bipedal-v1",
   "variant_id": "added_1512169647__one_hand",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
