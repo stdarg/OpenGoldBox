@@ -1,15 +1,15 @@
 {
-  "action_sha256": "53c1e1e2c478b0ec971166806cf36184fb7b5ca2a0961579a797d627a714f316",
+  "action_sha256": "909baa2cb9130e74e45fd41425481ebcaef10428d97f19fa1a1ef569cee3a001",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon6cha_dax_86/default/action.png",
     "ready": "art/mon6cha_dax_86/default/ready.png"
   },
   "metadata_sha256": "ab020bbc643a488caab007a0bdfa057979d52ac945644e6d6f332dd2458743c6",
-  "notes": "Exact copy of reviewed MON5CHA.DAX:86 full-height Dazid pair. Same saved description and all gear. Ready/action reviewed natively and alternating in catalog: fixed boots, wand lightning moves from raised charge to rightward release, ready-only top overflow, action fits tile.",
+  "notes": "Approved independently generated AL-HYAM DAZID wand pair corrected with identical nearest-neighbor vertical transform in both poses: head source row 36 to 29, boots source row 119 to 115. Bottom 22 rows copied from ready to action to make planted feet pixel-identical. All saved gear retained: Wand of Lightning, Ring of Fire Resistance, Bracers AC 3. Wand raised with lightning in ready; wand extended and lightning cast in action. Reviewed both 128 px images and one-second catalog alternation. Normal body fits 1 x 1 tile; only charged wand crosses top in ready. CPIC6:14 is exact one-creature script-linked icon for MON6:86.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "b18e8c7f034659b854c2a19ad371d14bef9a9dbdf45d13ec3c53c2fd2a801aff",
-  "reviewed_at": "2026-10-23T04:29:18.567786+00:00",
+  "ready_sha256": "abfe960e2c42a4cba2176590e8cb62dc378dac1244bd46371ff6934b18b347a7",
+  "reviewed_at": "2026-10-23T06:36:17.396671+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON6CHA.DAX:86",
   "specification": "bipedal-v1",

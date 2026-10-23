@@ -211,5 +211,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-ART REUSE: Exact matching named Al-Hyam Dazid record in MON5CHA.DAX:86 has identical description, all saved gear, default casting set, Normal height and 1x1 footprint. Reuse its newly generated, hash-reviewed action art unchanged. Wand remains classified gear and visible, with ring and bracers. No original game art used as reference.

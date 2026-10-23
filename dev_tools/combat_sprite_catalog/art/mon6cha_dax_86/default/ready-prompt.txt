@@ -209,5 +209,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-ART REUSE: Exact matching named Al-Hyam Dazid record in MON5CHA.DAX:86 has identical description, all saved gear, default casting set, Normal height and 1x1 footprint. Reuse its newly generated, hash-reviewed ready art unchanged. Wand remains classified gear and visible, with ring and bracers. No original game art used as reference.
