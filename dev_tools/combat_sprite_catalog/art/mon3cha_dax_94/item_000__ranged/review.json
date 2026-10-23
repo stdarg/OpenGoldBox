@@ -1,15 +1,15 @@
 {
-  "action_sha256": "8c097deef98e50b89a092daefdc66c5ba4ceb30a48776ba9b53a33590e2be38f",
+  "action_sha256": "b16a363b3fac11bfb4eb0e2f7384d8506145e2fdad8c6884dc495c7dee32fe48",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_94/item_000__ranged/action.png",
     "ready": "art/mon3cha_dax_94/item_000__ranged/ready.png"
   },
   "metadata_sha256": "5f10566fe41ef42b484fba470a47835ec9dd2573991fddc80ba9462adddd1152",
-  "notes": "Exact copy of reviewed full-height MON2CHA.DAX:94 Wand of Magic Missiles ready/action pair. Same complete saved description and gear. Both frames reviewed at 128 px and alternating in catalog; ready glow alone crosses top, action fits tile, boots coincide.",
+  "notes": "Existing approved independently generated MON3 Level 3 MU wand pair height-corrected with the same piecewise nearest-neighbor row transform in both frames: head row 31 to 29, feet row 115 unchanged. Bottom 22 action rows copied from ready to make planted boots pixel-identical. Magic ready wand raised with glow above tile, action wand extended and blue missile released toward screen right. Reviewed both 128 px images and alternating fixed-grid catalog; body remains within 1 x 1, ready wand alone above top, action fits.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "a82c0688c6445624a87d21ac43f8c08ed0701080a680d17686636b5fbfe7112b",
-  "reviewed_at": "2026-10-23T04:16:48.327726+00:00",
+  "ready_sha256": "b050f9e38bb274d3249ad60873a655dd66fa17ee3802519436e611f96e1269c9",
+  "reviewed_at": "2026-10-23T06:32:43.487006+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:94",
   "specification": "bipedal-v1",

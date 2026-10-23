@@ -191,5 +191,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-ART REUSE: This archive record exactly matches MON2CHA.DAX:94 in description, all equipment, selected wand set, Normal height and 1 x 1 footprint. Reuse its approved newly generated action image byte for byte; no original-game art was supplied as a generation reference. The wand animation keeps a fixed foot anchor.
