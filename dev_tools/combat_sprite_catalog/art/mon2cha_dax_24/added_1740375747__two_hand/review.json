@@ -1,15 +1,15 @@
 {
-  "action_sha256": "8b069acd5320f4fc5eab1156c17da9aac2b766a4e4374c13194723bd77aab2ff",
+  "action_sha256": "2eacefd7c367d1f219a68f7da6bcbd9fe48bf85d6b196767e453c81627c43377",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_24/added_1740375747__two_hand/action.png",
     "ready": "art/mon2cha_dax_24/added_1740375747__two_hand/ready.png"
   },
-  "metadata_sha256": "1a8b7e57b4ffc81ec9048767b298521a1675a37b821b58e93714de388a9f6ac6",
-  "notes": "Both frames reviewed at 128 px and alternating in Godot catalog. Both feet, robe hem, body scale and head remain fixed; two hands tip the same staff forward for in-place casting. Ring +2 remains visible; no other weapons. User authorized natural in-place magical attacks.",
+  "metadata_sha256": "825cd7866bba60f3a4a305485969c5e246c53ec8e69f71c474a948c19157bce8",
+  "notes": "Height correction of previously approved independent generated art. The single saved Staff set and Ring of Protection +2 remain visible. Both poses uniformly nearest-neighbor enlarged 128->152 and identically positioned (-13,-7) so body head-to-feet is 88 pixels. Same planted feet and proportions in alternating catalog; ready staff alone crosses top, action staff alone crosses right. No original-game art used.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "434d83b656f9ea8e729f4afcf9a822ae7952d882dbeebcdf821d596cc530a1e8",
-  "reviewed_at": "2026-10-19T03:07:58.198353+00:00",
+  "ready_sha256": "4eb94b0f9015838e215edf8289b94b3c0ecea42c92a27849fdd0fe1d77a181f3",
+  "reviewed_at": "2026-10-23T13:56:18+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON2CHA.DAX:24",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
