@@ -1,15 +1,15 @@
 {
-  "action_sha256": "7ca980182c67600d40fa4c3f19cb338ff9ea06caface57f2c2c6099d397e085d",
+  "action_sha256": "f13f79715ed60e51598a1084ba156a48bbb138d9f28c9d83f8af6ecea6667cde",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_84/item_001__two_hand/action.png",
     "ready": "art/mon3cha_dax_84/item_001__two_hand/ready.png"
   },
   "metadata_sha256": "4c12ba69ba7f22ba964a5c2433017ac7598dacfa70eab65687cc8d5b2102c415",
-  "notes": "Height-corrected from this record's previously approved newly generated two-handed-sword pair. Shared vertical transform makes head-to-planted-feet about 88 native pixels, full 5-foot Normal body at 1.45 catalog scale. Shared horizontal right-side compression keeps arm/body in 1x1; ready sword alone rises above top. Bottom 20 action rows taken from ready to preserve exact foot pixels. Both poses inspected on white at 128px and alternating on the fixed catalog grid. Chain armor +1, sword +2, no shield. Other saved javelin set separately reviewed.",
+  "notes": "Approved independent two-handed-sword pair vertically corrected in both poses using same nearest-neighbor row transform: original head row 27 to 23, planted foot row 110 unchanged, giving full Normal 5-foot body height. Bottom 24 action rows copied from ready for exact boots. Sword held by two hands raised in ready, near-finished strike in action. Reviewed natively and alternating in catalog with game-derived 1 x 1 footprint; only sword crosses top in ready and action weapon may cross boundary. Javelin pair reviewed for identity and size.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "5cbd6dee7b00809456b9c041f64304d30c95eab4b201392af5ffe4f3902e0f39",
-  "reviewed_at": "2026-10-23T05:35:22.701728+00:00",
+  "ready_sha256": "d4fe4417928c17c3c9173cf8fac7974d1eb5e16c4d02124d6cbf52c5e111260e",
+  "reviewed_at": "2026-10-23T07:03:50.997006+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:84",
   "specification": "bipedal-v1",

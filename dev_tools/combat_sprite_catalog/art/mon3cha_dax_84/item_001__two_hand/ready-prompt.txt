@@ -200,6 +200,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-
-FINAL ART DIRECTION AND PROVENANCE: Height-corrected from this record's previously approved newly generated two-handed-sword pair. Shared vertical transform makes head-to-planted-feet about 88 native pixels, full 5-foot Normal body at 1.45 catalog scale. Shared horizontal right-side compression keeps arm/body in 1x1; ready sword alone rises above top. Bottom 20 action rows taken from ready to preserve exact foot pixels. Both poses inspected on white at 128px and alternating on the fixed catalog grid. Chain armor +1, sword +2, no shield. Other saved javelin set separately reviewed.

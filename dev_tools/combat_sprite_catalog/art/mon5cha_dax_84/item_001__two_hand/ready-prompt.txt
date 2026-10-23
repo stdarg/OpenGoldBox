@@ -200,6 +200,3 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
-
-
-FINAL ART DIRECTION AND PROVENANCE: Matching generic sixth-level fighter with exact same saved two-handed sword +2 and chain armor +1 as MON3:84. Uses that record's newly generated and height-corrected reviewed sword pair; no original game art reference. Full 5-foot body, ready sword alone above tile, late sword strike, exact planted feet. Reviewed this record independently alternating on fixed grid. Separate saved Javelin +1 classification remains unresolved for MON5 and this one-pair acceptance does not claim full record completion.

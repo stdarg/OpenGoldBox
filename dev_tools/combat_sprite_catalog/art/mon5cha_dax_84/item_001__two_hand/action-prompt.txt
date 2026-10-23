@@ -202,6 +202,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-
-FINAL ART DIRECTION AND PROVENANCE: Matching generic sixth-level fighter with exact same saved two-handed sword +2 and chain armor +1 as MON3:84. Uses that record's newly generated and height-corrected reviewed sword pair; no original game art reference. Full 5-foot body, ready sword alone above tile, late sword strike, exact planted feet. Reviewed this record independently alternating on fixed grid. Separate saved Javelin +1 classification remains unresolved for MON5 and this one-pair acceptance does not claim full record completion.

@@ -1,0 +1,32 @@
+{
+  "action_sha256": "1a9f2bc5e1ef6584efb561896157d9b73eac4bba387a202a4e66e6a0612f8901",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon5cha_dax_84/item_000__ranged/action.png",
+    "ready": "art/mon5cha_dax_84/item_000__ranged/ready.png"
+  },
+  "metadata_sha256": "6aa1050c702fbc7d5546892a90c2d828837156579ee858276ff28b7a0024b2ac",
+  "notes": "Exact copy of accepted MON3:84 ranged Javelin +1 ready/throw pair, following user decision to classify the same MON5 item as ranged. Same complete saved inventory, description, height tier and 1 x 1 footprint. Ready holds javelin poised, action is just after release with no weapon in hand. Both poses reviewed at 128 pixels and alternating catalog; full Normal body height and fixed feet. Same character identity and body scale as corrected two-handed-sword set.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "ec1edc2e8092037222660a9384964b276f381da7ea6ae32839dc990c6d0a93a6",
+  "reviewed_at": "2026-10-23T07:03:50.998019+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON5CHA.DAX:84",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
