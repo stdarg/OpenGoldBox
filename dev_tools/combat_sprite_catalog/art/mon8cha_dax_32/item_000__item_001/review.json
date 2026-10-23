@@ -1,0 +1,32 @@
+{
+  "action_sha256": "186d482727bd54466520dd2b327d62c99a245254ee5ecb7b8a27dcdb424e55f5",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon8cha_dax_32/item_000__item_001/action.png",
+    "ready": "art/mon8cha_dax_32/item_000__item_001/ready.png"
+  },
+  "metadata_sha256": "46f69c5da3e4cf11c3dd9929524b9c047383531b6396897ad93a02c6cf351cba",
+  "notes": "Newly generated independent Norris the Gray ready and action art. References: approved pose guide plus newly generated Norris ready image for action edit; no original game artwork. Shared 112 px nearest-neighbor export centered on 128 px, then same vertical full-height correction to both frames (top 33 rows to 31, middle 83 to 85). Action bottom 28 rows copied from ready for exact planted boots. Broad gray-haired human bandit leader in saved chain armor, gray cloak, long sword +1 and shield. Ready sword raised above tile only; action near-finished slash crosses right footprint line, allowed. Body and shield stay inside 1 x 1 square. Both 128 px frames and one-second catalog alternation visually reviewed. CPIC8:7 is exact one-creature linked icon for MON8:32.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "28b63be56425d318ec0c02e64b5b0f543d5a9d4c5c72584ecf7ad9cf223d5f3b",
+  "reviewed_at": "2026-10-23T06:43:27.543265+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON8CHA.DAX:32",
+  "specification": "bipedal-v1",
+  "variant_id": "item_000__item_001",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
