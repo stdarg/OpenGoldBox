@@ -1,15 +1,15 @@
 {
-  "action_sha256": "0f678e34b552a596232381c38fd2499e19367ac9e4feadde8e24b9c9e4c85e2e",
+  "action_sha256": "1989c8b6eaf5bd9637030081cad31533388a96880c59456603076258b4aed05e",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_85/item_001__two_hand/action.png",
     "ready": "art/mon3cha_dax_85/item_001__two_hand/ready.png"
   },
-  "metadata_sha256": "cd95c2c5b2e5b0bbd0f6b5f4f43d20c15836ac88ac580ef646274409939065ba",
-  "notes": "Rejected initial action because boots and body shifted. Final image edited from new approved ready and retains both plated boot contacts and body scale; both hands keep the greatsword, lowering it into a late strike. Ring and stowed potion visible. Both 128px frames reviewed alternating in catalog; approved pose guide only.",
+  "metadata_sha256": "94fdc09897f4026cfbd8bad2fbb46b2da4ad2b235767c8c8ed2b923fd64a10e6",
+  "notes": "Height correction from this fighter's previously approved newly generated pair (not original game art). Both frames received the same horizontal 1.10 transform and registered vertical mapping: original body rows 45-114 map to output rows 26-114 (about 88 output pixels / a full 5-foot Normal square at 1.45 preview scale); upper ready sword rows 12-44 map to rows 2-25. No frame-specific recentering. Same foot pixels in both poses. Plate +2, two-handed sword +2, Ring of Protection +3 and stowed healing potion reviewed. Ready sword alone crosses top; action sword alone crosses side. Inspected both alpha PNGs on white, at 128px, and one-second alternation against fixed grid in isolated catalog copy.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "d522932a5b4d0356ca4f72db06ec24454c784a9a7f7597c0f201a6b953753bd8",
-  "reviewed_at": "2026-10-19T03:35:40.293175+00:00",
+  "ready_sha256": "1a07eba05e15bfabdf23a3882bded78cce633d4e19cf8e691a765eacd0ee22ee",
+  "reviewed_at": "2026-10-23T05:23:15.734985+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:85",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
