@@ -1,0 +1,32 @@
+{
+  "action_sha256": "28175e72e0fdb9a501197a7a8f950471396e15a38dede7b1dfe972e687e703e2",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_118/default/action.png",
+    "ready": "art/mon6cha_dax_118/default/ready.png"
+  },
+  "metadata_sha256": "f0d2cc3ee783e285d61568b0ffa67bcb0dd6b6d270867c3cb3f69b2041879e69",
+  "notes": "Inspected 128px pair and one-second catalog preview at fixed 3x3 grid. Five-foot head-to-feet body fits 1x1; raised natural left claw alone exceeds top by 0.04 square in ready. Action right claw rake alone slightly crosses right line; all pixels stay on canvas. Both feet and non-attacking body retain exact ready pixels through deterministic composite of newly generated art. Exactly four arms, two legs, and no invented gear. Original game art never used as a generation or composite reference. Initial broad ready and shifted full-body action drafts rejected.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "cbd44af226d56ea5e2d6d978d513a9574826288fa01df37252c3b5f80f0aef7a",
+  "reviewed_at": "2026-10-23T08:59:52+00:00",
+  "reviewer": "Codex",
+  "source_key": "MON6CHA.DAX:118",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
