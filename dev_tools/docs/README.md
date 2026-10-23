@@ -17,6 +17,7 @@ are read from a local installation; they are not included here.
 - [Tile Art Viewer](tile-art-viewer.md): launch, catalog and map workflows, data, and checks.
 - [Replacement Art Creator](replacement-art-creator.md): briefs, source art, perspective exports, and checks.
 - [Combat Sprite Catalog](combat-sprite-catalog.md): metadata, sprite footprint and humanoid height, weapon sets, animation review, and checks.
+- [Humanoid height audit](humanoid-height-audit.md) and [per-record estimates](humanoid-height-estimates.csv): fixed-grid review of every humanoid combat sprite pair.
 - [Shop & Temple Manager](shop-manager.md): fixed locations, retail stock, temple services, prices, portraits, and checks.
 
 ## Detailed tool documents

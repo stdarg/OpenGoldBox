@@ -1,0 +1,176 @@
+record,name,humanoid_tier,art_target_feet,visual_estimate_feet,sprite_width_squares,sprite_height_squares,reviewed_ready_action_pairs,height_result
+cpic1_dax_11,Shared fighter combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic1_dax_16,4TH LVL FIGHTER combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic3_dax_11,"Shared combat icon: NOMAD, 4TH LVL FIGHTER, AIDES, 6TH LVL FIGHTER",normal,5,about 5,1,1,1,within saved height tier
+cpic3_dax_14,LEVEL 3 MU combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic3_dax_16,"Shared combat icon: AIDES, CORPORAL, 6TH LVL FIGHTER, 8TH LVL FIGHTER",normal,5,about 5,1,1,1,within saved height tier
+cpic4_dax_11,SKULLCRUSHER combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic4_dax_14,Shared spellcaster combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic4_dax_2,GRISHNAK combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic5_dax_11,"Shared combat icon: 4TH LVL FIGHTER, 6TH LVL FIGHTER, 6TH LVL FIGHTER, 8TH LVL FIGHTER, TYRANITHRAXUS",normal,5,about 5,1,1,1,within saved height tier
+cpic5_dax_12,"Shared combat icon: 1ST LVL THIEF, 6TH LVL THIEF",normal,5,about 5,1,1,1,within saved height tier
+cpic5_dax_13,"Shared combat icon: 1ST LVL CLERIC, LEVEL 5 CLERIC",normal,5,about 5,1,1,1,within saved height tier
+cpic5_dax_14,"Shared combat icon: AL-HYAM DAZID, ENVOY, GENHEERIS",normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_11,"Shared combat icon: 3RD LVL FIGHTER, 5TH LVL FIGHTER, 4TH LVL FIGHTER, AIDES, CORPORAL, GUARD, BUCCANEER",normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_12,Shared humanoid icon (thief / cleric / nomad),normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_13,Shared humanoid icon (cleric / thief / fighter),normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_14,AL-HYAM DAZID combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_15,DWARVEN FIGHTER combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_16,"Shared combat icon: CAPTAIN, COMMANDANT",normal,5,about 5,1,1,1,within saved height tier
+cpic6_dax_4,ORC combat icon (duplicate),normal,5,about 5,1,1,1,within saved height tier
+cpic7_dax_11,HASSAD combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic7_dax_12,NOMAD combat icon,normal,5,about 5,1,1,2,within saved height tier
+cpic7_dax_13,4TH LVL FIGHTER combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic7_dax_14,"Shared combat icon: SHAMAN, YARASH",normal,5,about 5,1,1,1,within saved height tier
+cpic8_dax_11,"Shared combat icon: PRINCESS FATIMA, ENVOY",normal,5,about 5,1,1,1,within saved height tier
+cpic8_dax_7,NORRIS THE GRAY combat icon,normal,5,about 5,1,1,1,within saved height tier
+cpic8_dax_70,EFREETI combat icon,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon1cha_dax_107,DIRTEN,normal,5,about 5,1,1,1,within saved height tier
+mon1cha_dax_2,GOBLIN GUARD,small,3.5,about 3.5,1,1,2,within saved height tier
+mon1cha_dax_22,GIANT SKELETON,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon1cha_dax_23,VAMPIRE,normal,5,about 5,1,1,1,within saved height tier
+mon1cha_dax_3,GOBLIN LEADER,small,4,about 4,1,1,2,within saved height tier
+mon1cha_dax_33,MACE,normal,5,about 5,1,1,1,within saved height tier
+mon1cha_dax_4,ORC,normal,5,about 5,1,1,2,within saved height tier
+mon1cha_dax_41,4TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon1cha_dax_44,ORC,normal,5,about 5,1,1,2,within saved height tier
+mon1cha_dax_5,ORC LEADER,normal,5,about 5,1,1,2,within saved height tier
+mon1cha_dax_6,HOBGOBLIN,normal,5,about 5,1,1,2,within saved height tier
+mon1cha_dax_7,HOBGOBLIN LDR,normal,5,about 5,1,1,2,within saved height tier
+mon1cha_dax_75,6TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon1cha_dax_8,OGRE,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon1cha_dax_9,OGRE LEADER,tall,8.5,about 8 to 9,1,2,2,within saved height tier
+mon2cha_dax_0,KOBOLD,small,2.5,about 2.5,1,1,1,within saved height tier
+mon2cha_dax_1,KOBOLD LEADER,small,3,about 3,1,1,2,within saved height tier
+mon2cha_dax_11,KOBOLD LEADER,small,3,about 3,1,1,1,within saved height tier
+mon2cha_dax_12,GOBLIN LEADER,small,4,about 4,1,1,1,within saved height tier
+mon2cha_dax_13,ORC,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_14,ORC LEADER,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_15,ORC LEADER,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_17,SPECTRE,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_2,GOBLIN GUARD,small,3.5,about 3.5,1,1,1,within saved height tier
+mon2cha_dax_24,LEVEL 6 MU,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_25,MAD MAN,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_3,GOBLIN LEADER,small,4,about 4,1,1,2,within saved height tier
+mon2cha_dax_31,TROLL,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon2cha_dax_4,ORC,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_5,ORC LEADER,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_53,AIDES,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_55,HILL GIANT,tall,8.5,about 8 to 9,1,2,2,within saved height tier
+mon2cha_dax_6,HOBGOBLIN,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_63,BUGBEAR,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_7,HOBGOBLIN LDR,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_71,ETTIN,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon2cha_dax_73,GNOLL,normal,5,about 5,1,2,1,within saved height tier
+mon2cha_dax_75,6TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon2cha_dax_8,OGRE,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon2cha_dax_82,LEVEL 6 MU,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_89,5TH LVL MU,normal,5,about 5,1,1,2,within saved height tier
+mon2cha_dax_94,LEVEL 3 MU,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_103,WARRIOR,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_107,DIRTEN,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_108,ACOLYTE,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_109,HERO,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_110,THEURGIST,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_111,ROBBER,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_112,CURATE,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_122,EVOKER,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_36,SWORDSMAN,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_40,NOMAD,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_41,4TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_45,1ST LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_51,6TH LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_53,AIDES,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_54,CORPORAL,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_83,7TH LVL CLERIC,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_84,6TH LVL FIGHTER,normal,5,about 5,1,1,2,within saved height tier
+mon3cha_dax_85,8TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon3cha_dax_94,LEVEL 3 MU,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_104,PRINCESS FATIMA,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_105,VAMPIRE,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_114,MUMMY,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_17,SPECTRE,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_19,FERRAN MARTINEZ,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_20,WIGHT,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_21,WRAITH,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_22,GIANT SKELETON,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon4cha_dax_23,VAMPIRE,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_24,LEVEL 6 MU,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_27,SKULLCRUSHER,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_28,GRISHNAK,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_29,JUJU ZOMBIE,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_34,SKELETON,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_35,ZOMBIE,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_4,ORC,normal,5,about 5,1,1,2,within saved height tier
+mon4cha_dax_5,ORC LEADER,normal,5,about 5,1,1,2,within saved height tier
+mon4cha_dax_6,HOBGOBLIN,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_7,HOBGOBLIN LDR,normal,5,about 5,1,1,2,within saved height tier
+mon4cha_dax_70,EFREETI,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon4cha_dax_72,GHOUL,normal,5,about 5,1,1,1,within saved height tier
+mon4cha_dax_8,OGRE,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon5cha_dax_31,TROLL,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon5cha_dax_41,4TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_45,1ST LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_49,MEDUSA,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_55,HILL GIANT,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon5cha_dax_56,FIRE GIANT,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon5cha_dax_75,6TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_84,6TH LVL FIGHTER,normal,5,about 5,1,1,2,within saved height tier
+mon5cha_dax_85,8TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_86,AL-HYAM DAZID,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_87,ENVOY,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_88,GENHEERIS,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_90,1ST LVL CLERIC,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_91,LEVEL 5 CLERIC,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_92,TYRANITHRAXUS,normal,5,about 5,1,1,1,within saved height tier
+mon5cha_dax_93,6TH LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_10,QUICKLINGS,small,2,about 2,1,1,1,within saved height tier
+mon6cha_dax_100,3RD LVL FIGHTER,normal,5,about 5,1,1,2,within saved height tier
+mon6cha_dax_101,5TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_102,CAPTAIN,normal,5,about 5,1,1,2,within saved height tier
+mon6cha_dax_118,THRI-KREEN,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_41,4TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_45,1ST LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_48,DWARVEN FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_50,COMMANDANT,normal,5,about 5,1,1,2,within saved height tier
+mon6cha_dax_51,6TH LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_53,AIDES,normal,5,about 5,1,1,2,within saved height tier
+mon6cha_dax_54,CORPORAL,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_86,AL-HYAM DAZID,normal,5,about 5,1,1,1,within saved height tier
+mon6cha_dax_96,GUARD,normal,5,about 5,1,1,2,within saved height tier
+mon6cha_dax_97,BANDIT,normal,5,about 5,1,1,2,within saved height tier
+mon6cha_dax_99,BUCCANEER,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_0,KOBOLD,small,2.5,about 2.5,1,1,1,within saved height tier
+mon7cha_dax_1,KOBOLD LEADER,small,3,about 3,1,1,2,within saved height tier
+mon7cha_dax_123,KOBOLD,small,2.5,about 2.5,1,1,2,within saved height tier
+mon7cha_dax_40,NOMAD,normal,5,about 5,1,1,2,within saved height tier
+mon7cha_dax_41,4TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_42,HASSAD,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_43,SHAMAN,normal,5,about 5,1,1,2,within saved height tier
+mon7cha_dax_44,ORC,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_53,AIDES,normal,5,about 5,1,1,2,within saved height tier
+mon7cha_dax_57,LIZARDMAN,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_58,MUTANT LIZ-MAN,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_62,MINOTAUR,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon7cha_dax_75,6TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_76,7TH LVL DW FIGH,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_77,7TH LVL THIEF,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_78,2ND LVL CLERIC,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_79,DIANE,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_80,7TH LVL FIGHTER,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_81,YARASH,normal,5,about 5,1,1,1,within saved height tier
+mon7cha_dax_97,BANDIT,normal,5,about 5,1,1,2,within saved height tier
+mon7cha_dax_98,MERCHANT,normal,5,about 5,1,1,2,within saved height tier
+mon8cha_dax_0,KOBOLD,small,2.5,about 2.5,1,1,1,within saved height tier
+mon8cha_dax_1,KOBOLD LEADER,small,3,about 3,1,1,2,within saved height tier
+mon8cha_dax_104,PRINCESS FATIMA,normal,5,about 5,1,1,1,within saved height tier
+mon8cha_dax_124,EFREETI,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon8cha_dax_31,TROLL,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon8cha_dax_32,NORRIS THE GRAY,normal,5,about 5,1,1,1,within saved height tier
+mon8cha_dax_57,LIZARDMAN,normal,5,about 5,1,1,1,within saved height tier
+mon8cha_dax_62,MINOTAUR,tall,8.5,about 8 to 9,1,2,1,within saved height tier
+mon8cha_dax_72,GHOUL,normal,5,about 5,1,1,1,within saved height tier
+mon8cha_dax_73,GNOLL,normal,5,about 5,1,2,1,within saved height tier
+mon8cha_dax_87,ENVOY,normal,5,about 5,1,1,1,within saved height tier
+mon8cha_dax_94,LEVEL 3 MU,normal,5,about 5,1,1,1,within saved height tier
+mon8cha_dax_95,DRYTHH,normal,5,about 5,1,1,1,within saved height tier
