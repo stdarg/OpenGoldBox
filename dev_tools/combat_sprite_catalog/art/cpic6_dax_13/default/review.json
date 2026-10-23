@@ -1,0 +1,32 @@
+{
+  "action_sha256": "b0c10630313db81ff931055f0acab1bc4be7856a5b82cf1fac0d6a8a531c8198",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/cpic6_dax_13/default/action.png",
+    "ready": "art/cpic6_dax_13/default/ready.png"
+  },
+  "metadata_sha256": "6f640614c3852c85f4b2bea3af289e4ab0fbb69625ffcfa9103ae2dcf3508f97",
+  "notes": "Neutral cleric archetype for shared equipment-free icon. This row reuses the exact independently generated and reviewed cleric pair from cpic5_dax_13. Natural in-place attack: hands gathered around a small glow to a forward divine spell release. Exact final pair reviewed side by side at 4x and in the Godot combat catalog at one-square scale; foot pixels, head height, body scale, facing and clothing remain registered. Normal humanoid head-to-foot extent fills the 5-foot square. Ready fits its tile. Action body stays in tile. The released spell effect alone crosses the right tile boundary in action; the body and feet remain inside.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "e2aebc5f398d03fcb60e713e5e161d11d0c112b6814ca49e45d70f256c4b9952",
+  "reviewed_at": "2026-10-23T16:54:26+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "CPIC6.DAX:13",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

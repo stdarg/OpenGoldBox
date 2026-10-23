@@ -1,0 +1,32 @@
+{
+  "action_sha256": "ddef5284f24b619d7972094242e02d00055401e225eb871ad44be1582ffc96d3",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/cpic6_dax_12/default/action.png",
+    "ready": "art/cpic6_dax_12/default/ready.png"
+  },
+  "metadata_sha256": "ef4bc0e01c567e1fb53633ad661e692e609db418de0c45e746f681ed9902e1ac",
+  "notes": "Neutral traveler archetype for shared equipment-free icon. This row reuses the exact independently generated and reviewed traveler pair from cpic5_dax_12. Natural in-place attack: unarmed guarded stance to a short forward hand strike. Exact final pair reviewed side by side at 4x and in the Godot combat catalog at one-square scale; foot pixels, head height, body scale, facing and clothing remain registered. Normal humanoid head-to-foot extent fills the 5-foot square. Ready fits its tile. Action body stays in tile.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "d0a8f2188d8f3ba333ebbf358f6a569015a61299c2b7841ec831fc77aded81e4",
+  "reviewed_at": "2026-10-23T16:54:26+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "CPIC6.DAX:12",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

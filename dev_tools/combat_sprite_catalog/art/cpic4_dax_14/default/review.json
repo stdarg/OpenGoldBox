@@ -1,0 +1,32 @@
+{
+  "action_sha256": "3effdc566a2c50a3119132ac3d77f945e4ec91e28111bb628e613579170f66d8",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/cpic4_dax_14/default/action.png",
+    "ready": "art/cpic4_dax_14/default/ready.png"
+  },
+  "metadata_sha256": "f923b9be9277956f63d32c80645d3e08891e0107f4aad708c8c8396ad4a706b0",
+  "notes": "Neutral spellcaster archetype for shared equipment-free icon. This is the source independently generated neutral archetype pair. Natural in-place attack: raised casting hand to a forward spell release. Exact final pair reviewed side by side at 4x and in the Godot combat catalog at one-square scale; foot pixels, head height, body scale, facing and clothing remain registered. Normal humanoid head-to-foot extent fills the 5-foot square. Ready fits its tile. Action body stays in tile. The released spell effect alone crosses the right tile boundary in action; the body and feet remain inside.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "31817d537bd3bfd3f8ae1ae914ead2f6a56a743ca1fbbb649ff4575c195faffc",
+  "reviewed_at": "2026-10-23T16:54:26+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "CPIC4.DAX:14",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
