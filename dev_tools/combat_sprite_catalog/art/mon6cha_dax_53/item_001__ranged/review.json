@@ -1,0 +1,32 @@
+{
+  "action_sha256": "2fdc13295ce3d09891e0d861b6f750500ffe154c63c7d7fc54cbf715bd8199cb",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_53/item_001__ranged/action.png",
+    "ready": "art/mon6cha_dax_53/item_001__ranged/ready.png"
+  },
+  "metadata_sha256": "4320f8b0e3746b2e7b89fe548e5286f738e6ee05a7a295950cb218f294d4f482",
+  "notes": "Separate long-bow set for the same blue-chain-armored Aides identity, no sword shown. Loaded arrow ready and just-released action. Approved guide and this monster's corrected NEW sword-ready sprite were references, not original game art. Same 5-foot body and ground anchor as sword set. This identical archived record reuses the accepted MON3 canonical art because description and full saved equipment match exactly. Inspected native ready/action pair and one-second fixed-grid catalog alternation; matching archive entries load identical hashes. Body head and feet fit one 5-foot tile; only raised ready weapon or moving action weapon overflows footprint. Planted feet stay at same coordinates. Rejected sources remain in staging.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "83e79e920525fabaddb010fc0d8a802f4136dfbc7a2c2077089b19e8be5d8987",
+  "reviewed_at": "2026-10-23T04:00:02+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON6CHA.DAX:53",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__ranged",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

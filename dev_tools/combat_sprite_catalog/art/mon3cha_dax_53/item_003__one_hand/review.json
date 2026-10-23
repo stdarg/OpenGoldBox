@@ -1,15 +1,15 @@
 {
-  "action_sha256": "8e0f17c1af8d6668a7fd71c480d206d60f09de459af2e70f201b91bba28dcdcf",
+  "action_sha256": "c79fc93b1d4294a275b4684c632bdb9106cd71a872d2bd7ea9412ea45cc515bf",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_53/item_003__one_hand/action.png",
     "ready": "art/mon3cha_dax_53/item_003__one_hand/ready.png"
   },
-  "metadata_sha256": "ee37d2e26beba97df461651aa7d511f0f89f20ea04c78f2161a022b3dfa2e702",
-  "notes": "Initial full swing shifted whole character and was rejected. Final pair was generated as small guard-angle edit of new strike frame. 128px frames inspected alternating in catalog: same boots, legs, chain armor, quiver, scale and screen-right facing; sword changes angle locally.",
+  "metadata_sha256": "ed3d40a5929eb4a534c013ebe7e2b7315ca470fa2636be871b882a2023bc7e75",
+  "notes": "New blue-chain-armored Aides identity uses one long sword, no shield. Corrected 5-foot height, raised sword ready, compact late slash action. Approved guide and earlier new Aides art were references; original game art was not. The action arm/sword was composited onto the exact ready lower body after rejecting shifted generated feet. Inspected native ready/action pair and one-second fixed-grid catalog alternation; matching archive entries load identical hashes. Body head and feet fit one 5-foot tile; only raised ready weapon or moving action weapon overflows footprint. Planted feet stay at same coordinates. Rejected sources remain in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "ff16eaa3b5fde4ffff5d8d75c1566a1571df181e3a7739c7d9ac80acd499ef64",
-  "reviewed_at": "2026-10-19T04:47:18.021413+00:00",
+  "ready_sha256": "e927aaa71dd787c220d5f8786f9c1cbe0340500961484b372f89617b5571ecd0",
+  "reviewed_at": "2026-10-23T03:59:58+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:53",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
