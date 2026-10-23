@@ -1,0 +1,32 @@
+{
+  "action_sha256": "93c89691a0c26302dff1bbdb8372d8ea9345779f3e4599046942c43dd5026c37",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon4cha_dax_34/default/action.png",
+    "ready": "art/mon4cha_dax_34/default/ready.png"
+  },
+  "metadata_sha256": "7beea0f1e845f3c2fcd5365019ec731ebbc9c0e760ed2f2d105b948c70da9a9b",
+  "notes": "Replaced previously oversized regular skeleton. Approved guide and newly generated ready were the only references. Exact ready lower body composited into action; native pair and one-second catalog alternation reviewed. Five-foot skull-to-foot height fits 1x1; ready entirely inside, action claw alone extends 0.12 square. No equipment in game record.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "a128153dfe909eff3aa27d6aba6e418f7e8e410bb1e26034d93f8e9d9f531dcb",
+  "reviewed_at": "2026-10-23T07:27:33.390149+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON4CHA.DAX:34",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
