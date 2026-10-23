@@ -1,10 +1,11 @@
 {
-  "description": "The medusa kept near Tyranthraxus’s lair; its snake-haired head and petrifying gaze define the threat. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
+  "description": "The medusa kept near Tyranthraxus’s lair stands upright on two legs, with snake hair and a petrifying gaze. Keep the humanlike lower body shown by the game icon; do not give her a serpent tail. The original template records no carried items. Source wealth: no coins, gems, or jewelry recorded.",
   "humanoid_size": "normal",
   "sprite_size": {"height_squares": 1, "width_squares": 1},
   "description_sources": [
     "Original game MON5CHA.DAX:49 and matching MONnITM inventory",
-    "GameDocs/Cluebook.pdf, PDF page 28"
+    "GameDocs/Cluebook.pdf, PDF page 28 (Medusa's Chamber)",
+    "Original CPIC5.DAX Medusa combat icon (upright two-legged silhouette)"
   ],
   "equipment": [],
   "flag_for_regeneration": false,
