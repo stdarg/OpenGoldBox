@@ -1,0 +1,32 @@
+{
+  "action_sha256": "53c1e1e2c478b0ec971166806cf36184fb7b5ca2a0961579a797d627a714f316",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon6cha_dax_86/default/action.png",
+    "ready": "art/mon6cha_dax_86/default/ready.png"
+  },
+  "metadata_sha256": "ab020bbc643a488caab007a0bdfa057979d52ac945644e6d6f332dd2458743c6",
+  "notes": "Exact copy of reviewed MON5CHA.DAX:86 full-height Dazid pair. Same saved description and all gear. Ready/action reviewed natively and alternating in catalog: fixed boots, wand lightning moves from raised charge to rightward release, ready-only top overflow, action fits tile.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "b18e8c7f034659b854c2a19ad371d14bef9a9dbdf45d13ec3c53c2fd2a801aff",
+  "reviewed_at": "2026-10-23T04:29:18.567786+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON6CHA.DAX:86",
+  "specification": "bipedal-v1",
+  "variant_id": "default",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}
