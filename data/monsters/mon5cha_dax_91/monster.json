@@ -1,0 +1,50 @@
+{
+  "creature_archive": "MON5CHA.DAX",
+  "creature_record": 91,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Necklace of Missiles",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 70,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Mace +3",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 23,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Plate armor +1",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 58,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON5CHA.DAX:91",
+  "name": "LEVEL 5 CLERIC",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_001__one_hand/action.png",
+      "id": "item_001__one_hand",
+      "ready": "item_001__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001"
+    }
+  ]
+}

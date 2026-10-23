@@ -17,6 +17,12 @@ const PhlanResources &RolfTourSession::area_resources() const
     return current_area_ ? *town_->districts.at(current_area_) : *town_;
 }
 
+const ExportedMonster *RolfTourSession::exported_creature(const PhlanResources &area,
+                                                          unsigned record) const
+{
+    return town_ && town_->monsters ? town_->monsters->creature(area.bank, record) : nullptr;
+}
+
 void RolfTourSession::change_area(unsigned id)
 {
     if (id == current_area_)
@@ -825,6 +831,58 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     return true;
 }
 
+namespace
+{
+// A creature's gear by MONnITM place. With an export, an original item the
+// Combat Sprite Catalog left out is not carried (#274).
+std::vector<std::optional<Equipment>> carried_gear(const Creature &creature,
+                                                   const ExportedMonster *exported)
+{
+    std::vector<std::optional<Equipment>> gear(creature.equipment.begin(), creature.equipment.end());
+    if (!exported)
+    {
+        return gear;
+    }
+    for (std::size_t n = 0; n < gear.size(); ++n)
+    {
+        const bool kept = std::ranges::any_of(exported->equipment,
+                                              [&](const auto &item)
+                                              {
+                                                  return item.source_index == static_cast<int>(n) &&
+                                                         item.source_type == gear[n]->stored.type;
+                                              });
+        if (!kept)
+        {
+            gear[n].reset();
+        }
+    }
+    return gear;
+}
+
+// A staged creature's art: the export's weapon set for what it readies, drawn
+// as the catalog previews it, or else the original icon with its action pose,
+// the icon 128 records on.
+opengold::CombatArt staged_creature_art(const std::vector<std::uint8_t> &archive, unsigned icon,
+                                        Image ready, const ExportedMonster *exported, bool archer)
+{
+    if (const auto *variant = exported ? readied_variant(*exported, archer) : nullptr)
+    {
+        return {0, variant->ready, variant->action, {},
+                opengold::PlantedArt{art_scale(*exported), planted_ground(variant->ready)}};
+    }
+    opengold::CombatArt art{0, std::move(ready), {}, {}, {}};
+    if (icon >= 128)
+    {
+        return art;
+    }
+    if (auto action = decode_ega_combat_icon(archive, static_cast<std::uint8_t>(icon + 128), 0))
+    {
+        art.action = std::move(action.image);
+    }
+    return art;
+}
+} // namespace
+
 PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned> records,
                                             std::string reward, bool items,
                                             std::vector<SpentGear> spent) const
@@ -856,8 +914,7 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
         {
             continue;
         }
-        auto gear = std::vector<std::optional<Equipment>>(creature.equipment.begin(),
-                                                          creature.equipment.end());
+        auto gear = carried_gear(creature, exported_creature(*district->second, id));
         // One monster of this record used its gear in the fight (DIFF-1).
         if (const auto used = std::find_if(spent.begin(), spent.end(),
                                            [&](const auto &s)
@@ -1275,12 +1332,18 @@ namespace
 {
 // The potions, wands and scrolls a monster brings into a fight on Hard and
 // above (DIFF-1), each known by its place in the creature's gear, plus one.
-std::vector<rules::CarriedEquipment> fighting_gear(const Creature &creature)
+std::vector<rules::CarriedEquipment> fighting_gear(const Creature &creature,
+                                                   const ExportedMonster *exported)
 {
     std::vector<rules::CarriedEquipment> gear;
-    for (std::size_t n = 0; n < creature.equipment.size(); ++n)
+    const auto carried = carried_gear(creature, exported);
+    for (std::size_t n = 0; n < carried.size(); ++n)
     {
-        const auto &item = creature.equipment[n];
+        if (!carried[n])
+        {
+            continue;
+        }
+        const auto &item = *carried[n];
         const auto key = equipment_conversion(item);
         if (key.starts_with("potion_") || key.starts_with("wand:") || rules::parse_scroll_key(key))
         {
@@ -1334,10 +1397,13 @@ void RolfTourSession::fit_staged_encounter()
         const auto &creature = area_resources().encounter_creatures.at(staged_records_[n]);
         enemies.push_back(std::move(staged_enemies_[n]));
         enemies.back().id = id;
-        enemies.back().name = creature.stored.name + " " + std::to_string(enemies.size());
+        const auto *exported = exported_creature(area_resources(), staged_records_[n]);
+        enemies.back().name =
+            (exported ? exported->name : creature.stored.name) + " " + std::to_string(enemies.size());
         if (monsters_use_items(difficulty_))
         {
-            enemies.back().inventory = fighting_gear(creature);
+            enemies.back().inventory =
+                fighting_gear(creature, exported_creature(area_resources(), staged_records_[n]));
         }
         art.push_back(std::move(staged_art_[n]));
         art.back().entity = id;
@@ -1862,13 +1928,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         {
             definition = "slums-orc-leader-archer";
         }
+        const auto *exported = exported_creature(area_resources(), record);
+        const auto art = staged_creature_art(area_resources().combat_archive, arg(2),
+                                             std::move(icon.image), exported,
+                                             definition.ends_with("-archer"));
         for (unsigned i = 0; i < count; ++i)
         {
             const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
             staged_enemies_.push_back(
                 {id,
                  definition,
-                 creature.stored.name + " " + std::to_string(staged_enemies_.size() + 1),
+                 (exported ? exported->name : creature.stored.name) + " " +
+                     std::to_string(staged_enemies_.size() + 1),
                  rules::Side::opposition,
                  {}});
             // Morale is record byte 0x84: from 0x80 up a creature's own is
@@ -1879,7 +1950,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             staged_enemies_.back().morale = own > 102 ? 0 : std::min(own, 100u);
             staged_enemies_.back().intelligence =
                 std::min<unsigned>(creature.stored.abilities.intelligence, 30);
-            staged_art_.push_back({id, icon.image});
+            staged_art_.push_back(art);
+            staged_art_.back().entity = id;
             staged_records_.push_back(record);
         }
         break;

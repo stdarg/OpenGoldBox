@@ -10,6 +10,7 @@
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
 #include "opengold/difficulty.h"
+#include "opengold/monster_bundle.h"
 #include "opengold/encounter_budget.h"
 #include "opengold/shop_data.h"
 #include "opengold/temple_catalog.h"
@@ -104,6 +105,9 @@ struct PhlanResources
     std::array<unsigned, 3> pieces{};
     std::vector<std::uint8_t> combat_archive;
     std::vector<Image> terrain_art;
+    // The Combat Sprite Catalog's export (#274), on the town only: creatures'
+    // names, gear and new art. Null without one.
+    std::shared_ptr<const MonsterBundle> monsters;
 };
 
 // A script took coins the payer lacked and the purse made change.
@@ -168,9 +172,11 @@ class RolfTourSession
     ~RolfTourSession() = default;
     [[nodiscard]] RolfTourSession detached_copy() const;
 
-    // New wall art replaces the original appearances it covers.
-    [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory,
-                                              const WallArtReplacements &new_wall_art = {});
+    // New wall art replaces the original appearances it covers; exported
+    // monsters bring their names, gear and art to the fights they are in.
+    [[nodiscard]] static RolfTourSession
+    load(const std::filesystem::path &directory, const WallArtReplacements &new_wall_art = {},
+         std::shared_ptr<const MonsterBundle> monsters = {});
     // Also accepts wholly synthetic resources for asset-free host tests.
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                     std::array<opengold::Image, 3> sprites, std::uint32_t entry,
@@ -491,6 +497,9 @@ class RolfTourSession
     void announce_spokesman();
     bool choose_encounter(std::size_t choice);
     [[nodiscard]] const PhlanResources &area_resources() const;
+    // The export of the original creature `record` of `area`'s bank, if any.
+    [[nodiscard]] const ExportedMonster *exported_creature(const PhlanResources &area,
+                                                           unsigned record) const;
     void change_area(unsigned id);
 
     // Which script of an exploration event is running, so finish_event knows

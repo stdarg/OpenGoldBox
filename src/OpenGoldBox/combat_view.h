@@ -109,6 +109,10 @@ class CombatView : public godot::Control
         godot::Rect2 left_visible;
         godot::Rect2 unconscious_visible;
         bool goliath{};
+        // New monster art (#274): art squares to a combat square and the ready
+        // pose's foot row; zero scale fits the art to the square instead.
+        double planted_scale{};
+        double ground{};
     };
 
     // Everything sync_art() installs, built off to the side first.

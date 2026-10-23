@@ -1,0 +1,66 @@
+{
+  "creature_archive": "MON6CHA.DAX",
+  "creature_record": 96,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Long sword",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 36,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Leather armor",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 50,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Quarrel",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 28,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "weapon",
+      "name": "Light crossbow",
+      "readied": false,
+      "source_index": 3,
+      "source_type": 46,
+      "weapon_role": "ranged"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON6CHA.DAX:96",
+  "name": "GUARD",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "ready": "item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    },
+    {
+      "action": "item_003__ranged/action.png",
+      "id": "item_003__ranged",
+      "ready": "item_003__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_003"
+    }
+  ]
+}

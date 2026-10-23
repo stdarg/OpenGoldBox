@@ -7,8 +7,10 @@
 #include "opengold/rolf_tour.h"
 #include "opengold/scroll_key.h"
 #include "opengold/shop_data.h"
+#include "opengold/monster_bundle.h"
 #include "opengold/npc_portraits.h"
 #include "opengold/srd5.h"
+#include "png_size_only.h"
 #include "test_support.h"
 #include "tour_access.h"
 #include <algorithm>
@@ -625,6 +627,9 @@ struct FightStart
 
 std::vector<FightStart> fights_started;
 
+// The last encounter fight() played, as the town staged it.
+std::optional<CampaignEncounter> last_encounter;
+
 // Squares the party sees ahead before a wall or door, at most two.
 unsigned open_squares_ahead(const por::GeoMap &map, por::PartyPose pose)
 {
@@ -649,6 +654,7 @@ void fight(por::RolfTourSession &town, const std::shared_ptr<CampaignParty> &par
     {
         enemies_fought.push_back(enemy.definition);
     }
+    last_encounter = *town.pending_encounter();
     CombatDemo combat(module());
     combat.campaign_party(party);
     combat.encounter(*town.pending_encounter(), 42);
@@ -897,8 +903,9 @@ struct Expedition
 };
 
 // Six created fighters with the new-character purse, after Rolf's tour, in a
-// town that uses data/shops as the game does.
-Expedition create_party(const std::filesystem::path &directory)
+// town that uses data/shops as the game does, and `monsters` if given.
+Expedition create_party(const std::filesystem::path &directory,
+                        std::shared_ptr<const por::MonsterBundle> monsters = {})
 {
     auto party = std::make_shared<CampaignParty>(module());
     std::uint64_t seed = 1;
@@ -907,7 +914,7 @@ Expedition create_party(const std::filesystem::path &directory)
         (void)party->add_pc(character(name, seed++));
         party->add_coins(Coin::gold, 250);
     }
-    auto town = por::RolfTourSession::load(directory);
+    auto town = por::RolfTourSession::load(directory, {}, std::move(monsters));
     auto shop_data = load_shop_data(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/shops");
     town.temples(std::move(shop_data.temples));
     town.shops(std::move(shop_data.shops));
@@ -2942,6 +2949,59 @@ void slums_flight(const std::filesystem::path &save, const std::filesystem::path
     check(someone_got_away, "Someone got away");
 }
 
+// The Combat Sprite Catalog's export (#274) in the four-orc fight. A renamed
+// creature fights under its new name, in its new art for the weapon set it
+// readies, standing as the catalog previews it; one without exported art
+// keeps its original icon, now with its action pose. An original item the
+// export leaves out is not carried, so it is not left behind.
+void exported_monsters(const std::filesystem::path &directory)
+{
+    const auto orc_fight = [&](std::shared_ptr<const por::MonsterBundle> monsters)
+    {
+        auto trip = create_party(directory, std::move(monsters));
+        walk_to(trip.town, trip.party, 0, 4);
+        step(trip.town, trip.party, 3);
+        walk_to(trip.town, trip.party, 12, 1);
+        check(last_encounter && orc_rewards(*trip.party) == 2, "The four orcs are fought");
+        return std::pair{*last_encounter, party_items(*trip.party)};
+    };
+    const auto [original, original_items] = orc_fight({});
+    auto bundle = por::load_monster_bundle(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "data/monsters",
+                                           test::png_size_only);
+    auto &tusker = bundle.monsters.at("MON2CHA.DAX:13");
+    tusker.name = "TUSKER";
+    std::erase_if(tusker.equipment,
+                  [](const auto &item)
+                  {
+                      return item.source_index >= 0;
+                  });
+    bundle.monsters.erase("MON2CHA.DAX:4");
+    const auto tusker_art = tusker;
+    const auto [exported, exported_items] =
+        orc_fight(std::make_shared<const por::MonsterBundle>(std::move(bundle)));
+    check(original.enemies.size() == exported.enemies.size(), "The same orcs are fought");
+    bool renamed = false;
+    for (std::size_t n = 0; n < exported.enemies.size(); ++n)
+    {
+        const auto &enemy = exported.enemies[n];
+        const auto &art = exported.art[n];
+        check(art.action.has_value(), "Every orc has an action pose");
+        if (enemy.name.starts_with("TUSKER "))
+        {
+            renamed = true;
+            check(art.planted && art.planted->scale == por::art_scale(tusker_art) && art.image.width == 128 &&
+                      art.action->width == 128,
+                  "The renamed orc stands in its new art, scaled as the catalog previews it");
+        }
+        else
+        {
+            check(!art.planted, enemy.name + " has no exported art and keeps its original icon");
+        }
+    }
+    check(renamed, "The renamed orc fights under its new name");
+    check(exported_items + 1 == original_items, "The renamed orc's scroll is not left behind");
+}
+
 void installed_first_expedition(const std::filesystem::path &executable,
                                 const std::filesystem::path &directory)
 {
@@ -3032,6 +3092,7 @@ void installed_first_expedition(const std::filesystem::path &executable,
     }
     general_store_gear(directory);
     city_hall_rewards(directory);
+    exported_monsters(directory);
     auto trip = create_party(directory);
     buy_and_equip(trip);
     defeat_four_orcs(trip);

@@ -1,0 +1,41 @@
+{
+  "creature_archive": "MON2CHA.DAX",
+  "creature_record": 25,
+  "equipment": [
+    {
+      "id": "added_1868544393",
+      "kind": "weapon",
+      "name": "Great sword",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "added_1881895503",
+      "kind": "gear",
+      "name": "scale armor",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON2CHA.DAX:25",
+  "name": "MAD MAN",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_1868544393__two_hand/action.png",
+      "id": "added_1868544393__two_hand",
+      "ready": "added_1868544393__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_1868544393"
+    }
+  ]
+}

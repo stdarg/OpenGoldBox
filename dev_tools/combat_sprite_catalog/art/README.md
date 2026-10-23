@@ -29,5 +29,5 @@ consistent scale and foot placement. The generated working images were exported
 to 128 x 128 with point sampling. The ready and action images were reviewed in
 contact sheets at their final size.
 
-These files are currently consumed by the standalone Combat Sprite Catalog.
-The game runtime does not yet read this tool's replacement-art directory.
+The game never reads this folder: **Export to game** copies the reviewed sets
+into [`data/monsters`](../../../data/monsters/README.md), which the game ships.

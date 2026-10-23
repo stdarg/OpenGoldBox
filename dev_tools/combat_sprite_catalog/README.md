@@ -179,6 +179,17 @@ and that the character pane has no scrolling selection panel. For every built-in
 monster and combat-icon row, it also checks that saved descriptions have at
 least 80 characters and saved wealth matches the decoded creature record.
 
+### Export to game
+
+**Export to game** writes every saved record of a `MONnCHA` creature, and
+every copy, to [`data/monsters`](../../data/monsters/README.md), which the game
+reads: its name, sprite size, humanoid height, equipment and each weapon set's
+PNGs. Unsaved edits are not exported. A record flagged for regeneration exports
+its data but no art, and a set missing a 128 × 128 pose is left out. Records of
+shared `CPIC` icons are not exported. The headless `--export-to-game` mode does
+the same without the game files, and `--catalog-check` fails when the export is
+out of date.
+
 Run `--metadata-check` in place of `--catalog-check` to verify JSON persistence,
 draft retention, paired one-handed setups, separate ranged and two-handed setups,
 replacement preview, and original fallback.

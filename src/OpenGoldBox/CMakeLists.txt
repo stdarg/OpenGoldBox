@@ -120,7 +120,11 @@ add_custom_target(opengoldbox_assets DEPENDS ${portrait_outputs} ${splash_output
 set(wall_art_project_commands
     COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/art/walls"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_project}/data/art/walls"
-    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/art/walls/.gdignore")
+    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/art/walls/.gdignore"
+    # So is the Combat Sprite Catalog's export (data/monsters, #274).
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/monsters"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_project}/data/monsters"
+    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/monsters/.gdignore")
 
 if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_combat_sprite_layout_tests "${PROJECT_SOURCE_DIR}/tests/combat_sprite_layout_tests.cpp")
@@ -498,6 +502,7 @@ if(WIN32)
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_output}/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_output}/data/art/walls"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${game_output}/data/monsters"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${game_output}/data/art/combat-weapon-options.tsv"
@@ -507,6 +512,7 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${export_path}/Contents/Resources/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${export_path}/Contents/Resources/data/shops"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${export_path}/Contents/Resources/data/art/walls"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/monsters" "${export_path}/Contents/Resources/data/monsters"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${export_path}/Contents/Resources/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${export_path}/Contents/Resources/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${export_path}/Contents/Resources/data/art/combat-weapon-options.tsv"

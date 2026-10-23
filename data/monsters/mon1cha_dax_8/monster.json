@@ -1,0 +1,32 @@
+{
+  "creature_archive": "MON1CHA.DAX",
+  "creature_record": 8,
+  "equipment": [
+    {
+      "id": "added_4277717173",
+      "kind": "weapon",
+      "name": "club",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "tall",
+  "key": "MON1CHA.DAX:8",
+  "name": "OGRE",
+  "sprite_size": {
+    "height_squares": 2.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_4277717173__one_hand/action.png",
+      "id": "added_4277717173__one_hand",
+      "ready": "added_4277717173__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_4277717173"
+    }
+  ]
+}

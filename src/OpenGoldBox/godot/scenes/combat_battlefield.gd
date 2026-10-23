@@ -17,10 +17,17 @@ func _cell_rect(cell: Vector2i, tile: float, inset: float = 0.0) -> Rect2:
         Vector2.ONE * (tile - 2.0 * inset))
 
 
-func _sprite_rect(texture: Texture2D, visible: Rect2, cell: Rect2, goliath: bool) -> Rect2:
+func _sprite_rect(texture: Texture2D, visible: Rect2, cell: Rect2, goliath: bool,
+        planted_scale: float = 0.0, ground: float = 0.0) -> Rect2:
     if texture == null or visible.size.x <= 0 or visible.size.y <= 0:
         return Rect2()
     var source := texture.get_size()
+    # New monster art stands as the Combat Sprite Catalog previews it: a fixed
+    # scale for both poses, centered, its feet on the square's bottom edge.
+    if planted_scale > 0.0:
+        var art_scale := cell.size.x / source.x * planted_scale
+        return Rect2(Vector2(cell.get_center().x - source.x * art_scale * 0.5,
+            cell.end.y - ground * art_scale), source * art_scale)
     if goliath:
         var extent := cell.size * Vector2(1.0, _metric("combat_goliath_height_percent") / 100.0)
         var scale := extent / visible.size
@@ -97,7 +104,8 @@ func _draw() -> void:
             draw_texture_rect(actor["skull"], rect, false)
         elif actor.has("texture"):
             var texture: Texture2D = actor["texture"]
-            var sprite := _sprite_rect(texture, actor["visible"], rect, actor["goliath"])
+            var sprite := _sprite_rect(texture, actor["visible"], rect, actor["goliath"],
+                actor.get("planted_scale", 0.0), actor.get("ground", 0.0))
             draw_texture_rect(texture, sprite, false,
                 _palette("combat_reachable" if actor["conscious"] else "combat_unconscious"))
         elif actor.has("number"):

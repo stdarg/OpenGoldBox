@@ -31,7 +31,8 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 } // namespace
 
 RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
-                                      const WallArtReplacements &new_wall_art)
+                                      const WallArtReplacements &new_wall_art,
+                                      std::shared_ptr<const MonsterBundle> monsters)
 {
     const auto catalog = EclCatalog::load(directory);
     const auto program = catalog.find({"ECL3.DAX", 0});
@@ -200,6 +201,7 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
     town->treasure = item_lists("ITEM3.DAX");
 
     town->item_templates = *templates;
+    town->monsters = std::move(monsters);
     town->sprite_archive = std::move(bytes);
     const auto pictures = [&](const char *name, auto &destination)
     {

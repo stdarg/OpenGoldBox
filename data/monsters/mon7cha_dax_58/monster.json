@@ -1,0 +1,22 @@
+{
+  "creature_archive": "MON7CHA.DAX",
+  "creature_record": 58,
+  "equipment": [],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON7CHA.DAX:58",
+  "name": "MUTANT LIZ-MAN",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "default/action.png",
+      "id": "default",
+      "ready": "default/ready.png",
+      "shield_id": "",
+      "weapon_id": ""
+    }
+  ]
+}

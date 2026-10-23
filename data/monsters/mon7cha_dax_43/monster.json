@@ -1,0 +1,57 @@
+{
+  "creature_archive": "MON7CHA.DAX",
+  "creature_record": 43,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Wand of Magic Missiles",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 79,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Bracers AC 2",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 77,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Dagger +2",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON7CHA.DAX:43",
+  "name": "SHAMAN",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_002__one_hand/action.png",
+      "id": "item_002__one_hand",
+      "ready": "item_002__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_002"
+    },
+    {
+      "action": "item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "ready": "item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    }
+  ]
+}

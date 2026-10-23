@@ -1,0 +1,59 @@
+{
+  "creature_archive": "MON7CHA.DAX",
+  "creature_record": 78,
+  "equipment": [
+    {
+      "id": "added_20261023_7801",
+      "kind": "weapon",
+      "name": "Mace",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_20261023_7802",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_7803",
+      "kind": "gear",
+      "name": "Chain mail",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_7804",
+      "kind": "gear",
+      "name": "Holy symbol",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON7CHA.DAX:78",
+  "name": "2ND LVL CLERIC",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_20261023_7801__added_20261023_7802/action.png",
+      "id": "added_20261023_7801__added_20261023_7802",
+      "ready": "added_20261023_7801__added_20261023_7802/ready.png",
+      "shield_id": "added_20261023_7802",
+      "weapon_id": "added_20261023_7801"
+    }
+  ]
+}

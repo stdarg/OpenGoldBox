@@ -1,0 +1,57 @@
+{
+  "creature_archive": "MON3CHA.DAX",
+  "creature_record": 84,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Javelin +1",
+      "readied": false,
+      "source_index": 0,
+      "source_type": 21,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Two-handed sword +2",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 38,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Chain armor +1",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 55,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON3CHA.DAX:84",
+  "name": "6TH LVL FIGHTER",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "ready": "item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    },
+    {
+      "action": "item_001__two_hand/action.png",
+      "id": "item_001__two_hand",
+      "ready": "item_001__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001"
+    }
+  ]
+}

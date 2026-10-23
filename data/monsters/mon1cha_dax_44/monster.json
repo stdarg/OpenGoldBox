@@ -1,0 +1,66 @@
+{
+  "creature_archive": "MON1CHA.DAX",
+  "creature_record": 44,
+  "equipment": [
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Short bow",
+      "readied": false,
+      "source_index": 1,
+      "source_type": 44,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "added_12402564125",
+      "kind": "weapon",
+      "name": "short sword",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_12421537762",
+      "kind": "gear",
+      "name": "leather armor",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_12435671922",
+      "kind": "shield",
+      "name": "shield",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON1CHA.DAX:44",
+  "name": "ORC",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_12402564125__added_12435671922/action.png",
+      "id": "added_12402564125__added_12435671922",
+      "ready": "added_12402564125__added_12435671922/ready.png",
+      "shield_id": "added_12435671922",
+      "weapon_id": "added_12402564125"
+    },
+    {
+      "action": "item_001__ranged/action.png",
+      "id": "item_001__ranged",
+      "ready": "item_001__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001"
+    }
+  ]
+}

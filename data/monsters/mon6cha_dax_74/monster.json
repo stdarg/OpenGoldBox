@@ -1,0 +1,14 @@
+{
+  "creature_archive": "MON6CHA.DAX",
+  "creature_record": 74,
+  "equipment": [],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "na",
+  "key": "MON6CHA.DAX:74",
+  "name": "GIANT MANTIS",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 2.0
+  },
+  "variants": []
+}

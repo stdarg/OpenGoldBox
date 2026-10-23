@@ -1,0 +1,48 @@
+{
+  "creature_archive": "MON3CHA.DAX",
+  "creature_record": 122,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Dart",
+      "readied": false,
+      "source_index": 0,
+      "source_type": 9,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Dagger",
+      "readied": false,
+      "source_index": 1,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON3CHA.DAX:122",
+  "name": "EVOKER",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_001__one_hand/action.png",
+      "id": "item_001__one_hand",
+      "ready": "item_001__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001"
+    },
+    {
+      "action": "item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "ready": "item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    }
+  ]
+}

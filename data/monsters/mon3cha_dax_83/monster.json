@@ -1,0 +1,59 @@
+{
+  "creature_archive": "MON3CHA.DAX",
+  "creature_record": 83,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Potion of Healing",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 71,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Banded armor +2",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 57,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Mace +2",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 23,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_65322016084",
+      "kind": "shield",
+      "name": "Shield +2",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON3CHA.DAX:83",
+  "name": "7TH LVL CLERIC",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_002__added_65322016084/action.png",
+      "id": "item_002__added_65322016084",
+      "ready": "item_002__added_65322016084/ready.png",
+      "shield_id": "added_65322016084",
+      "weapon_id": "item_002"
+    }
+  ]
+}

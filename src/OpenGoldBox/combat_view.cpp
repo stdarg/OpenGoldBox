@@ -923,7 +923,9 @@ CombatView::ArtSet CombatView::build_art() const
                          Rect2(image->get_width() - visible.get_end().x, visible.position.y,
                                visible.size.x, visible.size.y),
                          lying->get_used_rect(),
-                         goliath};
+                         goliath,
+                         source.planted ? source.planted->scale : 0.0,
+                         source.planted ? static_cast<double>(source.planted->ground) : 0.0};
     };
     const auto install = [&](const CombatArt &source, bool goliath)
     {
@@ -3349,6 +3351,8 @@ Dictionary CombatView::battlefield_visuals()
                                : left      ? found->left_visible
                                            : found->visible;
             entry["goliath"] = found->goliath && !unconscious;
+            entry["planted_scale"] = unconscious ? 0.0 : found->planted_scale;
+            entry["ground"] = found->ground;
             entry["conscious"] = actor.conscious;
         }
         else

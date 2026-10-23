@@ -1,0 +1,42 @@
+{
+  "creature_archive": "MON7CHA.DAX",
+  "creature_record": 69,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": false,
+      "source_index": 1,
+      "source_type": 73,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Composite long bow",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 41,
+      "weapon_role": "ranged"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "na",
+  "key": "MON7CHA.DAX:69",
+  "name": "DRIDER",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 2.0
+  },
+  "variants": []
+}

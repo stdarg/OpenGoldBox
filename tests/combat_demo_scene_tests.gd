@@ -43,6 +43,18 @@ func check_sprite_geometry(canvas: Control) -> void:
                 "Normal visible art fills 90 percent of its cell")
     require(canvas.call("_sprite_rect", texture, Rect2(), Rect2(0, 0, 24, 24), true) == Rect2(),
         "Empty visible art does not divide by zero")
+    # New monster art (#274) stands as the Combat Sprite Catalog previews it:
+    # 1.45 art squares for a Normal humanoid, centered, feet on the cell's edge.
+    var art := ImageTexture.create_from_image(Image.create(128, 128, false, Image.FORMAT_RGBA8))
+    for tile in [24.0, 72.0]:
+        var occupied := Rect2(Vector2(4.0, 5.0) * tile, Vector2.ONE * tile)
+        var planted: Rect2 = canvas.call("_sprite_rect", art, Rect2(0, 0, 128, 128), occupied,
+            false, 1.45, 120.0)
+        require(is_equal_approx(planted.size.x, 1.45 * tile) and
+            is_equal_approx(planted.get_center().x, occupied.get_center().x),
+            "New art is drawn at its fixed scale, centered on its cell")
+        require(is_equal_approx(planted.position.y + 120.0 * planted.size.y / 128.0, occupied.end.y),
+            "New art's feet stand on the cell's bottom edge")
 
 func check_demo() -> void:
     root.size = Vector2i(1920, 1080)

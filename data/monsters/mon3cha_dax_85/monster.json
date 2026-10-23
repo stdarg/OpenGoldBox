@@ -1,0 +1,59 @@
+{
+  "creature_archive": "MON3CHA.DAX",
+  "creature_record": 85,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Ring Of Protection +3",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 93,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Two-handed sword +2",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 38,
+      "weapon_role": "two_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Plate armor +2",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 58,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_65498918654",
+      "kind": "gear",
+      "name": "potion of healing",
+      "readied": false,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON3CHA.DAX:85",
+  "name": "8TH LVL FIGHTER",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_001__two_hand/action.png",
+      "id": "item_001__two_hand",
+      "ready": "item_001__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001"
+    }
+  ]
+}

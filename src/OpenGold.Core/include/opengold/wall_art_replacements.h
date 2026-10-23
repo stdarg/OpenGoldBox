@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_WALL_ART_REPLACEMENTS_H
 #define OPENGOLD_WALL_ART_REPLACEMENTS_H
 
+#include "opengold/png_decoder.h"
 #include "opengold/wall_art.h"
 #include <array>
 #include <cstdint>
@@ -28,10 +29,6 @@ struct WallArtReplacements
 
 // The file each perspective piece is stored in, such as "far_front.png".
 [[nodiscard]] std::string_view wall_view_file(WallView view);
-
-// The core has no PNG codec; the host supplies one. It returns nothing for
-// bytes it cannot decode.
-using PngDecoder = std::function<std::optional<Image>(std::span<const std::uint8_t>)>;
 
 // Reads data/art/walls: one folder per appearance, named after its key with
 // "." and ":" as "_" (WALLDEF1_DAX_1_4), holding the ten wall_view_file PNGs.

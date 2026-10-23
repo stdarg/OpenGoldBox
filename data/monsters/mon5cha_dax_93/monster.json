@@ -1,0 +1,50 @@
+{
+  "creature_archive": "MON5CHA.DAX",
+  "creature_record": 93,
+  "equipment": [
+    {
+      "id": "added_20261023_9301",
+      "kind": "weapon",
+      "name": "Short sword",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_20261023_9302",
+      "kind": "gear",
+      "name": "Leather armor",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_9303",
+      "kind": "gear",
+      "name": "Thieves' tools",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON5CHA.DAX:93",
+  "name": "6TH LVL THIEF",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_20261023_9301__one_hand/action.png",
+      "id": "added_20261023_9301__one_hand",
+      "ready": "added_20261023_9301__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_20261023_9301"
+    }
+  ]
+}

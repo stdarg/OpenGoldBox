@@ -126,6 +126,8 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/ecl_party_host.cpp
     src/OpenGold.Core/src/npc_portraits.cpp
     src/OpenGold.Core/src/shop_data.cpp
+    src/OpenGold.Core/src/json_document.cpp
+    src/OpenGold.Core/src/monster_bundle.cpp
     src/OpenGold.Core/src/coin_purse.cpp
     src/OpenGold.Core/src/training_hall.cpp
     src/OpenGold.Core/src/campaign_rest.cpp
@@ -393,6 +395,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_wall_art_replacements_tests PRIVATE opengold_core)
     target_compile_definitions(opengold_wall_art_replacements_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_wall_art_replacements_tests COMMAND opengold_wall_art_replacements_tests)
+    add_executable(opengold_monster_bundle_tests tests/monster_bundle_tests.cpp)
+    target_link_libraries(opengold_monster_bundle_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_monster_bundle_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_monster_bundle_tests COMMAND opengold_monster_bundle_tests)
     add_executable(opengold_shop_data_tests tests/shop_data_tests.cpp)
     target_link_libraries(opengold_shop_data_tests PRIVATE opengold_core)
     target_compile_definitions(opengold_shop_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

@@ -1,0 +1,48 @@
+{
+  "creature_archive": "MON6CHA.DAX",
+  "creature_record": 67,
+  "equipment": [
+    {
+      "id": "added_14601162522",
+      "kind": "weapon",
+      "name": "long bow",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "added_14614854085",
+      "kind": "weapon",
+      "name": "halberd",
+      "readied": false,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "two_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "na",
+  "key": "MON6CHA.DAX:67",
+  "name": "CENTAUR",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 2.0
+  },
+  "variants": [
+    {
+      "action": "added_14601162522__ranged/action.png",
+      "id": "added_14601162522__ranged",
+      "ready": "added_14601162522__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_14601162522"
+    },
+    {
+      "action": "added_14614854085__two_hand/action.png",
+      "id": "added_14614854085__two_hand",
+      "ready": "added_14614854085__two_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_14614854085"
+    }
+  ]
+}

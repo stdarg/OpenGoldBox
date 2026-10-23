@@ -1,0 +1,84 @@
+{
+  "creature_archive": "MON6CHA.DAX",
+  "creature_record": 50,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Potion Extra Healing",
+      "readied": false,
+      "source_index": 0,
+      "source_type": 71,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Ring of Fire Resistance",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 69,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "shield",
+      "name": "Shield +1",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 59,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_003",
+      "kind": "gear",
+      "name": "Plate armor +2",
+      "readied": true,
+      "source_index": 3,
+      "source_type": 58,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_004",
+      "kind": "weapon",
+      "name": "Javelin of Lightning",
+      "readied": true,
+      "source_index": 4,
+      "source_type": 71,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_005",
+      "kind": "weapon",
+      "name": "Long sword +2",
+      "readied": false,
+      "source_index": 5,
+      "source_type": 36,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON6CHA.DAX:50",
+  "name": "COMMANDANT",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_005__item_002/action.png",
+      "id": "item_005__item_002",
+      "ready": "item_005__item_002/ready.png",
+      "shield_id": "item_002",
+      "weapon_id": "item_005"
+    },
+    {
+      "action": "item_004__ranged/action.png",
+      "id": "item_004__ranged",
+      "ready": "item_004__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_004"
+    }
+  ]
+}

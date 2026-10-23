@@ -1,0 +1,41 @@
+{
+  "creature_archive": "MON2CHA.DAX",
+  "creature_record": 13,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "gear",
+      "name": "Clerical Scroll With 2 Spells",
+      "readied": false,
+      "source_index": 0,
+      "source_type": 62,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_1512169647",
+      "kind": "weapon",
+      "name": "scimitar",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON2CHA.DAX:13",
+  "name": "ORC",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_1512169647__one_hand/action.png",
+      "id": "added_1512169647__one_hand",
+      "ready": "added_1512169647__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "added_1512169647"
+    }
+  ]
+}

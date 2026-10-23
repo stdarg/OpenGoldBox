@@ -1,0 +1,50 @@
+{
+  "creature_archive": "MON6CHA.DAX",
+  "creature_record": 54,
+  "equipment": [
+    {
+      "id": "added_20261023_5401",
+      "kind": "weapon",
+      "name": "Long sword",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "added_20261023_5402",
+      "kind": "shield",
+      "name": "Shield",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    },
+    {
+      "id": "added_20261023_5403",
+      "kind": "gear",
+      "name": "Chain mail",
+      "readied": true,
+      "source_index": -1,
+      "source_type": -1,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON6CHA.DAX:54",
+  "name": "CORPORAL",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "added_20261023_5401__added_20261023_5402/action.png",
+      "id": "added_20261023_5401__added_20261023_5402",
+      "ready": "added_20261023_5401__added_20261023_5402/ready.png",
+      "shield_id": "added_20261023_5402",
+      "weapon_id": "added_20261023_5401"
+    }
+  ]
+}

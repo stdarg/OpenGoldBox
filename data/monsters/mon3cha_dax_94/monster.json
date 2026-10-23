@@ -1,0 +1,32 @@
+{
+  "creature_archive": "MON3CHA.DAX",
+  "creature_record": 94,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Wand of Magic Missiles",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 79,
+      "weapon_role": "ranged"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON3CHA.DAX:94",
+  "name": "LEVEL 3 MU",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "ready": "item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    }
+  ]
+}

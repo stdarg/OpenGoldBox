@@ -1,0 +1,57 @@
+{
+  "creature_archive": "MON2CHA.DAX",
+  "creature_record": 7,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Long sword",
+      "readied": true,
+      "source_index": 0,
+      "source_type": 36,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_001",
+      "kind": "gear",
+      "name": "Arrows",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 73,
+      "weapon_role": ""
+    },
+    {
+      "id": "item_002",
+      "kind": "weapon",
+      "name": "Long bow",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 43,
+      "weapon_role": "ranged"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON2CHA.DAX:7",
+  "name": "HOBGOBLIN LDR",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "ready": "item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    },
+    {
+      "action": "item_002__ranged/action.png",
+      "id": "item_002__ranged",
+      "ready": "item_002__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_002"
+    }
+  ]
+}

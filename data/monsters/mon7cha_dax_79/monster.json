@@ -1,0 +1,32 @@
+{
+  "creature_archive": "MON7CHA.DAX",
+  "creature_record": 79,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Dagger",
+      "readied": false,
+      "source_index": 0,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON7CHA.DAX:79",
+  "name": "DIANE",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_000__one_hand/action.png",
+      "id": "item_000__one_hand",
+      "ready": "item_000__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    }
+  ]
+}

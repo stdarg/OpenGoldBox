@@ -13,12 +13,22 @@
 // Item 31).
 namespace opengold
 {
+// New art drawn as the Combat Sprite Catalog previews it (#274): `scale`
+// 128-pixel art squares to a combat square, both poses standing on the row
+// `ground` of the ready pose, centered.
+struct PlantedArt
+{
+    double scale{1};
+    unsigned ground{};
+};
+
 struct CombatArt
 {
     rules::EntityId entity{};
     Image image;
     std::optional<Image> action;
     std::string missing_combination;
+    std::optional<PlantedArt> planted; // empty for art fitted to the square
 };
 
 // Who an encounter caught unaware. The values are the original script's

@@ -1,0 +1,57 @@
+{
+  "creature_archive": "MON3CHA.DAX",
+  "creature_record": 110,
+  "equipment": [
+    {
+      "id": "item_000",
+      "kind": "weapon",
+      "name": "Dart",
+      "readied": false,
+      "source_index": 0,
+      "source_type": 9,
+      "weapon_role": "ranged"
+    },
+    {
+      "id": "item_001",
+      "kind": "weapon",
+      "name": "Dagger",
+      "readied": true,
+      "source_index": 1,
+      "source_type": 8,
+      "weapon_role": "one_hand"
+    },
+    {
+      "id": "item_002",
+      "kind": "gear",
+      "name": "Ring Of Protection +1",
+      "readied": true,
+      "source_index": 2,
+      "source_type": 93,
+      "weapon_role": ""
+    }
+  ],
+  "format": "opengold-monster-v1",
+  "humanoid_size": "normal",
+  "key": "MON3CHA.DAX:110",
+  "name": "THEURGIST",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
+  "variants": [
+    {
+      "action": "item_001__one_hand/action.png",
+      "id": "item_001__one_hand",
+      "ready": "item_001__one_hand/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_001"
+    },
+    {
+      "action": "item_000__ranged/action.png",
+      "id": "item_000__ranged",
+      "ready": "item_000__ranged/ready.png",
+      "shield_id": "",
+      "weapon_id": "item_000"
+    }
+  ]
+}

@@ -204,3 +204,10 @@ in the game: answering YES at a hall lists its services in the dialogue
   original pieces from the player's game files.
   [#272](https://github.com/stdarg/OpenGoldBox/issues/272),
   [data/art/walls](../data/art/walls/README.md).
+- **Monsters from the Combat Sprite Catalog** (2026-10-23). A creature the
+  catalog exported to `data/monsters` fights under the catalog's name, in its
+  new art for the weapon set it readies, and carries only the original items
+  the catalog kept: an item left out is neither used in the fight nor left
+  behind. A creature without new art shows its original icon with its action
+  pose. [#274](https://github.com/stdarg/OpenGoldBox/issues/274),
+  [data/monsters](../data/monsters/README.md).
