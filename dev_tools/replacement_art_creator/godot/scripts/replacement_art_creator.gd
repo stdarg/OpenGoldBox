@@ -4,6 +4,8 @@ const Builder = preload("res://scripts/perspective_builder.gd")
 const INDEX_PATH := "../data/appearance_index.csv"
 const BRIEFS_PATH := "../data/briefs.json"
 const METADATA_PATH := "../../tile_art_viewer/data/tile_art_catalog.csv"
+# The game's new wall art, one folder per appearance (WALLDEF1_DAX_1_4).
+const GAME_ART_PATH := "../../../data/art/walls"
 const KINDS := ["solid", "door", "opening", "landmark", "facade", "rect_opening", "cave_opening"]
 const CSV_COLUMNS := [
     "index", "archive", "record", "appearance", "view", "view_name", "name", "width", "height",
@@ -31,6 +33,7 @@ const CSV_COLUMNS := [
 @onready var import_feature: Button = $Margin/Main/Split/Tabs/Create/ArtActions/ImportFeature
 @onready var build_views: Button = $Margin/Main/Split/Tabs/Create/ArtActions/BuildViews
 @onready var export_set: Button = $Margin/Main/Split/Tabs/Create/ArtActions/ExportSet
+@onready var export_to_game: Button = $Margin/Main/Split/Tabs/Create/ArtActions/ExportToGame
 @onready var sources: Label = $Margin/Main/Split/Tabs/Create/Sources
 @onready var depth_picker: OptionButton = $Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn/DepthRow/DepthPicker
 @onready var corridor_preview: TextureRect = $Margin/Main/Split/Tabs/Create/PreviewSplit/CorridorColumn/CorridorPanel/CorridorPreview
@@ -89,6 +92,7 @@ func _ready() -> void:
     import_feature.pressed.connect(func(): feature_dialog.popup_centered_ratio())
     build_views.pressed.connect(_build_selected)
     export_set.pressed.connect(func(): export_dialog.popup_centered_ratio())
+    export_to_game.pressed.connect(_export_to_game)
     base_dialog.file_selected.connect(func(path: String): _import_art(path, "base"))
     feature_dialog.file_selected.connect(func(path: String): _import_art(path, "feature"))
     export_dialog.dir_selected.connect(_export_selected)
@@ -466,7 +470,8 @@ func _select_key(key: String) -> void:
     sources.text = "Wall: %s   Feature: %s" % [
         str(record.get("base", "none")), str(record.get("feature", "none"))
     ]
-    for control in [save_brief, copy_wall_prompt, import_base, import_feature, build_views, export_set]:
+    for control in [save_brief, copy_wall_prompt, import_base, import_feature, build_views, export_set,
+                    export_to_game]:
         control.disabled = false
     _update_feature_button()
     if visible_keys.has(key):
@@ -591,13 +596,25 @@ func _export_selected(folder: String) -> void:
     var error := _export_set(folder, selected_key, pieces)
     status.text = "Exported %s to %s" % [selected_key, folder] if error.is_empty() else error
 
-func _export_set(folder: String, key: String, images: Array[Image]) -> String:
+func _export_to_game() -> void:
+    _store_form()
+    if pieces.size() != 10 or selected_key.is_empty():
+        status.text = "Build a complete ten-view set before export."
+        return
+    var folder := ProjectSettings.globalize_path("res://").path_join(GAME_ART_PATH).simplify_path()
+    var error := _export_set(folder, selected_key, pieces, true)
+    status.text = "%s is now the game's art. Restart the Tile Art Viewer to review it in a map." % \
+        selected_key if error.is_empty() else error
+
+# A game export replaces the appearance's set; any other export keeps earlier
+# ones in numbered folders.
+func _export_set(folder: String, key: String, images: Array[Image], replace := false) -> String:
     if images.size() != 10:
         return "An appearance must have ten pieces."
     var stem := key.replace(".", "_").replace(":", "_")
     var directory := folder.path_join(stem)
     var version := 2
-    while DirAccess.dir_exists_absolute(directory):
+    while not replace and DirAccess.dir_exists_absolute(directory):
         directory = folder.path_join("%s-%04d" % [stem, version])
         version += 1
     var error := DirAccess.make_dir_recursive_absolute(directory)
@@ -647,7 +664,7 @@ func _export_used(folder: String) -> void:
             push_error("Used appearance lacks ten views: %s" % key)
             get_tree().quit(1)
             return
-        var error := _export_set(folder, key, images)
+        var error := _export_set(folder, key, images, true)
         if not error.is_empty():
             push_error(error)
             get_tree().quit(1)
@@ -680,6 +697,12 @@ func _run_check(output_folder: String) -> void:
         var error := _export_set(output_folder, key, images)
         if not error.is_empty():
             push_error(error)
+            get_tree().quit(1)
+            return
+        error = _export_set(output_folder, key, images, true)
+        var stem: String = key.replace(".", "_").replace(":", "_")
+        if not error.is_empty() or DirAccess.dir_exists_absolute(output_folder.path_join(stem + "-0002")):
+            push_error("A game export must replace the set in place: %s" % key)
             get_tree().quit(1)
             return
         var preview_error: Error = Builder.preview(images, 2).save_png(output_folder.path_join(

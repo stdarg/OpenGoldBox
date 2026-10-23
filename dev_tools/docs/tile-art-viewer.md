@@ -21,7 +21,7 @@ launcher builds the native extension and imports its Godot project when needed.
 
 - [`data/tile_art_catalog.csv`](../tile_art_viewer/data/tile_art_catalog.csv) stores a description and source metadata for each perspective piece, plus a verified map location where available. Edit descriptions in the catalog and use **Save descriptions to CSV** to write them.
 - **Flag for Regen** saves a per-piece review flag to the CSV. It does not create art.
-- **Show new art** displays available sets from the [Replacement Art Creator pack](../replacement_art_creator/replacement_pack); otherwise the tool displays locally decoded original art.
+- **Show new art** displays the game's new wall art from [`data/art/walls`](../../data/art/walls), composed by the game's own code; appearances without a set show locally decoded original art.
 - [`godot/`](../tile_art_viewer/godot) contains the standalone UI. [`native/`](../tile_art_viewer/native) contains its Godot extension and wall/map catalog implementation.
 
 The [tool README](../tile_art_viewer/README.md) explains the filters, map

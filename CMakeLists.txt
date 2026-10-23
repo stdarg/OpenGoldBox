@@ -146,6 +146,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/dungeon_battlefield.cpp
     src/OpenGold.Core/src/encounter_formation.cpp
     src/OpenGold.Core/src/exploration_view.cpp
+    src/OpenGold.Core/src/wall_art_replacements.cpp
     src/OpenGold.Core/src/speaker_audio.cpp
     src/OpenGold.Core/src/sound_bank.cpp
     src/OpenGold.Core/src/sound_player.cpp
@@ -388,6 +389,10 @@ if(OPENGOLD_BUILD_TESTS)
     target_link_libraries(opengold_wizard_levels_tests PRIVATE opengold_core opengold_rules_srd5)
     target_compile_definitions(opengold_wizard_levels_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME opengold_wizard_levels_tests COMMAND opengold_wizard_levels_tests)
+    add_executable(opengold_wall_art_replacements_tests tests/wall_art_replacements_tests.cpp)
+    target_link_libraries(opengold_wall_art_replacements_tests PRIVATE opengold_core)
+    target_compile_definitions(opengold_wall_art_replacements_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME opengold_wall_art_replacements_tests COMMAND opengold_wall_art_replacements_tests)
     add_executable(opengold_shop_data_tests tests/shop_data_tests.cpp)
     target_link_libraries(opengold_shop_data_tests PRIVATE opengold_core)
     target_compile_definitions(opengold_shop_data_tests PRIVATE OPENGOLD_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

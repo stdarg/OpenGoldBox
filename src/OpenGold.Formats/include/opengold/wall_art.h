@@ -27,6 +27,8 @@ struct WallArtSet
 {
     // GEO appearance ID n selects appearances[n-1]. ID 0 has no artwork.
     std::vector<std::array<Image, 10>> appearances;
+    // Pixels per original pixel: 1 for decoded art, more for new art.
+    unsigned scale{1};
 };
 
 // Inputs are decompressed DAX records. Resource selection belongs to the host.

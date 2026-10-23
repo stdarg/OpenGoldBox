@@ -198,3 +198,9 @@ in the game: answering YES at a hall lists its services in the dialogue
   [PRD §5.2](PRD.md#52-modern-shell-original-game).
 - **Save files.** OpenGoldBox uses its own versioned save format. Importing
   original saves is wanted but not yet supported. [PRD §14](PRD.md#14-save-games), [SAVES.md](SAVES.md).
+- **New wall art.** The first-person view draws the new wall art in
+  `data/art/walls`, at four times the original resolution, in place of each
+  original appearance it covers. Appearances without new art keep the
+  original pieces from the player's game files.
+  [#272](https://github.com/stdarg/OpenGoldBox/issues/272),
+  [data/art/walls](../data/art/walls/README.md).

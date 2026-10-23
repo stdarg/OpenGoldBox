@@ -30,7 +30,8 @@ std::vector<std::uint8_t> read_archive(const std::filesystem::path &path)
 
 } // namespace
 
-RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
+RolfTourSession RolfTourSession::load(const std::filesystem::path &directory,
+                                      const WallArtReplacements &new_wall_art)
 {
     const auto catalog = EclCatalog::load(directory);
     const auto program = catalog.find({"ECL3.DAX", 0});
@@ -113,6 +114,8 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
     {
         throw EclError("Invalid Phlan wall definitions");
     }
+    wall_art = with_replacements(std::move(*wall_art), wall_appearance_keys("WALLDEF3.DAX", 0, 15),
+                                 new_wall_art);
     auto bytes = read_archive(resolve_archive(directory, "SPRIT3.DAX"));
     std::array<opengold::Image, 3> sprites;
     for (std::uint8_t i = 0; i < sprites.size(); ++i)
@@ -340,9 +343,13 @@ RolfTourSession RolfTourSession::load(const std::filesystem::path &directory)
                 {
                     throw EclError("Invalid wall definition bank " + std::to_string(id));
                 }
+                const auto with_new_art = with_replacements(
+                    std::move(*decoded), wall_appearance_keys("WALLDEF" + bank + ".DAX", id, 5),
+                    new_wall_art);
+                district->wall_art.scale = with_new_art.scale;
                 district->wall_art.appearances.insert(district->wall_art.appearances.end(),
-                                                      decoded->appearances.begin(),
-                                                      decoded->appearances.end());
+                                                      with_new_art.appearances.begin(),
+                                                      with_new_art.appearances.end());
             }
             district->sprite_archive =
                 read_archive(resolve_archive(directory, "SPRIT" + bank + ".DAX"));

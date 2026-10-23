@@ -21,7 +21,7 @@ and accepts `GODOT_BIN` for a different Godot executable.
 
 - [`data/briefs.json`](../replacement_art_creator/data/briefs.json) records the appearance briefs and source-art choices. [`data/appearance_index.csv`](../replacement_art_creator/data/appearance_index.csv) maps appearance IDs.
 - [`godot/art/`](../replacement_art_creator/godot/art) holds imported new source PNGs. [`data/provenance.json`](../replacement_art_creator/data/provenance.json) and [`data/source_art_provenance.json`](../replacement_art_creator/data/source_art_provenance.json) record prompt and source-image provenance.
-- [`replacement_pack/`](../replacement_art_creator/replacement_pack) contains exported perspective PNGs and manifests. The Tile Art Viewer loads this pack for map-context review.
+- **Export to game** writes the selected set to [`data/art/walls`](../../data/art/walls), replacing that appearance's earlier set. The game shows these sets in place of the original appearances, and the Tile Art Viewer reads the same folder for map-context review.
 - [`assign_used_art.py`](../replacement_art_creator/assign_used_art.py) assigns or checks replacement coverage for used appearances; `--check-pack` audits the pack.
 
 The [tool README](../replacement_art_creator/README.md) gives the full

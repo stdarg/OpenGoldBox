@@ -5,6 +5,7 @@
 #include "opengold/map_catalog.h"
 #include "opengold/formats.h"
 #include "opengold/wall_art.h"
+#include "opengold/wall_art_replacements.h"
 #include "opengold/creature_catalog.h"
 #include "opengold/campaign_party.h"
 #include "opengold/campaign_encounter.h"
@@ -167,7 +168,9 @@ class RolfTourSession
     ~RolfTourSession() = default;
     [[nodiscard]] RolfTourSession detached_copy() const;
 
-    [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory);
+    // New wall art replaces the original appearances it covers.
+    [[nodiscard]] static RolfTourSession load(const std::filesystem::path &directory,
+                                              const WallArtReplacements &new_wall_art = {});
     // Also accepts wholly synthetic resources for asset-free host tests.
     RolfTourSession(GeoMap map, std::shared_ptr<const EclProgram> program,
                     std::array<opengold::Image, 3> sprites, std::uint32_t entry,

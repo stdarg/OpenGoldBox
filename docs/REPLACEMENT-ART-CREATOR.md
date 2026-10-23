@@ -7,9 +7,10 @@ wall image and, when needed, a separate feature image. You can inspect original
 pieces from your own game files on the **Reference** tab, but the **Create** tab
 uses an independent brief and newly generated images.
 
-An exported replacement set can be previewed in the Tile Art Viewer's **Map
-Browser**. Exporting does not install the art into the game. The game runtime
-does not yet load these replacement sets.
+**Export to game** puts a set in `data/art/walls`, where the game shows it in
+place of the original appearance. The Tile Art Viewer's **Map Browser** reads
+the same folder, so it shows what the game shows. An appearance with no set
+there keeps its original art.
 
 ## Quick start on this Mac
 
@@ -131,10 +132,13 @@ exports.
 7. Switch **Synthetic corridor** between **Far**, **Middle**, and **Near**.
    Inspect seams, projection, repetition, and transparency. If the result needs
    work, revise the new source PNG, import it again, and rebuild.
-8. Click **Export selected set…** and choose a parent folder. The creator makes
-   a child folder named for the appearance, containing ten PNGs and a
-   `manifest.json`. Exporting the same appearance again creates a numbered
-   child folder, leaving the earlier export intact.
+8. Click **Export to game**. The creator writes ten PNGs and a `manifest.json`
+   to `data/art/walls/<appearance>/` (for example `WALLDEF1_DAX_1_4`),
+   replacing that appearance's earlier set. The game now shows it, and so does
+   the Tile Art Viewer after a restart. Commit the folder to keep the change.
+   To keep a copy outside the game instead, click **Export selected set…** and
+   choose a parent folder; exporting the same appearance there again creates a
+   numbered child folder.
 
 The logical first-person canvas is 88 × 88 pixels. The creator exports each
 perspective piece at four times its original dimensions and composes a 352 ×
@@ -161,14 +165,12 @@ OPENGOLD_GAME_DIR=/Users/edmond/POOLRAD \
   --path dev_tools/tile_art_viewer/godot
 ```
 
-1. Open **Map Browser** and choose a map. The viewer automatically loads art
-   from `dev_tools/replacement_art_creator/replacement_pack` and starts with
-   **Show new art** enabled. To review another export, place its appearance
-   folder under `replacement_pack` and restart the viewer.
-2. The first-person view displays replacements where
-   the pack has them and locally decoded originals for missing appearances.
-   If you exported an appearance more than once, the latest numbered export
-   wins.
+1. Open **Map Browser** and choose a map. The viewer automatically loads the
+   game's new art from `data/art/walls` and starts with **Show new art**
+   enabled. After **Export to game**, restart the viewer to see the new set.
+2. The first-person view is composed exactly as the game composes it: new art
+   where `data/art/walls` has a set, and locally decoded originals, enlarged
+   four times, for missing appearances.
 3. Navigate with the arrow keys: **Left** and **Right** turn, **Up** moves
    forward, and **Down** turns around. You can move through walls in this
    inspection tool. You can also click the top-down map to jump to a cell.
@@ -186,12 +188,13 @@ Art Catalog, map controls, and source-piece export features.
 | Save brief | `dev_tools/replacement_art_creator/data/briefs.json` |
 | Import a new PNG | `dev_tools/replacement_art_creator/godot/art/` and its path in `briefs.json` |
 | Save a reference description | `dev_tools/tile_art_viewer/data/tile_art_catalog.csv` |
-| Export a set | A new child folder inside the parent folder you choose |
+| Export to game | `data/art/walls/<appearance>/`, replacing that appearance's set |
+| Export selected set… | A new child folder inside the parent folder you choose |
 
 The source game files are read from `OPENGOLD_GAME_DIR`; these operations do
 not write to that directory. The imported images and brief file are in your
 checkout, so check your Git changes if you want to keep or share them. The
-exported pack contains only new art and its manifest.
+game's `data/art/walls` contains only new art and each set's manifest.
 
 ## Common problems
 
@@ -206,9 +209,9 @@ exported pack contains only new art and its manifest.
   and saving again.
 - **Build reports an incomplete set:** Confirm the imported wall file is a
   readable PNG. Reimport any missing or damaged feature PNG, then build again.
-- **New art is absent in Map Browser:** Place the exported appearance folder
-  under `dev_tools/replacement_art_creator/replacement_pack`, restart the viewer,
-  enable **Show new art**, and visit a map location that uses that appearance.
+- **New art is absent in Map Browser:** Press **Export to game** for the
+  appearance, restart the viewer, enable **Show new art**, and visit a map
+  location that uses that appearance.
   The **Unused** label can help explain why an appearance is hard to find.
 
 For developer details and optional headless checks, see the

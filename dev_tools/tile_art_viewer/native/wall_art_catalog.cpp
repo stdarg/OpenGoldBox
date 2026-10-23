@@ -6,6 +6,7 @@
 #include "opengold/magic_item_catalog.h"
 #include "opengold/por_sound.h"
 #include "opengold/wall_art.h"
+#include "../../../src/OpenGoldBox/wall_art_files.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <algorithm>
@@ -143,14 +144,17 @@ void WallArtCatalog::_bind_methods()
     ClassDB::bind_method(D_METHOD("item_catalog"), &WallArtCatalog::item_catalog);
     ClassDB::bind_method(D_METHOD("map_cell", "map_index", "profile_index", "x", "y", "view"),
                          &WallArtCatalog::map_cell);
-    ClassDB::bind_method(D_METHOD("map_view", "map_index", "profile_index", "x", "y", "facing"),
-                         &WallArtCatalog::map_view);
-    ClassDB::bind_method(D_METHOD("map_pick", "map_index", "profile_index", "x", "y", "facing",
-                                  "pixel_x", "pixel_y"),
-                         &WallArtCatalog::map_pick);
+    ClassDB::bind_method(D_METHOD("load_new_art", "folder"), &WallArtCatalog::load_new_art);
+    ClassDB::bind_method(D_METHOD("new_art_sets"), &WallArtCatalog::new_art_sets);
     ClassDB::bind_method(
-        D_METHOD("map_visible_pieces", "map_index", "profile_index", "x", "y", "facing"),
-        &WallArtCatalog::map_visible_pieces);
+        D_METHOD("map_view", "map_index", "profile_index", "x", "y", "facing", "new_art"),
+        &WallArtCatalog::map_view, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("map_pick", "map_index", "profile_index", "x", "y", "facing",
+                                  "pixel_x", "pixel_y", "new_art"),
+                         &WallArtCatalog::map_pick, DEFVAL(false));
+    ClassDB::bind_method(
+        D_METHOD("map_visible_pieces", "map_index", "profile_index", "x", "y", "facing", "new_art"),
+        &WallArtCatalog::map_visible_pieces, DEFVAL(false));
 }
 
 String WallArtCatalog::load_directory(const String &directory)
@@ -262,6 +266,9 @@ String WallArtCatalog::load_directory(const String &directory)
                     for (const auto &views : found->second)
                     {
                         profile.appearance_entries.push_back(views);
+                        const auto &first = loaded[views[0]];
+                        profile.appearance_keys.push_back(
+                            wall_appearance_key(first.archive, first.record, first.appearance));
                         std::array<opengold::Image, 10> pieces;
                         for (unsigned view = 0; view < 10; ++view)
                         {
@@ -281,6 +288,7 @@ String WallArtCatalog::load_directory(const String &directory)
                         }
                     }
                 }
+                profile.new_art = with_replacements(profile.art, profile.appearance_keys, new_art_);
                 map.profiles.push_back(std::move(profile));
             }
             if (map.profiles.empty())
@@ -451,6 +459,53 @@ Array WallArtCatalog::item_catalog() const
     return item_catalog_.duplicate(true);
 }
 
+String WallArtCatalog::load_new_art(const String &folder)
+{
+    try
+    {
+        auto replacements = load_wall_art_files(folder);
+        // Compose every profile before keeping any, so a bad set changes nothing.
+        std::vector<WallArtSet> composed;
+        for (const auto &map : maps_)
+        {
+            for (const auto &profile : map.profiles)
+            {
+                composed.push_back(
+                    with_replacements(profile.art, profile.appearance_keys, replacements));
+            }
+        }
+        auto next = composed.begin();
+        for (auto &map : maps_)
+        {
+            for (auto &profile : map.profiles)
+            {
+                profile.new_art = std::move(*next++);
+            }
+        }
+        new_art_ = std::move(replacements);
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return godot_string(error.what());
+    }
+}
+
+Dictionary WallArtCatalog::new_art_sets() const
+{
+    Dictionary result;
+    for (const auto &[key, pieces] : new_art_.sets)
+    {
+        Array images;
+        for (const auto &piece : pieces)
+        {
+            images.push_back(godot_image(piece));
+        }
+        result[godot_string(key)] = images;
+    }
+    return result;
+}
+
 Dictionary WallArtCatalog::map_cell(int map_index, int profile_index, int x, int y, int view) const
 {
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
@@ -487,7 +542,7 @@ Dictionary WallArtCatalog::map_cell(int map_index, int profile_index, int x, int
 }
 
 Ref<godot::Image> WallArtCatalog::map_view(int map_index, int profile_index, int x, int y,
-                                           int facing) const
+                                           int facing, bool new_art) const
 {
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
         y < 0 || y >= 16 || facing < 0 || facing >= 4)
@@ -500,16 +555,16 @@ Ref<godot::Image> WallArtCatalog::map_view(int map_index, int profile_index, int
         return {};
     }
     const auto direction = MapDirection{static_cast<std::size_t>(facing)};
-    return godot_image(
-        compose_exploration_view(map.geometry, map.profiles[profile_index].art, x, y, direction));
+    const auto &profile = map.profiles[profile_index];
+    return godot_image(compose_exploration_view(
+        map.geometry, new_art ? profile.new_art : profile.art, x, y, direction));
 }
 
 Dictionary WallArtCatalog::map_pick(int map_index, int profile_index, int x, int y, int facing,
-                                    int pixel_x, int pixel_y) const
+                                    int pixel_x, int pixel_y, bool new_art) const
 {
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
-        y < 0 || y >= 16 || facing < 0 || facing >= 4 || pixel_x < 0 || pixel_x >= 88 ||
-        pixel_y < 0 || pixel_y >= 88)
+        y < 0 || y >= 16 || facing < 0 || facing >= 4 || pixel_x < 0 || pixel_y < 0)
     {
         return {};
     }
@@ -519,9 +574,15 @@ Dictionary WallArtCatalog::map_pick(int map_index, int profile_index, int x, int
         return {};
     }
     const auto &profile = map.profiles[profile_index];
-    const auto rendered = render_exploration_view(map.geometry, profile.art, x, y,
-                                                  MapDirection{static_cast<std::size_t>(facing)});
-    const auto &hit = rendered.wall_hits[pixel_y * 88 + pixel_x];
+    const auto rendered =
+        render_exploration_view(map.geometry, new_art ? profile.new_art : profile.art, x, y,
+                                MapDirection{static_cast<std::size_t>(facing)});
+    const int side = rendered.image.width;
+    if (pixel_x >= side || pixel_y >= side)
+    {
+        return {};
+    }
+    const auto &hit = rendered.wall_hits[pixel_y * side + pixel_x];
     if (hit.cell < 0)
     {
         return {};
@@ -542,8 +603,8 @@ Dictionary WallArtCatalog::map_pick(int map_index, int profile_index, int x, int
     return result;
 }
 
-Array WallArtCatalog::map_visible_pieces(int map_index, int profile_index, int x, int y,
-                                         int facing) const
+Array WallArtCatalog::map_visible_pieces(int map_index, int profile_index, int x, int y, int facing,
+                                         bool new_art) const
 {
     Array result;
     if (map_index < 0 || static_cast<std::size_t>(map_index) >= maps_.size() || x < 0 || x >= 16 ||
@@ -556,15 +617,17 @@ Array WallArtCatalog::map_visible_pieces(int map_index, int profile_index, int x
     {
         return result;
     }
+    const auto &profile = map.profiles[profile_index];
     const auto rendered =
-        render_exploration_view(map.geometry, map.profiles[profile_index].art, x, y,
+        render_exploration_view(map.geometry, new_art ? profile.new_art : profile.art, x, y,
                                 MapDirection{static_cast<std::size_t>(facing)});
+    const int side = rendered.image.width;
     std::set<std::tuple<int, std::size_t, unsigned>> seen;
-    for (int py = 0; py < 88; ++py)
+    for (int py = 0; py < side; ++py)
     {
-        for (int px = 0; px < 88; ++px)
+        for (int px = 0; px < side; ++px)
         {
-            const auto &hit = rendered.wall_hits[py * 88 + px];
+            const auto &hit = rendered.wall_hits[py * side + px];
             if (hit.cell < 0 ||
                 !seen.insert({hit.cell, index(hit.face), static_cast<unsigned>(hit.perspective)})
                      .second)

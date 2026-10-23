@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent
 CATALOG = ROOT.parent / "tile_art_viewer/data/tile_art_catalog.csv"
 BRIEFS = ROOT / "data/briefs.json"
 ART = ROOT / "godot/art"
-PACK = ROOT / "replacement_pack"
+PACK = ROOT.parents[1] / "data" / "art" / "walls"
 VIEW_NAMES = ("Far front", "Far left", "Far right", "Middle front", "Middle left",
               "Middle right", "Near front", "Near left", "Near right", "Far extension")
 VIEW_SIZES = ((8, 16), (8, 32), (8, 32), (24, 32), (16, 64),

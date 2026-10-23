@@ -115,6 +115,12 @@ add_custom_command(OUTPUT "${combat_weapon_output}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${combat_weapon_output}"
     DEPENDS "${combat_weapon_source}" VERBATIM)
 add_custom_target(opengoldbox_assets DEPENDS ${portrait_outputs} ${splash_outputs} "${combat_body_output}" "${combat_weapon_output}")
+# New wall art (data/art/walls) is read by the core, not imported by Godot,
+# so the project copy is replaced whole and hidden from the importer.
+set(wall_art_project_commands
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${game_project}/data/art/walls"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_project}/data/art/walls"
+    COMMAND "${CMAKE_COMMAND}" -E touch "${game_project}/data/art/walls/.gdignore")
 
 if(OPENGOLD_BUILD_TESTS)
     add_executable(opengold_combat_sprite_layout_tests "${PROJECT_SOURCE_DIR}/tests/combat_sprite_layout_tests.cpp")
@@ -145,6 +151,7 @@ if(OPENGOLD_BUILD_TESTS)
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_project}/data/shops"
+        ${wall_art_project_commands}
         COMMAND "${OPENGOLDBOX_GODOT}" --headless --editor --path "${game_project}" --import --quit
         DEPENDS opengoldbox_game opengoldbox_assets VERBATIM)
     add_test(NAME opengold_godot_prepare COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
@@ -490,6 +497,7 @@ if(WIN32)
     set(package_commands
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_output}/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_output}/data/shops"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${game_output}/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${game_output}/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${game_output}/data/art/combat-weapon-options.tsv"
@@ -498,6 +506,7 @@ else()
     set(package_commands
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${export_path}/Contents/Resources/data/rules/srd-5.2.1"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${export_path}/Contents/Resources/data/shops"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/art/walls" "${export_path}/Contents/Resources/data/art/walls"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${export_path}/Contents/Resources/data/art"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_body_source}" "${export_path}/Contents/Resources/data/art/combat-body-looks.tsv"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${combat_weapon_source}" "${export_path}/Contents/Resources/data/art/combat-weapon-options.tsv"
@@ -508,6 +517,7 @@ add_custom_target(OpenGoldBox ALL
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/opengold.gdextension" "${game_project}/bin/opengold.gdextension"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/rules/srd-5.2.1" "${game_project}/data/rules/srd-5.2.1"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/data/shops" "${game_project}/data/shops"
+    ${wall_art_project_commands}
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${game_output}"
     COMMAND "${OPENGOLDBOX_GODOT}" --headless --editor --path "${game_project}" --import --quit
     ${pre_export_commands}
