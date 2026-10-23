@@ -217,6 +217,3 @@ move the weapon arm and weapon, with only modest upper-body follow-through.
 Never shift, recenter or rotate the entire character to fit the attack. Change
 the pose; do not turn the character's back toward the viewer.
 Output one character only, not the guide sheet or multiple animation frames.
-
-
-FINAL LEADER HEIGHT CORRECTION: This record's previously approved newly generated goblin leader art was shorter and slimmer than MON2:2 Goblin Guard, contrary to saved 4.0 ft leader versus 3.5 ft guard. Shared horizontal 1.30 scale and anchored vertical transform increase body to about 4.0 ft (roughly 100 native pixels), make the leader broader, and preserve its enchanted leather +1, red rank clothing, short sword and shield. No gameplay gear invented. Both frames share transform and exact planted-foot pixels after lower 12 action rows taken from ready. Reviewed next to MON2:2 guard and MON2:3 leader; at 128px on white and alternating on fixed catalog grid. Body and shield fit 1x1 in both frames, ready sword held overhead and action near end of slash.

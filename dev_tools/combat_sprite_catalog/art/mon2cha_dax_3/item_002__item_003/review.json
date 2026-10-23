@@ -1,15 +1,15 @@
 {
-  "action_sha256": "2b8b8aecc3b4034775e2c5f5c1cb40f5e18decd331dcf53279bb025f6f320026",
+  "action_sha256": "fd20f4b6e0b89d098a70dca19b9a0238cc51c9bf512201e4a1111fa8b89b68f2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_3/item_002__item_003/action.png",
     "ready": "art/mon2cha_dax_3/item_002__item_003/ready.png"
   },
   "metadata_sha256": "9e214c6806e1ed38b79c8e3be6abc5541284e37597aefa09d68f3af6eb469617",
-  "notes": "Goblin Leader compared with accepted MON2 Goblin Guard: 4-foot broader body versus 3.5-foot guard, richer saved scale armor and weapon presentation. Action from newly generated attack composited over exact ready lower body/feet. Inspected both poses enlarged and alternating in catalog, with same ground anchor and consistent identity across both saved weapon sets. Original game art was not a generation reference. Short sword ready raised; strike action and shield stay within selected footprint.",
+  "notes": "Reuses accepted MON1 Goblin Leader Short sword + Shield pair: MON2 record has identical 4-foot target, description and selected equipment. Both frames viewed alternating in MON2 catalog context; body broader and taller than Goblin Guard.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "221708786811d967ba4ebbd52474bbe8f8b7910e30a32f6f59d7d333cd0f7246",
-  "reviewed_at": "2026-10-23T03:17:29+00:00",
+  "ready_sha256": "7588cefdfa6f70c09d099efb3d083afb2d158e960b889947dd93ac18bda812ef",
+  "reviewed_at": "2026-10-23T10:58:49.829775+00:00",
   "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:3",
   "specification": "bipedal-v1",

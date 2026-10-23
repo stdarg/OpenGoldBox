@@ -1,16 +1,16 @@
 {
-  "action_sha256": "036303302d98fc41e3bfb45509071ac7d2fef2e021711c011693ebb57ce666c1",
+  "action_sha256": "8106bf444fd6f19a3c7ed6c9169aa6668501f096d82038a038058866b59c01c2",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon2cha_dax_12/item_000__item_001/action.png",
     "ready": "art/mon2cha_dax_12/item_000__item_001/ready.png"
   },
   "metadata_sha256": "a1f9089eb829166491b3d6525c78829db01526ccdb25ec5fd06a530c48c7ccaf",
-  "notes": "This record's previously approved newly generated goblin leader art was shorter and slimmer than MON2:2 Goblin Guard, contrary to saved 4.0 ft leader versus 3.5 ft guard. Shared horizontal 1.30 scale and anchored vertical transform increase body to about 4.0 ft (roughly 100 native pixels), make the leader broader, and preserve its enchanted leather +1, red rank clothing, short sword and shield. No gameplay gear invented. Both frames share transform and exact planted-foot pixels after lower 12 action rows taken from ready. Reviewed next to MON2:2 guard and MON2:3 leader; at 128px on white and alternating on fixed catalog grid. Body and shield fit 1x1 in both frames, ready sword held overhead and action near end of slash.",
+  "notes": "Distinct enchanted Leather armor +1 leader with only saved short sword and shield; approximately 4 ft body height and broader rank silhouette. Both poses viewed at native size and alternating in catalog; boots register in place.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "999a850d1ad61ef96c37c4a55ce456c45abc8394a116b503462fa1b7f8ed6fec",
-  "reviewed_at": "2026-10-23T05:39:05.628034+00:00",
-  "reviewer": "Codex visual review",
+  "ready_sha256": "be1a4da5b296138297d3863c5f430d701302ecc3b7ddb984dec4ebabaf8b490d",
+  "reviewed_at": "2026-10-23T11:04:25.192854+00:00",
+  "reviewer": "Codex",
   "source_key": "MON2CHA.DAX:12",
   "specification": "bipedal-v1",
   "variant_id": "item_000__item_001",

@@ -1,15 +1,15 @@
 {
-  "action_sha256": "ad8e1b7328c406e1d20334488e5c47057a21fab2a183bbb836e9ad11fc2ae99e",
+  "action_sha256": "815a060c9c1ef22e3b8538a9d8849082e315bee38f688f70f6c2cd71fc0a8a5d",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon6cha_dax_10/default/action.png",
     "ready": "art/mon6cha_dax_10/default/ready.png"
   },
-  "metadata_sha256": "598b5b4e4666c0ae47461a13e18c7be15bc023931c4a1f9bf6fc24971737a00f",
-  "notes": "Reviewed in the isolated catalog at normal combat size with one-second ready/action alternation. Original game art measured 15 source pixels / 56 display pixels, below the Small target. New pale-blue, silver-haired fey identity follows published Quickling appearance; natural in-place unarmed punch, no equipment. Both planted feet occupy the same bottom pixels in ready/action. Appearance source: https://www.5esrd.com/database/creature/quickling/ (text only, no art reference).",
+  "metadata_sha256": "91f5d4696a18df94975eb8d4ba6a101e4927a30bcaecf5fe45e12886f898693b",
+  "notes": "Two-foot Quickling body approximately 51 native pixels from hair to planted feet; natural fist jab is fixed in place. Existing record has no saved weapons. Lower 12 action rows copied from new ready figure to register both boots exactly; seam inspected at native and catalog size.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "8c25c4dca48a10cde4b0e46a0ee2d34d8153b6b4c10f97edfc00f18933391b43",
-  "reviewed_at": "2026-10-21T21:23:44+00:00",
+  "ready_sha256": "6a547e446401a091a8d4fbf1e3d6114179a6d6248dc1de71dabdf2814da7f744",
+  "reviewed_at": "2026-10-23T10:52:21.289136+00:00",
   "reviewer": "Codex",
   "source_key": "MON6CHA.DAX:10",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "7d3d91a14ee2b74f3534cc92656ff5a5bbc19d14af368e8badce1b51ceb10ec1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }

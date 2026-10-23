@@ -1,15 +1,15 @@
 {
-  "action_sha256": "a297924bc426069513d3f06098f2512a5245baa9f554f47460ae33c576784208",
+  "action_sha256": "e8d241a4a366ba22fb4b97b83a8f41b925560a798945b8a246c202cc0818c46c",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon1cha_dax_3/item_001__ranged/action.png",
     "ready": "art/mon1cha_dax_3/item_001__ranged/ready.png"
   },
-  "metadata_sha256": "a93bec2a7b8a12a44aa6b9413e07503568c863caf056d67077deecafce44f6a0",
-  "notes": "Long-bow set compared with MON1 regular Goblin Guard and this leader's accepted sword/shield set at combat zoom. Body is modestly taller/broader than guard and consistent with melee set. Arrow nocked in ready and gone just after release in action. Exact pair inspected at combat size and in both catalog states; planted boots and hips register. Only approved new replacement art and pose guide referenced, no original game image.",
+  "metadata_sha256": "79f9fe8345fe6f56194e04ffed87fcf35b33cc860acae3e3a9af8079db36e2f8",
+  "notes": "Long bow loaded/released pair at approximately 4 ft body scale. Lower left leg composited from accepted new melee set so planted foot aligns across sets and poses; no shield or sword shown. Viewed exact PNGs side by side and alternating in catalog; footprint fits.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "910c421049aea8a9df41d78059698a20050c873ecd3715763b9adf74ebf88c38",
-  "reviewed_at": "2026-10-21T02:04:58+00:00",
+  "ready_sha256": "a80352a2e043676801852a03703c26410dd88bd1da9e038c9b921053d004f8a2",
+  "reviewed_at": "2026-10-23T10:57:24.196189+00:00",
   "reviewer": "Codex",
   "source_key": "MON1CHA.DAX:3",
   "specification": "bipedal-v1",
@@ -28,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "c5b94c39f0acaa304d211bcdc7a7ddfcb4e0ac9a96b9eeaa022cfa5a734d6fa1"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
