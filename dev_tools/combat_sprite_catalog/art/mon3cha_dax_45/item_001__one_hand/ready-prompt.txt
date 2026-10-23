@@ -4,6 +4,9 @@ Create one independently designed full-body monster combat sprite in crisp pixel
 art. Use the monster's current text description and the selected equipment set.
 No original game image, extracted sprite, or original-art contact sheet may be an
 input reference. Do not copy the pose-guide mannequin's identity or clothes.
+The saved sprite_size comes from the game's decoded combat-art dimensions,
+measured in 24-pixel source tiles; never replace it with an SRD creature-space
+category. Do not use original game artwork as a generation reference.
 
 FACING: Front three-quarter view toward the RIGHT EDGE OF THE IMAGE (screen
 right), approximately 45 degrees between frontal and right-side profile. The
@@ -32,10 +35,58 @@ ask the user for its ready/action behavior before generating it.
 
 EQUIPMENT: Draw only the selected weapon/shield setup, plus appropriate other
 gear from the record. Retain the shield in both frames when the set includes it.
+For a spellcaster whose saved wand is classified as gear, show that wand in the
+default casting pair without changing its equipment classification.
 Do not add a shield to a two-handed or ranged setup. Preserve the character's
 identity, clothing, colors, handedness and equipment across the pair and all its
 weapon sets. Treat conflicting descriptions/equipment as a question to resolve,
 not permission to invent a different setup.
+
+HUMANOID HEIGHT: Each combat square on the catalog's fixed 3 x 3 grid is 5 feet
+by 5 feet. The catalog's humanoid_size is a visual body-height tier, separate
+from sprite_size (combat squares) and from the SRD creature-type tag. "small"
+humanoids stand 2-4 feet tall (0.4-0.8 square), according to their species and
+the saved height_feet art target when present. Goblins are typically 3-4 feet;
+kobolds are typically 2-3 feet. A quickling's saved height is an art-direction
+estimate, not an exact current-SRD measurement. "normal" human-scale figures,
+including orcs, should stand a full 5 feet tall (one square), not 3-4 feet.
+"tall" figures, such as ogres and hill
+giants, should read taller than normal figures; aim for about 1.7 squares when
+their saved footprint permits. "na" means this humanoid-height comparison does
+not apply to the body plan. Compare with correctly scaled art from the same
+species and tier before choosing a body scale. Measure the figure from planted
+feet to the top of its head, excluding weapons, horns, raised arms and effects.
+For a small humanoid, use the individual record's height_feet, not a generic
+Small-tier midpoint. Read height_reference to distinguish a published species
+range from a chosen art target or an estimate.
+Keep that body height consistent across both poses and every weapon set for this
+creature; do not fill the 128 x 128 canvas independently for each sprite. Use
+only a correctly scaled comparison sprite as a reference: an older accepted
+image is not a height authority if it makes normal orcs 3-4 feet tall. These
+are body measurements, not canvas sizes. Never shrink a normal body below the
+5-foot target merely to make room for its weapon.
+
+FOOTPRINT BOUNDARY: The saved sprite_size is the creature's game-derived tile
+footprint, distinct from the 128 x 128 PNG canvas. In READY, a raised weapon
+may extend above the footprint into the combat square above. It may render over
+the combat sprite occupying that square. The ready weapon must stay within the
+footprint's side and bottom boundaries. In ACTION, the moving attack weapon may
+cross the dotted footprint boundary during its swing or thrust. In BOTH poses,
+keep the body, planted feet, shield, and non-attacking gear inside the footprint.
+This permitted weapon overflow is not a reason to shrink or recenter the figure.
+The weapon must still be visible inside the PNG canvas with transparent margin;
+pixels cannot be drawn outside the PNG. The grid never moves between monsters
+or frames. If the body cannot fit at the correct height, resolve that conflict
+before generating; never solve it by shrinking only one frame.
+
+LEADER COMPARISON: For every creature named Leader or Ldr, compare its body
+against regular creatures of the same kind in the same game archive. Make the
+leader broader and more impressive in both poses and every weapon set, with
+richer treatment of its saved armor and weapons. A 1 x 1 Normal leader and its
+regular counterpart both have 5-foot bodies: do not shrink the regular figure
+or push the leader's head above the square. Where the saved tier and footprint
+leave room, the leader may also be modestly taller. Keep the game-derived
+sprite_size unchanged and do not invent gameplay gear to signal rank.
 
 WEAPON-SET COVERAGE (generation workflow): Inspect the monster's entire current
 equipment list and enumerate every weapon set, including weapons not currently
@@ -55,12 +106,14 @@ images must be supplied with the request, not merely named in its text.
 
 SHARED FRAME BUDGET: Plan BOTH poses before drawing either one. Identify the
 pose with the widest or tallest full-body-and-weapon silhouette, reserve a
-transparent margin around that larger pose, and use its camera distance for
-both images. The character's head, torso, limbs and equipment keep the same
-apparent pixel scale in ready and action. Do not shrink the whole action figure
-to fit a wider attack, and do not enlarge the ready figure to fill spare space.
-Change the pose within the shared canvas; if the attack cannot fit at the
-chosen body scale, remake the pair at a smaller common scale.
+transparent margin around that larger pose in the PNG canvas, and use its
+camera distance for both images. The character's head, torso, limbs and
+equipment keep the same apparent pixel scale in ready and action. Do not
+shrink the whole action figure to fit a wider attack, and do not enlarge the
+ready figure to fill spare space. The raised ready weapon may cross the top
+tile-footprint line, and the moving action weapon may cross a tile-footprint
+line, while all pixels remain inside the PNG. Do not reduce the required
+humanoid body height to make room for the attack.
 
 FIXED ANIMATION REGISTRATION: These are successive frames of ONE character,
 not separately composed illustrations. Establish the ready figure's planted
@@ -72,15 +125,19 @@ needed to show the attack. Do not translate, recenter, crop, independently
 scale, or rotate the entire figure between frames. A matching foot baseline
 alone is insufficient if the character slides horizontally. For a stationary
 attack, do not invent a step or a new stance. Plan transparent space for the
-weapon's widest action sweep before making ready; if that cannot fit, remake
-BOTH frames at a smaller common scale while retaining a single shared foot
-anchor. Overlay the frames and play them at combat size to reject any jump.
+weapon's widest action sweep before making ready; a raised ready weapon may
+cross the top tile line, and the moving action weapon may cross a tile line.
+If the weapon cannot fit inside the PNG,
+revise the pose without changing body scale or foot anchor. Overlay the frames
+and play them at combat size to reject any jump.
 
 OUTPUT: A single full-body figure, genuine transparent background, no painted
 checkerboard, ground plane, labels, borders, scenery, shadows extending off the
-figure or motion blur. Keep body and equipment entirely inside the frame with
-transparent margin. Final assets are 128 x 128 PNGs with alpha. Larger working
-images are allowed; export with nearest-neighbor sampling and preserve alpha.
+figure or motion blur. Keep all visible pixels inside the PNG canvas with
+transparent margin. A raised READY weapon may cross the top tile line; the
+moving ACTION weapon may cross a footprint line. Final assets are 128 x 128
+PNGs with alpha. Larger working images are allowed; export with nearest-neighbor
+sampling and preserve alpha.
 Keep camera, character scale and exact planted-foot coordinates consistent across poses
 and weapon sets; do not resize each pose independently to fill the canvas. The
 action must read clearly at normal combat size, not only in a magnified preview.
@@ -88,6 +145,9 @@ action must read clearly at normal combat size, not only in a magnified preview.
 MONSTER AND SELECTED SET (current catalog JSON):
 {
   "description": "A mobile thief whose lighter kit and guarded stance distinguish this template from armored soldiers. Source inventory: Leather armor, Long sword. Source wealth: 5 sp.",
+  "height_feet": null,
+  "height_reference": null,
+  "humanoid_size": "normal",
   "name": "1ST LVL THIEF",
   "other_gear": [
     {
@@ -115,6 +175,10 @@ MONSTER AND SELECTED SET (current catalog JSON):
   ],
   "selected_set": "Long sword",
   "source_key": "MON3CHA.DAX:45",
+  "sprite_size": {
+    "height_squares": 1.0,
+    "width_squares": 1.0
+  },
   "weapon_role": "one_hand"
 }
 
@@ -122,6 +186,12 @@ POSE TO GENERATE: READY only.
 Apply the READY rule for the selected weapon from the specification above.
 For melee, weapon UP in a ready-to-strike guard, never lowered at rest.
 For projectile weapons, loaded before release. Preserve an included shield.
+Keep the body, feet, shield, and other gear inside the saved combat-square
+footprint. A raised weapon may extend above its top boundary into the square
+above, where it can render over another combat sprite. Do not let the ready
+weapon cross a side or bottom boundary. One square is 5 feet by 5 feet. A
+normal humanoid, including an orc, remains a full 5 feet tall; do not shrink
+the body to make room for the weapon.
 Leave enough canvas space for this set's later action pose at the SAME body
 scale. The larger pose determines the shared camera distance for both frames.
 Choose and retain exact planted-foot x/y coordinates on the canvas. This ready
@@ -130,3 +200,5 @@ Reference 1: approved original pose guide, for facing and ready-pose mechanics.
 Reference 2, when available: this monster's first approved NEW ready sprite,
 for identity, clothing, palette, scale and exact foot placement across weapon sets.
 Output one character only, not the guide sheet or multiple animation frames.
+
+ADDITIONAL ART DIRECTION: Brown leather-armored, dark tied-back hair, human-height first-level thief with one plain long sword; no shield, bow, or magic. The old newly generated thief art supplies identity only, not scale. Both frames derive from the accepted MON3 canonical design because these three records have identical description, saved equipment, and height tier. The ready sword is raised; the action is a compact late slash with planted feet at identical pixels. The first generated action attempt was rejected for sliding and clipping; the second edit was accepted.

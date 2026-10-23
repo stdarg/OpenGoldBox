@@ -1,0 +1,32 @@
+{
+  "action_sha256": "ed8366892f4aef1c13153e237bc808372c157a03cf2a952b2a2d8d522eb2cbd8",
+  "format": "opengold-sprite-review-v1",
+  "install_paths": {
+    "action": "art/mon5cha_dax_45/item_001__one_hand/action.png",
+    "ready": "art/mon5cha_dax_45/item_001__one_hand/ready.png"
+  },
+  "metadata_sha256": "d5bc96e44aba49be83003a3f62c86e499830cf15316613672fbc5d10cac7addd",
+  "notes": "New imagegen pair generated for MON3 and reused unchanged for exact matching MON5/MON6 records with same description and leather armor + long sword. Approved guide and earlier new thief art only; no original game art. Shared 1254-to-139 nearest-neighbor export with +5,+8 crop. Visually inspected native pair and catalog one-second alternation; other records show same exact PNG hashes in fixed grid. Body fills one 5-foot square, sword alone crosses top in ready and side in action. Head/feet stay registered and attack blade fits PNG. Rejected first action source remains in staging.",
+  "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
+  "ready_sha256": "195c0c636339f7067d40c14f58fec8ea6749234938fdfa9d3c8d46a92d8d624d",
+  "reviewed_at": "2026-10-23T03:51:09+00:00",
+  "reviewer": "Codex visual review",
+  "source_key": "MON5CHA.DAX:45",
+  "specification": "bipedal-v1",
+  "variant_id": "item_001__one_hand",
+  "visual_checks": {
+    "action_late_strike_or_after_release": true,
+    "complete_silhouette_no_clipping_or_background": true,
+    "consistent_scale_and_grounded_foot_baseline_across_sets": true,
+    "correct_equipment_grip_and_handedness": true,
+    "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
+    "only_independent_art_used_as_references": true,
+    "pair_reviewed_alternating_in_catalog": true,
+    "pixel_art_readable_at_combat_size": true,
+    "planted_feet_same_xy_no_whole_body_translation": true,
+    "ready_weapon_raised_or_projectile_loaded": true,
+    "same_identity_clothing_palette_and_camera": true
+  },
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
+}

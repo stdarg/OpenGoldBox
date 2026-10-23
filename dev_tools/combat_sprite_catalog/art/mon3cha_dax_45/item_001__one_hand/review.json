@@ -1,15 +1,15 @@
 {
-  "action_sha256": "4f784090d9399582f4464ffb570496a9d96358823421e3ba9acaca46fcdbf774",
+  "action_sha256": "ed8366892f4aef1c13153e237bc808372c157a03cf2a952b2a2d8d522eb2cbd8",
   "format": "opengold-sprite-review-v1",
   "install_paths": {
     "action": "art/mon3cha_dax_45/item_001__one_hand/action.png",
     "ready": "art/mon3cha_dax_45/item_001__one_hand/ready.png"
   },
-  "metadata_sha256": "8b50949fabaa9a12ad7348db0d255d23900446ec8c1881b3fedc59a423657cab",
-  "notes": "Both frames reviewed at 128 px and alternating in catalog; fixed boots/body with local sword slash. First action rejected for widening stance; regenerated action preserves planted boots.",
+  "metadata_sha256": "d7cf51b217257ccc794ebe55dd2b1e94f80215bf94dd25338d3f6222b9fcbbb1",
+  "notes": "New imagegen pair generated for MON3 and reused unchanged for exact matching MON5/MON6 records with same description and leather armor + long sword. Approved guide and earlier new thief art only; no original game art. Shared 1254-to-139 nearest-neighbor export with +5,+8 crop. Visually inspected native pair and catalog one-second alternation; other records show same exact PNG hashes in fixed grid. Body fills one 5-foot square, sword alone crosses top in ready and side in action. Head/feet stay registered and attack blade fits PNG. Rejected first action source remains in staging.",
   "pose_guide_sha256": "6b6182bfee5cbd7c5f36e6827728777e8043ce83462f4ee619fc596c57f1ece2",
-  "ready_sha256": "69bccde46f0d4f5ab5ed7abc104b317a95ee17b21c67afaf99ffdedbbb9a3326",
-  "reviewed_at": "2026-10-19T02:37:46.116838+00:00",
+  "ready_sha256": "195c0c636339f7067d40c14f58fec8ea6749234938fdfa9d3c8d46a92d8d624d",
+  "reviewed_at": "2026-10-23T03:51:08+00:00",
   "reviewer": "Codex visual review",
   "source_key": "MON3CHA.DAX:45",
   "specification": "bipedal-v1",
@@ -20,6 +20,7 @@
     "consistent_scale_and_grounded_foot_baseline_across_sets": true,
     "correct_equipment_grip_and_handedness": true,
     "front_three_quarter_screen_right_chest_visible": true,
+    "humanoid_height_tier_or_na_reviewed": true,
     "only_independent_art_used_as_references": true,
     "pair_reviewed_alternating_in_catalog": true,
     "pixel_art_readable_at_combat_size": true,
@@ -27,5 +28,5 @@
     "ready_weapon_raised_or_projectile_loaded": true,
     "same_identity_clothing_palette_and_camera": true
   },
-  "workflow_sha256": "3c924a6ad2aedca5eacee9d7aa25a07791fd7370083e78681876b107857da599"
+  "workflow_sha256": "ff9c0d6be5460220e7e048ec589fe9ec0598ada24c1a3b3d84ff71151ba00b18"
 }
